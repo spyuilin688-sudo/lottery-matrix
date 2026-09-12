@@ -2,6 +2,7 @@ import json
 from urllib.parse import quote
 
 import httpx
+import pytest
 from postgrest import SyncPostgrestClient
 
 from app.api_server import handle_api_request
@@ -130,3 +131,51 @@ def test_downward_period_correction_preserves_next_date_using_the_previous_key()
     repo.upsert_draw({**preliminary("026100"), "resultStatus": "confirmed"})
     assert [(row["drawDate"], row["period"]) for row in repo.list_draws("六合彩")] == [
         ("2026-09-17", "026101"), ("2026-09-15", "026100")]
+
+
+def test_older_official_backfill_preserves_the_newer_preliminary_date():
+    repo = InMemoryAnalysisRepository()
+    repo.upsert_draw({**preliminary("026099"), "drawDate": "2026-09-10", "resultStatus": "confirmed"})
+    repo.upsert_draw(preliminary())
+    version = "026100:matrix-python-v14-sorted"
+    repo.begin_run("六合彩", "026100", version, "2026-09-15T13:40:00Z")
+    backfill = {**preliminary(), "drawDate": "2026-09-12", "resultStatus": "confirmed"}
+    repo.upsert_draw(backfill)
+    expected = [("2026-09-15", "026101", "preliminary"), ("2026-09-12", "026100", "confirmed"),
+                ("2026-09-10", "026099", "confirmed")]
+    assert [(row["drawDate"], row["period"], row["resultStatus"]) for row in repo.list_draws("六合彩")] == expected
+    assert repo.get_progress("六合彩", "026100", version) is None
+    repo.upsert_draw(backfill)
+    assert [(row["drawDate"], row["period"], row["resultStatus"]) for row in repo.list_draws("六合彩")] == expected
+
+
+def test_reverse_order_backfill_preserves_multiple_preliminary_dates_and_retries():
+    repo = InMemoryAnalysisRepository()
+    repo.upsert_draw(preliminary())
+    repo.upsert_draw({**preliminary("026101"), "drawDate": "2026-09-17"})
+    backfill = [{**preliminary("026101"), "drawDate": "2026-09-13", "resultStatus": "confirmed"},
+                {**preliminary(), "drawDate": "2026-09-12", "resultStatus": "confirmed"}]
+    repo.upsert_draws(backfill)
+    expected = [("2026-09-17", "026103"), ("2026-09-15", "026102"),
+                ("2026-09-13", "026101"), ("2026-09-12", "026100")]
+    assert [(row["drawDate"], row["period"]) for row in repo.list_draws("六合彩")] == expected
+    repo.upsert_draws(list(reversed(backfill)))
+    assert [(row["drawDate"], row["period"]) for row in repo.list_draws("六合彩")] == expected
+
+
+def test_confirmed_period_collision_rolls_back_the_entire_backfill_and_analysis():
+    repo = InMemoryAnalysisRepository()
+    repo.upsert_draw({**preliminary("026099"), "drawDate": "2026-09-10", "resultStatus": "confirmed"})
+    repo.upsert_draw(preliminary())
+    version = "026100:matrix-python-v14-sorted"
+    repo.begin_run("六合彩", "026100", version, "2026-09-15T13:40:00Z")
+    repo.save_artifact("六合彩", "026100", version, "explore", {"items": ["ready"]})
+    before = repo.list_draws("六合彩")
+    with pytest.raises(ValueError, match="DRAW_PERIOD_DATE_CONFLICT"):
+        repo.upsert_draws([
+            {**preliminary(), "drawDate": "2026-09-12", "resultStatus": "confirmed"},
+            {**preliminary("026099"), "drawDate": "2026-09-13", "resultStatus": "confirmed"},
+        ])
+    assert repo.list_draws("六合彩") == before
+    assert repo.get_progress("六合彩", "026100", version) is not None
+    assert repo.read_artifact("六合彩", "026100", version, "explore") == {"items": ["ready"]}

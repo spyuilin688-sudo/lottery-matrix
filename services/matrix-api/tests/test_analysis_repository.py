@@ -14,6 +14,8 @@ from app.repositories.analysis_repository import (
 )
 
 
+WRITE_FENCE = {"owner_id": "worker", "run_started_at": "2026-09-12T00:00:00+00:00"}
+
 KINDS = ["explore", "tianheng", "tianyan", "tiangong", "status"]
 
 
@@ -84,6 +86,7 @@ class FakeSupabaseClient:
         self.last_ranges: list[tuple[int, int]] = []
         self.last_gt_filters: list[tuple[str, Any]] = []
         self.last_limits: list[int] = []
+        self.rpc_calls: list[tuple[str, dict[str, Any]]] = []
         self.upsert_records: list[dict[str, Any] | list[dict[str, Any]]] = []
         self.responses: dict[str, list[dict[str, Any]]] = {}
 
@@ -93,6 +96,10 @@ class FakeSupabaseClient:
 
     def rpc(self, name: str, params: dict[str, Any]) -> FakeQuery:
         self.last_rpc = (name, params)
+        self.rpc_calls.append((name, params))
+        if name == "matrix_analysis_write_owned":
+            self.responses[name] = True
+            return FakeQuery(self, name)
         return FakeQuery(self, "lottery_draws")
 
 
@@ -508,12 +515,11 @@ def test_supabase_explore_results_use_bounded_batch_upsert_and_skip_empty_payloa
 
     repository.save_explore_results("今彩539", "115000205", "matrix-python-v6", {
         "items": [item], "validationById": {"road-1": validation},
-    })
+    }, **WRITE_FENCE)
 
-    assert fake_client.last_table == "matrix_explore_results"
-    assert fake_client.last_on_conflict == "lottery,draw_period,analysis_version,item_id"
-    assert isinstance(fake_client.last_record, list)
-    assert fake_client.last_record[0] | {"expires_at": "ignored"} == {
+    assert fake_client.last_rpc[1]["p_target"] == "matrix_explore_results"
+    assert isinstance(fake_client.last_rpc[1]["p_records"], list)
+    assert fake_client.last_rpc[1]["p_records"][0] | {"expires_at": "ignored"} == {
         "lottery": "今彩539", "draw_period": "115000205",
         "analysis_version": "matrix-python-v6", "item_id": "road-1",
         "number": "02", "locked_position": 1, "prediction_distance": 2,
@@ -529,7 +535,7 @@ def test_supabase_explore_results_use_bounded_batch_upsert_and_skip_empty_payloa
     empty_client = FakeSupabaseClient()
     SupabaseAnalysisRepository(empty_client).save_explore_results(
         "今彩539", "115000205", "matrix-python-v6",
-        {"items": [], "validationById": {}},
+        {"items": [], "validationById": {}}, **WRITE_FENCE,
     )
     assert empty_client.last_table == ""
 
@@ -551,11 +557,12 @@ def test_supabase_explore_results_split_large_payloads_into_bounded_batches() ->
 
     repository.save_explore_results(
         "今彩539", "115000205", "matrix-python-v7",
-        {"items": items, "validationById": validations},
+        {"items": items, "validationById": validations}, **WRITE_FENCE,
     )
 
-    assert [len(batch) for batch in fake_client.upsert_records] == [100, 100, 1]
-    assert [record["item_id"] for batch in fake_client.upsert_records for record in batch] == [
+    batches = [params["p_records"] for _, params in fake_client.rpc_calls]
+    assert [len(batch) for batch in batches] == [100, 100, 1]
+    assert [record["item_id"] for batch in batches for record in batch] == [
         f"road-{index}" for index in range(201)
     ]
 
@@ -599,10 +606,9 @@ def test_supabase_chunk_queries_use_composite_upsert_and_ordered_minimal_read() 
     repository = SupabaseAnalysisRepository(fake_client)
     delta = {"items": [{"id": "b"}], "validationById": {"b": {"ruleSets": []}}}
 
-    repository.save_artifact_chunk("今彩539", "115000205", "v1", "explore", 1, 10, 20, delta)
+    repository.save_artifact_chunk("今彩539", "115000205", "v1", "explore", 1, 10, 20, delta, **WRITE_FENCE)
 
-    assert fake_client.last_table == "matrix_analysis_artifact_chunks"
-    assert fake_client.last_on_conflict == "lottery,draw_period,analysis_version,kind,chunk_index"
+    assert fake_client.last_rpc[1]["p_target"] == "matrix_analysis_artifact_chunks"
     fake_client.responses["matrix_analysis_artifact_chunks"] = [{
         "chunk_index": 1, "cursor_start": 10, "cursor_end": 20, "payload": delta,
     }]
@@ -684,10 +690,10 @@ def test_supabase_chunk_write_compacts_large_payload() -> None:
     }
 
     repository.save_artifact_chunk(
-        "大樂透", "115000205", "v1", "explore", 0, 0, 10, delta,
+        "大樂透", "115000205", "v1", "explore", 0, 0, 10, delta, **WRITE_FENCE,
     )
 
-    stored_payload = fake_client.last_record["payload"]
+    stored_payload = fake_client.last_rpc[1]["p_records"][0]["payload"]
     raw_size = len(json.dumps(delta, ensure_ascii=False, separators=(",", ":")))
     stored_size = len(json.dumps(stored_payload, separators=(",", ":")))
     assert stored_payload["encoding"] == "zlib+base64"

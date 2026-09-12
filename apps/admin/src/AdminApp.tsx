@@ -1595,7 +1595,7 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
       {items.length === 0 && <div className="statusEmpty">{checking ? "正在檢查服務狀態…" : "目前沒有服務狀態"}</div>}
       <div className="statusGroups">
         {groupSystemStatusItems(items).map((group) => {
-          const abnormalCount = group.items.filter((item) => !item.ok).length;
+          const abnormalCount = group.items.filter((item) => getSystemStatusPresentation(item).tone === "bad").length;
           const limitedCount = group.items.filter((item) => getSystemStatusPresentation(item).tone === "limited").length;
           const groupTitleId = `status-group-${group.location.toLowerCase()}`;
           return (

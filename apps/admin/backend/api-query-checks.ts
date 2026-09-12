@@ -8,6 +8,25 @@ const draw = (value: unknown, lottery: string): boolean => record(value)
   && Array.isArray(value.numbers) && value.numbers.length === (['今彩539', '天天樂'].includes(lottery) ? 5 : 7)
   && new Set(value.numbers).size === value.numbers.length
   && value.numbers.every((number: unknown) => typeof number === 'string' && /^\d{2}$/.test(number) && Number(number) >= 1 && Number(number) <= (['今彩539', '天天樂'].includes(lottery) ? 39 : 49));
+// Visible rows in card_renderer.card_layout; actual order requires every row.
+const cardHistorySize: Record<string, number> = { 今彩539: 227, 六合彩: 171, 大樂透: 171 };
+const actualOrderAvailable = (value: Record<string, any>, lottery: string) => {
+  if (!draw(value, lottery) || !['confirmed', 'preliminary'].includes(value.resultStatus)) throw new Error('回傳資料格式不符。');
+  const actual = value.drawOrderNumbers;
+  if (actual != null && !(Array.isArray(actual) && actual.length === 0)
+    && (!draw({ ...value, numbers: actual }, lottery)
+      || !actual.every((number: string) => value.numbers.includes(number))
+      || (['六合彩', '大樂透'].includes(lottery) && actual.at(-1) !== value.numbers.at(-1)))) throw new Error('回傳資料格式不符。');
+  return value.resultStatus === 'confirmed' && Array.isArray(actual) && actual.length > 0;
+};
+const pngCard = (value: unknown) => record(value) && typeof value.url === 'string' && value.url.startsWith('https://') && value.mimeType === 'image/png';
+const cardPublicationState = (value: unknown, lottery: string) => {
+  if (!record(value) || value.lottery !== lottery || !record(value.cards)) throw new Error('回傳資料格式不符。');
+  if (value.period === null && Object.keys(value.cards).length === 0) return 'pending';
+  if (typeof value.period !== 'string' || !value.period || !pngCard(value.cards.sorted)
+    || (lottery !== '天天樂' && value.cards.draw !== undefined && !pngCard(value.cards.draw))) throw new Error('回傳資料格式不符。');
+  return 'published';
+};
 
 export function createApiQueryChecks(options: {
   loadWorkerUrl: () => Promise<string | undefined>;
@@ -42,6 +61,15 @@ export function createApiQueryChecks(options: {
     }
   };
   let workerUrl: Promise<string | undefined> | undefined;
+  const latestQueries = new Map<string, Promise<any>>();
+  const latest = (lottery: string, base: string, refresh = false) => {
+    let value = refresh ? undefined : latestQueries.get(lottery);
+    if (!value) {
+      value = request(`${base.replace(/\/+$/, '')}/api/matrix/latest/${encodeURIComponent(lottery)}`);
+      latestQueries.set(lottery, value);
+    }
+    return value;
+  };
   let config: Promise<SupabaseConfig> | undefined;
   const rpc = async (name: 'matrix_explore_list' | 'matrix_explore_validation', body: unknown) => {
     const current = await (config ??= options.loadSupabaseConfig());
@@ -86,11 +114,55 @@ export function createApiQueryChecks(options: {
         const kind = id.replace('railway-', '');
         const computation = kind === 'tongxing' || kind === 'number-reference';
         const path = `/api/matrix/${kind}${computation ? '' : `/${encodeURIComponent(lottery)}`}${kind === 'history' ? '?limit=1' : kind === 'cards' ? '?format=png' : ''}`;
-        const value = await request(`${base.replace(/\/+$/, '')}${path}`, computation ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lottery, numberOrder: '依號碼由小到大排序', numbers: ['01', '02', '03'], ...(kind === 'tongxing' ? { futureOffset: 1 } : { historyRange: 1000 }) }) } : {});
+        let value = kind === 'latest' ? await latest(lottery, base) : await request(`${base.replace(/\/+$/, '')}${path}`, computation ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lottery, numberOrder: '依號碼由小到大排序', numbers: ['01', '02', '03'], ...(kind === 'tongxing' ? { futureOffset: 1 } : { historyRange: 1000 }) }) } : {});
         let valid = record(value);
         if (kind === 'latest') valid = valid && draw(value.item, lottery);
         else if (kind === 'history') valid = valid && Array.isArray(value.items) && value.items.length === 1 && draw(value.items[0], lottery);
-        else if (kind === 'cards') valid = valid && value.lottery === lottery && typeof value.period === 'string' && Boolean(value.period) && record(value.cards) && ['draw', 'sorted'].every((order) => record(value.cards[order]) && typeof value.cards[order].url === 'string' && value.cards[order].url.startsWith('https://') && value.cards[order].mimeType === 'image/png');
+        else if (kind === 'cards') {
+          let current = await latest(lottery, base);
+          if (!record(current) || !draw(current.item, lottery)) throw new Error('回傳資料格式不符。');
+          actualOrderAvailable(current.item, lottery);
+          if (cardPublicationState(value, lottery) === 'pending') return { lottery, ok: true, period: current.item.period, waiting: true, waitingFor: 'generation' };
+          let changedDuringCheck = false;
+          if (value.period !== current.item.period) {
+            const previousCardPeriod = value.period;
+            const previousDrawPeriod = current.item.period;
+            [value, current] = await Promise.all([
+              request(`${base.replace(/\/+$/, '')}${path}`), latest(lottery, base, true),
+            ]);
+            changedDuringCheck = value?.period !== previousCardPeriod || current?.item?.period !== previousDrawPeriod;
+          }
+          if (!record(current) || !draw(current.item, lottery)) throw new Error('回傳資料格式不符。');
+          const actualAvailable = actualOrderAvailable(current.item, lottery);
+          if (cardPublicationState(value, lottery) === 'pending') return { lottery, ok: true, period: current.item.period, waiting: true, waitingFor: 'generation' };
+          if (value.period !== current.item.period) {
+            if (changedDuringCheck) return { lottery, ok: true, period: current.item.period, waiting: true, waitingFor: 'publication' };
+            throw new Error('回傳資料格式不符。');
+          }
+          let waitingFor = current.item.resultStatus === 'preliminary' ? 'official' : undefined;
+          if (lottery !== '天天樂') {
+            if (!actualAvailable) waitingFor ??= 'draw-order';
+            else if (value.cards.draw === undefined) {
+              const count = cardHistorySize[lottery];
+              const history = await request(`${base.replace(/\/+$/, '')}/api/matrix/history/${encodeURIComponent(lottery)}?limit=${count}`);
+              if (!record(history) || !Array.isArray(history.items) || history.items.length !== count
+                || new Set(history.items.map((item: any) => item?.period)).size !== count) throw new Error('回傳資料格式不符。');
+              const available = history.items.map((item: any) => actualOrderAvailable(item, lottery));
+              if (history.items[0].period !== current.item.period) {
+                const refreshed = await latest(lottery, base, true);
+                if (!record(refreshed) || !draw(refreshed.item, lottery)) throw new Error('回傳資料格式不符。');
+                actualOrderAvailable(refreshed.item, lottery);
+                if (refreshed.item.period !== current.item.period && refreshed.item.period === history.items[0].period) {
+                  return { lottery, ok: true, period: refreshed.item.period, waiting: true, waitingFor: 'publication' };
+                }
+                throw new Error('回傳資料格式不符。');
+              }
+              if (available.every(Boolean)) throw new Error('回傳資料格式不符。');
+              waitingFor = 'draw-order';
+            }
+          }
+          return { lottery, ok: true, period: value.period, waiting: Boolean(waitingFor), ...(waitingFor ? { waitingFor } : {}) };
+        }
         else if (kind === 'tongxing') valid = valid && value.lottery === lottery && value.futureOffset === 1 && Array.isArray(value.groups) && value.groups.every((group: unknown) => record(group) && draw(group.lockedEntry, lottery) && draw(group.predictedEntry, lottery) && group.lockedEntry.period !== group.predictedEntry.period);
         else valid = valid && value.lottery === lottery && value.historyRange === 1000 && Array.isArray(value.items) && value.items.length > 0 && value.items.every((item: unknown) => draw(item, lottery) && record(item) && Array.isArray(item.matchSlots) && item.matchSlots.length === item.numbers.length);
         if (!valid) throw new Error('回傳資料格式不符。');
@@ -101,6 +173,6 @@ export function createApiQueryChecks(options: {
         return { lottery, ok: false, error: safe };
       }
     }));
-    return { ok: samples.every((sample) => sample.ok), skipped: samples.some((sample) => 'skipped' in sample), samples, error: samples.filter((sample) => !sample.ok).map((sample) => `${sample.lottery}：${'error' in sample ? sample.error : ''}`).join(' ') };
+    return { ok: samples.every((sample) => sample.ok), waiting: samples.some((sample) => 'waiting' in sample && sample.waiting), skipped: samples.some((sample) => 'skipped' in sample), samples, error: samples.filter((sample) => !sample.ok).map((sample) => `${sample.lottery}：${'error' in sample ? sample.error : ''}`).join(' ') };
   };
 }

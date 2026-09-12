@@ -214,4 +214,24 @@ describe('system status evidence presentation', () => {
     expect(getSystemStatusPresentation({ ...item, location: 'Railway', checkMode: 'service' })).toMatchObject({ label: '主機正常', tone: 'limited' });
     expect(getSystemStatusPresentation({ ...item, id: 'supabase-watchdog-heartbeat', checkMode: 'service' })).toMatchObject({ label: '執行正常' });
   });
+
+  it.each([
+    ['running', true, { status: 'running' }, '執行中', 'limited'],
+    ['waiting', true, { status: 'waiting_source' }, '等待開獎來源更新', 'limited'],
+    ['unknown', false, { status: 'unknown' }, '狀態待確認', 'limited'],
+    ['unknown', false, null, '尚無執行紀錄', 'limited'],
+    ['failed', false, { status: 'running' }, '異常', 'bad'],
+    ['healthy', true, { status: 'success' }, '執行正常', 'good'],
+  ] as const)('presents %s execution evidence without a false completion or failure', (healthState, ok, detail, label, tone) => {
+    expect(getSystemStatusPresentation({ ...item, id: 'cron-matrix-fantasy5-refresh-v2', checkEvidence: 'reported', healthState, ok, detail })).toMatchObject({ label, tone });
+  });
+
+  it.each([
+    ['official', '等待正式開獎'],
+    ['draw-order', '落球尚未就緒'],
+    ['publication', '牌單更新中'],
+    ['generation', '牌單產生中'],
+  ])('keeps %s card evidence limited without claiming all cards are ready', (waitingFor, label) => {
+    expect(getSystemStatusPresentation({ ...item, id: 'railway-cards', checkEvidence: 'query', healthState: 'waiting', detail: { samples: [{ lottery: '今彩539', ok: true, waitingFor }] } })).toMatchObject({ label, tone: 'limited' });
+  });
 });

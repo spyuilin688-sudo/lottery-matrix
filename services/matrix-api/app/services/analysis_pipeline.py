@@ -48,6 +48,7 @@ class AnalysisPipeline:
         self.number_orders = number_orders
         self._draw_snapshot: dict[str, Any] | None = None
         self._verified_history: tuple[Any, ...] | None = None
+        self._run_started_at = ""
 
     def run(self, draw: dict[str, Any], history: Sequence[dict[str, Any]]) -> dict[str, Any]:
         self._validate_draw(draw)
@@ -67,6 +68,7 @@ class AnalysisPipeline:
             return {**run, "skipped": True}
         if run.get("leaseAcquired") is False:
             return {**run, "skipped": True}
+        self._run_started_at = str(run["startedAt"])
 
         context = {"draw": draw, "history": list(history), "artifacts": {},
                    "numberOrders": allowed_number_orders(lottery, self.number_orders)}
@@ -264,19 +266,31 @@ class AnalysisPipeline:
 
     def _save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any) -> None:
         self._require_lease(lottery, draw_period)
-        self.repository.save_artifact(lottery, draw_period, analysis_version, kind, payload)
+        self.repository.save_artifact(
+            lottery, draw_period, analysis_version, kind, payload,
+            owner_id=self.owner_id, run_started_at=self._run_started_at,
+        )
 
     def _save_artifact_chunk(self, lottery: str, draw_period: str, analysis_version: str, kind: str, chunk_index: int, cursor_start: int, cursor_end: int, payload: Any) -> None:
         self._require_lease(lottery, draw_period)
-        self.repository.save_artifact_chunk(lottery, draw_period, analysis_version, kind, chunk_index, cursor_start, cursor_end, payload)
+        self.repository.save_artifact_chunk(
+            lottery, draw_period, analysis_version, kind, chunk_index, cursor_start, cursor_end, payload,
+            owner_id=self.owner_id, run_started_at=self._run_started_at,
+        )
 
     def _save_explore_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any) -> None:
         self._require_lease(lottery, draw_period)
-        self.repository.save_explore_results(lottery, draw_period, analysis_version, payload)
+        self.repository.save_explore_results(
+            lottery, draw_period, analysis_version, payload,
+            owner_id=self.owner_id, run_started_at=self._run_started_at,
+        )
 
     def _save_tianheng_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any) -> None:
         self._require_lease(lottery, draw_period)
-        self.repository.save_tianheng_results(lottery, draw_period, analysis_version, payload)
+        self.repository.save_tianheng_results(
+            lottery, draw_period, analysis_version, payload,
+            owner_id=self.owner_id, run_started_at=self._run_started_at,
+        )
 
     def _update_progress(self, lottery: str, draw_period: str, analysis_version: str, phase: str, cursor: int, total: int) -> None:
         self._require_lease(lottery, draw_period)

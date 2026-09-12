@@ -8,6 +8,7 @@ export type SystemStatusItem = {
   checkMode: 'live' | 'openapi' | 'registry' | 'service';
   checkEvidence?: 'live' | 'registered' | 'options' | 'inherited' | 'reported' | 'query' | 'no-sample';
   ok: boolean;
+  healthState?: 'healthy' | 'running' | 'waiting' | 'unknown' | 'failed';
   checkedAt: string;
   responseMs: number;
   retryable?: boolean;
@@ -46,6 +47,29 @@ const statusLocationOrder: SystemStatusItem['location'][] = [
 
 // Older servers omit checkEvidence; keep their partial probes visibly limited too.
 export function getSystemStatusPresentation(item: SystemStatusItem) {
+  if (item.healthState === 'unknown') return {
+    label: item.detail === null ? '尚無執行紀錄' : '狀態待確認', tone: 'limited' as const,
+    scope: '目前的執行紀錄不足以確認工作狀態，請稍後重新檢查。',
+  };
+  if (item.ok && item.healthState === 'running') return {
+    label: '執行中', tone: 'limited' as const,
+    scope: '工作正在執行，最近的執行紀錄仍持續更新，尚未完成。',
+  };
+  if (item.ok && item.healthState === 'waiting') {
+    if (item.id === 'railway-cards') {
+      const samples = isRecord(item.detail) && Array.isArray(item.detail.samples) ? item.detail.samples : [];
+      if (samples.some(sample => isRecord(sample) && sample.waitingFor === 'generation')) return {
+        label: '牌單產生中', tone: 'limited' as const, scope: '已取得最新開獎資料，部分彩種的牌單仍在產生中，本次尚未取得可用的 PNG。',
+      };
+      if (samples.some(sample => isRecord(sample) && sample.waitingFor === 'publication')) return {
+        label: '牌單更新中', tone: 'limited' as const, scope: '檢查期間的開獎期別或牌單已有變動，本次尚未完成同一期別驗證，請稍後重新檢查。',
+      };
+      const official = samples.some(sample => isRecord(sample) && sample.waitingFor === 'official');
+      return { label: official ? '等待正式開獎' : '落球尚未就緒', tone: 'limited' as const,
+        scope: official ? '目前可用的順球牌單查詢正常；部分彩種仍等待正式開獎資料。' : '目前可用的順球牌單查詢正常；部分歷史資料尚無落球順序，落球牌單尚未就緒。' };
+    }
+    return { label: '等待開獎來源更新', tone: 'limited' as const, scope: '排程正在等待開獎來源更新，本次尚未完成新的資料更新。' };
+  }
   const evidence = item.checkEvidence ?? (
     item.endpoint.startsWith('/functions/v1/') ? 'options'
       : item.checkMode === 'openapi' || item.checkMode === 'registry' ? 'registered'

@@ -142,7 +142,7 @@ def test_tianheng_normalization_failure_replays_chunk_before_advancing(monkeypat
     pipeline = AnalysisPipeline(repository, builders(), VERSION, explore_batch_size=1)
     original = repository.save_tianheng_results
 
-    def fail_save(*args):
+    def fail_save(*args, **kwargs):
         raise RuntimeError("storage unavailable")
 
     monkeypatch.setattr(repository, "save_tianheng_results", fail_save)
@@ -200,6 +200,24 @@ class ResultClient:
         self.rows = {}
         self.batch_sizes = []
 
+    def rpc(self, name, params):
+        assert name == "matrix_analysis_write_owned"
+        assert params["p_target"] == "matrix_tianheng_results"
+        assert params["p_owner_id"] == "worker"
+        assert params["p_started_at"] == "2026-09-12T00:00:00+00:00"
+        records = params["p_records"]
+        client = self
+
+        class Call:
+            def execute(self):
+                client.batch_sizes.append(len(records))
+                for row in records:
+                    key = tuple(row[key] for key in ("lottery", "draw_period", "analysis_version", "item_id"))
+                    client.rows[key] = row
+                return SimpleNamespace(data=True)
+
+        return Call()
+
     def table(self, name):
         assert name == "matrix_tianheng_results"
         client = self
@@ -252,12 +270,13 @@ class ResultClient:
 def test_normalized_tianheng_records_keep_both_locks_and_upsert_idempotently(backend):
     client = ResultClient()
     repository = InMemoryAnalysisRepository() if backend == "memory" else SupabaseAnalysisRepository(client)
+    fence = {} if backend == "memory" else {"owner_id": "worker", "run_started_at": "2026-09-12T00:00:00+00:00"}
     assert not repository.has_tianheng_results("今彩539", "114001", VERSION)
-    repository.save_tianheng_results("今彩539", "114001", VERSION, empty_artifact())
+    repository.save_tianheng_results("今彩539", "114001", VERSION, empty_artifact(), **fence)
     assert not repository.has_tianheng_results("今彩539", "114001", VERSION)
     payload = tianheng_artifact()
-    repository.save_tianheng_results("今彩539", "114001", VERSION, payload)
-    repository.save_tianheng_results("今彩539", "114001", VERSION, payload)
+    repository.save_tianheng_results("今彩539", "114001", VERSION, payload, **fence)
+    repository.save_tianheng_results("今彩539", "114001", VERSION, payload, **fence)
     rows = repository.tianheng_results if backend == "memory" else client.rows
     assert len(rows) == 1
     row = rows[("今彩539", "114001", VERSION, "th_test")]
@@ -289,12 +308,13 @@ def test_normalized_tianheng_records_keep_both_locks_and_upsert_idempotently(bac
 def test_supabase_tianheng_upserts_are_bounded_batches():
     client = ResultClient()
     repository = SupabaseAnalysisRepository(client)
+    fence = {"owner_id": "worker", "run_started_at": "2026-09-12T00:00:00+00:00"}
     payload = empty_artifact()
     for index in range(201):
         artifact = tianheng_artifact(f"th_{index}")
         payload["items"].extend(artifact["items"])
         payload["validationById"].update(artifact["validationById"])
-    repository.save_tianheng_results("今彩539", "114001", VERSION, payload)
+    repository.save_tianheng_results("今彩539", "114001", VERSION, payload, **fence)
     assert client.batch_sizes == [100, 100, 1]
     assert len(client.rows) == 201
 
