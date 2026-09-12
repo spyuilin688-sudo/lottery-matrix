@@ -6,7 +6,7 @@ import { type LotteryId, type DrawOrder } from "../Prototype";
 import { BottomNavigation } from "../BottomNavigation";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "../NumberBall";
 import { fetchLotteryHistory, type LotteryDrawRecord } from "../lottery-api";
-import { BrandHeader } from "./BrandHeader";
+import { BrandHeader, type HeaderSettings } from "./BrandHeader";
 export { BrandHeader } from "./BrandHeader";
 import { isNearHistoryWeekBoundary } from "../history-week-groups";
 import { formatReferenceNumber, sanitizeReferenceNumber } from "../reference-number-input";
@@ -118,7 +118,7 @@ export function FeatureShell({
   className?: string;
   backTarget?: ScreenId;
   headerAction?: React.ReactNode;
-  headerSettings?: import("./BrandHeader").HeaderSettings;
+  headerSettings?: HeaderSettings;
   compactHeader?: boolean;
 }) {
   const { onQuickBack, quickActive } = useQuickNavigation();

@@ -79,23 +79,23 @@ export function BrandHeader({ title, onBack, backHref, action, settings, showBac
     width + (/[^\u0000-\u007f]/.test(character) ? 1 : /[A-Z]/.test(character) ? .75 : .6), 0);
   const titleFit = titleWidth <= 6 ? "short" : titleWidth <= 8 ? "regular" : titleWidth <= 11 ? "medium" : "long";
   const frame = (
-      <div className="product-header__frame" data-back={hasBack} data-actions={Boolean(action)}>
-        {hasBack ? backHref ? (
-          <a className="product-header__back" href={backHref} aria-label="返回">
-            <ChevronLeftIcon aria-hidden="true" />
-          </a>
-        ) : (
-          <button type="button" className="product-header__back" onClick={onBack} aria-label="返回">
-            <ChevronLeftIcon aria-hidden="true" />
-          </button>
-        ) : null}
-        <img className="product-header__mark" src="/assets/lottery/matrixYY.png" alt="" aria-hidden="true" draggable={false} />
-        <div className="product-header__copy">
-          <h1 data-title-fit={titleFit}>{displayTitle}</h1>
-          <span>{PAGE_SUBTITLES[title] ?? "LOTTERY MATRIX"}</span>
-        </div>
-        {action ? <div className="product-header__actions">{action}</div> : null}
+    <div className="product-header__frame" data-back={hasBack} data-actions={Boolean(action)}>
+      {hasBack ? backHref ? (
+        <a className="product-header__back" href={backHref} aria-label="返回">
+          <ChevronLeftIcon aria-hidden="true" />
+        </a>
+      ) : (
+        <button type="button" className="product-header__back" onClick={onBack} aria-label="返回">
+          <ChevronLeftIcon aria-hidden="true" />
+        </button>
+      ) : null}
+      <img className="product-header__mark" src="/assets/lottery/matrixYY.png" alt="" aria-hidden="true" draggable={false} />
+      <div className="product-header__copy">
+        <h1 data-title-fit={titleFit}>{displayTitle}</h1>
+        <span>{PAGE_SUBTITLES[title] ?? "LOTTERY MATRIX"}</span>
       </div>
+      {action ? <div className="product-header__actions">{action}</div> : null}
+    </div>
   );
   return (
     <header className="feature-brand-header product-header" data-product-header={title} data-header-style={CORE_HEADER_TITLES.has(title) ? "flow" : "geometric"} data-settings-floating={Boolean(settings?.expanded && settings.floating)} onKeyDown={(event) => {

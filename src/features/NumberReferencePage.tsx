@@ -126,14 +126,14 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   };
 
   const queryPanel = (
-        <div
-          className="reference-query-panel tool-settings-panel"
-          data-floating={queryFloating}
-          role={queryFloating ? "dialog" : undefined}
-          aria-label={queryFloating ? "探索設定" : undefined}
-          hidden={!queryExpanded}
-        >
-        <div className="query-selects three-cols tool-settings-primary-row">
+    <div
+      className="reference-query-panel tool-settings-panel"
+      data-floating={queryFloating}
+      role={queryFloating ? "dialog" : undefined}
+      aria-label={queryFloating ? "探索設定" : undefined}
+      hidden={!queryExpanded}
+    >
+      <div className="query-selects three-cols tool-settings-primary-row">
         <div className="select-box native-select reference-select">
           <select
             aria-label="彩種"
@@ -166,20 +166,20 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
           <ChevronDownIcon aria-hidden="true" />
         </div>
         <button type="button" className="tool-settings-reset reference-refresh-trigger" onClick={resetReference}><ReloadIcon className="reference-refresh-icon" aria-hidden="true" /><span>刷新</span></button>
+      </div>
+      <section className="reference-search" aria-label="探索號碼">
+        <div>
+          {inputs.map((v, i) => (
+            <input key={i} value={v} aria-label={`探索號碼 ${i + 1}`} inputMode="numeric" pattern="(0[1-9]|[1-4][0-9])" maxLength={2} data-filled={Boolean(v)}
+              onClick={(event) => event.currentTarget.select()}
+              onChange={(event) => setInputs(updateLookupInputValues(inputs, i, event.target.value))}
+              onBlur={() => setInputs(finalizeLookupInputValues(inputs, i))}
+            />
+          ))}
+          <button type="button" className="gold-button branded-explore-action" onClick={startReferenceSearch}><MagnifyingGlassIcon />開始探索</button>
         </div>
-        <section className="reference-search" aria-label="探索號碼">
-          <div>
-            {inputs.map((v, i) => (
-              <input key={i} value={v} aria-label={`探索號碼 ${i + 1}`} inputMode="numeric" pattern="(0[1-9]|[1-4][0-9])" maxLength={2} data-filled={Boolean(v)}
-                onClick={(event) => event.currentTarget.select()}
-                onChange={(event) => setInputs(updateLookupInputValues(inputs, i, event.target.value))}
-                onBlur={() => setInputs(finalizeLookupInputValues(inputs, i))}
-              />
-            ))}
-            <button type="button" className="gold-button branded-explore-action" onClick={startReferenceSearch}><MagnifyingGlassIcon />開始探索</button>
-          </div>
-        </section>
-        </div>
+      </section>
+    </div>
   );
 
   return (
@@ -190,7 +190,6 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
       headerAction={<HeaderSettingsButton expanded={queryExpanded} controls="reference-header-settings" onClick={toggleQueryPanel} />}
       headerSettings={{ id: "reference-header-settings", expanded: queryExpanded, floating: queryFloating, content: queryPanel, onClose: () => { setQueryExpanded(false); setQueryFloating(false); } }}
     >
-
       {referenceLoadState === "error" ? <div className="panel" role="alert"><span>號碼對照資料載入失敗</span><button type="button" aria-label="重新載入號碼對照資料" onClick={() => void startReferenceSearch()}>重新載入</button></div> : null}
       {referenceLoadState === "loading" ? <p role="status">號碼對照資料載入中</p> : null}
       <section className="panel reference-table-panel" hidden={referenceLoadState === "error" || referenceLoadState === "loading"}>

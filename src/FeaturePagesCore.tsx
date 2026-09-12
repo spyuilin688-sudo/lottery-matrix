@@ -258,23 +258,23 @@ function PatchedDrawHistoryPage({
   };
 
   const historySettings = (
-        <section className="history-filter-panel tool-settings-panel" data-floating={filterFloating} role={filterFloating ? "dialog" : "region"} aria-label="歷史篩選設定" hidden={!filterExpanded}>
-          <div className="history-filter-primary-row tool-settings-primary-row">
-            <div className="select-box native-select"><select aria-label="彩種" value={lottery} onChange={(event) => changeLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
-            <div className="select-box native-select history-order-select"><select aria-label="號碼順序" value={numberOrder} onChange={(event) => setNumberOrder(event.target.value)}><option>依號碼由小到大排序</option><option>依實際開獎順序排序</option></select><ChevronDownIcon aria-hidden="true" /></div>
-            <button type="button" className="tool-settings-reset history-reset-trigger" onClick={resetHistory}><ReloadIcon aria-hidden="true" /><span>重設</span></button>
-          </div>
-          {yearError ? <p role="alert">年份載入失敗 <button type="button" onClick={() => setYearRevision(value => value + 1)}>重試年份</button></p> : null}
-          <div className="history-filter-secondary-row">
-            <div className="history-date-selects">
-              <div className="select-box native-select"><select aria-label="年份" value={year} onChange={(event) => { setYear(event.target.value); setDateFilterTouched(true); setHistoryFilterPriority("date"); }}>{(availableYears.length ? availableYears : [year]).map((value) => <option key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
-              <div className="select-box native-select"><select aria-label="月份" value={month} onChange={(event) => { setMonth(event.target.value); setDateFilterTouched(true); setHistoryFilterPriority("date"); }}>{Array.from({ length: 12 }, (_, index) => `${String(index + 1).padStart(2, "0")}月`).map((value) => <option key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
-              <div className="select-box native-select"><select aria-label="日期" value={day} onChange={(event) => { setDay(event.target.value); setDateFilterTouched(true); setHistoryFilterPriority("date"); }}>{Array.from({ length: 31 }, (_, index) => `${String(index + 1).padStart(2, "0")}日`).map((value) => <option key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
-            </div>
-            <div className="select-box native-select history-range-select"><select aria-label="探索範圍" value={range} onChange={(event) => { setRange(event.target.value); setHistoryFilterPriority("range"); }}>{["1000期", "3000期", "5000期", "所有期數"].map((value) => <option value={value} key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
-            <button type="button" className="history-filter-start branded-explore-action" onClick={applyHistoryFilters}><MagnifyingGlassIcon aria-hidden="true" /><span>開始探索</span></button>
-          </div>
-        </section>
+    <section className="history-filter-panel tool-settings-panel" data-floating={filterFloating} role={filterFloating ? "dialog" : "region"} aria-label="歷史篩選設定" hidden={!filterExpanded}>
+      <div className="history-filter-primary-row tool-settings-primary-row">
+        <div className="select-box native-select"><select aria-label="彩種" value={lottery} onChange={(event) => changeLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
+        <div className="select-box native-select history-order-select"><select aria-label="號碼順序" value={numberOrder} onChange={(event) => setNumberOrder(event.target.value)}><option>依號碼由小到大排序</option><option>依實際開獎順序排序</option></select><ChevronDownIcon aria-hidden="true" /></div>
+        <button type="button" className="tool-settings-reset history-reset-trigger" onClick={resetHistory}><ReloadIcon aria-hidden="true" /><span>重設</span></button>
+      </div>
+      {yearError ? <p role="alert">年份載入失敗 <button type="button" onClick={() => setYearRevision(value => value + 1)}>重試年份</button></p> : null}
+      <div className="history-filter-secondary-row">
+        <div className="history-date-selects">
+          <div className="select-box native-select"><select aria-label="年份" value={year} onChange={(event) => { setYear(event.target.value); setDateFilterTouched(true); setHistoryFilterPriority("date"); }}>{(availableYears.length ? availableYears : [year]).map((value) => <option key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
+          <div className="select-box native-select"><select aria-label="月份" value={month} onChange={(event) => { setMonth(event.target.value); setDateFilterTouched(true); setHistoryFilterPriority("date"); }}>{Array.from({ length: 12 }, (_, index) => `${String(index + 1).padStart(2, "0")}月`).map((value) => <option key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
+          <div className="select-box native-select"><select aria-label="日期" value={day} onChange={(event) => { setDay(event.target.value); setDateFilterTouched(true); setHistoryFilterPriority("date"); }}>{Array.from({ length: 31 }, (_, index) => `${String(index + 1).padStart(2, "0")}日`).map((value) => <option key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
+        </div>
+        <div className="select-box native-select history-range-select"><select aria-label="探索範圍" value={range} onChange={(event) => { setRange(event.target.value); setHistoryFilterPriority("range"); }}>{["1000期", "3000期", "5000期", "所有期數"].map((value) => <option value={value} key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
+        <button type="button" className="history-filter-start branded-explore-action" onClick={applyHistoryFilters}><MagnifyingGlassIcon aria-hidden="true" /><span>開始探索</span></button>
+      </div>
+    </section>
   );
 
   const historyTitleActions = (
@@ -283,7 +283,6 @@ function PatchedDrawHistoryPage({
 
   return (
     <ToolFeatureShell title="歷史開獎號碼" onNavigate={onNavigate} backTarget={backTarget} className="draw-history-screen sticky-title-card-screen" headerAction={historyTitleActions} headerSettings={{ id: "history-header-settings", expanded: filterExpanded, floating: filterFloating, content: historySettings, onClose: () => { setFilterExpanded(false); setFilterFloating(false); } }} onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} quickActive={quickActive}>
-
       <div className="matrix-explore-main-screen draw-history-history-scope">
         {historyLoadState === "error" ? <div className="panel" role="alert"><span>歷史開獎號碼載入失敗</span><button type="button" aria-label="重新載入歷史開獎號碼" onClick={reloadHistory}>重新載入</button></div> : null}
         {historyLoadState === "loading" ? <p role="status">歷史開獎號碼載入中</p> : null}
@@ -398,16 +397,15 @@ function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickA
   };
 
   const tongxingSettings = (
-        <section className="tongxing-query tongxing-panel-scope tool-settings-panel" data-floating={settingsFloating} role={settingsFloating ? "dialog" : "region"} aria-label="同星探索設定" hidden={!settingsExpanded}>
-          <div className="query-selects tool-settings-primary-row"><div className="select-box native-select"><select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div><div className="select-box native-select tongxing-order-select"><select aria-label="號碼順序" value={order} onChange={(event) => setOrder(event.target.value)}><option value="依號碼由小到大排序">依號碼由小到大排序</option><option value="依實際開獎順序排序">依實際開獎順序排序</option></select><ChevronDownIcon aria-hidden="true" /></div></div>
-          <div className="same-star-fields">{values.map((value, index) => <input key={index} aria-label={`號碼 ${index + 1}`} value={value} inputMode="numeric" pattern="(0[1-9]|[1-4][0-9])" maxLength={2} onClick={(event) => event.currentTarget.select()} onChange={(event) => setValues(updateLookupInputValues(values, index, event.target.value))} onBlur={() => setValues(finalizeLookupInputValues(values, index))} />)}<span>之後下</span><div className="select-box native-select same-star-period-select"><select aria-label="之後期數" value={period} onChange={(event) => setPeriod(event.target.value)}>{Array.from({ length: 30 }, (_, index) => `${index + 1}期`).map((item) => <option value={item} key={item}>{item}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div><span>開出</span></div>
-          <button type="button" className="primary-action branded-explore-action" onClick={handleSearch}><MagnifyingGlassIcon /><span>開始探索</span></button>
-        </section>
+    <section className="tongxing-query tongxing-panel-scope tool-settings-panel" data-floating={settingsFloating} role={settingsFloating ? "dialog" : "region"} aria-label="同星探索設定" hidden={!settingsExpanded}>
+      <div className="query-selects tool-settings-primary-row"><div className="select-box native-select"><select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div><div className="select-box native-select tongxing-order-select"><select aria-label="號碼順序" value={order} onChange={(event) => setOrder(event.target.value)}><option value="依號碼由小到大排序">依號碼由小到大排序</option><option value="依實際開獎順序排序">依實際開獎順序排序</option></select><ChevronDownIcon aria-hidden="true" /></div></div>
+      <div className="same-star-fields">{values.map((value, index) => <input key={index} aria-label={`號碼 ${index + 1}`} value={value} inputMode="numeric" pattern="(0[1-9]|[1-4][0-9])" maxLength={2} onClick={(event) => event.currentTarget.select()} onChange={(event) => setValues(updateLookupInputValues(values, index, event.target.value))} onBlur={() => setValues(finalizeLookupInputValues(values, index))} />)}<span>之後下</span><div className="select-box native-select same-star-period-select"><select aria-label="之後期數" value={period} onChange={(event) => setPeriod(event.target.value)}>{Array.from({ length: 30 }, (_, index) => `${index + 1}期`).map((item) => <option value={item} key={item}>{item}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div><span>開出</span></div>
+      <button type="button" className="primary-action branded-explore-action" onClick={handleSearch}><MagnifyingGlassIcon /><span>開始探索</span></button>
+    </section>
   );
 
   return (
     <ToolFeatureShell title="Matrix 同星" onNavigate={onNavigate} className="tongxing-screen sticky-title-card-screen" headerAction={<HeaderSettingsButton expanded={settingsExpanded} controls="tongxing-header-settings" accessibleLabel="同星探索設定" onClick={toggleSettingsPanel} />} headerSettings={{ id: "tongxing-header-settings", expanded: settingsExpanded, floating: settingsFloating, content: tongxingSettings, onClose: () => { setSettingsExpanded(false); setSettingsFloating(false); } }} onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} quickActive={quickActive}>
-
       {searched ? <><div className="ornament-title"><span />探索結果<span /></div>{resultLoadState === "error" ? <section ref={resultsEndRef} className="panel tongxing-results" role="alert"><span>Matrix 同星資料載入失敗</span><button type="button" aria-label="重新載入 Matrix 同星資料" onClick={() => void handleSearch()}>重新載入</button></section> : <section ref={resultsEndRef} className="panel tongxing-results">{resultLoadState === "loading" ? <p role="status">Matrix 同星資料載入中</p> : resultLoadState === "empty" ? <p>目前沒有符合條件的同星結果。</p> : <div className="tongxing-table" data-columns={resultColumns.length} aria-label={`${appliedLottery}同星探索結果`}><div className="tongxing-table-row tongxing-table-head"><span>期數</span>{resultColumns.map((column) => <span key={column}>{column}</span>)}</div>{resultGroups.map(({ lockedEntry, predictedEntry }) => <article className="tongxing-result-group" key={getDrawIssue(lockedEntry)}>{renderResultRow(lockedEntry, "locked")}{renderResultRow(predictedEntry, "predicted")}</article>)}</div>}</section>}</> : null}
     </ToolFeatureShell>
   );
