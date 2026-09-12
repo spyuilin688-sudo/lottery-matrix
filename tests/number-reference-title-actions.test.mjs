@@ -1,4 +1,3 @@
-import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -6,13 +5,13 @@ import assert from "node:assert/strict";
 import { ruleBodies } from "./helpers/css-rules.mjs";
 
 test("號碼對照單標題卡只保留探索設定", () => {
-  const source = readFeaturePagesSource();
+  const source = readFileSync(new URL("../src/features/NumberReferencePage.tsx", import.meta.url), "utf8");
   const start = source.indexOf('title="號碼對照單"');
-  const end = source.indexOf('className="reference-query-panel"', start);
+  const end = source.indexOf('headerSettings={', start);
   const header = source.slice(start, end);
 
   assert.doesNotMatch(header, /reference-refresh-trigger/);
-  assert.match(header, /探索設定/);
+  assert.match(header, /HeaderSettingsButton/);
 });
 
 test("三頁共用設定操作固定於標題卡右下各 4px，刷新使用設定區共用尺寸", () => {
