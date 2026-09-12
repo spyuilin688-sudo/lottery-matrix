@@ -586,14 +586,18 @@ export function MatrixExplorePage({
               ))}
             </div>
           </label>
-          <div className="explore-condition-row" role="group" aria-label="探索條件">
-            <span className="explore-condition-label"><SettingLabelIcon type="condition" />探索條件</span>
+          <div className="explore-condition-row" role="group" aria-label={`${settingsName}條件`}>
+            <span className="explore-condition-label"><SettingLabelIcon type="condition" />{settingsName}條件</span>
             <div className="hit-options">
-              {(isTianheng ? ["準5+（鎖定1碼）", "準6+（鎖定2碼）"] : isTianyan ? ["準5+（鎖定2碼）"] : ["準4+（鎖定1碼）", "準5+（鎖定2碼）"]).map((v) => (
-                <button type="button" key={v} aria-label={v} data-selected={hit === v} aria-pressed={hit === v} onClick={() => changeHit(v)}>
-                  <span>{v.slice(0, v.indexOf("（"))}</span><span className="hit-lock-detail">{v.slice(v.indexOf("（"))}</span>
-                </button>
-              ))}
+              {(isTianheng ? ["準5+（鎖定1碼）", "準6+（鎖定2碼）"] : isTianyan ? ["準5+（鎖定2碼）"] : ["準4+（鎖定1碼）", "準5+（鎖定2碼）"]).map((v) => {
+                const label = v.replace("（", " (").replace("）", ")");
+                const detailStart = label.indexOf(" (");
+                return (
+                  <button type="button" key={v} aria-label={label} data-selected={hit === v} aria-pressed={hit === v} onClick={() => changeHit(v)}>
+                    <span>{label.slice(0, detailStart)}</span><span className="hit-lock-detail">{label.slice(detailStart)}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

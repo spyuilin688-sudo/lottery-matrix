@@ -222,8 +222,8 @@ test('天衍方案不符以共用視窗提示，關閉後保留設定且可重�
 test('天衍維持複合版路與準5+鎖定2碼，沒有準4+入口', () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
   expect(screen.getByText('複合版路')).toBeTruthy();
-  expect(screen.getByRole('button', { name: '準5+（鎖定2碼）' })).toBeTruthy();
-  expect(screen.queryByRole('button', { name: '準4+（鎖定1碼）' })).toBeNull();
+  expect(screen.getByRole('button', { name: '準5+ (鎖定2碼)' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: '準4+ (鎖定1碼)' })).toBeNull();
 });
 
 test('天衍只有展開結果時才讀取驗證資料', async () => {

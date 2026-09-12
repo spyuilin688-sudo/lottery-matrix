@@ -13,8 +13,8 @@ test('core lottery tabs reuse the existing state setters outside the settings ca
   const source = read('src/features/MatrixExplorePage.tsx');
   assert.match(source, /<div className="explore-hit-settings">\{advancedSettings\}<\/div>/);
   assert.doesNotMatch(source, /hit-advanced-panel|<SectionTitle>命中條件/);
-  assert.match(source, /className="explore-condition-row" role="group" aria-label="探索條件"/);
-  assert.match(source, /<SettingLabelIcon type="condition" \/>探索條件/);
+  assert.match(source, /className="explore-condition-row" role="group" aria-label=\{`\$\{settingsName\}條件`\}/);
+  assert.match(source, /<SettingLabelIcon type="condition" \/>\{settingsName\}條件/);
   assert.match(source, /onClick=\{\(\) => changeHit\(v\)\}/);
   assert.match(source, /onClick=\{\(\) => setAdvanced\(!advanced\)\}/);
 });
