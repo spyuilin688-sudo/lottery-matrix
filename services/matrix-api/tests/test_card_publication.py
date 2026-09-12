@@ -282,7 +282,7 @@ def test_scheduled_not_due_branch_notifies_published_actual_card_without_analysi
     assert [e['eventType'] for e in events] == ['lottery_result', 'matrix_card']
 
 
-def test_analysis_backlog_publishes_card_without_notifying_before_analysis(monkeypatch):
+def test_analysis_backlog_notifies_latest_published_fantasy5_card_before_analysis(monkeypatch):
     import app.analysis_worker as worker
     from types import SimpleNamespace
     repository, cards = fixture('天天樂')
@@ -295,7 +295,8 @@ def test_analysis_backlog_publishes_card_without_notifying_before_analysis(monke
     emitter = SimpleNamespace(enabled=True, emit=lambda e: events.append(e))
     worker.run_analysis_only_worker('天天樂', repository, notification_emitter=emitter)
     assert cards.row['manifest']['period'] == '10000'
-    assert not any(e['eventType'] == 'matrix_card' for e in events)
+    assert [e['eventKey'] for e in events if e['eventType'] == 'matrix_card'] == ['matrix_card:fantasy5:10000']
+    assert all(e['payload']['period'] == '10000' for e in events)
 
 
 def test_card_notifications_retry_only_published_period(monkeypatch):

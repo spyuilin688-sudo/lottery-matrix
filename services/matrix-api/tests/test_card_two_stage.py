@@ -105,7 +105,7 @@ def test_renderer_never_substitutes_sorted_numbers_for_missing_or_unconfirmed_ac
     assert rows[0][0]['values'] == []
 
 
-def test_sorted_only_official_lottery_never_gets_an_actual_png_or_notification_readiness():
+def test_sorted_only_official_lottery_never_gets_an_actual_png_or_actual_readiness():
     repository, cards = fixture('天天樂')
     manifest = service(repository, cards, available_pngs).ensure_current('天天樂', NOW)
     assert manifest is not None
