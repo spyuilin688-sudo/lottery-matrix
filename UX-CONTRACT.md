@@ -64,10 +64,13 @@
 | Scrollbar | Global application stylesheet `src/styles.css` | `DESIGN.md` and this contract | Scrolling remains enabled while native and app-owned scrollbar visuals stay hidden | Computed overflow plus Firefox and WebKit hidden-scrollbar source checks |
 | PWA install/update | `PwaLifecycleProvider` | This contract and `src/pwa-lifecycle.tsx` | Browser-native install prompt; iOS add-to-home-screen instructions; app-owned update confirmation | Lifecycle component tests plus production build fingerprint test |
 | Feature page startup/recovery | `Prototype`, `features/router` and `FeaturePageLoadBoundary` | This contract and the user's request to restore startup loading (2026-09-06) | Feature-page code loads at startup; page render errors retain explicit reload and home actions | Production import-graph check, immediate first-navigation test and boundary component tests |
+| Payment history access/recovery | `features/use-payment-history.ts` and `PaymentHistoryPage` | User-approved guest, empty and failure states; existing member payment RPC authorization | Check session before reading, guest action returns to profile, session changes invalidate private results, real failures remain retryable | `src/__tests__/PaymentHistoryAccess.test.tsx` and `DataPageFailureStates.test.tsx` |
 | Matrix status triggers | `MatrixStatusPage` and the Matrix status Edge response | Approved Matrix status design (2026-09-04) | Compact status-category cards, one card per trigger, Explore-style result rows, server-projected locked rows | Component tests at 320/360px plus route projection tests |
 | Admin todos | Existing AppDeploy admin `AdminApp` | Approved admin todo design (2026-09-04) | All administrators create; owner edits/deletes; super administrator may delete any item | Service, route, component and narrow-viewport tests |
 
 ## Form behavior
+
+付款紀錄先確認登入狀態，確認前不查詢會員付款資料。未登入顯示「請先登入，即可查看付款紀錄。」及「前往登入」，返回既有「我的」頁使用 LINE 登入流程。只有已登入且查詢成功為空陣列才顯示「目前沒有付款紀錄。」；登入狀態確認失敗與付款資料讀取失敗分開提示並可重新載入。沿用共用逾時機制，不把未知狀態當成訪客。登出、切換帳號或重試時立即撤銷舊請求的畫面更新資格；同帳號 token 更新不重查或閃動。資料只保留於本次頁面 state，實際授權仍由既有 RPC 與資料庫負責；訂閱購買顯示開關維持原控制範圍。
 
 2026-09-08 自訂觸發條件採共用22條預設模板；初入顯示「使用預設條件」，修改後顯示「已自訂」。一碼與兩碼各自呈現條件群組；同卡條件為AND、不同卡為OR，AND只使用同一組預測號碼。連準起終點與同碼最少最多皆包含邊界；最多空白為不限。版路使用原生複選與any/all關係；三條既有替代版路規則保留各組合獨立計數，在一張卡中以「或」呈現版路組合。舊設定最低數量保留為最少，最多不限。範圍無效時標記並聚焦欄位；讀取失敗不展示假預設，儲存失敗保留輸入；各彩種／狀態草稿與延遲回應互不覆蓋。重置僅清除目前彩種／狀態設定。依據為本對話使用者完整規格；模板來源services/matrix-api/app/domain/status-rules.json，資料契約shared/matrix-status-config.ts。
 

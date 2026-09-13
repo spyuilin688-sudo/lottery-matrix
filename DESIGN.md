@@ -117,6 +117,8 @@ components:
 
 金色實心或描邊控制表示主要品牌動作；中性動作用低強度邊框；刪除、登出與安全敏感動作保持文字、狀態與後果清楚。busy 時停用重複提交並維持按鈕尺寸。圖示必須與文字共用於非通用操作。
 
+付款紀錄的「前往登入」及「重新載入」沿用 `primary-action branded-explore-action` 黑金按鈕，說明文字使用既有 `DetailCard` 段落樣式與間距。未登入提示保持中性，實際失敗才使用 `role="alert"`；不增加頁面專屬按鈕 CSS 或覆寫層。
+
 ### PWA 共用標題卡 — 2026-09-12
 
 首頁以外的 PWA 頁面統一由 `src/features/BrandHeader.tsx` 與 `src/feature-pages.css` 的 `.product-header*` 擁有標題卡，沿用探索頁的黑金樣式。首頁 Logo、首頁排列與獨立管理後台不屬於此次遷移。

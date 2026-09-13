@@ -2,7 +2,7 @@ import { useId, useEffect, useMemo, useRef, useState, type ReactNode } from "rea
 import { CheckIcon, ChevronRightIcon } from "@radix-ui/react-icons";
 import type { Session } from "@supabase/supabase-js";
 import { isActivationRedemptionError, redeemActivationCode, type ActivationRedemptionErrorCode } from "../activation/redeemActivationCode";
-import { bootstrapMember, fetchMemberPaymentHistory, fetchMemberProfile, fetchMemberReferralSummary, fetchPendingTransferRequest, submitMemberReferralCode, submitTransferRequest, type MemberPaymentHistoryItem, type MemberProfileResponse, type MemberReferralSummary, type MemberTransferRequest, type ManualTransferPlanCode } from "../member-api";
+import { bootstrapMember, fetchMemberProfile, fetchMemberReferralSummary, fetchPendingTransferRequest, submitMemberReferralCode, submitTransferRequest, type MemberProfileResponse, type MemberReferralSummary, type MemberTransferRequest, type ManualTransferPlanCode } from "../member-api";
 import { readManualTransferPlan, saveManualTransferPlan } from "../manual-transfer-selection";
 import { reconcilePendingLineLogoutPresence, signInWithLine, signOutFromMatrix } from "../auth/line-auth";
 import { clearLineLoginAttempt, consumeLineLoginAttempt, markLineLoginAttempt } from "../auth/line-login-attempt";
@@ -14,6 +14,7 @@ import { usePwaLifecycle } from "../pwa-lifecycle";
 import { useSubscriptionPurchaseVisible } from "../subscription-purchase-visibility";
 import { Navigate, ScreenId } from "./navigation";
 import { FeatureShell, SectionTitle } from "./shared";
+import { usePaymentHistory } from "./use-payment-history";
 
 
 /** Keep the approved raster artwork intact; mask sample text and the sample photo.
@@ -520,22 +521,30 @@ export const paymentStatusLabels = {
 } as const;
 
 export function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
-  const [history, setHistory] = useState<MemberPaymentHistoryItem[] | null>(null);
-  const [historyError, setHistoryError] = useState(false);
-  const loadPaymentHistory = () => {
-    setHistory(null);
-    setHistoryError(false);
-    void fetchMemberPaymentHistory().then(setHistory).catch(() => setHistoryError(true));
-  };
-  useEffect(() => {
-    loadPaymentHistory();
-  }, []);
-  return (
-    <ProfileDetailShell title="付款紀錄" onNavigate={onNavigate} className="payment-history-screen">
-      <DetailCard title="付款紀錄">
-        {historyError ? <div role="alert"><span>付款紀錄載入失敗</span><button type="button" aria-label="重新載入付款紀錄" onClick={loadPaymentHistory}>重新載入</button></div> : history === null ? <p role="status">付款紀錄載入中</p> : history.length === 0 ? <p>目前沒有付款紀錄。</p> : (
+  const payments = usePaymentHistory();
+  let content: ReactNode;
+  switch (payments.status) {
+    case "guest":
+      content = <>
+          <p role="status">請先登入，即可查看付款紀錄。</p>
+          <button type="button" className="primary-action branded-explore-action" onClick={() => onNavigate("profile")}><span>前往登入</span></button>
+        </>;
+      break;
+    case "error":
+    case "auth-error":
+      content = <div role="alert">
+          <p>{payments.status === "auth-error" ? "登入狀態確認失敗，請稍後再試。" : "付款紀錄載入失敗，請稍後再試。"}</p>
+          <button type="button" className="primary-action branded-explore-action" aria-label={payments.status === "auth-error" ? "重新確認登入狀態" : "重新載入付款紀錄"} onClick={payments.retry}><span>重新載入</span></button>
+        </div>;
+      break;
+    case "checking":
+    case "loading":
+      content = <p role="status">{payments.status === "checking" ? "登入狀態確認中…" : "付款紀錄載入中…"}</p>;
+      break;
+    case "ready":
+      content = payments.history.length === 0 ? <p>目前沒有付款紀錄。</p> : (
           <div className="payment-history-list">
-            {history.map((item) => (
+            {payments.history.map((item) => (
               <article className="payment-history-item" key={item.id}>
                 <strong>{item.planName}</strong>
                 <span>{`NT$${item.amount.toLocaleString("en-US")}`}</span>
@@ -544,8 +553,12 @@ export function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
               </article>
             ))}
           </div>
-        )}
-      </DetailCard>
+        );
+      break;
+  }
+  return (
+    <ProfileDetailShell title="付款紀錄" onNavigate={onNavigate} className="payment-history-screen">
+      <DetailCard title="付款紀錄">{content}</DetailCard>
     </ProfileDetailShell>
   );
 }
@@ -1169,4 +1182,3 @@ export function DisclaimerPage({ onNavigate }: { onNavigate: Navigate }) {
     </LegalInfoDocument>
   );
 }
-
