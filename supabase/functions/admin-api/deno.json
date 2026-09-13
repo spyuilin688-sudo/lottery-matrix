@@ -21,6 +21,7 @@
     "../../../apps/admin/backend/api-status-inventory": "../../../apps/admin/backend/api-status-inventory.ts",
     "../../../apps/admin/backend/api-query-checks": "../../../apps/admin/backend/api-query-checks.ts",
     "../../../apps/admin/backend/index": "../../../apps/admin/backend/index.ts",
-    "../../../apps/admin/backend/matrix-storage-status": "../../../apps/admin/backend/matrix-storage-status.ts"
+    "../../../apps/admin/backend/matrix-storage-status": "../../../apps/admin/backend/matrix-storage-status.ts",
+    "../../../apps/admin/backend/notification-calendar-status": "../../../apps/admin/backend/notification-calendar-status.ts"
   }
 }

@@ -1,5 +1,6 @@
 import { apiStatusInventory, type ApiCheckEvidence, type ApiStatusDefinition } from './api-status-inventory';
 import { matrixStorageStatusId, parseMatrixStorageHealth } from './matrix-storage-status';
+import { notificationCalendarStatusId, parseNotificationCalendarStatus } from './notification-calendar-status';
 import type { SupabaseConfig } from './supabase';
 import type { RailwayLatestAnalysis, WorkerStatus } from './worker-api';
 import type { WatchdogStatus } from './watchdog-status';
@@ -187,7 +188,7 @@ export function createConnectionStatus(dependencies: Dependencies) {
   const runDefinition = async (definition: ApiStatusDefinition, shared: ReturnType<typeof createSharedChecks>): Promise<ConnectionStatusItem> => {
     const started = now().getTime();
     const checkEvidence: ApiCheckEvidence = queryCheckIds.has(definition.id) ? 'query'
-      : definition.id === 'supabase-watchdog-heartbeat' || definition.id === matrixStorageStatusId ? 'reported'
+      : definition.id === 'supabase-watchdog-heartbeat' || definition.id === matrixStorageStatusId || definition.id === notificationCalendarStatusId ? 'reported'
       : definition.endpoint.startsWith('/functions/v1/') ? 'options'
       : definition.checkMode === 'registry' ? 'registered'
       : definition.location === 'Railway' && definition.checkMode === 'service' ? 'inherited'
@@ -227,6 +228,17 @@ export function createConnectionStatus(dependencies: Dependencies) {
         if (heartbeat.status !== 'ok') {
           return finish(false, detail, '最近一次自動監控回報異常');
         }
+      } else if (definition.id === notificationCalendarStatusId) {
+        const current = await shared.config();
+        const response = await fetchWithDeadline(`${current.url}${definition.endpoint}`, {
+          method: 'GET', cache: 'no-store', redirect: 'error',
+          headers: { apikey: current.serviceRoleKey, Authorization: `Bearer ${current.serviceRoleKey}` },
+        });
+        if (!response.ok) throw new Error('NOTIFICATION_CALENDAR_UNAVAILABLE');
+        const calendar = parseNotificationCalendarStatus(await readJsonWithDeadline<unknown>(response), now());
+        if (!calendar) throw new Error('NOTIFICATION_CALENDAR_INVALID');
+        const confirmed = calendar.status === '已確認';
+        return { ...finish(confirmed, calendar, confirmed ? undefined : calendar.message), healthState: confirmed ? 'healthy' : 'waiting' };
       } else if (definition.id === matrixStorageStatusId) {
         const current = await shared.config();
         const response = await fetchWithDeadline(`${current.url}${definition.endpoint}`, {
@@ -292,6 +304,9 @@ export function createConnectionStatus(dependencies: Dependencies) {
       } else throw new Error('UNSUPPORTED_STATUS_CHECK');
       return finish(true, detail);
     } catch (cause) {
+      if (definition.id === notificationCalendarStatusId) return {
+        ...finish(false, null, '六合彩開獎日曆狀態暫時無法取得。'), healthState: 'unknown',
+      };
       if (definition.id === matrixStorageStatusId) return {
         ...finish(false, null, 'Matrix Storage 狀態暫時無法取得，請重新檢查。'), healthState: 'unknown',
       };
