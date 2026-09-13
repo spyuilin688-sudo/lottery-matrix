@@ -2,7 +2,8 @@ from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
 
-from httpx import Client as HttpClient
+from httpx import Client as HttpClient, HTTPError
+from postgrest.exceptions import APIError
 
 from app.repositories.artifact_chunks import (
     encode_chunk_payload,
@@ -683,6 +684,9 @@ class InMemoryAnalysisRepository:
         return self.read_artifact(lottery, draw_period, run["analysisVersion"], kind)
 
     def cleanup_expired(self, now: datetime) -> int:
+        # Test-double equivalent of the enabled SQL core. Production predicates
+        # live only in private.matrix_analysis_retained_versions().
+        cutoff = min(now, datetime.now(UTC))
         completed_periods: dict[str, set[str]] = {}
         running = set()
         for key, run in self.runs.items():
@@ -702,19 +706,41 @@ class InMemoryAnalysisRepository:
             )
             retained_periods.update((lottery, period) for period in ordered[:3])
         retained_runs = running | {
-            key for key in self.runs if key[:2] in retained_periods
+            (lottery, period, version)
+            for (lottery, period, _order), version in self.active_versions.items()
+            if (lottery, period) in retained_periods
         }
 
+        # The SQL core fails closed if any required recent slot is damaged.
+        for lottery, period in retained_periods:
+            orders = ["sorted", "draw"] if self._draw_order_eligible(lottery, period) else ["sorted"]
+            for order in orders:
+                version = self.active_versions.get((lottery, period, order))
+                key = (lottery, period, version)
+                if (
+                    self.runs.get(key, {}).get("status") != "complete"
+                    or any((*key, kind) not in self.artifacts for kind in ARTIFACT_KINDS)
+                ):
+                    return 0
+
         removed = 0
-        for collection in (self.artifacts, self.artifact_chunks, self.explore_results, self.tianheng_results):
+        removed_versions = set()
+        for collection, batch_size in (
+            (self.explore_results, 5000), (self.tianheng_results, 5000),
+            (self.artifact_chunks, 2000), (self.artifacts, 500),
+        ):
             expired = [
                 key for key, record in collection.items()
-                if record["expiresAt"] < now
+                if record["expiresAt"] < cutoff
                 and key[:3] not in retained_runs
-            ]
+            ][:batch_size]
             for key in expired:
                 del collection[key]
+                removed_versions.add(key[:3])
             removed += len(expired)
+        for key, version in list(self.active_versions.items()):
+            if (*key[:2], version) in removed_versions:
+                del self.active_versions[key]
         return removed
 
 
@@ -1340,6 +1366,16 @@ class SupabaseAnalysisRepository:
         return self.read_artifact(lottery, draw_period, version, kind)
 
     def cleanup_expired(self, now: datetime) -> int:
+        try:
+            status = self.client.rpc("matrix_analysis_cleanup_status", {}).execute().data
+        except (HTTPError, APIError):
+            # A missing/unreachable status RPC may still reach the existing
+            # gated, advisory-locked core. Never delete through a second path.
+            status = None
+        if isinstance(status, dict) and (
+            status.get("cleanup_enabled") is False or status.get("cleanup_due") is False
+        ):
+            return 0
         response = self.client.rpc("matrix_analysis_cleanup_expired", {
             "p_now": now.isoformat(),
         }).execute()

@@ -63,7 +63,9 @@ def test_cleanup_keeps_latest_three_completed_periods_and_running_checkpoints():
         for record in collection.values():
             record["expiresAt"] = NOW - timedelta(seconds=1)
 
-    assert repository.cleanup_expired(NOW) == 21
+    # The previous unsuffixed version is not an active pointer. Its seven
+    # expired records now lose the old period-wide protection as well.
+    assert repository.cleanup_expired(NOW) == 28
     assert {key[:2] for key in repository.artifacts} == {
         ("六合彩", "026093"), ("六合彩", "026094"), ("六合彩", "026095"),
         ("六合彩", "026090"), ("天天樂", "260901"),
@@ -75,8 +77,12 @@ def test_cleanup_keeps_latest_three_completed_periods_and_running_checkpoints():
 
 
 def test_supabase_cleanup_uses_atomic_retention_rpc_and_returns_full_count():
+    calls = []
     def respond(request):
         assert request.method == "POST"
+        calls.append(request.url.path)
+        if request.url.path == "/rest/v1/rpc/matrix_analysis_cleanup_status":
+            return httpx.Response(200, json={"cleanup_enabled": True, "cleanup_due": True})
         assert request.url.path == "/rest/v1/rpc/matrix_analysis_cleanup_expired"
         assert request.read() == ('{"p_now":"' + NOW.isoformat() + '"}').encode()
         return httpx.Response(200, json=2505)
@@ -84,6 +90,108 @@ def test_supabase_cleanup_uses_atomic_retention_rpc_and_returns_full_count():
     with httpx.Client(transport=httpx.MockTransport(respond)) as session:
         client = SyncPostgrestClient("https://example.invalid/rest/v1", http_client=session)
         assert SupabaseAnalysisRepository(client).cleanup_expired(NOW) == 2505
+    assert calls == ["/rest/v1/rpc/matrix_analysis_cleanup_status", "/rest/v1/rpc/matrix_analysis_cleanup_expired"]
+
+
+@pytest.mark.parametrize("status", [
+    {"cleanup_enabled": True, "cleanup_due": False},
+    {"cleanup_enabled": False, "cleanup_due": True},
+])
+def test_supabase_skips_cleanup_when_cron_is_fresh_or_rollout_is_disabled(status):
+    calls = []
+    def respond(request):
+        calls.append(request.url.path)
+        if request.url.path.endswith("matrix_analysis_cleanup_status"):
+            return httpx.Response(200, json=status)
+        return httpx.Response(200, json=99)
+    with httpx.Client(transport=httpx.MockTransport(respond)) as session:
+        client = SyncPostgrestClient("https://example.invalid/rest/v1", http_client=session)
+        assert SupabaseAnalysisRepository(client).cleanup_expired(NOW) == 0
+    assert calls == ["/rest/v1/rpc/matrix_analysis_cleanup_status"]
+
+
+@pytest.mark.parametrize("status", [None, {}, {"cleanup_due": "false"}, {"cleanup_due": True, "last_error": "previous failure"}])
+def test_supabase_missing_or_stale_status_uses_the_same_cleanup_core(status):
+    calls = []
+    def respond(request):
+        calls.append(request.url.path)
+        return httpx.Response(200, json=status if request.url.path.endswith("matrix_analysis_cleanup_status") else 7)
+    with httpx.Client(transport=httpx.MockTransport(respond)) as session:
+        client = SyncPostgrestClient("https://example.invalid/rest/v1", http_client=session)
+        assert SupabaseAnalysisRepository(client).cleanup_expired(NOW) == 7
+    assert calls == ["/rest/v1/rpc/matrix_analysis_cleanup_status", "/rest/v1/rpc/matrix_analysis_cleanup_expired"]
+
+
+@pytest.mark.parametrize("failure", ["transport", "rpc"])
+def test_supabase_status_failure_can_attempt_only_the_existing_locked_core(failure):
+    calls = []
+    def respond(request):
+        calls.append(request.url.path)
+        if request.url.path.endswith("matrix_analysis_cleanup_status"):
+            if failure == "transport":
+                raise httpx.ConnectError("temporarily unavailable", request=request)
+            return httpx.Response(503, json={"code": "PGRST000", "message": "temporarily unavailable"})
+        return httpx.Response(200, json=0)
+    with httpx.Client(transport=httpx.MockTransport(respond)) as session:
+        client = SyncPostgrestClient("https://example.invalid/rest/v1", http_client=session)
+        assert SupabaseAnalysisRepository(client).cleanup_expired(NOW) == 0
+    assert calls == ["/rest/v1/rpc/matrix_analysis_cleanup_status", "/rest/v1/rpc/matrix_analysis_cleanup_expired"]
+
+
+def test_inmemory_recent_superseded_expired_removed_but_live_ttl_and_running_kept():
+    repository = InMemoryAnalysisRepository()
+    for period, date in [("101", "2026-09-10"), ("102", "2026-09-11"), ("103", "2026-09-12")]:
+        seed_complete(repository, "天天樂", period, date, f"{period}:matrix-python-v15-sorted")
+    _, old = seed_complete(repository, "天天樂", "103", "2026-09-12", "103:matrix-python-v13")
+    _, running = seed_complete(repository, "天天樂", "103", "2026-09-12", "103:matrix-python-v16-preview")
+    repository.runs[("天天樂", "103", running)]["status"] = "running"
+    for collection in (repository.explore_results, repository.tianheng_results, repository.artifacts, repository.artifact_chunks):
+        for row in collection.values():
+            row["expiresAt"] = NOW - timedelta(days=1)
+    live_key = ("天天樂", "103", old, "status")
+    repository.artifacts[live_key]["expiresAt"] = NOW + timedelta(days=1)
+    assert repository.cleanup_expired(NOW) == 6
+    assert live_key in repository.artifacts
+    assert repository.has_artifact("天天樂", "103", running, "explore")
+    assert repository.active_versions[("天天樂", "103", "sorted")] == "103:matrix-python-v15-sorted"
+
+
+def test_inmemory_independent_order_versions_remain_retained():
+    repository = InMemoryAnalysisRepository()
+    draw = {"lottery": "今彩539", "period": "103", "drawDate": "2026-09-12",
+            "numbers": ["01", "02", "03", "04", "05"], "drawOrderNumbers": ["05", "04", "03", "02", "01"]}
+    repository.upsert_draw(draw)
+    for order in ["sorted", "draw"]:
+        version = f"103:matrix-python-v15-{order}"
+        repository.begin_run("今彩539", "103", version, NOW.isoformat())
+        for kind in ARTIFACT_KINDS:
+            repository.save_artifact("今彩539", "103", version, kind, {"items": []})
+        repository.complete_run("今彩539", "103", version, NOW.isoformat())
+    for artifact in repository.artifacts.values():
+        artifact["expiresAt"] = NOW - timedelta(days=1)
+    assert repository.cleanup_expired(NOW) == 0
+    assert len(repository.active_versions) == 2
+
+
+def test_inmemory_cleanup_bounds_each_table_and_retires_historical_manifest_pointer():
+    repository = InMemoryAnalysisRepository()
+    for period, date in [("100", "2026-09-01"), ("101", "2026-09-10"), ("102", "2026-09-11"), ("103", "2026-09-12")]:
+        seed_complete(repository, "天天樂", period, date)
+    version = f"100:{ANALYSIS_VERSION}-sorted"
+    prefix = ("天天樂", "100", version)
+    for collection in (repository.explore_results, repository.tianheng_results):
+        for i in range(5001):
+            collection[(*prefix, f"test-{i}")] = {"expiresAt": NOW - timedelta(days=1)}
+    for i in range(1, 5002):
+        repository.artifact_chunks[(*prefix, "explore", i)] = {"expiresAt": NOW - timedelta(days=1)}
+    for artifact in repository.artifacts.values():
+        artifact["expiresAt"] = NOW - timedelta(days=1)
+    assert repository.cleanup_expired(NOW) == 12005
+    assert ("天天樂", "100", "sorted") not in repository.active_versions
+    assert prefix in repository.runs
+    assert sum(key[:3] == prefix for key in repository.explore_results) == 2
+    assert sum(key[:3] == prefix for key in repository.tianheng_results) == 1
+    assert sum(key[:3] == prefix for key in repository.artifact_chunks) == 3002
 
 
 def test_missing_completed_artifact_reopens_at_zero_without_stealing_lease():
