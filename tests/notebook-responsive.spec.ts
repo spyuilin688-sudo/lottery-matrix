@@ -15,7 +15,7 @@ async function expectPageInsets(page: Page) {
 }
 
 for (const width of [320, 360, 390, 430]) {
-  test(`notebook list, editor and record views fit ${width}px`, async ({ page }, testInfo) => {
+  test(`notebook list and editor fit ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 844 });
     await page.addInitScript(() => {
       localStorage.clear();
@@ -29,11 +29,8 @@ for (const width of [320, 360, 390, 430]) {
       const actions = rect('.notebook-note-actions');
       const add = rect('.notebook-note-actions > button:last-child');
       const remove = rect('.notebook-delete-action');
-      const mode = rect('.notebook-mode-switch');
       return {
         leftGap: actions.left - left.right,
-        rightGap: mode.left - actions.right,
-        modeGap: getComputedStyle(heading.querySelector('.notebook-mode-switch')!).gap,
         iconSizes: Array.from(heading.querySelectorAll('img')).map((img) => [img.width, img.height]),
         buttonHeights: [add.height, remove.height],
         equalWidths: add.width === remove.width,
@@ -41,7 +38,7 @@ for (const width of [320, 360, 390, 430]) {
         hasDuplicateTitle: Boolean(heading.querySelector('h2')),
       };
     });
-    expect(toolbar).toEqual({ leftGap: 8, rightGap: 8, modeGap: '8px', iconSizes: [[42, 42], [42, 42], [42, 42]], buttonHeights: [26, 26], equalWidths: true, addFontSize: '11px', hasDuplicateTitle: false });
+    expect(toolbar).toEqual({ leftGap: 8, iconSizes: [[42, 42]], buttonHeights: [26, 26], equalWidths: true, addFontSize: '11px', hasDuplicateTitle: false });
     await expect(page.locator('.notebook-entry-open').first()).toHaveCSS('padding-top', '5px');
     await expect(page.locator('.notebook-entry-open').first()).toHaveCSS('padding-bottom', '5px');
     await page.screenshot({ path: testInfo.outputPath(`notebook-list-${width}.png`), fullPage: true });
@@ -67,13 +64,8 @@ for (const width of [320, 360, 390, 430]) {
     await page.screenshot({ path: testInfo.outputPath(`notebook-editor-${width}.png`), fullPage: true });
 
     await page.getByRole('button', { name: '返回列表' }).click();
-    await page.getByRole('button', { name: '切換至紀錄模式' }).click();
-    await expectPageInsets(page);
-    await page.getByRole('button', { name: '新增紀錄' }).click();
-    await expectPageInsets(page);
-    await page.screenshot({ path: testInfo.outputPath(`notebook-record-${width}.png`), fullPage: true });
-    await page.getByRole('button', { name: '設定', exact: true }).click();
-    await expectPageInsets(page);
-    await page.screenshot({ path: testInfo.outputPath(`notebook-settings-${width}.png`), fullPage: true });
+    await expect(page.getByRole('button', { name: '切換至紀錄模式' })).toHaveCount(0);
+    await expect(page.locator('.notebook-mode-switch')).toHaveCount(0);
+
   });
 }

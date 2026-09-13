@@ -12,12 +12,11 @@ export function NotificationsPage({ onNavigate }: { onNavigate: Navigate }) {
   const lotteries = ["今彩539", "天天樂", "六合彩", "大樂透"] as const;
   const matrixStatuses = ["啟動", "聚合", "共振", "臨界"] as const;
   const initial = useMemo(() => ({
-    bet: true, result: true, win: true, status: true, card: true, collision: false, system: true, expiry: true,
+    bet: true, result: true, status: true, card: true, collision: false, system: true, expiry: true,
   }), []);
   const [settings, setSettings] = useState(initial);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string[]>>({
     result: ["今彩539", "天天樂", "六合彩", "大樂透"],
-    win: ["彩種通知"],
     card: ["今彩539", "天天樂", "六合彩", "大樂透"],
     system: ["維護", "更新"],
     expiry: ["提前1日", "提前3日", "提前7日"],
@@ -41,7 +40,6 @@ export function NotificationsPage({ onNavigate }: { onNavigate: Navigate }) {
   const rows = [
     ["bet", "選號提醒", "", "/resources/notify-bet.png"],
     ["result", "開獎結果", "今彩539、天天樂、六合彩、大樂透", "/resources/notify-result.png"],
-    ["win", "中獎通知", "彩種通知、獎金通知", "/resources/notify-win.png"],
     ["status", "Matrix 狀態", "", "/resources/notify-status.png"],
     ["card", "Matrix 牌單", "今彩539、天天樂、六合彩、大樂透", "/resources/notify-card.png"],
     ["collision", "Matrix 摘星", "", "/resources/notify-collision.png"],
@@ -54,9 +52,7 @@ export function NotificationsPage({ onNavigate }: { onNavigate: Navigate }) {
       const selected = current[key] ?? [];
       return {
         ...current,
-        [key]: key === "win"
-          ? [option]
-          : selected.includes(option)
+        [key]: selected.includes(option)
             ? selected.filter((item) => item !== option)
             : [...selected, option],
       };
@@ -76,10 +72,10 @@ export function NotificationsPage({ onNavigate }: { onNavigate: Navigate }) {
     if (key === "bet") return <div className="notification-lottery-settings notification-time-settings">{lotteries.map((lottery) => <div className="notification-lottery-row" key={lottery}><strong>{lottery}</strong><div>{([0, 1] as const).map((index) => <div className="select-box native-select" key={index}><select aria-label={`${lottery}時間${index + 1}`} value={betTimes[lottery][index]} onChange={(event) => setBetTimes((current) => ({ ...current, [lottery]: index === 0 ? [event.target.value, current[lottery][1]] : [current[lottery][0], event.target.value] }))}><option value="">選擇時間</option>{betTimeOptions[lottery].map((time) => <option value={time} key={time}>{time.replace(":", "：")}</option>)}</select></div>)}</div></div>)}</div>;
     if (key === "status") return <div className="notification-lottery-settings notification-status-settings">{lotteries.map((lottery) => <div className="notification-lottery-row" key={lottery}><strong>{lottery}</strong><div>{matrixStatuses.map((option) => <label className="notification-choice" key={option}><input type="checkbox" checked={statusOptions[lottery]?.includes(option)} onChange={() => toggleNestedOption(setStatusOptions, lottery, option)} /><span>{option}</span></label>)}</div></div>)}</div>;
     if (key === "collision") return <div className="notification-lottery-settings">{lotteries.map((lottery) => <fieldset className="notification-lottery-row" key={lottery}><legend>{lottery}</legend><div>{["獨碰二星", "獨碰三星"].map((option) => <label className="notification-choice" key={option}><input type="checkbox" checked={collisionOptions[lottery]?.includes(option)} onChange={() => toggleNestedOption(setCollisionOptions, lottery, option)} /><span>{option}</span></label>)}</div></fieldset>)}</div>;
-    return <div className="notification-options" role={key === "win" ? "radiogroup" : "group"} aria-label={`${title}選項`}>{options.map((option) => <label className="notification-choice" key={option}><input type={key === "win" ? "radio" : "checkbox"} name={key === "win" ? "win-notification" : undefined} checked={selectedOptions[key]?.includes(option)} onChange={() => toggleOption(key, option)} /><span>{option}</span></label>)}</div>;
+    return <div className="notification-options" role="group" aria-label={`${title}選項`}>{options.map((option) => <label className="notification-choice" key={option}><input type="checkbox" checked={selectedOptions[key]?.includes(option)} onChange={() => toggleOption(key, option)} /><span>{option}</span></label>)}</div>;
   };
   return (
-    <FeatureShell title="通知" onNavigate={onNavigate} active="通知" className="notifications-screen" compactHeader>
+    <FeatureShell title="通知設定" onNavigate={onNavigate} active="通知" className="notifications-screen" compactHeader>
       <div className="notification-list">
         {rows.map(([key, title, subtitle, icon]) => {
           return <article className="notification-row" key={key}>

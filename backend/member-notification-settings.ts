@@ -1,8 +1,8 @@
 export const MEMBER_NOTIFICATION_LOTTERIES = ['今彩539', '天天樂', '六合彩', '大樂透'] as const;
 export type MemberNotificationLottery = (typeof MEMBER_NOTIFICATION_LOTTERIES)[number];
 
-const SETTING_KEYS = ['bet', 'result', 'win', 'status', 'card', 'collision', 'system', 'expiry'] as const;
-const SELECTED_OPTION_KEYS = ['result', 'win', 'status', 'card', 'system', 'expiry'] as const;
+const SETTING_KEYS = ['bet', 'result', 'status', 'card', 'collision', 'system', 'expiry'] as const;
+const SELECTED_OPTION_KEYS = ['result', 'status', 'card', 'system', 'expiry'] as const;
 const MATRIX_STATUSES = ['啟動', '聚合', '共振', '臨界'] as const;
 const COLLISION_OPTIONS = ['獨碰二星', '獨碰三星'] as const;
 const BET_TIME_OPTIONS: Record<MemberNotificationLottery, readonly string[]> = {
@@ -13,7 +13,6 @@ const BET_TIME_OPTIONS: Record<MemberNotificationLottery, readonly string[]> = {
 };
 const SELECTED_OPTION_ALLOWLIST: Record<(typeof SELECTED_OPTION_KEYS)[number], readonly string[]> = {
   result: MEMBER_NOTIFICATION_LOTTERIES,
-  win: ['彩種通知', '獎金通知'],
   status: MEMBER_NOTIFICATION_LOTTERIES,
   card: MEMBER_NOTIFICATION_LOTTERIES,
   system: ['維護', '更新'],
@@ -24,7 +23,6 @@ export type MemberNotificationSettings = {
   settings: {
     bet: boolean;
     result: boolean;
-    win: boolean;
     status: boolean;
     card: boolean;
     collision: boolean;
@@ -33,7 +31,6 @@ export type MemberNotificationSettings = {
   };
   selectedOptions: Record<string, string[]> & {
     result: string[];
-    win: string[];
     status: string[];
     card: string[];
     system: string[];
@@ -49,7 +46,6 @@ export function createDefaultMemberNotificationSettings(): MemberNotificationSet
     settings: {
       bet: true,
       result: true,
-      win: true,
       status: true,
       card: true,
       collision: false,
@@ -58,7 +54,6 @@ export function createDefaultMemberNotificationSettings(): MemberNotificationSet
     },
     selectedOptions: {
       result: ['今彩539', '天天樂', '六合彩', '大樂透'],
-      win: ['彩種通知'],
       status: ['今彩539', '天天樂', '六合彩', '大樂透'],
       card: ['今彩539', '天天樂', '六合彩', '大樂透'],
       system: ['維護', '更新'],
@@ -89,6 +84,12 @@ function record(value: unknown) {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>
     : null;
+}
+
+// Older installed clients may still submit the retired field; never persist or return it.
+function activeSettings(value: unknown) {
+  const input = record(value);
+  return input ? Object.fromEntries(Object.entries(input).filter(([key]) => key !== 'win')) : null;
 }
 
 function hasExactKeys(value: Record<string, unknown>, keys: readonly string[]) {
@@ -126,9 +127,7 @@ export function normalizeMemberNotificationSettings(value: unknown): MemberNotif
   }
   for (const key of SELECTED_OPTION_KEYS) {
     const normalized = normalizedList(selected[key], defaults.selectedOptions[key], SELECTED_OPTION_ALLOWLIST[key]);
-    defaults.selectedOptions[key] = key === 'win' && normalized.length !== 1
-      ? defaults.selectedOptions[key]
-      : normalized;
+    defaults.selectedOptions[key] = normalized;
   }
   for (const lottery of MEMBER_NOTIFICATION_LOTTERIES) {
     const times = Array.isArray(betTimes[lottery]) ? betTimes[lottery] : defaults.betTimes[lottery];
@@ -147,8 +146,8 @@ export function validateMemberNotificationSettings(value: unknown): MemberNotifi
   if (!input || !hasExactKeys(input, ['settings', 'selectedOptions', 'betTimes', 'statusOptions', 'collisionOptions'])) {
     throw new Error('INVALID_NOTIFICATION_SETTINGS');
   }
-  const enabled = record(input.settings);
-  const selected = record(input.selectedOptions);
+  const enabled = activeSettings(input.settings);
+  const selected = activeSettings(input.selectedOptions);
   const betTimes = record(input.betTimes);
   const statusOptions = record(input.statusOptions);
   const collisionOptions = record(input.collisionOptions);
@@ -162,8 +161,7 @@ export function validateMemberNotificationSettings(value: unknown): MemberNotifi
   }
   if (!SETTING_KEYS.every((key) => typeof enabled[key] === 'boolean')) throw new Error('INVALID_NOTIFICATION_SETTINGS');
   for (const key of SELECTED_OPTION_KEYS) {
-    const values = requiredList(selected[key], SELECTED_OPTION_ALLOWLIST[key]);
-    if (key === 'win' && values.length !== 1) throw new Error('INVALID_NOTIFICATION_SETTINGS');
+    requiredList(selected[key], SELECTED_OPTION_ALLOWLIST[key]);
   }
   for (const lottery of MEMBER_NOTIFICATION_LOTTERIES) {
     const times = betTimes[lottery];

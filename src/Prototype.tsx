@@ -255,7 +255,7 @@ export function LatestDrawCard({ lottery, result, nextDrawInfo, order, onOrderCh
       <button className="history-link" type="button" onClick={onOpenHistory} aria-label="查看更多紀錄"><span>查看更多紀錄</span><span aria-hidden="true">&gt;</span></button>
       <div className="draw-balls" data-has-special={hasSpecial}>
         <div className="main-balls">
-          {order === "落球" && hasMeta && !displayedNumbers.length ? <span role="status">實際開獎順序待公布</span> : null}
+          {order === "落球" && hasMeta && !displayedNumbers.length ? <span role="status">實際落球順序待公布</span> : null}
           {displayedNumbers.map((number, index) => <LotteryNumberBall lottery={lottery} number={number} key={`${number}-${index}`} />)}
         </div>
         {displayedSpecialNumber ? <><span className="special-ball-separator" aria-hidden="true" /><div className="special-ball-group"><span className="special-label">特別號</span><LotteryNumberBall lottery={lottery} number={displayedSpecialNumber} isSpecial /></div></> : null}

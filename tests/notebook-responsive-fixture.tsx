@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client';
-import { DEFAULT_RECORD_SETTINGS, MatrixNotebookPage } from '../src/features/NotebookPages';
+import { MatrixNotebookPage } from '../src/features/NotebookPages';
 import { getSupabaseClient } from '../src/lib/supabase';
 import { AppDialogProvider } from '../src/dialog/AppDialog';
 import { MobileDeviceProvider } from '../src/mobile/Device';
@@ -36,12 +36,11 @@ getSupabaseClient().auth.getSession = async () => ({
 getSupabaseClient().auth.onAuthStateChange = () => ({ data: { subscription: {
   id: 'notebook-layout-fixture', callback: () => {}, unsubscribe() {},
 } } });
-window.localStorage.setItem('matrix-notebook:v1:notebook-layout-fixture', JSON.stringify({
+window.localStorage.setItem('matrix-notebook:v2:notebook-layout-fixture', JSON.stringify({
   notes: [
     { id: 'first', title: '第一張筆記', content: '保留原有內容', updatedAt: '2026-09-08T10:00:00Z' },
     { id: 'long', title: '長標題'.repeat(30), content: '長內容'.repeat(100), updatedAt: '2026-09-08T11:00:00Z' },
   ],
-  records: [], settings: DEFAULT_RECORD_SETTINGS(),
 }));
 
 // Render the real notebook with its production providers and CSS cascade.

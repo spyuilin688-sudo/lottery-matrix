@@ -610,7 +610,7 @@ export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
     onNavigate("manual-transfer");
   };
   return (
-    <ProfileDetailShell title="Matrix Pro 訂閱方案與收費標準" onNavigate={onNavigate} className="pro-plans-screen">
+    <ProfileDetailShell title="訂閱方案與收費標準" onNavigate={onNavigate} className="pro-plans-screen">
       <div className="plan-carousel" aria-label="Matrix Pro 會員方案" ref={carouselRef} onScroll={handleCarouselScroll}>
         {carouselPlans.map((plan, position) => {
           const planIndex = position === 0 ? plans.length - 1 : position === plans.length + 1 ? 0 : position - 1;
@@ -1083,7 +1083,7 @@ export function ServiceInfoPage({ onNavigate }: { onNavigate: Navigate }) {
       {subscriptionPurchaseVisible && <LegalInfoSection title="七、Matrix Pro 說明">
         <p>Matrix Pro 為樂彩 Matrix 的付費訂閱方案，提供月方案、季方案及年方案。</p>
         <p>使用者可自行選擇是否開啟自動續訂。</p>
-        <p>實際方案價格、訂閱期間、功能權限及目前可使用內容，依「Matrix Pro 訂閱方案與收費標準」及帳號顯示為準。</p>
+        <p>實際方案價格、訂閱期間、功能權限及目前可使用內容，依「訂閱方案與收費標準」及帳號顯示為準。</p>
       </LegalInfoSection>}
     </LegalInfoDocument>
   );

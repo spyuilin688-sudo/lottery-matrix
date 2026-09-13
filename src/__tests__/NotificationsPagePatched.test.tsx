@@ -49,10 +49,9 @@ import { PushSubscriptionError } from "../push-subscription";
 afterEach(cleanup);
 
 const storedSettings: MemberNotificationSettings = {
-  settings: { bet: true, result: true, win: true, status: true, card: true, collision: false, system: true, expiry: true },
+  settings: { bet: true, result: true, status: true, card: true, collision: false, system: true, expiry: true },
   selectedOptions: {
     result: ["今彩539", "天天樂", "六合彩", "大樂透"],
-    win: ["彩種通知"],
     status: ["今彩539", "天天樂", "六合彩", "大樂透"],
     card: ["今彩539", "天天樂", "六合彩", "大樂透"],
     system: ["維護", "更新"],
@@ -107,6 +106,12 @@ function pushFailure(stage: "service-worker-registration" | "browser-subscriptio
 }
 
 describe("NotificationsPagePatched", () => {
+  it("removes the retired winning notification and uses the settings title", async () => {
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    expect(screen.queryByText("中獎通知")).toBeNull();
+    expect(screen.getByRole("heading", { level: 1, name: "通知設定" })).toBeVisible();
+  });
+
   it("全部關閉只停用目前可用的通知項目並保留手機推播與 Matrix 摘星", async () => {
     pushSubscription.getPushStatus.mockResolvedValue({ supported: true, permission: "granted", enabled: true });
     render(<NotificationsPagePatched onNavigate={vi.fn()} />);
@@ -114,7 +119,7 @@ describe("NotificationsPagePatched", () => {
     expect(await screen.findByText("手機通知已開啟")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "全部關閉" }));
 
-    for (const key of ["bet", "result", "win", "status", "card", "expiry"]) {
+    for (const key of ["bet", "result", "status", "card", "expiry"]) {
       const row = document.querySelector<HTMLElement>(`[data-notification-key="${key}"]`)!;
       expect(within(row).getByRole("button", { name: `開啟${row.querySelector("h2 span")?.textContent}` })).toHaveAttribute("data-checked", "false");
     }
@@ -129,7 +134,6 @@ describe("NotificationsPagePatched", () => {
       settings: {
         bet: false,
         result: false,
-        win: false,
         status: false,
         card: false,
         collision: false,
@@ -143,7 +147,7 @@ describe("NotificationsPagePatched", () => {
     await waitFor(() => expect(within(betRow).getByRole("button", { name: "開啟選號提醒" })).toHaveAttribute("data-checked", "false"));
     fireEvent.click(screen.getByRole("button", { name: "全部開啟" }));
 
-    for (const key of ["bet", "result", "win", "status", "card", "expiry"]) {
+    for (const key of ["bet", "result", "status", "card", "expiry"]) {
       const row = document.querySelector<HTMLElement>(`[data-notification-key="${key}"]`)!;
       expect(within(row).getByRole("button", { name: `關閉${row.querySelector("h2 span")?.textContent}` })).toHaveAttribute("data-checked", "true");
     }
@@ -383,16 +387,13 @@ describe("NotificationsPagePatched", () => {
   it("上方使用正式通知標題卡", () => {
     render(<NotificationsPagePatched onNavigate={vi.fn()} />);
 
-    expect(screen.getByRole("img", { name: "通知" })).toHaveAttribute(
-      "src",
-      "/assets/lottery/functions/通知標題K.png",
-    );
+    expect(screen.getByRole("heading", { name: "通知設定", level: 1 })).toBeVisible();
   });
 
   it("依需求將通知分成兩個群組並保留獨立系統通知", () => {
     render(<NotificationsPagePatched onNavigate={vi.fn()} />);
 
-    expect(within(screen.getByRole("region", { name: "一般通知" })).getAllByRole("article")).toHaveLength(3);
+    expect(within(screen.getByRole("region", { name: "一般通知" })).getAllByRole("article")).toHaveLength(2);
     expect(within(screen.getByRole("region", { name: "Matrix 通知" })).getAllByRole("article")).toHaveLength(4);
     expect(within(screen.getByRole("region", { name: "系統通知" })).getAllByRole("article")).toHaveLength(1);
   });
@@ -474,10 +475,10 @@ describe("NotificationsPagePatched", () => {
     expect(panel).toHaveAttribute("inert");
   });
 
-  it("中獎通知、系統通知與 Matrix Pro 使用四等分選項列", () => {
+  it("系統通知與 Matrix Pro 使用四等分選項列", () => {
     render(<NotificationsPagePatched onNavigate={vi.fn()} />);
 
-    for (const key of ["win", "system", "expiry"] as const) {
+    for (const key of ["system", "expiry"] as const) {
       const row = document.querySelector<HTMLElement>(`[data-notification-key="${key}"]`);
       expect(row).not.toBeNull();
       fireEvent.click(within(row!).getByRole("button", { name: /設定選項/ }));
@@ -646,19 +647,19 @@ describe("NotificationsPagePatched", () => {
 
     const betToggle = within(document.querySelector<HTMLElement>('[data-notification-key="bet"]')!).getAllByRole("button")[1];
     const resultToggle = within(document.querySelector<HTMLElement>('[data-notification-key="result"]')!).getAllByRole("button")[1];
-    const winToggle = within(document.querySelector<HTMLElement>('[data-notification-key="win"]')!).getAllByRole("button")[1];
+    const expiryToggle = within(document.querySelector<HTMLElement>('[data-notification-key="expiry"]')!).getAllByRole("button")[1];
     await waitFor(() => expect(betToggle).toHaveAttribute("data-checked", "false"));
 
     fireEvent.click(betToggle);
     fireEvent.click(resultToggle);
-    fireEvent.click(winToggle);
+    fireEvent.click(expiryToggle);
 
     await waitFor(() => expect(memberApi.saveNotificationSettings).toHaveBeenCalled());
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 100)); });
     expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(1);
     expect(memberApi.saveNotificationSettings).toHaveBeenCalledWith({
       ...storedSettings,
-      settings: { ...storedSettings.settings, bet: true, result: false, win: false },
+      settings: { ...storedSettings.settings, bet: true, result: false, expiry: false },
     });
   });
 

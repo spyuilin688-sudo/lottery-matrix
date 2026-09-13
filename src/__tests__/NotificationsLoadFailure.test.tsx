@@ -43,7 +43,6 @@ const storedSettings: MemberNotificationSettings = {
   settings: {
     bet: true,
     result: true,
-    win: true,
     status: true,
     card: true,
     collision: false,
@@ -52,7 +51,6 @@ const storedSettings: MemberNotificationSettings = {
   },
   selectedOptions: {
     result: ['今彩539'],
-    win: ['彩種通知'],
     status: ['今彩539'],
     card: ['今彩539'],
     expiry: ['提前1日'],

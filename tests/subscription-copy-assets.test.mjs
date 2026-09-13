@@ -17,7 +17,7 @@ test("subscription pricing and naming use the current approved copy", () => {
   assert.match(featurePagesSource, /quarter: \{ name: "季費方案", amount: 5580 \}/);
   assert.match(featurePagesSource, /year: \{ name: "年費方案", amount: 17800 \}/);
   assert.match(featurePagesSource, /訂閱方案／收費標準/);
-  assert.match(featurePagesSource, /Matrix Pro 訂閱方案與收費標準/);
+  assert.match(featurePagesSource, /訂閱方案與收費標準/);
   assert.doesNotMatch(featurePagesSource, /會員方案／收費標準/);
   assert.doesNotMatch(featurePagesSource, /Matrix Pro 會員方案與收費標準/);
   assert.doesNotMatch(featurePagesSource, /\$1,880|NT\$1,880|\$4,580|NT\$4,580|\$16,800|NT\$16,800/);

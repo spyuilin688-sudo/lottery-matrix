@@ -31,7 +31,7 @@ const LOTTERIES = ["今彩539", "天天樂", "六合彩", "大樂透"] as const;
 const MATRIX_STATUSES = ["啟動", "聚合", "共振", "臨界"] as const;
 
 type Lottery = (typeof LOTTERIES)[number];
-type SettingKey = "bet" | "result" | "win" | "status" | "card" | "collision" | "expiry" | "system";
+type SettingKey = "bet" | "result" | "status" | "card" | "collision" | "expiry" | "system";
 type NotificationRow = readonly [SettingKey, string, string, string];
 type NotificationSettingsEdit = (current: MemberNotificationSettings) => MemberNotificationSettings;
 type NotificationSettingsLoadState = "loading" | "ready" | "failed" | "unauthenticated";
@@ -50,7 +50,6 @@ const BET_TIME_OPTIONS = {
 const PRIMARY_ROWS: NotificationRow[] = [
   ["bet", "選號提醒", "", "/resources/notify-bet.png"],
   ["result", "開獎結果", "今彩539、天天樂、六合彩、大樂透", "/resources/notify-result.png"],
-  ["win", "中獎通知", "彩種通知、獎金通知", "/resources/notify-win.png"],
 ];
 
 const MATRIX_ROWS: NotificationRow[] = [
@@ -61,16 +60,15 @@ const MATRIX_ROWS: NotificationRow[] = [
 ];
 
 const SYSTEM_ROW: NotificationRow = ["system", "系統通知", "維護、更新", "/resources/notify-system.png"];
-const BULK_SETTING_KEYS: SettingKey[] = ["bet", "result", "win", "status", "card", "expiry"];
+const BULK_SETTING_KEYS: SettingKey[] = ["bet", "result", "status", "card", "expiry"];
 
 function createDefaultNotificationSettings(): MemberNotificationSettings {
   return {
     settings: {
-      bet: true, result: true, win: true, status: true, card: true, collision: false, expiry: true, system: true,
+      bet: true, result: true, status: true, card: true, collision: false, expiry: true, system: true,
     },
     selectedOptions: {
       result: [...LOTTERIES],
-      win: ["彩種通知"],
       status: [...LOTTERIES],
       card: [...LOTTERIES],
       expiry: ["提前1日", "提前3日", "提前7日"],
@@ -351,7 +349,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
         ...current,
         selectedOptions: {
           ...current.selectedOptions,
-          [key]: key === "win" ? [option] : selected.includes(option) ? selected.filter((item) => item !== option) : [...selected, option],
+          [key]: selected.includes(option) ? selected.filter((item) => item !== option) : [...selected, option],
         },
       };
     });
@@ -410,7 +408,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
 
   const renderGenericSettings = (key: SettingKey, title: string, subtitle: string) => {
     const options = subtitle ? subtitle.split("、") : [];
-    return <div className="notification-inline-option-row" data-setting-key={key} role={key === "win" ? "radiogroup" : "group"} aria-label={`${title}選項`}>{options.map((option) => <label className="notification-choice" key={option}><input type={key === "win" ? "radio" : "checkbox"} name={key === "win" ? "win-notification" : undefined} checked={selectedOptions[key]?.includes(option)} disabled={notificationSettingsControlsBlocked} onChange={() => toggleOption(key, option)} /><span>{option}</span></label>)}</div>;
+    return <div className="notification-inline-option-row" data-setting-key={key} role="group" aria-label={`${title}選項`}>{options.map((option) => <label className="notification-choice" key={option}><input type="checkbox" checked={selectedOptions[key]?.includes(option)} disabled={notificationSettingsControlsBlocked} onChange={() => toggleOption(key, option)} /><span>{option}</span></label>)}</div>;
   };
 
   const renderInlineSettings = (row: NotificationRow) => {
@@ -468,7 +466,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
 
   return (
     <main className="feature-screen compact-feature-screen bottom-nav-brand-screen notifications-screen notifications-screen-v2">
-      <BrandHeader title="通知" showBack={false} />
+      <BrandHeader title="通知設定" showBack={false} />
       <div className="feature-body">
         <div className="notification-content">
           {saveFailed ? <div className="notification-settings-save-error panel" role="status"><p>通知設定尚未儲存，請重試</p><button type="button" className="title-card-compact-action" aria-label="重試儲存通知設定" disabled={saveBusy} aria-busy={saveBusy} onClick={() => {
@@ -492,4 +490,3 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     </main>
   );
 }
-

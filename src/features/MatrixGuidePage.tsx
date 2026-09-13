@@ -123,25 +123,24 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
     },
     {
       title: "快捷與 Matrix 筆記本",
-      summary: "快捷可快速開啟已設定的功能；Matrix 筆記本提供筆記與紀錄兩種模式。",
+      summary: "快捷可快速開啟已設定的功能；Matrix 筆記本可新增、編輯與刪除筆記。",
       blocks: [
         { title: "快捷", items: ["點擊快捷開啟目前設定的功能。", "在首頁連續點擊左下角設定按鈕兩下可設定快捷功能。"] },
-        { title: "筆記模式", items: ["新增筆記後輸入標題與內容，再按「寫入筆記」。", "返回列表前若內容尚未寫入，將提醒是否儲存。", "只顯示筆記功能，不顯示損益與紀錄統計。"] },
-        { title: "紀錄模式", items: ["可建立單號、連碰或立柱紀錄，號碼由彈窗選取。", "玩法可複選，各玩法分別設定碰數、1碰成本、成本與玩法獎金。", "摘要顯示玩法成本、已確認獎金及金額差額；統計提供本日、本週與自訂日期。", "每筆紀錄保存建立當下的設定快照，後續修改設定不影響歷史紀錄。"] },
+        { title: "筆記", items: ["新增筆記後輸入標題與內容，再按「寫入筆記」。", "返回列表前若內容尚未寫入，將提醒是否儲存。"] },
       ],
     },
     {
-      title: "通知",
-      summary: "可設定選號提醒、開獎結果、中獎通知、Matrix 牌單、Matrix 狀態、系統通知。",
+      title: "通知設定",
+      summary: "可設定選號提醒、開獎結果、Matrix 牌單、Matrix 狀態、系統通知。",
       blocks: [
-        { title: "通知設定", items: ["各通知可個別開啟或關閉。", "選號提醒可依彩種設定提醒時間。", "開獎結果可依彩種設定。", "中獎通知可選擇彩種通知或中獎金額通知。", "Matrix 牌單可依彩種設定。", "Matrix 狀態與系統通知可個別設定。"] },
+        { title: "通知設定", items: ["各通知可個別開啟或關閉。", "選號提醒可依彩種設定提醒時間。", "開獎結果可依彩種設定。", "Matrix 牌單可依彩種設定。", "Matrix 狀態與系統通知可個別設定。"] },
       ],
     },
     {
       title: "Matrix Pro",
       summary: "Matrix Pro 為樂彩 Matrix 的付費訂閱方案。",
       blocks: [
-        { title: "方案與期間", items: ["提供月方案、季方案與年方案。", "實際價格、期間及權限請至「Matrix Pro 訂閱方案與收費標準」查看。"] },
+        { title: "方案與期間", items: ["提供月方案、季方案與年方案。", "實際價格、期間及權限請至「訂閱方案與收費標準」查看。"] },
         { title: "權限內容", items: ["Matrix 狀態進階資訊。", "Matrix 狀態自訂觸發條件。", "Matrix 探索期數十三期。", "Matrix 探索完整範圍。", "Matrix Pro 專屬推播通知。", "依訂閱方案顯示 Matrix 天衍、Matrix 天工權限。"] },
       ],
     },
@@ -160,7 +159,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
         { title: "條件變更後結果沒有更新", items: ["Matrix 探索需按「開始探索」產生結果。", "號碼對照單修改條件後，也需再次按「開始探索」。"] },
         { title: "查看更多開獎紀錄", items: ["近10期開獎號碼，點選查看更多紀錄，可查閱歷史開獎號碼。", "號碼對照單可選擇1000期、3000期或5000期。"] },
         { title: "設定常用功能", items: ["在首頁連續點擊底部左下角設定按鈕兩下後，選擇要指定的功能。"] },
-        ...(subscriptionPurchaseVisible ? [{ title: "查看 Matrix Pro 權限", items: ["前往「我的」中的「Matrix Pro 訂閱方案與收費標準」。"] }] : []),
+        ...(subscriptionPurchaseVisible ? [{ title: "查看 Matrix Pro 權限", items: ["前往「我的」中的「訂閱方案與收費標準」。"] }] : []),
       ],
     },
     {
