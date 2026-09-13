@@ -1,3 +1,4 @@
+import { DAILY_SORTED_ONLY_DESCRIPTION, supportsDrawOrder, useLotteryOrder } from "../use-lottery-order";
 import { subscribeLotteryRefresh } from "../lottery-data-refresh";
 import { useEffect, useRef, useState } from "react";
 import { DownloadIcon } from "@radix-ui/react-icons";
@@ -10,7 +11,8 @@ import { FeatureShell, LotteryTabs } from "./shared";
 export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
   const appDialog = useAppDialog();
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
-  const [order, setOrder] = useState<MatrixCardOrder>("sorted");
+  const [requestedOrder, setOrder] = useState<MatrixCardOrder>("sorted");
+  const order = useLotteryOrder(lottery, requestedOrder, setOrder, "sorted");
   const [manifest, setManifest] = useState<MatrixCardManifest | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -73,7 +75,7 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
       <LotteryTabs selected={lottery} onChange={setLottery} />
       <div className="matrix-card-order" role="tablist" aria-label="牌單順序">
         <button type="button" role="tab" aria-selected={order === "sorted"} className={order === "sorted" ? "is-selected" : undefined} onClick={() => setOrder("sorted")}>順球</button>
-        <button type="button" role="tab" aria-selected={order === "draw"} className={order === "draw" ? "is-selected" : undefined} onClick={() => setOrder("draw")} disabled={!currentManifest?.cards.draw?.url} aria-label="落球" aria-description={!currentManifest?.cards.draw?.url ? "落球牌單待公布" : undefined}>落球{currentManifest && !currentManifest.cards.draw?.url ? "（待公布）" : ""}</button>
+        <button type="button" role="tab" aria-selected={order === "draw"} className={order === "draw" ? "is-selected" : undefined} onClick={() => setOrder("draw")} disabled={!supportsDrawOrder(lottery) || !currentManifest?.cards.draw?.url} aria-label="落球" aria-description={!supportsDrawOrder(lottery) ? DAILY_SORTED_ONLY_DESCRIPTION : !currentManifest?.cards.draw?.url ? "落球牌單待公布" : undefined}>落球{supportsDrawOrder(lottery) && currentManifest && !currentManifest.cards.draw?.url ? "（待公布）" : ""}</button>
       </div>
       <section className="matrix-ticket" aria-busy={loading}>
         {loading ? <p>牌單載入中…</p> : null}

@@ -1,3 +1,4 @@
+import { DAILY_SORTED_ONLY_DESCRIPTION, supportsDrawOrder, useLotteryOrder } from "../use-lottery-order";
 import { useRef, useState } from "react";
 import { ChevronDownIcon, MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { type LotteryId } from "../Prototype";
@@ -8,7 +9,8 @@ import { useTimedState, getHistoryOrder, updateLookupInputValues, finalizeLookup
 
 export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
   const [lottery, setLottery] = useTimedState<LotteryId>("tongxing-lottery", "今彩539");
-  const [order, setOrder] = useTimedState("tongxing-order", "依號碼由小到大排序");
+  const [requestedOrder, setOrder] = useTimedState("tongxing-order", "依號碼由小到大排序");
+  const order = useLotteryOrder(lottery, requestedOrder, setOrder, "依號碼由小到大排序");
   const [period, setPeriod] = useTimedState("tongxing-period", "1期");
   const [searched, setSearched] = useTimedState("tongxing-searched", false);
   const [values, setValues] = useTimedState("tongxing-values", ["", "", ""]);
@@ -161,12 +163,12 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
           </div>
           <div className="select-box native-select tongxing-order-select">
             <select
-              aria-label="號碼順序"
+              aria-label="號碼順序" aria-description={!supportsDrawOrder(lottery) ? DAILY_SORTED_ONLY_DESCRIPTION : undefined}
               value={order}
               onChange={(event) => setOrder(event.target.value)}
             >
               <option value="依號碼由小到大排序">依號碼由小到大排序</option>
-              <option value="依實際開獎順序排序">依實際開獎順序排序</option>
+              <option value="依實際開獎順序排序" disabled={!supportsDrawOrder(lottery)}>依實際開獎順序排序</option>
             </select>
             <ChevronDownIcon aria-hidden="true" />
           </div>

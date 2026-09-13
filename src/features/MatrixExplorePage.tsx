@@ -1,3 +1,4 @@
+import { DAILY_SORTED_ONLY_DESCRIPTION, supportsDrawOrder, useLotteryOrder } from "../use-lottery-order";
 import { usePermissionSettings } from '../permission-settings';
 import { subscribeMatrixDataRevision } from "../matrix-data-revision";
 import { subscribeAlgorithmCacheScope } from "../auth/algorithm-cache-scope";
@@ -114,7 +115,8 @@ export function MatrixExplorePage({
   const initialHit = isTianheng ? "準5+（鎖定1碼）" : isTianyan ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）";
   const [hit, setHit] = useState(initialHit);
   const [advanced, setAdvanced] = useState(false);
-  const [numberOrder, setNumberOrder] = useState("依號碼由小到大排序");
+  const [requestedOrder, setNumberOrder] = useState("依號碼由小到大排序");
+  const numberOrder = useLotteryOrder(lottery, requestedOrder, setNumberOrder, "依號碼由小到大排序");
   const [exploreDate, setExploreDate] = useState<ExploreDate>("本日 (最新)");
   const [exploreRange, setExploreRange] = useState(initialExploreDefaults.range);
   const [searched, setSearched] = useState(false);
@@ -499,12 +501,12 @@ export function MatrixExplorePage({
               </span>
               <div className="native-select">
                 <select
-                  aria-label="號碼順序"
+                  aria-label="號碼順序" aria-description={!supportsDrawOrder(lottery) ? DAILY_SORTED_ONLY_DESCRIPTION : undefined}
                   value={numberOrder}
                   onChange={(event) => setNumberOrder(event.target.value)}
                 >
                   <option value="依號碼由小到大排序">依號碼由小到大排序</option>
-                  <option value="依實際開獎順序排序">依實際開獎順序排序</option>
+                  <option value="依實際開獎順序排序" disabled={!supportsDrawOrder(lottery)}>依實際開獎順序排序</option>
                 </select>
                 <ChevronDownIcon aria-hidden="true" />
               </div>

@@ -1,3 +1,4 @@
+import { DAILY_SORTED_ONLY_DESCRIPTION, supportsDrawOrder, useLotteryOrder } from "./use-lottery-order";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import "./feature-pages.css";
@@ -236,7 +237,8 @@ export type LatestDrawCardProps = {
   className?: string;
 };
 
-export function LatestDrawCard({ lottery, result, nextDrawInfo, order, onOrderChange, onOpenHistory, className = "" }: LatestDrawCardProps) {
+export function LatestDrawCard({ lottery, result, nextDrawInfo, order: requestedOrder, onOrderChange, onOpenHistory, className = "" }: LatestDrawCardProps) {
+  const order = useLotteryOrder(lottery, requestedOrder, onOrderChange, "順球");
   const displayedNumbers = order === "順球" ? result.numbers : result.drawOrderNumbers ?? [];
   const displayedSpecialNumber = order === "順球" ? result.specialNumber : result.drawOrderSpecialNumber;
   const hasMeta = Boolean(result.issue || result.date);
@@ -249,7 +251,7 @@ export function LatestDrawCard({ lottery, result, nextDrawInfo, order, onOrderCh
       </div>
       <div className="draw-order" role="radiogroup" aria-label="號碼排列">
         {(["順球", "落球"] as DrawOrder[]).map((option) => (
-          <button type="button" role="radio" aria-checked={order === option} data-selected={order === option} onClick={() => onOrderChange(option)} key={option}>{option}</button>
+          <button type="button" role="radio" aria-checked={order === option} data-selected={order === option} disabled={option === "落球" && !supportsDrawOrder(lottery)} aria-description={option === "落球" && !supportsDrawOrder(lottery) ? DAILY_SORTED_ONLY_DESCRIPTION : undefined} onClick={() => onOrderChange(option)} key={option}>{option}</button>
         ))}
       </div>
       <button className="history-link" type="button" onClick={onOpenHistory} aria-label="查看更多紀錄"><span>查看更多紀錄</span><span aria-hidden="true">&gt;</span></button>

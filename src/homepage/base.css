@@ -316,6 +316,11 @@
   font-weight: 700;
 }
 
+.home-screen .latest-draw-card .draw-order button:disabled {
+  opacity: .55;
+  cursor: default;
+}
+
 .home-screen .latest-draw-card .draw-order button[data-selected="true"] {
   border-color: rgba(244, 192, 82, .82);
   color: #ffd36c;

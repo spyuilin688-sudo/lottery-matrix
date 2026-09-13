@@ -1,3 +1,4 @@
+import { DAILY_SORTED_ONLY_DESCRIPTION, supportsDrawOrder, useLotteryOrder } from "../use-lottery-order";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "@radix-ui/react-icons";
 import { type LotteryId } from "../Prototype";
@@ -24,7 +25,8 @@ export function DrawHistoryPage({
   const [day, setDay] = useTimedState("history-day", "31日");
   const [dateFilterTouched, setDateFilterTouched] = useState(false);
   const [range, setRange] = useTimedState("history-range", "1000期");
-  const [numberOrder, setNumberOrder] = useTimedState("history-order", "依號碼由小到大排序");
+  const [requestedOrder, setNumberOrder] = useTimedState("history-order", "依號碼由小到大排序");
+  const numberOrder = useLotteryOrder(lottery, requestedOrder, setNumberOrder, "依號碼由小到大排序");
   const [appliedFilters, setAppliedFilters] = useState({ issue: "", date: "" });
   const [appliedHistorySettings, setAppliedHistorySettings] = useState({
     lottery,
@@ -124,9 +126,9 @@ export function DrawHistoryPage({
               <ChevronDownIcon aria-hidden="true" />
             </div>
             <div className="select-box native-select history-order-select">
-              <select aria-label="號碼順序" value={numberOrder} onChange={(event) => setNumberOrder(event.target.value)}>
+              <select aria-label="號碼順序" aria-description={!supportsDrawOrder(lottery) ? DAILY_SORTED_ONLY_DESCRIPTION : undefined} value={numberOrder} onChange={(event) => setNumberOrder(event.target.value)}>
                 <option>依號碼由小到大排序</option>
-                <option>依實際開獎順序排序</option>
+                <option disabled={!supportsDrawOrder(lottery)}>依實際開獎順序排序</option>
               </select>
               <ChevronDownIcon aria-hidden="true" />
             </div>

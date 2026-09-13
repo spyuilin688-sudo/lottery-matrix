@@ -58,6 +58,7 @@
 |---|---|---|---|---|
 | Table Selection | Existing admin `DataTable` with native row checkboxes | This contract and the approved activation-code management request (2026-09-05) | Selection is transient and limited to the currently loaded activation-code list; leaving the page clears it | Admin component test for multiple selection and newline-delimited clipboard output |
 | Select/Listbox | Native HTML `select` on product forms | `premium-ui.json` and this contract | OS-owned native popup only; authored replacement requires a separate approved contract | Keyboard and open-popup checks on supported mobile PWA browsers |
+| Lottery number order | `src/use-lottery-order.ts` | User-approved 天天樂 sorted-only controls | Native select options, home radios and card tabs; daily always resolves to sorted order before rendering or submitting | `src/__tests__/daily-draw-order.test.tsx` and two-stage UI regression tests |
 | Date | Native HTML `input[type="date"]` | `premium-ui.json` and this contract | OS-owned Gregorian date popup; ISO date-only form value | Locale, keyboard, narrow-viewport and open-calendar checks |
 | Form | The React screen that owns each product form | This contract and the owning component test | Sign-in, settings and data-entry forms with app-owned validation | Component tests for validation, busy, recovery and first-error focus |
 | Scrollbar | Global application stylesheet `src/styles.css` | `DESIGN.md` and this contract | Scrolling remains enabled while native and app-owned scrollbar visuals stay hidden | Computed overflow plus Firefox and WebKit hidden-scrollbar source checks |
@@ -327,3 +328,5 @@ After result notification dispatch, the trusted producer requests immediate back
 - Explore, Tianheng and Tianyan advanced number-order controls use one rounded native-select frame. They do not opt into the shared `.select-box` chamfer decoration. Options, values and draft retention across disclosure toggles remain intact. Tianheng road summaries place 開 and both source numbers on row one, joined by 、同期; reference offset, reference position, formula and result distance stay together on row two.
 
 2026-09-14：通知標題卡顯示「通知設定」；一般通知只保留選號提醒與開獎結果。中獎通知的控制、選項、批次操作、指南文案及 API `settings.win`／`selectedOptions.win` 欄位退役。讀取與儲存皆只回傳使用中的欄位；舊版客戶端傳入的 win 欄位忽略且不再寫入，既有 Supabase 設定只清除這兩欄，其他偏好、會員權限與派送流程保留。筆記本紀錄模式、玩法設定、統計與其本機寫入介面移除。方案標題及相關連結說明統一為「訂閱方案與收費標準」。首頁無實際落球資料時顯示「實際落球順序待公布」，文字置於球號區中央。
+
+天天樂在同星、對照單、歷史紀錄、探索、天衡、天衍、牌單與首頁開獎資訊卡停用落球控制，並立即切回順球。共用排序規則先正規化畫面及查詢值，再同步原有 state／限時快取；舊快取中的天天樂落球值不會進入初次結果或查詢。歷史頁即時切換彩種時也正規化已套用的排序。同星與對照單保留尚未重新提交前的結果及其原彩種／排序。切回其他彩種後落球恢復可選；牌單仍須存在對應期數的落球檔案。即使舊天天樂 manifest 含落球 URL，頁面也只預覽與下載順球。此規則不改動其他彩種的兩階段資料更新、API 權限或後端演算法。
