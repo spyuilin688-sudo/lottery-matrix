@@ -34,7 +34,7 @@ before(async () => {
   const fastResults = read('../migrations/20260905205428_notification_fast_results.sql');
   await db.exec(fastResults.split('create or replace function private.notification_pilio_http_tick')[0] + 'commit;');
   await db.exec(read('../migrations/20260908022115_simplify_matrix_card_notification_body.sql'));
-  const migration = read('../migrations/20260913130913_notification_reminder_draw_days.sql');
+  const migration = read('../migrations/20260913133102_notification_reminder_draw_days.sql');
   if (migration.trim()) await db.exec(migration);
 });
 after(async () => db.close());
