@@ -1,3 +1,5 @@
+import { matrixStorageStatusId, parseMatrixStorageHealth } from '../backend/matrix-storage-status';
+
 export type SystemStatusItem = {
   id: string;
   name: string;
@@ -47,6 +49,12 @@ const statusLocationOrder: SystemStatusItem['location'][] = [
 
 // Older servers omit checkEvidence; keep their partial probes visibly limited too.
 export function getSystemStatusPresentation(item: SystemStatusItem) {
+  if (item.id === matrixStorageStatusId) {
+    const storage = parseMatrixStorageHealth(item.detail);
+    if (!storage) return { label: '狀態待確認', tone: 'limited' as const, scope: '目前無法取得完整儲存健康資料，請重新檢查。' };
+    const tones = { Healthy: 'good', Warning: 'warning', Critical: 'bad' } as const;
+    return { label: storage.status, tone: tones[storage.status], scope: '依資料庫回報的儲存健康判定，涵蓋分析版本、到期資料與清理紀錄。' };
+  }
   if (item.healthState === 'unknown') return {
     label: item.detail === null ? '尚無執行紀錄' : '狀態待確認', tone: 'limited' as const,
     scope: '目前的執行紀錄不足以確認工作狀態，請稍後重新檢查。',
@@ -194,4 +202,34 @@ export function formatSystemStatusValue(value: unknown): string {
   };
   if (value === null || value === undefined || value === '') return '尚無紀錄';
   return labels[String(value)] ?? String(value);
+}
+
+export function getMatrixStorageFacts(item: SystemStatusItem, section: 'summary' | 'details' = 'details'): SystemStatusFact[] {
+  if (item.id !== matrixStorageStatusId) return [];
+  const storage = parseMatrixStorageHealth(item.detail);
+  const size = (bytes: number | undefined) => bytes === undefined ? '無法取得'
+    : `${(bytes / (bytes >= 1_000_000_000 ? 1_000_000_000 : 1_000_000)).toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${bytes >= 1_000_000_000 ? 'GB' : 'MB'}`;
+  const count = (value: number | undefined) => value === undefined ? '無法取得' : value.toLocaleString('zh-TW');
+  if (section === 'summary') return [{ label: '資料庫大小', value: size(storage?.database_size_bytes) }];
+  const cleanup = storage?.cleanup;
+  return [
+    { label: '探索大小', value: size(storage?.tables.explore.size_bytes) },
+    { label: '天衡大小', value: size(storage?.tables.tianheng.size_bytes) },
+    { label: '成品大小', value: size(storage?.tables.artifacts.size_bytes) },
+    { label: '分塊大小', value: size(storage?.tables.chunks.size_bytes) },
+    { label: '啟用版本數', value: count(storage?.active_versions) },
+    { label: '異常啟用版本數', value: count(storage?.active_unhealthy) },
+    { label: '已取代列數', value: count(storage?.superseded_rows) },
+    { label: '逾期可刪列數', value: count(storage?.expired_deletable_rows) },
+    cleanup?.last_finished_at ? { label: '最近清理', value: cleanup.last_finished_at, format: 'date' }
+      : { label: '最近清理', value: cleanup ? '尚無完成紀錄' : '無法取得' },
+    cleanup?.last_started_at ? { label: '清理開始時間', value: cleanup.last_started_at, format: 'date' }
+      : { label: '清理開始時間', value: cleanup ? '尚無開始紀錄' : '無法取得' },
+    { label: '最近刪除列數', value: count(cleanup?.last_deleted) },
+    { label: '清理待處理列數', value: count(cleanup?.deletable_backlog) },
+    { label: '清理狀態', value: cleanup ? cleanup.cleanup_enabled ? '已啟用' : '已停用' : '無法取得' },
+    { label: '清理錯誤', value: cleanup ? cleanup.last_error ? '最近清理回報錯誤' : '無' : '無法取得' },
+    storage ? { label: '資料檢查時間', value: storage.checked_at, format: 'date' } : { label: '資料檢查時間', value: '無法取得' },
+    { label: '大小單位', value: '1 MB = 1,000,000 bytes；1 GB = 1,000,000,000 bytes' },
+  ];
 }
