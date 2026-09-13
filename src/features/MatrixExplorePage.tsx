@@ -1,4 +1,3 @@
-import { SubscriptionCopy } from '../subscription-copy';
 import { usePermissionSettings } from '../permission-settings';
 import { subscribeMatrixDataRevision } from "../matrix-data-revision";
 import { subscribeAlgorithmCacheScope } from "../auth/algorithm-cache-scope";
@@ -641,7 +640,7 @@ export function MatrixExplorePage({
                 <button
                   type="button"
                   key={number}
-                  aria-label={`篩選預測號碼 ${number}，${count}次`}
+                  aria-label={`篩選結果號碼 ${number}，${count}次`}
                   aria-pressed={selectedPredictionNumber === number}
                   data-selected={selectedPredictionNumber === number}
                   onClick={() => togglePredictionNumber(number)}
@@ -700,9 +699,9 @@ export function MatrixExplorePage({
               <div className="road-results-head" aria-hidden="true">
                 <span>位置</span>
                 <span>號碼</span>
-                <span><SubscriptionCopy formal="預測期" alternative="查詢期" /></span>
+                <span>結果期</span>
                 <span>連準次數</span>
-                <span><SubscriptionCopy formal="預測" alternative="結果" /></span>
+                <span>結果</span>
                 <span>版路類型</span>
               </div>
               {paginatedResults.map((item, index) => (

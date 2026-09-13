@@ -184,3 +184,10 @@ test('讀取失敗可重試並恢复原本可用條件', async () => {
  fireEvent.click(await screen.findByRole('button',{name:'重新載入自訂設定'}));
  expect(await screen.findByText('使用預設條件')).toBeTruthy();
 });
+
+
+test('自訂觸發條件標題不包含 MATRIX 前綴', async () => {
+  render(<MatrixCustomStatusPage onNavigate={vi.fn()} />);
+  expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('自訂觸發條件');
+  await screen.findByText('使用預設條件');
+});

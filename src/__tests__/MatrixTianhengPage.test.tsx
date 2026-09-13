@@ -270,17 +270,17 @@ it('submits advanced settings without rendering near-10 history', async () => {
   }));
 });
 
-it.each([true, false])('result copy follows purchase visibility %s independently of free access', async visible => {
+it.each([true, false])('result copy stays consistent under purchase visibility %s and free access', async visible => {
   uiState.permissionSettings.subscriptionPurchaseVisible = visible;
   const view = await openPage();
   await search();
   expect(screen.getByRole('heading', { name: '天衡結果區' })).toBeVisible();
-  expect(screen.getByText(visible ? '預測期' : '查詢期')).toBeVisible();
-  expect(screen.getByText(visible ? '預測' : '結果')).toBeVisible();
+  expect(screen.getByText('結果期')).toBeVisible();
+  expect(screen.getByText('結果')).toBeVisible();
   uiState.permissionSettings.registeredMemberFreeAccess = true;
   view.rerender(<MatrixExplorePage title="Matrix 天衡" onNavigate={vi.fn()} />);
-  expect(screen.getByText(visible ? '預測期' : '查詢期')).toBeVisible();
-  expect(screen.getByText(visible ? '預測' : '結果')).toBeVisible();
+  expect(screen.getByText('結果期')).toBeVisible();
+  expect(screen.getByText('結果')).toBeVisible();
 });
 
 it.each([
@@ -303,7 +303,7 @@ it.each([
 it('forwards duplicate-number and same-code filters to Tianheng', async () => {
   await openPage();
   await search();
-  fireEvent.click(screen.getByRole('button', { name: '篩選預測號碼 23，2次' }));
+  fireEvent.click(screen.getByRole('button', { name: '篩選結果號碼 23，2次' }));
   await act(async () => {});
   expect(matrixApi.fetchTianhengList).toHaveBeenLastCalledWith(expect.objectContaining({ predictionNumber: '23', sameCode: false }));
   fireEvent.click(screen.getByRole('button', { name: '同碼' }));

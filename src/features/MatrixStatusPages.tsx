@@ -1,6 +1,5 @@
 import { subscribeAlgorithmCacheScope } from "../auth/algorithm-cache-scope";
 import { subscribeMatrixDataRevision } from "../matrix-data-revision";
-import { SubscriptionCopy } from "../subscription-copy";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDownIcon, ChevronRightIcon, GearIcon, ReaderIcon, ReloadIcon } from "@radix-ui/react-icons";
 import { LotterySwitcher, type LotteryId } from "../Prototype";
@@ -49,7 +48,7 @@ export function MatrixStatusTriggerCard({
       <header className="matrix-status-trigger-summary">
         <span className="matrix-status-trigger-result">
           <strong className="numeric-text">
-            <span className="matrix-status-prediction-label"><SubscriptionCopy formal="預測：" alternative="結果：" /></span>
+            <span className="matrix-status-prediction-label">結果：</span>
             {card.result.map((number, index) => (
               <span key={index}>
                 {index > 0 ? <span className="matrix-status-prediction-separator">、</span> : null}
@@ -67,9 +66,9 @@ export function MatrixStatusTriggerCard({
           <div className="road-results-head" aria-hidden="true">
             <span>位置</span>
             <span>號碼</span>
-            <span><SubscriptionCopy formal="預測期" alternative="查詢期" /></span>
+            <span>結果期</span>
             <span>連準次數</span>
-            <span><SubscriptionCopy formal="預測" alternative="結果" /></span>
+            <span>結果</span>
             <span>版路類型</span>
           </div>
         ) : null}
@@ -511,7 +510,7 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
 
   if (accessFailure) return null;
 
-  return <FeatureShell title="Matrix 自訂觸發狀態" onNavigate={onNavigate} backTarget="status" className="matrix-custom-status-screen">
+  return <FeatureShell title="自訂觸發條件" onNavigate={onNavigate} backTarget="status" className="matrix-custom-status-screen">
     <LotterySwitcher selected={lottery} onChange={setLottery} className="lottery-switcher--home-style matrix-status-lottery-switcher" />
     <div className="custom-status-tabs" role="tablist" aria-label="選擇狀態">{CUSTOM_STATUS_OPTIONS.map(([code, label, tone]) => <button type="button" role="tab" aria-selected={status === code} data-tone={tone} onClick={() => setStatus(code)} key={code}><strong>{label}</strong><small>{code}</small></button>)}</div>
     <section className="custom-status-explore" aria-label="探索條件">

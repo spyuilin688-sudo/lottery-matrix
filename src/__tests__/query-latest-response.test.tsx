@@ -65,11 +65,11 @@ test('keeps the latest different Explore query when an older response arrives la
   expect(matrixApi.fetchExploreList.mock.calls[1][0].roadTypes).toEqual(['合值']);
 
   await act(async () => { requestB.resolve(envelope('request-b', '26')); await requestB.promise; });
-  expect(screen.getByRole('button', { name: '篩選預測號碼 26，1次' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: '篩選結果號碼 26，1次' })).toBeTruthy();
 
   await act(async () => { requestA.resolve(envelope('request-a', '22')); await requestA.promise; });
-  expect(screen.queryByRole('button', { name: '篩選預測號碼 22，1次' })).toBeNull();
-  expect(screen.getByRole('button', { name: '篩選預測號碼 26，1次' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: '篩選結果號碼 22，1次' })).toBeNull();
+  expect(screen.getByRole('button', { name: '篩選結果號碼 26，1次' })).toBeTruthy();
 });
 
 
@@ -114,5 +114,5 @@ test('Tianyan ignores an older permission error while the latest query is loadin
  expect(screen.queryByRole('alertdialog')).toBeNull();
  expect(screen.queryByText('目前 Matrix Pro 方案不符合天衍的使用條件')).toBeNull();
  await act(async()=>{second.resolve({...envelope('tianyan-new','26'),kind:'tianyan',lottery:'天天樂'});await second.promise;});
- expect(screen.getByRole('button',{name:'篩選預測號碼 26，1次'})).toBeTruthy();
+ expect(screen.getByRole('button',{name:'篩選結果號碼 26，1次'})).toBeTruthy();
 });

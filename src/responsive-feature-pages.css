@@ -178,12 +178,16 @@
 .history-filter-primary-row,
 .reference-query-panel .query-selects.three-cols { width: 100%; }
 
-.tool-settings-primary-row .select-box {
+.tool-settings-primary-row .select-box,
+.tongxing-query .same-star-period-select {
   --select-tech-cut: 4px;
   --select-tech-border-paint: #8a7147;
   --select-tech-surface-paint: linear-gradient(180deg, #101514, #020609);
   --select-tech-frame-shadow: none;
   --select-tech-focus-shadow: none;
+}
+
+.tool-settings-primary-row .select-box {
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -195,8 +199,10 @@
 .tool-settings-primary-row .select-box::before,
 .tool-settings-primary-row .select-box::after { display: block; }
 
-.tool-settings-primary-row .select-box:hover { --select-tech-border-paint: #b7995e; }
-.tool-settings-primary-row .select-box:focus-within { --select-tech-border-paint: var(--lottery-gold-300); }
+.tool-settings-primary-row .select-box:hover,
+.tongxing-query .same-star-period-select:hover { --select-tech-border-paint: #b7995e; }
+.tool-settings-primary-row .select-box:focus-within,
+.tongxing-query .same-star-period-select:focus-within { --select-tech-border-paint: var(--lottery-gold-300); }
 
 .history-filter-start.branded-explore-action {
   display: flex;

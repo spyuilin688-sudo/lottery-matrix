@@ -353,7 +353,7 @@ export function MatrixStatusSection({
 export function MatrixCoreBanner({ onOpen }: { onOpen?: () => void }) {
   return (
     <button type="button" className="matrix-core-banner home-core-box" aria-label="Matrix Core" data-testid="matrix-core-banner" onClick={onOpen}>
-      <span className="matrix-core-description">進入更深入的查詢</span>
+      <span className="matrix-core-description">進入更深層的演算法</span>
       <ChevronRightIcon className="matrix-core-chevron" aria-hidden="true" />
     </button>
   );

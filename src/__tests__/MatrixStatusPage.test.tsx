@@ -143,7 +143,7 @@ test('狀態頁各同碼群組以獨立結果框呈現，並各自顯示探索�
   expect(lockedRow?.children[1]).toHaveTextContent('07.09');
   expect(resultTable).toContainElement(firstGroup);
   for (const group of resultGroups) {
-    for (const heading of ['位置', '號碼', '查詢期', '連準次數', '結果', '版路類型']) {
+    for (const heading of ['位置', '號碼', '結果期', '連準次數', '結果', '版路類型']) {
       expect(within(group).getByText(heading)).toBeInTheDocument();
     }
   }

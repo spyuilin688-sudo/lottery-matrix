@@ -325,7 +325,7 @@ test('展開版路後套用獨立結果區並完整顯示 API 驗證過程', asy
   expect(validationRows[2].querySelector('.explore-validation-number--step')?.textContent).toBe('22');
   expect(validation.querySelectorAll('.explore-validation-group')[1].querySelector('.explore-validation-number--hit')?.textContent).toBe('44');
   expect(validation.querySelectorAll('.explore-validation-number').length).toBeGreaterThan(0);
-  expect(validation.textContent).toContain('本期預測');
+  expect(validation.textContent).toContain('版路結果');
   expect(validation.querySelector('.explore-validation-prediction-arrow--left')).not.toBeNull();
   expect(validation.querySelector('.explore-validation-prediction-arrow--right')).not.toBeNull();
 });
@@ -782,7 +782,7 @@ test('再次開始探索會清除同碼與號碼篩選並恢復準4+預設連準
     expect.objectContaining({ sameCode: true }),
   ));
 
-  fireEvent.click(screen.getByRole('button', { name: '篩選預測號碼 22，1次' }));
+  fireEvent.click(screen.getByRole('button', { name: '篩選結果號碼 22，1次' }));
   await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
     expect.objectContaining({ predictionNumber: '22' }),
   ));
@@ -805,7 +805,7 @@ test('再次開始探索會清除同碼與號碼篩選並恢復準4+預設連準
     expect.not.objectContaining({ predictionNumber: expect.anything() }),
   );
   expect(screen.getByRole('button', { name: '同碼' }).getAttribute('aria-pressed')).toBe('false');
-  expect(screen.getByRole('button', { name: '篩選預測號碼 22，1次' }).getAttribute('aria-pressed')).toBe('false');
+  expect(screen.getByRole('button', { name: '篩選結果號碼 22，1次' }).getAttribute('aria-pressed')).toBe('false');
   expect(screen.getByRole('button', { name: '準6進7' }).getAttribute('aria-pressed')).toBe('true');
 });
 
@@ -931,21 +931,21 @@ test('點擊重複號碼小卡會傳送號碼篩選，再點一次取消', async
   render(<MatrixExplorePage onNavigate={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
 
-  let numberCard = await screen.findByRole('button', { name: '篩選預測號碼 22，1次' });
+  let numberCard = await screen.findByRole('button', { name: '篩選結果號碼 22，1次' });
   expect(numberCard.getAttribute('aria-pressed')).toBe('false');
 
   fireEvent.click(numberCard);
   await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
     expect.objectContaining({ predictionNumber: '22' }),
   ));
-  numberCard = await screen.findByRole('button', { name: '篩選預測號碼 22，1次' });
+  numberCard = await screen.findByRole('button', { name: '篩選結果號碼 22，1次' });
   expect(numberCard.getAttribute('aria-pressed')).toBe('true');
 
   fireEvent.click(numberCard);
   await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
     expect.not.objectContaining({ predictionNumber: expect.anything() }),
   ));
-  numberCard = await screen.findByRole('button', { name: '篩選預測號碼 22，1次' });
+  numberCard = await screen.findByRole('button', { name: '篩選結果號碼 22，1次' });
   expect(numberCard.getAttribute('aria-pressed')).toBe('false');
 });
 
@@ -997,7 +997,7 @@ test('Matrix 探索驗證過程在頁面 hidden 時遮蔽、回到前景後還�
     hidden = false;
     fireEvent(document, new Event('visibilitychange'));
     expect(validation.getAttribute('data-content-protected')).toBe('false');
-    expect(validation.textContent).toContain('本期預測');
+    expect(validation.textContent).toContain('版路結果');
     expect(matrixApi.fetchExploreValidation).toHaveBeenCalledTimes(1);
 
     unmount();

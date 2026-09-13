@@ -32,7 +32,7 @@ test('Core 保持獨立入口與可讀說明，計算機仍可從底部導覽開
   const navigate = vi.fn();
   render(<><MatrixCoreBanner onOpen={openCore} /><BottomNavigation onNavigate={navigate} /></>);
   const core = screen.getByRole('button', { name: 'Matrix Core' });
-  expect(core).toHaveTextContent('進入更深入的查詢');
+  expect(core).toHaveTextContent('進入更深層的演算法');
   fireEvent.click(core);
   expect(openCore).toHaveBeenCalledTimes(1);
   fireEvent.click(within(screen.getByRole('navigation', { name: '底部導覽' })).getByRole('button', { name: '計算機' }));

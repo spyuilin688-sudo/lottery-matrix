@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import type { Session } from '@supabase/supabase-js';
 import { render } from '../../test/render-with-dialog';
@@ -61,4 +61,14 @@ test('切換會員後忽略舊會員未完成的方案請求', async () => {
   await act(async () => resolve(profile('方案 A')));
   expect(screen.queryByText('方案 A')).toBeNull();
   expect(screen.getByText('方案 B')).toBeTruthy();
+});
+
+
+test('系統相關以通知設定開啟既有通知頁面', async () => {
+  const navigate = vi.fn();
+  render(<ProfilePage onNavigate={navigate} />);
+  await screen.findByText('方案 A');
+  expect(screen.queryByRole('button', { name: '通知' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '通知設定' }));
+  expect(navigate).toHaveBeenCalledWith('notifications');
 });

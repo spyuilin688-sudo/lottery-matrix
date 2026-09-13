@@ -229,7 +229,7 @@ test('天工列表沿用探索樣式並顯示指定五欄與整列按鈕', async
   fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
   const row = await screen.findByRole('button', { name: /展開版路/ });
   expect(screen.getByRole('heading', { name: '天工結果區' })).toBeTruthy();
-  expect([...document.querySelectorAll('.tiangong-results-head > span')].map(x => x.textContent)).toEqual(['間距','位移走向','查詢位置','結果','版路類型']);
+  expect([...document.querySelectorAll('.tiangong-results-head > span')].map(x => x.textContent)).toEqual(['間距','位移走向','結果位置','結果','版路類型']);
   expect(row.classList.contains('road-result-row')).toBe(true);
   expect(row.querySelector('.tiangong-interval')?.textContent).toBe('間距2');
   expect(row.querySelector('.tiangong-directions')?.textContent).toBe('固定|固定|固定');
@@ -272,15 +272,15 @@ test('重複號碼統計依次數排序，同碼及號碼篩選可切換', async
   ]});
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
   fireEvent.click(screen.getByRole('button',{name:'開始天工'}));
-  await screen.findByRole('button',{name:'篩選預測號碼 03，2次'});
+  await screen.findByRole('button',{name:'篩選結果號碼 03，2次'});
   expect([...document.querySelectorAll('.result-summary b')].map(x=>x.textContent)).toEqual(['03','28','10']);
   fireEvent.click(screen.getByRole('button',{name:'同碼'}));
   expect(document.querySelectorAll('.tiangong-result-row')).toHaveLength(4);
-  expect(screen.queryByRole('button',{name:'篩選預測號碼 10，1次'})).toBeNull();
-  fireEvent.click(screen.getByRole('button',{name:'篩選預測號碼 28，2次'}));
+  expect(screen.queryByRole('button',{name:'篩選結果號碼 10，1次'})).toBeNull();
+  fireEvent.click(screen.getByRole('button',{name:'篩選結果號碼 28，2次'}));
   expect(document.querySelectorAll('.tiangong-result-row')).toHaveLength(2);
   expect(document.querySelectorAll('.result-summary button')).toHaveLength(2);
-  fireEvent.click(screen.getByRole('button',{name:'篩選預測號碼 28，2次'}));
+  fireEvent.click(screen.getByRole('button',{name:'篩選結果號碼 28，2次'}));
   expect(document.querySelectorAll('.tiangong-result-row')).toHaveLength(4);
   fireEvent.click(screen.getByRole('button',{name:'同碼'}));
   expect(document.querySelectorAll('.tiangong-result-row')).toHaveLength(5);
@@ -317,10 +317,10 @@ test('天工每頁15筆，篩選與重新探索都回到第一頁', async () => 
   expect(document.querySelectorAll('.tiangong-result-row')).toHaveLength(1);
   expect(screen.getByRole('button', { name: '展開版路 tg-page-16' })).toBeTruthy();
   expect(screen.getByRole('button', { name: '天工結果下一頁' }).hasAttribute('disabled')).toBe(true);
-  fireEvent.click(screen.getByRole('button', { name: '篩選預測號碼 12，15次' }));
+  fireEvent.click(screen.getByRole('button', { name: '篩選結果號碼 12，15次' }));
   expect(document.querySelectorAll('.tiangong-result-row')).toHaveLength(15);
   expect(screen.queryByRole('navigation', { name: '天工結果分頁' })).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: '篩選預測號碼 12，15次' }));
+  fireEvent.click(screen.getByRole('button', { name: '篩選結果號碼 12，15次' }));
   fireEvent.click(screen.getByRole('button', { name: '天工結果下一頁' }));
   fireEvent.click(screen.getByRole('button', { name: '同碼' }));
   expect(document.querySelectorAll('.tiangong-result-row')).toHaveLength(15);
@@ -341,13 +341,13 @@ test('點擊天工號碼小卡後，完整結果先依預測位置再依間距�
   matrixApi.fetchTiangongList.mockResolvedValue({ ...envelope, total: items.length, items });
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
-  await screen.findByRole('button', { name: '篩選預測號碼 12，18次' });
-  fireEvent.click(screen.getByRole('button', { name: '篩選預測號碼 12，18次' }));
+  await screen.findByRole('button', { name: '篩選結果號碼 12，18次' });
+  fireEvent.click(screen.getByRole('button', { name: '篩選結果號碼 12，18次' }));
   const labels = () => [...document.querySelectorAll('.tiangong-result-row')].map(row => row.getAttribute('aria-label'));
   expect(labels()).toEqual([1, 2, 3, 4, 6].flatMap(position => [2, 5, 9].map(gap => `展開版路 position-${position}-gap-${gap}`)));
   fireEvent.click(screen.getByRole('button', { name: '天工結果下一頁' }));
   expect(labels()).toEqual([2, 5, 9].map(gap => `展開版路 position-7-gap-${gap}`));
-  expect(screen.getByRole('button', { name: '篩選預測號碼 12，18次' }).getAttribute('aria-pressed')).toBe('true');
+  expect(screen.getByRole('button', { name: '篩選結果號碼 12，18次' }).getAttribute('aria-pressed')).toBe('true');
 });
 
 

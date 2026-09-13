@@ -101,7 +101,7 @@ test('天衍重複號碼統計比照 Matrix 探索，可點號碼進行版路篩
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
   fireEvent.click(screen.getByRole('button', { name: '開始天衍' }));
 
-  const stat = await screen.findByRole('button', { name: '篩選預測號碼 14，3次' });
+  const stat = await screen.findByRole('button', { name: '篩選結果號碼 14，3次' });
   fireEvent.click(stat);
 
   await waitFor(() => expect(matrixApi.fetchTianyanList).toHaveBeenLastCalledWith({
@@ -111,7 +111,7 @@ test('天衍重複號碼統計比照 Matrix 探索，可點號碼進行版路篩
     sameCode: false,
     predictionNumber: '14',
   }));
-  expect(screen.getByRole('button', { name: '篩選預測號碼 14，3次' }).getAttribute('aria-pressed')).toBe('true');
+  expect(screen.getByRole('button', { name: '篩選結果號碼 14，3次' }).getAttribute('aria-pressed')).toBe('true');
 });
 
 test('天衍同碼篩選比照 Matrix 探索送出相同篩選規則', async () => {

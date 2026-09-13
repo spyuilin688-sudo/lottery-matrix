@@ -100,11 +100,11 @@ test('first visit dialog changes live and keeps the login action and once-only b
 });
 
 test.each([
-  ['04Matrix 探索', ['結果顯示位置、號碼、查詢期、連準次數、結果及版路類型。']],
-  ['06Matrix 天工', ['第一段驗證3個球位；第二段驗證前2個球位，第3個球位產生結果。', '按下「開始探索」後顯示間距期數、查詢位置、結果及版路類型。']],
-  ['07Matrix 狀態', ['每條版路顯示位置、號碼、查詢期、連準次數、結果及版路類型。']],
-  ['17關於 樂彩 Matrix', ['提供 Matrix 查詢、歷史資料查詢、號碼紀錄、計算工具、牌單及通知等功能。']],
-] as const)('guide %s switches requested result copy and restores its complete original section', (name, expected) => {
+  ['04Matrix 探索', ['結果顯示位置、號碼、結果期、連準次數、結果及版路類型。']],
+  ['07Matrix 天工', ['第一段驗證3個球位；第二段驗證前2個球位，第3個球位產生結果。', '按下「開始天工」後顯示間距期數、結果位置、結果及版路類型。']],
+  ['08Matrix 狀態', ['每條版路顯示位置、號碼、結果期、連準次數、結果及版路類型。']],
+  ['18關於 樂彩 Matrix', ['提供 Matrix 查詢、歷史資料查詢、號碼紀錄、計算工具、牌單及通知等功能。']],
+] as const)('guide %s keeps approved result copy while preserving the other visibility-controlled text', (name, expected) => {
   const view = render(<MatrixGuidePage onNavigate={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name }));
   const preview = view.container.querySelector('.guide-preview')!;
@@ -121,24 +121,41 @@ test.each([
 test('guide removes Pro category and requested blocks, keeps original IDs, and restores content', () => {
   const view = render(<MatrixGuidePage onNavigate={vi.fn()} />);
   const choose = (name: RegExp) => fireEvent.click(screen.getByRole('button', { name }));
-  choose(/^14Matrix Pro$/);
+  choose(/^15Matrix Pro$/);
   expect(view.container.querySelector('.guide-preview h2')).toHaveTextContent('Matrix Pro');
   toggle(false);
-  expect(screen.queryByRole('button', { name: /^14Matrix Pro$/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /^15Matrix Pro$/ })).not.toBeInTheDocument();
   expect(view.container.querySelector('.guide-preview h2')).toHaveTextContent('新手入門');
   const preview = () => within(view.container.querySelector('.guide-preview') as HTMLElement);
   expect(preview().queryByText('我的：查看 Matrix Pro 訂閱、推薦、系統及法律資訊。')).not.toBeInTheDocument();
   expect(preview().queryByRole('heading', { name: 'Matrix Pro' })).not.toBeInTheDocument();
-  choose(/^16常見問題$/);
+  choose(/^17常見問題$/);
   expect(preview().queryByRole('heading', { name: '查看 Matrix Pro 權限' })).not.toBeInTheDocument();
-  choose(/^17關於 樂彩 Matrix$/);
+  choose(/^18關於 樂彩 Matrix$/);
   expect(preview().getByText('樂彩 Matrix 提供開獎資料查詢服務，協助查閱公開資訊、整理歷史數據與使用各項查詢工具。')).toBeInTheDocument();
   toggle(true);
-  expect(screen.getByRole('button', { name: /^14Matrix Pro$/ })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /^15Matrix Pro$/ })).toBeInTheDocument();
   expect(preview().getByText(/查詢與分析服務/)).toBeInTheDocument();
-  choose(/^16常見問題$/);
+  choose(/^17常見問題$/);
   expect(preview().getByRole('heading', { name: '查看 Matrix Pro 權限' })).toBeInTheDocument();
   choose(/^01新手入門$/);
   expect(preview().getByText('我的：查看 Matrix Pro 訂閱、推薦、系統及法律資訊。')).toBeInTheDocument();
   expect(preview().getByRole('heading', { name: 'Matrix Pro' })).toBeInTheDocument();
+});
+
+
+test.each([true, false])('天衡指南與服務說明在購買顯示 %s 下提供完整功能資訊', visible => {
+  settings.visible = visible;
+  const guide = render(<MatrixGuidePage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '05Matrix 天衡' }));
+  const preview = guide.container.querySelector('.guide-preview')!;
+  for (const text of ['同一期兩個球位', '三期、十三期', '準5+ (鎖定1碼)、準6+ (鎖定2碼)', '進階天衡設定', '結果期', '版路結果', '依目前帳號權限開放']) {
+    expect(preview.textContent).toContain(text);
+  }
+  expect(preview.textContent).not.toMatch(/預測|查詢期/);
+  guide.unmount();
+  const service = render(<ServiceInfoPage onNavigate={vi.fn()} />);
+  expect([...service.container.querySelectorAll('.legal-info-subfunctions > li')].map(node => node.textContent)).toEqual(['Matrix 探索', 'Matrix 天衡', 'Matrix 天衍', 'Matrix 天工']);
+  expect(service.container.textContent).toContain('Matrix 天衡以同一期的兩個球位與對應號碼共同作為條件');
+  expect(service.container.textContent).toContain('開始天衡');
 });

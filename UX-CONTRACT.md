@@ -116,9 +116,9 @@ The dialog preserves the existing navy, gold, danger-red and success-green visua
 
 ## Navigation, async and recovery
 
-2026-09-12：首頁 Matrix Core 保持獨立探索入口，顯示「進入更深入的查詢」說明；四大功能依序開啟既有 `tongxing`、`reference`、`matrix-card`、`guide` 路由。移除功能列中的計算機，底部導覽及快捷設定的計算機保留。插畫不包含卡名；原生按鈕提供文字名稱、鍵盤焦點及按壓回饋。靜止金屬素材取代循環光圈，減少動態干擾。
+2026-09-12：首頁 Matrix Core 保持獨立探索入口，顯示「進入更深層的演算法」說明；四大功能依序開啟既有 `tongxing`、`reference`、`matrix-card`、`guide` 路由。移除功能列中的計算機，底部導覽及快捷設定的計算機保留。插畫不包含卡名；原生按鈕提供文字名稱、鍵盤焦點及按壓回饋。靜止金屬素材取代循環光圈，減少動態干擾。
 
-2026-09-12：PD01 底部導覽依使用者指定順序提供「首頁、快捷、計算機、我的」。計算機沿用既有 `calculator` 路由，選中態由 `QuickNavigationContext.currentScreen` 推導，保留工具頁標題與返回行為；快捷開啟時優先顯示快捷選中態。原通知入口移至「我的 → 系統相關 → 通知」，仍使用既有通知頁及資料流程，該頁將「我的」標示為目前導覽群組。首頁快捷設定與狀態頁自訂觸發條件入口均保留；兩者繼續使用既有 800ms 內雙擊及鍵盤／輔助操作的原生 click 行為，不改動權限、設定內容或儲存邏輯。金框滿寬，角落設定與四個主要按鈕的觸控區分離。
+2026-09-12：PD01 底部導覽依使用者指定順序提供「首頁、快捷、計算機、我的」。計算機沿用既有 `calculator` 路由，選中態由 `QuickNavigationContext.currentScreen` 推導，保留工具頁標題與返回行為；快捷開啟時優先顯示快捷選中態。原通知入口移至「我的 → 系統相關 → 通知設定」，仍使用既有通知頁及資料流程，該頁將「我的」標示為目前導覽群組。首頁快捷設定與狀態頁自訂觸發條件入口均保留；兩者繼續使用既有 800ms 內雙擊及鍵盤／輔助操作的原生 click 行為，不改動權限、設定內容或儲存邏輯。金框滿寬，角落設定與四個主要按鈕的觸控區分離。
 
 2026-09-08：依使用者截圖要求，自訂觸發條件頁的探索摘要改為四狀態下方單列「探索期數：十三期 | 探索範圍：完整範圍」，分隔符水平置中，整列標籤、值與分隔符統一正文白色；原預設／自訂狀態保留於一碼條件標題右側。後續依使用者要求一併整理字型、位置與結構，群組以原生 details/summary 預設收合，各組可獨立展開；收合仍提供條件摘要。新增群組直接展開，收合不清除草稿；儲存遇到欄位錯誤先展開所在群組再聚焦。切換彩種或狀態恢復該頁群組初始收合，草稿仍依原有方式保留。刪除按鍵獨立，版路整列、其餘欄位對齊；底部重置與儲存列位於導覽列上方，留出8px間隔；現有選項、群組關係、儲存與重置規則不變。
 
@@ -304,9 +304,11 @@ After result notification dispatch, the trusted producer requests immediate back
 
 - Core settings labels follow the page: 天衡 and 天衍 replace 探索 in setting, period, date, range and advanced-setting labels; 天工 replaces 探索 in setting, period and ball-position labels. Asset filenames and existing option values, selection handlers, entitlements and request semantics are preserved. Condition segments keep full accessible names and 700/500 primary/detail weights, in 20px rounded buttons aligned with the upper controls.
 
-- History, number reference and tongxing first-row selects keep native keyboard behavior, existing option labels, values and heights. Their shared frame uses a 4px chamfer, muted gold 1px outline and no glow; hover/focus brighten the outline. Second-row fields, resets, requests and result behavior are unchanged.
+- History, number reference and tongxing first-row selects, plus the tongxing period select, keep native keyboard behavior, existing option labels, values and heights. Their shared frame uses a 4px chamfer, muted gold 1px outline and no glow; hover/focus brighten the outline. Number-input fields, resets, requests and result behavior are unchanged.
 
 - Core condition options display ASCII parentheses with exactly one U+0020 space before the opening parenthesis, e.g. `準5+ (鎖定2碼)`. Button accessible names match visible text. Existing internal condition values and request/default selection behavior remain intact.
+
+- Result terminology is independent of subscription purchase visibility: four algorithms and related status/validation views use 結果期, 結果, 結果位置 and 版路結果. Number-filter accessible names use 篩選結果號碼; request keys, persisted values, result numbers and entitlements remain unchanged. The custom trigger page title is 自訂觸發條件; the profile system menu opens the existing notifications route through 通知設定.
 
 
 ## Admin service evidence — 2026-09-13
