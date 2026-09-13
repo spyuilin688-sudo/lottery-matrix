@@ -277,6 +277,35 @@ Deno.test("delivery log failure finalizes the confirmed send without retrying it
   assertEquals(test.observations.failed, []);
 });
 
+Deno.test('transient finalizer failures retry only the write after one provider acceptance', async () => {
+  let calls = 0;
+  const fixture = setup({ markSent: async () => {
+    if (++calls < 3) throw new Error('temporary database failure');
+    return true;
+  } });
+  const response = await fixture.handler(request());
+  assertEquals(response.status, 200);
+  assertEquals(await response.json(), { claimed: 1, sent: 1, skipped: 0, retried: 0, failed: 0 });
+  assertEquals(calls, 3);
+  assertEquals(fixture.observations.pushTargets, ['sub-a']);
+  assertEquals(fixture.observations.retried, []);
+});
+
+Deno.test('accepted delivery records its outbox and uses the same replacement tag after reclaim', async () => {
+  const payloads: PushPayload[] = [];
+  for (const attemptCount of [1, 2]) {
+    const fixture = setup({
+      work: [{ ...WORK, attemptCount }],
+      sendPush: async (_subscription, payload) => { payloads.push(payload); },
+    });
+    assertEquals((await fixture.handler(request())).status, 200);
+    assertEquals(fixture.observations.deliveryLogs[0]?.outboxId, 'outbox-1');
+    assertEquals(fixture.observations.deliveryLogs[0]?.status, 'sent');
+  }
+  assertEquals(payloads.map(payload => payload.tag), ['matrix-outbox-outbox-1', 'matrix-outbox-outbox-1']);
+  assertEquals(payloads.map(payload => payload.body), [WORK.payload.body, WORK.payload.body]);
+});
+
 afterEach(() => vi.useRealTimers());
 
 Deno.test('failed finalization does not abort the rest of a claimed batch or resend in the same invocation', async () => {
@@ -287,7 +316,8 @@ Deno.test('failed finalization does not abort the rest of a claimed batch or res
   const response = await fixture.handler(request());
   assertEquals(response.status, 500);
   assertEquals(await response.json(), { error: { code: 'DISPATCH_FAILED' } });
-  assertEquals(fixture.observations.sent.length, 6);
+  assertEquals(fixture.observations.sent.filter(item => item.outboxId === 'outbox-0').length, 3);
+  assertEquals(fixture.observations.sent.filter(item => item.outboxId !== 'outbox-0').length, 5);
   assertEquals(fixture.observations.pushTargets.length, 6);
   assertEquals(fixture.observations.retried, []);
 });

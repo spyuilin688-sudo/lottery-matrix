@@ -438,11 +438,14 @@ self.addEventListener("push", (event) => {
   const payload = parsePushPayload(event);
   const title = typeof payload.title === "string" ? payload.title : "";
   const body = typeof payload.body === "string" ? payload.body : "";
+  const tag = typeof payload.tag === "string" && payload.tag.trim() && payload.tag.length <= 128
+    ? payload.tag : null;
 
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
       icon: "/icons/icon-192x192.png",
+      ...(tag ? { tag, renotify: false } : {}),
       data: { url: safePwaPath(payload.url) },
     }),
   );

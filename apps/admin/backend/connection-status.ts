@@ -1,6 +1,7 @@
 import { apiStatusInventory, type ApiCheckEvidence, type ApiStatusDefinition } from './api-status-inventory';
 import { matrixStorageStatusId, parseMatrixStorageHealth } from './matrix-storage-status';
 import { notificationCalendarStatusId, parseNotificationCalendarStatus } from './notification-calendar-status';
+import { nativeNotificationStatusId, nativeNotificationWarning, parseNativeNotificationHealth } from './native-notification-status';
 import type { SupabaseConfig } from './supabase';
 import type { RailwayLatestAnalysis, WorkerStatus } from './worker-api';
 import type { WatchdogStatus } from './watchdog-status';
@@ -207,7 +208,7 @@ export function createConnectionStatus(dependencies: Dependencies) {
     const started = now().getTime();
     const checkEvidence: ApiCheckEvidence = queryCheckIds.has(definition.id) || definition.id === 'supabase-rpc-matrix_permission_settings' ? 'query'
       : protectedResultKinds[definition.id] ? 'data'
-      : definition.id === 'supabase-watchdog-heartbeat' || definition.id === matrixStorageStatusId || definition.id === notificationCalendarStatusId ? 'reported'
+      : definition.id === 'supabase-watchdog-heartbeat' || definition.id === matrixStorageStatusId || definition.id === notificationCalendarStatusId || definition.id === nativeNotificationStatusId ? 'reported'
       : definition.endpoint.startsWith('/functions/v1/') ? 'options'
       : definition.checkMode === 'registry' ? 'registered'
       : definition.location === 'Railway' && definition.checkMode === 'service' ? 'inherited'
@@ -256,6 +257,11 @@ export function createConnectionStatus(dependencies: Dependencies) {
         if (heartbeat.status !== 'ok') {
           return finish(false, detail, '最近一次自動監控回報異常');
         }
+      } else if (definition.id === nativeNotificationStatusId) {
+        const health = parseNativeNotificationHealth(await shared.readRpc('admin_native_notification_health'), now());
+        if (!health) throw new Error('NATIVE_NOTIFICATION_HEALTH_INVALID');
+        const warning = nativeNotificationWarning(health, now());
+        return { ...finish(!warning, health, warning), healthState: warning ? 'failed' : health.enabled_devices === 0 ? 'waiting' : 'healthy' };
       } else if (definition.id === notificationCalendarStatusId) {
         const current = await shared.config();
         const response = await fetchWithDeadline(`${current.url}${definition.endpoint}`, {
@@ -337,6 +343,9 @@ export function createConnectionStatus(dependencies: Dependencies) {
     } catch (cause) {
       if (definition.id === 'supabase-rpc-matrix_permission_settings') return finish(false, undefined, '權限設定讀取失敗或資料格式不完整，請重新檢查。');
       if (protectedResultKinds[definition.id]) return finish(false, undefined, '分析資料或 API 登記暫時無法確認，請重新檢查。');
+      if (definition.id === nativeNotificationStatusId) return {
+        ...finish(false, null, '原生通知狀態暫時無法取得，請重新檢查。'), healthState: 'unknown',
+      };
       if (definition.id === notificationCalendarStatusId) return {
         ...finish(false, null, '六合彩開獎日曆狀態暫時無法取得。'), healthState: 'unknown',
       };

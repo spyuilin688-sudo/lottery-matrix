@@ -90,6 +90,25 @@ test("push event uses safe empty defaults when data is absent", async () => {
   }]);
 });
 
+test('replayed notifications pass a stable tag without requesting another alert', async () => {
+  const worker = createWorker();
+  for (const tag of ['matrix-outbox-1', 'matrix-outbox-1', 'matrix-outbox-2']) {
+    await worker.dispatch('push', { data: { json: () => ({ title: 'Result', body: 'Draw complete', url: '/', tag }) } });
+  }
+  assert.deepEqual(worker.notifications.map(item => item.options.tag), ['matrix-outbox-1', 'matrix-outbox-1', 'matrix-outbox-2']);
+  assert.deepEqual(worker.notifications.map(item => item.options.renotify), [false, false, false]);
+});
+
+test('invalid replacement tags preserve ordinary notification delivery', async () => {
+  for (const tag of [null, {}, 1, '', ' ', 'a'.repeat(129)]) {
+    const worker = createWorker();
+    await worker.dispatch('push', { data: { json: () => ({ title: 'Result', body: 'Available', tag }) } });
+    assert.equal(worker.notifications.length, 1);
+    assert.equal(worker.notifications[0].options.body, 'Available');
+    assert.equal(worker.notifications[0].options.tag, undefined);
+  }
+});
+
 test("push event uses safe empty defaults when JSON is malformed", async () => {
   const worker = createWorker();
 

@@ -7,6 +7,7 @@ describe('api status inventory', () => {
       expect.objectContaining({ id: 'admin-api', location: 'Supabase', endpoint: '/admin/api/_healthcheck' }),
       expect.objectContaining({ id: 'supabase-watchdog-heartbeat', location: 'Supabase' }),
       expect.objectContaining({ id: 'supabase-auth', location: 'Supabase' }),
+      expect.objectContaining({ id: 'native-notification-dispatch', endpoint: '/rest/v1/rpc/admin_native_notification_health', checkMode: 'service' }),
       expect.objectContaining({ id: 'matrix-status-function', endpoint: '/functions/v1/matrix-status' }),
       expect.objectContaining({ id: 'supabase-rpc-matrix_explore_list', endpoint: '/rest/v1/rpc/matrix_explore_list' }),
       expect.objectContaining({ id: 'supabase-rpc-matrix_tianheng_list', rpcAccess: 'public-read' }),
@@ -23,7 +24,7 @@ describe('api status inventory', () => {
       expect.objectContaining({ id: 'railway-jobs-recover', endpoint: '/jobs/recover', checkMode: 'service' }),
       expect.objectContaining({ id: 'railway-number-reference', endpoint: '/api/matrix/number-reference' }),
     ]));
-    expect(apiStatusInventory).toHaveLength(64);
+    expect(apiStatusInventory).toHaveLength(65);
     expect(new Set(apiStatusInventory.map((item) => item.id)).size).toBe(apiStatusInventory.length);
     expect(apiStatusInventory.every((item) => item.name && item.group && item.endpoint)).toBe(true);
   });

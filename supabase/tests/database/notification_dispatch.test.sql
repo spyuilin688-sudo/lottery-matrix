@@ -174,6 +174,14 @@ select is(
 reset role;
 
 -- Task 2: server-side renderer, member filtering, fan-out, and recovery.
+-- Period-only queued payloads resolve their own draw date from lottery_draws.
+insert into public.lottery_draws(lottery, period, draw_date, numbers, sorted_numbers)
+values
+  ('今彩539', '115203', '2026-09-03', '["01","02","03","04","05"]', '["01","02","03","04","05"]'),
+  ('今彩539', '115204', '2026-09-04', '["06","07","08","09","10"]', '["06","07","08","09","10"]'),
+  ('今彩539', '115205', '2026-09-05', '["11","12","13","14","15"]', '["11","12","13","14","15"]'),
+  ('大樂透', '115206', '2026-09-04', '["01","02","03","04","05","06","07"]', '["01","02","03","04","05","06","07"]');
+
 select has_function(
   'private',
   'notification_render_payload',
@@ -243,7 +251,7 @@ select private.notification_event_enqueue(
   'matrix_status',
   'railway',
   '2026-09-03T12:03:00+08:00',
-  '{"lottery":"今彩539","lotteryCode":"539","period":"115205","status":"UNKNOWN","statusLabel":"未知"}'::jsonb
+  '{"lottery":"今彩539","lotteryCode":"539","period":"115205","status":"CRITICAL","statusLabel":"臨界"}'::jsonb
 );
 select private.notification_event_enqueue(
   'matrix_card:649:115206',
@@ -290,8 +298,8 @@ select is(
     'lottery_result:539:115203',
     '{"lottery":"今彩539","period":"115203","numbers":["01","02","03","04","05"]}'::jsonb
   )->>'body',
-  '第115203期｜01 02 03 04 05',
-  'lottery result renderer preserves draw number order'
+  '09/03(四) 01-02-03-04-05',
+  'lottery result renderer uses the event draw date and preserves draw number order'
 );
 select is(
   private.notification_render_payload(
@@ -326,8 +334,8 @@ select is(
     'matrix_status:539:115203',
     '{"lottery":"今彩539","period":"115203","status":"ACTIVE","statusLabel":"啟動"}'::jsonb
   )->>'body',
-  '第115203期｜啟動',
-  'matrix status renderer uses the localized status label'
+  '發現了具備基本參考價值的版路！',
+  'matrix status renderer uses the approved copy for the localized status'
 );
 
 select ok(
@@ -502,6 +510,14 @@ select is(
   'Matrix 牌單｜今彩539',
   'fanout stores the fixed rendered payload snapshot in the outbox'
 );
+-- Keep the no-match event valid: CRITICAL is not selected by either member.
+-- Invalid status labels are rejected before recipient filtering.
+insert into public.notification_settings(member_id, settings)
+values (
+  '31000000-0000-0000-0000-000000000002',
+  jsonb_set(private.default_member_notification_settings(), '{statusOptions,今彩539}', '["啟動","聚合","共振"]'::jsonb)
+);
+
 select is(
   private.notification_fanout_event(
     (select id from public.notification_events where event_key = 'matrix_status:539:115205')
