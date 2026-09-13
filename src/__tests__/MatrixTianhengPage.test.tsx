@@ -343,7 +343,7 @@ it('orders the drag summary in exactly two rows', async () => {
   expect(rows).toHaveLength(2);
   expect(within(summary).getAllByText('開')).toHaveLength(1);
   expect(rows[0].firstElementChild).toHaveTextContent('開');
-  expect(rows[0]).toHaveTextContent('開05 第 1 顆與18 第 4 顆');
+  expect(rows[0]).toHaveTextContent('開05 第 1 顆、同期18 第 4 顆');
   expect(rows[1]).toHaveTextContent('同期｜第 1 顆｜+14.24｜下 5 期開');
 });
 
@@ -356,7 +356,7 @@ it('places both source numbers on the first summary row and the complete rule on
     predictionDistance: 13, algorithmType: '加減' }, validation));
   const rows = await screen.findAllByTestId('tianheng-summary-row');
   expect(rows).toHaveLength(2);
-  expect(rows[0]).toHaveTextContent('開02 第 1 顆與09 第 3 顆');
+  expect(rows[0]).toHaveTextContent('開02 第 1 顆、同期09 第 3 顆');
   expect(rows[0].querySelectorAll('.validation-summary-divider')).toHaveLength(0);
   expect(rows[1]).toHaveTextContent('下 8 期｜第 1 顆｜+12.33｜下 13 期開');
   expect(rows[1].querySelectorAll('.validation-summary-divider')).toHaveLength(3);

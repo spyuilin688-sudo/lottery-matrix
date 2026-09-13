@@ -715,7 +715,7 @@ export function TianhengValidationProcess({
                   <span className="tianyan-validation-summary-row" data-testid="tianheng-summary-row">
                     <span>開</span>
                     {summaryLocked(item.firstNumber, item.firstLockedPosition)}
-                    <span>與</span>
+                    <span>、同期</span>
                     {summaryLocked(item.secondNumber, item.secondLockedPosition)}
                   </span>
                   <span className="tianyan-validation-summary-row" data-testid="tianheng-summary-row">
