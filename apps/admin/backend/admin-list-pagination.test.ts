@@ -25,6 +25,21 @@ test('search includes plan, nickname, referral and invitation before pagination 
   expect(query.get('or')).toContain('current_plan_id.in.(22222222-2222-4222-8222-222222222222)');
 });
 
+test.each(['users', 'subscriptions'] as const)('%s active search includes legacy null status without weakening the status or keyword filters', async table => {
+  const request = vi.fn().mockResolvedValueOnce([{ id: '22222222-2222-4222-8222-222222222222' }]).mockResolvedValue([]);
+  const requestPage = vi.fn().mockResolvedValue({ items: [], total: 0 });
+
+  await listAdminMemberPage(table, { page: 1, keyword: '月費,(x)', status: 'active' }, { request, requestPage });
+
+  const query = new URL(requestPage.mock.calls[0][0], 'https://test').searchParams;
+  // Separate AND/OR groups keep the status requirement in force during search.
+  // An allowlist plus NULL continues to exclude disabled and unknown statuses.
+  expect(query.has('status')).toBe(false);
+  expect(query.get('and')).toBe('(or(status.in.(active,啟用),status.is.null))');
+  expect(query.get('or')).toContain('line_display_name.imatch."月費,\\\\(x\\\\)"');
+  expect(query.get('or')).toContain('current_plan_id.in.(22222222-2222-4222-8222-222222222222)');
+});
+
 test('deleted last page clamps to final available page without fetching the full table', async () => {
   const requestPage = vi.fn().mockResolvedValueOnce({ items: [], total: 31 }).mockResolvedValueOnce({ items: [member], total: 31 });
   const result = await listAdminMemberPage('subscriptions', { page: '9' }, { request: vi.fn().mockResolvedValue([]), requestPage });
