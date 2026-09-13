@@ -292,9 +292,13 @@ export async function listAdminMemberPage(
     url.searchParams.set('current_plan.duration_days', plan === 'all' ? 'in.(30,90,365)' : `eq.${planDurations[plan]}`);
     url.searchParams.set('plan_expires_at', `gt.${currentDate.toISOString()}`);
     url.searchParams.set('is_lifetime', 'eq.false');
-    url.searchParams.set('status', 'in.(active,啟用)');
-  } else if (status !== 'all') {
-    url.searchParams.set('status', status === 'disabled' ? 'in.(disabled,inactive,停用)' : 'in.(active,啟用)');
+  }
+  if (table === 'subscriptions' || status === 'active') {
+    // Legacy members have NULL status. Keep the enabled-status group separate
+    // from the keyword OR group so searching cannot replace either filter.
+    url.searchParams.set('and', '(or(status.in.(active,啟用),status.is.null))');
+  } else if (status === 'disabled') {
+    url.searchParams.set('status', 'in.(disabled,inactive,停用)');
   }
   if (keyword) {
     // Literal, case-insensitive substring search. Escape regex syntax and then

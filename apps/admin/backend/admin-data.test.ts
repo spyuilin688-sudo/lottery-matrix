@@ -171,7 +171,8 @@ describe('listAdminMemberPage subscriptions', () => {
     expect(url.searchParams.get('current_plan.duration_days')).toBe(durationFilter);
     expect(url.searchParams.get('plan_expires_at')).toBe('gt.2026-09-11T00:00:00.000Z');
     expect(url.searchParams.get('is_lifetime')).toBe('eq.false');
-    expect(url.searchParams.get('status')).toBe('in.(active,啟用)');
+    expect(url.searchParams.has('status')).toBe(false);
+    expect(url.searchParams.get('and')).toBe('(or(status.in.(active,啟用),status.is.null))');
   });
 
   it('rejects an unknown subscription plan filter before querying Supabase', async () => {
