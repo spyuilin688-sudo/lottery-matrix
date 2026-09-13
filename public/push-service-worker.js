@@ -1,5 +1,8 @@
 const STATIC_CACHE_PREFIX = "matrix-pwa-shell-";
 const STATIC_CACHE_NAME = "matrix-pwa-shell-__BUILD_ID__";
+// Filled by pwa-build-version.mjs from this exact build, including lazy chunks.
+const BUILD_ASSET_PATHS = [];
+const SHELL_READY_PATH = "/__matrix_pwa_shell_ready__";
 const APP_SHELL_PATHS = [
   "/",
   "/index.html",
@@ -125,19 +128,37 @@ function keepAlive(event, operation) {
 
 async function precacheAppShell() {
   const cache = await openStaticCache();
-  if (!cache || typeof cache.addAll !== "function") return;
-  try {
-    await cache.addAll(APP_SHELL_PATHS);
-  } catch {
-    // Installation remains successful when a cache is unavailable or the network is temporarily offline.
+  // Cache Storage is optional, but an incomplete update must not replace a
+  // working cache when storage is available.
+  if (!cache) return;
+  const shell = await fetch("/", { cache: "reload" });
+  const paths = await shellAssetPaths(shell);
+  if (BUILD_ASSET_PATHS.length && paths.some(path => !BUILD_ASSET_PATHS.includes(path))) {
+    throw new Error("PWA_BUILD_MISMATCH");
   }
+  await prepareAssets(cache, [...new Set([...paths, ...BUILD_ASSET_PATHS])]);
+  await cache.put("/", shell.clone());
+  await cache.put("/index.html", shell.clone());
+  await cache.put(SHELL_READY_PATH, new Response(STATIC_CACHE_NAME));
+  // Icons are optional; an unavailable icon must not discard a complete app.
+  await Promise.all(APP_SHELL_PATHS.filter(path => path !== "/" && path !== "/index.html").map(async path => {
+    try { await cacheResponse(cache, path, await loadAsset(cache, path)); } catch { /* Retry optional artwork on demand. */ }
+  }));
 }
 
 async function clearOldStaticCaches() {
   try {
+    const cache = await openStaticCache();
+    const ready = await cacheMatch(cache, SHELL_READY_PATH);
+    if (!ready || await ready.text() !== STATIC_CACHE_NAME) return;
     const names = await caches.keys();
+    // Keep the preceding generation for pages still using its hashed assets.
+    let previous;
+    for (const name of names.filter(name => name.startsWith(STATIC_CACHE_PREFIX) && name !== STATIC_CACHE_NAME).reverse()) {
+      if (await cachedShell(await caches.open(name))) { previous = name; break; }
+    }
     await Promise.all(names
-      .filter((name) => name.startsWith(STATIC_CACHE_PREFIX) && name !== STATIC_CACHE_NAME)
+      .filter((name) => name.startsWith(STATIC_CACHE_PREFIX) && name !== STATIC_CACHE_NAME && name !== previous)
       .map(async (name) => {
         try {
           await caches.delete(name);
@@ -176,28 +197,121 @@ function offlineNavigationResponse() {
 async function handleNavigation(event) {
   try {
     const response = await fetch(event.request);
-    if (response && response.ok) keepAlive(event, (async () => {
-      const cache = await openStaticCache();
-      await cacheResponse(cache, "/", response);
-    })());
+    // Only the main PWA entry is an app shell. Never store admin/other documents
+    // under '/', or persist a LINE callback response in the shell cache.
+    const url = new URL(event.request.url);
+    if (!["/", "/index.html"].includes(url.pathname) || url.search) return response;
+    const cache = await openStaticCache();
+    const paths = await shellAssetPaths(response);
+    const stored = await prepareAssets(cache, paths, false);
+    if (stored) await cacheResponse(cache, "/", response);
     return response;
   } catch {
-    const cache = await openStaticCache();
-    return (await cacheMatch(cache, event.request))
-      || (await cacheMatch(cache, "/"))
-      || (await cacheMatch(cache, "/index.html"))
-      || offlineNavigationResponse();
+    return await completeCachedShell() || offlineNavigationResponse();
   }
 }
 
 async function handleStaticAsset(event) {
   const cache = await openStaticCache();
-  const cached = await cacheMatch(cache, event.request);
-  if (cached) return cached;
+  return loadAsset(cache, event.request, event);
+}
 
-  const response = await fetch(event.request);
-  if (response && response.ok) keepAlive(event, cacheResponse(cache, event.request, response));
+function validAsset(request, response) {
+  if (!response?.ok) return false;
+  const pathname = new URL(typeof request === "string" ? request : request.url, self.location.origin).pathname;
+  const type = (response.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+  if (request.destination === "style" || /\.css$/i.test(pathname)) return type === "text/css";
+  if (request.destination === "script" || /\.m?js$/i.test(pathname)) {
+    return ["text/javascript", "application/javascript", "application/x-javascript", "text/ecmascript", "application/ecmascript"].includes(type);
+  }
+  return type !== "text/html";
+}
+
+async function cachedAsset(cache, request) {
+  const response = await cacheMatch(cache, request);
+  if (validAsset(request, response)) return response;
+  if (response) {
+    try { await cache.delete(request); } catch { /* Invalid content is never returned. */ }
+  }
+}
+
+async function previousCaches() {
+  try {
+    return (await caches.keys()).filter(name => name.startsWith(STATIC_CACHE_PREFIX) && name !== STATIC_CACHE_NAME).reverse();
+  } catch { return []; }
+}
+
+async function findCachedAsset(cache, request) {
+  const current = await cachedAsset(cache, request);
+  if (current) return current;
+  // Only immutable Vite paths may be reused across versions.
+  const url = new URL(typeof request === "string" ? request : request.url, self.location.origin);
+  if (!url.pathname.startsWith("/assets/")) return;
+  for (const name of await previousCaches()) {
+    try {
+      const result = await cachedAsset(await caches.open(name), request);
+      if (result) return result;
+    } catch { /* Another version may still contain the asset. */ }
+  }
+}
+
+async function loadAsset(cache, request, event) {
+  const cached = await findCachedAsset(cache, request);
+  if (cached) return cached;
+  // Bypass the HTTP cache as well as removing invalid Cache Storage entries.
+  const response = await fetch(request, { cache: "reload" });
+  if (!validAsset(request, response)) throw new Error("PWA_INVALID_ASSET_RESPONSE");
+  if (event) keepAlive(event, cacheResponse(cache, request, response));
   return response;
+}
+
+async function shellAssetPaths(response) {
+  if (!response?.ok || !response.headers.get("content-type")?.toLowerCase().startsWith("text/html")) throw new Error("PWA_INVALID_SHELL");
+  const html = await response.clone().text();
+  const paths = [];
+  for (const tag of html.match(/<(?:script|link)\b[^>]*>/gi) || []) {
+    const attributes = Object.fromEntries([...tag.matchAll(/([\w-]+)\s*=\s*["']([^"']*)["']/g)].map(([, key, value]) => [key.toLowerCase(), value]));
+    const asset = /^<script/i.test(tag) && attributes.type === "module" ? attributes.src
+      : ["stylesheet", "modulepreload"].includes(attributes.rel) ? attributes.href : null;
+    if (!asset) continue;
+    const url = new URL(asset, self.location.origin);
+    if (url.origin !== self.location.origin || !url.pathname.startsWith("/assets/")) throw new Error("PWA_INVALID_SHELL_ASSET");
+    paths.push(url.pathname + url.search);
+  }
+  if (!paths.some(path => /\.css(?:\?|$)/.test(path)) || !paths.some(path => /\.m?js(?:\?|$)/.test(path))) throw new Error("PWA_INCOMPLETE_SHELL");
+  return [...new Set(paths)];
+}
+
+async function prepareAssets(cache, paths, requireStorage = true) {
+  // Fetch and validate the complete set before committing its HTML.
+  const assets = await Promise.all(paths.map(async path => [path, await loadAsset(cache, path)]));
+  if (!cache) return false;
+  try {
+    await Promise.all(assets.map(([path, response]) => cache.put(path, response.clone())));
+    return true;
+  } catch (error) {
+    if (requireStorage) throw error;
+    return false;
+  }
+}
+
+async function cachedShell(cache) {
+  try {
+    const shell = await cacheMatch(cache, "/");
+    const paths = await shellAssetPaths(shell);
+    const assets = await Promise.all(paths.map(path => cachedAsset(cache, path)));
+    if (assets.every(Boolean)) return shell;
+  } catch { /* A partial generation cannot serve a usable app. */ }
+}
+
+async function completeCachedShell() {
+  for (const name of [STATIC_CACHE_NAME, ...await previousCaches()]) {
+    try {
+      const cache = await caches.open(name);
+      const shell = await cachedShell(cache);
+      if (shell) return shell;
+    } catch { /* Try an older complete generation, never incomplete HTML. */ }
+  }
 }
 
 function lineCallbackUrl(client) {
@@ -390,7 +504,14 @@ self.addEventListener("message", (event) => {
 });
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(Promise.all([precacheAppShell(), skipWaiting()]).then(() => undefined));
+  event.waitUntil(precacheAppShell().then(skipWaiting).catch(async error => {
+    try {
+      const cache = await openStaticCache();
+      // A reinstall may share an existing complete generation. Keep it intact.
+      if (!await cachedShell(cache)) await caches.delete(STATIC_CACHE_NAME);
+    } catch { /* Cleanup must not mask the failed installation. */ }
+    throw error;
+  }));
 });
 
 self.addEventListener("activate", (event) => {

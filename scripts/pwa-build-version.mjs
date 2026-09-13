@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 const WORKER_FILE = "push-service-worker.js";
 const BUILD_STAMP = /\n?\/\/ matrix-build:[a-f0-9]{16}\s*$/;
 const CACHE_VERSION = /matrix-pwa-shell-(?:__BUILD_ID__|[a-f0-9]{16})/g;
+const BUILD_ASSETS = /const BUILD_ASSET_PATHS = \[[^;]*\];/;
 
 async function listFiles(root, directory = root) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -22,6 +23,13 @@ export async function stampPwaWorker(outDir) {
     .filter((file) => file !== WORKER_FILE)
     .sort();
   const hash = createHash("sha256");
+  const workerPath = path.join(outDir, WORKER_FILE);
+  const template = (await readFile(workerPath, "utf8"))
+    .replace(BUILD_STAMP, "")
+    .replace(CACHE_VERSION, "matrix-pwa-shell-__BUILD_ID__")
+    .replace(BUILD_ASSETS, "const BUILD_ASSET_PATHS = [];")
+    .trimEnd();
+  hash.update(WORKER_FILE).update("\0").update(template).update("\0");
 
   for (const file of files) {
     hash.update(file);
@@ -31,10 +39,9 @@ export async function stampPwaWorker(outDir) {
   }
 
   const buildId = hash.digest("hex").slice(0, 16);
-  const workerPath = path.join(outDir, WORKER_FILE);
-  const worker = (await readFile(workerPath, "utf8"))
-    .replace(BUILD_STAMP, "")
+  const worker = template
     .replace(CACHE_VERSION, `matrix-pwa-shell-${buildId}`)
+    .replace(BUILD_ASSETS, `const BUILD_ASSET_PATHS = ${JSON.stringify(files.filter(file => /^assets\/.*\.(?:css|m?js)$/.test(file)).map(file => `/${file}`))};`)
     .trimEnd();
   await writeFile(workerPath, `${worker}\n// matrix-build:${buildId}\n`);
   return buildId;
