@@ -79,7 +79,7 @@ export function MatrixExplorePage({
   const defaultFiltersFor = (hitValue: string, roadValue: string): ConsecutiveOption[] => {
     if (isTianheng) {
       return hitValue.includes("鎖定2碼")
-        ? ["準9進10", "準11進12"]
+        ? ["準7進8", "準9進10", "準11進12"]
         : filterOptions[hitValue];
     }
     if (title === "Matrix 天衍") {

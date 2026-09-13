@@ -239,13 +239,14 @@ it.each([
   fireEvent.click(screen.getByRole('button', { name: '連準篩選' }));
   const group = screen.getByRole('group', { name: `${resultFilterName}連準篩選` });
   expect(within(group).getAllByRole('button').map(button => button.textContent)).toEqual(options);
-  const defaults: readonly string[] = ruleCount === 2 ? ['準9進10', '準11進12'] : options;
+  const defaults: readonly string[] = ruleCount === 2 ? ['準7進8', '準9進10', '準11進12'] : options;
   expect(within(group).getAllByRole('button').map(button => button.getAttribute('aria-pressed')))
     .toEqual(options.map(option => String(defaults.includes(option))));
   expect(matrixApi.fetchTianhengList).toHaveBeenLastCalledWith(expect.objectContaining({ ruleCount, selectedStreaks: defaults }));
-  fireEvent.click(within(group).getByRole('button', { name: options[0] }));
+  const toggledOption = ruleCount === 2 ? '準7進8' : options[0];
+  fireEvent.click(within(group).getByRole('button', { name: toggledOption }));
   await act(async () => {});
-  const toggled = defaults.includes(options[0]) ? defaults.filter(option => option !== options[0]) : [...defaults, options[0]];
+  const toggled = defaults.includes(toggledOption) ? defaults.filter(option => option !== toggledOption) : [...defaults, toggledOption];
   expect(matrixApi.fetchTianhengList).toHaveBeenLastCalledWith(expect.objectContaining({ selectedStreaks: toggled }));
 });
 
