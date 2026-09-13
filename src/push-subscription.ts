@@ -22,10 +22,15 @@ export class PushSubscriptionError extends Error {
 }
 
 function serviceWorkerContainer(): ServiceWorkerContainer | null {
-  if (typeof Notification === 'undefined' || typeof navigator === 'undefined') return null;
+  if (typeof navigator === 'undefined') return null;
   const serviceWorker = navigator.serviceWorker;
   if (!serviceWorker || typeof serviceWorker.register !== 'function') return null;
   return serviceWorker;
+}
+
+// Notifications are optional; the PWA worker also owns caching and LINE handoff.
+function supportsPushNotifications(): boolean {
+  return typeof Notification !== 'undefined' && serviceWorkerContainer() !== null;
 }
 
 function withRegistrationTimeout<T>(promise: Promise<T>): Promise<T> {
@@ -95,6 +100,7 @@ export async function registerPushServiceWorker(
 }
 
 async function getPushContext(): Promise<PushContext | null> {
+  if (!supportsPushNotifications()) return null;
   try {
     const registration = await registerPushServiceWorker({ update: false });
     const pushManager = registration?.pushManager;
@@ -130,6 +136,7 @@ function subscriptionInput(subscription: PushSubscription) {
 }
 
 export async function getPushStatus(authenticated = true): Promise<PushStatus> {
+  if (!supportsPushNotifications()) return unsupportedStatus();
   if (!authenticated) return { supported: true, permission: Notification.permission, enabled: false };
   const context = await getPushContext();
   if (!context) return unsupportedStatus();
@@ -146,7 +153,7 @@ export async function getPushStatus(authenticated = true): Promise<PushStatus> {
 }
 
 export function enablePushNotifications(publicKey: string, authenticated = false): Promise<PushStatus> {
-  if (!serviceWorkerContainer()) return Promise.resolve(unsupportedStatus());
+  if (!supportsPushNotifications()) return Promise.resolve(unsupportedStatus());
   const permission = Notification.permission;
   if (!authenticated) return Promise.reject(new PushSubscriptionError({ supported: true, permission, enabled: false }));
   const permissionRequest = Notification.requestPermission();

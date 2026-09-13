@@ -101,6 +101,58 @@ async function expectFixedFailure(
 }
 
 describe('PWA push subscriptions', () => {
+  it('registers the PWA worker without Notification or PushManager', async () => {
+    Object.defineProperty(globalThis, 'Notification', { configurable: true, value: undefined });
+    getRegistration.mockResolvedValue(undefined);
+    const registration = { active: { state: 'activated' } };
+    register.mockResolvedValue(registration);
+
+    await expect(registerPushServiceWorker()).resolves.toBe(registration);
+    expect(register).toHaveBeenCalledWith('/push-service-worker.js');
+    expect(requestPermission).not.toHaveBeenCalled();
+  });
+
+  it('updates the existing PWA worker without Notification', async () => {
+    Object.defineProperty(globalThis, 'Notification', { configurable: true, value: undefined });
+
+    await expect(registerPushServiceWorker()).resolves.toBeDefined();
+    expect(updateRegistration).toHaveBeenCalledTimes(1);
+    expect(register).not.toHaveBeenCalled();
+  });
+
+  it.each(['default', 'denied', 'granted'] as const)('registers the PWA worker with %s notification permission', async (permission) => {
+    installSupportedPushApi(permission);
+    getRegistration.mockResolvedValue(undefined);
+
+    await expect(registerPushServiceWorker()).resolves.toBeDefined();
+    expect(register).toHaveBeenCalledWith('/push-service-worker.js');
+    expect(requestPermission).not.toHaveBeenCalled();
+  });
+
+  it.each([true, false])('reports push unsupported without Notification when authenticated=%s', async (authenticated) => {
+    Object.defineProperty(globalThis, 'Notification', { configurable: true, value: undefined });
+    const unsupported = { supported: false, permission: 'default', enabled: false };
+
+    await expect(getPushStatus(authenticated)).resolves.toEqual(unsupported);
+    await expect(enablePushNotifications('key', authenticated)).resolves.toEqual(unsupported);
+    await expect(disablePushNotifications()).resolves.toEqual(unsupported);
+    await expect(cleanupBrowserPushSubscription()).resolves.toBeUndefined();
+    expect(requestPermission).not.toHaveBeenCalled();
+    expect(getSubscription).not.toHaveBeenCalled();
+    expect(memberApi.fetchPushSubscriptionStatus).not.toHaveBeenCalled();
+    expect(memberApi.savePushSubscription).not.toHaveBeenCalled();
+    expect(memberApi.disablePushSubscription).not.toHaveBeenCalled();
+  });
+
+  it('rejects PWA registration when Service Worker is unavailable even with Notification', async () => {
+    installSupportedPushApi('granted');
+    Object.defineProperty(globalThis, 'navigator', { configurable: true, value: {} });
+
+    await expect(registerPushServiceWorker()).rejects.toThrow('PUSH_SERVICE_WORKER_UNSUPPORTED');
+    await expect(getPushStatus(false)).resolves.toEqual({ supported: false, permission: 'default', enabled: false });
+    expect(register).not.toHaveBeenCalled();
+  });
+
   it('enables push with an activated worker even when checking for an update would fail', async () => {
     requestPermission.mockResolvedValue('granted');
     getRegistration.mockResolvedValue({
