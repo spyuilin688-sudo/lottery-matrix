@@ -2,7 +2,7 @@
 
 .home-screen {
   position: absolute;
-  inset: var(--layout-safe-area-top) 0 0;
+  inset: 0;
   box-sizing: border-box;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -113,8 +113,7 @@
   object-fit: contain;
 }
 
-.home-screen .home-asset-image,
-.home-screen .home-logo-image {
+.home-screen .home-asset-image {
   display: block;
   max-width: 100%;
   height: auto;
@@ -122,16 +121,6 @@
   object-position: center;
   -webkit-user-drag: none;
   user-select: none;
-}
-
-.home-screen .brand-header {
-  display: flex;
-  box-sizing: border-box;
-  width: 100%;
-  padding-top: 0;
-  align-items: flex-end;
-  justify-content: center;
-  overflow: visible;
 }
 
 .home-screen .latest-draw-card::before {
@@ -149,10 +138,6 @@
 .home-screen .latest-draw-card > * {
   position: relative;
   z-index: 1;
-}
-
-.home-screen .home-logo-image {
-  object-position: center bottom;
 }
 
 .lottery-switcher--home-style {

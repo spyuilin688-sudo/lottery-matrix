@@ -149,9 +149,9 @@ Matrix 探索、天衡、天衍、天工與狀態頁的驗證過程，依鎖定�
 
 ### 首頁固定 Logo — 2026-09-09
 
-首頁 Logo 固定於內容捲動區上方，沿用正式 MatrixLogo 素材、91.9632% 流動寬度、自動比例高度、390px 內容寬度上限與既有頂部留白。`src/homepage/base.css` 擁有首頁固定品牌列與下方捲動區的排列，`src/homepage/logo-spacing.css` 繼續擁有 Logo 尺寸；品牌列保留自然高度，卡片不會滑入其後方。底部導覽與其他頁面的 Logo 行為維持既有設定。
+首頁 Logo 固定於內容捲動區上方，沿用正式 MatrixLogo 素材、91.9632% 流動寬度、自動比例高度與 390px 內容寬度上限。`src/homepage/base.css` 擁有首頁固定品牌列與下方捲動區的排列；`src/homepage/logo-spacing.css` 統一擁有品牌列與 Logo 的幾何樣式，品牌列保留自然高度，卡片不會滑入其後方。底部導覽與其他頁面的 Logo 行為維持既有設定。
 
-2026-09-10：依使用者確認，首頁 Logo 圖片以 `translateY(-16px)` 單獨上移 16px，由 `src/homepage/logo-spacing.css` 擁有；圖片尺寸、品牌列佔位、安全區與下方內容位置不變。
+2026-09-14：依使用者確認的第一輪修正，首頁容器以 `inset: 0` 填滿畫布，頂部安全區只由 `padding-top: var(--layout-safe-area-top)` 避讓一次。品牌列使用 8px 頂部內距與自然高度，移除 Logo 負位移及品牌列扣減高度公式；圖片以真實尺寸 2154 × 634 預留比例，避免下載前後版面跳動。下方原生捲動區接在品牌列之後，保留既有卡片間距。
 
 ### Home Mark Six numbers — 2026-09-06
 

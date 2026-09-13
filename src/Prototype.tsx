@@ -501,7 +501,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     <FirstVisitGuide enabled={!startupVisible} onNavigate={navigate} />
     <section className="home-screen">
       <BrandLoading visible={startupVisible} onComplete={() => setStartupVisible(false)} />
-      <header className="brand-header home-logo-box"><img className="home-logo-image" src={HOME_ASSETS.logo} alt="樂彩 Matrix" draggable={false} /></header>
+      <header className="brand-header home-logo-box"><img className="home-logo-image" src={HOME_ASSETS.logo} alt="樂彩 Matrix" width={2154} height={634} draggable={false} /></header>
       <MobileScroll className="app-screen home-content">
         <div className="home-layout">
           <main className="screen-content lottery-screen" data-testid="lottery-screen" aria-label="首頁彩種切換元件預覽">
