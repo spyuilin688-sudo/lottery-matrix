@@ -20,8 +20,8 @@ function assertLastBlock(source, selector, pattern) {
   assert.match(body, pattern, `${selector} final rule missing ${pattern}`);
 }
 
-test('homepage brand header owns a bounded responsive top gap and logo is enlarged by 5 percent', () => {
-  assertLastBlock(css, '.home-screen .brand-header', /padding-top:\s*clamp\(8px,\s*1dvh,\s*12px\);/);
+test('homepage brand header owns an 8px top gap and logo is enlarged by 5 percent', () => {
+  assertLastBlock(css, '.home-screen > .brand-header', /padding-top:\s*8px;/);
   assertLastBlock(css, '.home-screen .home-logo-image', /width:\s*91\.9632%;/);
 });
 
@@ -38,6 +38,7 @@ test('homepage surfaces keep their independent responsive inline insets', () => 
 });
 
 test('homepage reserves a logo row above the existing native content scroller', () => {
+  assertBlock(css, '.home-screen', /inset:\s*0;/);
   assertBlock(css, '.home-screen', /grid-template-rows:\s*auto minmax\(0, 1fr\);/);
   assertBlock(css, '.home-screen', /padding-top:\s*var\(--layout-safe-area-top\);/);
   assertBlock(css, '.home-screen > .home-content', /position:\s*relative;/);

@@ -1,17 +1,24 @@
 /* Homepage logo size and header spacing are owned here. */
 .home-screen > .brand-header {
+  display: flex;
+  box-sizing: border-box;
   width: min(100%, 390px);
-  height: calc((min(100vw, 390px) * 0.273114) + clamp(8px, 1dvh, 12px) - 20px);
+  height: auto;
   min-height: 0;
   margin: 0 auto;
-}
-
-.home-screen .brand-header {
-  padding-top: clamp(8px, 1dvh, 12px);
+  padding-top: 8px;
   align-items: flex-start;
+  justify-content: center;
+  overflow: visible;
 }
 
 .home-screen .home-logo-image {
+  display: block;
   width: 91.9632%;
-  transform: translateY(-20px);
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  object-position: center bottom;
+  -webkit-user-drag: none;
+  user-select: none;
 }

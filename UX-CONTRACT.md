@@ -288,7 +288,7 @@ After result notification dispatch, the trusted producer requests immediate back
 
 ## 首頁固定 Logo — 2026-09-09
 
-依使用者確認，首頁 Logo 位於 `MobileScroll` 外的固定品牌列；首頁內容仍由既有 `.mobile-scroll` 使用原生上下捲動。品牌列依圖片比例保留實際高度，下方捲動區填滿剩餘空間，內容與鍵盤焦點不會滑入 Logo 後方。保留既有 Logo 大小、安全區、卡片間距及固定底部導覽。2026-09-10 依使用者確認，僅 Logo 圖片上移 16px，品牌列佔位與下方內容位置不變。此行為限首頁，功能頁共用 `MobileScroll` 與 Logo 不變。
+依使用者確認，首頁 Logo 位於 `MobileScroll` 外的固定品牌列；首頁內容仍由既有 `.mobile-scroll` 使用原生上下捲動。2026-09-14 第一輪修正後，首頁頂部安全區只計算一次，Logo 在安全區後保留 8px 頂部留白；品牌列依圖片比例自然佔位，不使用負位移或扣減高度公式。圖片以真實尺寸 2154 × 634 預留比例，下方捲動區填滿剩餘空間，內容與鍵盤焦點不會滑入 Logo 後方。保留既有 Logo 大小、卡片間距及固定底部導覽。此行為限首頁，功能頁共用 `MobileScroll` 與 Logo 不變。
 
 
 ## Core settings and header backgrounds — 2026-09-12

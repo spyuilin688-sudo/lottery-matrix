@@ -29,18 +29,19 @@ for (const viewport of viewports) {
       const cards = Array.from(root.querySelectorAll(".matrix-status-card"));
       const core = root.querySelector(".matrix-core-banner")!.getBoundingClientRect();
       const canvas = root.getBoundingClientRect();
-      const switcher = root.querySelector(".lottery-switcher")!;
-      const switcherTop = switcher.getBoundingClientRect().top;
+      const appCanvas = root.closest(".app-mobile-canvas")!.getBoundingClientRect();
+      const scroller = root.querySelector(".mobile-scroll")!.getBoundingClientRect();
+      const safeAreaTop = parseFloat(getComputedStyle(root).paddingTop);
       const transform = getComputedStyle(logo).transform;
-      logo.style.transform = "none";
-      const originalLogo = logo.getBoundingClientRect();
-      const originalSwitcherTop = switcher.getBoundingClientRect().top;
-      logo.style.removeProperty("transform");
       return {
         transform,
-        logoTopDelta: logoRect.top - originalLogo.top,
-        logoHeightDelta: logoRect.height - originalLogo.height,
-        switcherTopDelta: switcherTop - originalSwitcherTop,
+        logoTopGap: logoRect.top - header.top,
+        homeCanvasTopGap: canvas.top - appCanvas.top,
+        logoCanvasTopGap: logoRect.top - appCanvas.top - safeAreaTop,
+        headerSafeAreaGap: header.top - canvas.top - safeAreaTop,
+        headerBottomGap: header.bottom - logoRect.bottom,
+        scrollerGap: scroller.top - header.bottom,
+        logoInsetTop: logoRect.top - canvas.top,
         logoWidth: logoRect.width,
         expectedLogoWidth: header.width * 0.87584 * 1.05,
         logoHeight: logoRect.height,
@@ -52,10 +53,14 @@ for (const viewport of viewports) {
       };
     });
     console.log(JSON.stringify({ viewport, ...geometry }));
-    expect(geometry.transform).toBe("matrix(1, 0, 0, 1, 0, -16)");
-    expect(geometry.logoTopDelta).toBe(-16);
-    expect(geometry.logoHeightDelta).toBe(0);
-    expect(geometry.switcherTopDelta).toBe(0);
+    expect(geometry.transform).toBe("none");
+    expect(Math.abs(geometry.logoTopGap - 8)).toBeLessThan(0.1);
+    expect(Math.abs(geometry.homeCanvasTopGap)).toBeLessThan(0.1);
+    expect(Math.abs(geometry.logoCanvasTopGap - 8)).toBeLessThan(0.1);
+    expect(Math.abs(geometry.headerSafeAreaGap)).toBeLessThan(0.1);
+    expect(Math.abs(geometry.headerBottomGap)).toBeLessThan(0.1);
+    expect(Math.abs(geometry.scrollerGap)).toBeLessThan(0.1);
+    expect(geometry.logoInsetTop).toBeGreaterThanOrEqual(8);
     expect(Math.abs(geometry.logoWidth - geometry.expectedLogoWidth)).toBeLessThan(0.1);
     expect(Math.abs(geometry.logoHeight - geometry.expectedLogoHeight)).toBeLessThan(0.1);
     expect(geometry.cardCoreGap).toBeGreaterThanOrEqual(8.98);
