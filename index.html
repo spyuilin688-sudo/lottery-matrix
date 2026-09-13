@@ -4,6 +4,80 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#02070c" />
+    <script id="matrix-startup-recovery">
+      (() => {
+        // Runs before Vite's CSS/module tags, even when React cannot start.
+        const states = new Map();
+        const reloadKey = 'matrix-pwa-asset-reload';
+        const initialUrl = window.location.href;
+        let edited = false;
+        let update;
+        document.addEventListener('input', () => { edited = true; }, true);
+        document.addEventListener('change', () => { edited = true; }, true);
+
+        const isCallback = (href) => {
+          const url = new URL(href);
+          const hash = new URLSearchParams(url.hash.slice(1));
+          return ['code', 'error', 'error_code', 'access_token', 'matrix_line_return']
+            .some(key => url.searchParams.has(key) || hash.has(key));
+        };
+        const reloadOnce = () => {
+          if (edited || navigator.onLine === false || isCallback(initialUrl) || isCallback(window.location.href)) return;
+          try {
+            if (sessionStorage.getItem(reloadKey)) return;
+            sessionStorage.setItem(reloadKey, '1');
+          } catch { return; } // Without a persistent guard, never auto-reload.
+          window.location.reload();
+        };
+        const updateWorker = () => {
+          if (update) return update;
+          const sw = navigator.serviceWorker;
+          if (!sw || typeof sw.register !== 'function') return Promise.resolve();
+          update = new Promise(resolve => {
+            const finish = () => {
+              clearTimeout(timer);
+              sw.removeEventListener('controllerchange', finish);
+              resolve();
+            };
+            const timer = setTimeout(finish, 4000);
+            sw.addEventListener('controllerchange', finish);
+            Promise.resolve().then(() => sw.getRegistration?.('/push-service-worker.js'))
+              .then(registration => registration ? registration.update() : sw.register('/push-service-worker.js'))
+              .then(registration => {
+                if (!registration?.installing && !registration?.waiting) finish();
+              }).catch(finish);
+          });
+          return update;
+        };
+        window.addEventListener('error', event => {
+          const element = event.target;
+          const stylesheet = element?.tagName === 'LINK' && element.rel === 'stylesheet';
+          const entry = element?.tagName === 'SCRIPT' && element.type === 'module';
+          if (!stylesheet && !entry) return;
+          const url = new URL(stylesheet ? element.href : element.src, window.location.href);
+          if (url.origin !== new URL(window.location.href).origin || !url.pathname.startsWith('/assets/')) return;
+          if (states.get(element) === 'waiting') return;
+          if (states.has(element)) { reloadOnce(); return; }
+          states.set(element, 'waiting');
+          void updateWorker().then(() => {
+            states.set(element, 'retried');
+            if (entry) { reloadOnce(); return; }
+            // Retry the same hashed CSS, avoiding poisoned old-worker/HTTP cache.
+            // No page reload is needed when this succeeds, preserving all input.
+            if (element.sheet) { states.delete(element); return; }
+            url.searchParams.set('matrix_asset_retry', String(Date.now()));
+            element.href = url.href;
+          });
+        }, true);
+        window.addEventListener('load', event => {
+          if (event.target?.tagName === 'LINK' && event.target.sheet) states.delete(event.target);
+          const styles = [...document.querySelectorAll('link[rel="stylesheet"]')];
+          if (document.readyState === 'complete' && !states.size && styles.length && styles.every(link => link.sheet)) {
+            try { sessionStorage.removeItem(reloadKey); } catch { /* Storage is optional. */ }
+          }
+        }, true);
+      })();
+    </script>
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
