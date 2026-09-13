@@ -293,7 +293,7 @@ After result notification dispatch, the trusted producer requests immediate back
 
 ## Core settings and header backgrounds — 2026-09-12
 
-- Four core pages use the approved 06 flow background; all other non-home PWA headers use 07 geometric. Existing fixed dimensions, logo, back behavior and right-side sticky controls remain.
+- Four core pages (探索、天衡、天衍、天工) retain the approved 06 flow background. Tongxing, number reference and draw history retain 07 geometric. Per the 2026-09-13 reference, every other non-home PWA header uses the shared static gold-arc artwork: dark grain, warm reflection behind the logo and a lower gold arc. BrandHeader owns this mutually exclusive choice; the existing frame owns background rendering. Existing fixed dimensions, logo, titles, back behavior and right-side sticky controls remain.
 - Lottery tabs sit 8px below the frame and retain the existing lottery-change behavior. Core pages reuse the exact draw-sheet LotteryTabs component and styling (36px, 14px type, 2px text-width gold active underline), with keyboard selection and without the redundant lottery select.
 - Explore, Tianheng and Tianyan render their existing hit and advanced controls inside the settings card. The condition row uses each page name (探索條件, 天衡條件, 天衍條件) for both visible text and accessible name, keeps the supplied functions/探索條件.png icon and aligns with the preceding settings rows; Tiangong retains its existing stage settings. No algorithm, entitlement, default or result behavior changes.
 - One 8px header bottom margin separates the frame and the next visible content. History, number reference and tongxing settings share the title border with one internal divider; their floating state is anchored to the same sticky header.

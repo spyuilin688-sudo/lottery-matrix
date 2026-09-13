@@ -2525,6 +2525,12 @@ opacity: .30; box-shadow: none;
 .product-header[data-header-style="flow"] {
   --product-header-background: url("/assets/lottery/header-06-flow.svg");
 }
+.product-header[data-header-style="geometric"] {
+  --product-header-background: url("/assets/lottery/header-07-geometric.svg");
+}
+.product-header[data-header-style="gold-arc"] {
+  --product-header-background: url("/assets/lottery/header-gold-arc.svg");
+}
 .product-header__frame {
   position: relative;
   isolation: isolate;
@@ -2540,7 +2546,7 @@ opacity: .30; box-shadow: none;
   overflow: hidden;
   border: var(--product-header-frame-border-width, 1px) solid rgba(205, 155, 62, .74);
   border-radius: var(--product-header-frame-radius, 10px);
-  background: #020609 var(--product-header-background, url("/assets/lottery/header-07-geometric.svg")) center / cover no-repeat;
+  background: #020609 var(--product-header-background) center / cover no-repeat;
 }
 .product-header__frame[data-actions="true"] {
   --product-header-action-width: var(--product-header-settings-action-width, 60px);
