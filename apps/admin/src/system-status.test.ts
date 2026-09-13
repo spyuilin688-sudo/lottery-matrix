@@ -1,5 +1,5 @@
 import { matrixStorageFixture } from '../backend/matrix-storage-status.fixture';
-import { getMatrixStorageFacts, type SystemStatusItem } from './system-status';
+import { getMatrixStorageFacts, getServiceEvidenceFacts, type SystemStatusItem } from './system-status';
 import { describe, expect, it, vi } from 'vitest';
 import {
   canRefreshCrawler,
@@ -13,6 +13,28 @@ import {
 } from './system-status';
 
 describe('system status client', () => {
+  it('separates member access, historical activity and data reads from successful functional queries', () => {
+    const base: SystemStatusItem = { id: 'supabase-rpc-member_profile', name: '會員資料', description: '', group: '會員', location: 'Supabase', endpoint: '/rest/v1/rpc/member_profile', checkMode: 'registry', checkEvidence: 'registered', ok: true, checkedAt: '2026-09-13T10:00:00Z', responseMs: 1 };
+    expect(getSystemStatusPresentation(base)).toMatchObject({ label: '需會員驗證', tone: 'limited' });
+    const recorded = { ...base, id: 'supabase-rpc-notification_dispatch_mark_skipped', detail: { activity: { state: 'recorded', source: '通知派送略過', observedAt: '2026-09-13T09:00:00Z' } } };
+    expect(getSystemStatusPresentation(recorded)).toMatchObject({ label: '有相關紀錄', tone: 'limited' });
+    expect(getServiceEvidenceFacts(recorded)).toEqual(expect.arrayContaining([{ label: '最近相關紀錄', value: '2026-09-13T09:00:00Z', format: 'date' }]));
+    for (const state of ['none', 'not-recorded', 'unavailable']) {
+      expect(getSystemStatusPresentation({ ...recorded, detail: { activity: { state } } }).tone).toBe('limited');
+    }
+    expect(getSystemStatusPresentation({ ...recorded, ok: false }).tone).toBe('bad');
+    const data = { ...base, id: 'supabase-rpc-matrix_tianyan_list', checkEvidence: 'data' as const };
+    expect(getSystemStatusPresentation(data)).toMatchObject({ label: '分析資料可讀', tone: 'limited', scope: expect.stringContaining('會員') });
+    expect(getSystemStatusPresentation({ ...base, id: 'supabase-rpc-matrix_permission_settings', checkEvidence: 'query' })).toMatchObject({ label: '查詢正常', scope: expect.not.stringMatching(/四彩種|修改資料/) });
+  });
+  it('shows per-lottery sample failures and untested validation without rendering arbitrary payload fields', () => {
+    const base: SystemStatusItem = { id: 'supabase-rpc-matrix_tianheng_validation', name: '天衡驗證', description: '', group: 'Matrix 演算法', location: 'Supabase', endpoint: '/rest/v1/rpc/matrix_tianheng_validation', checkMode: 'registry', checkEvidence: 'query', ok: false, checkedAt: '2026-09-13T10:00:00Z', responseMs: 1, detail: { secret: 'private', samples: [
+      { lottery: '今彩539', ok: true, period: '123', records: 2 }, { lottery: '六合彩', ok: false }, { lottery: '天天樂', ok: true, skipped: true },
+    ] } };
+    const facts = getServiceEvidenceFacts(base);
+    expect(facts).toEqual(expect.arrayContaining([{ label: '今彩539', value: '123 期 · 2 筆 · 通過' }, { label: '六合彩', value: '檢查未通過' }, { label: '天天樂', value: '沒有驗證樣本' }]));
+    expect(JSON.stringify(facts)).not.toContain('private');
+  });
   it('loads the system status endpoint', async () => {
     const get = vi.fn(async () => ({ data: { checkedAt: '2026-08-21T03:00:00Z', items: [] } }));
     await expect(loadSystemStatus({ get })).resolves.toEqual({ checkedAt: '2026-08-21T03:00:00Z', items: [] });
@@ -199,7 +221,7 @@ describe('system status evidence presentation', () => {
     ['query', '查詢正常', 'good'],
     ['no-sample', '缺少測試資料', 'limited'],
     ['live', '連線正常', 'good'],
-    ['registered', 'API 已建立', 'limited'],
+    ['registered', '未驗證操作', 'limited'],
     ['options', '連線正常', 'limited'],
     ['inherited', '主機正常', 'limited'],
     ['reported', '執行正常', 'good'],
@@ -210,8 +232,8 @@ describe('system status evidence presentation', () => {
   });
 
   it('preserves limited evidence for registry and older backend payloads', () => {
-    expect(getSystemStatusPresentation({ ...item, checkMode: 'registry' })).toMatchObject({ label: 'API 已建立', tone: 'limited' });
-    expect(getSystemStatusPresentation({ ...item, checkMode: 'openapi' })).toMatchObject({ label: 'API 已建立', tone: 'limited', scope: 'API 已建立；此操作會修改資料或工作狀態，自動檢查不會執行正式操作。' });
+    expect(getSystemStatusPresentation({ ...item, checkMode: 'registry' })).toMatchObject({ label: '未驗證操作', tone: 'limited' });
+    expect(getSystemStatusPresentation({ ...item, checkMode: 'openapi' })).toMatchObject({ label: '未驗證操作', tone: 'limited', scope: expect.stringContaining('自動檢查不會執行正式操作') });
     expect(getSystemStatusPresentation({ ...item, endpoint: '/functions/v1/notification-pilio' })).toMatchObject({ label: '連線正常', tone: 'limited' });
     expect(getSystemStatusPresentation({ ...item, location: 'Railway', checkMode: 'service' })).toMatchObject({ label: '主機正常', tone: 'limited' });
     expect(getSystemStatusPresentation({ ...item, id: 'supabase-watchdog-heartbeat', checkMode: 'service' })).toMatchObject({ label: '執行正常' });

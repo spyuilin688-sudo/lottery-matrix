@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { expect, it, vi } from 'vitest';
+import { beforeEach, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({ get: vi.fn(async (url: string) => {
   if (url === '/api/bootstrap') return { data: { admin: { id: 'admin', name: '管理員', role: '超級管理員', permissions: { view: true, edit: true } } } };
@@ -15,6 +15,36 @@ const mocks = vi.hoisted(() => ({ get: vi.fn(async (url: string) => {
 vi.mock('@appdeploy/client', () => ({ api: mocks, auth: { signIn: vi.fn(), signOut: vi.fn() } }));
 import AdminApp from './AdminApp';
 import { matrixStorageFixture } from '../backend/matrix-storage-status.fixture';
+beforeEach(() => vi.clearAllMocks());
+
+it('renders query samples and related operation dates with limited evidence visibly distinct from success', async () => {
+  const originalGet = mocks.get.getMockImplementation()!;
+  const base = { group: 'Matrix 演算法', location: 'Supabase', description: '取得正式分析資料。', endpoint: '/rest/v1/rpc/example', checkMode: 'registry', ok: true, checkedAt: '2026-09-13T10:05:00Z', responseMs: 10 };
+  mocks.get.mockImplementation(async (url: string) => url === '/api/system-status' ? { data: { checkedAt: base.checkedAt, items: [
+    { ...base, id: 'supabase-rpc-matrix_tianheng_list', name: 'Matrix 天衡清單', checkEvidence: 'query', detail: { samples: [{ lottery: '今彩539', period: '123', records: 2, ok: true }] } },
+    { ...base, id: 'supabase-rpc-matrix_tianyan_list', name: 'Matrix 天衍清單', checkEvidence: 'data', detail: { probe: 'data' } },
+    { ...base, id: 'supabase-rpc-notification_dispatch_mark_skipped', name: '標記通知派送略過', checkEvidence: 'registered', detail: { activity: { state: 'recorded', source: '通知派送略過', observedAt: '2026-09-13T10:00:00Z' } } },
+  ] } } : originalGet(url));
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  const container = document.createElement('div'); document.body.append(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<AdminApp />));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    await act(async () => [...container.querySelectorAll('button')].find(button => button.textContent?.includes('系統設定'))?.click());
+    const rows = container.querySelectorAll('.statusRow');
+    expect(rows).toHaveLength(3);
+    expect(rows[0].querySelector('.statusBadge.good')?.textContent).toBe('查詢正常');
+    expect(rows[1].querySelector('.statusBadge.limited')?.textContent).toBe('分析資料可讀');
+    expect(rows[1].querySelector('.statusScope')?.textContent).toContain('會員');
+    expect(rows[2].querySelector('.statusBadge.limited')?.textContent).toBe('有相關紀錄');
+    await act(async () => rows[0].querySelector('summary')?.click());
+    expect(rows[0].querySelector('details')?.textContent).toContain('123 期 · 2 筆 · 通過');
+    await act(async () => rows[2].querySelector('summary')?.click());
+    expect(rows[2].querySelector('details')?.textContent).toContain('最近相關紀錄2026/09/13');
+    expect(rows[2].querySelector('details')?.textContent).toContain('通知派送略過');
+  } finally { await act(async () => root.unmount()); container.remove(); mocks.get.mockImplementation(originalGet); }
+});
 
 it('keeps purpose, evidence and errors visible while technical details collapse without calling write APIs', async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -29,7 +59,7 @@ it('keeps purpose, evidence and errors visible while technical details collapse 
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
     const rows = container.querySelectorAll('.statusRow');
     expect(rows).toHaveLength(2);
-    expect(rows[0].querySelector('.statusBadge')?.textContent).toBe('API 已建立');
+    expect(rows[0].querySelector('.statusBadge')?.textContent).toBe('未驗證操作');
     expect(rows[0].querySelector('.statusDescription')?.closest('details')).toBeNull();
     expect(rows[0].querySelector('.statusScope')?.textContent).toContain('此操作會修改資料或工作狀態，自動檢查不會執行正式操作');
     expect(rows[1].querySelector('[role=alert]')?.closest('details')).toBeNull();

@@ -27,7 +27,7 @@ export function isPermissionSettingKey(value: unknown): value is PermissionSetti
     || value === 'registeredMemberFreeAccess';
 }
 
-function parseSettings(value: unknown): MatrixPermissionSettings {
+export function parseSettings(value: unknown): MatrixPermissionSettings {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new PermissionSettingsResponseError();
   }

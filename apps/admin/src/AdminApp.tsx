@@ -37,6 +37,7 @@ import {
   canRetrySystemStatus,
   focusSystemStatusAfterAction,
   getGithubStatusFacts,
+  getServiceEvidenceFacts,
   getMatrixStorageFacts,
   getSystemStatusPresentation,
   formatSystemStatusValue,
@@ -1633,7 +1634,7 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
                           <div><dt>API 位址</dt><dd className="statusEndpoint">{item.endpoint}</dd></div>
                           <div><dt>檢查時間</dt><dd>{formatAdminDateTime(item.checkedAt)}</dd></div>
                           <div><dt>回應時間</dt><dd>{item.responseMs} ms</dd></div>
-                          {[...getGithubStatusFacts(item), ...getMatrixStorageFacts(item)].map((fact) => (
+                          {[...getGithubStatusFacts(item), ...getMatrixStorageFacts(item), ...getServiceEvidenceFacts(item)].map((fact) => (
                             <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.format === "date" ? formatAdminDateTime(fact.value) : text(fact.value)}</dd></div>
                           ))}
                           {item.id !== "matrix-storage" && detail?.status !== undefined && <div><dt>{typeof detail.status === "number" ? "回應代碼" : "執行結果"}</dt><dd>{formatSystemStatusValue(detail.status)}</dd></div>}
