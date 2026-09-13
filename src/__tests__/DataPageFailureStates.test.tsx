@@ -26,6 +26,12 @@ vi.mock('../member-api', async (importOriginal) => ({
 }));
 
 vi.mock('../subscription-purchase-visibility', () => ({ useSubscriptionPurchaseVisible: () => true }));
+vi.mock('../lib/supabase', () => ({
+  getSupabaseClient: () => ({ auth: {
+    getSession: async () => ({ data: { session: { access_token: 'member-token', user: { id: 'member' } } }, error: null }),
+    onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+  } }),
+}));
 
 import { FeaturePageRouter } from '../FeaturePagesPatched';
 
