@@ -80,7 +80,7 @@ describe("Matrix 牌單 layout", () => {
     expect(imageStyles.height).toBe("auto");
   });
 
-  it("uses 14px order-row gutters while retaining the 16px shared page inset and 34px controls", async () => {
+  it("uses 12px order-row gutters while retaining the 16px shared page inset and 34px controls", async () => {
     await renderMatrixCardPage();
 
     const body = document.querySelector(".feature-body");
@@ -94,7 +94,7 @@ describe("Matrix 牌單 layout", () => {
     expect(sortedOrder).toHaveAttribute("aria-selected", "true");
     expect(drawOrder).toHaveAttribute("aria-selected", "false");
     expect(getComputedStyle(document.documentElement).getPropertyValue("--layout-page-inline")).toBe("16px");
-    expect(getComputedStyle(body!).paddingInline).toBe("14px");
+    expect(getComputedStyle(body!).paddingInline).toBe("12px");
     expect(getComputedStyle(orderTabs!).marginLeft).toBe("0px");
     expect(getComputedStyle(orderTabs!).marginRight).toBe("0px");
     expect(getComputedStyle(drawOrder).height).toBe("34px");

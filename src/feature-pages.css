@@ -774,8 +774,8 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .matrix-card-body {
   --lottery-tabs-bottom-gap: 0px;
   display: grid;
-  grid-template-columns: [order-start] 2px [content-start] minmax(0, 1fr) [content-end] 2px [order-end];
-  padding-inline: 14px;
+  grid-template-columns: [order-start] 4px [content-start] minmax(0, 1fr) [content-end] 4px [order-end];
+  padding-inline: 12px;
 }
 .matrix-card-body > :not(.matrix-card-order) { grid-column: content; }
 .matrix-ticket { position: relative; box-sizing: border-box; display: grid; min-height: 0; padding: 10px; place-items: center; border: 1px solid #be8e2f; border-radius: 16px; background: radial-gradient(circle at 50% 20%, rgba(156, 108, 28, .24), transparent 34%), linear-gradient(145deg, #07111a, #02070c); overflow: hidden; }
