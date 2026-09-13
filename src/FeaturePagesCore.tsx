@@ -1,3 +1,4 @@
+import { DAILY_SORTED_ONLY_DESCRIPTION, supportsDrawOrder, useLotteryOrder, normalizeLotteryOrder } from "./use-lottery-order";
 import { subscribeLotteryRefresh } from "./lottery-data-refresh";
 import { BrandHeader, HeaderSettingsButton, type HeaderSettings } from "./features/BrandHeader";
 import { useTimedState } from "./use-timed-state";
@@ -180,7 +181,8 @@ function PatchedDrawHistoryPage({
   const [dateFilterTouched, setDateFilterTouched] = useState(false);
   const [historyFilterPriority, setHistoryFilterPriority] = useState<"date" | "range">("range");
   const [range, setRange] = useTimedState("history-range", "1000期");
-  const [numberOrder, setNumberOrder] = useTimedState("history-order", "依號碼由小到大排序");
+  const [requestedOrder, setNumberOrder] = useTimedState("history-order", "依號碼由小到大排序");
+  const numberOrder = useLotteryOrder(lottery, requestedOrder, setNumberOrder, "依號碼由小到大排序");
   const [appliedFilters, setAppliedFilters] = useState({ issue: "", date: "" });
   const [appliedHistorySettings, setAppliedHistorySettings] = useState({ lottery, range, numberOrder });
   const [page, setPage] = useState(1);
@@ -223,7 +225,7 @@ function PatchedDrawHistoryPage({
 
   const changeLottery = (value: LotteryId) => {
     setLottery(value);
-    setAppliedHistorySettings((current) => ({ ...current, lottery: value }));
+    setAppliedHistorySettings((current) => ({ ...current, lottery: value, numberOrder: normalizeLotteryOrder(value, current.numberOrder, "依號碼由小到大排序") }));
     setAppliedFilters({ issue: "", date: "" });
     setDateFilterTouched(false);
     setHistoryFilterPriority("range");
@@ -261,7 +263,7 @@ function PatchedDrawHistoryPage({
     <section className="history-filter-panel tool-settings-panel" data-floating={filterFloating} role={filterFloating ? "dialog" : "region"} aria-label="歷史篩選設定" hidden={!filterExpanded}>
       <div className="history-filter-primary-row tool-settings-primary-row">
         <div className="select-box native-select"><select aria-label="彩種" value={lottery} onChange={(event) => changeLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
-        <div className="select-box native-select history-order-select"><select aria-label="號碼順序" value={numberOrder} onChange={(event) => setNumberOrder(event.target.value)}><option>依號碼由小到大排序</option><option>依實際開獎順序排序</option></select><ChevronDownIcon aria-hidden="true" /></div>
+        <div className="select-box native-select history-order-select"><select aria-label="號碼順序" aria-description={!supportsDrawOrder(lottery) ? DAILY_SORTED_ONLY_DESCRIPTION : undefined} value={numberOrder} onChange={(event) => setNumberOrder(event.target.value)}><option>依號碼由小到大排序</option><option disabled={!supportsDrawOrder(lottery)}>依實際開獎順序排序</option></select><ChevronDownIcon aria-hidden="true" /></div>
         <button type="button" className="tool-settings-reset history-reset-trigger" onClick={resetHistory}><ReloadIcon aria-hidden="true" /><span>重設</span></button>
       </div>
       {yearError ? <p role="alert">年份載入失敗 <button type="button" onClick={() => setYearRevision(value => value + 1)}>重試年份</button></p> : null}
@@ -312,7 +314,8 @@ function PatchedDrawHistoryPage({
 function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickActive }: { onNavigate: Navigate } & BottomNavCallbacks) {
   const appDialog = useAppDialog();
   const [lottery, setLottery] = useTimedState<LotteryId>("tongxing-lottery", "今彩539");
-  const [order, setOrder] = useTimedState("tongxing-order", "依號碼由小到大排序");
+  const [requestedOrder, setOrder] = useTimedState("tongxing-order", "依號碼由小到大排序");
+  const order = useLotteryOrder(lottery, requestedOrder, setOrder, "依號碼由小到大排序");
   const [period, setPeriod] = useTimedState("tongxing-period", "1期");
   const [searched, setSearched] = useTimedState("tongxing-searched", false);
   const [values, setValues] = useTimedState("tongxing-values", ["", "", ""]);
@@ -398,7 +401,7 @@ function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickA
 
   const tongxingSettings = (
     <section className="tongxing-query tongxing-panel-scope tool-settings-panel" data-floating={settingsFloating} role={settingsFloating ? "dialog" : "region"} aria-label="同星探索設定" hidden={!settingsExpanded}>
-      <div className="query-selects tool-settings-primary-row"><div className="select-box native-select"><select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div><div className="select-box native-select tongxing-order-select"><select aria-label="號碼順序" value={order} onChange={(event) => setOrder(event.target.value)}><option value="依號碼由小到大排序">依號碼由小到大排序</option><option value="依實際開獎順序排序">依實際開獎順序排序</option></select><ChevronDownIcon aria-hidden="true" /></div></div>
+      <div className="query-selects tool-settings-primary-row"><div className="select-box native-select"><select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div><div className="select-box native-select tongxing-order-select"><select aria-label="號碼順序" aria-description={!supportsDrawOrder(lottery) ? DAILY_SORTED_ONLY_DESCRIPTION : undefined} value={order} onChange={(event) => setOrder(event.target.value)}><option value="依號碼由小到大排序">依號碼由小到大排序</option><option value="依實際開獎順序排序" disabled={!supportsDrawOrder(lottery)}>依實際開獎順序排序</option></select><ChevronDownIcon aria-hidden="true" /></div></div>
       <div className="same-star-fields">{values.map((value, index) => <input key={index} aria-label={`號碼 ${index + 1}`} value={value} inputMode="numeric" pattern="(0[1-9]|[1-4][0-9])" maxLength={2} onClick={(event) => event.currentTarget.select()} onChange={(event) => setValues(updateLookupInputValues(values, index, event.target.value))} onBlur={() => setValues(finalizeLookupInputValues(values, index))} />)}<span>之後下</span><div className="select-box native-select same-star-period-select"><select aria-label="之後期數" value={period} onChange={(event) => setPeriod(event.target.value)}>{Array.from({ length: 30 }, (_, index) => `${index + 1}期`).map((item) => <option value={item} key={item}>{item}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div><span>開出</span></div>
       <button type="button" className="primary-action branded-explore-action" onClick={handleSearch}><MagnifyingGlassIcon /><span>開始探索</span></button>
     </section>

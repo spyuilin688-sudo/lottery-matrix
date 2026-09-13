@@ -1,3 +1,4 @@
+import { DAILY_SORTED_ONLY_DESCRIPTION, supportsDrawOrder, useLotteryOrder } from "../use-lottery-order";
 import { subscribeLotteryRefresh } from "../lottery-data-refresh";
 import { useReferenceWindow } from "../reference-window";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -12,7 +13,8 @@ import { useTimedState, useLotteryHistory, getHistoryLimit, getHistoryOrder, Fea
 export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const [lottery, setLottery] = useTimedState<LotteryId>("reference-lottery", "今彩539");
   const [range, setRange] = useTimedState("reference-range", "1000期");
-  const [order, setOrder] = useTimedState("reference-order", "依號碼由小到大排序");
+  const [requestedOrder, setOrder] = useTimedState("reference-order", "依號碼由小到大排序");
+  const order = useLotteryOrder(lottery, requestedOrder, setOrder, "依號碼由小到大排序");
   const [inputs, setInputs] = useTimedState("reference-inputs", ["", "", ""]);
   const [appliedLottery, setAppliedLottery] = useState<LotteryId>(lottery);
   const [appliedRange, setAppliedRange] = useState(range);
@@ -156,12 +158,12 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
         </div>
         <div className="select-box native-select reference-select reference-order-select">
           <select
-            aria-label="號碼順序"
+            aria-label="號碼順序" aria-description={!supportsDrawOrder(lottery) ? DAILY_SORTED_ONLY_DESCRIPTION : undefined}
             value={order}
             onChange={(event) => setOrder(event.target.value)}
           >
             <option value="依號碼由小到大排序">依號碼由小到大排序</option>
-            <option value="依實際開獎順序排序">依實際開獎順序排序</option>
+            <option value="依實際開獎順序排序" disabled={!supportsDrawOrder(lottery)}>依實際開獎順序排序</option>
           </select>
           <ChevronDownIcon aria-hidden="true" />
         </div>

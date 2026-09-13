@@ -798,6 +798,10 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   background: #07111a;
   color: #c8b994;
 }
+.matrix-card-order button:disabled {
+  opacity: .55;
+  cursor: default;
+}
 .matrix-card-order button.is-selected {
   border-color: #d7a93f;
   background: #241908;
