@@ -16,6 +16,8 @@ type WorkerRequest = {
 type WorkerHandler = (event: Record<string, unknown>) => void;
 
 const origin = 'https://matrix.test';
+const shellHtml = '<link rel="stylesheet" href="/assets/app.css"><script type="module" src="/assets/app.js"></script><body>cached app shell</body>';
+const typedResponse = (body: string, type: string) => new Response(body, { headers: { 'content-type': type } });
 
 function requestKey(request: string | WorkerRequest) {
   return new URL(typeof request === 'string' ? request : request.url, origin).href;
@@ -68,7 +70,14 @@ function createWorkerHarness(options: {
     registration: { showNotification },
     skipWaiting,
   };
-  const network = vi.fn<(...args: unknown[]) => Promise<Response>>();
+  const network = vi.fn<(...args: unknown[]) => Promise<Response>>(async (request) => {
+    const url = requestKey(request as string | WorkerRequest);
+    if (url.endsWith('.css')) return typedResponse('body { color: gold }', 'text/css');
+    if (url.endsWith('.js')) return typedResponse('/* app */', 'text/javascript');
+    if (url.endsWith('.png')) return typedResponse('image', 'image/png');
+    if (url.endsWith('.webmanifest')) return typedResponse('{}', 'application/manifest+json');
+    return typedResponse(shellHtml, 'text/html');
+  });
   const source = readFileSync(`${process.cwd()}/public/push-service-worker.js`, 'utf8');
   new Function('self', 'caches', 'fetch', source)(worker, cacheStorage, network);
 
@@ -161,7 +170,7 @@ describe('combined Push and PWA service worker', () => {
   it('returns a cached static asset after a successful first request goes offline', async () => {
     const worker = createWorkerHarness();
     const request: WorkerRequest = { url: `${origin}/assets/app.js`, method: 'GET', destination: 'script' };
-    worker.network.mockResolvedValueOnce(new Response('bundle-v1'));
+    worker.network.mockResolvedValueOnce(typedResponse('bundle-v1', 'text/javascript'));
 
     const online = await worker.dispatchFetch(request);
     expect(await online.response?.text()).toBe('bundle-v1');
@@ -174,12 +183,12 @@ describe('combined Push and PWA service worker', () => {
 
   it('uses the cached app shell when a navigation request fails and returns a non-empty fallback when none exists', async () => {
     const worker = createWorkerHarness();
-    worker.entries.set(requestKey('/'), new Response('cached app shell'));
+    await worker.dispatchLifecycle('install');
     const navigation: WorkerRequest = { url: `${origin}/explore`, method: 'GET', mode: 'navigate', destination: 'document' };
     worker.network.mockRejectedValueOnce(new Error('offline'));
 
     const cached = await worker.dispatchFetch(navigation);
-    expect(await cached.response?.text()).toBe('cached app shell');
+    expect(await cached.response?.text()).toBe(shellHtml);
 
     const empty = createWorkerHarness();
     empty.network.mockRejectedValueOnce(new Error('offline'));
@@ -190,13 +199,13 @@ describe('combined Push and PWA service worker', () => {
 
   it('uses the network response when Cache Storage cannot open or write', async () => {
     const unavailable = createWorkerHarness({ cacheOpenFailure: true });
-    unavailable.network.mockResolvedValueOnce(new Response('network-without-cache'));
+    unavailable.network.mockResolvedValueOnce(typedResponse('network-without-cache', 'text/css'));
     const unavailableResult = await unavailable.dispatchFetch({ url: `${origin}/assets/app.css`, method: 'GET', destination: 'style' });
     expect(await unavailableResult.response?.text()).toBe('network-without-cache');
     await unavailableResult.waited;
 
     const full = createWorkerHarness({ cachePutFailure: true });
-    full.network.mockResolvedValueOnce(new Response('network-with-full-cache'));
+    full.network.mockResolvedValueOnce(typedResponse('network-with-full-cache', 'text/css'));
     const fullResult = await full.dispatchFetch({ url: `${origin}/assets/app.css`, method: 'GET', destination: 'style' });
     expect(await fullResult.response?.text()).toBe('network-with-full-cache');
     await fullResult.waited;
@@ -228,6 +237,7 @@ describe('combined Push and PWA service worker', () => {
 
   it('cleans prior PWA cache versions without blocking activation when deletion fails', async () => {
     const worker = createWorkerHarness({ cacheDeleteFailure: true });
+    await worker.dispatchLifecycle('install');
 
     await expect(worker.dispatchLifecycle('activate')).resolves.toBeUndefined();
 
