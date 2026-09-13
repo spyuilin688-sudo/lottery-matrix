@@ -31,6 +31,7 @@ from app.services.notification_events import (
     matrix_status_event,
 )
 from app.settings import load_settings
+from app.services.marksix_calendar import sync_marksix_calendar
 
 
 EXPLORE_BATCH_SIZE = 10
@@ -501,6 +502,10 @@ def main(argv: list[str] | None = None) -> int:
     settings = load_settings()
     repository = create_supabase_repository(settings.supabase_url, settings.supabase_secret_key)
     with httpx.Client() as client:
+        if lottery == '六合彩':
+            calendar = sync_marksix_calendar(repository, client)
+            if calendar['status'] != 'not-due':
+                print(f"六合彩 calendar {calendar['status']}")
         source = LatestDrawSource(client)
         notification_emitter = create_notification_emitter(settings, client)
         if notification_emitter is None:
