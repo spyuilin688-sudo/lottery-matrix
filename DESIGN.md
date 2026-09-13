@@ -129,7 +129,7 @@ components:
 
 ### Navigation and data display
 
-2026-09-13：Matrix 牌單的順球／落球按鈕列左右留白各 12px，按鈕間距 8px、高度 34px。共用 `FeatureShell` 以 `bodyLayout="matrix-card"` 選用牌單網格；彩種、牌單預覽、下載按鈕與狀態訊息位於內側內容欄，保留左右各 16px。`src/feature-pages.css` 是唯一排版來源，標準 `.feature-body` 留白規則明確排除牌單網格，不以負外距、位移或行內樣式補償。牌單容器保留 10px 內距、6px 內框與完整等比例圖片，移除舊縮圖尺寸、舊票券裝飾規則及 `matrix-ticket--preview` 覆寫層；下載按鈕沿用共用品牌外觀與 44px 高度。
+2026-09-13：Matrix 牌單的順球／落球按鈕列左右留白各 18px，按鈕間距 8px、高度 34px。共用 `FeatureShell` 以 `bodyLayout="matrix-card"` 選用牌單網格；彩種、牌單預覽、下載按鈕與狀態訊息位於內容欄，保留左右各 16px；按鈕欄在內容欄兩側各內縮 2px。`src/feature-pages.css` 是唯一排版來源，標準 `.feature-body` 留白規則明確排除牌單網格，不以負外距、位移或行內樣式補償。牌單容器保留 10px 內距、6px 內框與完整等比例圖片，移除舊縮圖尺寸、舊票券裝飾規則及 `matrix-ticket--preview` 覆寫層；下載按鈕沿用共用品牌外觀與 44px 高度。
 
 同日清理牌單可命中的共用舊規則：`.feature-screen` 合併於原本較後方的正式容器規則，保留既有套用順序；內容底部由非首頁的直接子層規則單獨保留「底部導覽避讓值 + 8px」。共用 48px 操作高度明確排除牌單下載變體，44px 由 `.matrix-card-download-action` 單獨擁有；品牌裝飾 `::before` 與 `::after` 各自設定位置。外層 `.app-screen` 背景僅由 `src/prototype.css` 擁有，移除 `src/styles.css` 的舊白底。品牌背景、選取狀態、安全區與鍵盤避讓沿用現有行為。
 
