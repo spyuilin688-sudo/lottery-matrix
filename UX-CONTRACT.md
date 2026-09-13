@@ -307,3 +307,12 @@ After result notification dispatch, the trusted producer requests immediate back
 - History, number reference and tongxing first-row selects keep native keyboard behavior, existing option labels, values and heights. Their shared frame uses a 4px chamfer, muted gold 1px outline and no glow; hover/focus brighten the outline. Second-row fields, resets, requests and result behavior are unchanged.
 
 - Core condition options display ASCII parentheses with exactly one U+0020 space before the opening parenthesis, e.g. `準5+ (鎖定2碼)`. Button accessible names match visible text. Existing internal condition values and request/default selection behavior remain intact.
+
+
+## Admin service evidence — 2026-09-13
+
+- Existing `api-status-inventory.ts` owns RPC read/write classification; `system-status.ts` owns badges and evidence facts in the existing System Settings cards. No second status page is introduced.
+- Public Explore/Tianheng list and validation checks query all four lotteries, sharing list samples and pinning the validation period/version. Permission settings are actually read and validated. Empty lists leave validation explicitly untested.
+- Tianyan/Tiangong diagnostics use the canonical active version resolver and artifact reader through a service-only, metadata-only RPC. The UI states that this verifies sorted analysis data; member authorization and request filtering are not tested. Existing member RPC grants and entitlements remain authoritative.
+- Write operations show related timestamps from existing persisted records, when available. These are not per-call audit logs or proof of current functional success. Missing, overwritten, unavailable and unrecorded history remain distinguishable and do not imply an outage. Automatic checks do not trigger notifications, member writes, lease acquisition or recovery.
+- Per-lottery outcomes and operation sources/times appear in the existing disclosure, with safe metadata only. Verification: targeted backend, SQL permission/data tests and `system-status` component tests.

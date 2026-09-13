@@ -1,4 +1,5 @@
 import { matrixStorageStatusId, parseMatrixStorageHealth } from '../backend/matrix-storage-status';
+import { apiStatusInventory, type ApiStatusDefinition, type ApiCheckEvidence } from '../backend/api-status-inventory';
 
 export type SystemStatusItem = {
   id: string;
@@ -8,7 +9,8 @@ export type SystemStatusItem = {
   location: 'Supabase' | 'GitHub' | 'Railway';
   endpoint: string;
   checkMode: 'live' | 'openapi' | 'registry' | 'service';
-  checkEvidence?: 'live' | 'registered' | 'options' | 'inherited' | 'reported' | 'query' | 'no-sample';
+  checkEvidence?: ApiCheckEvidence;
+  rpcAccess?: ApiStatusDefinition['rpcAccess'];
   ok: boolean;
   healthState?: 'healthy' | 'running' | 'waiting' | 'unknown' | 'failed';
   checkedAt: string;
@@ -84,19 +86,34 @@ export function getSystemStatusPresentation(item: SystemStatusItem) {
         : item.location === 'Railway' && item.checkMode === 'service' ? 'inherited'
           : item.id === 'supabase-watchdog-heartbeat' || item.id.startsWith('cron-') ? 'reported' : 'live'
   );
-  const memberRead = /(?:matrix_(?:tianyan|tiangong)_(?:list|validation)|matrix_custom_status_list|member_(?:referral_summary|profile|notification_settings_get|pending_transfer_request|payment_history_get|push_subscription_status))$/.test(item.id);
+  const access = item.rpcAccess ?? (apiStatusInventory.find(definition => definition.id === item.id) ?? apiStatusInventory.find(definition => definition.endpoint === item.endpoint))?.rpcAccess;
+  const activity = isRecord(item.detail) && isRecord(item.detail.activity) ? item.detail.activity : null;
+  const registration = access === 'member-read'
+    ? { label: '需會員驗證', tone: 'limited', scope: 'API 已建立；此查詢需要會員登入，自動檢查尚未驗證會員查詢流程。' }
+    : access === 'public-read'
+      ? { label: '尚未驗證查詢', tone: 'limited', scope: '目前僅確認 API 已建立；請重新檢查以取得實際查詢結果。' }
+      : activity?.state === 'recorded'
+        ? { label: '有相關紀錄', tone: 'limited', scope: '已找到正式資料中的相關操作紀錄；可在明細查看時間與來源，本次未重新執行操作。' }
+        : activity?.state === 'none'
+          ? { label: '尚無相關紀錄', tone: 'limited', scope: 'API 已建立，目前保留的資料中尚無相關紀錄；沒有紀錄不代表功能故障。' }
+          : activity?.state === 'unavailable'
+            ? { label: '紀錄待確認', tone: 'limited', scope: 'API 已建立，但本次無法讀取相關紀錄；請重新檢查。' }
+            : { label: '未驗證操作', tone: 'limited', scope: 'API 已建立；此操作會修改資料或工作狀態，自動檢查不會執行正式操作。目前沒有可獨立辨識的執行紀錄。' };
+  const permissionQuery = item.id === 'supabase-rpc-matrix_permission_settings';
   const presentations = {
-    query: { label: '查詢正常', tone: 'good', scope: '四彩種均完成實際查詢，回傳資料格式正常。' },
-    'no-sample': { label: '缺少測試資料', tone: 'limited', scope: '探索查詢正常，但部分彩種沒有符合條件的結果，本次無法完整檢查展開資料。' },
+    query: { label: '查詢正常', tone: 'good', scope: permissionQuery ? '已實際讀取目前權限設定，兩項開關、版本與更新時間格式正常。' : '四彩種均完成實際查詢，回傳資料格式正常。' },
+    data: { label: '分析資料可讀', tone: 'limited', scope: '四彩種順球分析資料已完成讀取檢查；會員登入、權限與查詢篩選流程仍需會員驗證。' },
+    'no-sample': { label: '缺少測試資料', tone: 'limited', scope: isRecord(item.detail) && item.detail.probe === 'data' ? '分析資料可讀，但部分彩種沒有驗證樣本；本次未驗證會員查詢流程。' : '清單查詢正常，但部分彩種沒有符合條件的結果，本次無法完整檢查展開資料。' },
     live: { label: '連線正常', tone: 'good', scope: '此項連線或資料讀取檢查已通過。' },
-    registered: { label: 'API 已建立', tone: 'limited', scope: memberRead ? '此查詢需要會員登入；自動檢查僅確認 API 已建立，沒有讀取會員資料。' : 'API 已建立；此操作會修改資料或工作狀態，自動檢查不會執行正式操作。' },
+    registered: registration,
     options: { label: '連線正常', tone: 'limited', scope: '已收到連線回應；自動檢查不會派送通知、處理事件或執行登出。' },
     inherited: { label: '主機正常', tone: 'limited', scope: '主機與排程查詢正常；自動檢查不會啟動資料更新或復原工作。' },
     reported: { label: '執行正常', tone: 'good', scope: '最近的執行紀錄正常；這次檢查沒有重新執行工作。' },
   } as const;
   const presentation = presentations[evidence];
   const failedScopes = {
-    query: '四彩種查詢未全部通過，原因顯示於下方。',
+    query: permissionQuery ? '權限設定查詢未通過，原因顯示於下方。' : '四彩種查詢未全部通過，原因顯示於下方。',
+    data: '本次未完成四彩種分析資料讀取檢查，原因顯示於下方。',
     'no-sample': '本次未完成查詢驗證。',
     live: '本次連線或資料讀取檢查失敗。',
     registered: '這次無法確認資料庫內是否有此 API。',
@@ -105,6 +122,27 @@ export function getSystemStatusPresentation(item: SystemStatusItem) {
     reported: '最近的執行紀錄未通過檢查。',
   };
   return item.ok ? presentation : { ...presentation, label: '異常', tone: 'bad' as const, scope: failedScopes[evidence] };
+}
+
+export function getServiceEvidenceFacts(item: SystemStatusItem): SystemStatusFact[] {
+  if (!isRecord(item.detail)) return [];
+  const facts: SystemStatusFact[] = [];
+  if (isRecord(item.detail.activity)) {
+    const activity = item.detail.activity;
+    if (typeof activity.source === 'string') facts.push({ label: '紀錄來源', value: activity.source });
+    if (activity.state === 'recorded' && typeof activity.observedAt === 'string') facts.push({ label: '最近相關紀錄', value: activity.observedAt, format: 'date' });
+    facts.push({ label: '驗證範圍', value: '目前保留的相關資料，不是逐次 API 呼叫紀錄；歷史紀錄不能保證現在每次操作成功。' });
+  }
+  if (item.id === 'supabase-rpc-matrix_permission_settings') {
+    facts.push({ label: '設定版本', value: item.detail.revision }, { label: '設定更新時間', value: item.detail.updatedAt, format: 'date' });
+  }
+  if (Array.isArray(item.detail.samples)) for (const sample of item.detail.samples) {
+    if (!isRecord(sample) || typeof sample.lottery !== 'string') continue;
+    const suffix = sample.ok !== true ? '檢查未通過' : sample.skipped ? '沒有驗證樣本' : sample.waiting ? '等待資料更新' : '通過';
+    const parts = [typeof sample.period === 'string' ? `${sample.period} 期` : '', Number.isInteger(sample.records) ? `${sample.records} 筆` : '', suffix].filter(Boolean);
+    facts.push({ label: sample.lottery, value: parts.join(' · ') });
+  }
+  return facts;
 }
 
 export function groupSystemStatusItems(items: SystemStatusItem[]): SystemStatusGroup[] {
