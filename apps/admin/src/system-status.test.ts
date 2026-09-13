@@ -1,3 +1,5 @@
+import { matrixStorageFixture } from '../backend/matrix-storage-status.fixture';
+import { getMatrixStorageFacts, type SystemStatusItem } from './system-status';
 import { describe, expect, it, vi } from 'vitest';
 import {
   canRefreshCrawler,
@@ -233,5 +235,34 @@ describe('system status evidence presentation', () => {
     ['generation', '牌單產生中'],
   ])('keeps %s card evidence limited without claiming all cards are ready', (waitingFor, label) => {
     expect(getSystemStatusPresentation({ ...item, id: 'railway-cards', checkEvidence: 'query', healthState: 'waiting', detail: { samples: [{ lottery: '今彩539', ok: true, waitingFor }] } })).toMatchObject({ label, tone: 'limited' });
+  });
+});
+
+describe('Matrix Storage presentation', () => {
+  const item = (detail: unknown): SystemStatusItem => ({ id: 'matrix-storage', name: 'Matrix Storage', description: '儲存狀態', group: '系統', location: 'Supabase', endpoint: '/rest/v1/rpc/matrix_analysis_storage_health', checkMode: 'service', checkEvidence: 'reported', ok: true, checkedAt: '2026-09-12T02:00:00Z', responseMs: 1, detail });
+  it.each([['Healthy', 'good'], ['Warning', 'warning'], ['Critical', 'bad']] as const)('shows SQL %s without deriving health from connectivity', (status, tone) => {
+    const presentation = getSystemStatusPresentation(item({ ...matrixStorageFixture(), status }));
+    expect(presentation).toMatchObject({ label: status, tone });
+    expect(presentation.scope).toContain('儲存健康');
+    expect(presentation.scope).not.toMatch(/四彩種|連線正常/);
+  });
+  it.each([undefined, null, {}, { ...matrixStorageFixture(), active_unhealthy: Infinity }, { ...matrixStorageFixture(), database_size_bytes: NaN }, { ...matrixStorageFixture(), cleanup: { ...matrixStorageFixture().cleanup, cleanup_enabled: 'true' } }])('never displays malformed storage data as healthy or zero', detail => {
+    expect(getSystemStatusPresentation(item(detail))).toMatchObject({ label: '狀態待確認', tone: 'limited' });
+    expect(getMatrixStorageFacts(item(detail), 'summary')).toEqual([{ label: '資料庫大小', value: '無法取得' }]);
+  });
+  it('formats actual decimal MB/GB, counts, and cleanup facts without capacity percentages', () => {
+    const row = item(matrixStorageFixture());
+    expect(getMatrixStorageFacts(row, 'summary')).toEqual([{ label: '資料庫大小', value: '2.50 GB' }]);
+    expect(getMatrixStorageFacts(row)).toEqual(expect.arrayContaining([
+      { label: '探索大小', value: '120.00 MB' }, { label: '天衡大小', value: '80.00 MB' },
+      { label: '成品大小', value: '1.20 GB' }, { label: '分塊大小', value: '900.00 MB' },
+      { label: '啟用版本數', value: '24' }, { label: '已取代列數', value: '15' },
+      { label: '逾期可刪列數', value: '10' }, { label: '最近清理', value: '2026-09-12T01:00:30Z', format: 'date' },
+      { label: '最近刪除列數', value: '1,234' }, { label: '清理待處理列數', value: '10' },
+      { label: '清理狀態', value: '已啟用' },
+    ]));
+    expect(JSON.stringify(getMatrixStorageFacts(row))).not.toContain('%');
+    const noRun = matrixStorageFixture(); noRun.cleanup.last_finished_at = null;
+    expect(getMatrixStorageFacts(item(noRun))).toContainEqual({ label: '最近清理', value: '尚無完成紀錄' });
   });
 });

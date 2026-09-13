@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({ get: vi.fn(async (url: string) => {
 }), post: vi.fn(), put: vi.fn(), delete: vi.fn() }));
 vi.mock('@appdeploy/client', () => ({ api: mocks, auth: { signIn: vi.fn(), signOut: vi.fn() } }));
 import AdminApp from './AdminApp';
+import { matrixStorageFixture } from '../backend/matrix-storage-status.fixture';
 
 it('keeps purpose, evidence and errors visible while technical details collapse without calling write APIs', async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -72,4 +73,52 @@ it('counts only actual failures as abnormal while running, waiting and unknown j
     await act(async () => root.unmount()); container.remove();
     mocks.get.mockImplementation(originalGet);
   }
+});
+
+it('keeps storage size visible, separates Warning counts, and preserves details during failed refresh', async () => {
+  const originalGet = mocks.get.getMockImplementation()!;
+  let fail = false;
+  let malformed = false;
+  mocks.get.mockImplementation(async url => {
+    if (url !== '/api/system-status') return originalGet(url);
+    if (fail) throw new Error('狀態重新檢查失敗');
+    return { data: { checkedAt: '2026-09-12T02:00:00Z', items: [{
+      id: 'matrix-storage', name: 'Matrix Storage', description: '分析資料儲存與清理狀態。', group: '系統', location: 'Supabase', endpoint: '/rest/v1/rpc/matrix_analysis_storage_health', checkMode: 'service', checkEvidence: 'reported', ok: false, checkedAt: '2026-09-12T02:00:00Z', responseMs: 12,
+      detail: malformed ? { status: 'Healthy' } : { ...matrixStorageFixture(), status: 'Warning' },
+    }] } };
+  });
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  const container = document.createElement('div'); document.body.append(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<AdminApp />));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    await act(async () => [...container.querySelectorAll('button')].find(button => button.textContent?.includes('系統設定'))?.click());
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    const row = container.querySelector('[data-status-id="matrix-storage"]')!;
+    expect(row.querySelector('.statusBadge')?.textContent).toBe('Warning');
+    expect(row.querySelector('.statusBadge')?.classList.contains('good')).toBe(false);
+    expect(row.querySelector('.statusRowMain > .statusFacts')?.textContent).toContain('資料庫大小2.50 GB');
+    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('1 項警告');
+    expect(row.textContent).not.toContain('%');
+    expect(row.querySelector('.statusRowActions')).toBeNull();
+    const details = row.querySelector('details')!;
+    expect(details.open).toBe(false);
+    await act(async () => details.querySelector('summary')?.click());
+    expect(details.open).toBe(true);
+    expect(details.textContent).toContain('120.00 MB');
+    expect(details.textContent).toContain('1,234');
+    expect(details.textContent).toContain('2026/09/12 09:00');
+    fail = true;
+    await act(async () => [...container.querySelectorAll('button')].find(button => button.textContent === '重新檢查')?.click());
+    expect(container.querySelector('[role=alert]')?.textContent).toContain('狀態重新檢查失敗');
+    expect(details.open).toBe(true);
+    expect(row.textContent).toContain('2.50 GB');
+    expect(row.querySelector('.statusBadge')?.textContent).toBe('Warning');
+    fail = false; malformed = true;
+    await act(async () => [...container.querySelectorAll('button')].find(button => button.textContent === '重新檢查')?.click());
+    expect(row.querySelector('.statusBadge')?.textContent).toBe('狀態待確認');
+    expect(row.textContent).not.toContain('Healthy');
+    expect(row.querySelector('.statusRowMain > .statusFacts')?.textContent).toContain('資料庫大小無法取得');
+  } finally { await act(async () => root.unmount()); container.remove(); mocks.get.mockImplementation(originalGet); }
 });

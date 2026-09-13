@@ -1,4 +1,5 @@
 import { apiStatusInventory, type ApiCheckEvidence, type ApiStatusDefinition } from './api-status-inventory';
+import { matrixStorageStatusId, parseMatrixStorageHealth } from './matrix-storage-status';
 import type { SupabaseConfig } from './supabase';
 import type { RailwayLatestAnalysis, WorkerStatus } from './worker-api';
 import type { WatchdogStatus } from './watchdog-status';
@@ -186,7 +187,7 @@ export function createConnectionStatus(dependencies: Dependencies) {
   const runDefinition = async (definition: ApiStatusDefinition, shared: ReturnType<typeof createSharedChecks>): Promise<ConnectionStatusItem> => {
     const started = now().getTime();
     const checkEvidence: ApiCheckEvidence = queryCheckIds.has(definition.id) ? 'query'
-      : definition.id === 'supabase-watchdog-heartbeat' ? 'reported'
+      : definition.id === 'supabase-watchdog-heartbeat' || definition.id === matrixStorageStatusId ? 'reported'
       : definition.endpoint.startsWith('/functions/v1/') ? 'options'
       : definition.checkMode === 'registry' ? 'registered'
       : definition.location === 'Railway' && definition.checkMode === 'service' ? 'inherited'
@@ -226,6 +227,18 @@ export function createConnectionStatus(dependencies: Dependencies) {
         if (heartbeat.status !== 'ok') {
           return finish(false, detail, '最近一次自動監控回報異常');
         }
+      } else if (definition.id === matrixStorageStatusId) {
+        const current = await shared.config();
+        const response = await fetchWithDeadline(`${current.url}${definition.endpoint}`, {
+          method: 'GET', cache: 'no-store', redirect: 'error',
+          headers: { apikey: current.serviceRoleKey, Authorization: `Bearer ${current.serviceRoleKey}` },
+        });
+        if (!response.ok) throw new Error('MATRIX_STORAGE_UNAVAILABLE');
+        const storage = parseMatrixStorageHealth(await readJsonWithDeadline<unknown>(response));
+        if (!storage) throw new Error('MATRIX_STORAGE_INVALID');
+        // Cleanup errors may contain SQL details; the admin receives a safe signal.
+        if (storage.cleanup.last_error) storage.cleanup.last_error = '最近清理回報錯誤';
+        return finish(storage.status === 'Healthy', storage);
       } else if (definition.id === 'supabase-database') {
         await withDeadline(() => dependencies.supabase.selectRows('plans', 'select=id&limit=1'));
         detail = { reachable: true };
@@ -279,6 +292,9 @@ export function createConnectionStatus(dependencies: Dependencies) {
       } else throw new Error('UNSUPPORTED_STATUS_CHECK');
       return finish(true, detail);
     } catch (cause) {
+      if (definition.id === matrixStorageStatusId) return {
+        ...finish(false, null, 'Matrix Storage 狀態暫時無法取得，請重新檢查。'), healthState: 'unknown',
+      };
       if (cause instanceof Error && cause.message === 'STATUS_PROBE_TIMEOUT') return finish(false, undefined, '連線檢查逾時，請重新檢查。');
       const workerStatus = definition.location === 'Railway' ? await shared.worker().catch(() => undefined) : undefined;
       return finish(false, undefined, safeErrorFor(definition, workerStatus));

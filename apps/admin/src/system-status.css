@@ -79,3 +79,4 @@
   .railwayOperationHeader { gap: 6px; }
   .railwayOperationRow { gap: 8px; }
 }
+.statusState .statusBadge.warning { color: #e1c170; background: #352e1d; }

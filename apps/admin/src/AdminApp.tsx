@@ -37,6 +37,7 @@ import {
   canRetrySystemStatus,
   focusSystemStatusAfterAction,
   getGithubStatusFacts,
+  getMatrixStorageFacts,
   getSystemStatusPresentation,
   formatSystemStatusValue,
   groupSystemStatusItems,
@@ -1597,12 +1598,13 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
         {groupSystemStatusItems(items).map((group) => {
           const abnormalCount = group.items.filter((item) => getSystemStatusPresentation(item).tone === "bad").length;
           const limitedCount = group.items.filter((item) => getSystemStatusPresentation(item).tone === "limited").length;
+          const warningCount = group.items.filter((item) => getSystemStatusPresentation(item).tone === "warning").length;
           const groupTitleId = `status-group-${group.location.toLowerCase()}`;
           return (
             <section className="statusGroup" key={group.location} aria-labelledby={groupTitleId}>
               <header className="statusGroupHeader">
                 <h3 id={groupTitleId}>{group.location}</h3>
-                <span>{group.items.length} 項 · {limitedCount} 項僅部分檢查 · {abnormalCount} 項異常</span>
+                <span>{group.items.length} 項 · {limitedCount} 項僅部分檢查 · {abnormalCount} 項異常{warningCount > 0 ? ` · ${warningCount} 項警告` : ""}</span>
               </header>
               <div className="statusRows">
                 {group.items.map((item) => {
@@ -1611,6 +1613,7 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
                     : null;
                   const finishedAt = detail?.finishedAt ?? detail?.finished_at;
                   const presentation = getSystemStatusPresentation(item);
+                  const storageSummary = getMatrixStorageFacts(item, "summary");
                   return (
                     <article className="statusRow" key={item.id} data-status-id={item.id} tabIndex={-1} aria-label={`${item.name}：${presentation.label}`}>
                       <div className="statusRowMain">
@@ -1621,16 +1624,19 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
                         <p className="statusDescription">{item.description}</p>
                         <p className="statusScope">{presentation.scope}</p>
                         {item.error && <div className="statusErrorText" role="alert">{item.error}</div>}
+                        {storageSummary.length > 0 && <dl className="statusFacts">
+                          {storageSummary.map((fact) => <div key={fact.label}><dt>{fact.label}</dt><dd>{text(fact.value)}</dd></div>)}
+                        </dl>}
                         <details className="statusDetails">
                           <summary>檢查明細</summary>
                         <dl className="statusFacts">
                           <div><dt>API 位址</dt><dd className="statusEndpoint">{item.endpoint}</dd></div>
                           <div><dt>檢查時間</dt><dd>{formatAdminDateTime(item.checkedAt)}</dd></div>
                           <div><dt>回應時間</dt><dd>{item.responseMs} ms</dd></div>
-                          {getGithubStatusFacts(item).map((fact) => (
+                          {[...getGithubStatusFacts(item), ...getMatrixStorageFacts(item)].map((fact) => (
                             <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.format === "date" ? formatAdminDateTime(fact.value) : text(fact.value)}</dd></div>
                           ))}
-                          {detail?.status !== undefined && <div><dt>{typeof detail.status === "number" ? "回應代碼" : "執行結果"}</dt><dd>{formatSystemStatusValue(detail.status)}</dd></div>}
+                          {item.id !== "matrix-storage" && detail?.status !== undefined && <div><dt>{typeof detail.status === "number" ? "回應代碼" : "執行結果"}</dt><dd>{formatSystemStatusValue(detail.status)}</dd></div>}
                           {finishedAt !== undefined && <div><dt>排程完成時間</dt><dd>{formatAdminDateTime(finishedAt)}</dd></div>}
                           {item.id === "supabase-watchdog-heartbeat" && (
                             <>
