@@ -2,22 +2,25 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import vm from 'node:vm';
+import jsdom from 'jsdom';
+const { JSDOM, VirtualConsole, requestInterceptor } = jsdom;
 
 const origin = 'https://matrix.test';
 const html = (version) => `<!doctype html><html><head><link rel="stylesheet" crossorigin href="/assets/${version}.css"><script type="module" crossorigin src="/assets/${version}.js"></script></head><body>${version}</body></html>`;
 const response = (body, type = 'text/html', status = 200) => new Response(body, { status, headers: { 'content-type': type } });
 
-async function harness({ version = 'new', stores = new Map(), offline = false, brokenCss = false, cacheUnavailable = false, cachePutFailure = false } = {}) {
+async function harness({ version = 'new', stores = new Map(), offline = false, brokenCss = false, cacheUnavailable = false, cachePutFailure = false, legacy = false } = {}) {
   const handlers = new Map();
   const requests = [];
   const key = (request) => new URL(typeof request === 'string' ? request : request.url, origin).href;
   const network = async (request) => {
     const url = key(request); requests.push(url);
+    const pathname = new URL(url).pathname;
     if (offline) throw new Error('offline');
-    if (url.endsWith('.css')) return brokenCss ? response('<html>SPA fallback</html>') : response('body { color: gold }', 'text/css');
-    if (url.endsWith('.js')) return response('window.matrix = true', 'text/javascript');
-    if (url.endsWith('.png')) return response('image', 'image/png');
-    if (url.endsWith('.webmanifest')) return response('{}', 'application/manifest+json');
+    if (pathname.endsWith('.css')) return brokenCss ? response('<html>SPA fallback</html>') : response('body { color: gold }', 'text/css');
+    if (pathname.endsWith('.js')) return response('window.matrix = true', 'text/javascript');
+    if (pathname.endsWith('.png')) return response('image', 'image/png');
+    if (pathname.endsWith('.webmanifest')) return response('{}', 'application/manifest+json');
     return response(html(version));
   };
   const caches = {
@@ -43,7 +46,7 @@ async function harness({ version = 'new', stores = new Map(), offline = false, b
     },
   };
   const actions = [];
-  const source = (await readFile(new URL('../public/push-service-worker.js', import.meta.url), 'utf8'))
+  const source = (await readFile(new URL(legacy ? './fixtures/pwa-cache-before-540.js' : '../public/push-service-worker.js', import.meta.url), 'utf8'))
     .replaceAll('__BUILD_ID__', version)
     .replace(/const BUILD_ASSET_PATHS = .*?;/, `const BUILD_ASSET_PATHS = ["/assets/${version}.css", "/assets/${version}.js"];`);
   vm.runInNewContext(source, { URL, Request, Response, setTimeout, clearTimeout, caches, fetch: network, self: {
@@ -149,3 +152,58 @@ test('a full cache does not block validated online navigation or delete old reso
   assert.equal(old.stores.has('matrix-pwa-shell-old'), true);
   assert.match(await (await next.dispatch('fetch', navigation)).text(), /new/);
 });
+
+for (const canUpdate of [true, false]) {
+  test(`an old installed worker's poisoned stylesheet heals in the DOM (worker update ${canUpdate ? 'succeeds' : 'fails'})`, async () => {
+    const startupHtml = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+    const startup = startupHtml.match(/<script id="matrix-startup-recovery">[\s\S]*?<\/script>/)?.[0] ?? '';
+    const entries = new Map([[`${origin}/assets/new.css`, response('<html>wrong cached response</html>')]]);
+    const stores = new Map([['matrix-pwa-shell-old', entries]]);
+    const old = await harness({ version: 'old', legacy: true, stores });
+    const current = await harness({ version: 'new', stores });
+    let active = old;
+    const requested = [];
+    const resources = { interceptors: [requestInterceptor(async request => {
+      requested.push(request.url);
+      const result = await active.dispatch('fetch', { url: request.url, method: 'GET', destination: 'style' });
+      // jsdom parses HTML as CSS instead of enforcing stylesheet MIME, unlike
+      // browsers. Enforce that response boundary; loading/events remain real DOM.
+      if (result.headers.get('content-type') !== 'text/css') throw new Error('Stylesheet MIME rejected');
+      return result;
+    })] };
+    const errors = [];
+    const console = new VirtualConsole(); console.on('jsdomError', e => errors.push(e.message));
+    const dom = new JSDOM(`<!doctype html><head>${startup}<link rel="stylesheet" href="/assets/new.css"></head><body>Matrix</body>`, {
+      url: origin, runScripts: 'dangerously', resources, virtualConsole: console,
+      beforeParse(window) {
+        const serviceWorker = new window.EventTarget();
+        const registration = { installing: null, waiting: null, update: async () => {
+          if (!canUpdate) throw new Error('worker temporarily unavailable');
+          await current.dispatch('install'); await current.dispatch('activate'); active = current;
+          serviceWorker.dispatchEvent(new window.Event('controllerchange'));
+          return registration;
+        } };
+        serviceWorker.getRegistration = async () => registration;
+        serviceWorker.register = async () => registration;
+        Object.defineProperty(window.navigator, 'serviceWorker', { value: serviceWorker });
+        window.localStorage.setItem('member-session-fixture', 'existing-member');
+      },
+    });
+    try {
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => { clearInterval(interval); reject(new Error('stylesheet did not recover: ' + JSON.stringify({ requested, errors, href: dom.window.document.querySelector('link').href, color: dom.window.getComputedStyle(dom.window.document.body).color })));  }, 1500);
+        const interval = setInterval(() => {
+          if (dom.window.getComputedStyle(dom.window.document.body).color === 'rgb(255, 215, 0)') {
+            clearTimeout(timeout); clearInterval(interval); resolve();
+          }
+        }, 10);
+      });
+      assert.equal(dom.window.document.styleSheets.length, 1);
+      assert.equal(dom.window.localStorage.getItem('member-session-fixture'), 'existing-member');
+      assert.equal(dom.window.sessionStorage.getItem('matrix-pwa-asset-reload'), null);
+      assert.equal(requested.length, 2);
+      assert.equal(new URL(requested[1]).searchParams.has('matrix_asset_retry'), true);
+      assert.equal(errors.some(message => /navigation/i.test(message)), false);
+    } finally { dom.window.close(); }
+  });
+}
