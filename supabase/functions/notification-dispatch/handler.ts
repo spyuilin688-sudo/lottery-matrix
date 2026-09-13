@@ -46,6 +46,7 @@ const CORS_HEADERS = {
 };
 const CLAIM_LIMIT = 25;
 const DISPATCH_CONCURRENCY = 4;
+const SENT_FINALIZE_ATTEMPTS = 3;
 const RETRY_MINUTES = [1, 2, 5, 15, 30] as const;
 const DISPATCH_ACCOUNT = "system:notification-dispatch";
 
@@ -95,6 +96,18 @@ export function createNotificationDispatchHandler(dependencies: Dependencies) {
   const now = dependencies.now ?? (() => new Date());
   const bounded = <T>(operation: () => Promise<T>) =>
     withRequestDeadline(operation, { timeoutMs: PUSH_OPERATION_TIMEOUT_MS });
+  const finalizeSent = async (outboxId: string, processedAt: string) => {
+    // Provider acceptance is irreversible. Retry only the idempotent database
+    // write; a durable delivery log also lets the next claim reconcile it.
+    for (let attempt = 1; attempt <= SENT_FINALIZE_ATTEMPTS; attempt += 1) {
+      try {
+        requireFinalized(await bounded(() => dependencies.markSent(outboxId, processedAt)));
+        return;
+      } catch (error) {
+        if (attempt === SENT_FINALIZE_ATTEMPTS) throw error;
+      }
+    }
+  };
 
   return async (request: Request): Promise<Response> => {
     if (request.method === "OPTIONS") {
@@ -138,15 +151,16 @@ export function createNotificationDispatchHandler(dependencies: Dependencies) {
         const deliveryResults = [];
         for (const subscription of subscriptions) {
           deliveryResults.push(await deliverPushToSubscription(dependencies, {
+            outboxId: work.outboxId,
             userId: work.userId,
             subscription,
-            payload: work.payload,
+            payload: { ...work.payload, tag: `matrix-outbox-${work.outboxId}` },
             adminAccount: DISPATCH_ACCOUNT,
           }));
         }
 
         if (deliveryResults.some((result) => result.delivered)) {
-          requireFinalized(await bounded(() => dependencies.markSent(work.outboxId, processedAtIso)));
+          await finalizeSent(work.outboxId, processedAtIso);
           totals.sent += 1;
           return;
         }

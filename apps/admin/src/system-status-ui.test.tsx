@@ -17,6 +17,40 @@ import AdminApp from './AdminApp';
 import { matrixStorageFixture } from '../backend/matrix-storage-status.fixture';
 beforeEach(() => vi.clearAllMocks());
 
+it('renders native notification counts as partial evidence and never sends a notification from the health row', async () => {
+  const originalGet = mocks.get.getMockImplementation()!;
+  const checkedAt = '2026-09-13T12:00:00Z';
+  mocks.get.mockImplementation(async url => url === '/api/system-status' ? { data: { checkedAt, items: [{
+    id: 'native-notification-dispatch', name: '原生 App 通知派送', group: '通知', location: 'Supabase',
+    description: '讀取原生通知的排程、待處理工作與最近派送紀錄。', endpoint: '/rest/v1/rpc/admin_native_notification_health',
+    checkMode: 'service', checkEvidence: 'reported', healthState: 'waiting', ok: true, checkedAt, responseMs: 1,
+    detail: {
+      checked_at: checkedAt, enabled_devices: 0,
+      schedule: { enabled: true, every_minute: true, last_started_at: '2026-09-13T11:59:00Z', last_finished_at: '2026-09-13T11:59:01Z', last_status: 'succeeded' },
+      deliveries: { pending: 0, processing: 0, overdue: 0, sent_24h: 0, failed_24h: 0, canceled_24h: 0, last_sent_at: '2026-09-09T21:30:00Z', last_failed_at: '2026-09-10T00:30:00Z' },
+    },
+  }] } } : originalGet(url));
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  const container = document.createElement('div'); document.body.append(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<AdminApp />));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    await act(async () => [...container.querySelectorAll('button')].find(button => button.textContent?.includes('系統設定'))?.click());
+    const row = container.querySelector('[data-status-id="native-notification-dispatch"]')!;
+    expect(row.querySelector('.statusBadge.limited')?.textContent).toBe('待命（無啟用裝置）');
+    expect(row.querySelector('.statusScope')?.textContent).toContain('尚未驗證');
+    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('1 項 · 1 項僅部分檢查 · 0 項異常');
+    await act(async () => row.querySelector('summary')?.click());
+    expect(row.querySelector('details')?.textContent).toContain('啟用裝置數0');
+    expect(row.querySelector('details')?.textContent).toContain('24 小時內派送失敗0');
+    expect(row.querySelector('details')?.textContent).toContain('最近派送失敗2026/09/10');
+    expect(row.querySelector('details')?.textContent).toContain('服務商接受，未確認裝置顯示');
+    expect(row.querySelector('.statusRowActions')).toBeNull();
+    expect(mocks.post).not.toHaveBeenCalled();
+  } finally { await act(async () => root.unmount()); container.remove(); mocks.get.mockImplementation(originalGet); }
+});
+
 it('renders query samples and related operation dates with limited evidence visibly distinct from success', async () => {
   const originalGet = mocks.get.getMockImplementation()!;
   const base = { group: 'Matrix 演算法', location: 'Supabase', description: '取得正式分析資料。', endpoint: '/rest/v1/rpc/example', checkMode: 'registry', ok: true, checkedAt: '2026-09-13T10:05:00Z', responseMs: 10 };

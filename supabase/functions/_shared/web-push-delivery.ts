@@ -17,6 +17,7 @@ export type PushPayload = {
 };
 
 export type DeliveryLog = {
+  outboxId?: string;
   userId: string;
   subscriptionId: string;
   title: string;
@@ -82,6 +83,7 @@ function allowedEndpoint(endpoint: unknown): boolean {
 export async function deliverPushToSubscription(
   dependencies: DeliveryDependencies,
   input: {
+    outboxId?: string;
     userId: string;
     subscription: PushSubscription;
     payload: PushPayload;
@@ -108,6 +110,7 @@ export async function deliverPushToSubscription(
     await recordMetadata([
       () => dependencies.markSuccess(input.subscription.id, sentAt),
       () => dependencies.recordDelivery({
+        ...(input.outboxId ? { outboxId: input.outboxId } : {}),
         userId: input.userId,
         subscriptionId: input.subscription.id,
         title: input.payload.title,
@@ -135,6 +138,7 @@ export async function deliverPushToSubscription(
       permanentFailure,
     ),
     () => dependencies.recordDelivery({
+      ...(input.outboxId ? { outboxId: input.outboxId } : {}),
       userId: input.userId,
       subscriptionId: input.subscription.id,
       title: input.payload.title,

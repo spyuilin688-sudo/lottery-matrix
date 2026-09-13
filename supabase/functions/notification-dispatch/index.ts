@@ -121,6 +121,7 @@ async function sendPush(subscription: PushSubscription, payload: PushPayload) {
 
 async function recordDelivery(log: DeliveryLog) {
   const { error } = await supabase.from("push_delivery_logs").insert({
+    notification_outbox_id: log.outboxId,
     user_id: log.userId,
     subscription_id: log.subscriptionId,
     title: log.title,

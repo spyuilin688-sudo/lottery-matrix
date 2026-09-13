@@ -1,4 +1,5 @@
 import { matrixStorageStatusId, parseMatrixStorageHealth } from '../backend/matrix-storage-status';
+import { nativeNotificationStatusId, parseNativeNotificationHealth } from '../backend/native-notification-status';
 import { apiStatusInventory, type ApiStatusDefinition, type ApiCheckEvidence } from '../backend/api-status-inventory';
 
 export type SystemStatusItem = {
@@ -51,6 +52,13 @@ const statusLocationOrder: SystemStatusItem['location'][] = [
 
 // Older servers omit checkEvidence; keep their partial probes visibly limited too.
 export function getSystemStatusPresentation(item: SystemStatusItem) {
+  if (item.id === nativeNotificationStatusId) {
+    const health = parseNativeNotificationHealth(item.detail, new Date(item.checkedAt));
+    if (!health) return { label: '狀態待確認', tone: 'limited' as const, scope: '目前無法取得完整原生通知紀錄，請重新檢查。' };
+    const scope = '排程紀錄只證明排程曾執行；尚未驗證本次 OAuth、FCM 連線及裝置收到通知。';
+    if (!item.ok) return { label: '需查看紀錄', tone: 'warning' as const, scope };
+    return { label: health.enabled_devices === 0 ? '待命（無啟用裝置）' : '排程紀錄正常', tone: 'limited' as const, scope };
+  }
   if (item.id === matrixStorageStatusId) {
     const storage = parseMatrixStorageHealth(item.detail);
     if (!storage) return { label: '狀態待確認', tone: 'limited' as const, scope: '目前無法取得完整儲存健康資料，請重新檢查。' };
@@ -125,6 +133,27 @@ export function getSystemStatusPresentation(item: SystemStatusItem) {
 }
 
 export function getServiceEvidenceFacts(item: SystemStatusItem): SystemStatusFact[] {
+  if (item.id === nativeNotificationStatusId) {
+    const health = parseNativeNotificationHealth(item.detail, new Date(item.checkedAt));
+    if (!health) return [];
+    const count = (value: number) => value.toLocaleString('zh-TW');
+    const time = (label: string, value: string | null): SystemStatusFact => value ? { label, value, format: 'date' } : { label, value: '尚無紀錄' };
+    return [
+      { label: '排程開關', value: health.schedule.enabled ? '已啟用' : '已停用' },
+      { label: '排程頻率', value: health.schedule.every_minute ? '每分鐘' : '未設定為每分鐘' },
+      time('最近排程開始', health.schedule.last_started_at), time('最近排程結束', health.schedule.last_finished_at),
+      { label: '最近排程結果', value: formatSystemStatusValue(health.schedule.last_status) },
+      { label: '啟用裝置數', value: count(health.enabled_devices) },
+      { label: '待處理通知', value: count(health.deliveries.pending) },
+      { label: '處理中通知', value: count(health.deliveries.processing) },
+      { label: '到期逾 5 分鐘工作', value: count(health.deliveries.overdue) },
+      { label: '24 小時內派送成功', value: count(health.deliveries.sent_24h) },
+      { label: '24 小時內派送失敗', value: count(health.deliveries.failed_24h) },
+      { label: '24 小時內取消', value: count(health.deliveries.canceled_24h) },
+      time('最近派送成功', health.deliveries.last_sent_at), time('最近派送失敗', health.deliveries.last_failed_at),
+      { label: '驗證範圍', value: '排程成功只表示排程 SQL 完成，不代表 OAuth、FCM 或裝置收件已驗證；派送成功紀錄表示服務商接受，未確認裝置顯示。' },
+    ];
+  }
   if (!isRecord(item.detail)) return [];
   const facts: SystemStatusFact[] = [];
   if (isRecord(item.detail.activity)) {

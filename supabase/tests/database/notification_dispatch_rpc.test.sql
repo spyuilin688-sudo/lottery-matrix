@@ -177,8 +177,8 @@ select is(
     '54000000-0000-0000-0000-000000000001'::uuid,
     '2026-09-03T12:02:00+08:00'::timestamptz
   ),
-  false,
-  'sent terminal row cannot be finalized twice'
+  true,
+  'retry after a lost sent response acknowledges the same terminal result'
 );
 select is(
   (select pg_catalog.jsonb_build_object(

@@ -80,6 +80,7 @@ export const apiStatusInventory: readonly ApiStatusDefinition[] = [
   { id: 'supabase-database', name: '資料庫連線', group: '系統', location: 'Supabase', endpoint: '/rest/v1/plans?select=id&limit=1', checkMode: 'live', description: '讀取一筆訂閱方案，確認資料庫能回傳資料。' },
   { id: 'matrix-storage', name: 'Matrix Storage', group: '系統', location: 'Supabase', endpoint: '/rest/v1/rpc/matrix_analysis_storage_health', checkMode: 'service', description: '查看分析資料的實際儲存大小、版本與清理紀錄。' },
   { id: 'notification-calendar', name: '六合彩開獎日曆', group: '通知', location: 'Supabase', endpoint: '/rest/v1/rpc/notification_draw_calendar_status', checkMode: 'service', description: '依香港賽馬會官方日期決定選號提醒；日期待確認時暫停提醒。' },
+  { id: 'native-notification-dispatch', name: '原生 App 通知派送', group: '通知', location: 'Supabase', endpoint: '/rest/v1/rpc/admin_native_notification_health', checkMode: 'service', description: '讀取原生通知的排程、待處理工作與最近派送紀錄；不發送測試通知。' },
   { id: 'supabase-auth', name: '會員登入服務', group: '系統', location: 'Supabase', endpoint: '/auth/v1/settings', checkMode: 'live', description: '讀取會員登入服務設定，確認服務有回應。' },
   { id: 'matrix-status-function', name: 'Matrix 狀態處理', group: 'Matrix 狀態', location: 'Supabase', endpoint: '/functions/v1/matrix-status', checkMode: 'live', description: '處理 Matrix 狀態資料查詢。' },
   { id: 'notification-ingest-function', name: '接收通知事件', group: '通知', location: 'Supabase', endpoint: '/functions/v1/notification-ingest', checkMode: 'live', description: '接收通知內容並建立待處理的通知事件。' },
