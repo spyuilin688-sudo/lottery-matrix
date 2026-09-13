@@ -25,16 +25,29 @@ import { FeatureShell } from "../features/shared";
 
 const readCss = (path: string) => readFileSync(`${process.cwd()}/${path}`, "utf8");
 
-function mountStyles() {
+function mountStyles(paths = ["src/design-tokens.css", "src/feature-pages.css"]) {
   const style = document.createElement("style");
   style.dataset.matrixCardLayout = "true";
-  style.textContent = `${readCss("src/design-tokens.css")}\n${readCss("src/feature-pages.css")}`;
+  style.textContent = paths.map(readCss).join("\n");
   document.head.append(style);
 }
 
 async function renderMatrixCardPage() {
   render(<AppDialogProvider><MatrixCardPage onNavigate={vi.fn()} /></AppDialogProvider>);
   await screen.findByRole("img", { name: "今彩539順球牌單，第 115000001 期" });
+}
+
+// Inspect matching declarations as well as computed values: an obsolete rule
+// can be hidden by the cascade while every final dimension still looks right.
+function declarationOwners(element: Element, properties: string[], pseudo?: "::after") {
+  return [...document.styleSheets].flatMap((sheet) => [...sheet.cssRules])
+    .filter((rule): rule is CSSStyleRule => "selectorText" in rule)
+    .filter((rule) => {
+      if (pseudo && !rule.selectorText.includes(pseudo)) return false;
+      const selector = pseudo ? rule.selectorText.replaceAll(pseudo, "") : rule.selectorText;
+      return element.matches(selector) && properties.some((property) => rule.style.getPropertyValue(property));
+    })
+    .map((rule) => rule.selectorText);
 }
 
 beforeEach(() => {
@@ -101,5 +114,40 @@ describe("Matrix 牌單 layout", () => {
     expect(download).toHaveClass("primary-action", "branded-explore-action");
     expect(getComputedStyle(download).height).toBe("44px");
     expect(getComputedStyle(download).fontSize).toBe("20px");
+  });
+
+  it("has one owner for each cleaned layout property, including the app shell and decoration", async () => {
+    // Include the runtime shell for cross-file ownership checks. Real-browser
+    // verification covers font shorthands that jsdom does not fully cascade.
+    mountStyles(["src/styles.css", "src/prototype.css"]);
+    await renderMatrixCardPage();
+
+    const main = document.querySelector("main")!;
+    const body = main.querySelector(".feature-body")!;
+    const download = screen.getByRole("button", { name: "下載牌單" });
+    const app = document.createElement("div");
+    app.className = "app-screen";
+
+    expect.soft(declarationOwners(main, ["min-height"])).toHaveLength(1);
+    expect.soft(declarationOwners(main, ["padding", "padding-bottom", "padding-block", "padding-block-end"])).toHaveLength(1);
+    expect.soft(declarationOwners(body, ["padding", "padding-bottom", "padding-block", "padding-block-end"])).toHaveLength(1);
+    expect.soft(declarationOwners(download, ["height", "block-size"])).toHaveLength(1);
+    expect.soft(declarationOwners(download, ["inset", "top", "right", "bottom", "left"], "::after")).toHaveLength(1);
+    expect.soft(declarationOwners(app, ["background", "background-color"])).toHaveLength(1);
+  });
+
+  it("preserves shared shell spacing and the other action sizes", () => {
+    const sibling = render(
+      <FeatureShell title="計算機" className="calculator-screen" onNavigate={vi.fn()}>
+        <button type="button" className="primary-action" onClick={vi.fn()}>共用操作</button>
+        <button type="button" className="gold-button" onClick={vi.fn()}>金色操作</button>
+      </FeatureShell>,
+    );
+
+    expect(getComputedStyle(sibling.container.querySelector("main")!).minHeight).toBe("100%");
+    expect(getComputedStyle(sibling.container.querySelector(".feature-body")!).paddingBottom)
+      .toBe("calc(var(--layout-bottom-nav-clearance) + 8px)");
+    expect(getComputedStyle(screen.getByRole("button", { name: "共用操作" })).height).toBe("48px");
+    expect(getComputedStyle(screen.getByRole("button", { name: "金色操作" })).height).toBe("42px");
   });
 });
