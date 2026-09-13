@@ -69,13 +69,13 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
   };
 
   return (
-    <FeatureShell title="Matrix 牌單" onNavigate={onNavigate}>
+    <FeatureShell title="Matrix 牌單" onNavigate={onNavigate} bodyLayout="matrix-card">
       <LotteryTabs selected={lottery} onChange={setLottery} />
       <div className="matrix-card-order" role="tablist" aria-label="牌單順序">
         <button type="button" role="tab" aria-selected={order === "sorted"} className={order === "sorted" ? "is-selected" : undefined} onClick={() => setOrder("sorted")}>順球</button>
         <button type="button" role="tab" aria-selected={order === "draw"} className={order === "draw" ? "is-selected" : undefined} onClick={() => setOrder("draw")} disabled={!currentManifest?.cards.draw?.url} aria-label="落球" aria-description={!currentManifest?.cards.draw?.url ? "落球牌單待公布" : undefined}>落球{currentManifest && !currentManifest.cards.draw?.url ? "（待公布）" : ""}</button>
       </div>
-      <section className="matrix-ticket matrix-ticket--preview" aria-busy={loading}>
+      <section className="matrix-ticket" aria-busy={loading}>
         {loading ? <p>牌單載入中…</p> : null}
         {loadFailed ? <p role="alert">牌單暫時無法載入，請稍後再試</p> : null}
         {!loading && !loadFailed && !cardPeriod ? <p>尚無可用牌單</p> : null}

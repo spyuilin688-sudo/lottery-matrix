@@ -21,6 +21,7 @@ vi.mock("../lottery-api", async (importOriginal) => ({
 
 import { MatrixCardPage } from "../FeaturePages";
 import { AppDialogProvider } from "../dialog/AppDialog";
+import { FeatureShell } from "../features/shared";
 
 const readCss = (path: string) => readFileSync(`${process.cwd()}/${path}`, "utf8");
 
@@ -66,7 +67,7 @@ describe("Matrix 牌單 layout", () => {
     expect(imageStyles.height).toBe("auto");
   });
 
-  it("keeps the Matrix 牌單 body at 16px gutters and reduces both order controls to 34px", async () => {
+  it("uses 14px order-row gutters while retaining the 16px shared page inset and 34px controls", async () => {
     await renderMatrixCardPage();
 
     const body = document.querySelector(".feature-body");
@@ -80,11 +81,16 @@ describe("Matrix 牌單 layout", () => {
     expect(sortedOrder).toHaveAttribute("aria-selected", "true");
     expect(drawOrder).toHaveAttribute("aria-selected", "false");
     expect(getComputedStyle(document.documentElement).getPropertyValue("--layout-page-inline")).toBe("16px");
-    expect(getComputedStyle(body!).paddingInline).toBe("var(--layout-page-inline)");
+    expect(getComputedStyle(body!).paddingInline).toBe("14px");
+    expect(getComputedStyle(orderTabs!).marginLeft).toBe("0px");
+    expect(getComputedStyle(orderTabs!).marginRight).toBe("0px");
     expect(getComputedStyle(drawOrder).height).toBe("34px");
     expect(getComputedStyle(drawOrder).minHeight).toBe("34px");
     expect(getComputedStyle(sortedOrder).height).toBe("34px");
     expect(getComputedStyle(sortedOrder).minHeight).toBe("34px");
+
+    const sibling = render(<FeatureShell title="Matrix 指南" onNavigate={vi.fn()}><p>指南內容</p></FeatureShell>);
+    expect(getComputedStyle(sibling.container.querySelector(".feature-body")!).paddingInline).toBe("var(--layout-page-inline)");
   });
 
   it("uses the Matrix 探索 action treatment at the requested 44px download height", async () => {

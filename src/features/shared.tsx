@@ -110,6 +110,7 @@ export function FeatureShell({
   headerAction,
   headerSettings,
   compactHeader = false,
+  bodyLayout,
 }: {
   title: string;
   children: React.ReactNode;
@@ -120,6 +121,7 @@ export function FeatureShell({
   headerAction?: React.ReactNode;
   headerSettings?: HeaderSettings;
   compactHeader?: boolean;
+  bodyLayout?: "matrix-card";
 }) {
   const { onQuickBack, quickActive } = useQuickNavigation();
   const logoOnlyHeader = compactHeader || active !== "首頁";
@@ -132,7 +134,7 @@ export function FeatureShell({
         settings={headerSettings}
         showBack={!logoOnlyHeader || (active === "我的" && backTarget === "profile") || title === "Matrix 筆記本"}
       />
-      <div className="feature-body">{children}</div>
+      <div className={bodyLayout === "matrix-card" ? "feature-body matrix-card-body" : "feature-body"}>{children}</div>
       <FeatureBottomNavigationPortal active={active} onNavigate={onNavigate} />
     </main>
   );

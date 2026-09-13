@@ -129,6 +129,8 @@ components:
 
 ### Navigation and data display
 
+2026-09-13：Matrix 牌單的順球／落球按鈕列左右留白各 14px，按鈕間距 8px、高度 34px。共用 `FeatureShell` 以 `bodyLayout="matrix-card"` 選用牌單網格；彩種、牌單預覽、下載按鈕與狀態訊息位於內側內容欄，保留左右各 16px。`src/feature-pages.css` 是唯一排版來源，標準 `.feature-body` 留白規則明確排除牌單網格，不以負外距、位移或行內樣式補償。牌單容器保留 10px 內距、6px 內框與完整等比例圖片，移除舊縮圖尺寸、舊票券裝飾規則及 `matrix-ticket--preview` 覆寫層；下載按鈕沿用共用品牌外觀與 44px 高度。
+
 2026-09-12：依使用者選定的 PD01「階梯裝飾」重製共用底部導覽。外框左右外距為 0、滿寬，72px 主體下方接瀏覽器安全區；Figma 匯出的 `public/assets/lottery/navigation/pd01-frame.svg` 與 `pd01-active.svg` 分別承載階梯金框、扇形角飾及選中拱框，圖示與 12px 文字由四個真實按鈕呈現。圖示 24px、圖文距離 4px，選中態以金拱、底座、亮金字及 `aria-current` 共同表示；180ms 淡入支援 reduced motion。框內兩側各 44px 為角飾與設定操作區，其餘空間四格等分；這是內部配置，不是導覽外距。首頁與狀態頁的既有設定齒輪保留 44px 觸控區及原視覺尺寸，與主導覽觸控區不重疊。`src/prototype.css` 是導覽樣式唯一來源，移除舊「我的」按鈕 4px 位移補償。
 
 PD01 導覽專用 token：底色 `--bottom-nav-panel-950: #030708`、未選中圖示 `--bottom-nav-icon-default: #e0bd75`、未選中文字 `--bottom-nav-text-default: #c3beb6`、選中文字 `--bottom-nav-text-active: #ffe2a0`；其他元件色彩不由此變更。
