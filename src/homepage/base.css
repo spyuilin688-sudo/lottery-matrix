@@ -628,12 +628,10 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   width: calc(100% - var(--home-feature-inline) * 2);
   margin-inline: auto;
-  padding: 4px;
+  padding: 0;
   gap: var(--home-feature-gap);
   align-items: stretch;
-  border: 1px solid color-mix(in srgb, var(--lottery-gold-500) 20%, transparent);
-  border-radius: 10px;
-  background: #05080a;
+  border: 0;
 }
 
 .home-screen .home-shortcut {
