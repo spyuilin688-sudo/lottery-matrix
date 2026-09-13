@@ -96,7 +96,7 @@ const HOME_ASSETS = {
 
 const HOME_SHORTCUTS = [
   { label: "Matrix 同星", screen: "tongxing", image: HOME_ASSETS.tongxing },
-  { label: "號碼對照單", screen: "reference", image: HOME_ASSETS.reference },
+  { label: "Matrix 對照", screen: "reference", image: HOME_ASSETS.reference },
   { label: "Matrix 牌單", screen: "matrix-card", image: HOME_ASSETS.matrixCard },
   { label: "Matrix 指南", screen: "guide", image: HOME_ASSETS.guide },
 ] as const;

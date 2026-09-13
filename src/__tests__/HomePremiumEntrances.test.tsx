@@ -15,7 +15,7 @@ test('首頁四大功能顯示可讀名稱，且分別開啟既有功能', () =>
 
   for (const [label, destination] of [
     ['Matrix 同星', 'tongxing'],
-    ['號碼對照單', 'reference'],
+    ['Matrix 對照', 'reference'],
     ['Matrix 牌單', 'matrix-card'],
     ['Matrix 指南', 'guide'],
   ]) {
