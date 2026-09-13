@@ -2652,7 +2652,7 @@ opacity: .30; box-shadow: none;
   height: 48px;
   object-fit: contain;
   object-position: center;
-  filter: drop-shadow(0 0 6px rgba(217, 169, 72, .14));
+  filter: brightness(.85);
 }
 .product-header__copy {
   grid-area: var(--product-header-copy-area, copy);

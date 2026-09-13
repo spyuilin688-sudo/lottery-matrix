@@ -32,7 +32,6 @@
 .home-screen .home-layout {
   --home-feature-inline: 16px;
   --home-feature-gap: 6px;
-  --home-feature-card-aspect: 154 / 194;
   --home-gap-status-core: clamp(9px, 1.35dvh, 12px);
   --home-gap-core-features: 8px;
   --home-gap-features-nav: clamp(8px, 1.15dvh, 12px);
@@ -626,9 +625,9 @@
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   width: 100%;
+  height: 90px;
   min-width: 0;
   min-height: 90px;
-  aspect-ratio: var(--home-feature-card-aspect);
   padding: 2px 1px 6px;
   justify-items: center;
   border: 4px solid transparent;
