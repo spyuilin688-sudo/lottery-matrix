@@ -12,6 +12,22 @@ const member: MemberContext = {
 };
 
 describe('member notification routes', () => {
+  it('excludes the retired win fields from notification defaults', () => {
+    const defaults = createDefaultMemberNotificationSettings();
+    expect(defaults.settings).not.toHaveProperty('win');
+    expect(defaults.selectedOptions).not.toHaveProperty('win');
+  });
+
+  it('accepts legacy clients but never stores or returns retired win fields', async () => {
+    const settings = createDefaultMemberNotificationSettings();
+    const legacy = { ...settings, settings: { ...settings.settings, win: true }, selectedOptions: { ...settings.selectedOptions, win: ['獎金通知'] } };
+    const store = { read: vi.fn(async () => legacy), save: vi.fn(async (_id: string, value: typeof settings) => value) };
+    const api = createMemberNotificationRoutes({ requireMember: async () => member, store });
+    await expect(api.get({ authorization: 'Bearer token', body: {} })).resolves.toEqual({ status: 200, body: settings });
+    await expect(api.save({ authorization: 'Bearer token', body: legacy })).resolves.toEqual({ status: 200, body: settings });
+    expect(store.save).toHaveBeenCalledWith('member-1', settings);
+  });
+
   it('returns current UI defaults when the member has no saved settings', async () => {
     const store = {
       read: vi.fn(async () => null),
@@ -83,8 +99,8 @@ describe('member notification routes', () => {
     ['missing selected option key', (settings: ReturnType<typeof createDefaultMemberNotificationSettings>) => {
       delete settings.selectedOptions.status;
     }],
-    ['empty radio selection', (settings: ReturnType<typeof createDefaultMemberNotificationSettings>) => {
-      settings.selectedOptions.win = [];
+    ['unknown selected option key', (settings: ReturnType<typeof createDefaultMemberNotificationSettings>) => {
+      settings.selectedOptions.unexpected = [];
     }],
     ['invalid bet time', (settings: ReturnType<typeof createDefaultMemberNotificationSettings>) => {
       settings.betTimes['今彩539'] = ['16:00', '23:59'];

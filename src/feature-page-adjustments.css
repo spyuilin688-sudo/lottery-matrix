@@ -150,7 +150,7 @@
 }
 
 /* Reserve top spacing in layout so the 4px bottom padding is preserved. */
-.notifications-screen-v2 .notification-row:is([data-notification-key="bet"], [data-notification-key="result"], [data-notification-key="win"]) .notification-icon {
+.notifications-screen-v2 .notification-row:is([data-notification-key="bet"], [data-notification-key="result"]) .notification-icon {
   margin-block-start: 4px;
 }
 
