@@ -4,7 +4,7 @@ import { after, before, test } from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
 
 const original = readFileSync(new URL('../migrations/20260829090000_member_pwa_rpc.sql', import.meta.url), 'utf8');
-const migration = readFileSync(new URL('../migrations/20260913192039_remove_win_notification_settings.sql', import.meta.url), 'utf8');
+const migration = readFileSync(new URL('../migrations/20260913193834_remove_win_notification_settings.sql', import.meta.url), 'utf8');
 const db = new PGlite();
 const ownerA = '00000000-0000-4000-8000-000000000001';
 const ownerB = '00000000-0000-4000-8000-000000000002';
