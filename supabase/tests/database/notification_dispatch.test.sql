@@ -390,7 +390,11 @@ select ok(
   private.notification_member_matches(
     '31000000-0000-0000-0000-000000000001',
     'bet_reminder',
-    '{"memberId":"31000000-0000-0000-0000-000000000001","lottery":"今彩539"}'::jsonb
+    jsonb_build_object(
+      'memberId', '31000000-0000-0000-0000-000000000001',
+      'lottery', '天天樂',
+      'scheduledAt', to_char(statement_timestamp() at time zone 'Asia/Taipei', 'YYYY-MM-DD"T"HH24:MI:SS') || '+08:00'
+    )
   ),
   'bet reminder matches only its intended enabled member'
 );
@@ -398,7 +402,11 @@ select ok(
   not private.notification_member_matches(
     '31000000-0000-0000-0000-000000000002',
     'bet_reminder',
-    '{"memberId":"31000000-0000-0000-0000-000000000001","lottery":"今彩539"}'::jsonb
+    jsonb_build_object(
+      'memberId', '31000000-0000-0000-0000-000000000001',
+      'lottery', '天天樂',
+      'scheduledAt', to_char(statement_timestamp() at time zone 'Asia/Taipei', 'YYYY-MM-DD"T"HH24:MI:SS') || '+08:00'
+    )
   ),
   'bet reminder cannot fan out to another member'
 );
