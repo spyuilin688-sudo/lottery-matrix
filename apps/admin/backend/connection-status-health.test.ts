@@ -57,7 +57,7 @@ describe('permission-independent RPC registration evidence', () => {
     expect(fetcher.mock.calls.every(([input, init]) => {
       if (init?.method === 'POST') {
         const path = new URL(String(input)).pathname;
-        return ['/rest/v1/rpc/matrix_explore_list', '/rest/v1/rpc/matrix_explore_validation'].includes(path)
+        return ['/rest/v1/rpc/matrix_explore_list', '/rest/v1/rpc/matrix_explore_validation', '/rest/v1/rpc/matrix_tianheng_list', '/rest/v1/rpc/matrix_tianheng_validation'].includes(path)
           && typeof JSON.parse(String(init.body)).p_request === 'object';
       }
       return !init?.method || ['GET', 'OPTIONS'].includes(init.method);

@@ -5,6 +5,8 @@ import type { SupabaseConfig } from './supabase';
 import type { RailwayLatestAnalysis, WorkerStatus } from './worker-api';
 import type { WatchdogStatus } from './watchdog-status';
 import { createApiQueryChecks, queryCheckIds } from './api-query-checks';
+import { parseSettings } from './permission-settings';
+import { operationActivity, operationSources, protectedResultKinds, resultDataEvidence } from './service-evidence';
 
 type Row = Record<string, unknown>;
 type Dependencies = {
@@ -169,7 +171,7 @@ export function createConnectionStatus(dependencies: Dependencies) {
     const worker = memoizePromise(() => withDeadline(dependencies.getWorkerStatus));
     const registeredRpcs = memoizePromise(async () => {
       const current = await config();
-      const names = apiStatusInventory.filter(item => item.checkMode === 'registry' && !queryCheckIds.has(item.id))
+      const names = apiStatusInventory.filter(item => item.checkMode === 'registry' && !queryCheckIds.has(item.id) && item.id !== 'supabase-rpc-matrix_permission_settings')
         .map(item => item.endpoint.slice('/rest/v1/rpc/'.length));
       const url = new URL(`${current.url}/rest/v1/rpc/admin_api_registry`);
       url.searchParams.set('select', 'rpc_name');
@@ -183,11 +185,28 @@ export function createConnectionStatus(dependencies: Dependencies) {
       return new Set(rows.map(row => row.rpc_name as string));
     });
     const query = createApiQueryChecks({ loadWorkerUrl: () => withDeadline(async () => dependencies.loadWorkerUrl?.()), loadSupabaseConfig: config, fetcher, timeoutMs: requestTimeoutMs });
-    return { config, worker, registeredRpcs, query };
+    const readRpc = async (name: string, parameters = '') => {
+      const current = await config();
+      const response = await fetchWithDeadline(`${current.url}/rest/v1/rpc/${name}${parameters}`, {
+        method: 'GET', cache: 'no-store', redirect: 'error',
+        headers: { apikey: current.serviceRoleKey, Authorization: `Bearer ${current.serviceRoleKey}` },
+      });
+      if (!response.ok) throw new Error('STATUS_DATA_UNAVAILABLE');
+      return readJsonWithDeadline<unknown>(response);
+    };
+    const operationRows = memoizePromise(() => readRpc('admin_service_operation_evidence').catch(() => null));
+    const protectedResults = new Map<string, Promise<unknown>>();
+    const resultRows = (kind: 'tianyan' | 'tiangong') => {
+      let pending = protectedResults.get(kind);
+      if (!pending) { pending = readRpc('admin_matrix_result_probe', `?p_kind=${kind}`); protectedResults.set(kind, pending); }
+      return pending;
+    };
+    return { config, worker, registeredRpcs, query, readRpc, operationRows, resultRows };
   };
   const runDefinition = async (definition: ApiStatusDefinition, shared: ReturnType<typeof createSharedChecks>): Promise<ConnectionStatusItem> => {
     const started = now().getTime();
-    const checkEvidence: ApiCheckEvidence = queryCheckIds.has(definition.id) ? 'query'
+    const checkEvidence: ApiCheckEvidence = queryCheckIds.has(definition.id) || definition.id === 'supabase-rpc-matrix_permission_settings' ? 'query'
+      : protectedResultKinds[definition.id] ? 'data'
       : definition.id === 'supabase-watchdog-heartbeat' || definition.id === matrixStorageStatusId || definition.id === notificationCalendarStatusId ? 'reported'
       : definition.endpoint.startsWith('/functions/v1/') ? 'options'
       : definition.checkMode === 'registry' ? 'registered'
@@ -207,6 +226,15 @@ export function createConnectionStatus(dependencies: Dependencies) {
       if (queryCheckIds.has(definition.id)) {
         const result = await shared.query(definition.id);
         return { ...finish(result.ok, { samples: result.samples }, result.error), ...(result.ok && result.waiting ? { healthState: 'waiting' as const } : {}), checkEvidence: result.ok && result.skipped ? 'no-sample' : 'query' };
+      } else if (definition.id === 'supabase-rpc-matrix_permission_settings') {
+        const settings = parseSettings(await shared.readRpc('matrix_permission_settings'));
+        return finish(true, { revision: settings.revision, updatedAt: settings.updatedAt });
+      } else if (protectedResultKinds[definition.id]) {
+        const names = await shared.registeredRpcs();
+        if (!names.has(definition.endpoint.slice('/rest/v1/rpc/'.length))) throw new Error('RPC_NOT_REGISTERED');
+        const result = resultDataEvidence(await shared.resultRows(protectedResultKinds[definition.id]), definition.id.endsWith('_validation'));
+        return { ...finish(result.ok, { registered: true, probe: 'data', samples: result.samples }, result.ok ? undefined : '正式分析資料未通過讀取檢查，請查看各彩種明細。'),
+          checkEvidence: result.ok && result.skipped ? 'no-sample' : 'data' };
       } else if (definition.id === 'admin-api') {
         const response = await fetchWithDeadline(`${adminUrl}${definition.endpoint}`, { cache: 'no-store', redirect: 'error' });
         if (!response.ok) throw new Error('ADMIN_API_UNAVAILABLE');
@@ -272,8 +300,11 @@ export function createConnectionStatus(dependencies: Dependencies) {
         detail = { status: response.status };
       } else if (definition.checkMode === 'registry') {
         const names = await shared.registeredRpcs();
-        if (!names.has(definition.endpoint.slice('/rest/v1/rpc/'.length))) throw new Error('RPC_NOT_REGISTERED');
-        detail = { registered: true };
+        const rpc = definition.endpoint.slice('/rest/v1/rpc/'.length);
+        if (!names.has(rpc)) throw new Error('RPC_NOT_REGISTERED');
+        detail = { registered: true, ...(definition.rpcAccess === 'operation' ? {
+          activity: operationActivity(rpc, operationSources[rpc] ? await shared.operationRows() : null, now()),
+        } : {}) };
       } else if (definition.location === 'GitHub') {
         const token = await withDeadline(async () => dependencies.loadGithubToken?.());
         if (!token) throw new Error('GITHUB_CONFIG_MISSING');
@@ -304,6 +335,8 @@ export function createConnectionStatus(dependencies: Dependencies) {
       } else throw new Error('UNSUPPORTED_STATUS_CHECK');
       return finish(true, detail);
     } catch (cause) {
+      if (definition.id === 'supabase-rpc-matrix_permission_settings') return finish(false, undefined, '權限設定讀取失敗或資料格式不完整，請重新檢查。');
+      if (protectedResultKinds[definition.id]) return finish(false, undefined, '分析資料或 API 登記暫時無法確認，請重新檢查。');
       if (definition.id === notificationCalendarStatusId) return {
         ...finish(false, null, '六合彩開獎日曆狀態暫時無法取得。'), healthState: 'unknown',
       };

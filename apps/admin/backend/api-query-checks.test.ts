@@ -8,7 +8,7 @@ function fixture(input: RequestInfo | URL, init?: RequestInit) {
     const body = JSON.parse(String(init?.body)).p_request;
     return response(url.pathname.endsWith('_validation')
       ? { ...body, status: 'complete', validation: { ruleSets: [] } }
-      : { kind: 'explore', lottery: body.lottery, status: 'complete', drawPeriod: '123', analysisVersion: '123:v12', total: 1, items: [{ id: 'sample' }] });
+      : { kind: url.pathname.includes('_tianheng_') ? 'tianheng' : 'explore', lottery: body.lottery, status: 'complete', drawPeriod: '123', analysisVersion: '123:v12', total: 1, items: [{ id: 'sample' }] });
   }
   const body = init?.body ? JSON.parse(String(init.body)) : null;
   const lottery = body?.lottery ?? decodeURIComponent(url.pathname.split('/').pop()!);
@@ -23,6 +23,24 @@ function fixture(input: RequestInfo | URL, init?: RequestInit) {
 const make = (fetcher: typeof fetch, timeoutMs = 1000) => createApiQueryChecks({ fetcher, loadWorkerUrl: async () => 'https://worker.test', loadSupabaseConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'server-secret' }), timeoutMs });
 
 describe('automatic per API queries', () => {
+  it('checks Tianheng using its three-period public settings and a version-pinned validation sample', async () => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = JSON.parse(String(init?.body)).p_request;
+      expect(request.explorePeriods).toBe(3);
+      expect(request.exploreRange).toBe('標準範圍');
+      if (String(input).endsWith('_validation')) {
+        expect(request).toMatchObject({ itemId: 'balance', drawPeriod: '123', analysisVersion: '123:v15-sorted' });
+        return response({ ...request, status: 'complete', validation: { ruleSets: [] } });
+      }
+      return response({ kind: 'tianheng', lottery: request.lottery, status: 'complete', drawPeriod: '123', analysisVersion: '123:v15-sorted', total: 1, items: [{ id: 'balance' }] });
+    });
+    const probe = make(fetcher);
+    const results = await Promise.all(['list', 'validation'].map(part => probe(`supabase-rpc-matrix_tianheng_${part}`)));
+    expect(results.every(result => result.ok && !result.skipped)).toBe(true);
+    expect(fetcher).toHaveBeenCalledTimes(8);
+    expect(fetcher.mock.calls.every(([url]) => String(url).includes('/matrix_tianheng_'))).toBe(true);
+  });
+
   it('calls volatile Supabase RPCs with POST JSON bodies', async () => {
     const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (init?.method !== 'POST') return new Response(JSON.stringify({ error: 'METHOD_NOT_ALLOWED' }), { status: 405 });
@@ -49,7 +67,7 @@ describe('automatic per API queries', () => {
     const probe = make(fetcher);
     const results = await Promise.all([...queryCheckIds].map(probe));
     expect(results.every((r) => r.ok && r.samples.length === 4 && !r.skipped)).toBe(true);
-    expect(fetcher).toHaveBeenCalledTimes(28);
+    expect(fetcher).toHaveBeenCalledTimes(36);
     const urls = fetcher.mock.calls.map(([url]) => new URL(String(url)));
     expect(urls.filter((url) => url.pathname.endsWith('matrix_explore_list'))).toHaveLength(4);
     for (const [url, init] of fetcher.mock.calls) {

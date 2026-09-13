@@ -1,7 +1,7 @@
 import type { SupabaseConfig } from './supabase';
 
 const lotteries = ['今彩539', '天天樂', '六合彩', '大樂透'] as const;
-export const queryCheckIds = new Set(['railway-cards', 'railway-latest', 'railway-history', 'railway-tongxing', 'railway-number-reference', 'supabase-rpc-matrix_explore_list', 'supabase-rpc-matrix_explore_validation']);
+export const queryCheckIds = new Set(['railway-cards', 'railway-latest', 'railway-history', 'railway-tongxing', 'railway-number-reference', 'supabase-rpc-matrix_explore_list', 'supabase-rpc-matrix_explore_validation', 'supabase-rpc-matrix_tianheng_list', 'supabase-rpc-matrix_tianheng_validation']);
 const record = (value: unknown): value is Record<string, any> => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 const draw = (value: unknown, lottery: string): boolean => record(value)
   && typeof value.period === 'string' && value.period.length > 0
@@ -71,7 +71,7 @@ export function createApiQueryChecks(options: {
     return value;
   };
   let config: Promise<SupabaseConfig> | undefined;
-  const rpc = async (name: 'matrix_explore_list' | 'matrix_explore_validation', body: unknown) => {
+  const rpc = async (name: 'matrix_explore_list' | 'matrix_explore_validation' | 'matrix_tianheng_list' | 'matrix_tianheng_validation', body: unknown) => {
     const current = await (config ??= options.loadSupabaseConfig());
     return request(`${current.url}/rest/v1/rpc/${name}`, {
       method: 'POST',
@@ -84,14 +84,15 @@ export function createApiQueryChecks(options: {
     });
   };
   const lists = new Map<string, Promise<any>>();
-  const explore = (lottery: string) => {
-    let result = lists.get(lottery);
+  const analysis = (lottery: string, kind: 'explore' | 'tianheng') => {
+    const key = `${kind}:${lottery}`;
+    let result = lists.get(key);
     if (!result) {
-      result = rpc('matrix_explore_list', { lottery, numberOrder: '依號碼由小到大排序', explorePeriods: 2, exploreDateOffset: 0, exploreRange: '標準範圍', ruleCount: 1, roadTypes: ['加減', '合值', '拖牌'], selectedStreaks: ['準2進3', '準3進4', '準4進5', '準5進6', '準6進7', '準7進8', '準8進9', '準9進10'] }).then((value) => {
-        if (!record(value) || value.kind !== 'explore' || value.lottery !== lottery || value.status !== 'complete' || typeof value.drawPeriod !== 'string' || !value.drawPeriod || typeof value.analysisVersion !== 'string' || !value.analysisVersion || !Array.isArray(value.items) || value.total !== value.items.length || !value.items.every((item: unknown) => record(item) && typeof item.id === 'string' && item.id)) throw new Error('回傳資料格式不符。');
+      result = rpc(`matrix_${kind}_list`, { lottery, numberOrder: '依號碼由小到大排序', explorePeriods: kind === 'tianheng' ? 3 : 2, exploreDateOffset: 0, exploreRange: '標準範圍', ruleCount: 1, roadTypes: ['加減', '合值', '拖牌'], selectedStreaks: ['準2進3', '準3進4', '準4進5', '準5進6', '準6進7', '準7進8', '準8進9', '準9進10'] }).then((value) => {
+        if (!record(value) || value.kind !== kind || value.lottery !== lottery || value.status !== 'complete' || typeof value.drawPeriod !== 'string' || !value.drawPeriod || typeof value.analysisVersion !== 'string' || !value.analysisVersion || !Array.isArray(value.items) || value.total !== value.items.length || !value.items.every((item: unknown) => record(item) && typeof item.id === 'string' && item.id)) throw new Error('回傳資料格式不符。');
         return value;
       });
-      lists.set(lottery, result);
+      lists.set(key, result);
     }
     return result;
   };
@@ -100,11 +101,12 @@ export function createApiQueryChecks(options: {
     const samples = await Promise.all(lotteries.map(async (lottery) => {
       try {
         if (id.startsWith('supabase-rpc-')) {
-          const list = await explore(lottery);
+          const kind = id.includes('_tianheng_') ? 'tianheng' : 'explore';
+          const list = await analysis(lottery, kind);
           if (id.endsWith('_validation')) {
             if (!list.items.length) return { lottery, ok: true, skipped: true };
             const itemId = list.items[0].id;
-            const value = await rpc('matrix_explore_validation', { lottery, drawPeriod: list.drawPeriod, analysisVersion: list.analysisVersion, itemId, explorePeriods: 2, exploreRange: '標準範圍' });
+            const value = await rpc(`matrix_${kind}_validation`, { lottery, drawPeriod: list.drawPeriod, analysisVersion: list.analysisVersion, itemId, explorePeriods: kind === 'tianheng' ? 3 : 2, exploreRange: '標準範圍' });
             if (!record(value) || value.status !== 'complete' || value.lottery !== lottery || value.itemId !== itemId || value.drawPeriod !== list.drawPeriod || value.analysisVersion !== list.analysisVersion || !record(value.validation) || !Array.isArray(value.validation.ruleSets)) throw new Error('回傳資料格式不符。');
           }
           return { lottery, ok: true, period: list.drawPeriod, records: list.total };
