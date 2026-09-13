@@ -7,6 +7,7 @@ import httpx
 from app.repositories.analysis_repository import create_supabase_repository
 from app.scraping.sources import LatestDrawSource
 from app.settings import load_settings
+from app.services.marksix_calendar import sync_marksix_calendar
 from app.worker import create_notification_emitter, run_scheduled_worker
 
 
@@ -39,6 +40,9 @@ def main() -> int:
         settings.supabase_secret_key,
     )
     with httpx.Client(verify=create_railway_ssl_context()) as client:
+        calendar = sync_marksix_calendar(repository, client)
+        if calendar['status'] != 'not-due':
+            print(f"六合彩 calendar {calendar['status']}")
         source = LatestDrawSource(client)
         notification_emitter = create_notification_emitter(settings, client)
         if notification_emitter is None:

@@ -154,3 +154,20 @@ def test_worker_all_rejects_partial_notification_configuration(monkeypatch: pyte
 
     with pytest.raises(NotificationConfigurationError):
         worker_all.main()
+
+@pytest.mark.parametrize('module,args', [(worker_all, None), (worker, ['--lottery','六合彩','--scheduled'])])
+def test_official_calendar_sync_precedes_the_worker_even_when_no_draw_is_due(monkeypatch, module, args):
+    repository, source = _stub_shared_dependencies(monkeypatch, module)
+    monkeypatch.setattr(module, 'load_settings', lambda: _settings())
+    if module is worker_all:
+        monkeypatch.setattr(module, 'create_railway_ssl_context', lambda: object())
+    calls = []
+    def sync(actual_repository, client):
+        assert actual_repository is repository
+        calls.append('calendar')
+        return {'status':'unavailable'}
+    monkeypatch.setattr(module, 'sync_marksix_calendar', sync, raising=False)
+    monkeypatch.setattr(module, 'run_scheduled_worker', lambda lottery, *_: calls.append(lottery) or {'lottery':lottery,'status':'not-due'})
+    assert (module.main() if args is None else module.main(args)) == 0
+    assert calls[0] == 'calendar'
+    assert '六合彩' in calls[1:]

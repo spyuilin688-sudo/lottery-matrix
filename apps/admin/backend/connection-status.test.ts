@@ -78,7 +78,7 @@ describe('connection status', () => {
       checkMode: 'registry',
       checkEvidence: 'registered',
     });
-    expect(result.items).toHaveLength(65);
+    expect(result.items).toHaveLength(66);
     expect(result.items.every((item) => item.location && item.endpoint && item.group)).toBe(true);
     expect(result.items.map((item) => item.id)).not.toEqual(expect.arrayContaining([
       'api-appdeploy',
@@ -133,7 +133,7 @@ describe('connection status', () => {
       now: () => new Date('2026-08-21T03:00:00Z'),
     });
     const result = await status.get();
-    expect(result.items).toHaveLength(65);
+    expect(result.items).toHaveLength(66);
     expect(result.items.find((item) => item.id === 'railway-health')).toMatchObject({
       ok: true,
       retryable: true,
@@ -370,7 +370,7 @@ describe('connection status', () => {
     expect(result.items.find((item) => item.id === 'supabase-rpc-claim_matrix_watchdog_lease')).toMatchObject({ ok: true });
     expect(result.items.find((item) => item.id === 'supabase-rpc-notification_dispatch_mark_sent')).toMatchObject({ ok: true });
     expect(fetcher.mock.calls.filter(([input]) => new URL(String(input)).pathname === '/rest/v1/rpc/admin_api_registry')).toHaveLength(1);
-    expect(fetcher.mock.calls.filter(([input]) => String(input).includes('/rest/v1/rpc/')).every(([input]) => ['/rest/v1/rpc/matrix_explore_list', '/rest/v1/rpc/admin_api_registry', '/rest/v1/rpc/matrix_analysis_storage_health'].includes(new URL(String(input)).pathname))).toBe(true);
+    expect(fetcher.mock.calls.filter(([input]) => String(input).includes('/rest/v1/rpc/')).every(([input]) => ['/rest/v1/rpc/matrix_explore_list', '/rest/v1/rpc/admin_api_registry', '/rest/v1/rpc/matrix_analysis_storage_health', '/rest/v1/rpc/notification_draw_calendar_status'].includes(new URL(String(input)).pathname))).toBe(true);
   });
 
   it('inherits Railway recovery status without posting to recovery', async () => {
