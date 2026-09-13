@@ -36,7 +36,7 @@ before(async () => {
   await db.exec(read('../migrations/20260908022115_simplify_matrix_card_notification_body.sql'));
   const migration = read('../migrations/20260913133102_notification_reminder_draw_days.sql');
   if (migration.trim()) await db.exec(migration);
-  await db.exec(read('../migrations/20260913150709_notification_marksix_official_calendar.sql'));
+  await db.exec(read('../migrations/20260913153424_notification_marksix_official_calendar.sql'));
 });
 after(async () => db.close());
 test('an unconfirmed Mark Six date fails closed instead of using Thursday', async () => {
