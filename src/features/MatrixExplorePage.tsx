@@ -497,7 +497,7 @@ export function MatrixExplorePage({
               <span className="advanced-setting-title">
                 <SettingLabelIcon type="order" />號碼順序
               </span>
-              <div className="select-box native-select">
+              <div className="native-select">
                 <select
                   aria-label="號碼順序"
                   value={numberOrder}

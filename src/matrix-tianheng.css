@@ -9,30 +9,9 @@
   row-gap: 1.5px;
 }
 
-.matrix-tianheng-screen .tianheng-summary-lines {
-  grid-template-columns: max-content minmax(0, 1fr);
-  column-gap: 4.5px;
-  align-items: center;
-}
-
-.matrix-tianheng-screen .tianheng-summary-open-label {
-  grid-column: 1;
-  grid-row: 1 / 3;
-  align-self: center;
-}
-
 .matrix-tianheng-screen .tianheng-summary-lines .tianyan-validation-summary-row {
-  grid-column: 2;
   justify-content: flex-start;
   width: max-content;
-}
-
-.matrix-tianheng-screen .tianheng-summary-row--first {
-  grid-row: 1;
-}
-
-.matrix-tianheng-screen .tianheng-summary-row--second {
-  grid-row: 2;
 }
 
 .matrix-tianheng-screen .explore-validation-summary-card {

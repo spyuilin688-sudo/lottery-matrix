@@ -712,16 +712,16 @@ export function TianhengValidationProcess({
             <header className="explore-validation-summary-card">
               <ExploreValidationSummary layout="tianyan">
                 <span className="tianyan-validation-summary-lines tianheng-summary-lines" aria-label="版路摘要">
-                  <span className="tianheng-summary-open-label">開</span>
-                  <span className="tianyan-validation-summary-row tianheng-summary-row--first" data-testid="tianheng-summary-row">
+                  <span className="tianyan-validation-summary-row" data-testid="tianheng-summary-row">
+                    <span>開</span>
                     {summaryLocked(item.firstNumber, item.firstLockedPosition)}
-                    {divider}
+                    <span>與</span>
+                    {summaryLocked(item.secondNumber, item.secondLockedPosition)}
+                  </span>
+                  <span className="tianyan-validation-summary-row" data-testid="tianheng-summary-row">
                     {summaryDirection()}
                     {divider}
                     <span>第 <i className="validation-summary-position">{summaryPosition}</i> 顆</span>
-                  </span>
-                  <span className="tianyan-validation-summary-row tianheng-summary-row--second" data-testid="tianheng-summary-row">
-                    {summaryLocked(item.secondNumber, item.secondLockedPosition)}
                     {divider}
                     {item.algorithmType === "合值" ? (
                       <span className="validation-summary-formula-sequence">

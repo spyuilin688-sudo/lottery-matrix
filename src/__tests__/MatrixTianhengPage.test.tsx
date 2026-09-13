@@ -342,11 +342,24 @@ it('orders the drag summary in exactly two rows', async () => {
   const rows = await screen.findAllByTestId('tianheng-summary-row');
   expect(rows).toHaveLength(2);
   expect(within(summary).getAllByText('開')).toHaveLength(1);
-  expect(within(summary).getByText('開')).toHaveClass('tianheng-summary-open-label');
-  expect(rows[0].firstElementChild).toHaveTextContent('05');
-  expect(rows[1].firstElementChild).toHaveTextContent('18');
-  expect(rows[0]).toHaveTextContent('05 第 1 顆｜同期｜第 1 顆');
-  expect(rows[1]).toHaveTextContent('18 第 4 顆｜+14.24｜下 5 期開');
+  expect(rows[0].firstElementChild).toHaveTextContent('開');
+  expect(rows[0]).toHaveTextContent('開05 第 1 顆與18 第 4 顆');
+  expect(rows[1]).toHaveTextContent('同期｜第 1 顆｜+14.24｜下 5 期開');
+});
+
+it('places both source numbers on the first summary row and the complete rule on the second', async () => {
+  const validation = { ...tianhengValidation, ruleSets: [{ ...tianhengValidation.ruleSets[0],
+    rules: [{ value: 12, display: '+12', algorithmType: '加減' }, { value: 33, display: '+33', algorithmType: '加減' }],
+  }] };
+  fireEvent.click(await renderTianhengResult({ firstNumber: '02', firstLockedPosition: 1,
+    secondNumber: '09', secondLockedPosition: 3, referenceOffset: 8, referencePosition: 1,
+    predictionDistance: 13, algorithmType: '加減' }, validation));
+  const rows = await screen.findAllByTestId('tianheng-summary-row');
+  expect(rows).toHaveLength(2);
+  expect(rows[0]).toHaveTextContent('開02 第 1 顆與09 第 3 顆');
+  expect(rows[0].querySelectorAll('.validation-summary-divider')).toHaveLength(0);
+  expect(rows[1]).toHaveTextContent('下 8 期｜第 1 顆｜+12.33｜下 13 期開');
+  expect(rows[1].querySelectorAll('.validation-summary-divider')).toHaveLength(3);
 });
 
 it('highlights both locked numbers in every source group', async () => {
@@ -473,4 +486,19 @@ it('clears results and validation caches on data revision and ignores stale vali
   fireEvent.click(fresh);
   await act(async () => {});
   expect(matrixApi.fetchTianhengValidation).toHaveBeenCalledTimes(2);
+});
+
+
+it.each(['探索', '天衡', '天衍'] as const)('%s進階設定保留號碼順序及收合前的選擇', async name => {
+  render(<MatrixExplorePage title={`Matrix ${name}`} onNavigate={vi.fn()} />);
+  await act(async () => {});
+  const toggle = screen.getByRole('button', { name: `進階${name}設定` });
+  fireEvent.click(toggle);
+  const order = screen.getByRole('combobox', { name: '號碼順序' });
+  expect(within(order).getAllByRole('option')).toHaveLength(2);
+  fireEvent.change(order, { target: { value: '依實際開獎順序排序' } });
+  fireEvent.click(toggle);
+  expect(screen.queryByRole('combobox', { name: '號碼順序' })).not.toBeInTheDocument();
+  fireEvent.click(toggle);
+  expect(screen.getByRole('combobox', { name: '號碼順序' })).toHaveValue('依實際開獎順序排序');
 });
