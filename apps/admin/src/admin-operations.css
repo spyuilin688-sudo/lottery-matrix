@@ -24,10 +24,9 @@
 .railwayOperationControls select,
 .operationDialog input,
 .operationDialog select { width: 100%; }
-.managementToolbar select { width: auto; }
 
 .managementToolbar input { height: 32px; }
-.managementToolbar select { height: 32px; }
+.managementToolbar select { height: 32px; width: auto; }
 .operationDialog input,
 .operationDialog select,
 .formGrid input,
