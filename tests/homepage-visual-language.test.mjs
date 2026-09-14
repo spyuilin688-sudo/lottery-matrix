@@ -37,15 +37,20 @@ test("does not add navigation-height clearance above the fixed homepage navigati
   assert.doesNotMatch(visualLanguage, /\.home-screen \.home-layout\s*\{[^}]*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);/s);
 });
 
-test("preserves the four semantic Matrix status tones", () => {
-  for (const tone of ["ACTIVE", "FOCUS", "RESONANCE", "CRITICAL"]) {
-    assert.match(visualLanguage, new RegExp(`data-status="${tone}"`));
-  }
+test("status cards share the thin gold frame in every load and press state", () => {
+  assert.match(base, /\.home-screen \.matrix-status-card\s*\{[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*box-shadow:\s*inset 0 0 0 1px var\(--home-frame-gold\);/s);
+  assert.doesNotMatch(base, /\.home-screen \.matrix-status-card\s*\{[^}]*clip-path:/s);
+  assert.doesNotMatch(visualLanguage, /--home-status-(?:tone|glow)|matrix-status-card:active/);
+  assert.doesNotMatch(base, /\.matrix-status-card\[data-load-state="(?:loading|error)"\]\s*\{[^}]*box-shadow:/s);
+  assert.match(base, /\.matrix-status-card:active,[\s\S]*?filter:\s*brightness\(1\.15\);/);
 });
 
-test("keeps idle status glow restrained and strengthens it only while pressed", () => {
-  assert.match(base, /--home-status-glow:\s*color-mix\(in srgb, var\(--home-status-tone\) 18%, transparent\);/);
-  assert.match(visualLanguage, /\.home-screen \.matrix-status-card:active\s*\{[^}]*26%/s);
+test("removes only the artwork perimeter without moving or resizing the content", () => {
+  const artwork = base.match(/\.home-screen \.matrix-status-artwork\s*\{([^}]*)\}/s)[1];
+  assert.match(artwork, /clip-path:\s*inset\(6% 4% round 4px\);/);
+  assert.match(artwork, /width:\s*100%;/);
+  assert.match(artwork, /height:\s*auto;/);
+  assert.doesNotMatch(artwork, /(?:^|;)\s*(?:transform|position|margin|scale):/);
 });
 
 test("does not replace or redraw existing homepage artwork", () => {
@@ -57,5 +62,5 @@ test("derives homepage colors from the canonical runtime tokens", () => {
   assert.match(visualLanguage, /var\(--lottery-gold-500\)/);
   assert.match(visualLanguage, /var\(--lottery-gold-300\)/);
   assert.match(base, /var\(--lottery-card-bg\)/);
-  assert.match(visualLanguage, /var\(--matrix-status-active\)/);
+  assert.match(base, /var\(--home-frame-gold\)/);
 });

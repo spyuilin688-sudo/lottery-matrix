@@ -476,20 +476,8 @@
   line-height: 0;
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
-  clip-path: polygon(
-    var(--home-octagon-cut) 0,
-    calc(100% - var(--home-octagon-cut)) 0,
-    100% var(--home-octagon-cut),
-    100% calc(100% - var(--home-octagon-cut)),
-    calc(100% - var(--home-octagon-cut)) 100%,
-    var(--home-octagon-cut) 100%,
-    0 calc(100% - var(--home-octagon-cut)),
-    0 var(--home-octagon-cut)
-  );
-  border-radius: 0;
-  --home-status-tone: var(--lottery-gold-300);
-  --home-status-glow: color-mix(in srgb, var(--home-status-tone) 18%, transparent);
-  box-shadow: 0 0 3px var(--home-status-glow);
+  border-radius: var(--home-frame-radius);
+  box-shadow: inset 0 0 0 1px var(--home-frame-gold);
 }
 
 .home-screen .matrix-status-artwork {
@@ -501,16 +489,13 @@
   object-fit: contain;
   object-position: center;
   pointer-events: none;
+  /* Remove the baked-in perimeter frame without scaling or moving the artwork. */
+  clip-path: inset(6% 4% round 4px);
 }
 
 .home-screen .matrix-status-card[data-load-state="loading"] .matrix-status-artwork,
 .home-screen .matrix-status-card[data-load-state="error"] .matrix-status-artwork {
   visibility: hidden;
-}
-
-.home-screen .matrix-status-card[data-load-state="loading"],
-.home-screen .matrix-status-card[data-load-state="error"] {
-  box-shadow: inset 0 0 0 1px var(--lottery-border-default);
 }
 
 .home-screen .matrix-status-message {
@@ -590,6 +575,7 @@
   text-align: center;
 }
 
+.home-screen .matrix-status-card:active,
 .home-screen .matrix-core-banner:active,
 .home-screen .home-shortcut:active {
   filter: brightness(1.15);
