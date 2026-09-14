@@ -33,39 +33,47 @@ function supportsPushNotifications(): boolean {
   return typeof Notification !== 'undefined' && serviceWorkerContainer() !== null;
 }
 
-function withRegistrationTimeout<T>(promise: Promise<T>): Promise<T> {
+function registrationTimeoutError() {
+  return new Error('PUSH_SERVICE_WORKER_TIMEOUT');
+}
+
+function withRegistrationTimeout<T>(operation: (signal: AbortSignal) => Promise<T>): Promise<T> {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('PUSH_SERVICE_WORKER_TIMEOUT')), REGISTRATION_TIMEOUT_MS);
-    void promise.then(
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      controller.abort();
+      reject(registrationTimeoutError());
+    }, REGISTRATION_TIMEOUT_MS);
+    void operation(controller.signal).then(
       (value) => { clearTimeout(timer); resolve(value); },
       (error) => { clearTimeout(timer); reject(error); },
     );
   });
 }
 
-function observeControllerChange(serviceWorker: ServiceWorkerContainer) {
+function observeControllerChange(serviceWorker: ServiceWorkerContainer, signal: AbortSignal) {
   let changed = false;
   let resolveChange!: () => void;
-  let rejectChange!: (error: Error) => void;
-  const promise = new Promise<void>((resolve, reject) => {
+  const promise = new Promise<void>((resolve) => {
     resolveChange = resolve;
-    rejectChange = reject;
   });
   const handleChange = () => {
     changed = true;
     resolveChange();
   };
-  const timer = setTimeout(
-    () => rejectChange(new Error('PUSH_SERVICE_WORKER_ACTIVATION_TIMEOUT')),
-    REGISTRATION_TIMEOUT_MS,
-  );
+  const handleAbort = () => {
+    serviceWorker.removeEventListener('controllerchange', handleChange);
+    resolveChange();
+  };
   serviceWorker.addEventListener('controllerchange', handleChange);
+  signal.addEventListener('abort', handleAbort, { once: true });
+  if (signal.aborted) handleAbort();
   return {
     changed: () => changed,
     promise,
     stop: () => {
-      clearTimeout(timer);
       serviceWorker.removeEventListener('controllerchange', handleChange);
+      signal.removeEventListener('abort', handleAbort);
     },
   };
 }
@@ -75,7 +83,7 @@ export async function registerPushServiceWorker(
 ): Promise<ServiceWorkerRegistration> {
   const serviceWorker = serviceWorkerContainer();
   if (!serviceWorker) throw new Error('PUSH_SERVICE_WORKER_UNSUPPORTED');
-  return withRegistrationTimeout((async () => {
+  return withRegistrationTimeout(async (signal) => {
     const existing = typeof serviceWorker.getRegistration === 'function'
       ? await serviceWorker.getRegistration(SERVICE_WORKER_PATH)
       : undefined;
@@ -86,23 +94,40 @@ export async function registerPushServiceWorker(
     if (typeof existing.update !== 'function') return existing;
 
     const previousController = serviceWorker.controller;
-    const controllerChange = observeControllerChange(serviceWorker);
+    const controllerChange = observeControllerChange(serviceWorker, signal);
     try {
       const updated = await existing.update();
+      if (signal.aborted) throw registrationTimeoutError();
       if (controllerChange.changed() || serviceWorker.controller !== previousController) return updated;
       if (!updated.installing && !updated.waiting) return updated;
       await controllerChange.promise;
+      if (signal.aborted) throw registrationTimeoutError();
       return updated;
     } finally {
       controllerChange.stop();
     }
-  })());
+  });
+}
+
+async function getRegisteredServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+  const serviceWorker = serviceWorkerContainer();
+  if (!serviceWorker) return null;
+  return withRegistrationTimeout(async (signal) => {
+    const existing = typeof serviceWorker.getRegistration === 'function'
+      ? await serviceWorker.getRegistration(SERVICE_WORKER_PATH)
+      : undefined;
+    if (existing) return existing;
+    if (!serviceWorker.ready) return null;
+    const registration = await serviceWorker.ready;
+    if (signal.aborted) throw registrationTimeoutError();
+    return registration;
+  });
 }
 
 async function getPushContext(): Promise<PushContext | null> {
   if (!supportsPushNotifications()) return null;
   try {
-    const registration = await registerPushServiceWorker({ update: false });
+    const registration = await getRegisteredServiceWorker();
     const pushManager = registration?.pushManager;
     if (!pushManager || typeof pushManager.getSubscription !== 'function' || typeof pushManager.subscribe !== 'function') return null;
     return { pushManager };

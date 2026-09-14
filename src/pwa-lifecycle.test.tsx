@@ -90,7 +90,7 @@ describe("PWA install lifecycle", () => {
 
     await waitFor(() => expect(prompt).toHaveBeenCalledTimes(1));
     expect(onResult).toHaveBeenCalledWith("accepted");
-    expect(serviceWorker.register).toHaveBeenCalledWith("/push-service-worker.js");
+    expect(serviceWorker.register).not.toHaveBeenCalled();
   });
 
   it("offers iOS add-to-home-screen instructions when no native prompt exists", async () => {
@@ -169,7 +169,7 @@ describe("PWA update lifecycle", () => {
 
     serviceWorker.dispatchEvent(new Event("controllerchange"));
 
-    await waitFor(() => expect(serviceWorker.register).toHaveBeenCalledTimes(1));
+    expect(serviceWorker.register).not.toHaveBeenCalled();
     expect(screen.queryByRole("dialog", { name: "發現新版本" })).not.toBeInTheDocument();
   });
 

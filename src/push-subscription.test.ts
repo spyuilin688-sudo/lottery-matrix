@@ -188,6 +188,23 @@ describe('PWA push subscriptions', () => {
     });
   });
 
+  it('waits for the startup-owned worker without registering from a push status read', async () => {
+    installSupportedPushApi('granted', {
+      register,
+      getRegistration,
+      ready: Promise.resolve({ pushManager: { subscribe, getSubscription } }),
+      addEventListener: addServiceWorkerListener,
+      removeEventListener: removeServiceWorkerListener,
+    });
+    getRegistration.mockResolvedValue(undefined);
+    memberApi.fetchPushSubscriptionStatus.mockResolvedValue({ enabled: true });
+
+    await expect(getPushStatus()).resolves.toEqual({
+      supported: true, permission: 'granted', enabled: true,
+    });
+    expect(register).not.toHaveBeenCalled();
+  });
+
   it('checks an existing service worker registration for an update', async () => {
     getRegistration.mockResolvedValue({
       active: { state: 'activated' },
@@ -238,6 +255,45 @@ describe('PWA push subscriptions', () => {
     await operation;
     expect(resolved).toBe(true);
     expect(serviceWorker.removeEventListener).toHaveBeenCalled();
+  });
+
+  it('cleans the controller listener when a worker update times out without a second rejection', async () => {
+    vi.useFakeTimers();
+    const listeners = new Set<EventListener>();
+    const serviceWorker = {
+      controller: {} as ServiceWorker,
+      getRegistration,
+      register,
+      addEventListener: vi.fn((type: string, listener: EventListener) => {
+        if (type === 'controllerchange') listeners.add(listener);
+      }),
+      removeEventListener: vi.fn((type: string, listener: EventListener) => {
+        if (type === 'controllerchange') listeners.delete(listener);
+      }),
+    };
+    let finishUpdate!: (registration: ServiceWorkerRegistration) => void;
+    const registration = {
+      active: serviceWorker.controller,
+      installing: {} as ServiceWorker,
+      waiting: null,
+      pushManager: { subscribe, getSubscription },
+      update: updateRegistration,
+    } as unknown as ServiceWorkerRegistration;
+    updateRegistration.mockReturnValue(new Promise((resolve) => { finishUpdate = resolve; }));
+    getRegistration.mockResolvedValue(registration);
+    installSupportedPushApi('default', serviceWorker);
+
+    const operation = registerPushServiceWorker();
+    const failure = operation.catch((error: unknown) => error);
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    await expect(failure).resolves.toMatchObject({ message: 'PUSH_SERVICE_WORKER_TIMEOUT' });
+    expect(listeners.size).toBe(0);
+
+    finishUpdate(registration);
+    await vi.runAllTimersAsync();
+    expect(listeners.size).toBe(0);
+    vi.useRealTimers();
   });
 
   it('does not create a subscription when the Push API is unsupported', async () => {

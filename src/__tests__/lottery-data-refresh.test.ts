@@ -14,10 +14,10 @@ test('shares one timer for mounted readers, coalesces revisions and stops after 
   await vi.advanceTimersByTimeAsync(0);
   expect(first).toHaveBeenCalledTimes(1);
   expect(second).toHaveBeenCalledTimes(1);
-  await vi.advanceTimersByTimeAsync(60_000);
+  await vi.advanceTimersByTimeAsync(3_600_000);
   expect(first).toHaveBeenCalledTimes(2);
   stopFirst();
-  await vi.advanceTimersByTimeAsync(60_000);
+  await vi.advanceTimersByTimeAsync(3_600_000);
   expect(first).toHaveBeenCalledTimes(2);
   expect(second).toHaveBeenCalledTimes(3);
   stopSecond();
@@ -31,10 +31,20 @@ test('suspends hidden-page polling and refreshes when visible again', async () =
   const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
   const refresh = vi.fn();
   const stop = subscribeLotteryRefresh('六合彩', refresh);
-  await vi.advanceTimersByTimeAsync(60_000);
+  await vi.advanceTimersByTimeAsync(3_600_000);
   expect(refresh).not.toHaveBeenCalled();
   visibility.mockReturnValue('visible');
   document.dispatchEvent(new Event('visibilitychange'));
+  await vi.advanceTimersByTimeAsync(0);
+  expect(refresh).toHaveBeenCalledTimes(1);
+  stop();
+});
+
+test('refreshes immediately when the browser comes back online', async () => {
+  vi.useFakeTimers();
+  const refresh = vi.fn();
+  const stop = subscribeLotteryRefresh('天天樂', refresh);
+  window.dispatchEvent(new Event('online'));
   await vi.advanceTimersByTimeAsync(0);
   expect(refresh).toHaveBeenCalledTimes(1);
   stop();
