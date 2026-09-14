@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const homeCss = readFileSync(new URL("../src/homepage/base.css", import.meta.url), "utf8");
+const switcherCss = readFileSync(new URL("../src/homepage/lottery-switcher.css", import.meta.url), "utf8");
 const guideCss = readFileSync(new URL("../src/feature-page-adjustments.css", import.meta.url), "utf8");
 const source = readFeaturePagesSource();
 const guideStart = source.indexOf("export function MatrixGuidePage");
@@ -12,7 +13,7 @@ const guideSource = source.slice(guideStart, guideEnd);
 
 test("首頁各區塊獨立擁有指定左右外距", () => {
   assert.match(homeCss, /\.home-screen \.lottery-screen\s*\{[^}]*--home-content-width:\s*calc\(min\(100vw, 390px\) - 32px\);[^}]*padding:\s*0;/s);
-  assert.match(homeCss, /\.lottery-switcher--home-style\s*\{[^}]*width:\s*calc\(100% - 32px\);/s);
+  assert.match(switcherCss, /\.lottery-switcher--home-style\s*\{[^}]*width:\s*calc\(100% - 32px\);/s);
   assert.match(homeCss, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*calc\(100% - 32px\);/s);
   assert.match(homeCss, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\);/s);
   assert.match(homeCss, /--home-core-width:\s*calc\(min\(100vw, 390px\) - 32px\);/s);
