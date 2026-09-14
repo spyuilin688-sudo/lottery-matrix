@@ -128,8 +128,7 @@
   inset: 44px 4px 24px;
   border-radius: 4px;
   background:
-    radial-gradient(circle at 50% 82%, transparent 0 18%, rgba(0, 5, 10, .28) 48%, rgba(0, 5, 10, .56) 100%),
-    linear-gradient(180deg, rgba(0, 4, 9, .18), rgba(0, 4, 9, .3) 54%, transparent 92%);
+    radial-gradient(ellipse at 50% 100%, transparent 58%, rgba(214, 182, 111, .10) 59%, transparent 60%, transparent 75%, rgba(214, 182, 111, .06) 76%, transparent 77%);
   content: "";
   pointer-events: none;
 }
@@ -152,10 +151,10 @@
   min-height: 0;
   margin-inline: 0;
   padding: 9px 0 0;
-  border: 1px solid rgba(229, 179, 77, .56);
-  border-radius: 10px;
-  background: url("/assets/lottery/functions/開獎資訊卡.png") center / 100% 100% no-repeat;
-  box-shadow: inset 0 0 10px rgba(229, 179, 77, .10), 0 0 5px rgba(229, 179, 77, .08);
+  border: 0;
+  border-radius: var(--home-frame-radius);
+  background: linear-gradient(180deg, #071018, #04090d);
+  box-shadow: inset 0 0 0 1px var(--home-frame-gold);
   color: var(--lottery-text-primary);
   overflow: visible;
 }

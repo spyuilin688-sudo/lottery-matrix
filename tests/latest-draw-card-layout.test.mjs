@@ -80,7 +80,12 @@ test("底部資訊改為參考圖的兩個獨立鑲嵌切角容器", () => {
   assert.match(css, /\.next-draw-value\s*\{[^}]*font-size:\s*11px/s);
 });
 
-test("彩球區降低周邊光效並保留中央光點與底部波紋", () => {
-  assert.match(css, /\.home-screen \.latest-draw-card::before\s*\{[^}]*radial-gradient\(circle at 50% 82%[^}]*pointer-events:\s*none/s);
+test("開獎卡使用單層細金框與簡潔背景，保留內容盒尺寸", () => {
+  const cardRules = ruleBodies(css, ".home-screen .latest-draw-card").join("\n");
+  assert.match(cardRules, /border:\s*0;[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
+  assert.match(cardRules, /box-shadow:\s*inset 0 0 0 1px var\(--home-frame-gold\);/);
+  assert.doesNotMatch(cardRules, /clip-path\s*:|開獎資訊卡\.png/);
+  assert.equal(ruleBodies(css, ".home-screen .latest-draw-card::after").length, 0);
+  assert.match(css, /\.home-screen \.latest-draw-card::before\s*\{[^}]*radial-gradient\(ellipse at 50% 100%[^}]*pointer-events:\s*none/s);
   assert.match(css, /\.home-screen \.latest-draw-card > \*\s*\{[^}]*z-index:\s*1/s);
 });
