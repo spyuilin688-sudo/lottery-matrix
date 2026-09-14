@@ -2,7 +2,6 @@
 
 :is(.home-screen, .matrix-status-screen, .matrix-custom-status-screen) {
   --home-octagon-cut: clamp(4px, 1.54vw, 6px);
-  --home-frame-inset: 2px;
   --home-frame-border: color-mix(in srgb, var(--lottery-gold-500) 56%, transparent);
   --home-frame-color: var(--home-frame-border);
   --home-frame-shadow: inset 0 0 8px color-mix(in srgb, var(--lottery-gold-500) 10%, transparent), 0 0 4px color-mix(in srgb, var(--lottery-gold-500) 8%, transparent);
@@ -11,27 +10,6 @@
 
 .home-screen .home-bottom-group {
   margin-block-start: var(--home-gap-status-core);
-}
-
-.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
-  --home-frame-inner-color: color-mix(in srgb, var(--home-frame-color) 48%, transparent);
-  --home-octagon-frame:
-    linear-gradient(var(--home-frame-color) 0 0) top center / calc(100% - var(--home-octagon-cut) - var(--home-octagon-cut)) var(--lottery-stroke-default) no-repeat,
-    linear-gradient(var(--home-frame-color) 0 0) bottom center / calc(100% - var(--home-octagon-cut) - var(--home-octagon-cut)) var(--lottery-stroke-default) no-repeat,
-    linear-gradient(var(--home-frame-color) 0 0) left center / var(--lottery-stroke-default) calc(100% - var(--home-octagon-cut) - var(--home-octagon-cut)) no-repeat,
-    linear-gradient(var(--home-frame-color) 0 0) right center / var(--lottery-stroke-default) calc(100% - var(--home-octagon-cut) - var(--home-octagon-cut)) no-repeat,
-    linear-gradient(135deg, transparent calc(50% - .5px), var(--home-frame-color) calc(50% - .5px), var(--home-frame-color) calc(50% + .5px), transparent calc(50% + .5px)) top left / var(--home-octagon-cut) var(--home-octagon-cut) no-repeat,
-    linear-gradient(45deg, transparent calc(50% - .5px), var(--home-frame-color) calc(50% - .5px), var(--home-frame-color) calc(50% + .5px), transparent calc(50% + .5px)) top right / var(--home-octagon-cut) var(--home-octagon-cut) no-repeat,
-    linear-gradient(45deg, transparent calc(50% - .5px), var(--home-frame-color) calc(50% - .5px), var(--home-frame-color) calc(50% + .5px), transparent calc(50% + .5px)) bottom left / var(--home-octagon-cut) var(--home-octagon-cut) no-repeat,
-    linear-gradient(135deg, transparent calc(50% - .5px), var(--home-frame-color) calc(50% - .5px), var(--home-frame-color) calc(50% + .5px), transparent calc(50% + .5px)) bottom right / var(--home-octagon-cut) var(--home-octagon-cut) no-repeat,
-    linear-gradient(var(--home-frame-inner-color) 0 0) center top var(--home-frame-inset) / calc(100% - var(--home-octagon-cut) - var(--home-octagon-cut)) var(--lottery-stroke-default) no-repeat,
-    linear-gradient(var(--home-frame-inner-color) 0 0) center bottom var(--home-frame-inset) / calc(100% - var(--home-octagon-cut) - var(--home-octagon-cut)) var(--lottery-stroke-default) no-repeat,
-    linear-gradient(var(--home-frame-inner-color) 0 0) left var(--home-frame-inset) center / var(--lottery-stroke-default) calc(100% - var(--home-octagon-cut) - var(--home-octagon-cut)) no-repeat,
-    linear-gradient(var(--home-frame-inner-color) 0 0) right var(--home-frame-inset) center / var(--lottery-stroke-default) calc(100% - var(--home-octagon-cut) - var(--home-octagon-cut)) no-repeat,
-    linear-gradient(135deg, transparent calc(50% - .5px), var(--home-frame-inner-color) calc(50% - .5px), var(--home-frame-inner-color) calc(50% + .5px), transparent calc(50% + .5px)) left var(--home-frame-inset) top var(--home-frame-inset) / calc(var(--home-octagon-cut) - var(--home-frame-inset)) calc(var(--home-octagon-cut) - var(--home-frame-inset)) no-repeat,
-    linear-gradient(45deg, transparent calc(50% - .5px), var(--home-frame-inner-color) calc(50% - .5px), var(--home-frame-inner-color) calc(50% + .5px), transparent calc(50% + .5px)) right var(--home-frame-inset) top var(--home-frame-inset) / calc(var(--home-octagon-cut) - var(--home-frame-inset)) calc(var(--home-octagon-cut) - var(--home-frame-inset)) no-repeat,
-    linear-gradient(45deg, transparent calc(50% - .5px), var(--home-frame-inner-color) calc(50% - .5px), var(--home-frame-inner-color) calc(50% + .5px), transparent calc(50% + .5px)) left var(--home-frame-inset) bottom var(--home-frame-inset) / calc(var(--home-octagon-cut) - var(--home-frame-inset)) calc(var(--home-octagon-cut) - var(--home-frame-inset)) no-repeat,
-    linear-gradient(135deg, transparent calc(50% - .5px), var(--home-frame-inner-color) calc(50% - .5px), var(--home-frame-inner-color) calc(50% + .5px), transparent calc(50% + .5px)) right var(--home-frame-inset) bottom var(--home-frame-inset) / calc(var(--home-octagon-cut) - var(--home-frame-inset)) calc(var(--home-octagon-cut) - var(--home-frame-inset)) no-repeat;
 }
 
 .home-screen .matrix-status-card {
@@ -53,58 +31,6 @@
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-}
-
-.home-screen .latest-draw-card .next-draw-info--embedded {
-  position: relative;
-  isolation: isolate;
-  gap: 0;
-  border: 0;
-  border-radius: 0;
-  clip-path: none;
-  background: transparent;
-  overflow: visible;
-}
-
-.home-screen .latest-draw-card .next-draw-info--embedded::before {
-  display: none;
-}
-
-.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
-  --home-octagon-cut: clamp(4px, 1.54vw, 6px);
-  position: relative;
-  isolation: isolate;
-  border: 0;
-  border-radius: 0;
-  background: linear-gradient(180deg, rgba(23, 18, 8, .72), rgba(4, 7, 10, .94));
-  box-shadow: inset 0 0 8px color-mix(in srgb, var(--lottery-gold-500) 9%, transparent);
-  clip-path: polygon(
-    var(--home-octagon-cut) 0,
-    calc(100% - var(--home-octagon-cut)) 0,
-    100% var(--home-octagon-cut),
-    100% calc(100% - var(--home-octagon-cut)),
-    calc(100% - var(--home-octagon-cut)) 100%,
-    var(--home-octagon-cut) 100%,
-    0 calc(100% - var(--home-octagon-cut)),
-    0 var(--home-octagon-cut)
-  );
-  overflow: hidden;
-}
-
-.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item::before {
-  position: absolute;
-  z-index: 0;
-  inset: 0;
-  display: block;
-  clip-path: inherit;
-  background: var(--home-octagon-frame);
-  content: "";
-  pointer-events: none;
-}
-
-.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item > * {
-  position: relative;
-  z-index: 1;
 }
 
 .home-screen .matrix-status-card {
