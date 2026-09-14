@@ -167,11 +167,12 @@
 
 .home-screen .latest-draw-card .draw-issue {
   display: flex;
-  align-items: baseline;
+  height: 15px;
+  align-items: center;
   font-size: 10px;
   line-height: 15px;
   white-space: nowrap;
-  gap: 0;
+  gap: 1px;
 }
 
 .home-screen .latest-draw-card .draw-issue strong {
