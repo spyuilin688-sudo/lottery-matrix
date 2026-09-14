@@ -3,13 +3,14 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const homeCss = readFileSync(new URL("../src/homepage/base.css", import.meta.url), "utf8");
+const logoCss = readFileSync(new URL("../src/homepage/logo-spacing.css", import.meta.url), "utf8");
 const featureCss = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const navigationCss = readFileSync(new URL("../src/prototype.css", import.meta.url), "utf8");
 
 test("首頁內容由安全區頂部開始排列且不再把剩餘高度堆到 Logo 上方", () => {
   assert.match(
     homeCss,
-    /\.home-screen\s*\{[^}]*inset:\s*var\(--layout-safe-area-top\) 0 0;[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\);[^}]*padding-top:\s*var\(--layout-safe-area-top\);/s,
+    /\.home-screen\s*\{[^}]*inset:\s*0;[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\);[^}]*padding-top:\s*var\(--layout-safe-area-top\);/s,
   );
   assert.match(
     homeCss,
@@ -21,10 +22,10 @@ test("首頁內容由安全區頂部開始排列且不再把剩餘高度堆到 L
   );
 });
 
-test("首頁狀態卡間距為 1.5px 且彩種圖示維持核准位置", () => {
+test("首頁狀態卡間距為 4px 且彩種圖示維持核准位置", () => {
   assert.match(
     homeCss,
-    /\.home-screen \.matrix-status-card-grid\s*\{[^}]*gap:\s*1\.5px;/s,
+    /\.home-screen \.matrix-status-card-grid\s*\{[^}]*gap:\s*4px;/s,
   );
   assert.match(
     homeCss,
@@ -47,26 +48,22 @@ test("號碼對照單第二列與浮動設定共用 26px 控制高度", () => {
   );
   assert.match(
     featureCss,
-    /\.reference-search input,\s*\.note-form input\s*\{[^}]*min-width:\s*0;[^}]*border:\s*1px solid #6e4a1e;[^}]*background:\s*#030a10;[^}]*color:\s*#efe8dc;[^}]*text-align:\s*center;/s,
+    /\.reference-search input\s*\{[^}]*min-width:\s*0;[^}]*border:\s*1px solid #6e4a1e;[^}]*background:\s*#030a10;[^}]*color:\s*#efe8dc;[^}]*text-align:\s*center;/s,
   );
-  assert.match(featureCss, /\.note-form input\s*\{[^}]*height:\s*42px;/s);
 });
 
-test("首頁快捷設定避開左側安全區並維持核准縮放", () => {
+test("首頁快捷設定位於 Logo 卡右上角並維持 44px 觸控區", () => {
   assert.match(
-    navigationCss,
-    /\.bottom-navigation-quick-settings\s*\{[^}]*left:\s*max\(10px, calc\(env\(safe-area-inset-left, 0px\) \+ 4px\)\);[^}]*right:\s*auto;[^}]*bottom:\s*calc\(var\(--bottom-nav-safe-area\) \+ 9px\);[^}]*width:\s*44px;[^}]*height:\s*44px;[^}]*place-items:\s*end start;/s,
-  );
-  assert.match(
-    navigationCss,
-    /\.bottom-navigation-quick-settings-visual\s*\{[^}]*width:\s*22\.95px;[^}]*height:\s*22\.95px;[^}]*justify-self:\s*start;[^}]*border-radius:\s*7\.65px;/s,
+    logoCss,
+    /\.home-screen \.home-brand-frame > \.header-settings-button\s*\{[^}]*position:\s*absolute;[^}]*top:\s*0;[^}]*right:\s*0;/s,
   );
   assert.match(
     navigationCss,
-    /\.bottom-navigation-quick-settings svg\s*\{[^}]*width:\s*12\.15px;[^}]*height:\s*12\.15px;/s,
+    /\.header-settings-button\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;[^}]*place-items:\s*center;/s,
   );
-  assert.doesNotMatch(
+  assert.match(
     navigationCss,
-    /\.bottom-navigation-quick-settings\s*\{[^}]*right:\s*max\(5px,/s,
+    /\.header-settings-button svg\s*\{[^}]*width:\s*22px;[^}]*height:\s*22px;/s,
   );
+  assert.doesNotMatch(navigationCss, /\.bottom-navigation-quick-settings\s*\{/);
 });
