@@ -16,8 +16,8 @@ def test_artifact_builder_defaults_to_canonical_v13_batch_runner() -> None:
     assert full_signature.parameters["batch_runner"].default is run_explore_batch
 
 
-def test_worker_writes_new_results_under_matrix_python_v13() -> None:
-    assert worker.ANALYSIS_VERSION == "matrix-python-v13"
+def test_worker_writes_new_results_under_matrix_python_v14() -> None:
+    assert worker.ANALYSIS_VERSION == "matrix-python-v14"
 
 
 def test_legacy_explore_v2_runtime_is_removed() -> None:

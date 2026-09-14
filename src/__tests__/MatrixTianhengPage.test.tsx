@@ -131,10 +131,12 @@ async function search() {
   return screen.findByRole('button', { name: '展開版路 th-1' });
 }
 
-it('routes Tianheng into the canonical Explore layout with its exact artwork and 3/13 controls', async () => {
+it('routes Tianheng into the canonical Explore layout with its shared text header and 3/13 controls', async () => {
   render(<FeaturePageRouter screen="tianheng" onNavigate={vi.fn()} />);
   await act(async () => {});
-  expect(screen.getByAltText('Matrix 天衡')).toHaveAttribute('src', '/assets/lottery/functions/天衡標題K.png');
+  const header = screen.getByRole('heading', { level: 1, name: 'MATRIX 天衡' }).closest('header');
+  expect(header).toHaveAttribute('data-header-style', 'flow');
+  expect(header?.querySelector('.product-header__mark')).toHaveAttribute('src', '/assets/lottery/matrixYY.png');
   expect(screen.getByRole('button', { name: '三期' })).toHaveAttribute('data-selected', 'true');
   expect(screen.getByRole('button', { name: /十三期/ })).toBeEnabled();
   expect(screen.queryByRole('button', { name: '二期' })).not.toBeInTheDocument();
@@ -157,7 +159,10 @@ it.each([
     'Matrix 探索', 'Matrix 天衡', 'Matrix 天衍', 'Matrix 天工',
   ]);
   const tianhengButton = screen.getByRole('button', { name: 'Matrix 天衡' });
-  expect(tianhengButton.querySelector('img')).toHaveAttribute('src', '/assets/lottery/functions/天衡.png');
+  expect(tianhengButton).toHaveTextContent('天衡');
+  expect(buttons.map(button => button.textContent)).toEqual(['探索', '天衡', '天衍', '天工']);
+  expect(buttons.map(button => button.getAttribute('aria-current')))
+    .toEqual(['explore', 'tianheng', 'tianyan', 'tiangong'].map(page => page === current ? 'page' : null));
   buttons.forEach((button, index) => {
     fireEvent.click(button);
     expect(onNavigate).toHaveBeenNthCalledWith(index + 1, ['explore', 'tianheng', 'tianyan', 'tiangong'][index]);
@@ -176,7 +181,7 @@ it.each([
   });
   await openPage();
   expect(screen.getByRole('button', { name: expectedPeriod })).toHaveAttribute('data-selected', 'true');
-  fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
+  fireEvent.click(screen.getByRole('button', { name: '進階天衡設定' }));
   expect(screen.getByRole('button', { name: expectedRange })).toHaveAttribute('data-selected', 'true');
   await search();
   expect(matrixApi.fetchTianhengList).toHaveBeenCalledWith({
@@ -194,7 +199,7 @@ it('uses thirteen periods and full range while registered-member free access is 
   });
   await openPage();
   expect(screen.getByRole('button', { name: '十三期' })).toHaveAttribute('data-selected', 'true');
-  fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
+  fireEvent.click(screen.getByRole('button', { name: '進階天衡設定' }));
   expect(screen.getByRole('button', { name: '完整範圍' })).toHaveAttribute('data-selected', 'true');
 });
 
@@ -224,7 +229,7 @@ it('Matrix Explore follows the highest current access when free access changes',
 
 it('shows the Matrix Pro cue on full range without full-range access', async () => {
   await openPage();
-  fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
+  fireEvent.click(screen.getByRole('button', { name: '進階天衡設定' }));
   const fullRange = screen.getByRole('button', { name: '完整範圍' });
   expect(within(fullRange).getByText('Matrix Pro')).toBeVisible();
 });
@@ -258,8 +263,8 @@ it('submits advanced settings without rendering near-10 history', async () => {
   expect(document.querySelector('.matrix-tianheng-screen .history-panel')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: /十三期/ }));
   fireEvent.click(screen.getByRole('button', { name: '拖牌版路' }));
-  fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
-  fireEvent.change(screen.getByRole('combobox', { name: '彩種' }), { target: { value: '六合彩' } });
+  fireEvent.click(screen.getByRole('button', { name: '進階天衡設定' }));
+  fireEvent.click(screen.getByRole('tab', { name: '六合彩' }));
   fireEvent.change(screen.getByRole('combobox', { name: '號碼順序' }), { target: { value: '依實際開獎順序排序' } });
   fireEvent.click(screen.getByRole('button', { name: '前日 (上2期)' }));
   fireEvent.click(screen.getByRole('button', { name: /完整範圍/ }));
@@ -317,7 +322,7 @@ it('loads validation only on expansion using the submitted access settings, not 
   await search();
   expect(matrixApi.fetchTianhengValidation).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: /十三期/ }));
-  fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
+  fireEvent.click(screen.getByRole('button', { name: '進階天衡設定' }));
   fireEvent.click(screen.getByRole('button', { name: /完整範圍/ }));
   fireEvent.click(screen.getByRole('button', { name: '展開版路 th-1' }));
   await act(async () => {});

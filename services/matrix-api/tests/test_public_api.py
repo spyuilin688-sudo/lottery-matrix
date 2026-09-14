@@ -401,12 +401,27 @@ def test_latest_and_history_are_read_from_repository() -> None:
     assert [item["period"] for item in history["items"]] == ["003117", "003116"]
 
 
-def test_public_latest_supabase_query_puts_undated_rows_last() -> None:
+def test_public_latest_puts_undated_rows_last() -> None:
+    repository = _repository()
+    repository.upsert_draw({
+        **_draw("今彩539", "999999", "", ["01", "02", "03", "04", "05"]),
+        "drawDate": None,
+    })
+    status, payload = handle_api_request(
+        "GET", f"/api/matrix/latest/{quote('今彩539')}", None, repository,
+    )
+    assert status == 200
+    assert payload["item"]["period"] == "003117"
+
+
+def test_public_latest_supabase_uses_latest_rpc_and_preserves_empty_revision() -> None:
     requests: list[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
         requests.append(request)
-        return httpx.Response(200, json=[])
+        return httpx.Response(200, json={
+            "items": [], "revision": "empty-history", "nextCursor": None,
+        })
 
     base_url = "https://example.supabase.co/rest/v1"
     http_client = httpx.Client(
@@ -422,11 +437,13 @@ def test_public_latest_supabase_query_puts_undated_rows_last() -> None:
             repository,
         )
 
-    assert (status, payload) == (200, {"item": None})
+    assert (status, payload) == (200, {"item": None, "revision": "empty-history"})
     assert len(requests) == 1
-    assert requests[0].url.params["order"] == (
-        "draw_date.desc.nullslast,period.desc"
-    )
+    assert requests[0].method == "POST"
+    assert requests[0].url.path == "/rest/v1/rpc/matrix_draw_query"
+    assert json.loads(requests[0].content) == {
+        "p_lottery": "今彩539", "p_kind": "latest",
+    }
 
 
 def test_history_without_limit_returns_all_rows() -> None:

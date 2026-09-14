@@ -27,7 +27,7 @@ test('first navigation renders real feature pages immediately without waiting fo
   expect(screen.queryByText('載入中…')).not.toBeInTheDocument();
 
   fireEvent.click(screen.getByRole('button', { name: '首頁' }));
-  fireEvent.click(screen.getByRole('button', { name: '連碰立柱計算機' }));
+  fireEvent.click(screen.getByRole('button', { name: /^計算機$/ }));
   expect(screen.getByRole('heading', { name: '連碰設定' })).toBeInTheDocument();
   expect(screen.queryByText('載入中…')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: '立柱計算機' }));

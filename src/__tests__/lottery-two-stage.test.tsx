@@ -13,7 +13,15 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.useRealTimers(); resetRead
 
 test.each([[null], [undefined], [[]]])('missing actual order (%s) never falls back to sorted numbers in any projection', async (drawOrderNumbers) => {
   const draw = { ...preliminary, drawOrderNumbers };
-  vi.spyOn(globalThis, 'fetch').mockImplementation(async url => json(String(url).includes('/latest/') ? draw : { items: [draw, previous] }));
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async url => {
+    const path = String(url);
+    if (path.includes('/latest/')) return json(draw);
+    if (path.includes('/tongxing')) return json({ groups: [{
+      lockedEntry: { ...previous, numbers: actual },
+      predictedEntry: { ...draw, numbers: [] },
+    }], nextCursor: null });
+    return json({ items: [draw, previous], nextCursor: null });
+  });
   expect((await fetchLatestLotteryDraw('今彩539'))?.drawOrderNumbers).toEqual([]);
   const history = await fetchLotteryHistory('今彩539', 1000);
   expect(history[0].drawOrderNumbers).toEqual([]);

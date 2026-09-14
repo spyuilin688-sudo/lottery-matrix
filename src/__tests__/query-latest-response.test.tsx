@@ -108,8 +108,10 @@ test('Tianyan ignores an older permission error while the latest query is loadin
  matrixApi.fetchTianyanList.mockReset().mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
  render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']}/>);
  fireEvent.click(screen.getByRole('button',{name:'開始天衍'}));
- fireEvent.change(screen.getByRole('combobox',{name:'彩種'}),{target:{value:'天天樂'}});
+ fireEvent.click(screen.getByRole('tab',{name:'天天樂'}));
  fireEvent.click(screen.getByRole('button',{name:'開始天衍'}));
+ expect(matrixApi.fetchTianyanList).toHaveBeenCalledTimes(2);
+ expect(matrixApi.fetchTianyanList.mock.calls[1][0].lottery).toBe('天天樂');
  await act(async()=>{first.reject({code:'FORBIDDEN'});await first.promise.catch(()=>{});});
  expect(screen.queryByRole('alertdialog')).toBeNull();
  expect(screen.queryByText('目前 Matrix Pro 方案不符合天衍的使用條件')).toBeNull();

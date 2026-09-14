@@ -117,7 +117,7 @@ test('Matrix 天衍只顯示全寬十三期與完整範圍', async () => {
   expect(thirteen?.parentElement?.classList.contains('one')).toBe(true);
   expect(screen.queryByText('二期')).toBeNull();
   expect(screen.queryByText('七期')).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
+  fireEvent.click(screen.getByRole('button', { name: '進階天衍設定' }));
   const fullRange = screen.getByText('完整範圍').closest('button');
   expect(fullRange?.getAttribute('data-selected')).toBe('true');
   expect(fullRange?.parentElement?.classList.contains('one')).toBe(true);

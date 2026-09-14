@@ -19,16 +19,29 @@ def test_api_parallel_tongxing_avoids_terminated_http2_connection(monkeypatch):
             if http2:
                 raise httpx.RemoteProtocolError("HTTP/2 connection terminated")
             requests.append(request)
-            assert request.method == "GET"
-            assert request.url.path == "/rest/v1/lottery_draws"
+            assert request.method == "POST"
+            assert request.url.path == "/rest/v1/rpc/matrix_draw_query"
+            params = json.loads(request.content)
+            assert params == {
+                "p_lottery": params["p_lottery"], "p_kind": "tongxing",
+                "p_limit": 500, "p_cursor": None,
+                "p_numbers": ["01", "02", "03"],
+                "p_order": "依號碼由小到大排序", "p_future_offset": 1,
+            }
+            assert params["p_lottery"] in lotteries
             assert request.headers["apikey"] == "test-key"
             assert request.headers["authorization"] == "Bearer test-key"
-            assert request.headers["accept-profile"] == "public"
-            assert request.extensions["timeout"]["read"] == 120
-            return httpx.Response(200, json=[
-                {"period": "115000002", "draw_date": "2026-09-02", "numbers": [4, 5, 6]},
-                {"period": "115000001", "draw_date": "2026-09-01", "numbers": [1, 2, 3]},
-            ])
+            assert request.headers["content-profile"] == "public"
+            assert request.extensions["timeout"] == {
+                "connect": 2, "read": 6, "write": 6, "pool": 1,
+            }
+            return httpx.Response(200, json={
+                "revision": "transport-test", "nextCursor": None,
+                "groups": [{
+                    "lockedEntry": {"period": "115000001", "draw_date": "2026-09-01", "numbers": [1, 2, 3]},
+                    "predictedEntry": {"period": "115000002", "draw_date": "2026-09-02", "numbers": [4, 5, 6]},
+                }],
+            })
         return httpx.MockTransport(respond)
 
     monkeypatch.setattr(httpx._client, "HTTPTransport", transport_factory)

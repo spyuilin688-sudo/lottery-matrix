@@ -8,6 +8,7 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { MatrixExplorePage, TongXingPage } from '../FeaturePages';
 import { resetReadCacheForTests } from '../read-cache';
+import { fetchLotteryHistory } from '../lottery-api';
 
 const matrixApi = vi.hoisted(() => ({
   fetchExploreList: vi.fn(),
@@ -15,6 +16,10 @@ const matrixApi = vi.hoisted(() => ({
 }));
 
 vi.mock('../matrix-algorithm-api', () => matrixApi);
+vi.mock('../lottery-api', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../lottery-api')>(),
+  fetchLotteryHistory: vi.fn(),
+}));
 // Existing algorithm assertions exercise the formal display mode.
 vi.mock('../subscription-purchase-visibility', () => ({ useSubscriptionPurchaseVisible: () => true }));
 
@@ -96,13 +101,16 @@ beforeEach(() => {
   window.localStorage.clear();
   window.sessionStorage.clear();
   resetReadCacheForTests();
+  // Keep display-only tests independent of history correction snapshots.
+  vi.mocked(fetchLotteryHistory).mockReset().mockResolvedValue([]);
   HTMLElement.prototype.scrollIntoView = vi.fn();
   matrixApi.fetchExploreList.mockReset().mockResolvedValue(exploreEnvelope);
   matrixApi.fetchExploreValidation.mockReset().mockResolvedValue(exploreValidationEnvelope);
-  globalThis.fetch = vi.fn().mockResolvedValue({
-    ok: true,
-    json: async () => ({ records: [] }),
-  }) as typeof fetch;
+  globalThis.fetch = vi.fn().mockImplementation(async (input) => new Response(JSON.stringify(
+    String(input).includes('/latest/') ? { item: null }
+      : String(input).includes('/tongxing') ? { groups: [], nextCursor: null }
+        : { items: [], nextCursor: null },
+  ), { status: 200, headers: { 'content-type': 'application/json' } })) as typeof fetch;
 });
 
 test('Matrix 天衍移除近10期但保留 Matrix 探索頁布局', () => {
@@ -114,7 +122,7 @@ test('Matrix 天衍移除近10期但保留 Matrix 探索頁布局', () => {
   expect(screen.queryByRole('button', { name: /近10期開獎號碼/ })).toBeNull();
   expect(document.querySelector('.matrix-tianyan-screen .history-panel')).toBeNull();
 
-  fireEvent.change(screen.getByRole('combobox', { name: '彩種' }), { target: { value: '六合彩' } });
+  fireEvent.click(screen.getByRole('tab', { name: '六合彩' }));
   expect(screen.queryByText('近10期開獎號碼')).toBeNull();
   expect(document.querySelector('.matrix-tianyan-screen .history-panel')).toBeNull();
 });
@@ -199,10 +207,10 @@ test('Matrix 同星探索結果左欄期數在上、日期在下', async () => {
     const url = String(input);
     const data = url.includes('/latest/')
       ? { period: '114002', drawDate: '2026/08/21', numbers: ['06', '07', '08', '09', '10'] }
-      : { items: [
-          { period: '114002', drawDate: '2026/08/21', numbers: ['06', '07', '08', '09', '10'] },
-          { period: '114001', drawDate: '2026/08/20', numbers: ['01', '02', '03', '04', '05'] },
-        ] };
+      : { groups: [{
+          lockedEntry: { period: '114001', drawDate: '2026/08/20', numbers: ['01', '02', '03', '04', '05'] },
+          predictedEntry: { period: '114002', drawDate: '2026/08/21', numbers: ['06', '07', '08', '09', '10'] },
+        }], nextCursor: null };
     return new Response(JSON.stringify(data), {
       status: 200,
       headers: { 'content-type': 'application/json' },
@@ -256,13 +264,15 @@ test('切換彩種時自動展開近10期開獎號碼', () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} />);
 
   fireEvent.click(screen.getByRole('button', { name: '收合近10期開獎號碼' }));
-  fireEvent.change(screen.getByRole('combobox', { name: '彩種' }), { target: { value: '六合彩' } });
+  fireEvent.click(screen.getByRole('tab', { name: '六合彩' }));
 
   expect(screen.getByRole('button', { name: '收合近10期開獎號碼' }).getAttribute('aria-expanded')).toBe('true');
   expect(document.querySelector<HTMLElement>('.history-table')?.hidden).toBe(false);
 });
 
 test('近10期依 API 唯一期號契約只請求並顯示完整 10 期', async () => {
+  const lotteryApi = await vi.importActual<typeof import('../lottery-api')>('../lottery-api');
+  vi.mocked(fetchLotteryHistory).mockImplementation(lotteryApi.fetchLotteryHistory);
   const uniqueRecords = Array.from({ length: 10 }, (_, index) => ({
     period: String(11974 - index),
     drawDate: `2026-08-${String(20 - index).padStart(2, '0')}`,
@@ -277,8 +287,8 @@ test('近10期依 API 唯一期號契約只請求並顯示完整 10 期', async 
         headers: { 'content-type': 'application/json' },
       });
     }
-    const limit = Number(requestUrl.searchParams.get('limit'));
-    return new Response(JSON.stringify({ items: uniqueRecords.slice(0, limit) }), {
+    const pageSize = Number(requestUrl.searchParams.get('pageSize'));
+    return new Response(JSON.stringify({ items: uniqueRecords.slice(0, pageSize), nextCursor: null }), {
       status: 200,
       headers: { 'content-type': 'application/json' },
     });
@@ -290,7 +300,7 @@ test('近10期依 API 唯一期號契約只請求並顯示完整 10 期', async 
     expect(document.querySelectorAll('.history-row:not(.history-head)')).toHaveLength(10);
   });
   expect(globalThis.fetch).toHaveBeenCalledWith(
-    expect.stringContaining('/history/%E4%BB%8A%E5%BD%A9539?limit=10'),
+    expect.stringContaining('/history/%E4%BB%8A%E5%BD%A9539?pageSize=10'),
     expect.anything(),
   );
 });
@@ -480,7 +490,7 @@ test.each(['六合彩', '大樂透'] as const)('%s驗證號碼會在特別號前
   });
   render(<MatrixExplorePage onNavigate={vi.fn()} />);
 
-  fireEvent.change(screen.getByRole('combobox', { name: '彩種' }), { target: { value: lottery } });
+  fireEvent.click(screen.getByRole('tab', { name: lottery }));
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
   fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
 
@@ -498,14 +508,13 @@ test.each([
   matrixApi.fetchExploreList.mockResolvedValue({ ...exploreEnvelope, lottery: resultLottery });
   matrixApi.fetchExploreValidation.mockResolvedValue({ ...exploreValidationEnvelope, lottery: resultLottery });
   render(<MatrixExplorePage onNavigate={vi.fn()} />);
-  const select = screen.getByRole('combobox', { name: '彩種' });
-  fireEvent.change(select, { target: { value: resultLottery } });
+  fireEvent.click(screen.getByRole('tab', { name: resultLottery }));
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
   fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
   const validation = await screen.findByRole('region', { name: '驗證過程' });
   const before = validation.innerHTML;
 
-  fireEvent.change(select, { target: { value: draftLottery } });
+  fireEvent.click(screen.getByRole('tab', { name: draftLottery }));
 
   expect(validation.innerHTML).toBe(before);
   expect(validation.querySelector('.explore-validation-group')?.getAttribute('data-lottery')).toBe(resultLottery);

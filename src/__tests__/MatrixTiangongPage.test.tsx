@@ -52,12 +52,12 @@ beforeEach(() => {
 
 test('天工固定顯示二段式設定，且不再提供模式與命中條件選項', () => {
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
-  const generalCard = screen.getByRole('heading', { name: '探索設定' }).closest('section') as HTMLElement;
-  const periodSetting = screen.getByText('探索期數').closest('label') as HTMLElement;
-  const fixedPeriod = within(periodSetting).getByLabelText('探索期數');
-  const stageSection = screen.getByRole('heading', { name: '第一段 探索設定' }).closest('section') as HTMLElement;
-  const firstStageCard = screen.getByRole('heading', { name: '第一段 探索設定' }).closest('.tiangong-stage-block') as HTMLElement;
-  const firstPosition = within(firstStageCard).getByRole('group', { name: '探索球位' });
+  const generalCard = screen.getByRole('heading', { name: '天工設定' }).closest('section') as HTMLElement;
+  const periodSetting = screen.getByText('天工期數').closest('label') as HTMLElement;
+  const fixedPeriod = within(periodSetting).getByLabelText('天工期數');
+  const stageSection = screen.getByRole('heading', { name: '第一段 天工設定' }).closest('section') as HTMLElement;
+  const firstStageCard = screen.getByRole('heading', { name: '第一段 天工設定' }).closest('.tiangong-stage-block') as HTMLElement;
+  const firstPosition = within(firstStageCard).getByRole('group', { name: '天工球位' });
   const firstRoad = within(firstStageCard).getByRole('group', { name: '版路類型' });
   expect(document.querySelector('.matrix-tiangong-screen')?.classList.contains('matrix-explore-layout')).toBe(true);
   expect(fixedPeriod.tagName).toBe('OUTPUT');
@@ -70,15 +70,15 @@ test('天工固定顯示二段式設定，且不再提供模式與命中條件�
   expect(generalCard.contains(firstRoad)).toBe(false);
   expect(firstStageCard.contains(firstPosition)).toBe(true);
   expect(firstStageCard.contains(firstRoad)).toBe(true);
-  expect(screen.getByRole('heading', { name: '第二段 探索設定' })).toBeTruthy();
-  expect(screen.queryByRole('button', { name: '進階探索設定' })).toBeNull();
+  expect(screen.getByRole('heading', { name: '第二段 天工設定' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: '進階天工設定' })).toBeNull();
   expect(screen.queryByText('探索模式')).toBeNull();
   expect(screen.queryByText('命中條件')).toBeNull();
   expect(screen.queryByRole('button', { name: '一段式' })).toBeNull();
   expect(screen.queryByRole('button', { name: '準3進4' })).toBeNull();
   expect(screen.queryByText('近10期開獎號碼')).toBeNull();
   expect(screen.queryByText('連準篩選')).toBeNull();
-  expect(within(generalCard).getByRole('group', { name: '探索球位' }).classList.contains('tiangong-setting-row')).toBe(true);
+  expect(within(generalCard).getByRole('group', { name: '天工球位' }).classList.contains('tiangong-setting-row')).toBe(true);
   expect(firstPosition.classList.contains('tiangong-setting-row')).toBe(true);
   expect(firstRoad.classList.contains('tiangong-setting-row')).toBe(true);
   expect(document.querySelector('.tiangong-settings fieldset')).toBeNull();
@@ -88,10 +88,10 @@ test('依附件演算法支援的篩選條件提交請求', async () => {
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
   expect(screen.queryByRole('button', { name: '八十期' })).toBeNull();
   fireEvent.click(screen.getAllByRole('button', { name: '由左至右' })[0]);
-  const secondStageTitle = screen.getByRole('heading', { name: '第二段 探索設定' });
-  const firstStageCard = screen.getByRole('heading', { name: '第一段 探索設定' }).closest('section');
+  const secondStageTitle = screen.getByRole('heading', { name: '第二段 天工設定' });
+  const firstStageCard = screen.getByRole('heading', { name: '第一段 天工設定' }).closest('section');
   expect(firstStageCard?.contains(secondStageTitle)).toBe(true);
-  expect(screen.getAllByRole('group', { name: '探索球位' })).toHaveLength(3);
+  expect(screen.getAllByRole('group', { name: '天工球位' })).toHaveLength(3);
   fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
 
   expect(await screen.findByRole('button', {name:/展開版路/})).toBeTruthy();
@@ -358,7 +358,7 @@ test.each(['success', 'failure'])('切換彩種清除天工請求並忽略舊 %s
   matrixApi.fetchTiangongList.mockReturnValueOnce(new Promise((done, fail) => { resolve = done; reject = fail; }));
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
-  fireEvent.change(screen.getByRole('combobox', { name: '彩球類型' }), { target: { value: '天天樂' } });
+  fireEvent.click(screen.getByRole('tab', { name: '天天樂' }));
   expect(screen.queryByRole('heading', { name: '天工結果區' })).toBeNull();
   expect((screen.getByRole('button', { name: '開始天工' }) as HTMLButtonElement).disabled).toBe(false);
   await act(async () => { outcome === 'success' ? resolve(envelope) : reject({ code: 'AUTH_REQUIRED' }); });

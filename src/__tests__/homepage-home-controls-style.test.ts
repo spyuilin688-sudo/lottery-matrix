@@ -10,7 +10,8 @@ const prototypeCss = readFileSync(new URL("../prototype.css", import.meta.url), 
 describe("homepage control layout rules", () => {
   it("uses the shared Matrixbba sprite and scoped selection frame", () => {
     expect(homepageCss).toMatch(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*background-image:\s*url\("\/assets\/lottery\/status\/Matrixbba\.png"\);/s);
-    expect(homepageCss).toMatch(/\.lottery-card\[data-selected="true"\]::before\s*\{/);
+    expect(homepageCss).toMatch(/\.lottery-card\[data-selected="true"\]\s*\{[^}]*border-color:\s*var\(--home-frame-gold\);/s);
+    expect(homepageCss).not.toMatch(/\.lottery-card\[data-selected="true"\]::before\s*\{/);
   });
 
   it("uses the current draw-order control height and requested spacing", () => {
@@ -21,9 +22,13 @@ describe("homepage control layout rules", () => {
     expect(homepageCss).toMatch(/\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*width:\s*100%;[^}]*padding:\s*0;/s);
   });
 
-  it("uses the canonical Matrix Core container background and responsive 1536 / 414 height token", () => {
-    expect(homepageCss).toMatch(/\.home-screen \.home-bottom-group\s*\{[^}]*--home-core-height:\s*clamp\(68px, calc\(\(var\(--home-core-width\) \* 414 \/ 1536\) - 18px\), 79px\);/s);
-    expect(homepageCss).toMatch(/\.home-screen \.matrix-core-banner\s*\{[^}]*background:\s*var\(--home-octagon-frame\),\s*url\("\/assets\/lottery\/functions\/matrixcore\.png"\) center \/ cover no-repeat;/s);
+  it("keeps the approved 654:181 Core proportion without a compensating height subtraction", () => {
+    // DESIGN.md 2026-09-14 specifies the current ratio; the former -18px patch is retired.
+    const heights = [...homepageCss.matchAll(/--home-core-height:\s*([^;]+);/g)];
+    expect(heights).toHaveLength(1);
+    expect(heights[0][1]).toBe("calc(var(--home-core-width) * 181 / 654)");
+    expect(homepageCss).toMatch(/\.home-screen \.matrix-core-banner\s*\{[^}]*height:\s*var\(--home-core-height\);/s);
+    expect(homepageCss).not.toMatch(/\.home-screen \.matrix-core-banner\s*\{[^}]*background:[^;]*var\(--home-octagon-frame\)/s);
   });
 
   it("does not paint a black background behind the bottom navigation artwork", () => {

@@ -113,7 +113,10 @@ describe("existing feature actions", () => {
     await waitFor(() => expect(matrixTicket.download).toHaveBeenCalledWith(
       "https://matrix.example.test/api/matrix/cards/今彩539/sorted.png",
       "今彩539-順球牌單.png",
+      expect.any(Function),
     ));
+    const ownsCard = matrixTicket.download.mock.calls[0][2] as () => boolean;
+    expect(ownsCard()).toBe(true);
     expect(matrixTicket.download).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(button).toBeDisabled());
     expect(button).toHaveAttribute("aria-busy", "true");
@@ -130,6 +133,8 @@ describe("existing feature actions", () => {
     await waitFor(() => expect(matrixTicket.download).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(button).toBeEnabled());
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: '落球' }));
+    expect(ownsCard()).toBe(false);
   });
 
   it("loads referral details and lets an eligible member submit one referral code", async () => {
@@ -179,7 +184,8 @@ describe("existing feature actions", () => {
   it("combines version information and update history into one page", async () => {
     render(<FeaturePageRouter screen="version-info" onNavigate={vi.fn()} />);
 
-    expect(await screen.findByRole("img", { name: "版本資訊/更新紀錄" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "版本資訊/更新紀錄", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "目前版本" })).toBeInTheDocument();
     expect(screen.getByText("0.1.0")).toBeInTheDocument();
   });
 

@@ -322,7 +322,13 @@ def test_supabase_tianheng_upserts_are_bounded_batches():
 def test_expired_unretained_tianheng_results_are_cleaned_up():
     repository = InMemoryAnalysisRepository()
     repository.save_tianheng_results("今彩539", "114001", VERSION, tianheng_artifact())
-    assert repository.cleanup_expired(datetime.now(UTC) + timedelta(days=4)) == 1
+    now = datetime.now(UTC)
+    # A future cutoff cannot expire live results before their actual expiry.
+    assert repository.cleanup_expired(now + timedelta(days=4)) == 0
+    assert repository.has_tianheng_results("今彩539", "114001", VERSION)
+    for record in repository.tianheng_results.values():
+        record["expiresAt"] = now - timedelta(seconds=1)
+    assert repository.cleanup_expired(now) == 1
     assert not repository.has_tianheng_results("今彩539", "114001", VERSION)
 
 

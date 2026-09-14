@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 import pytest
 
 from app.domain.history_boundaries import COMPLETED_YEAR_LAST_SEQUENCES
@@ -220,19 +222,22 @@ def test_ordinary_history_repair_never_erases_existing_actual_order() -> None:
 
 def test_ensure_history_retargets_repair_after_learning_source_is_ahead() -> None:
     repository = InMemoryAnalysisRepository()
+    # Both fake sources describe the same draw for an overlapping period.
+    def repair_draw(period: int) -> dict:
+        return {
+            **_draw(period),
+            "drawDate": (date(2026, 8, 1) + timedelta(days=period - 170)).isoformat(),
+        }
+
     for period in range(200, 169, -1):
         if period == 198:
             continue
         repository.upsert_draw({
-            **_draw(period),
+            **repair_draw(period),
             "lottery": "今彩539",
-            "drawDate": f"2026-08-{period - 169:02d}",
         })
     source = HistorySource([
-        {
-            **_draw(period),
-            "drawDate": f"2026-08-{period - 174:02d}",
-        }
+        repair_draw(period)
         for period in range(205, 174, -1)
     ])
 
@@ -240,6 +245,7 @@ def test_ensure_history_retargets_repair_after_learning_source_is_ahead() -> Non
 
     assert source.history_requests == [("今彩539", 3), ("今彩539", 8)]
     assert any(draw["period"] == "000000198" for draw in history)
+    assert history[0]["period"] == "000000205"
 
 
 def test_ensure_history_stops_when_source_cannot_repair_missing_periods() -> None:
@@ -407,7 +413,7 @@ def test_algorithm_history_repairs_width_alias_conflict_from_official_source() -
     )
 
     assert source.algorithm_history_requests == ["今彩539"]
-    assert history == [repaired]
+    assert history == [{**repaired, "resultStatus": "confirmed"}]
 
 
 def test_lotto_history_repairs_old_api_alias_from_verified_biga_source() -> None:
@@ -433,7 +439,7 @@ def test_lotto_history_repairs_old_api_alias_from_verified_biga_source() -> None
     )
 
     assert source.algorithm_history_requests == ["大樂透"]
-    assert history == [repaired]
+    assert history == [{**repaired, "resultStatus": "confirmed"}]
 
 
 def test_algorithm_history_rejects_non_alias_period_conflicts() -> None:

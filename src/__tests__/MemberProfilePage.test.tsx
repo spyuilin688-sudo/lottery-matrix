@@ -117,8 +117,10 @@ describe("ProfilePage member API", () => {
     expect(document.querySelector(".subscription-status-card")).toBeNull();
     const artwork = document.querySelector(".membership-reference-art")!;
     expect(artwork.querySelectorAll(":scope > svg")).toHaveLength(1);
-    expect(artwork.querySelector("svg")).toHaveAttribute("viewBox", "0 0 1563 387");
-    expect(getComputedStyle(artwork).gridTemplateRows).toBe("24.76cqw");
+    const [, artworkTop, , artworkHeight] = artwork.querySelector("svg")!.getAttribute("viewBox")!.split(" ").map(Number);
+    // The subscription artwork starts at source y=387 and must not leak into free mode.
+    expect(artworkTop + artworkHeight).toBeLessThanOrEqual(387);
+    expect(artwork.querySelector(".subscription-information-art")).toBeNull();
     expect(screen.queryByRole("button", { name: "付款紀錄" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "退款規範" })).not.toBeInTheDocument();
     expect(screen.queryByText("會員相關")).not.toBeInTheDocument();
@@ -134,7 +136,7 @@ describe("ProfilePage member API", () => {
 
   it.each(["pro-plans", "manual-transfer", "payment-history", "refund-policy"] as const)("暫時隱藏 %s 購買頁並顯示會員頁", async (purchaseScreen) => {
     render(<FeaturePageRouter screen={purchaseScreen} onNavigate={vi.fn()} />);
-    expect(screen.getByRole("img", { name: "我的" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "我的", level: 1 })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "確定付款" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "提交" })).not.toBeInTheDocument();
     await screen.findByRole("button", { name: "登出" });
@@ -228,10 +230,8 @@ describe("ProfilePage member API", () => {
   it("我的頁面使用正式標題卡", () => {
     render(<ProfilePage onNavigate={vi.fn()} />);
 
-    expect(screen.getByRole("img", { name: "我的" })).toHaveAttribute(
-      "src",
-      "/assets/lottery/functions/我的標題K.png",
-    );
+    expect(screen.getByRole("heading", { name: "我的", level: 1 })).toBeVisible();
+    expect(screen.getByText("MY ACCOUNT")).toBeVisible();
   });
 
   it("未登入時在既有會員卡顯示 LINE 登入並啟動登入流程", async () => {
@@ -767,7 +767,9 @@ it("開啟購買開關後恢復入口，關閉後不需重掛即可隱藏", asyn
   fireEvent.click(screen.getByRole("button", { name: "訂閱方案／收費標準" }));
   expect(onNavigate).toHaveBeenCalledWith("pro-plans");
   expect(screen.getByText("目前訂閱狀態")).toBeInTheDocument();
-  expect(document.querySelector(".membership-reference-art > svg")).toHaveAttribute("viewBox", "0 0 1563 740");
+  const [, artworkTop, , artworkHeight] = document.querySelector(".membership-reference-art > svg")!.getAttribute("viewBox")!.split(" ").map(Number);
+  expect(artworkTop).toBeLessThan(387);
+  expect(artworkTop + artworkHeight).toBeGreaterThanOrEqual(740);
   expect(document.querySelector(".subscription-information-art")).not.toBeNull();
   expect(screen.getByRole("button", { name: "付款紀錄" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "退款規範" })).toBeInTheDocument();

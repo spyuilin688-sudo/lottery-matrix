@@ -74,7 +74,7 @@ test('天衍修改彩種但未開始探索時，原結果及補充排版使用�
   fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
   const region = await screen.findByRole('region', { name: '天衍驗證過程' });
   const before = region.innerHTML;
-  fireEvent.change(screen.getByRole('combobox', { name: '彩種' }), { target: { value: '六合彩' } });
+  fireEvent.click(screen.getByRole('tab', { name: '六合彩' }));
   expect(region.innerHTML).toBe(before);
   expect(region.getAttribute('data-lottery')).toBe('今彩539');
   expect(matrixApi.fetchTianyanList).toHaveBeenCalledTimes(1);

@@ -26,7 +26,15 @@ test.each(['reference', 'tongxing'] as const)('%s refreshes a submitted actual-o
   vi.useFakeTimers();
   let current = { ...preliminary, numbers: sorted, sortedNumbers: sorted, drawOrderNumbers: [] as string[], resultStatus: 'preliminary' };
   const previous = { period: '115208', drawDate: '2026/09/11', numbers: sorted, sortedNumbers: sorted, drawOrderNumbers: actual };
-  vi.spyOn(globalThis, 'fetch').mockImplementation(async url => json(String(url).includes('/latest/') ? current : { items: [current, previous] }));
+  const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async url => {
+    const path = String(url);
+    if (path.includes('/latest/')) return json(current);
+    if (path.includes('/tongxing')) return json({ groups: [{
+      lockedEntry: { ...previous, numbers: actual },
+      predictedEntry: { ...current, numbers: current.drawOrderNumbers },
+    }], nextCursor: null });
+    return json({ items: [current, previous], nextCursor: null });
+  });
   HTMLElement.prototype.scrollIntoView = vi.fn();
   render(<AppDialogProvider>{page === 'reference' ? <NumberReferencePage onNavigate={vi.fn()} /> : <FeaturePageRouter screen="tongxing" onNavigate={vi.fn()} />}</AppDialogProvider>);
   await flush();
@@ -43,10 +51,19 @@ test.each(['reference', 'tongxing'] as const)('%s refreshes a submitted actual-o
   fireEvent.change(screen.getByRole('combobox', { name: '彩種' }), { target: { value: '天天樂' } });
   current = { ...current, drawOrderNumbers: actual, resultStatus: 'confirmed' };
   await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+  expect(currentRow().textContent).not.toContain('25');
+  await act(async () => { await vi.advanceTimersByTimeAsync(3_540_000); });
   expect(currentRow().textContent).toContain('25');
   expect((screen.getByRole('combobox', { name: '彩種' }) as HTMLSelectElement).value).toBe('天天樂');
   const cells = page === 'reference' ? within(currentRow() as HTMLElement).getAllByRole('button').slice(1).map(node => node.textContent) : Array.from(currentRow().children).slice(1).map(node => node.textContent);
   expect(cells).toEqual(actual);
+  if (page === 'tongxing') {
+    const calls = fetcher.mock.calls.filter(([url]) => String(url).includes('/tongxing'));
+    expect(calls.length).toBeGreaterThanOrEqual(2);
+    expect(JSON.parse(String(calls.at(-1)?.[1]?.body))).toMatchObject({
+      lottery: '今彩539', numberOrder: '依實際開獎順序排序', numbers: ['01', '08'],
+    });
+  }
 });
 
 test('sorted-only card disables actual order and updates when the formal card arrives', async () => {
@@ -59,6 +76,8 @@ test('sorted-only card disables actual order and updates when the formal card ar
   expect((screen.getByRole('tab', { name: '落球' }) as HTMLButtonElement).disabled).toBe(true);
   ready = true;
   await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+  expect((screen.getByRole('tab', { name: '落球' }) as HTMLButtonElement).disabled).toBe(true);
+  await act(async () => { await vi.advanceTimersByTimeAsync(3_540_000); });
   expect((screen.getByRole('tab', { name: '落球' }) as HTMLButtonElement).disabled).toBe(false);
   fireEvent.click(screen.getByRole('tab', { name: '落球' }));
   expect(screen.getByRole('img', { name: '今彩539落球牌單，第 115209 期' }).getAttribute('src')).toContain('/115209/draw.png');
@@ -74,7 +93,7 @@ test('new preliminary period removes the previous actual card and cancels its pe
   fireEvent.click(screen.getByRole('button', { name: '下載牌單' }));
   await flush();
   manifest = { lottery: '今彩539', period: '115209', cards: { sorted: { url: '/cards/115209/sorted.png' } } } as typeof manifest;
-  await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+  await act(async () => { await vi.advanceTimersByTimeAsync(3_600_000); });
   expect(document.querySelector('.matrix-ticket-image')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: '確認' }));
   await flush();
@@ -95,12 +114,12 @@ test.each(['依號碼由小到大排序', '依實際開獎順序排序'])('histo
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
   await flush();
   records = [{ ...preliminary, numbers: sorted, sortedNumbers: sorted, drawOrderNumbers: [] }, previous];
-  await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+  await act(async () => { await vi.advanceTimersByTimeAsync(3_600_000); });
   const row = screen.getByText('115209').closest('.draw-history-row')!;
   expect(row.textContent).toContain('09/12');
   expect(row.querySelectorAll('.number-ball')).toHaveLength(numberOrder.includes('實際') ? 0 : 5);
   records = [{ ...records[0], period: '115210', drawOrderNumbers: actual }, previous];
-  await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+  await act(async () => { await vi.advanceTimersByTimeAsync(3_600_000); });
   expect(screen.queryByText('115209')).toBeNull();
   expect(screen.getByText('115210').closest('.draw-history-row')!.querySelectorAll('.number-ball')).toHaveLength(5);
 });

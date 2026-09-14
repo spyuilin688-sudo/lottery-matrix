@@ -71,23 +71,11 @@ describe("production member shell", () => {
     expect(screen.queryByText("member-root")).not.toBeInTheDocument();
   });
 
-  it("keeps the isolated preview logo inside its responsive title banner", () => {
+  it("keeps the isolated preview title accessible with a return link to the app", () => {
     window.history.replaceState({}, "", "/explore-result-preview");
-    const previewStyle = document.createElement("style");
-    previewStyle.textContent = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
-    document.head.append(previewStyle);
-
     render(<App />);
-
-    const logo = screen.getByRole("img", { name: "Matrix 探索" });
-    const logoStyles = getComputedStyle(logo);
-    expect(logoStyles.display).toBe("block");
-    expect(logoStyles.width).toBe("100%");
-    expect(logoStyles.maxWidth).toBe("100%");
-    expect(logoStyles.height).toBe("auto");
-    expect(logoStyles.objectFit).toBe("contain");
-
-    previewStyle.remove();
+    expect(screen.getByRole("heading", { name: "MATRIX 探索", level: 1 })).toBeVisible();
+    expect(screen.getByRole("link", { name: "返回" })).toHaveAttribute("href", "/");
   });
 
   it("keeps isolated preview headings and result rows readable", () => {

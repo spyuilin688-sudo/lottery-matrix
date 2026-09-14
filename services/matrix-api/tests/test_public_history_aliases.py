@@ -10,7 +10,8 @@ from app.repositories.analysis_repository import InMemoryAnalysisRepository, Sup
 
 
 @pytest.mark.parametrize('lottery', ['今彩539', '大樂透'])
-def test_history_alias_does_not_count_as_the_next_draw(lottery):
+@pytest.mark.parametrize('backend', ['memory', 'supabase'])
+def test_history_alias_does_not_count_as_the_next_draw(lottery, backend):
     numbers = ['03', '09', '23', '32', '39']
     rows = [
         dict(period='096000005', draw_date='2007-01-05', numbers=['01', '02', '04', '05', '06']),
@@ -19,13 +20,36 @@ def test_history_alias_does_not_count_as_the_next_draw(lottery):
     ]
 
     def handler(request):
+        if request.method == 'POST':
+            assert request.url.path == '/rest/v1/rpc/matrix_draw_query'
+            assert json.loads(request.content) == {
+                'p_lottery': lottery, 'p_kind': 'tongxing', 'p_limit': 500,
+                'p_cursor': None, 'p_numbers': ['03'],
+                'p_order': '依號碼由小到大排序', 'p_future_offset': 1,
+            }
+            # The read-only RPC canonicalizes aliases before pairing draws.
+            # SQL execution is covered by supabase/tests/matrix-draw-query.test.mjs.
+            return httpx.Response(200, json={
+                'groups': [{'lockedEntry': rows[2], 'predictedEntry': rows[0]}],
+                'revision': 'alias-test', 'nextCursor': None,
+            })
+        assert request.method == 'GET'
+        assert request.url.path == '/rest/v1/lottery_draws'
         offset = int(request.url.params.get('offset', 0))
         limit = int(request.url.params.get('limit', 1000))
         return httpx.Response(200, json=rows[offset:offset + limit])
 
     base = 'https://example.supabase.co/rest/v1'
     with SyncPostgrestClient(base, http_client=httpx.Client(base_url=base, transport=httpx.MockTransport(handler))) as client:
-        repository = SupabaseAnalysisRepository(client)
+        if backend == 'supabase':
+            repository = SupabaseAnalysisRepository(client)
+        else:
+            repository = InMemoryAnalysisRepository()
+            for row in rows:
+                repository.upsert_draw({
+                    'lottery': lottery, 'period': row['period'],
+                    'drawDate': row['draw_date'], 'numbers': row['numbers'],
+                })
         status, history = handle_api_request('GET', f'/api/matrix/history/{quote(lottery)}', None, repository)
         assert status == 200
         assert [r['period'] for r in history['items']] == ['096000005', '096000004']

@@ -25,19 +25,22 @@ afterAll(() => {
 });
 
 beforeEach(() => {
-  globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ records: [] }) }) as typeof fetch;
+  globalThis.fetch = vi.fn().mockImplementation(async (input) => new Response(JSON.stringify(
+    String(input).includes('/latest/') ? { item: null } : { items: [], nextCursor: null },
+  ), { status: 200, headers: { 'content-type': 'application/json' } })) as typeof fetch;
 });
 
 test.each([
-  ['explore'],
-  ['tianyan'],
-  ['tiangong'],
-] as const)('%s 在第一張探索設定標題同列固定顯示四頁，僅點擊切換', (current) => {
+  ['explore', '探索設定'],
+  ['tianheng', '天衡設定'],
+  ['tianyan', '天衍設定'],
+  ['tiangong', '天工設定'],
+] as const)('%s 在第一張設定標題同列固定顯示四頁，僅點擊切換', (current, settingsHeading) => {
   const onNavigate = vi.fn();
   if (current === 'tiangong') render(<MatrixTiangongPage onNavigate={onNavigate} />);
-  else render(<MatrixExplorePage onNavigate={onNavigate} title={current === 'tianyan' ? 'Matrix 天衍' : 'Matrix 探索'} />);
+  else render(<MatrixExplorePage onNavigate={onNavigate} title={current === 'tianyan' ? 'Matrix 天衍' : current === 'tianheng' ? 'Matrix 天衡' : 'Matrix 探索'} />);
 
-  const heading = screen.getByRole('heading', { name: '探索設定' });
+  const heading = screen.getByRole('heading', { name: settingsHeading });
   const nav = screen.getByRole('navigation', { name: 'Matrix Core 功能切換' });
   expect(heading.parentElement).toBe(nav.parentElement);
   expect(heading.closest('section')).toBe(document.querySelector('.feature-body > section'));
@@ -55,36 +58,41 @@ test.each([
   });
 });
 
-test('四個 Matrix 切換圖示均完整顯示相同外框', () => {
+test('四個 Matrix 文字分段共用單一金褐色外框', () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 探索" />);
 
   const nav = screen.getByRole('navigation', { name: 'Matrix Core 功能切換' });
   const buttons = within(nav).getAllByRole('button');
-
-  expect(buttons).toHaveLength(4);
-  buttons.forEach((button) => {
-    const styles = getComputedStyle(button);
-    expect(styles.borderTopWidth).toBe('1px');
-    expect(styles.borderRightWidth).toBe('1px');
-    expect(styles.borderBottomWidth).toBe('1px');
-    expect(styles.borderLeftWidth).toBe('1px');
-    expect(styles.borderTopColor).toBe('rgb(117, 83, 41)');
-  });
+  const styles = getComputedStyle(nav);
+  expect(styles.borderTopWidth).toBe('1px');
+  expect(styles.borderRightWidth).toBe('1px');
+  expect(styles.borderBottomWidth).toBe('1px');
+  expect(styles.borderLeftWidth).toBe('1px');
+  expect(styles.borderTopColor).toBe('rgba(117, 83, 41, 0.48)');
+  expect(styles.borderRadius).toBe('8px');
+  expect(styles.height).toBe('26px');
+  expect(styles.width).toBe('176px');
+  expect(buttons.map(button => button.textContent)).toEqual(['探索', '天衡', '天衍', '天工']);
+  expect(nav.querySelector('img')).toBeNull();
 });
 
-test('僅將天衡圖示置中放大裁切以貼齊共用外框', () => {
+test('當前 Matrix 頁面以粗體與淡金底標示並保留完整名稱', () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 探索" />);
 
   const nav = screen.getByRole('navigation', { name: 'Matrix Core 功能切換' });
-  const tianhengImage = within(nav).getByRole('button', { name: 'Matrix 天衡' }).querySelector('img');
-  const otherImages = within(nav).getAllByRole('button')
-    .filter((button) => button.getAttribute('aria-label') !== 'Matrix 天衡')
-    .map((button) => button.querySelector('img'));
-
-  expect(tianhengImage).toHaveClass('matrix-page-switcher-image--tianheng');
-  expect(getComputedStyle(tianhengImage!).transform).toBe('scale(1.14)');
-  otherImages.forEach((image) => {
-    expect(image).not.toHaveClass('matrix-page-switcher-image--tianheng');
-    expect(getComputedStyle(image!).transform).not.toBe('scale(1.14)');
+  const buttons = within(nav).getAllByRole('button');
+  // Check the owned declaration directly: Vitest's CSSOM reports a transparent
+  // background here, while standalone jsdom resolves the same DOM and CSS correctly.
+  const currentRule = [...style.sheet!.cssRules].find((rule): rule is CSSStyleRule =>
+    rule instanceof CSSStyleRule && rule.selectorText === '.matrix-page-switcher button[aria-current="page"]');
+  expect(currentRule?.style.backgroundColor).toBe('rgba(244, 206, 103, 0.1)');
+  expect(buttons.filter(button => button.matches(currentRule!.selectorText))).toEqual([buttons[0]]);
+  buttons.forEach((button, index) => {
+    expect(button).toHaveAttribute('title', ['Matrix 探索', 'Matrix 天衡', 'Matrix 天衍', 'Matrix 天工'][index]);
+    const styles = getComputedStyle(button);
+    if (index === 0) expect(styles.fontWeight).toBe('700');
+    else expect(styles.fontWeight).not.toBe('700');
+    if (index === 0) expect(button).toHaveAttribute('aria-current', 'page');
+    else expect(button).not.toHaveAttribute('aria-current');
   });
 });
