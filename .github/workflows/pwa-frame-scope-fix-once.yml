@@ -1,0 +1,93 @@
+name: PWA frame scope cleanup once
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup-frame-scope:
+    if: github.head_ref == 'chatgpt/pwa-frame-unify-20260915'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 'chatgpt/pwa-frame-unify-20260915'
+          fetch-depth: 0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Tighten selector scope and formatting
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new, label):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 match, found {count}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          replace_once(
+              'src/feature-pages.css',
+              '.matrix-explore-screen:not(.matrix-tianheng-screen):not(.matrix-tianyan-screen) .lottery-tabs,',
+              '.matrix-explore-screen:not(.matrix-tianheng-screen):not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .lottery-tabs,',
+              'Explore-only underline lottery tabs',
+          )
+          replace_once(
+              'src/features/MatrixExplorePage.tsx',
+              '    setSearched(true);\n      setSameCode(false);',
+              '    setSearched(true);\n    setSameCode(false);',
+              'startExplore indentation',
+          )
+          replace_once(
+              'src/features/MatrixExplorePage.tsx',
+              '\n{searched ? (',
+              '\n      {searched ? (',
+              'searched block indentation',
+          )
+          replace_once(
+              'tests/pwa-frame-system.test.mjs',
+              r'\.matrix-explore-screen:not\(\.matrix-tianheng-screen\):not\(\.matrix-tianyan-screen\) \.lottery-tabs,\s*\.matrix-card-body \.lottery-tabs',
+              r'\.matrix-explore-screen:not\(\.matrix-tianheng-screen\):not\(\.matrix-tianyan-screen\):not\(\.matrix-tiangong-screen\) \.lottery-tabs,\s*\.matrix-card-body \.lottery-tabs',
+              'scoped regression assertion',
+          )
+          PY
+
+      - name: Verify targeted frame-system contract
+        run: node --test tests/pwa-frame-system.test.mjs
+
+      - name: Verify production build
+        run: npm run build
+
+      - name: Inspect scoped diff
+        shell: bash
+        run: |
+          git diff --check
+          test "$(grep -Fc '.matrix-explore-screen:not(.matrix-tianheng-screen):not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .lottery-tabs,' src/feature-pages.css)" -eq 1
+          if git diff -U0 -- src | grep -E '^\+.*(!important|style=\{|translate[XY]?\(|margin-(left|right|top|bottom): *-)' ; then
+            echo 'Forbidden override or compensatory displacement detected.'
+            exit 1
+          fi
+
+      - name: Commit selector cleanup
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/pwa-frame-scope-fix-once.yml
+          git add src/feature-pages.css src/features/MatrixExplorePage.tsx tests/pwa-frame-system.test.mjs
+          git diff --cached --check
+          git commit -m 'Tighten PWA frame selector scope'
+          git push origin HEAD:'chatgpt/pwa-frame-unify-20260915'
