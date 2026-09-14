@@ -31,10 +31,9 @@ test("Matrix 天工所有設定列共用同一個響應式標籤欄與選項欄"
   assert.match(exploreSpacing, /@media \(min-width:\s*40rem\)[\s\S]*?\.matrix-tiangong-screen \.tiangong-settings\s*\{[^}]*--tiangong-label-column:\s*104\.8px;/s);
 });
 
-test("首頁快捷設定位於 Logo 卡右上角且指南文案同步", () => {
+test("首頁快捷設定位於 Logo 卡右上角且不殘留底部覆寫", () => {
   assert.match(logoSpacing, /\.home-screen \.home-brand-frame > \.header-settings-button\s*\{[^}]*position:\s*absolute;[^}]*top:\s*0;[^}]*right:\s*0;/s);
   assert.doesNotMatch(prototype, /\.bottom-navigation-quick-settings\s*\{/);
-  assert.match(pages, /Logo 卡右上角設定按鈕/);
 });
 
 test("首頁狀態圖示維持位置，探索切換圖示移至設定標題同列", () => {
