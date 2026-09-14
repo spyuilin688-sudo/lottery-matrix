@@ -13,15 +13,16 @@ test("approved homepage uses independent component insets and canonical rhythm",
   assert.match(css, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\);/s);
 });
 
-test("approved homepage uses 1.5px status gaps and 6px feature gaps without artwork collisions", () => {
+test("approved homepage uses 4px status gaps and 6px feature gaps without artwork collisions", () => {
   assert.match(css, /\.lottery-switcher--home-style \.lottery-switcher-hit-grid\s*\{[^}]*gap:\s*6px;/s);
-  assert.match(css, /\.home-screen \.matrix-status-card-grid\s*\{[^}]*gap:\s*1\.5px;/s);
+  assert.match(css, /\.home-screen \.matrix-status-card-grid\s*\{[^}]*gap:\s*4px;/s);
   assert.match(css, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*calc\(100% - var\(--home-feature-inline\) \* 2\);[^}]*gap:\s*var\(--home-feature-gap\);/s);
-  assert.match(css, /\.home-screen \.home-shortcut\s*\{[^}]*min-height:\s*90px;/s);
+  assert.match(css, /\.home-screen \.home-shortcut\s*\{[^}]*min-height:\s*76px;/s);
 });
 
-test("approved homepage enlarges the logo by 5 percent while keeping the responsive shell free of hard positioning", () => {
-  assert.match(css, /\.home-screen \.home-logo-image\s*\{[^}]*width:\s*91\.9632%;/s);
+test("approved homepage fills the canonical logo frame while keeping the responsive shell free of hard positioning", () => {
+  assert.match(css, /\.home-screen \.home-logo-image\s*\{[^}]*width:\s*100%;/s);
+  assert.match(css, /\.home-screen \.home-brand-frame\s*\{[^}]*width:\s*calc\(100% - 32px\);[^}]*border:\s*1px solid var\(--home-frame-gold\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
   assert.match(tokens, /--bottom-navigation-height:\s*72px;/);
   assert.doesNotMatch(css, /\.home-screen \.lottery-screen\s*\{[^}]*width:\s*\d+px/s);
   assert.doesNotMatch(css, /\.home-screen \.lottery-screen\s*\{[^}]*transform:/s);
