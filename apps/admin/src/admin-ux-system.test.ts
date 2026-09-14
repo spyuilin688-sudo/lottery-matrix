@@ -2,9 +2,12 @@ import { readFileSync } from 'node:fs';
 import { parse } from 'postcss';
 import { describe, expect, it } from 'vitest';
 
+import { formatAdminRowForDisplay, formatDeviceSummary } from './admin-display';
+
 const appSource = readFileSync(new URL('./AdminApp.tsx', import.meta.url), 'utf8');
 const adminSource = readFileSync(new URL('./AdminTodos.tsx', import.meta.url), 'utf8');
 const listControlsSource = readFileSync(new URL('./AdminListControls.tsx', import.meta.url), 'utf8');
+const dataPageSource = readFileSync(new URL('./use-admin-data-page.ts', import.meta.url), 'utf8');
 const adminCss = readFileSync(new URL('./admin.css', import.meta.url), 'utf8');
 const operationsCss = readFileSync(new URL('./admin-operations.css', import.meta.url), 'utf8');
 const todoCss = readFileSync(new URL('./admin-todos.css', import.meta.url), 'utf8');
@@ -58,13 +61,15 @@ describe('admin UX system pass', () => {
     expect(operationsCss).not.toContain('.managementFilterLabel');
   });
 
-  it('keeps search, status, plan, and count on one row at phone width', () => {
+  it('lets status and plan controls size to their text while keeping the mobile toolbar on one row', () => {
     expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasCount.hasStatusFilter', 390).get('grid-template-columns'))
-      .toBe('minmax(0, 1fr) 88px max-content');
+      .toBe('minmax(0, 1fr) max-content max-content');
     expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasCount.hasStatusFilter.hasExtraFilter', 390).get('grid-template-columns'))
-      .toBe('minmax(0, 1fr) 80px 80px max-content');
+      .toBe('minmax(0, 1fr) max-content max-content max-content');
     expect(declarationsAt(operationsCss, '.managementSearchField', 390).get('grid-column')).toBeUndefined();
     expect(declarationsAt(operationsCss, '.managementCount', 390).get('min-width')).toBe('44px');
+    expect(declarations(operationsCss, '.managementToolbar select').get('width')).toBe('auto');
+    expect(declarations(operationsCss, '.managementExtraFilter > *').get('width')).toBe('auto');
   });
 
   it('keeps every admin data table dense by scrolling horizontally instead of crushing records vertically', () => {
@@ -84,6 +89,31 @@ describe('admin UX system pass', () => {
     expect(bodyCells.get('line-height')).toBe('1.35');
     expect(headers.get('white-space')).toBe('nowrap');
     expect(adminCss).toMatch(/\.notificationLogTable td\{[^}]*white-space:normal/);
+  });
+
+  it('summarizes audit snapshots and device strings instead of dumping raw technical payloads', () => {
+    const before = {
+      id: 'f7fe0227-9fc9-4880-b97d-2460aaa4f5b9',
+      name: '玄',
+      role: '營運管理員',
+      status: '啟用',
+      account: 'fsmmm023@gmail.com',
+      can_add: true,
+      can_edit: true,
+      can_view: true,
+      can_delete: false,
+    };
+    const after = { ...before, name: 'Yuilin' };
+    const device = 'Mozilla/5.0 (Linux; Android 16; CPH2629 Build/UP1A.231005.007) AppleWebKit/537.36 Chrome/140.0.0.0 Mobile Safari/537.36';
+    const row = formatAdminRowForDisplay('auditLogs', { id: 'audit-1', beforeData: before, afterData: after, device });
+
+    expect(row.beforeData).toBe('名稱：玄');
+    expect(row.afterData).toBe('名稱：Yuilin');
+    expect(String(row.beforeData)).not.toContain('f7fe0227');
+    expect(String(row.beforeData)).not.toContain('can_add');
+    expect(row.device).toBe('CPH2629 · Android 16 · Chrome 140');
+    expect(formatDeviceSummary(device)).not.toContain('Mozilla/5.0');
+    expect(dataPageSource).toContain('formatAdminRowForDisplay');
   });
 
   it('caps the first operational list column instead of wasting width on member names', () => {

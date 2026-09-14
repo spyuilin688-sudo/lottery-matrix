@@ -48,18 +48,18 @@ describe('admin compact density', () => {
     expect(operationsCss).not.toMatch(/\.metric\s*\{/);
   });
 
-  it('separates overview groups and gives compact search cards responsive columns', () => {
+  it('separates overview groups and lets compact search filters fit their labels', () => {
     expect(declarationsAt(adminCss, '.cards', 390).get('gap')).toBe('8px');
     expect(declarationsAt(adminCss, '.cards', 1000).get('gap')).toBe('8px');
     expect(operationsCss).toMatch(/\.metricDivider \{ grid-column: 1 \/ -1; height: 1px; margin: 0;/);
     expect(declarationsAt(operationsCss, '.managementPrimaryFilters', 1000).get('grid-template-columns')).toBe('minmax(180px, 1fr)');
     expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasCount', 1000).get('grid-template-columns')).toBe('minmax(180px, 1fr) minmax(64px, max-content)');
-    expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasCount.hasStatusFilter', 1000).get('grid-template-columns')).toBe('minmax(180px, 1fr) 112px minmax(64px, max-content)');
-    expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasCount.hasStatusFilter.hasExtraFilter', 1000).get('grid-template-columns')).toBe('minmax(180px, 1fr) 112px 112px minmax(64px, max-content)');
+    expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasCount.hasStatusFilter', 1000).get('grid-template-columns')).toBe('minmax(180px, 1fr) max-content minmax(64px, max-content)');
+    expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasCount.hasStatusFilter.hasExtraFilter', 1000).get('grid-template-columns')).toBe('minmax(180px, 1fr) max-content max-content minmax(64px, max-content)');
     expect(declarationsAt(operationsCss, '.managementPrimaryFilters', 390).get('grid-template-columns')).toBe('minmax(0, 1fr)');
     expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasCount', 390).get('grid-template-columns')).toBe('minmax(0, 1fr) max-content');
-    expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasCount.hasStatusFilter', 390).get('grid-template-columns')).toBe('minmax(0, 1fr) 88px max-content');
-    expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasCount.hasStatusFilter.hasExtraFilter', 390).get('grid-template-columns')).toBe('minmax(0, 1fr) 80px 80px max-content');
+    expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasCount.hasStatusFilter', 390).get('grid-template-columns')).toBe('minmax(0, 1fr) max-content max-content');
+    expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasCount.hasStatusFilter.hasExtraFilter', 390).get('grid-template-columns')).toBe('minmax(0, 1fr) max-content max-content max-content');
     expect(declarationsAt(operationsCss, '.managementCount', 390).get('min-width')).toBe('44px');
     expect(declarationsAt(operationsCss, '.managementCount', 390).get('text-align')).toBe('right');
     expect(operationsCss).not.toContain('.managementSecondaryFilters');
@@ -68,7 +68,8 @@ describe('admin compact density', () => {
   it('keeps user and subscription search cards compact', () => {
     expect(operationsCss).toMatch(/\.managementToolbar \{[\s\S]*?margin-bottom: 8px;[\s\S]*?padding: 6px;/);
     expect(operationsCss).toMatch(/\.managementToolbar input \{ height: 32px; \}/);
-    expect(operationsCss).toMatch(/\.managementToolbar select \{ height: 32px; \}/);
+    expect(declarationsAt(operationsCss, '.managementToolbar select', 390).get('height')).toBe('32px');
+    expect(declarationsAt(operationsCss, '.managementToolbar select', 390).get('width')).toBe('auto');
     expect(declarationsAt(operationsCss, '.managementList table', 390).get('min-width')).toBe('820px');
   });
 
