@@ -380,6 +380,29 @@ export function MatrixStatusSection({
 export function MatrixCoreBanner({ onOpen }: { onOpen?: () => void }) {
   return (
     <button type="button" className="matrix-core-banner home-core-box" aria-label="Matrix Core" data-testid="matrix-core-banner" onClick={onOpen}>
+      <span className="matrix-core-energy-loop" aria-hidden="true" />
+      <span className="matrix-core-node-frame" aria-hidden="true">
+        <span className="matrix-core-node" />
+        <span className="matrix-core-node" />
+        <span className="matrix-core-node" />
+        <span className="matrix-core-node" />
+        <span className="matrix-core-node" />
+        <span className="matrix-core-node" />
+        <span className="matrix-core-node" />
+        <span className="matrix-core-node" />
+      </span>
+      <svg className="matrix-core-symbol-energy" viewBox="0 0 1536 414" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="matrix-core-symbol-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="rgba(203, 146, 36, .08)" />
+            <stop offset="34%" stopColor="rgba(244, 190, 73, .96)" />
+            <stop offset="68%" stopColor="rgba(255, 241, 190, 1)" />
+            <stop offset="100%" stopColor="rgba(203, 146, 36, .08)" />
+          </linearGradient>
+        </defs>
+        <ellipse className="matrix-core-energy-path matrix-core-energy-path--ring" cx="1163" cy="207" rx="212" ry="144" pathLength="100" />
+        <path className="matrix-core-energy-path matrix-core-energy-path--m" d="M1099 340V111H1129L1163 222L1197 111H1226V340" pathLength="100" />
+      </svg>
       <span className="matrix-core-description">進入更深層的演算法</span>
       <ChevronRightIcon className="matrix-core-chevron" aria-hidden="true" />
     </button>
