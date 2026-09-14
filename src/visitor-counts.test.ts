@@ -1,43 +1,33 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-const rpc = vi.hoisted(() => vi.fn());
-vi.mock('./lib/supabase', () => ({ getSupabaseClient: () => ({ rpc }) }));
+const invoke = vi.hoisted(() => vi.fn());
+vi.mock('./lib/supabase', () => ({ getSupabaseClient: () => ({ functions: { invoke } }) }));
 import { recordVisitor, installVisitorTracking } from './visitor-counts';
 
-beforeEach(() => { localStorage.clear(); rpc.mockReset().mockResolvedValue({ error: null }); vi.stubEnv('DEV', false); vi.useFakeTimers(); vi.setSystemTime(new Date('2026-09-05T10:00:00Z')); });
+beforeEach(() => { localStorage.clear(); invoke.mockReset().mockResolvedValue({ error: null }); vi.stubEnv('DEV', false); });
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 
-it('stores only a random anonymous hash and reuses it for repeated visits', async () => {
+it('records through the Edge Function without sending a caller-controlled identity', async () => {
   await recordVisitor(); await recordVisitor();
-  const hash = rpc.mock.calls[0][1].p_visitor_hash;
-  expect(hash).toMatch(/^[a-f0-9]{64}$/);
-  expect(rpc.mock.calls[1][1].p_visitor_hash).toBe(hash);
-  expect(rpc.mock.calls[0][0]).toBe('record_matrix_visit');
+  expect(invoke).toHaveBeenCalledTimes(2);
+  expect(invoke).toHaveBeenNthCalledWith(1, 'visitor-visit', { body: {} });
+  expect(localStorage.length).toBe(0);
 });
-it('replaces the identifier at 90 days', async () => {
-  await recordVisitor(); const first = rpc.mock.calls[0][1].p_visitor_hash;
-  vi.advanceTimersByTime(90 * 86400000);
-  await recordVisitor();
-  expect(rpc.mock.calls[1][1].p_visitor_hash).not.toBe(first);
-});
-it('does not block the app when storage or the request fails', async () => {
-  vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw Error('blocked'); });
+it('does not block the app when the request fails', async () => {
+  invoke.mockRejectedValueOnce(Error('offline'));
   await expect(recordVisitor()).resolves.toBeUndefined();
-  expect(rpc).not.toHaveBeenCalled();
-});
-it('retries with the same identifier after a network failure', async () => {
-  rpc.mockRejectedValueOnce(Error('offline'));
-  await recordVisitor(); await recordVisitor();
-  expect(rpc.mock.calls[1][1]).toEqual(rpc.mock.calls[0][1]);
+  expect(invoke).toHaveBeenCalledTimes(1);
 });
 it('records reopening the visible app and removes its listener on cleanup', async () => {
   const stop = installVisitorTracking();
-  await vi.waitFor(() => expect(rpc).toHaveBeenCalledTimes(1));
+  await vi.waitFor(() => expect(invoke).toHaveBeenCalledTimes(1));
+  await recordVisitor();
   vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
   document.dispatchEvent(new Event('visibilitychange'));
-  await vi.waitFor(() => expect(rpc).toHaveBeenCalledTimes(2));
+  await vi.waitFor(() => expect(invoke).toHaveBeenCalledTimes(2));
+  await recordVisitor();
   stop(); document.dispatchEvent(new Event('visibilitychange'));
-  expect(rpc).toHaveBeenCalledTimes(2);
+  expect(invoke).toHaveBeenCalledTimes(2);
 });
 
 it('does not count development or browser test sessions', async () => {
@@ -45,7 +35,7 @@ it('does not count development or browser test sessions', async () => {
   const stop = installVisitorTracking();
   document.dispatchEvent(new Event('visibilitychange'));
   await Promise.resolve();
-  expect(rpc).not.toHaveBeenCalled();
+  expect(invoke).not.toHaveBeenCalled();
   expect(localStorage.length).toBe(0);
   stop();
 });

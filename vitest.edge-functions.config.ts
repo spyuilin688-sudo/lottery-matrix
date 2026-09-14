@@ -12,8 +12,8 @@ export default defineConfig({
       "supabase/functions/notification-ingest/**/*.test.ts",
       "supabase/functions/notification-pilio/**/*.test.ts",
       "supabase/functions/send-test-push/**/*.test.ts",
+      "supabase/functions/visitor-visit/**/*.test.ts",
     ],
     setupFiles: ["./test/edge-functions-setup.ts"],
   },
 });
-
