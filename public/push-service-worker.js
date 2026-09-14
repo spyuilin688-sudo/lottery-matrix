@@ -1,5 +1,6 @@
 const STATIC_CACHE_PREFIX = "matrix-pwa-shell-";
 const STATIC_CACHE_NAME = "matrix-pwa-shell-__BUILD_ID__";
+const BUILD_SOURCE_SHA = "__SOURCE_SHA__";
 // Filled by pwa-build-version.mjs from this exact build, including lazy chunks.
 const BUILD_ASSET_PATHS = [];
 const SHELL_READY_PATH = "/__matrix_pwa_shell_ready__";
@@ -525,6 +526,16 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
+  const url = new URL(request.url);
+  if (isGetRequest(request) && url.origin === self.location.origin && url.pathname === "/__matrix_pwa_version__") {
+    event.respondWith(Promise.resolve(new Response(JSON.stringify({
+      sourceSha: BUILD_SOURCE_SHA,
+      workerBuild: STATIC_CACHE_NAME,
+      cacheVersion: STATIC_CACHE_NAME,
+      assets: BUILD_ASSET_PATHS,
+    }), { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } })));
+    return;
+  }
   if (!isGetRequest(request) || shouldBypassStaticCache(request)) return;
 
   if (isNavigationRequest(request)) {
