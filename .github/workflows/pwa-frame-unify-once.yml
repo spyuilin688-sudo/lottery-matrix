@@ -35,6 +35,7 @@ jobs:
           if marker not in source:
               raise SystemExit('runner guard marker missing')
           source = source.split(marker, 1)[0] + 'print("PWA frame unification patch applied and static guardrails passed.")\n'
+          source = source.replace('ROOT = Path(__file__).resolve().parents[1]', 'ROOT = Path.cwd()', 1)
           Path('/tmp/pwa-frame-unify-once.py').write_text(source, encoding='utf-8')
           PY
           python /tmp/pwa-frame-unify-once.py
