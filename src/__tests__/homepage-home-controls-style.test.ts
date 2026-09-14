@@ -13,12 +13,12 @@ describe("homepage control layout rules", () => {
     expect(homepageCss).toMatch(/\.lottery-selector-logo\s*\{[^}]*opacity:\s*\.6;/s);
     expect(homepageCss).toMatch(/\.lottery-card\[data-selected="true"\] \.lottery-selector-logo\s*\{[^}]*opacity:\s*1;/s);
     expect(homepageCss).toMatch(/border:\s*1px solid color-mix\(in srgb, var\(--home-frame-gold\) 22%, transparent\);/);
-    expect(homepageCss).toMatch(/\.lottery-card\[data-selected="true"\]\s*\{[^}]*border-color:\s*color-mix\(in srgb, var\(--home-frame-gold\) 45%, transparent\);/s);
+    expect(homepageCss).toMatch(/\.lottery-card\[data-selected="true"\]\s*\{[^}]*border-color:\s*color-mix\(in srgb, var\(--home-frame-bright\) 55%, transparent\);/s);
     expect(homepageCss).not.toMatch(/\.lottery-card\[data-selected="true"\]::before\s*\{/);
   });
 
   it("uses the current draw-order control height and requested spacing", () => {
-    expect(homepageCss).toMatch(/\.home-screen \.latest-draw-card \.draw-order\s*\{[^}]*height:\s*25px;[^}]*gap:\s*2\.5px;/s);
+    expect(homepageCss).toMatch(/\.home-screen \.latest-draw-card \.draw-order\s*\{[^}]*height:\s*22px;[^}]*gap:\s*2\.5px;/s);
   });
 
   it("lets the embedded next-draw information use the full card width", () => {
