@@ -72,6 +72,12 @@ it('keeps the operational search cards compact without date or sort controls', a
       expect(toolbar?.querySelector('.managementCount')).not.toBeNull();
     }
 
+    for (const page of ['登入紀錄', '審計日誌']) {
+      await choose(container, page);
+      expect(container.querySelector('.toolbar'), `${page} should not duplicate the count in a second toolbar row`).toBeNull();
+      expect(container.querySelectorAll('.managementCount')).toHaveLength(1);
+    }
+
     await choose(container, '用戶管理');
     expect(container.querySelector('.managementToolbar [aria-label="篩選會員狀態"]')).not.toBeNull();
 
@@ -83,6 +89,9 @@ it('keeps the operational search cards compact without date or sort controls', a
       await choose(container, page);
       expect(container.querySelector('.managementToolbar'), `${page} should stay focused on its own actions`).toBeNull();
     }
+
+    await choose(container, '啟動碼管理');
+    expect(container.querySelector('.toolbar'), 'activation-code actions and count should keep their dedicated toolbar').not.toBeNull();
   } finally {
     await act(async () => root.unmount());
     container.remove();
