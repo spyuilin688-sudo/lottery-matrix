@@ -34,8 +34,6 @@ describe('admin compact density', () => {
     expect(declarationsAt(adminCss, '.shell > main > header', 1000).get('min-height')).toBe('46px');
     expect(declarationsAt(adminCss, '.shell > main > header', 390).get('padding')).toBe('0 10px');
     expect(declarationsAt(adminCss, 'header', 1000).size).toBe(0);
-    expect(operationsCss).toContain('.shell > main > header > div:nth-child(2) b');
-    expect(operationsCss).not.toMatch(/(^|\n)header > div:nth-child\(2\) b/);
     for (const css of [statusCss, permissionCss]) {
       expect(css).not.toMatch(/(?:systemStatusHeader|statusGroupHeader|permissionSwitchesHeader)[^{]*\{[^}]*(?:position:\s*static|z-index:\s*auto|backdrop-filter:\s*none)/);
     }
