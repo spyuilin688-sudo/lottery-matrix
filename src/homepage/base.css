@@ -33,7 +33,7 @@
   --home-feature-inline: 16px;
   --home-feature-gap: 6px;
   --home-gap-status-core: clamp(9px, 1.35dvh, 12px);
-  --home-gap-core-features: 8px;
+  --home-gap-core-features: var(--home-gap-status-core);
   --home-gap-features-nav: clamp(8px, 1.15dvh, 12px);
   box-sizing: border-box;
   display: grid;
@@ -168,7 +168,7 @@
 .home-screen .latest-draw-card .draw-issue {
   display: flex;
   align-items: baseline;
-  font-size: 12px;
+  font-size: 10px;
   line-height: 15px;
   white-space: nowrap;
   gap: 0;
@@ -203,7 +203,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   width: clamp(110px, calc(32vw - 6px), 118px);
-  height: 25px;
+  height: 22px;
   gap: 2.5px;
   justify-self: center;
   align-self: start;
