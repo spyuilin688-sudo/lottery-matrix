@@ -143,6 +143,19 @@ test("declares runtime token ownership and traces the maintained values", () => 
   }
 });
 
+test("keeps every shared feature title card eight pixels from page content", () => {
+  const featureStyles = readFileSync("src/feature-pages.css", "utf8");
+
+  assert.match(
+    featureStyles,
+    /\\.product-header\\s*\\{[^}]*margin-bottom:\\s*var\\(--layout-section-gap\\);/s,
+  );
+  assert.doesNotMatch(
+    featureStyles,
+    /(?:profile|notifications|calculator|draw-history|tongxing|number-reference)-screen[^{}]*>\\s*\\.product-header\\s*\\{[^}]*margin-bottom:/s,
+  );
+});
+
 test("assigns every required capability to a complete canonical row", () => {
   const contract = readFileSync("UX-CONTRACT.md", "utf8");
   const exactHeading = "| Capability | Canonical owner | Source of truth | Allowed variants | Verification |";

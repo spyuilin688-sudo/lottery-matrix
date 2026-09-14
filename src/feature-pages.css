@@ -2370,7 +2370,7 @@ opacity: .30; box-shadow: none;
   box-sizing: border-box;
   width: 100%;
   padding: 0 var(--layout-page-inline);
-  margin-bottom: 8px;
+  margin-bottom: var(--layout-section-gap);
   flex: 0 0 auto;
 }
 .product-header[data-header-style="flow"] {
