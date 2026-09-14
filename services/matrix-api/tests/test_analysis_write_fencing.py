@@ -178,6 +178,7 @@ def test_completed_restore_rejects_unknown_kind_and_missing_artifact():
 @pytest.mark.parametrize("accepted", [False, True])
 def test_supabase_restore_captures_generation_before_materializing_saved_chunks(kind, accepted):
     requests = []
+    chunk_cursors = []
     started_at = "2026-09-12T00:00:00+00:00"
     payload = result_payload("06")
 
@@ -194,10 +195,15 @@ def test_supabase_restore_captures_generation_before_materializing_saved_chunks(
         if path == "matrix_analysis_artifacts":
             return httpx.Response(200, json=[{"payload": {"storage": "chunks", "total": 1}}])
         if path == "matrix_analysis_artifact_chunks":
-            return httpx.Response(200, json=[{
+            cursor = request.url.params.get("chunk_index")
+            chunk_cursors.append(cursor)
+            chunks = [{
                 "chunk_index": 0, "cursor_start": 0, "cursor_end": 1,
                 "payload": encode_chunk_payload(payload),
-            }])
+            }]
+            if cursor is not None:
+                chunks = [chunk for chunk in chunks if chunk["chunk_index"] > int(cursor.removeprefix("gt."))]
+            return httpx.Response(200, json=chunks)
         if path == f"matrix_{kind}_results":
             return httpx.Response(200, json=[], headers={"content-range": "*/0"})
         assert path == "rpc/matrix_analysis_restore_results"
@@ -212,8 +218,9 @@ def test_supabase_restore_captures_generation_before_materializing_saved_chunks(
                 repository.restore_completed_results(*KEY, kind)
     assert [path for path, _ in requests] == [
         "matrix_analysis_runs", "matrix_analysis_artifacts", "matrix_analysis_artifact_chunks",
-        f"matrix_{kind}_results", "rpc/matrix_analysis_restore_results",
+        "matrix_analysis_artifact_chunks", f"matrix_{kind}_results", "rpc/matrix_analysis_restore_results",
     ]
+    assert chunk_cursors == [None, "gt.0"]
     body = requests[-1][1]
     assert body | {"p_records": []} == {
         "p_lottery": LOTTERY, "p_draw_period": PERIOD, "p_analysis_version": VERSION,

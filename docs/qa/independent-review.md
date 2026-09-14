@@ -74,3 +74,29 @@ Primary syntax reference: [PostgREST 13 resource embedding](https://docs.postgre
 - Optional geolocation enrichment degrades to a missing region without discarding the main member/login row. Visitor-stat failures are represented as `null` and displayed as “—”, rather than fabricated zero. These are explicitly degraded fields, not successful empty replacements for primary records.
 - The reliability fixes reviewed here do not rewrite stored data or alter algorithm rules. Separately imported upstream-main changes are outside that claim. No claims about deployment configuration, production response limits, full browser layout equivalence, or all PWA/CI/CSS changes are made by this reviewer.
 - The final targeted checkpoint also covered the `4d5bc44` API/publication-fixture and PWA lifecycle combinations described above, following the earlier service, push-reader, member RPC/page ownership, activation confirmation/result ownership, admin bearer, server member-page and CI reinspections. The coordinator owns changes after that checkpoint and any deployment/runtime gates. Fresh green checks prove the behavior exercised, not arbitrary later edits.
+
+
+## Later scoped CI baseline reproduction
+
+The coordinator requested an independent baseline check of failures selected by scoped CI after remote `2706045`. The reviewer reconstructed parent `4d5bc44` in isolated scratch using `git archive 40c0ee8a33eb75466a58dfa5d99781ef0626585b` and all 48 supplied upstream files, independently verifying every overlay Git blob SHA against `upstream-manifest.json`. No current reliability source changes were copied into this baseline; existing dependencies were reused. These checks classify baseline failures and do not make the current CI run green.
+
+- The exact ten requested Python cases failed on the isolated parent: **10 failed**, pytest exit 1. All seven containing test files are byte-identical to the current working tree. The failures cover old GET/row-list mocks for RPC callers, the v13/v14 expectation, a period/date-conflict fixture, two expected rows missing `resultStatus`, an old years mock without `rpc`, and cleanup expecting 1 rather than 0. The exact command, named failures, JUnit output and file hashes are saved under `review-baseline-evidence/python-baseline*` and `python-test-identity.json` in the coordinator's scratch directory.
+- The thirteen explicitly requested root Vitest files collected **242 cases: 196 passed and 46 failed**, exit 1. Only the files listed below were passed to `node node_modules/vitest/vitest.mjs run`, with `--reporter=json` and an explicit output file. Execution started at `2026-09-14T15:07:43.880324+00:00`. The coordinator supplied the current CI failed-case extract and confirmed that its extractor intentionally deduplicates repeated names. All **44 distinct file/case-name pairs match exactly** after replacing only the CI hierarchy separator ` > ` with a space; there are no unmatched names in either direction. The baseline records 46 failures because three parameterized Tianheng cases share the name `defaults to the highest currently available settings`, which occurs once in the deduplicated CI extract. Duplicate multiplicity cannot be independently recovered from that extract. `root-ci-baseline-comparison.json` records both the exact name-set match and this limitation.
+
+| Explicit root test path | Passed | Failed |
+| --- | ---: | ---: |
+| `src/__tests__/FeatureActions.test.tsx` | 7 | 2 |
+| `src/__tests__/FeaturePageStartup.test.tsx` | 0 | 1 |
+| `src/__tests__/MatrixExploreGuest.test.tsx` | 12 | 1 |
+| `src/__tests__/MatrixExplorePage.test.tsx` | 31 | 9 |
+| `src/__tests__/MatrixPageSwitcher.test.tsx` | 1 | 4 |
+| `src/__tests__/MatrixTiangongLayoutCards.test.tsx` | 0 | 1 |
+| `src/__tests__/MatrixTiangongPage.test.tsx` | 29 | 4 |
+| `src/__tests__/MatrixTianhengPage.test.tsx` | 22 | 12 |
+| `src/__tests__/MatrixTianyanPage.test.tsx` | 13 | 1 |
+| `src/__tests__/MemberProfilePage.test.tsx` | 39 | 7 |
+| `src/__tests__/app-production-shell.test.tsx` | 36 | 1 |
+| `src/__tests__/homepage-home-controls-style.test.ts` | 3 | 2 |
+| `src/__tests__/homepage-lottery-switcher-style.test.ts` | 3 | 1 |
+
+Exact case names and messages are retained in `review-baseline-evidence/root-ci-baseline-failures.json`; complete Vitest output is `root-ci-baseline.json`, with command metadata and log alongside it. The baseline preserves all 18 native archived lottery assets. Eleven current-only binary assets are absent from the verified overlay and were not copied without baseline provenance; their names are recorded in `root-ci-baseline-assets.json`. All 242 selected cases collected, with no missing-file or asset collection failure. These source/DOM assertions do not verify rendered image availability or visual parity.

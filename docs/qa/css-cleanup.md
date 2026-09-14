@@ -178,3 +178,40 @@ node --test --test-reporter=spec tests/css-canonical-cleanup.test.mjs tests/ui-r
 ```
 
 Final integration verification: **39/39 checks pass across these five explicit Node files**. PostCSS parses every remaining PWA stylesheet; no CSS conflict marker or retired record selector remains. Original inventory snapshots were compared after serialization and are byte-equivalent as JSON data. The historical-test and visual-verification limitations documented above still apply.
+
+
+## Scoped CI triage after 2706045
+
+`src/__tests__/QuickHistorySettings.test.tsx` no longer asserts the obsolete inline `top: 128px` viewport calculation. It loads the canonical token, feature and responsive styles and verifies the same settings DOM/card survives reopening, the header remains sticky with a 68px placeholder and 8px content gap, and the floating card is absolutely positioned at top 0 inside that header with the shared 16px inline inset. The test also verifies reopening does not measure the viewport rectangle. This contract already exists in local base `40c0ee8`; the same positioning CSS is present in the fetched `4d5bc44` source.
+
+```sh
+node_modules/.bin/vitest run src/__tests__/QuickHistorySettings.test.tsx --reporter=json --outputFile=/tmp/quick-history-contract-final.json
+```
+
+**1/1 passes**, with no stylesheet parser warning. Only this explicit test file was executed for this follow-up. Production CSS/JSX and the CSS inventory were unchanged.
+
+The following reported CI failures were reviewed against `git show 40c0ee8:<source>` without running or modifying their test files. Their relevant production blocks match the pre-cleanup source, so they are stale baseline assertions, not changes to the accepted design:
+
+| Reported test | Existing production evidence |
+|---|---|
+| `src/__tests__/MatrixPageSwitcher.test.tsx`: four separate 1px frames | `.matrix-page-switcher button` already has `border: 0` and a right divider; the shared navigation owns the outer frame. The complete button rule also matches fetched main `4d5bc44`. |
+| Same file: `matrix-page-switcher-image--tianheng` / scale 1.14 | `MatrixPageSwitcher` already renders `item.shortLabel` text; no image element or Tianheng image class exists. |
+| `src/__tests__/MemberProfilePage.test.tsx`: viewBox `0 0 1563 740` | `MemberPages.tsx` already uses visible-subscription viewBox `0 48 1563 692` (or `0 48 1563 339` when hidden). |
+| `src/__tests__/app-production-shell.test.tsx`: accessible image named “Matrix 探索” | The preview uses shared `BrandHeader`, whose mark already has empty alt and `aria-hidden="true"`; the real heading supplies the page name. |
+| `src/__tests__/homepage-home-controls-style.test.ts`: selected `::before` and 1536:414 clamp | The switcher already selects through the actual card border; base already defines Core height as `calc(var(--home-core-width) * 181 / 654)`. |
+| `src/__tests__/homepage-lottery-switcher-style.test.ts`: hidden divider `::before` | That pseudo-element rule is already absent in the base snapshot. The existing time-cell block, including its original padding and single inset frame, matches current source exactly. |
+
+This classification does not claim that the wider CI run passes. No obsolete image, duplicate frame, viewport offset or pseudo-element was restored to satisfy those historical tests.
+
+
+## Runtime fixture import consumers
+
+Scoped runtime CI exposed three browser-fixture entries still importing retired CSS: `tests/custom-status-layout-fixture.tsx`, `tests/notebook-responsive-fixture.tsx` and `tests/validation-format-fixture.tsx`. Their obsolete Matrix-result/profile/notification imports were removed, together with `brand-header-unify.css` (already absent at the baseline) and the direct responsive import duplicated by `matrix-explore-spacing.css`. Existing `feature-pages.css` supplies shared header styling through the fixtures’ existing component/import graph. The validation fixture’s font imports now precede the main CSS sequence, matching the production entry order. No production entry, stylesheet or runtime fixture behavior was added.
+
+A narrow contract in `tests/css-canonical-cleanup.test.mjs` checks these three entries only: every CSS module and nested quoted CSS import resolves, retired files cannot return, direct imports are unique, shared styles follow `src/main.tsx` order, and responsive rules are reached exactly once through the canonical spacing owner.
+
+```sh
+node --test --test-reporter=spec tests/css-canonical-cleanup.test.mjs
+```
+
+**6/6 checks pass**, including the new import-graph contract; diff check is clean. No browser run was attempted, and unrelated historical runtime selectors remain outside this correction. Production CSS and the inventory are unchanged.

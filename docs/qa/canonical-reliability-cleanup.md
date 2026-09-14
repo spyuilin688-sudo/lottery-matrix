@@ -60,3 +60,29 @@ Known baseline test debt remains visible. Seven unrelated `FeatureActions.test.t
 The concurrent `4d5bc44` commit independently removed the five retired notebook tests and their dormant implementation. That deletion is retained. The original seven-failure evidence describes the initial baseline; it is not the failure count for the merged source.
 
 Merged-source verification: `test_analysis_repository.py`, `test_capped_reads.py`, `test_api_server_http.py` and `test_matrix_card_api.py` passed **79 tests**. The HTTP CORS fixture now creates completed raw analysis, keeps the special ball last and expects only sorted cards for 天天樂, matching the new upstream publication contract. No production publication rule was changed by this fixture repair. The merged PWA lifecycle/referral/redemption files passed **27 tests**, plus **4** activation cases; both the first-controller latch and the unmount guard are retained.
+
+## Production release and scoped CI follow-up
+
+Source release `27060458bbdbc146cbcff41bd3a003dd6f5a66e7` was pushed without force on top of `4d5bc44`. The entire resulting Git tree was checked against intended blobs, including unchanged binary assets. Cloudflare Pages deployment `6beab894-4a2e-4d1d-a383-fe1bfd706217` succeeded. The production domain, after fresh navigation, served the same `index-YSgZN6rF.js` / `index-D80OEcgO.css` as the verified build. `/admin/` served `index-MrWfA_6O.js` / `index-DK5XfN-7.css` and rendered the login form with the formal `loginPrimary` variant, 348px wide and 12px 16px padding at the inspected viewport.
+
+Supabase `admin-api` version **20** is active; all 27 deployed source files exactly matched the intended payload. Its existing custom authentication setting (`verify_jwt: false`) was retained. No account or data mutation was used for verification.
+
+All three Railway production services reached **SUCCESS** on source release `2706045`:
+
+| Service | Deployment | Runtime evidence |
+|---|---|---|
+| API / heartfelt-generosity | `753d8310-6d91-4791-9707-09d33748c2b6` | Latest, history and history-years requests returned 200; public Matrix Explore loaded four result rows. |
+| lottery-matrix worker | `fd5b02c5-a51e-41c7-951e-2fa53cc73c3c` | 今彩539,六合彩,大樂透 completed. |
+| fantasy5-analysis | `971c5e0a-6884-4457-b500-58c6d84ff25c` | 天天樂 11999 reported already-analyzed. |
+
+Read-only browser measurements on the deployed app used a 1363px viewport and 430px application canvas. Notification list width was 398px with 8px gap, bulk buttons were 193×29px, and title weight was 600. The membership stack remained 418px wide and 243.59375px high with unchanged SVG slices; the visible card rails remain aligned to 398px cards. The Matrix result panel was 404px wide at x=479.5 within a canvas starting at x=466.5: exactly 13px on each side, with no horizontal overflow. These observations cover the inspected browser size, not every native-device configuration or authenticated administrative operation.
+
+The first scoped CI run `34859070226` passed scope selection, runtime integrity/build and admin checks. Its root Vitest selection reported **1076 passed / 57 failed**; its Python selection reported **568 passed / 14 failed**. These were explicit related file lists emitted by the selector, not blanket test commands. The release is not represented as a fully green regression run.
+
+Four Python failures came from a stale write-fencing transport fixture repeating chunk zero after `chunk_index=gt.0`. The fixture now respects the cursor and asserts the final empty page before restore. No production guard was weakened. Explicit `test_analysis_write_fencing.py` plus `test_capped_reads.py` then passed **67 tests**. All ten other Python failures were independently reproduced on a hash-verified reconstruction of parent `4d5bc44`, using only their exact named cases; their seven test files are byte-identical to the current files. Three directly relevant async test files likewise produced the same **11 passed / 10 failed** on both parent and release; details are recorded in `async-cleanup.md`.
+
+The remaining thirteen failing root test files were independently run on the same parent reconstruction: **196 passed / 46 failed**. Their distinct failed file/case names exactly match CI; three identically named parameterized Tianheng cases explain the deduplicated name count. `QuickHistorySettings.test.tsx` was migrated from an already obsolete inline-offset assertion to the canonical shared sticky header, retained settings DOM and token geometry; its explicit one-case run passes. The broader stale UI/algorithm test expectations remain visible.
+
+The seven explicitly selected runtime browser files finished with **6 passed / 47 failed**; the subsequent membership-preview step was skipped by GitHub after that failure. Logs identify missing retired fixture CSS imports, obsolete controls/fixture selectors, and geometry expectations such as 28px hit buttons where the accepted CSS renders 20px. These browser failures were not all independently reproduced on the parent, and this report does not claim complete responsive or authenticated end-to-end coverage. Direct consumers of this cleanup's retired CSS files are corrected in the follow-up test fixtures; no production override file is restored to satisfy them.
+
+A still-open baseline browser tab retained `index-BQddmwOO.js` / `index-BJ4YZlaZ.css`. It measured the same 9px homepage logo top gap and 20px Explore hit-button height as the release, against runtime tests expecting 8px and 28px. At the inspected 430px canvas, both baseline and release buttons had padding 2px 4px and widths 133.59375/133.609375px. This establishes the preserved geometry at that size without changing production CSS to satisfy stale assertions.

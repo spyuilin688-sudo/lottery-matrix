@@ -4,21 +4,18 @@ import { AppDialogProvider, useAppDialog } from '../src/dialog/AppDialog';
 import { MatrixExplorePage } from '../src/FeaturePages';
 import { TianyanExpandedLayoutPatch } from '../src/TianyanExpandedLayoutPatch';
 import { exploreEnvelope, exploreValidationEnvelope, tianyanEnvelope, tianyanValidation } from './validation-format-fixture-data';
+import '@fontsource/roboto/latin-500.css';
+import '@fontsource/roboto/latin-700.css';
+import '@fontsource/roboto/latin-900.css';
 import '../src/design-tokens.css';
 import '../src/feature-pages.css';
 import '../src/explore-result-preview.css';
 import '../src/styles.css';
 import '../src/prototype.css';
-import '../src/brand-header-unify.css';
 import '../src/homepage-repair.css';
-import '../src/responsive-feature-pages.css';
 import '../src/tongxing-compact.css';
 import '../src/matrix-explore-spacing.css';
-import '../src/matrix-explore-result-13px.css';
 import '../src/feature-page-adjustments.css';
-import '@fontsource/roboto/latin-500.css';
-import '@fontsource/roboto/latin-700.css';
-import '@fontsource/roboto/latin-900.css';
 
 // Local regression fixtures only. No request leaves this page.
 // The HTTP preview lacks secure-context randomUUID; requests use a fixture ID.

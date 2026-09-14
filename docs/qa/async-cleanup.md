@@ -96,6 +96,25 @@ The initial activation compatibility run also selected the whole directly relate
 | `does not reinterpret a drag back to its origin or a cancelled drag as a click reorder` | Same retired notebook-mode setup. |
 | `keeps a custom tag name input mounted and focused across consecutive edits` | Same retired notebook-mode setup. |
 
+### Scoped CI diagnosis against current-main baseline
+
+The coordinator's selected CI run exposed additional failures. This workstream was assigned exactly three files: `src/__tests__/lottery-two-stage-ui.test.tsx`, `src/__tests__/lottery-two-stage.test.tsx`, and `src/__tests__/query-latest-response.test.tsx`.
+
+Ran `npx vitest run src/__tests__/lottery-two-stage-ui.test.tsx src/__tests__/lottery-two-stage.test.tsx src/__tests__/query-latest-response.test.tsx` with a JSON reporter both in the final working tree and in the independent reviewer's isolated `4d5bc44` baseline. The baseline was assembled from `40c0ee8` plus all 48 upstream files, with every overlay Git blob verified against the upstream manifest. Both runs produced **11 passed, 10 failed across 3 files**, exit 1; comparing every named case showed identical outcomes. No source or test edits were made for these failures, because none was introduced by this workstream or its changed contracts.
+
+| File / exact failed case | Verified baseline cause |
+| --- | --- |
+| `lottery-two-stage-ui.test.tsx`: `reference refreshes a submitted actual-order query without applying edited settings` | Advances 60 seconds, while the retained baseline shared refresh cadence is 3,600,000 ms. The old preliminary row therefore remains at the assertion. |
+| Same file: `tongxing refreshes a submitted actual-order query without applying edited settings` | The fetch fixture returns a history `{items}` envelope for the 同星 endpoint, which requires `{groups}`. The queried row never loads. |
+| Same file: `sorted-only card disables actual order and updates when the formal card arrives` | Same 60-second assumption against the retained one-hour refresh cadence. |
+| Same file: `new preliminary period removes the previous actual card and cancels its pending confirmation` | Same 60-second assumption against the retained one-hour refresh cadence. |
+| Same file: `history advances to preliminary and replaces its corrected period in 依號碼由小到大排序` | Same 60-second assumption against the retained one-hour refresh cadence. |
+| Same file: `history advances to preliminary and replaces its corrected period in 依實際開獎順序排序` | Same 60-second assumption against the retained one-hour refresh cadence. |
+| `lottery-two-stage.test.tsx`: `missing actual order (null) never falls back to sorted numbers in any projection` | 同星 fixture returns `{items}`, failing the baseline `groups` envelope validation. |
+| Same file: `missing actual order (undefined) never falls back to sorted numbers in any projection` | Same malformed 同星 fixture. |
+| Same file: `missing actual order () never falls back to sorted numbers in any projection` | Same malformed 同星 fixture, for the empty-array input. |
+| `query-latest-response.test.tsx`: `Tianyan ignores an older permission error while the latest query is loading` | Requests a lottery combobox that the baseline already replaced with lottery tabs. |
+
 ## Limits of this evidence
 
 - Tests use deterministic promise ordering and local browser/transport doubles. Real iOS/Android LINE handoff, permissions UI, actual push receipt and multi-device behavior were not exercised.

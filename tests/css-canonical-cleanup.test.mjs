@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join, normalize } from 'node:path';
+import { createRequire } from 'node:module';
 import test from 'node:test';
 import postcss from 'postcss';
 
@@ -76,4 +77,44 @@ test('virtualized reference rows and Tiangong spacers have static CSS owners', (
   assert.equal(rule('src/feature-pages.css', '.reference-window').position, 'relative');
   assert.equal(rule('src/feature-pages.css', '.reference-window > .reference-row').position, 'absolute');
   assert.equal(rule('src/matrix-tiangong-results.css', '.tiangong-summary-spacer').visibility, 'hidden');
+});
+
+
+test('runtime fixtures resolve canonical CSS imports once and follow the main entry order', () => {
+  const require = createRequire(import.meta.url);
+  const cssImports = source => [...source.matchAll(/^import\s+["']([^"']+\.css)["'];?$/gm)].map(match => match[1]);
+  const owner = (file, specifier) => specifier.startsWith('.') ? normalize(join(dirname(file), specifier)) : specifier;
+  const mainOrder = cssImports(read('src/main.tsx')).map(specifier => owner('src/main.tsx', specifier));
+  const fixtures = [
+    'tests/custom-status-layout-fixture.tsx',
+    'tests/notebook-responsive-fixture.tsx',
+    'tests/validation-format-fixture.tsx',
+  ];
+  const retired = /(?:^|\/)(?:brand-header-unify|matrix-explore-result-13px|profile-card-visible-width|notification-visual-refinement|mobile-layout-polish)\.css$/;
+  for (const file of fixtures) {
+    const imports = cssImports(read(file)).map(specifier => owner(file, specifier));
+    assert.equal(new Set(imports).size, imports.length, `${file} must not repeat CSS entry imports`);
+    const sharedOrder = imports.filter(specifier => mainOrder.includes(specifier));
+    assert.deepEqual(sharedOrder, mainOrder.filter(specifier => imports.includes(specifier)), `${file} must preserve main CSS order`);
+    assert.equal(imports.includes('src/responsive-feature-pages.css'), false, `${file} must load responsive rules through matrix-explore-spacing.css`);
+    assert.ok(imports.includes('src/matrix-explore-spacing.css'), `${file} must retain the canonical result owner`);
+
+    let responsiveImports = 0;
+    const visited = new Set();
+    const visit = specifier => {
+      assert.doesNotMatch(specifier, retired, `${file} must not restore a retired stylesheet`);
+      if (specifier === 'src/responsive-feature-pages.css') responsiveImports += 1;
+      const path = specifier.startsWith('src/') ? specifier : require.resolve(specifier);
+      assert.equal(existsSync(path), true, `${file}: missing CSS ${specifier}`);
+      if (visited.has(path)) return;
+      visited.add(path);
+      postcss.parse(read(path), { from: path }).walkAtRules('import', node => {
+        const imported = /^\s*["']([^"']+)["']/.exec(node.params);
+        assert.ok(imported, `${path}: expected a local quoted CSS import`);
+        visit(owner(path, imported[1]));
+      });
+    };
+    imports.forEach(visit);
+    assert.equal(responsiveImports, 1, `${file} must load the responsive owner exactly once`);
+  }
 });
