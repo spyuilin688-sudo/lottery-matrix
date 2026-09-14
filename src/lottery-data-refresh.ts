@@ -18,7 +18,7 @@ export function subscribeLotteryRefresh(lottery: NumberBallLottery, listener: ()
       if (queued !== undefined) return;
       queued = setTimeout(() => { queued = undefined; refresh(); }, 0);
     };
-    const timer = setInterval(refresh, 60_000);
+    const timer = setInterval(refresh, 3_600_000);
     const unsubscribe = subscribeMatrixDataRevision(queueRefresh);
     document.addEventListener('visibilitychange', queueRefresh);
     window.addEventListener('online', queueRefresh);

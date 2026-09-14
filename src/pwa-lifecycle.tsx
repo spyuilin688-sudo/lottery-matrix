@@ -11,8 +11,6 @@ import {
 import { useAppDialog } from "./dialog/AppDialog";
 import { isPwaDisplayMode, PWA_DISPLAY_QUERIES } from './pwa-display-mode';
 
-const SERVICE_WORKER_PATH = "/push-service-worker.js";
-
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
@@ -94,10 +92,6 @@ export function PwaLifecycleProvider({
     };
 
     serviceWorker?.addEventListener("controllerchange", handleControllerChange);
-    if (serviceWorker && typeof serviceWorker.register === "function") {
-      void serviceWorker.register(SERVICE_WORKER_PATH).catch(() => undefined);
-    }
-
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
