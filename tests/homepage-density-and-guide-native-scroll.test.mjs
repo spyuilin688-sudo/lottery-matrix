@@ -11,8 +11,8 @@ const matrixGuideStart = guideSource.indexOf("export function MatrixGuidePage");
 const matrixGuideEnd = guideSource.indexOf("export function MatrixNotebookPage", matrixGuideStart);
 const matrixGuideSource = guideSource.slice(matrixGuideStart, matrixGuideEnd);
 
-test("首頁 Logo 等比例放大 5%", () => {
-  assert.match(homeCss, /\.home-screen \.home-logo-image\s*\{[^}]*width:\s*91\.9632%;/s);
+test("首頁 Logo 等比例填滿正式框", () => {
+  assert.match(homeCss, /\.home-screen \.home-logo-image\s*\{[^}]*width:\s*100%;/s);
 });
 
 test("順球與落球上移 2px且總高度縮減 3px", () => {
