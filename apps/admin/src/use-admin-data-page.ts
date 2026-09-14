@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { formatAdminRowForDisplay } from './admin-display';
 import { readAdminDataPage, type AdminDataPage } from './admin-table-pagination';
 type Client = { get(path: string): Promise<{ data: unknown }> };
 export type AdminListQuery = { page: number; keyword: string; status: string; startDate: string; endDate: string; sortBy: string; sortDirection: 'asc' | 'desc'; plan?: string };
@@ -57,7 +58,7 @@ export function useAdminDataPage(table: string | null, revision: number, client:
   };
   return {
     query, setQuery, setPage: (page: number) => setQuery({ page }), refresh,
-    items: current?.data?.items ?? [], total: current?.data?.total ?? 0,
+    items: (current?.data?.items ?? []).map(row => formatAdminRowForDisplay(table, row)), total: current?.data?.total ?? 0,
     currentPage: current?.data?.currentPage ?? query.page, totalPages: current?.data?.totalPages ?? query.page,
     loading: Boolean(table && sessionKey) && current === null, error: current?.error ?? '',
   };
