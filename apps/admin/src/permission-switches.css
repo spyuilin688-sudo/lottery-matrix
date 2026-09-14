@@ -1,5 +1,5 @@
 .permissionSwitches{display:grid;gap:8px;width:min(720px,100%);min-width:0}
-.permissionSwitchesHeader{position:static;z-index:auto;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;min-height:0;padding:0 0 8px;background:transparent;border-bottom:1px solid #292c32;backdrop-filter:none}
+.permissionSwitchesHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:0 0 8px;border-bottom:1px solid #292c32}
 .permissionSwitchesHeader h2{margin:0;color:#ece7d8;font-size:17px}
 .permissionSwitchesHeader p{margin:4px 0 0;color:#989ca5;font-size:12px;line-height:1.55}
 .permissionReadOnly{flex:0 0 auto;padding:3px 7px;border:1px solid #45403a;border-radius:6px;color:#cbb675;font-size:11px;line-height:1.4}
