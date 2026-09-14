@@ -69,7 +69,7 @@ npm run dev
 | `npm run build:verified` | 有界執行 build 並檢查 Sites 產物 |
 | `npm run validate:artifact` | 檢查已存在的 Sites 產物 |
 
-`worker/`、`.openai/hosting.json` 與相關 scripts 保留既有 Sites 封裝。`app/`、`db/`、`drizzle/`、`examples/` 為相容／示例內容，不是目前 Vite 主應用程式入口。
+`worker/index.js`、`.openai/hosting.json` 與相關 scripts 保留既有 Sites 靜態封裝。未被正式入口引用的 Next／D1 範本已移除；需要查閱舊稿時使用 Git 歷史。Supabase migrations 與 Railway 服務來源保持原位置。
 
 ## 測試與產物
 

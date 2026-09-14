@@ -184,7 +184,7 @@ describe('lottery-api response validation', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 
-  it('同星使用已保存的歷史資料在前端篩選', async () => {
+  it('同星只下載資料庫篩選後的配對結果', async () => {
     const request = {
       lottery: '今彩539' as const,
       numberOrder: '依號碼由小到大排序' as const,
@@ -200,14 +200,14 @@ describe('lottery-api response validation', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
       if (url.includes('/latest/')) return jsonResponse(history.items[1]);
-      if (url.includes('/history/')) return jsonResponse(history);
-      return jsonResponse({ ...request, groups: [] });
+      return jsonResponse({ ...request, groups: [{ lockedEntry: history.items[1], predictedEntry: history.items[0] }], nextCursor: null });
     });
 
     await expect(fetchTongXing(request)).resolves.toMatchObject({
       groups: [{ lockedEntry: { period: '115207' }, predictedEntry: { period: '115208' } }],
     });
-    expect(fetchSpy.mock.calls.map(([url]) => String(url))).not.toContain(`${LOTTERY_API_BASE}/api/matrix/tongxing`);
+    expect(fetchSpy.mock.calls.map(([url]) => String(url))).toContain(`${LOTTERY_API_BASE}/api/matrix/tongxing`);
+    expect(fetchSpy.mock.calls.some(([url]) => String(url).includes('/history/'))).toBe(false);
   });
 
   it('號碼對照單使用已保存的歷史資料在前端篩選', async () => {

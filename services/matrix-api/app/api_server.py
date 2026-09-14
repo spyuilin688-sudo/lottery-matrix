@@ -9,9 +9,11 @@ from os import environ
 from secrets import compare_digest
 from collections.abc import Callable
 from typing import Any
+from threading import BoundedSemaphore
 from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 import httpx
+from postgrest.exceptions import APIError
 
 from app.repositories.card_repository import published_manifest
 from app.card_renderer import card_layout, render_matrix_card
@@ -180,7 +182,9 @@ def _normalize_supabase_draw(draw: dict[str, Any]) -> dict[str, Any]:
 
 
 def _history_years(repository: AnalysisRepository, lottery: str) -> list[str]:
-    # Fetch only dates; year choices must include history outside the current UI limit.
+    if getattr(repository, "client", None) is not None:
+        return _draw_query(repository, lottery, "summary")["years"]
+    # In-memory repositories retain the same contract for isolated tests.
     years: set[str] = set()
 
     def add_date(value: Any) -> None:
@@ -188,24 +192,39 @@ def _history_years(repository: AnalysisRepository, lottery: str) -> list[str]:
         if len(text) >= 10 and text[:4].isdigit() and text[4] in {"-", "/"}:
             years.add(text[:4])
 
-    client = getattr(repository, "client", None)
-    if client is None:
-        for draw in repository.list_draws(lottery, None):
-            add_date(draw.get("drawDate"))
-    else:
-        offset = 0
-        while True:
-            rows = (client.table("lottery_draws").select("draw_date")
-                    .eq("lottery", lottery)
-                    .order("draw_date", desc=True, nullsfirst=False)
-                    .order("period", desc=True)
-                    .range(offset, offset + PAGE_SIZE - 1).execute()).data
-            if not rows:
-                break
-            for row in rows:
-                add_date(row.get("draw_date"))
-            offset += len(rows)
+    for draw in repository.list_draws(lottery, None):
+        add_date(draw.get("drawDate"))
     return sorted(years, reverse=True)
+
+
+class HistoryChangedError(Exception):
+    pass
+
+
+def _page_size(value: Any) -> int:
+    try:
+        size = int(value)
+    except (TypeError, ValueError) as error:
+        raise ValueError("INVALID_PAGE_SIZE") from error
+    if isinstance(value, bool) or str(size) != str(value) or not 1 <= size <= 500:
+        raise ValueError("INVALID_PAGE_SIZE")
+    return size
+
+
+def _draw_query(repository: AnalysisRepository, lottery: str, kind: str, **params: Any) -> dict[str, Any]:
+    cursor = params.get("p_cursor")
+    if cursor is not None and not isinstance(cursor, dict):
+        raise ValueError("INVALID_CURSOR")
+    data = repository.client.rpc("matrix_draw_query", {
+        "p_lottery": lottery, "p_kind": kind, **params,
+    }).execute().data
+    if not isinstance(data, dict):
+        raise RuntimeError("DRAW_QUERY_INVALID_RESPONSE")
+    if data.get("error") == "DRAW_HISTORY_CHANGED":
+        raise HistoryChangedError()
+    if data.get("error") == "DRAW_HISTORY_CONFLICT":
+        raise ValueError("DRAW_HISTORY_CONFLICT")
+    return data
 
 
 def _history(repository: AnalysisRepository, lottery: str, limit: int | None) -> list[dict[str, Any]]:
@@ -298,6 +317,37 @@ def _tongxing(repository: AnalysisRepository, body: dict[str, Any]) -> dict[str,
     groups: list[dict[str, Any]] = []
     if not numbers:
         return {"lottery": lottery, "numberOrder": number_order, "numbers": numbers, "futureOffset": future_offset, "groups": groups}
+    if getattr(repository, "client", None) is not None:
+        explicit_page = "pageSize" in body
+        page_size = _page_size(body.get("pageSize", 500))
+        cursor = body.get("cursor")
+        revision = None
+        while True:
+            data = _draw_query(repository, lottery, "tongxing",
+                p_limit=page_size, p_cursor=cursor,
+                p_numbers=numbers, p_order=number_order, p_future_offset=future_offset)
+            if revision is not None and data["revision"] != revision:
+                raise HistoryChangedError()
+            revision = data["revision"]
+            page_groups = data["groups"]
+            groups.extend({key: _project_draw(_normalize_supabase_draw(pair[key]), number_order)
+                           for key in ("lockedEntry", "predictedEntry")} for pair in page_groups)
+            next_cursor = data.get("nextCursor")
+            if explicit_page or next_cursor is None:
+                break
+            # Legacy callers expect every match. Read only filtered RPC pages,
+            # pinned to one revision, without accepting loops or skipped matches.
+            offset = cursor.get("offset", 0) if cursor is not None else 0
+            if (not page_groups or not isinstance(next_cursor, dict)
+                    or type(next_cursor.get("offset")) is not int
+                    or next_cursor["offset"] != offset + len(page_groups)):
+                raise RuntimeError("DRAW_QUERY_INVALID_CURSOR")
+            if next_cursor.get("revision") != revision:
+                raise HistoryChangedError()
+            cursor = next_cursor
+        return {"lottery": lottery, "numberOrder": number_order, "numbers": numbers,
+                "futureOffset": future_offset, "groups": groups,
+                "revision": data["revision"], "nextCursor": data.get("nextCursor")}
     history = _history(repository, lottery, None)
     for locked_index in range(future_offset, len(history)):
         locked_entry = history[locked_index]
@@ -488,14 +538,27 @@ def handle_api_request(
         history_prefix = "/api/matrix/history/"
         if method == "GET" and path.startswith(latest_prefix):
             lottery = _parse_lottery(unquote(path[len(latest_prefix):]))
-            items = _history(repository, lottery, 1)
+            metadata = {}
+            if getattr(repository, "client", None) is not None:
+                data = _draw_query(repository, lottery, "latest")
+                items = [_normalize_supabase_draw(row) for row in data["items"]]
+                metadata = {"revision": data["revision"]}
+            else:
+                items = _history(repository, lottery, 1)
             item = items[0] if items else None
             if item is not None:
                 item = {**item, "nextDrawAt": next_lottery_draw_time(lottery).isoformat()}
-            return 200, {"item": item}
+            return 200, {"item": item, **metadata}
         if method == "GET" and path.startswith(history_prefix):
             lottery = _parse_lottery(unquote(path[len(history_prefix):]))
             query = parse_qs(parsed.query)
+            # Explicit pagination preserves the full legacy response for installed clients.
+            # Updated PWA clients always use pageSize and follow nextCursor.
+            if "pageSize" in query:
+                size = _page_size(query["pageSize"][0])
+                cursor = json.loads(query["cursor"][0]) if "cursor" in query else None
+                data = _draw_query(repository, lottery, "history", p_limit=size, p_cursor=cursor)
+                return 200, {**data, "items": [_normalize_supabase_draw(row) for row in data["items"]]}
             limit: int | None = None
             if "limit" in query:
                 try:
@@ -510,6 +573,15 @@ def handle_api_request(
         if method == "POST" and path == "/api/matrix/number-reference":
             return 200, _number_reference(repository, _decode_body(body))
         return 404, {"error": "NOT_FOUND"}
+    except HistoryChangedError:
+        return 409, {"error": "DRAW_HISTORY_CHANGED"}
+    except APIError as error:
+        if error.code == "22023":
+            return 400, {"error": "INVALID_QUERY"}
+        logging.getLogger(__name__).error("matrix-query-database-error %s", error.code)
+        return 503, {"error": "QUERY_TEMPORARILY_UNAVAILABLE"}
+    except (httpx.TimeoutException, httpx.PoolTimeout):
+        return 503, {"error": "QUERY_TEMPORARILY_UNAVAILABLE"}
     except (ValueError, json.JSONDecodeError) as error:
         return 400, {"error": str(error)}
     except Exception as error:
@@ -578,12 +650,13 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
         no_store: bool = False,
     ) -> None:
         self._security_outcome(status)
-        encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+        encoded = b"" if status == 204 else json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
         self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
+        if status != 204:
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(encoded)))
         if status == 429:
             self.send_header("Retry-After", str(self._security_retry_after))
-        self.send_header("Content-Length", str(len(encoded)))
         if no_store:
             self.send_header("Cache-Control", "no-store")
         if allow_cors:
@@ -692,13 +765,49 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
         print(f"railway-api {self.address_string()} handler-event")
 
 
+class BoundedApiServer(ThreadingHTTPServer):
+    """Keep parallel reads, with a fixed upper bound and no unbounded thread queue."""
+
+    def __init__(self, address, handler, *, max_requests=16):
+        self._request_slots = BoundedSemaphore(max_requests)
+        super().__init__(address, handler)
+
+    def get_request(self):
+        request, address = super().get_request()
+        request.settimeout(10)
+        return request, address
+
+    def process_request(self, request, client_address):
+        if not self._request_slots.acquire(blocking=False):
+            try:
+                request.sendall(b"HTTP/1.1 503 Service Unavailable\r\nRetry-After: 1\r\nCache-Control: no-store\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+            except OSError:
+                pass
+            finally:
+                self.shutdown_request(request)
+            return
+        try:
+            super().process_request(request, client_address)
+        except BaseException:
+            self._request_slots.release()
+            raise
+
+    def process_request_thread(self, request, client_address):
+        try:
+            super().process_request_thread(request, client_address)
+        finally:
+            self._request_slots.release()
+
+
 def create_repository() -> AnalysisRepository:
     settings = load_settings()
     if not settings.supabase_url or not settings.supabase_secret_key:
         raise RuntimeError("SUPABASE_CONFIG_MISSING")
     # A terminated shared HTTP/2 connection caused concurrent history/Tongxing 500s.
     # Keep the PostgREST timeout while using HTTP/1.1 for this long-lived API client.
-    client = httpx.Client(http2=False, timeout=120, follow_redirects=True)
+    client = httpx.Client(http2=False, timeout=httpx.Timeout(6, connect=2, pool=1),
+                         limits=httpx.Limits(max_connections=16, max_keepalive_connections=16),
+                         follow_redirects=True)
     try:
         return create_supabase_repository(
             settings.supabase_url, settings.supabase_secret_key, httpx_client=client,
@@ -718,7 +827,7 @@ def main() -> None:
         enforce=environ.get("MATRIX_SECURITY_ENFORCE", "") == "true",
         trust_direct_peer=environ.get("MATRIX_SECURITY_TRUST_DIRECT_PEER", "") == "true",
     )
-    server = ThreadingHTTPServer((host, port), RailwayApiHandler)
+    server = BoundedApiServer((host, port), RailwayApiHandler)
     print(f"Railway Matrix API listening on {host}:{port}")
     try:
         server.serve_forever()

@@ -36,6 +36,7 @@ function drawFingerprint(record: LotteryDrawRecord) {
     period: record.period, drawDate: record.drawDate, numbers: record.numbers,
     sortedNumbers: record.sortedNumbers, drawOrderNumbers: record.drawOrderNumbers,
     specialNumber: record.specialNumber, resultStatus: record.resultStatus,
+    sourceRevision: record.sourceRevision,
   });
 }
 
@@ -72,13 +73,49 @@ export type LotteryDrawRecord = {
 
 type LatestLotteryEnvelope = {
   item?: LotteryDrawRecord | null;
+  revision?: string;
 };
 
 export type LatestLotteryResponse = LatestLotteryEnvelope | LotteryDrawRecord | null;
 
 export type LotteryHistoryResponse = {
   items?: LotteryDrawRecord[];
+  nextCursor?: QueryCursor | null;
+  revision?: string;
 } | LotteryDrawRecord[];
+
+type QueryCursor = { offset: number; revision: string };
+class HistoryChangedError extends Error {}
+
+async function collectQueryPages<T>(
+  request: (cursor: QueryCursor | null, size: number) => Promise<{ items: T[]; nextCursor?: QueryCursor | null }>,
+  limit = Infinity,
+): Promise<T[]> {
+  // One restart allows a concurrent draw correction without mixing snapshots.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const items: T[] = [];
+    let cursor: QueryCursor | null = null;
+    try {
+      do {
+        const page = await request(cursor, Math.min(500, limit - items.length));
+        assertArrayField(page.items, 'items');
+        if (page.items.length > 500) throw new Error('INVALID_HISTORY_PAGE');
+        items.push(...page.items);
+        const next = page.nextCursor;
+        if (next != null && (!Number.isSafeInteger(next.offset) || next.offset <= (cursor?.offset ?? 0)
+          || typeof next.revision !== 'string' || !next.revision
+          || (cursor && next.revision !== cursor.revision) || page.items.length === 0)) {
+          throw new Error('INVALID_HISTORY_CURSOR');
+        }
+        cursor = next ?? null;
+      } while (cursor && items.length < limit);
+      return items.slice(0, limit);
+    } catch (error) {
+      if (!(error instanceof HistoryChangedError) || attempt === 1) throw error;
+    }
+  }
+  throw new Error('DRAW_HISTORY_CHANGED');
+}
 
 export type MatrixCardOrder = 'draw' | 'sorted';
 
@@ -265,6 +302,10 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
     headers,
   });
   if (!response.ok) {
+    if (response.status === 409) {
+      const error = await response.json().catch(() => null);
+      if (error?.error === 'DRAW_HISTORY_CHANGED') throw new HistoryChangedError('DRAW_HISTORY_CHANGED');
+    }
     throw new Error(`Lottery API ${response.status}`);
   }
   const contentType = response.headers.get('content-type') ?? '';
@@ -366,7 +407,8 @@ export async function fetchLatestLotteryDraw(lottery: NumberBallLottery): Promis
       const item = isLatestLotteryEnvelope(data) ? data.item : data;
       if (item === null || item === undefined) return null;
       assertLotteryDrawRecord(item, 'item');
-      const record = normalizeRecord(lottery, item);
+      const revision = isLatestLotteryEnvelope(data) ? data.revision : undefined;
+      const record = normalizeRecord(lottery, typeof revision === 'string' ? { ...item, sourceRevision: revision } : item);
       const previous = latestRecords.get(lottery) ?? (stored ? normalizeRecord(lottery, stored.value) : undefined);
       const previousPeriod = getMatrixCurrentPeriod(lottery);
       if ((previous && drawFingerprint(previous) !== drawFingerprint(record))
@@ -382,6 +424,7 @@ export async function fetchLatestLotteryDraw(lottery: NumberBallLottery): Promis
 }
 
 export async function fetchLotteryHistoryYears(lottery: NumberBallLottery): Promise<string[]> {
+  await fetchLatestLotteryDraw(lottery);
   return readThroughCache(`lottery:years:${lottery}`, LOTTERY_READ_CACHE_MS, async () => {
     const data = await requestJson<{ years: unknown }>(`/api/matrix/history-years/${encodeURIComponent(lottery)}`);
     if (!Array.isArray(data.years) || data.years.some(year => typeof year !== 'string' || !/^\d{4}$/.test(year))) {
@@ -413,13 +456,14 @@ export async function fetchLotteryHistory(
         return cached.value;
       }
       const previous = historyRecords.get(historyKey) ?? stored?.value;
-      const query = typeof limit === 'number' ? `?limit=${limit}` : '';
-      const data = await requestJson<LotteryHistoryResponse>(
-        `/api/matrix/history/${encodeURIComponent(lottery)}${query}`,
-      );
+      const items = await collectQueryPages<LotteryDrawRecord>(async (cursor, size) => {
+        const query = new URLSearchParams({ pageSize: String(size) });
+        if (cursor) query.set('cursor', JSON.stringify(cursor));
+        const data = await requestJson<LotteryHistoryResponse>(`/api/matrix/history/${encodeURIComponent(lottery)}?${query}`);
+        return Array.isArray(data) ? { items: data } : { ...data, items: data.items ?? [] };
+      }, limit);
       // A superseded response must not restore persistent data or reach callers.
       if (!isCurrent()) return fetchLotteryHistory(lottery, limit);
-      const items = Array.isArray(data) ? data : data.items ?? [];
       assertArrayField(items, 'items');
       items.forEach((item, index) => assertLotteryDrawRecord(item, `items[${index}]`));
       const result = items.map((item) => normalizeRecord(lottery, item));
@@ -454,21 +498,23 @@ function projectHistoryRecord(
   });
 }
 
-export async function fetchTongXing(input: TongXingRequest) {
-  const history = await fetchLotteryHistory(input.lottery);
-  return readThroughCache(stableCacheKey(`lottery:tongxing:${input.lottery}`, { ...input, source: historyIdentity(history) }), LOTTERY_READ_CACHE_MS, async () => {
-    const groups: TongXingPair[] = [];
-    for (let lockedIndex = input.futureOffset; lockedIndex < history.length; lockedIndex += 1) {
-      const lockedEntry = history[lockedIndex];
-      if (!input.numbers.every((number) => orderedNumbers(lockedEntry, input.numberOrder).includes(number))) {
-        continue;
-      }
-      groups.push({
-        lockedEntry: projectHistoryRecord(input.lottery, lockedEntry, input.numberOrder),
-        predictedEntry: projectHistoryRecord(input.lottery, history[lockedIndex - input.futureOffset], input.numberOrder),
+export async function fetchTongXing(input: TongXingRequest): Promise<TongXingResponse> {
+  await fetchLatestLotteryDraw(input.lottery);
+  return readThroughCache(stableCacheKey(`lottery:tongxing:${input.lottery}`, input), LOTTERY_READ_CACHE_MS, async ({ isCurrent }) => {
+    const groups = await collectQueryPages<TongXingPair>(async (cursor, size) => {
+      const data = await requestJson<TongXingResponse & { nextCursor?: QueryCursor | null }>('/api/matrix/tongxing', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...input, pageSize: size, cursor }),
       });
-    }
-    return { ...input, groups: groups.reverse() };
+      assertArrayField(data.groups, 'groups');
+      data.groups.forEach(assertTongXingGroup);
+      return { items: data.groups, nextCursor: data.nextCursor };
+    });
+    if (!isCurrent()) return fetchTongXing(input);
+    return { ...input, groups: groups.map(pair => ({
+      lockedEntry: normalizeProjectedRecord(input.lottery, pair.lockedEntry),
+      predictedEntry: normalizeProjectedRecord(input.lottery, pair.predictedEntry),
+    })) };
   });
 }
 

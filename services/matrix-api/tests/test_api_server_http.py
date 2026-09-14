@@ -119,6 +119,22 @@ def test_lowercase_admin_header_can_read_protected_status(monkeypatch) -> None:
         assert b'"items"' in body
 
 
+@pytest.mark.parametrize("path", ["/api/matrix/tongxing", "/jobs/status"])
+def test_204_has_no_payload_or_representation_headers(path) -> None:
+    import socket
+    with running_server(HttpOperationalRepository()) as address:
+        with socket.create_connection(address, timeout=2) as connection:
+            connection.sendall(f"OPTIONS {path} HTTP/1.0\r\nHost: localhost\r\n\r\n".encode())
+            chunks = []
+            while chunk := connection.recv(4096):
+                chunks.append(chunk)
+        headers, body = b"".join(chunks).split(b"\r\n\r\n", 1)
+        assert b" 204 " in headers
+        assert body == b""
+        assert b"content-type:" not in headers.lower()
+        assert b"content-length:" not in headers.lower()
+
+
 def test_protected_status_errors_have_no_store_and_no_cors(monkeypatch) -> None:
     monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
     with running_server(HttpOperationalRepository()) as address:

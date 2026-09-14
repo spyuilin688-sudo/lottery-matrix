@@ -126,14 +126,18 @@ async function getRegisteredServiceWorker(): Promise<ServiceWorkerRegistration |
 
 async function getPushContext(): Promise<PushContext | null> {
   if (!supportsPushNotifications()) return null;
+  let registration: ServiceWorkerRegistration | null;
   try {
-    const registration = await getRegisteredServiceWorker();
-    const pushManager = registration?.pushManager;
-    if (!pushManager || typeof pushManager.getSubscription !== 'function' || typeof pushManager.subscribe !== 'function') return null;
-    return { pushManager };
+    registration = await getRegisteredServiceWorker();
   } catch {
-    return null;
+    return failure(Notification.permission, false, 'service-worker-registration');
   }
+  // Missing or unavailable registration is recoverable; only a registered
+  // worker lacking PushManager establishes that this browser cannot use push.
+  if (!registration) return failure(Notification.permission, false, 'service-worker-registration');
+  const pushManager = registration.pushManager;
+  if (!pushManager || typeof pushManager.getSubscription !== 'function' || typeof pushManager.subscribe !== 'function') return null;
+  return { pushManager };
 }
 
 function unsupportedStatus(): PushStatus {
@@ -181,7 +185,9 @@ export function enablePushNotifications(publicKey: string, authenticated = false
   if (!supportsPushNotifications()) return Promise.resolve(unsupportedStatus());
   const permission = Notification.permission;
   if (!authenticated) return Promise.reject(new PushSubscriptionError({ supported: true, permission, enabled: false }));
-  const permissionRequest = Notification.requestPermission();
+  const permissionRequest = permission === 'default'
+    ? Notification.requestPermission()
+    : Promise.resolve(permission);
   return (async () => {
     let resolvedPermission = permission;
     try {
@@ -271,3 +277,4 @@ export async function cleanupBrowserPushSubscription(): Promise<void> {
     await subscription.unsubscribe();
   }
 }
+

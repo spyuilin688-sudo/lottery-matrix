@@ -272,18 +272,30 @@ describe("NotificationsPagePatched", () => {
     expect(await screen.findByText("手機通知已開啟")).toBeVisible();
   });
 
-  it("不讓較慢的初始狀態讀取覆寫剛完成的手機訂閱", async () => {
+  it("初始化狀態確認前顯示檢查中並停用手機開關", async () => {
     const initialStatus = deferred<{ supported: boolean; permission: NotificationPermission; enabled: boolean }>();
     pushSubscription.getPushStatus.mockReturnValue(initialStatus.promise);
     render(<NotificationsPagePatched onNavigate={vi.fn()} />);
     const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
 
-    fireEvent.click(await within(systemRow).findByRole("button", { name: "開啟手機通知" }));
-    expect(await screen.findByText("手機通知已開啟")).toBeVisible();
+    expect(within(systemRow).getByRole("button", { name: "正在檢查手機通知" })).toBeDisabled();
+    expect(screen.getByText("正在檢查手機通知")).toBeVisible();
     await act(async () => { initialStatus.resolve({ supported: true, permission: "default", enabled: false }); });
+    expect(within(systemRow).getByRole("button", { name: "開啟手機通知" })).toBeEnabled();
+    expect(pushSubscription.enablePushNotifications).not.toHaveBeenCalled();
+  });
 
-    expect(screen.getByText("手機通知已開啟")).toBeVisible();
-    expect(within(systemRow).getByRole("button", { name: "關閉手機通知" })).toHaveAttribute("data-checked", "true");
+  it("暫時檢查失敗可手動重查，不自動重試或要求通知權限", async () => {
+    pushSubscription.getPushStatus.mockRejectedValueOnce(pushFailure("service-worker-registration"));
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    expect(await screen.findByText("手機通知暫時無法確認，請重新檢查")).toBeVisible();
+    expect(screen.queryByText("此手機不支援通知")).toBeNull();
+    expect(pushSubscription.getPushStatus).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "重新檢查手機通知" }));
+    await waitFor(() => expect(screen.queryByText("手機通知暫時無法確認，請重新檢查")).toBeNull());
+    expect(pushSubscription.getPushStatus).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole("button", { name: "開啟手機通知" })).toBeEnabled();
+    expect(pushSubscription.enablePushNotifications).not.toHaveBeenCalled();
   });
 
   it("頁面載入發現手機不支援時停用開關並且不要求權限", async () => {
@@ -305,6 +317,15 @@ describe("NotificationsPagePatched", () => {
     expect(screen.getByText("通知權限已拒絕")).toBeVisible();
     expect(within(systemRow).getByRole("button", { name: "通知權限已拒絕" })).toBeDisabled();
     expect(pushSubscription.enablePushNotifications).not.toHaveBeenCalled();
+  });
+
+  it("關閉時暫時無法取得 Worker 不會誤報已關閉", async () => {
+    pushSubscription.getPushStatus.mockResolvedValue({ supported: true, permission: "granted", enabled: true });
+    pushSubscription.disablePushNotifications.mockRejectedValue(pushFailure("service-worker-registration"));
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    fireEvent.click(await screen.findByRole("button", { name: "關閉手機通知" }));
+    expect(await screen.findByText("手機通知關閉失敗，請稍後再試")).toBeVisible();
+    expect(screen.getByRole("button", { name: "關閉手機通知" })).toHaveAttribute("data-checked", "true");
   });
 
   it("開啟手機訂閱不會儲存既有通知設定", async () => {
@@ -727,3 +748,4 @@ it("失敗後切回原設定仍確認儲存最新選擇，確認前保留提示"
     vi.useRealTimers();
   }
 });
+

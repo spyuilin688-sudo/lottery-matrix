@@ -205,6 +205,51 @@ describe('PWA push subscriptions', () => {
     expect(register).not.toHaveBeenCalled();
   });
 
+  it('reports registration lookup failure as temporary and recovers on an explicit recheck', async () => {
+    installSupportedPushApi('granted');
+    getRegistration.mockRejectedValueOnce(new Error('temporary worker failure'));
+    await expectFixedFailure(getPushStatus(), 'granted', 'service-worker-registration');
+    memberApi.fetchPushSubscriptionStatus.mockResolvedValue({ enabled: true });
+    await expect(getPushStatus()).resolves.toMatchObject({ supported: true, enabled: true });
+    expect(requestPermission).not.toHaveBeenCalled();
+    expect(register).not.toHaveBeenCalled();
+  });
+
+  it('reports startup timeout as temporary and clears its timer', async () => {
+    vi.useFakeTimers();
+    try {
+      installSupportedPushApi('granted', { register, getRegistration, ready: new Promise(() => {}) });
+      getRegistration.mockResolvedValue(undefined);
+      const status = getPushStatus().catch((error: unknown) => error);
+      await vi.advanceTimersByTimeAsync(10_000);
+      await expect(status).resolves.toMatchObject({
+        stage: 'service-worker-registration',
+        status: { supported: true, permission: 'granted', enabled: false },
+      });
+      expect(vi.getTimerCount()).toBe(0);
+      expect(register).not.toHaveBeenCalled();
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('treats a missing registration as temporary, not unsupported', async () => {
+    getRegistration.mockResolvedValue(undefined);
+    await expectFixedFailure(getPushStatus(), 'default', 'service-worker-registration');
+  });
+
+  it('reports a registered worker without PushManager as truly unsupported', async () => {
+    getRegistration.mockResolvedValue({});
+    await expect(getPushStatus()).resolves.toMatchObject({ supported: false, enabled: false });
+  });
+
+  it.each(['granted', 'denied'] as const)('does not ask again for an already %s permission', async (permission) => {
+    installSupportedPushApi(permission);
+    await expect(enablePushNotifications('BElong-key', true)).resolves.toMatchObject({
+      supported: true, permission, enabled: permission === 'granted',
+    });
+    expect(requestPermission).not.toHaveBeenCalled();
+    if (permission === 'denied') expect(subscribe).not.toHaveBeenCalled();
+  });
+
   it('waits for the startup-owned worker without registering while enabling push', async () => {
     installSupportedPushApi('default', {
       register,
@@ -614,3 +659,4 @@ describe('PWA push subscriptions', () => {
     expect(unsubscribe).toHaveBeenCalledTimes(1);
   });
 });
+
