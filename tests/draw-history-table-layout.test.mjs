@@ -50,12 +50,15 @@ test("篩選條件由標題卡內容寬度與內容驅動的精簡控制器承�
   const css = readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
   const actions = ruleBodies(css, /^\.product-header__actions$/);
   assert.equal(actions.length, 1);
-  assert.match(actions[0], /grid-area:\s*actions;/);
+  assert.match(actions[0], /position:\s*absolute;/);
+  assert.match(actions[0], /right:\s*4px;/);
+  assert.match(actions[0], /bottom:\s*0px;/);
+  assert.match(actions[0], /width:\s*var\(--product-header-action-width\);/);
   assert.match(actions[0], /min-width:\s*0;/);
-  assert.doesNotMatch(actions[0], /translate|position:\s*absolute/);
-  const control = ruleBodies(responsiveCss, /^\.draw-history-screen \.history-title-actions \.title-card-compact-action$/);
+  assert.doesNotMatch(actions[0], /translate/);
+  const control = ruleBodies(responsiveCss, /^\.title-card-compact-action$/);
   assert.equal(control.length, 1);
-  assert.match(control[0], /padding-inline:\s*4px;/);
+  assert.match(control[0], /padding:\s*2px 1px;/);
 });
 
 test("彩種下拉為歷史設定卡第一項並保留標題列篩選按鈕", () => {
@@ -77,17 +80,16 @@ test("彩種下拉為歷史設定卡第一項並保留標題列篩選按鈕", ()
   assert.doesNotMatch(css, /history-title-lottery|history-title-chevron/);
 });
 
-test("歷史設定卡維持 26px 控制、深色直角選項與共享 16px 水平外距", () => {
+test("歷史設定卡維持 26px 控制、第二列深色直角選項與共享 16px 水平外距", () => {
   assert.match(source, /className="history-filter-panel"/);
   assert.match(source, /className="history-filter-primary-row"/);
   assert.match(source, /className="history-filter-secondary-row"/);
   assert.ok(ruleBodies(css, /^\.history-filter-panel \.select-box$/).some((body) => /height:\s*26px;/.test(body)));
-  assert.match(css, /\.history-filter-panel \.select-box\s*\{[^}]*border-radius:\s*0;/s);
-  assert.ok(ruleBodies(css, /^\.history-filter-panel \.select-box::after$/).some((body) => /display:\s*none;/.test(body)));
+  assert.match(css, /\.history-filter-secondary-row \.select-box\s*\{[^}]*border:\s*1px solid #b98723;[^}]*border-radius:\s*0;[^}]*background:\s*#07131d;/s);
+  assert.match(css, /\.history-filter-secondary-row \.select-box::before,\s*\.history-filter-secondary-row \.select-box::after\s*\{[^}]*display:\s*none;/s);
   assert.match(css, /\.history-filter-panel select\s*\{[^}]*font-size:\s*clamp\(/s);
   const bodyRules = ruleBodies(responsiveCss, /^\.draw-history-screen \.feature-body$/);
   assert.equal(bodyRules.length, 1);
   assert.match(bodyRules[0], /padding:\s*0 var\(--tool-page-inline\) calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/);
   assert.match(responsiveCss, /--tool-page-inline:\s*var\(--layout-page-inline\);/);
 });
-
