@@ -108,6 +108,13 @@ class TianhengContext:
             tuple[int, int], tuple[tuple[int, tuple[int, ...]], ...]
         ] = {}
 
+    def clear_work_caches(self) -> None:
+        """Retain the history index while releasing each batch's derived cells."""
+        self._range_cache.clear()
+        self._candidate_cache.clear()
+        self._drag_cell_cache.clear()
+        self._drag_candidate_cache.clear()
+
     def _occurrences_at(
         self,
         draw_index: int,

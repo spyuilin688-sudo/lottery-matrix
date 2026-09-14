@@ -24,6 +24,23 @@ FONT_FILES = tuple(sorted([*FONT_DIR.glob('*.otf'), *FONT_DIR.glob('*.ttf')]))
 LOTTERY_CODES = {'今彩539': '539', '天天樂': 'fantasy5', '六合彩': 'marksix', '大樂透': 'lotto649'}
 
 
+def publication_orders(lottery: str, draws: list[dict[str, Any]], repository: Any) -> tuple[str, ...]:
+    if not draws:
+        return ()
+    orders = supported_card_orders(lottery, draws)
+    if 'draw' not in orders:
+        return orders
+    # Import at call time: worker orchestration also imports this publisher.
+    from app.domain.explore_state import DRAW_ORDER
+    from app.worker import analysis_version_for_order
+
+    period = str(draws[0]['period'])
+    progress = repository.get_progress(lottery, period, analysis_version_for_order(period, DRAW_ORDER))
+    if progress is None or progress.get('status') != 'complete':
+        return tuple(order for order in orders if order != 'draw')
+    return orders
+
+
 @lru_cache(maxsize=1)
 def renderer_digest() -> str:
     digest = sha256(b'matrix-static-png-v1:resvg-py==0.5.0')
@@ -171,7 +188,7 @@ class CardPublicationService:
             if not complete_snapshot(lottery, draws):
                 return None
             digest = snapshot_digest(lottery, draws)
-            orders = supported_card_orders(lottery, draws)
+            orders = publication_orders(lottery, draws, self.repository)
             period = str(draws[0]['period'])
             inputs = {order: order_input_digest(lottery, order, draws) for order in orders}
             previous = manifest.get('cards', {}) if manifest else {}

@@ -75,6 +75,34 @@ test('installation prepares CSS and JS before the offline shell becomes usable',
   assert.deepEqual(w.actions, ['skipWaiting', 'claim']);
 });
 
+test('a cached asset is served without a network request online or offline', async () => {
+  const w = await harness(); await w.dispatch('install');
+  const requestsAfterInstall = w.requests.length;
+
+  assert.equal((await w.dispatch('fetch', style)).headers.get('content-type'), 'text/css');
+  w.setOffline(true);
+  assert.equal((await w.dispatch('fetch', style)).headers.get('content-type'), 'text/css');
+  assert.equal(w.requests.length, requestsAfterInstall);
+});
+
+test('network recovery replaces the empty offline fallback with a complete reusable shell', async () => {
+  const w = await harness({ offline: true });
+  const fallback = await w.dispatch('fetch', navigation);
+  assert.equal(fallback.status, 503);
+  assert.match(await fallback.text(), /目前無法連線/);
+
+  w.setOffline(false);
+  const recovered = await w.dispatch('fetch', navigation);
+  assert.equal(recovered.status, 200);
+  assert.match(await recovered.text(), /new/);
+
+  w.setOffline(true);
+  const cached = await w.dispatch('fetch', navigation);
+  assert.equal(cached.status, 200);
+  assert.match(await cached.text(), /new/);
+  assert.equal((await w.dispatch('fetch', style)).headers.get('content-type'), 'text/css');
+});
+
 test('invalid CSS prevents activation of an incomplete update', async () => {
   const oldEntries = new Map([[`${origin}/`, response(html('old'))]]);
   const stores = new Map([['matrix-pwa-shell-old', oldEntries]]);

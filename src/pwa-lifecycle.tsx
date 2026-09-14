@@ -76,9 +76,14 @@ export function PwaLifecycleProvider({
     }
 
     const serviceWorker = navigator.serviceWorker;
-    const hadController = Boolean(serviceWorker?.controller);
+    let hadController = Boolean(serviceWorker?.controller);
     const handleControllerChange = () => {
-      if (!hadController || updatePromptedRef.current) return;
+      if (!hadController) {
+        // The first claim is installation; subsequent claims update this page.
+        hadController = Boolean(serviceWorker?.controller);
+        return;
+      }
+      if (updatePromptedRef.current) return;
       updatePromptedRef.current = true;
       void confirm({
         title: "發現新版本",

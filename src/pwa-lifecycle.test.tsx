@@ -173,6 +173,31 @@ describe("PWA update lifecycle", () => {
     expect(screen.queryByRole("dialog", { name: "發現新版本" })).not.toBeInTheDocument();
   });
 
+  it("offers a later update after the first controller claims an already open page", async () => {
+    const serviceWorker = new ServiceWorkerContainerStub();
+    installNavigator(serviceWorker);
+    const reloadPage = vi.fn();
+    render(
+      <AppDialogProvider>
+        <PwaLifecycleProvider reloadPage={reloadPage}>
+          <div>Matrix</div>
+        </PwaLifecycleProvider>
+      </AppDialogProvider>,
+    );
+
+    serviceWorker.controller = {};
+    serviceWorker.dispatchEvent(new Event("controllerchange"));
+    expect(screen.queryByRole("dialog", { name: "發現新版本" })).not.toBeInTheDocument();
+
+    serviceWorker.controller = {};
+    serviceWorker.dispatchEvent(new Event("controllerchange"));
+    expect(await screen.findByRole("dialog", { name: "發現新版本" })).toBeInTheDocument();
+    expect(reloadPage).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "立即更新" }));
+
+    await waitFor(() => expect(reloadPage).toHaveBeenCalledTimes(1));
+  });
+
   it("offers a later service worker update after the current prompt is postponed", async () => {
     const serviceWorker = new ServiceWorkerContainerStub();
     serviceWorker.controller = {};

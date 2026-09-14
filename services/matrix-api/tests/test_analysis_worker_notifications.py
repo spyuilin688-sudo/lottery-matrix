@@ -206,7 +206,7 @@ def test_analysis_only_worker_persistent_delivery_failure_retries_via_railway() 
             notification_emitter=emitter,
         )
 
-    assert emitter.attempts.count(RESULT_KEY) == 2
+    assert emitter.attempts.count(RESULT_KEY) == 3
     assert repository.get_progress(LOTTERY, PERIOD, VERSION)["status"] == "complete"
 
 

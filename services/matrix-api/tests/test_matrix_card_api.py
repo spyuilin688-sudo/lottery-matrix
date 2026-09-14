@@ -25,6 +25,8 @@ def _repository() -> InMemoryAnalysisRepository:
         "sortedNumbers": ["01", "07", "11", "20", "39"],
         "drawOrderNumbers": ["39", "20", "11", "07", "01"],
     })
+    from tests.test_card_publication import complete_analysis
+    complete_analysis(repository)
     return repository
 
 

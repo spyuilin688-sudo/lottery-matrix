@@ -5,7 +5,7 @@ import pytest
 
 from app.repositories.card_repository import published_manifest
 from app.services.card_publication import build_card_pngs
-from tests.test_card_publication import NOW, fixture, history, png_stub, service
+from tests.test_card_publication import NOW, complete_analysis, fixture, history, png_stub, service
 from tests.test_card_two_stage import preliminary
 
 
@@ -25,6 +25,7 @@ def test_confirmation_renders_and_uploads_only_actual_and_repeats_do_no_work(lot
     publisher = service(repository, cards, recording_renderer(calls))
     first = publisher.ensure_current(lottery, NOW)
     repository.upsert_draw({**history(lottery)[0], 'resultStatus': 'confirmed'})
+    complete_analysis(repository, lottery)
     confirmed = publisher.ensure_current(lottery, NOW + timedelta(seconds=1))
     assert calls == ['sorted', 'draw']
     assert len(cards.objects) == 2
@@ -44,6 +45,7 @@ def test_actual_order_correction_only_renders_actual_but_number_correction_rende
     corrected = deepcopy(history()[0])
     corrected['drawOrderNumbers'] = list(reversed(corrected['drawOrderNumbers']))
     repository.upsert_draw(corrected)
+    complete_analysis(repository)
     second = publisher.ensure_current('今彩539', NOW + timedelta(seconds=1))
     assert calls == ['draw', 'sorted', 'draw']
     assert second['cards']['sorted'] == first['cards']['sorted']
@@ -51,6 +53,7 @@ def test_actual_order_correction_only_renders_actual_but_number_correction_rende
     for key in ('numbers', 'sortedNumbers', 'drawOrderNumbers'):
         corrected[key] = ['02' if n == '01' else n for n in corrected[key]]
     repository.upsert_draw(corrected)
+    complete_analysis(repository)
     third = publisher.ensure_current('今彩539', NOW + timedelta(seconds=2))
     assert calls == ['draw', 'sorted', 'draw', 'draw', 'sorted']
     assert third['cards']['sorted'] != second['cards']['sorted']
@@ -70,6 +73,7 @@ def test_new_period_or_date_correction_rebuilds_both_orders(field, value):
         # Check publication after a persisted data repair, independently of
         # ingestion's rejection of conflicting confirmed dates.
         repository.draws[('今彩539', corrected['period'])] = corrected
+    complete_analysis(repository)
     second = publisher.ensure_current('今彩539', NOW + timedelta(seconds=1))
     assert calls == ['draw', 'sorted', 'draw', 'sorted']
     assert second['cards']['sorted'] != first['cards']['sorted']

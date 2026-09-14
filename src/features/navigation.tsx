@@ -13,7 +13,6 @@ export type ScreenId =
   | "calculator"
   | "matrix-card"
   | "guide"
-  | "notes"
   | "notebook"
   | "notifications"
   | "profile"

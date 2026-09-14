@@ -6,7 +6,7 @@ import pytest
 from app.card_renderer import _build_rows
 from app.repositories.card_repository import is_card_published, published_manifest
 from app.services.card_publication import build_card_pngs, snapshot_digest
-from tests.test_card_publication import NOW, fixture, history, png_stub, service
+from tests.test_card_publication import NOW, complete_analysis, fixture, history, png_stub, service
 
 
 def preliminary(repository, lottery='今彩539'):
@@ -46,6 +46,7 @@ def test_confirmation_publishes_actual_order_as_a_new_immutable_generation_immed
     publisher = service(repository, cards, available_pngs)
     first = publisher.ensure_current('今彩539', NOW)
     repository.upsert_draw({**history()[0], 'resultStatus': 'confirmed'})
+    complete_analysis(repository)
     confirmed = publisher.ensure_current('今彩539', NOW + timedelta(seconds=1))
     assert first is not None and confirmed is not None
     assert confirmed['period'] == first['period']

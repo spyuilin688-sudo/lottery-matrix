@@ -1,0 +1,58 @@
+{
+  "version": "20260914143243",
+  "before": [
+    {
+      "draw_count": 27896,
+      "latest_draw_update": "2026-09-14 14:03:11.301745+00",
+      "event_count": 124,
+      "latest_event_update": "2026-09-14 14:04:00.115572+00",
+      "publication_count": 4,
+      "publication_digest": "e5ffed752eb008ac1ac2546d7aeb5b5f"
+    }
+  ],
+  "after": [
+    {
+      "draw_count": 27896,
+      "latest_draw_update": "2026-09-14 14:03:11.301745+00",
+      "event_count": 124,
+      "latest_event_update": "2026-09-14 14:04:00.115572+00",
+      "publication_count": 4,
+      "publication_digest": "e5ffed752eb008ac1ac2546d7aeb5b5f"
+    }
+  ],
+  "catalog": [
+    {
+      "has_current_raw_version_fence": true,
+      "has_completed_timestamp_fence": true,
+      "anon_can_publish": false,
+      "authenticated_can_publish": false,
+      "service_can_publish": true
+    }
+  ],
+  "existingReadiness": [
+    {
+      "lottery": "今彩539",
+      "period": "115000223",
+      "contains_raw": true,
+      "raw_analysis_complete": true
+    },
+    {
+      "lottery": "六合彩",
+      "period": "026099",
+      "contains_raw": true,
+      "raw_analysis_complete": true
+    },
+    {
+      "lottery": "大樂透",
+      "period": "115000087",
+      "contains_raw": true,
+      "raw_analysis_complete": true
+    },
+    {
+      "lottery": "天天樂",
+      "period": "11999",
+      "contains_raw": false,
+      "raw_analysis_complete": false
+    }
+  ]
+}

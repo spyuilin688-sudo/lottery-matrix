@@ -261,7 +261,7 @@ def test_persistent_delivery_failure_raises_after_analysis_is_complete() -> None
     with pytest.raises(NotificationDeliveryError, match="test delivery failure"):
         run_worker(repository, NotificationSource(history_count=120), emitter)
 
-    assert emitter.attempts.count(RESULT_KEY) == 2
+    assert emitter.attempts.count(RESULT_KEY) == 3
     assert repository.get_progress(LOTTERY, PERIOD, VERSION)["status"] == "complete"
 
 

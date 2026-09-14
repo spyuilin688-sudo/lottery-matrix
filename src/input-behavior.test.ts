@@ -1,18 +1,34 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { formatLotteryNumber, normalizeLotteryNumberDraft } from './input-behavior';
+import { installGlobalInputBehavior } from './input-behavior';
 
-describe('全專案輸入框行為', () => {
-  it('號碼輸入只保留 01 到 49 範圍內的值', () => {
-    expect(normalizeLotteryNumberDraft('49', '')).toBe('49');
-    expect(normalizeLotteryNumberDraft('50', '5')).toBe('5');
-    expect(normalizeLotteryNumberDraft('abc12', '')).toBe('12');
-    expect(normalizeLotteryNumberDraft('00', '')).toBe('');
+describe('active input behavior after record retirement', () => {
+  it('selects the focused input and detaches the focus listener on cleanup', () => {
+    const input = document.createElement('input');
+    input.value = '筆記標題';
+    document.body.append(input);
+    const dispose = installGlobalInputBehavior();
+    try {
+      input.focus();
+      expect([input.selectionStart, input.selectionEnd]).toEqual([0, 4]);
+      dispose();
+      input.setSelectionRange(2, 2);
+      input.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      expect([input.selectionStart, input.selectionEnd]).toEqual([2, 2]);
+    } finally { dispose(); input.remove(); }
   });
 
-  it('一位數號碼輸入完成後自動補零', () => {
-    expect(formatLotteryNumber('1')).toBe('01');
-    expect(formatLotteryNumber('9')).toBe('09');
-    expect(formatLotteryNumber('10')).toBe('10');
-    expect(formatLotteryNumber('49')).toBe('49');
+  it('does not retain global input/blur rewriting for retired record controls', () => {
+    const legacy = document.createElement('div');
+    legacy.className = 'note-number-group';
+    legacy.innerHTML = '<input aria-label="投注號碼" value="77">';
+    document.body.append(legacy);
+    const input = legacy.querySelector('input')!;
+    const dispose = installGlobalInputBehavior();
+    try {
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+      expect(input.value).toBe('77');
+    } finally { dispose(); legacy.remove(); }
   });
 });

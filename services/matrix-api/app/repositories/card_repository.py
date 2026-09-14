@@ -146,7 +146,7 @@ def published_manifest(lottery: str, repository: Any) -> dict[str, Any] | None:
     # Import locally because the publisher depends on the storage transport.
     from app.card_renderer import card_layout, supported_card_orders
     from app.services.card_publication import (
-        complete_snapshot, order_input_digest, reusable_card, snapshot_digest,
+        complete_snapshot, order_input_digest, publication_orders, reusable_card, snapshot_digest,
     )
 
     draws = repository.list_draws(lottery, sum(card_layout(lottery)['column_rows']))
@@ -155,7 +155,7 @@ def published_manifest(lottery: str, repository: Any) -> dict[str, Any] | None:
             or manifest.get('generation') != snapshot_digest(lottery, draws)):
         return None
     available = manifest.get('cards', {})
-    orders = supported_card_orders(lottery, draws)
+    orders = publication_orders(lottery, draws, repository)
     if not isinstance(available, dict) or 'sorted' not in available:
         return None
     for order in orders:

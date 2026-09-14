@@ -178,7 +178,6 @@ def run_analysis_only_worker(
         raise ValueError("ANALYSIS_ONLY_LOTTERY_UNSUPPORTED")
 
     emitted_event_keys: set[str] = set()
-    publish_current_card(lottery, repository)
     candidates = repository.list_draws(lottery, ANALYSIS_CANDIDATE_LIMIT)
     if not candidates:
         return {
@@ -187,6 +186,11 @@ def run_analysis_only_worker(
             "status": "waiting-draw",
         }
 
+    _emit_early_notifications(
+        {"lottery": lottery, **candidates[0]}, repository,
+        notification_emitter, emitted_event_keys,
+    )
+    publish_current_card(lottery, repository)
     periods = [str(draw["period"]) for draw in candidates]
     progress_by_period = repository.list_progress_for_periods(
         lottery,

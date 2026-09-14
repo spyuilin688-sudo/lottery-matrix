@@ -8,7 +8,7 @@ export { NumberReferencePage } from "./features/NumberReferencePage";
 export { CalculatorPage } from "./features/CalculatorPage";
 export { MatrixCardPage } from "./features/MatrixCardPage";
 export { MatrixGuidePage } from "./features/MatrixGuidePage";
-export { MatrixNotebookPage, NotesPage } from "./features/NotebookPages";
+export { MatrixNotebookPage } from "./features/NotebookPages";
 export { NotificationsPage } from "./features/LegacyNotificationsPage";
 export { ProfilePage, PaymentHistoryPage, ProPlansPage, ManualTransferPage } from "./features/MemberPages";
 export { MatrixStatusPage, MatrixCustomStatusPage } from "./features/MatrixStatusPages";

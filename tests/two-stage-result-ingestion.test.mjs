@@ -65,6 +65,21 @@ async function upsert(db, draws) {
   return (await db.query('select public.matrix_upsert_draws($1::jsonb) result', [JSON.stringify(draws)])).rows[0].result;
 }
 
+for (const lottery of ['今彩539', '天天樂', '六合彩', '大樂透']) {
+  test(`${lottery} repeated identical crawler batches perform zero physical draw updates`, async () => {
+    const db = await database();
+    try {
+      const values = ['今彩539','天天樂'].includes(lottery) ? numbers.slice(0,5) : numbers;
+      const draw = formal('100', {lottery,numbers:values,sorted_numbers:values,
+        draw_order_numbers:lottery==='天天樂'?null:values});
+      const first = await upsert(db,[draw]);
+      const updateCount = await observeDrawUpdates(db);
+      assert.deepEqual(await upsert(db,[draw,draw]),[first[0],first[0]]);
+      assert.equal(await updateCount(),0);
+    } finally { await db.close(); }
+  });
+}
+
 test('repeated confirmed batches return existing rows without physical updates or invalidating completed work', async () => {
   const db=await database();
   try {

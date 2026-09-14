@@ -247,6 +247,9 @@ def create_artifact_builders(
     explore_batch_runner: ExploreBatchRunner = run_explore_batch,
 ) -> dict[str, Callable[[dict[str, Any]], dict[str, Any]]]:
     engine_sessions: dict[tuple[str, tuple[str, ...]], ExploreEngineSession] = {}
+    tianheng_sessions: dict[
+        tuple[str, tuple[str, ...]], tuple[ExploreEngineSession, TianhengEngineSession]
+    ] = {}
 
     def engine_session(lottery: str, history: list[dict[str, Any]], number_orders: tuple[str, ...] | None) -> ExploreEngineSession:
         orders = allowed_number_orders(lottery, number_orders)
@@ -295,14 +298,25 @@ def create_artifact_builders(
 
     def tianheng(context: dict[str, Any]) -> dict[str, Any]:
         draw = context["draw"]
-        session = TianhengEngineSession.from_explore_session(
-            engine_session(draw["lottery"], context["history"], context.get("numberOrders")),
-        )
+        orders = allowed_number_orders(draw["lottery"], context.get("numberOrders"))
+        explore_session = engine_session(draw["lottery"], context["history"], orders)
+        key = (draw["lottery"], orders)
+        cached = tianheng_sessions.get(key)
+        # The pair index covers the complete history. Keep it across batches,
+        # and replace it when the underlying verified history session changes.
+        if cached is None or cached[0] is not explore_session:
+            cached = (explore_session, TianhengEngineSession.from_explore_session(explore_session))
+            tianheng_sessions[key] = cached
+        session = cached[1]
         batch = context["tianhengBatch"]
-        result = run_tianheng_batch(
-            draw["lottery"], context["history"],
-            int(batch["start"]), int(batch["limit"]), session=session,
-        )
+        try:
+            result = run_tianheng_batch(
+                draw["lottery"], context["history"],
+                int(batch["start"]), int(batch["limit"]), session=session,
+            )
+        finally:
+            for indexed in session.contexts:
+                indexed.clear_work_caches()
         result["artifact"]["drawPeriod"] = draw["period"]
         return {"artifact": result["artifact"], "_checkpoint": {
             "cursorStart": result["cursorStart"], "cursor": result["cursor"],

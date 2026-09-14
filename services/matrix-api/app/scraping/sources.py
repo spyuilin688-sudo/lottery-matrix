@@ -124,12 +124,22 @@ def parse_taiwan_lottery_history(payload: Any, key: str, count: int) -> list[Mat
             continue
         size = item.get("drawNumberSize", item.get("draw_number_size"))
         appear = item.get("drawNumberAppear", item.get("draw_number_appear"))
-        if not isinstance(size, list) or not isinstance(appear, list):
+        if not isinstance(size, list) or (appear is not None and not isinstance(appear, list)):
             continue
         try:
             raw_period = str(item.get("period", "")).strip()
             period = raw_period.zfill(9) if len(raw_period) == 8 else raw_period
-            parsed.append(_materialize_draw(period, str(item.get("lotteryDate", "")), size, count, appear))
+            draw = _materialize_draw(period, str(item.get("lotteryDate", "")), size, count)
+            if appear:
+                try:
+                    draw = _materialize_draw(period, draw['drawDate'], size, count, appear)
+                except ValueError:
+                    pass  # Keep validated sorted numbers; never invent actual order.
+            if draw['drawOrderNumbers'] is None:
+                # Publish the validated sorted result now, then keep polling for
+                # the formal actual order instead of dropping the entire draw.
+                draw["resultStatus"] = "preliminary"
+            parsed.append(draw)
         except ValueError:
             continue
     return _newest_unique(parsed)
@@ -341,10 +351,18 @@ def parse_sc888_marksix_history(html: str) -> list[MatrixDraw]:
             size = _labelled_numbers(
                 row_text, r"大小(?:順序)?", r"台號|特三|奇偶", 7, 49,
             )
-        if not drop or not size:
+        if not size:
             continue
         try:
-            draws.append(_materialize_draw(period, draw_date, size, 7, drop))
+            draw = _materialize_draw(period, draw_date, size, 7)
+            if drop:
+                try:
+                    draw = _materialize_draw(period, draw_date, size, 7, drop)
+                except ValueError:
+                    pass
+            if draw['drawOrderNumbers'] is None:
+                draw['resultStatus'] = 'preliminary'
+            draws.append(draw)
         except ValueError:
             continue
     return _newest_unique(draws)

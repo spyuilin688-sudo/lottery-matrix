@@ -30,9 +30,10 @@ class _TableParser(HTMLParser):
             self._row.append(clean_text(" ".join(self._cell)))
             self._cell = None
         elif lowered == "tr" and self._row is not None:
-            cells = [cell for cell in self._row if cell]
-            if cells:
-                self.rows.append(cells)
+            # Empty cells retain their header position while results arrive in
+            # stages (for example sorted numbers before the actual draw order).
+            if any(self._row):
+                self.rows.append(self._row)
             self._row = None
             self._cell = None
 

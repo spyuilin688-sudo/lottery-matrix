@@ -8,7 +8,7 @@ import { NumberReferencePage } from "./NumberReferencePage";
 import { CalculatorPage } from "./CalculatorPage";
 import { MatrixCardPage } from "./MatrixCardPage";
 import { MatrixGuidePage } from "./MatrixGuidePage";
-import { NotesPage, MatrixNotebookPage } from "./NotebookPages";
+import { MatrixNotebookPage } from "./NotebookPages";
 import { NotificationsPage } from "./LegacyNotificationsPage";
 import {
   ProfilePage,
@@ -59,7 +59,6 @@ export function FeaturePageRouter({
   if (screen === "calculator") return <CalculatorPage onNavigate={onNavigate} />;
   if (screen === "matrix-card") return <MatrixCardPage onNavigate={onNavigate} />;
   if (screen === "guide") return <MatrixGuidePage onNavigate={onNavigate} />;
-  if (screen === "notes") return <NotesPage onNavigate={onNavigate} />;
   if (screen === "notebook") return <LinePageGuard key={screen} title="Matrix 筆記本" onNavigate={onNavigate}><MatrixNotebookPage onNavigate={onNavigate} /></LinePageGuard>;
   if (screen === "notifications") return <NotificationsPage onNavigate={onNavigate} />;
   if (screen === "profile") return <ProfilePage onNavigate={onNavigate} />;

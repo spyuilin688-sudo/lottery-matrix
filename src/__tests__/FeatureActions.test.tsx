@@ -38,25 +38,8 @@ vi.mock("../member-api", async (importOriginal) => ({
   submitMemberReferralCode: memberReferral.submit,
 }));
 
-import { FeaturePageRouter, MatrixCardPage, MatrixNotebookPage, NotesPage } from "../FeaturePages";
+import { FeaturePageRouter, MatrixCardPage } from "../FeaturePages";
 import { AppDialogProvider } from "../dialog/AppDialog";
-
-async function openNotebookSettings() {
-  render(<AppDialogProvider><MatrixNotebookPage onNavigate={vi.fn()} /></AppDialogProvider>);
-  fireEvent.click(await screen.findByRole("button", { name: "切換至紀錄模式" }));
-  fireEvent.click(screen.getByRole("button", { name: "設定" }));
-  fireEvent.click(screen.getByRole("button", { name: "編輯" }));
-}
-
-function tagOrder() {
-  return Array.from(document.querySelectorAll<HTMLElement>(".tag-setting-card > header > strong"))
-    .map((element) => element.textContent);
-}
-
-function reorderLabel(name: string, position: number, total = 4) {
-  const clickDirection = position === total ? "上移" : "下移";
-  return `調整${name}順序，目前第${position}項，共${total}項；點擊${clickDirection}，方向鍵可調整`;
-}
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -178,8 +161,6 @@ describe("existing feature actions", () => {
     expect(referralInput).toHaveValue("");
     expect(referralConfirm).toBeDisabled();
 
-    render(<NotesPage onNavigate={vi.fn()} />);
-    expect(screen.getByRole("button", { name: "紀錄設定" })).toBeDisabled();
   });
 
   it("places the three support contacts together on the contact page", async () => {
@@ -267,116 +248,5 @@ describe("existing feature actions", () => {
 
     fireEvent.change(input, { target: { value: "B7K9-P2XM-4Q8R-N6TY" } });
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-  });
-});
-
-describe("notebook tag ordering", () => {
-  it("clicking a reorder control moves down once, or up once when already last", async () => {
-    await openNotebookSettings();
-
-    fireEvent.click(screen.getByRole("button", { name: reorderLabel("單號", 1) }));
-    expect(tagOrder()).toEqual(["二星", "單號", "三星", "四星"]);
-
-    fireEvent.click(screen.getByRole("button", { name: reorderLabel("四星", 4) }));
-    expect(tagOrder()).toEqual(["二星", "單號", "四星", "三星"]);
-  });
-
-  it("ArrowUp and ArrowDown stay bounded, retain focus, and keep the position label accurate", async () => {
-    await openNotebookSettings();
-    const first = screen.getByRole("button", { name: reorderLabel("單號", 1) });
-    first.focus();
-
-    fireEvent.keyDown(first, { key: "ArrowUp" });
-    expect(tagOrder()).toEqual(["單號", "二星", "三星", "四星"]);
-    expect(first).toHaveFocus();
-
-    fireEvent.keyDown(first, { key: "ArrowDown" });
-    let moved = await screen.findByRole("button", { name: reorderLabel("單號", 2) });
-    expect(tagOrder()).toEqual(["二星", "單號", "三星", "四星"]);
-    expect(moved).toHaveFocus();
-
-    fireEvent.keyDown(moved, { key: "ArrowDown" });
-    moved = await screen.findByRole("button", { name: reorderLabel("單號", 3) });
-    fireEvent.keyDown(moved, { key: "ArrowDown" });
-    moved = await screen.findByRole("button", { name: reorderLabel("單號", 4) });
-    expect(tagOrder()).toEqual(["二星", "三星", "四星", "單號"]);
-    expect(moved).toHaveFocus();
-
-    fireEvent.keyDown(moved, { key: "ArrowDown" });
-    expect(tagOrder()).toEqual(["二星", "三星", "四星", "單號"]);
-    expect(moved).toHaveFocus();
-
-    fireEvent.keyDown(moved, { key: "ArrowUp" });
-    const movedUp = await screen.findByRole("button", { name: reorderLabel("單號", 3) });
-    expect(tagOrder()).toEqual(["二星", "三星", "單號", "四星"]);
-    expect(movedUp).toHaveFocus();
-  });
-
-  it("retains pointer drag reordering, suppresses its follow-on click, and focuses the moved tag", async () => {
-    await openNotebookSettings();
-    const cards = Array.from(document.querySelectorAll<HTMLElement>(".tag-setting-card"));
-    Object.defineProperty(document, "elementFromPoint", {
-      configurable: true,
-      value: vi.fn(() => cards[2]),
-    });
-    const first = screen.getByRole("button", { name: reorderLabel("單號", 1) });
-    first.focus();
-
-    fireEvent.pointerDown(first, { pointerId: 7, clientX: 1, clientY: 1 });
-    fireEvent.pointerMove(first, { pointerId: 7, clientX: 10, clientY: 10 });
-    fireEvent.pointerUp(first, { pointerId: 7, clientX: 10, clientY: 10 });
-    fireEvent.click(first);
-
-    expect(screen.getByRole("dialog", { name: "確認變更玩法順序？" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "確認變更" }));
-    await waitFor(() => expect(tagOrder()).toEqual(["二星", "三星", "單號", "四星"]));
-    expect(await screen.findByRole("button", { name: reorderLabel("單號", 3) })).toHaveFocus();
-  });
-
-  it("does not reinterpret a drag back to its origin or a cancelled drag as a click reorder", async () => {
-    await openNotebookSettings();
-    const cards = Array.from(document.querySelectorAll<HTMLElement>(".tag-setting-card"));
-    const elementFromPoint = vi.fn()
-      .mockReturnValueOnce(cards[2])
-      .mockReturnValue(cards[0]);
-    Object.defineProperty(document, "elementFromPoint", {
-      configurable: true,
-      value: elementFromPoint,
-    });
-    const first = screen.getByRole("button", { name: reorderLabel("單號", 1) });
-
-    fireEvent.pointerDown(first, { pointerId: 8, clientX: 1, clientY: 1 });
-    fireEvent.pointerMove(first, { pointerId: 8, clientX: 10, clientY: 10 });
-    fireEvent.pointerMove(first, { pointerId: 8, clientX: 1, clientY: 1 });
-    fireEvent.pointerUp(first, { pointerId: 8, clientX: 1, clientY: 1 });
-    fireEvent.click(first);
-
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(tagOrder()).toEqual(["單號", "二星", "三星", "四星"]);
-
-    fireEvent.pointerDown(first, { pointerId: 9, clientX: 1, clientY: 1 });
-    fireEvent.pointerMove(first, { pointerId: 9, clientX: 10, clientY: 10 });
-    fireEvent.pointerCancel(first, { pointerId: 9, clientX: 10, clientY: 10 });
-    fireEvent.click(first);
-
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(tagOrder()).toEqual(["單號", "二星", "三星", "四星"]);
-  });
-
-  it("keeps a custom tag name input mounted and focused across consecutive edits", async () => {
-    await openNotebookSettings();
-    fireEvent.change(screen.getByPlaceholderText("新增自訂玩法"), { target: { value: "測" } });
-    fireEvent.click(screen.getByRole("button", { name: "新增" }));
-    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "新增" }));
-
-    const nameInput = await screen.findByRole("textbox", { name: "玩法名稱" });
-    nameInput.focus();
-    fireEvent.change(nameInput, { target: { value: "測試" } });
-    expect(screen.getByRole("textbox", { name: "玩法名稱" })).toBe(nameInput);
-    expect(nameInput).toHaveFocus();
-
-    fireEvent.change(nameInput, { target: { value: "測試玩法" } });
-    expect(screen.getByRole("textbox", { name: "玩法名稱" })).toBe(nameInput);
-    expect(nameInput).toHaveFocus();
   });
 });

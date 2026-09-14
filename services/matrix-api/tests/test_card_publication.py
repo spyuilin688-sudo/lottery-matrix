@@ -79,7 +79,20 @@ def fixture(lottery='今彩539'):
         repository.upsert_draw(draw)
     cards = MemoryCards()
     repository.card_repository = cards
+    if lottery != '天天樂':
+        complete_analysis(repository, lottery)
     return repository, cards
+
+
+def complete_analysis(repository, lottery='今彩539', period=None):
+    from app.domain.explore_state import DRAW_ORDER
+    from app.worker import analysis_version_for_order
+    period = period or repository.list_draws(lottery, 1)[0]['period']
+    version = analysis_version_for_order(period, DRAW_ORDER)
+    repository.begin_run(lottery, period, version, NOW.isoformat())
+    for kind in ('explore', 'tianheng', 'tianyan', 'tiangong', 'status'):
+        repository.save_artifact(lottery, period, version, kind, {})
+    repository.complete_run(lottery, period, version, NOW.isoformat())
 
 
 def png_stub(lottery, draws, *, orders=None):
@@ -168,6 +181,7 @@ def test_historical_correction_creates_a_new_generation_immediately():
     changed['sortedNumbers'] = sorted(changed['numbers'], key=int)
     repository.upsert_draw(changed)
     publisher = service(repository, cards)
+    complete_analysis(repository)
     new = publisher.ensure_current('今彩539', NOW + timedelta(hours=1))
     assert new['period'] == old['period']
     assert new['generation'] != old['generation']
@@ -181,6 +195,7 @@ def test_second_upload_failure_preserves_old_manifest_and_retry_finishes_same_fi
     changed['period'] = '10001'
     repository.upsert_draw(changed)
     publisher = service(repository, cards)
+    complete_analysis(repository)
     cards.fail_order = 'sorted'
     with pytest.raises(RuntimeError, match='upload unavailable'):
         publisher.ensure_current('今彩539', NOW + timedelta(hours=1, minutes=10))

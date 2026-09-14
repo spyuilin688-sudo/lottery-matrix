@@ -154,7 +154,7 @@ def test_formal_first_runs_sorted_then_actual_under_separate_versions(monkeypatc
         assert repository.get_progress('今彩539', '115000220', f'115000220:matrix-python-v14-{suffix}')['status'] == 'complete'
 
 
-def test_actual_png_notification_does_not_wait_for_algorithm_progress(monkeypatch):
+def test_actual_png_notification_waits_for_algorithm_progress(monkeypatch):
     repository = InMemoryAnalysisRepository()
     repository.upsert_draw(CONFIRMED)
     class Emitter:
@@ -166,7 +166,7 @@ def test_actual_png_notification_does_not_wait_for_algorithm_progress(monkeypatc
     emitter = Emitter()
     monkeypatch.setattr(worker, '_card_ready', lambda *args: True)
     worker.emit_ready_notifications('今彩539', '115000220', repository, emitter, set())
-    assert any('matrix_card' in key for key in emitter.events)
+    assert not any('matrix_card' in key for key in emitter.events)
 
 
 def test_draw_engine_rejects_preliminary_even_if_stale_actual_field_is_present():

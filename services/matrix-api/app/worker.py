@@ -173,7 +173,9 @@ def emit_ready_notifications(
         lottery_result_event(draw),
         emitted_event_keys,
     )
-    if _card_ready(lottery, period, repository):
+    card_version = analysis_version_for_order(period, DRAW_ORDER)
+    card_progress = repository.get_progress(lottery, period, card_version) if lottery != "天天樂" else None
+    if card_progress is not None and card_progress.get("status") == "complete" and _card_ready(lottery, period, repository):
         _emit_notification_event(
             notification_emitter,
             matrix_card_event(draw),
@@ -296,10 +298,19 @@ def _resume_stored_analysis(
             if not has_complete_draw_order(current, lottery_position_count(lottery)):
                 break
             history = repository.list_draws(lottery, None)
-        history = sorted(
-            (row for row in history if period_sort_key(lottery, row["period"]) <= period_sort_key(lottery, period)),
-            key=lambda row: period_sort_key(lottery, row["period"]), reverse=True,
+        # Historical ROC eight/nine-digit aliases describe one draw. Both
+        # orders must see the same canonical history, with conflicts rejected.
+        history = DrawRefreshService._sort_algorithm_history(
+            lottery,
+            [row for row in history if period_sort_key(lottery, row["period"]) <= period_sort_key(lottery, period)],
         )
+        # A historical replay can target a stored eight-digit identity. Keep
+        # that run key while canonicalizing the other history rows.
+        history = [
+            {**row, "period": period}
+            if period_sort_key(lottery, row["period"]) == period_sort_key(lottery, period)
+            else row for row in history
+        ]
         draw = _draw_from_history(lottery, period, history)
         if number_order == DRAW_ORDER:
             publish_current_card(lottery, repository)
@@ -318,6 +329,10 @@ def _resume_stored_analysis(
             result = stage_result
         if stage_result.get("status") == "superseded":
             return stage_result
+        if number_order == DRAW_ORDER and stage_result.get("status") == "complete":
+            publish_current_card(lottery, repository)
+            if on_cards_ready is not None:
+                on_cards_ready()
     return result
 
 
@@ -332,7 +347,6 @@ def run_scheduled_worker(
 ) -> dict[str, Any]:
     emitted_event_keys: set[str] = set()
     latest = repository.list_draws(lottery, 1)
-    publish_current_card(lottery, repository, now)
     def notify_cards(*, final: bool = False) -> None:
         current = repository.list_draws(lottery, 1)
         if current:
@@ -341,6 +355,8 @@ def run_scheduled_worker(
             except NotificationDeliveryError:
                 if final:
                     raise
+    notify_cards()
+    publish_current_card(lottery, repository, now)
     notify_cards()
     if allow_recovery_crawl:
         cycle = due_call_cycle(lottery, now, allow_weekend_fallback=True)
@@ -448,6 +464,9 @@ def run_scheduled_worker(
             }
 
         draw = refresh.store(draw)
+        # Result delivery must not wait for archive repair, rasterization, or
+        # algorithm work. The durable event key/date fence absorbs retries.
+        notify_cards()
         refresh.ensure_history(lottery)
         publish_current_card(lottery, repository, now)
         notify_cards()

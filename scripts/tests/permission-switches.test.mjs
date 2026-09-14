@@ -88,5 +88,31 @@ const nativeAfterRetirement=(await adminChange(superAdmin,'registeredMemberFreeA
 assert.equal(nativeAfterRetirement.registeredMemberFreeAccess,!afterRetirement.registeredMemberFreeAccess);
 assert.equal(nativeAfterRetirement.revision,afterRetirement.revision+1);
 await db.exec('reset role');
+// Audit the production entitlement function across each current membership tier.
+// These fixtures live only in this in-memory PGlite database.
+const featureKeys = ['canUseSeven','canUseThirteen','canUseFullRange','canUseTianyan','canUseTiangong','canViewFullStatus','canCustomizeStatus','canUseCompositeCustomRoad'];
+const memberTiers = [
+  ['free', null, false, false, [false,false,false,false,false,false,false,false]],
+  ['expired', '月費方案', false, false, [false,false,false,false,false,false,false,false]],
+  ['monthly', '月費方案', true, false, [true,true,true,false,false,true,true,false]],
+  ['quarterly', '季費方案', true, false, [true,true,true,true,false,true,true,true]],
+  ['yearly', '年費方案', true, false, [true,true,true,true,true,true,true,true]],
+  ['lifetime', null, true, true, [true,true,true,true,true,true,true,true]],
+];
+for (const [index, [name, planName, active, lifetime, expected]] of memberTiers.entries()) {
+  const id = `99999999-9999-4999-8999-${String(index + 1).padStart(12, '0')}`;
+  if (planName) await db.query('insert into public.plans(id,name) values($1,$2)', [id,planName]);
+  await db.query("insert into public.members(auth_user_id,current_plan_id,is_lifetime,plan_expires_at) values($1,$2,$3,now()+$4::interval)", [id,planName ? id : null,lifetime,active ? '1 day' : '-1 day']);
+  await setUser(id);
+  for (const freeAccess of [false,true]) {
+    await db.query('update private.matrix_permission_settings set registered_member_free_access=$1',[freeAccess]);
+    const rights = await ent();
+    assert.deepEqual(featureKeys.map(key => rights[key]), expected.map((allowed, index) => allowed || (freeAccess && index < 5)), `${name}, freeAccess=${freeAccess}`);
+  }
+}
+await setUser('');
+const guestRights = await ent();
+assert.deepEqual(featureKeys.map(key => guestRights[key]), featureKeys.map(() => false), 'guest remains restricted while free switch is on');
+console.log('PASS: SQL tier matrix for free/expired/monthly/quarterly/yearly/lifetime with switch off/on, plus guest');
 console.log('PASS: settings authorization, admin role enforcement, payload validation, revision conflict, guest/old/new/disabled/missing members, five-feature scope, independent toggles, paid fallback and legacy token retirement');
 await db.close();

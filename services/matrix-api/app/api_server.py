@@ -16,6 +16,7 @@ import httpx
 from postgrest.exceptions import APIError
 
 from app.repositories.card_repository import published_manifest
+from app.services.card_publication import publication_orders
 from app.card_renderer import card_layout, render_matrix_card
 from app.analysis_worker import run_analysis_only_worker
 from app.recovery import RecoveryCoordinator
@@ -101,14 +102,14 @@ def _parse_number_order(value: Any) -> str:
 
 def _card_manifest(lottery: str, repository: AnalysisRepository) -> dict[str, Any]:
     encoded_lottery = quote(lottery, safe="")
-    latest = _history(repository, lottery, 1)
+    latest = _history(repository, lottery, sum(card_layout(lottery)["column_rows"]))
     item = latest[0] if latest else None
     return {
         "lottery": lottery,
         "period": None if item is None else item["period"],
         "cards": {
-            "draw": {"url": f"{CARD_PREFIX}{encoded_lottery}/draw.svg"},
-            "sorted": {"url": f"{CARD_PREFIX}{encoded_lottery}/sorted.svg"},
+            order: {"url": f"{CARD_PREFIX}{encoded_lottery}/{order}.svg"}
+            for order in publication_orders(lottery, latest, repository) if item is not None
         },
     }
 
@@ -137,7 +138,7 @@ def handle_matrix_card_request(
         raise MatrixCardRequestError("未知牌單順序")
     row_count = sum(card_layout(lottery)["column_rows"])
     draws = _history(repository, lottery, row_count)
-    if not draws:
+    if not draws or order not in publication_orders(lottery, draws, repository):
         raise MatrixCardRequestError("牌單尚未建立")
     return 200, render_matrix_card(lottery, order, draws)
 
