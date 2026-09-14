@@ -715,18 +715,7 @@
 }
 
 
-.matrix-status-settings-entry {
-  position: fixed;
-  z-index: 21;
-  right: env(safe-area-inset-right, 0px);
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 9px);
-  left: auto;
-  place-items: end end;
-}
 
-.matrix-status-settings-entry .bottom-navigation-quick-settings-visual {
-  justify-self: end;
-}
 
 @media (prefers-reduced-motion: reduce) {
   .notifications-screen-v2 .notification-inline-settings {

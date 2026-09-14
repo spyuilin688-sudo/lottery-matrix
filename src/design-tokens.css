@@ -29,13 +29,16 @@
   --lottery-text-primary: var(--lottery-neutral-100);
   --lottery-text-secondary: var(--lottery-neutral-400);
   --lottery-glow: rgba(244, 206, 103, 0.52);
+  --home-frame-gold: #d6b66f;
+  --home-frame-muted: #8a713f;
+  --home-frame-radius: 8px;
   --bottom-nav-panel-950: #030708;
   --bottom-nav-panel-900: #07101a;
   --bottom-nav-panel-850: #09131f;
   --bottom-nav-gold: #e5b34d;
   --bottom-nav-gold-bright: #ffd477;
   --bottom-nav-text-active: #ffe2a0;
-  --bottom-nav-icon-default: #e0bd75;
+  --bottom-nav-icon-default: #c3beb6;
   --bottom-nav-text-default: #c3beb6;
   --matrix-status-active: var(--lottery-status-active);
   --matrix-status-active-border: var(--lottery-status-active-border);

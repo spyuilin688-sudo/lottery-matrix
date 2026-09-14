@@ -135,15 +135,16 @@ components:
 
 同日清理牌單可命中的共用舊規則：`.feature-screen` 合併於原本較後方的正式容器規則，保留既有套用順序；內容底部由非首頁的直接子層規則單獨保留「底部導覽避讓值 + 8px」。共用 48px 操作高度明確排除牌單下載變體，44px 由 `.matrix-card-download-action` 單獨擁有；品牌裝飾 `::before` 與 `::after` 各自設定位置。外層 `.app-screen` 背景僅由 `src/prototype.css` 擁有，移除 `src/styles.css` 的舊白底。品牌背景、選取狀態、安全區與鍵盤避讓沿用現有行為。
 
-2026-09-12：依使用者選定的 PD01「階梯裝飾」重製共用底部導覽。外框左右外距為 0、滿寬，72px 主體下方接瀏覽器安全區；Figma 匯出的 `public/assets/lottery/navigation/pd01-frame.svg` 與 `pd01-active.svg` 分別承載階梯金框、扇形角飾及選中拱框，圖示與 12px 文字由四個真實按鈕呈現。圖示 24px、圖文距離 4px，選中態以金拱、底座、亮金字及 `aria-current` 共同表示；180ms 淡入支援 reduced motion。框內兩側各 44px 為角飾與設定操作區，其餘空間四格等分；這是內部配置，不是導覽外距。首頁與狀態頁的既有設定齒輪保留 44px 觸控區及原視覺尺寸，與主導覽觸控區不重疊。`src/prototype.css` 是導覽樣式唯一來源，移除舊「我的」按鈕 4px 位移補償。
+2026-09-14：依使用者確認的細金框示意圖，共用底部導覽改為滿寬單一 1px 金線上緣，四個等寬入口依序為首頁、快捷、計算機、我的。主體維持 72px，下方接瀏覽器安全區；內距左右各至少 8px、上下各 6px、項目間距 4px。圖示 24px、文字 12px、圖文距離 4px；選中項使用 1px 細金框、8px 圓角、淡金底、亮金文字與 `aria-current`。移除元件中的 PD01 階梯框與拱框引用，保留素材檔不修改。`src/prototype.css` 是唯一樣式來源，沿用 180ms 色彩轉換與 reduced motion。
 
-PD01 導覽專用 token：底色 `--bottom-nav-panel-950: #030708`、未選中圖示 `--bottom-nav-icon-default: #e0bd75`、未選中文字 `--bottom-nav-text-default: #c3beb6`、選中文字 `--bottom-nav-text-active: #ffe2a0`；其他元件色彩不由此變更。
+首頁快捷設定移到 Logo 卡右上角；Matrix 狀態頁的自訂觸發條件移到既有頁首 action slot，避免占用底部四個入口。兩者共用 22px 金色齒輪、44px 觸控區，保留 800ms 內雙擊、鍵盤、權限及設定流程。首頁框線由 `--home-frame-gold: #d6b66f`、`--home-frame-muted: #8a713f`、`--home-frame-radius: 8px` 統一；未選中導覽圖示與文字均為 `#c3beb6`，選中文字沿用 `#ffe2a0`。
 
 2026-09-12：Matrix 探索、天衡、天衍、天工在「探索設定」標題同列右側共用文字分段切換，依探索、天衡、天衍、天工排列。`MatrixPageSwitcher` 保留完整 accessible name、`aria-current` 與既有導覽回呼；當前頁以金字、淡金底及粗體標示。單一 1px 金褐色外框、8px 圓角、26px 高、176px 可收縮寬度，由 `src/feature-pages.css` 擁有全部切換樣式；移除 `src/matrix-explore-spacing.css` 舊圖片入口的覆寫。探索頁期數與版路欄位恢復使用共用 `SettingLabelIcon`，圖片為 `/assets/matrix-explore/period.png` 與 `/assets/matrix-explore/road.png`，維持 1.8rem 佔位。
 
 首頁由品牌、彩種切換、最新開獎、下次開獎、Matrix 狀態、Matrix Core、功能入口與底部導覽組成，詳見 `docs/COMPONENT_MAP.md`。Matrix Core 與四大功能入口保持分離。表格、歷史卡與彩球不因文件化而改變密度、順序或響應式幾何。
 
-2026-09-12 首頁 Core 與四大功能依使用者選定的黑金插畫參考圖更新。`src/homepage/base.css` 統一擁有兩區排版、金屬切角九宮格框與按壓回饋；不再疊加舊金框遮罩或持續閃爍軌跡。Core 與功能列對齊 16px 左右邊界，Core 比例 654:181，兩區間距 8px；四張卡單列等寬、間距 6px。2026-09-14 依使用者確認，四卡高度固定為 90px，移除撐高卡片的直式比例與未使用的比例變數；插畫在剩餘圖片區等比例縮放，文字沿用既有字級。功能列使用 0 內距與 0 外框，不繪製整列背景或圓角，讓第一張卡左框、第四張卡右框直接對齊 Core 外框；各卡既有 4px 金屬圖框保留。Core 主視覺與標題使用專用 WebP，中文說明與箭頭保持真實 UI；四卡插畫等比例 contain，名稱為真實文字。新素材位於 `public/assets/lottery/home-premium/`。入口依序為 Matrix 同星、Matrix 對照、Matrix 牌單、Matrix 指南；計算機沿用底部導覽與快捷設定入口。其他首頁區塊保留現有設計。
+2026-09-14 首頁 Logo、彩種切換、Matrix Core 與四大功能外框統一為 1px 細金線、8px 圓角，直接修改既有樣式來源，不新增疊框、遮罩或覆寫層。Logo、Core 與功能列對齊 16px 左右邊界；Core 維持 654:181 比例、功能列上方 8px 間距。四張卡單列等寬、間距 6px，高度由 90px 降到 76px，圖片在剩餘空間以 contain 等比例顯示，名稱字級不變。功能列本身保持 0 內距、0 外框。`src/homepage/base.css` 擁有 Core 與功能卡，`logo-spacing.css` 擁有 Logo，`lottery-switcher.css` 單獨擁有彩種切換；移除舊九宮格金框及彩種切角多色描邊。彩種選中項以亮金線區分，維持原有 radio 操作與 sprite。所有圖片檔不變；啟動／聚合／共振卡的霓虹邊框已嵌入原圖，本輪保留原圖，不加金色覆蓋層。四大功能仍依序為 Matrix 同星、Matrix 對照、Matrix 牌單、Matrix 指南；Core 說明與箭頭為真實 UI。
+
 
 Matrix 探索、天衡、天衍、天工與狀態頁的驗證過程，依鎖定條件整組交替使用 `#152A42`、`#0E1D30`。探索、天衡、天衍與天工的左、中、右三欄共用同組底色，欄間與列間間距統一透出純黑 `#000`；狀態頁維持既有頁面背景。既有結果的期號、特別號與欄寬依產生該結果的彩種呈現，探索設定尚未提交時不改變結果版面。版路摘要的公式序列以獨立文字節點呈現，加減版路例如 `+5`、`.`、`15`，合值序列為 `合值`、`5`、`.`、`15`（不顯示 `+`）；相鄰文字節點間距皆為 1px。
 
@@ -151,7 +152,7 @@ Matrix 探索、天衡、天衍、天工與狀態頁的驗證過程，依鎖定�
 
 ### 首頁固定 Logo — 2026-09-09
 
-首頁 Logo 固定於內容捲動區上方，沿用正式 MatrixLogo 素材、91.9632% 流動寬度、自動比例高度與 390px 內容寬度上限。`src/homepage/base.css` 擁有首頁固定品牌列與下方捲動區的排列；`src/homepage/logo-spacing.css` 統一擁有品牌列與 Logo 的幾何樣式，品牌列保留自然高度，卡片不會滑入其後方。底部導覽與其他頁面的 Logo 行為維持既有設定。
+首頁 Logo 固定於內容捲動區上方，沿用正式 MatrixLogo 素材、自動比例高度與 390px 內容寬度上限；Logo 框寬為內容寬減去左右各 16px，圖片填滿框內寬度。`src/homepage/base.css` 擁有首頁固定品牌列與下方捲動區的排列；`src/homepage/logo-spacing.css` 統一擁有品牌列與 Logo 的幾何樣式，品牌列保留自然高度，卡片不會滑入其後方。底部導覽與其他頁面的 Logo 行為維持既有設定。
 
 2026-09-14：依使用者確認的第一輪修正，首頁容器以 `inset: 0` 填滿畫布，頂部安全區只由 `padding-top: var(--layout-safe-area-top)` 避讓一次。品牌列使用 8px 頂部內距與自然高度，移除 Logo 負位移及品牌列扣減高度公式；圖片以真實尺寸 2154 × 634 預留比例，避免下載前後版面跳動。下方原生捲動區接在品牌列之後，保留既有卡片間距。
 

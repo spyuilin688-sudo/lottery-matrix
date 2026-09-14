@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 // @ts-expect-error Vitest runs on Node; app compilation intentionally omits global Node types.
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BottomNavigation } from "../BottomNavigation";
+import { BottomNavigation, HomeQuickSettingsButton } from "../BottomNavigation";
 import { QuickNavigationProvider } from "../features/navigation";
 import { FeatureBottomNavigationPortal } from "../features/shared";
 
@@ -24,14 +24,14 @@ describe("BottomNavigation", () => {
     expect(renderedButton).not.toContain("{...quickProps}");
   });
 
-  it("PD01 依序提供首頁、快捷、計算機、我的四個獨立入口", () => {
+  it("依序提供首頁、快捷、計算機、我的四個獨立入口", () => {
     render(<BottomNavigation />);
     const buttons = within(screen.getByRole("navigation", { name: "底部導覽" })).getAllByRole("button");
     expect(buttons.map((button) => button.textContent)).toEqual(["首頁", "快捷", "計算機", "我的"]);
   });
 
   it.each(["首頁", "快捷", "計算機", "我的"] as const)(
-    "只讓目前頁面 %s 顯示選取發光狀態",
+    "只讓目前頁面 %s 顯示選取狀態",
     (active) => {
       render(<BottomNavigation active={active} />);
 
@@ -95,23 +95,19 @@ describe("BottomNavigation", () => {
     expect(screen.getByRole("button", { name: "我的" })).toHaveAttribute("aria-current", "page");
   });
 
-  it("快捷設定入口只在顯示設定且提供處理函式時出現", () => {
+  it("快捷設定由頁首擁有，底部保留四個獨立導覽入口", () => {
     const onQuickConfigure = vi.fn();
-    const { rerender } = render(<BottomNavigation onQuickConfigure={onQuickConfigure} />);
-
-    expect(screen.queryByRole("button", { name: /快捷設定/ })).not.toBeInTheDocument();
-
-    rerender(<BottomNavigation showQuickSettings />);
-    expect(screen.queryByRole("button", { name: /快捷設定/ })).not.toBeInTheDocument();
-
-    rerender(<BottomNavigation onQuickConfigure={onQuickConfigure} showQuickSettings />);
-    expect(screen.getByRole("button", { name: /快捷設定/ })).toBeVisible();
+    render(<><header><HomeQuickSettingsButton onOpen={onQuickConfigure} /></header><BottomNavigation /></>);
+    const settings = screen.getByRole("button", { name: /快捷設定/ });
+    expect(screen.getByRole("banner")).toContainElement(settings);
+    expect(screen.getByRole("navigation")).not.toContainElement(settings);
+    expect(within(screen.getByRole("navigation")).getAllByRole("button")).toHaveLength(4);
     expect(onQuickConfigure).not.toHaveBeenCalled();
   });
 
   it("快捷設定保留鍵盤及輔助操作的原生 click 入口", () => {
     const onQuickConfigure = vi.fn();
-    render(<BottomNavigation onQuickConfigure={onQuickConfigure} showQuickSettings />);
+    render(<HomeQuickSettingsButton onOpen={onQuickConfigure} />);
 
     fireEvent.click(screen.getByRole("button", { name: /快捷設定/ }), { detail: 0 });
 
@@ -122,7 +118,7 @@ describe("BottomNavigation", () => {
     vi.useFakeTimers();
     const onQuickConfigure = vi.fn();
     const onQuickOpen = vi.fn();
-    render(<BottomNavigation onQuickConfigure={onQuickConfigure} onQuickOpen={onQuickOpen} showQuickSettings />);
+    render(<><HomeQuickSettingsButton onOpen={onQuickConfigure} /><BottomNavigation onQuickOpen={onQuickOpen} /></>);
     const settingsButton = screen.getByRole("button", { name: "快捷設定，連續點擊兩下開啟" });
 
     fireEvent.click(settingsButton, { detail: 1 });
@@ -140,7 +136,7 @@ describe("BottomNavigation", () => {
   it("快捷設定沿用既有雙擊判定，間隔達 800ms 的點擊不開啟", () => {
     vi.useFakeTimers();
     const onQuickConfigure = vi.fn();
-    render(<BottomNavigation onQuickConfigure={onQuickConfigure} showQuickSettings />);
+    render(<HomeQuickSettingsButton onOpen={onQuickConfigure} />);
     const settingsButton = screen.getByRole("button", { name: /快捷設定/ });
 
     fireEvent.click(settingsButton, { detail: 1 });
