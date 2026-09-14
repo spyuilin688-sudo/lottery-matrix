@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { parse } from 'postcss';
 import { describe, expect, it } from 'vitest';
 
+const appSource = readFileSync(new URL('./AdminApp.tsx', import.meta.url), 'utf8');
 const adminSource = readFileSync(new URL('./AdminTodos.tsx', import.meta.url), 'utf8');
 const listControlsSource = readFileSync(new URL('./AdminListControls.tsx', import.meta.url), 'utf8');
 const adminCss = readFileSync(new URL('./admin.css', import.meta.url), 'utf8');
@@ -32,12 +33,24 @@ describe('admin UX system pass', () => {
     expect(divider.get('background')).toBe('#30333a');
   });
 
-  it('groups search, secondary filters, and count inside one canonical search card', () => {
+  it('keeps operational search cards limited to search, filters, and count', () => {
     expect(listControlsSource).toContain('managementPrimaryFilters');
-    expect(listControlsSource).toContain('managementSecondaryFilters');
     expect(listControlsSource).toContain('managementSearchField');
     expect(listControlsSource).toContain('managementCount');
-    expect(operationsCss).toMatch(/\.managementSecondaryFilters \{[^}]*border-top: 1px solid #292c32;/);
+    expect(listControlsSource).not.toContain('managementSecondaryFilters');
+    expect(listControlsSource).not.toContain('type="date"');
+    expect(listControlsSource).not.toContain('排序方向');
+    expect(operationsCss).not.toContain('.managementSecondaryFilters');
+    expect(operationsCss).not.toContain('.managementFilterLabel');
+  });
+
+  it('gives the member name column a realistic width instead of consuming table space', () => {
+    expect(appSource).toContain('className="managementList tableWrap userManagementList"');
+    expect(appSource).toContain('className="userManagementNameCol"');
+    expect(appSource).toContain('className="userManagementTimeCol"');
+    expect(declarations(operationsCss, '.userManagementList table').get('table-layout')).toBe('fixed');
+    expect(declarations(operationsCss, '.userManagementNameCol').get('width')).toBe('124px');
+    expect(declarations(operationsCss, '.userManagementTimeCol').get('width')).toBe('148px');
   });
 
   it('keeps page actions smaller than form confirmation and header touch targets', () => {
