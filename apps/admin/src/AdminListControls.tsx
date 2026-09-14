@@ -17,6 +17,7 @@ export function AdminListControls({ page, name, statuses = [], sorts, showError 
   const composing = useRef(false);
   const [keyword, setKeyword] = useState(page.query.keyword);
   const showControls = operationalSearchCards.has(name);
+  const primaryClass = `managementPrimaryFilters${statuses.length ? ' hasStatusFilter' : ''}${children ? ' hasExtraFilter' : ''}`;
   void sorts;
 
   useEffect(() => { setKeyword(page.query.keyword); }, [page.query.keyword]);
@@ -25,7 +26,7 @@ export function AdminListControls({ page, name, statuses = [], sorts, showError 
     <>
       {showControls && (
         <div className={`managementToolbar ${className}`}>
-          <div className={`managementPrimaryFilters${children ? ' hasExtraFilter' : ''}`}>
+          <div className={primaryClass}>
             <div className="managementSearchField">
               <input
                 ref={input}
