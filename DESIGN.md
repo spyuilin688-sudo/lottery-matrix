@@ -259,3 +259,5 @@ Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封
 
 
 2026-09-15 首頁四彩種狀態卡：`src/homepage/base.css` 單獨繪製與首頁一致的 1px 細金框（`--home-frame-gold`）與 8px 圓角（`--home-frame-radius`）。原狀態 PNG 的文字、中央光環、色彩與彩種 Logo 保留；僅裁去圖片邊緣內建的彩色框，不縮放、不位移、不改圖檔。移除舊切角及按狀態變色的外光暈；載入與失敗使用同一金框，按下沿用首頁亮度回饋。四張卡的寬高、排列、間距與資料邏輯不變。
+
+首頁四彩種狀態卡依使用者最新要求，水平與垂直卡片間距統一為 4px，由 `src/homepage/base.css` 的既有 `.matrix-status-card-grid` 單獨控制；維持 1px 細金框、8px 圓角與兩欄兩列。
