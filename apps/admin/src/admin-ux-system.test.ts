@@ -67,16 +67,23 @@ describe('admin UX system pass', () => {
     expect(declarationsAt(operationsCss, '.managementCount', 390).get('min-width')).toBe('44px');
   });
 
-  it('keeps table values readable instead of permanently clipping them into ellipses', () => {
+  it('keeps every admin data table dense by scrolling horizontally instead of crushing records vertically', () => {
+    const table = declarations(adminCss, 'table');
     const sharedCells = declarations(adminCss, ':is(th,td)');
     const bodyCells = declarations(adminCss, 'td');
     const headers = declarations(adminCss, 'th');
+    const wrapper = declarations(adminCss, '.tableWrap');
 
-    expect(sharedCells.get('overflow')).not.toBe('hidden');
-    expect(sharedCells.get('text-overflow')).not.toBe('ellipsis');
-    expect(bodyCells.get('white-space')).toBe('normal');
-    expect(bodyCells.get('overflow-wrap')).toBe('anywhere');
+    expect(wrapper.get('overflow')).toBe('auto');
+    expect(table.get('width')).toBe('max-content');
+    expect(table.get('min-width')).toBe('100%');
+    expect(sharedCells.get('max-width')).toBe('none');
+    expect(bodyCells.get('white-space')).toBe('nowrap');
+    expect(bodyCells.get('overflow-wrap')).toBe('normal');
+    expect(bodyCells.get('word-break')).toBe('normal');
+    expect(bodyCells.get('line-height')).toBe('1.35');
     expect(headers.get('white-space')).toBe('nowrap');
+    expect(adminCss).toMatch(/\.notificationLogTable td\{[^}]*white-space:normal/);
   });
 
   it('caps the first operational list column instead of wasting width on member names', () => {
