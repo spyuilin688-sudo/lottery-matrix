@@ -72,7 +72,8 @@ for (const width of [360, 375, 390]) {
     expect(geometry.iconHeight).toBeCloseTo(28.8, 1);
     expect(geometry.rowGap).toBe("7px");
     expect(geometry.advancedWeight).toBe("600");
-    expect(geometry.hitWidths[0]).toBeCloseTo(geometry.hitWidths[1], 2);
+    // Equal grid tracks can differ by one Chromium layout unit after subpixel rounding.
+    expect(Math.abs(geometry.hitWidths[0] - geometry.hitWidths[1])).toBeLessThanOrEqual(1 / 64);
     // DESIGN: integrated condition options share the 20px segmented control contract.
     expect(geometry.hitHeights).toEqual(["20px", "20px"]);
     expect(geometry.hitPadding).toEqual(["2px 4px", "2px 4px"]);

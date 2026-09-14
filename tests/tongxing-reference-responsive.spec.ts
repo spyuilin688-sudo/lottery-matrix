@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }) => prepareReturningVisitor(page));
 
 const pages = [
   { label: "Matrix 同星", screenSelector: ".tongxing-screen" },
-  { label: "號碼對照單", screenSelector: ".number-reference-screen" },
+  { label: "Matrix 對照", screenSelector: ".number-reference-screen" },
 ] as const;
 
 for (const width of [320, 360, 390, 430]) {
@@ -37,7 +37,7 @@ for (const width of [320, 360, 390, 430]) {
       expect(appBox!.x + appBox!.width - titleBox!.x - titleBox!.width).toBeCloseTo(16, 0);
       expect(await featureBody.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
 
-      if (pageCase.label === "號碼對照單") {
+      if (pageCase.screenSelector === ".number-reference-screen") {
         const settingsTrigger = page.locator(".number-reference-screen .product-header__settings-toggle");
         await expect(settingsTrigger).toHaveAccessibleName("收合探索設定");
         await settingsTrigger.click();

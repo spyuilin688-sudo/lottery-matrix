@@ -168,13 +168,11 @@ describe("textarea and scrollbar ownership", () => {
     expect(getComputedStyle(textarea).minHeight).toBe("73px");
   });
 
-  it("keeps notebook and record textarea dimensions while disabling resize", () => {
+  it("keeps notebook textarea dimensions while disabling resize", () => {
     const notebookRule = exactRule(featureCss, /^\.matrix-notebook-editor > textarea$/);
-    const recordRule = exactRule(featureCss, /^\.record-form-section > textarea$/);
     const resizeRules = ruleBodies(featureCss, /^\.resize-none$/) as string[];
     mountStyle(`
       .matrix-notebook-editor > textarea { ${notebookRule} }
-      .record-form-section > textarea { ${recordRule} }
       ${resizeRules.map((body) => `.resize-none { ${body} }`).join("\n")}
     `);
 
@@ -184,17 +182,11 @@ describe("textarea and scrollbar ownership", () => {
     notebookTextarea.className = "resize-none";
     notebook.append(notebookTextarea);
 
-    const record = document.createElement("section");
-    record.className = "record-form-section";
-    const recordTextarea = document.createElement("textarea");
-    recordTextarea.className = "resize-none";
-    record.append(recordTextarea);
-    document.body.append(notebook, record);
+    document.body.append(notebook);
 
     expect(getComputedStyle(notebookTextarea).minHeight).toBe("330px");
     expect(getComputedStyle(notebookTextarea).resize).toBe("none");
-    expect(getComputedStyle(recordTextarea).minHeight).toBe("70px");
-    expect(getComputedStyle(recordTextarea).resize).toBe("none");
+    expect(ruleBodies(featureCss, /^\.record-form-section > textarea$/)).toHaveLength(0);
     expect(exactRule(featureCss, /^\.resize-none$/)).toMatch(/\bresize:\s*none;/);
     expect(featureCss).not.toMatch(/\bresize:\s*vertical;/);
   });

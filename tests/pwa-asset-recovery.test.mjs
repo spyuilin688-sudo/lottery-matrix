@@ -9,11 +9,11 @@ const origin = 'https://matrix.test';
 const html = (version) => `<!doctype html><html><head><link rel="stylesheet" crossorigin href="/assets/${version}.css"><script type="module" crossorigin src="/assets/${version}.js"></script></head><body>${version}</body></html>`;
 const response = (body, type = 'text/html', status = 200) => new Response(body, { status, headers: { 'content-type': type } });
 
-async function harness({ version = 'new', stores = new Map(), offline = false, brokenCss = false, cacheUnavailable = false, cachePutFailure = false, legacy = false } = {}) {
+async function harness({ version = 'new', stores = new Map(), offline = false, brokenCss = false, cacheUnavailable = false, cachePutFailure = false, legacy = false, freshHttpShell } = {}) {
   const handlers = new Map();
   const requests = [];
   const key = (request) => new URL(typeof request === 'string' ? request : request.url, origin).href;
-  const network = async (request) => {
+  const network = async (request, options = {}) => {
     const url = key(request); requests.push(url);
     const pathname = new URL(url).pathname;
     if (offline) throw new Error('offline');
@@ -21,6 +21,10 @@ async function harness({ version = 'new', stores = new Map(), offline = false, b
     if (pathname.endsWith('.js')) return response('window.matrix = true', 'text/javascript');
     if (pathname.endsWith('.png')) return response('image', 'image/png');
     if (pathname.endsWith('.webmanifest')) return response('{}', 'application/manifest+json');
+    // Model an HTML response that remains fresh in the browser HTTP cache.
+    // The browser spec separately exercises this boundary with real HTTP caching.
+    const cacheMode = options.cache ?? request.cache ?? 'default';
+    if (freshHttpShell && cacheMode === 'default') return response(html(freshHttpShell));
     return response(html(version));
   };
   const caches = {
@@ -148,6 +152,21 @@ test('navigation keeps the working shell if a new page stylesheet is unavailable
   const w = await harness({ version: 'new', stores: old.stores, brokenCss: true });
   const result = await w.dispatch('fetch', navigation);
   assert.match(await result.text(), /old/);
+});
+
+test('navigation revalidates a fresh older HTTP shell before choosing the current deployment', async () => {
+  const w = await harness({ freshHttpShell: 'old' });
+  const result = await w.dispatch('fetch', navigation);
+  assert.match(await result.text(), /assets\/new\.css/);
+  w.setOffline(true);
+  assert.match(await (await w.dispatch('fetch', navigation)).text(), /assets\/new\.css/);
+});
+
+test('revalidated HTML with invalid CSS still falls back to the complete previous shell', async () => {
+  const old = await harness({ version: 'old' }); await old.dispatch('install');
+  const w = await harness({ stores: old.stores, freshHttpShell: 'old', brokenCss: true });
+  assert.match(await (await w.dispatch('fetch', navigation)).text(), /assets\/old\.css/);
+  assert.equal(w.stores.get('matrix-pwa-shell-new')?.has(`${origin}/`), false);
 });
 
 test('navigation without a complete shell shows an offline response instead of an unstyled app', async () => {
