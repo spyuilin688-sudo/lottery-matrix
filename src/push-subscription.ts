@@ -193,7 +193,9 @@ export function enablePushNotifications(publicKey: string, authenticated = false
 
     let registration: ServiceWorkerRegistration;
     try {
-      registration = await registerPushServiceWorker({ update: false });
+      const existingRegistration = await getRegisteredServiceWorker();
+      if (!existingRegistration) return failure(resolvedPermission, false, 'service-worker-registration');
+      registration = existingRegistration;
     } catch {
       return failure(resolvedPermission, false, 'service-worker-registration');
     }

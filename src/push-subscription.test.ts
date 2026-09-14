@@ -205,6 +205,21 @@ describe('PWA push subscriptions', () => {
     expect(register).not.toHaveBeenCalled();
   });
 
+  it('waits for the startup-owned worker without registering while enabling push', async () => {
+    installSupportedPushApi('default', {
+      register,
+      getRegistration,
+      ready: Promise.resolve({ pushManager: { subscribe, getSubscription } }),
+      addEventListener: addServiceWorkerListener,
+      removeEventListener: removeServiceWorkerListener,
+    });
+    getRegistration.mockResolvedValue(undefined);
+    requestPermission.mockResolvedValue('granted');
+
+    await expect(enablePushNotifications('BElong-key', true)).resolves.toMatchObject({ enabled: true });
+    expect(register).not.toHaveBeenCalled();
+  });
+
   it('checks an existing service worker registration for an update', async () => {
     getRegistration.mockResolvedValue({
       active: { state: 'activated' },
