@@ -27,11 +27,11 @@ function finalDeclaration(source, selector, property) {
   return value;
 }
 
-test("homepage status frame owns 16px inset, 1.5px top padding and card gaps", () => {
+test("homepage status frame owns 16px inset, 1.5px top padding and 4px card gaps", () => {
   assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "width"), "calc(100% - 32px)");
   assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "padding-block-start"), "1.5px");
   assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "border"), "0");
-  assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-card-grid", "gap"), "1.5px");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-card-grid", "gap"), "4px");
   assert.match(homeCss, /--home-gap-draw-status:\s*clamp\(9px,\s*calc\(1\.15dvh\s*\+\s*1px\),\s*12px\);/);
   assert.match(homeCss, /--home-gap-status-core:\s*clamp\(9px,\s*1\.35dvh,\s*12px\);/);
 });
@@ -42,13 +42,18 @@ test("homepage status logos are 80 percent larger and shift left 6px without a m
   assert.notEqual(finalDeclaration(homeCss, ".home-screen .matrix-status-lottery-logo", "max-width"), "56px");
 });
 
-test("homepage logo is enlarged by 5 percent and five features keep their current responsive gaps", () => {
-  assert.equal(finalDeclaration(homeCss, ".home-screen .home-logo-image", "width"), "91.9632%");
-  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "width"), "100%");
-  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "column-gap"), "var(--home-feature-gap)");
-  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "padding-inline"), "var(--home-feature-inline)");
+test("homepage logo fills its frame and four features keep their current responsive gaps", () => {
+  assert.equal(finalDeclaration(homeCss, ".home-screen .home-logo-image", "width"), "100%");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .home-brand-frame", "width"), "calc(100% - 32px)");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .home-brand-frame", "border"), "1px solid var(--home-frame-gold)");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .home-brand-frame", "border-radius"), "var(--home-frame-radius)");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "width"), "calc(100% - var(--home-feature-inline) * 2)");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "gap"), "var(--home-feature-gap)");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "grid-template-columns"), "repeat(4, minmax(0, 1fr))");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "padding"), "0");
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut", "width"), "100%");
-  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut", "justify-self"), "center");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut", "height"), "76px");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut", "justify-items"), "center");
 });
 
 test("draw order moves up 2px, shrinks to 25px and keeps a compact near-flat inner seam", () => {
@@ -79,19 +84,22 @@ test("draw footer reference uses zero parent gap and no parent divider lines", (
   assert.doesNotMatch(footer, /border-top\s*:/);
 });
 
-test("bottom navigation keeps four primary columns with a separately positioned quick settings entry", () => {
+test("bottom navigation keeps four primary columns while quick settings lives in headers", () => {
   assert.equal(finalDeclaration(navCss, ".bottom-navigation", "grid-template-columns"), "repeat(4, minmax(0, 1fr))");
-  assert.equal(finalDeclaration(navCss, ".bottom-navigation-quick-settings", "position"), "absolute");
+  assert.equal(ruleBodies(navCss, ".bottom-navigation-quick-settings").length, 0);
+  assert.equal(finalDeclaration(navCss, ".header-settings-button", "width"), "44px");
+  assert.equal(finalDeclaration(navCss, ".header-settings-button", "height"), "44px");
+  assert.equal(finalDeclaration(navCss, ".header-settings-button svg", "width"), "22px");
 });
 
-test("guide categories scroll horizontally and status settings stays in bottom navigation", () => {
+test("guide categories scroll horizontally and status settings stays in the page header", () => {
   assert.equal(finalDeclaration(featureCss, ".matrix-guide-screen .guide-category-strip", "display"), "flex");
   assert.equal(finalDeclaration(featureCss, ".matrix-guide-screen .guide-category-strip", "overflow-x"), "auto");
   assert.equal(finalDeclaration(featureCss, ".matrix-guide-screen .guide-category-strip", "scroll-snap-type"), "x proximity");
   assert.doesNotMatch(canonicalFeatureCss, /status-title-trigger/);
-  assert.equal(finalDeclaration(featureCss, ".matrix-status-settings-entry", "position"), "fixed");
-  assert.equal(finalDeclaration(featureCss, ".matrix-status-settings-entry", "right"), "max(10px, calc(env(safe-area-inset-right, 0px) + 4px))");
-  assert.equal(finalDeclaration(featureCss, ".matrix-status-settings-entry", "z-index"), "21");
+  const featureSource = readFileSync(new URL("../src/features/MatrixStatusPages.tsx", import.meta.url), "utf8");
+  assert.match(featureSource, /className="header-settings-button"[^>]*aria-label="自訂觸發條件，連續點擊兩下開啟"/s);
+  assert.doesNotMatch(featureSource, /matrix-status-settings-entry/);
 });
 
 test("approved A+B membership cards keep the expiry divider with one style owner", () => {
