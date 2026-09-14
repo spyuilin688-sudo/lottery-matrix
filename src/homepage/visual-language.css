@@ -24,3 +24,50 @@
   outline: 2px solid var(--lottery-gold-300);
   outline-offset: 2px;
 }
+
+@property --matrix-core-frame-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.home-screen .matrix-core-banner::before {
+  --matrix-core-frame-angle: 0deg;
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  padding: 1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--matrix-core-frame-angle),
+    transparent 0deg,
+    transparent 248deg,
+    rgba(203, 146, 36, .08) 266deg,
+    rgba(244, 190, 73, .38) 286deg,
+    rgba(255, 241, 190, .68) 298deg,
+    rgba(238, 174, 51, .32) 310deg,
+    transparent 330deg,
+    transparent 360deg
+  );
+  content: "";
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: .72;
+  animation: matrix-core-frame-circulation 6.4s linear infinite;
+}
+
+@keyframes matrix-core-frame-circulation {
+  to {
+    --matrix-core-frame-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-screen .matrix-core-banner::before {
+    animation: none;
+    opacity: 0;
+  }
+}
