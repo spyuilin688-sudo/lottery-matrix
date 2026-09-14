@@ -3,6 +3,7 @@ import type { AdminDataPageController } from './use-admin-data-page';
 
 type Option = readonly [string, string];
 const operationalSearchCards = new Set(['會員', '訂閱', '登入紀錄', '審計日誌']);
+const searchCardOwnsCount = new Set(['會員', '訂閱']);
 
 export function AdminListControls({ page, name, statuses = [], sorts, showError = true, children, className = '' }: {
   page: AdminDataPageController;
@@ -17,7 +18,8 @@ export function AdminListControls({ page, name, statuses = [], sorts, showError 
   const composing = useRef(false);
   const [keyword, setKeyword] = useState(page.query.keyword);
   const showControls = operationalSearchCards.has(name);
-  const primaryClass = `managementPrimaryFilters${statuses.length ? ' hasStatusFilter' : ''}${children ? ' hasExtraFilter' : ''}`;
+  const ownsCount = searchCardOwnsCount.has(name);
+  const primaryClass = `managementPrimaryFilters${ownsCount ? ' hasCount' : ''}${statuses.length ? ' hasStatusFilter' : ''}${children ? ' hasExtraFilter' : ''}`;
   void sorts;
 
   useEffect(() => { setKeyword(page.query.keyword); }, [page.query.keyword]);
@@ -71,13 +73,15 @@ export function AdminListControls({ page, name, statuses = [], sorts, showError 
               </select>
             )}
             {children && <div className="managementExtraFilter">{children}</div>}
-            <span
-              className="managementCount"
-              aria-live="polite"
-              aria-label={page.loading ? '資料讀取中' : page.error ? '資料載入失敗' : `共 ${page.total} 筆資料`}
-            >
-              {page.loading ? '讀取中' : page.error ? '—' : `${page.total} 筆`}
-            </span>
+            {ownsCount && (
+              <span
+                className="managementCount"
+                aria-live="polite"
+                aria-label={page.loading ? '資料讀取中' : page.error ? '資料載入失敗' : `共 ${page.total} 筆資料`}
+              >
+                {page.loading ? '讀取中' : page.error ? '—' : `${page.total} 筆`}
+              </span>
+            )}
           </div>
         </div>
       )}

@@ -35,9 +35,12 @@
 .managementToolbar select { min-width: 0; font-size: 13px; }
 .managementPrimaryFilters {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(64px, max-content);
+  grid-template-columns: minmax(180px, 1fr);
   gap: 6px;
   align-items: center;
+}
+.managementPrimaryFilters.hasCount {
+  grid-template-columns: minmax(180px, 1fr) minmax(64px, max-content);
 }
 .managementPrimaryFilters.hasStatusFilter {
   grid-template-columns: minmax(180px, 1fr) 112px minmax(64px, max-content);
@@ -94,7 +97,7 @@
 .cardActions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .operationDialog { width: min(430px, 100%); padding: 14px; border: 1px solid #8c6d28; border-radius: 12px; background: #111419; box-shadow: 0 24px 80px #000b; }
 .operationDialog h2 { margin: 0 0 10px; font-size: 18px; }
-.operationDialog p { color: #989ca5; }
+.operationDialog p { color:#989ca5; }
 .operationDialog label { display: block; color: #989ca5; font-size: 12px; }
 .operationDialog label input, .operationDialog label select { margin-top: 6px; }
 .transferRow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px; align-items: center; padding: 5px 0; border-top: 1px solid #24272d; }
@@ -159,7 +162,8 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 
 @media (max-width: 760px) {
   .overviewCards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .managementPrimaryFilters,
+  .managementPrimaryFilters { grid-template-columns: minmax(0, 1fr); }
+  .managementPrimaryFilters.hasCount,
   .managementPrimaryFilters.hasStatusFilter { grid-template-columns: minmax(0, 1fr) minmax(64px, max-content); }
   .managementPrimaryFilters.hasExtraFilter { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(64px, max-content); }
   .managementSearchField { grid-column: 1 / -1; }

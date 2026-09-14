@@ -69,20 +69,33 @@ it('keeps the operational search cards compact without date or sort controls', a
       expect(toolbar?.querySelector('input[type="date"]')).toBeNull();
       expect(toolbar?.querySelector('[aria-label*="排序"]')).toBeNull();
       expect(toolbar?.querySelector('[aria-label*="方向"]')).toBeNull();
-      expect(toolbar?.querySelector('.managementCount')).not.toBeNull();
+    }
+
+    for (const page of ['登入紀錄', '審計日誌']) {
+      await choose(container, page);
+      const countOwners = [
+        container.querySelector('.toolbar')?.textContent?.includes('筆資料'),
+        container.querySelector('.managementCount')?.textContent?.includes('筆資料'),
+      ].filter(Boolean);
+      expect(countOwners, `${page} should expose the data count in exactly one place`).toHaveLength(1);
     }
 
     await choose(container, '用戶管理');
     expect(container.querySelector('.managementToolbar [aria-label="篩選會員狀態"]')).not.toBeNull();
+    expect(container.querySelectorAll('.managementCount')).toHaveLength(1);
 
     await choose(container, '訂閱管理');
     expect(container.querySelector('.managementToolbar [aria-label="篩選訂閱狀態"]')).not.toBeNull();
     expect(container.querySelector('.managementToolbar [aria-label="篩選訂閱方案"]')).not.toBeNull();
+    expect(container.querySelectorAll('.managementCount')).toHaveLength(1);
 
     for (const page of ['管理員權限', '啟動碼管理']) {
       await choose(container, page);
       expect(container.querySelector('.managementToolbar'), `${page} should stay focused on its own actions`).toBeNull();
     }
+
+    await choose(container, '啟動碼管理');
+    expect(container.querySelector('.toolbar'), 'activation-code actions and count should keep their dedicated toolbar').not.toBeNull();
   } finally {
     await act(async () => root.unmount());
     container.remove();
