@@ -17,24 +17,20 @@ test("Matrix Core uses its fitted responsive token and container background with
   assert.doesNotMatch(component, /<img\b/);
 });
 
-test("selected lottery frame follows the responsive octagonal card corners", () => {
+test("selected lottery restores artwork brightness inside the single rounded frame", () => {
+  const cardRule = css.match(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{([\s\S]*?)\}/)?.[1];
   const selectedRule = css.match(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]\s*\{([\s\S]*?)\}/)?.[1];
-  const selectedBeforeRule = css.match(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]::before\s*\{([\s\S]*?)\}/)?.[1];
 
-  assert.ok(selectedRule);
-  assert.match(selectedRule, /border-radius:\s*0;/);
-  assert.match(selectedRule, /border-image:\s*none;/);
-  assert.ok(selectedBeforeRule);
-  assert.match(selectedBeforeRule, /display:\s*block;/);
-  assert.match(selectedBeforeRule, /--matrix-selected-frame-width:\s*\.7px;/);
-  assert.match(selectedBeforeRule, /inset:\s*\.5px;/);
-  assert.doesNotMatch(selectedBeforeRule, /clip-path/);
-  assert.match(selectedBeforeRule, /var\(--lottery-selected-horizontal-gradient\)/);
-  assert.match(selectedBeforeRule, /var\(--lottery-selected-left-edge\)/);
-  assert.match(selectedBeforeRule, /var\(--lottery-selected-right-edge\)/);
-  assert.doesNotMatch(selectedBeforeRule, /(?:-webkit-)?mask|mask-composite|content-box/);
+  assert.ok(cardRule && selectedRule);
+  assert.match(cardRule, /border:\s*1px solid var\(--home-frame-muted\);/);
+  assert.match(cardRule, /border-radius:\s*var\(--home-frame-radius\);/);
+  assert.match(cardRule, /background-color:\s*rgba\(0, 0, 0, \.4\);/);
+  assert.match(cardRule, /background-blend-mode:\s*multiply;/);
+  assert.match(selectedRule, /background-color:\s*transparent;/);
+  assert.doesNotMatch(css, /\.lottery-card\[data-selected="true"\]::before\s*\{/);
 });
 
-test("latest draw artwork continues to fill the whole card container", () => {
-  assert.match(css, /\.home-screen \.latest-draw-card\s*\{[\s\S]*?background:\s*url\("\/assets\/lottery\/functions\/開獎資訊卡\.png"\) center \/ 100% 100% no-repeat;/);
+test("latest draw uses the canonical rounded bright frame without legacy artwork", () => {
+  assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*background:\s*linear-gradient\(180deg, #071018, #04090d\);[^}]*box-shadow:\s*inset 0 0 0 1px var\(--home-frame-bright\);/s);
+  assert.doesNotMatch(css, /開獎資訊卡\.png/);
 });
