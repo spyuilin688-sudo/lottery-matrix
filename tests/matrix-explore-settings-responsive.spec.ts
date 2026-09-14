@@ -16,10 +16,10 @@ for (const width of [360, 375, 390]) {
       const hitButtons = Array.from(document.querySelectorAll<HTMLElement>(".hit-options button"));
       const lockIcons = Array.from(document.querySelectorAll<SVGElement>(".segmented button em svg"));
       const nowrapControls = Array.from(document.querySelectorAll<HTMLElement>(
-        ".setting-grid label > span, .advanced-panel .advanced-setting-title, .segmented button, .segmented button em",
+        ".setting-grid label > span, .explore-condition-label, .advanced-panel .advanced-setting-title, .segmented button, .hit-options button, .segmented button em",
       ));
       const overflowContainers = Array.from(document.querySelectorAll<HTMLElement>(
-        ".explore-settings, .hit-advanced-panel, .setting-grid, .advanced-panel",
+        ".explore-settings, .explore-condition-row, .setting-grid, .advanced-panel",
       ));
       if (!icon || !settingGrid || !advancedRow || !advancedPanel || hitButtons.length !== 2) throw new Error("Missing setting fixture controls");
 
@@ -27,6 +27,8 @@ for (const width of [360, 375, 390]) {
       const hitStyles = hitButtons.map((button) => getComputedStyle(button));
       const screenFontFamily = getComputedStyle(document.querySelector<HTMLElement>(".matrix-explore-main-screen")!).fontFamily;
       return {
+        conditionsIntegrated: Boolean(settingGrid.querySelector(".explore-condition-row .hit-options")),
+        legacyLotterySelectCount: document.querySelectorAll('.setting-grid select[aria-label="彩種"]').length,
         advancedButtonCount: advancedButtons.length,
         advancedDateButtonCount: advancedDateButtons.length,
         advancedTitleCount: advancedTitles.length,
@@ -61,6 +63,8 @@ for (const width of [360, 375, 390]) {
       };
     });
 
+    expect(geometry.conditionsIntegrated).toBe(true);
+    expect(geometry.legacyLotterySelectCount).toBe(0);
     expect(geometry.advancedTitleCount).toBe(3);
     expect(geometry.advancedButtonCount).toBe(5);
     expect(geometry.advancedDateButtonCount).toBe(3);
@@ -69,7 +73,8 @@ for (const width of [360, 375, 390]) {
     expect(geometry.rowGap).toBe("7px");
     expect(geometry.advancedWeight).toBe("600");
     expect(geometry.hitWidths[0]).toBeCloseTo(geometry.hitWidths[1], 2);
-    expect(geometry.hitHeights).toEqual(["28px", "28px"]);
+    // DESIGN: integrated condition options share the 20px segmented control contract.
+    expect(geometry.hitHeights).toEqual(["20px", "20px"]);
     expect(geometry.hitPadding).toEqual(["2px 4px", "2px 4px"]);
     expect(geometry.buttonsInheritTypography).toBe(true);
     expect(geometry.lockIconCount).toBe(2);

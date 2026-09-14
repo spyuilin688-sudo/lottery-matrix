@@ -25,6 +25,8 @@ for (const viewport of viewports) {
     const geometry = await home.evaluate((root) => {
       const logo = root.querySelector<HTMLImageElement>(".home-logo-image")!;
       const logoRect = logo.getBoundingClientRect();
+      const frame = root.querySelector(".home-brand-frame")!;
+      const frameRect = frame.getBoundingClientRect();
       const header = root.querySelector(".brand-header")!.getBoundingClientRect();
       const cards = Array.from(root.querySelectorAll(".matrix-status-card"));
       const core = root.querySelector(".matrix-core-banner")!.getBoundingClientRect();
@@ -35,15 +37,21 @@ for (const viewport of viewports) {
       const transform = getComputedStyle(logo).transform;
       return {
         transform,
-        logoTopGap: logoRect.top - header.top,
+        logoTopGap: frameRect.top - header.top,
+        frameWidth: frameRect.width,
+        expectedFrameWidth: header.width - 32,
+        frameInsetLeft: frameRect.left - header.left,
+        frameInsetRight: header.right - frameRect.right,
+        frameBorder: getComputedStyle(frame).borderTopWidth,
+        frameRadius: getComputedStyle(frame).borderRadius,
         homeCanvasTopGap: canvas.top - appCanvas.top,
-        logoCanvasTopGap: logoRect.top - appCanvas.top - safeAreaTop,
+        logoCanvasTopGap: frameRect.top - appCanvas.top - safeAreaTop,
         headerSafeAreaGap: header.top - canvas.top - safeAreaTop,
-        headerBottomGap: header.bottom - logoRect.bottom,
+        headerBottomGap: header.bottom - frameRect.bottom,
         scrollerGap: scroller.top - header.bottom,
         logoInsetTop: logoRect.top - canvas.top,
         logoWidth: logoRect.width,
-        expectedLogoWidth: header.width * 0.87584 * 1.05,
+        expectedLogoWidth: header.width - 32 - 2,
         logoHeight: logoRect.height,
         expectedLogoHeight: logoRect.width * logo.naturalHeight / logo.naturalWidth,
         cardCoreGap: core.top - Math.max(...cards.map((card) => card.getBoundingClientRect().bottom)),
@@ -53,7 +61,13 @@ for (const viewport of viewports) {
       };
     });
     console.log(JSON.stringify({ viewport, ...geometry }));
+    // DESIGN: the logo frame has 16px insets and a 1px border; the image fills its content box.
     expect(geometry.transform).toBe("none");
+    expect(geometry.frameBorder).toBe("1px");
+    expect(geometry.frameRadius).toBe("8px");
+    expect(geometry.frameWidth).toBeCloseTo(geometry.expectedFrameWidth, 1);
+    expect(geometry.frameInsetLeft).toBeCloseTo(16, 1);
+    expect(geometry.frameInsetRight).toBeCloseTo(16, 1);
     expect(Math.abs(geometry.logoTopGap - 8)).toBeLessThan(0.1);
     expect(Math.abs(geometry.homeCanvasTopGap)).toBeLessThan(0.1);
     expect(Math.abs(geometry.logoCanvasTopGap - 8)).toBeLessThan(0.1);

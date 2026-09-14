@@ -23,8 +23,10 @@ for (const width of [320, 360, 390, 430]) {
     });
     await mockStatus(page);
     await page.goto('/tests/custom-status-layout-fixture.html?entry=1');
+    await expect(page.getByRole('heading', { name: 'MATRIX 狀態', exact: true })).toBeVisible();
     await expect(page.locator('.matrix-custom-status-screen')).toHaveCount(0);
     await page.getByRole('button', {name: '自訂觸發條件，連續點擊兩下開啟'}).dblclick();
+    await expect(page.getByRole('heading', { name: '自訂觸發條件', exact: true })).toBeVisible();
     await expect(page.getByText('使用預設條件', { exact: true })).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
     const summary = page.getByRole('region', { name: '探索條件' });
@@ -156,7 +158,8 @@ for (const width of [320, 360, 390, 430]) {
         });
       });
       await page.goto(`/tests/custom-status-layout-fixture.html?entry=1${reason === 'guest' ? '&guest=1' : ''}`);
-      const trigger=page.getByRole('button',{name:'自訂觸發條件，連續點擊兩下開啟'});
+      await expect(page.getByRole('heading', { name: 'MATRIX 狀態', exact: true })).toBeVisible();
+      const trigger=page.locator('.product-header').getByRole('button',{name:'自訂觸發條件，連續點擊兩下開啟'});
       if (reason === 'guest') await trigger.click();
       else await trigger.dblclick();
       const dialog=page.getByRole('dialog');

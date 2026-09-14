@@ -10,7 +10,6 @@ import {
   MobileScroll,
   type FlowScreen,
 } from "../src/mobile";
-import { NotesPage } from "../src/FeaturePages";
 import "../src/styles.css";
 import "./runtime-fixture.css";
 
@@ -141,16 +140,6 @@ function FlowFixture() {
   );
 }
 
-function NotesFixture() {
-  return (
-    <MobileRuntime>
-      <MobileScroll className="fixture-screen">
-        <NotesPage onNavigate={() => undefined} />
-      </MobileScroll>
-    </MobileRuntime>
-  );
-}
-
 function TextareaFixture() {
   return (
     <MobileRuntime>
@@ -173,11 +162,9 @@ const fixtureElement =
     ? <KeyboardFixture />
     : fixture === "flow"
       ? <FlowFixture />
-      : fixture === "notes"
-        ? <NotesFixture />
-        : fixture === "textarea"
-          ? <TextareaFixture />
-          : <CarouselFixture />;
+      : fixture === "textarea"
+        ? <TextareaFixture />
+        : <CarouselFixture />;
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>{fixtureElement}</StrictMode>,
