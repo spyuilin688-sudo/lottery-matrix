@@ -17,7 +17,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       summary: "樂彩 Matrix 提供公開的開獎資料查詢、整理、比對、驗證及探索功能，支援今彩539、天天樂、六合彩及大樂透。",
       blocks: [
         { title: "開始使用", items: ["使用 LINE 登入之後進入首頁。", "切換彩種，查看最新開獎資訊、下次開獎時間與 Matrix 狀態。", "依需求使用 Matrix 探索、Matrix 同星、號碼對照單、連碰立柱計算機、Matrix 牌單及 Matrix 指南。"] },
-        { title: "基本導覽", items: ["首頁：查看四彩種最新的資訊與主要功能入口。", "Matrix 狀態：查看四彩種目前觸發的狀態與相關資訊。", "快捷：開啟已設定的功能；在首頁連續點擊左下角設定按鈕兩下可變更快捷設定。", "通知設定：前往「我的」的「系統相關」，設定各類型的推播通知。", ...(subscriptionPurchaseVisible ? ["我的：查看 Matrix Pro 訂閱、推薦、系統及法律資訊。"] : [])] },
+        { title: "基本導覽", items: ["首頁：查看四彩種最新的資訊與主要功能入口。", "Matrix 狀態：查看四彩種目前觸發的狀態與相關資訊。", "快捷：開啟已設定的功能；在首頁連續點擊 Logo 卡右上角設定按鈕兩下可變更快捷設定。", "通知設定：前往「我的」的「系統相關」，設定各類型的推播通知。", ...(subscriptionPurchaseVisible ? ["我的：查看 Matrix Pro 訂閱、推薦、系統及法律資訊。"] : [])] },
         ...(subscriptionPurchaseVisible ? [{ title: "Matrix Pro", items: ["Matrix Pro 提供更多探索功能及會員權限。", "功能開放內容依目前會員狀態顯示。"] }] : []),
         { title: "結果說明", items: ["探索結果依歷史資料與所選條件產生，僅供參考，不代表中獎、獲利或任何結果之保證。"] },
       ],
@@ -85,7 +85,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       blocks: [
         { title: "狀態層級", items: ["啟動 ACTIVE。", "聚合 FOCUS。", "共振 RESONANCE。", "臨界 CRITICAL。"] },
         { title: "查看方式", items: ["切換彩種查看各自狀態。", "點擊狀態下拉可展開符合觸發條件的版路。", "每條版路顯示位置、號碼、結果期、連準次數、結果及版路類型。", "符合一組以上觸發條件時，各組內容以間隔區分。"] },
-        { title: "自訂觸發條件", items: ["各彩種的自訂觸發條件分開設定。", "在 Matrix 狀態頁面，連續點擊右下角設定按鈕兩下，即可開啟「自訂觸發條件」。", "可重置或儲存目前設定。"] },
+        { title: "自訂觸發條件", items: ["各彩種的自訂觸發條件分開設定。", "在 Matrix 狀態頁面，連續點擊頁首設定按鈕兩下，即可開啟「自訂觸發條件」。", "可重置或儲存目前設定。"] },
         { title: "四狀態條件設定", items: ["啟動、聚合、共振、臨界四個狀態分別設定。", "每組條件包含命中條件、連準次數、版路類型、號碼順序與同碼數量。", "同一組內有多列條件時，需全部符合。"] },
       ],
     },
@@ -125,7 +125,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       title: "快捷與 Matrix 筆記本",
       summary: "快捷可快速開啟已設定的功能；Matrix 筆記本可新增、編輯與刪除筆記。",
       blocks: [
-        { title: "快捷", items: ["點擊快捷開啟目前設定的功能。", "在首頁連續點擊左下角設定按鈕兩下可設定快捷功能。"] },
+        { title: "快捷", items: ["點擊快捷開啟目前設定的功能。", "在首頁連續點擊 Logo 卡右上角設定按鈕兩下可設定快捷功能。"] },
         { title: "筆記", items: ["新增筆記後輸入標題與內容，再按「寫入筆記」。", "返回列表前若內容尚未寫入，將提醒是否儲存。"] },
       ],
     },
@@ -158,7 +158,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       blocks: [
         { title: "條件變更後結果沒有更新", items: ["Matrix 探索需按「開始探索」產生結果。", "號碼對照單修改條件後，也需再次按「開始探索」。"] },
         { title: "查看更多開獎紀錄", items: ["近10期開獎號碼，點選查看更多紀錄，可查閱歷史開獎號碼。", "號碼對照單可選擇1000期、3000期或5000期。"] },
-        { title: "設定常用功能", items: ["在首頁連續點擊底部左下角設定按鈕兩下後，選擇要指定的功能。"] },
+        { title: "設定常用功能", items: ["在首頁連續點擊 Logo 卡右上角設定按鈕兩下後，選擇要指定的功能。"] },
         ...(subscriptionPurchaseVisible ? [{ title: "查看 Matrix Pro 權限", items: ["前往「我的」中的「訂閱方案與收費標準」。"] }] : []),
       ],
     },
@@ -290,4 +290,3 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
     </FeatureShell>
   );
 }
-
