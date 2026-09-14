@@ -606,9 +606,9 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
     repository: AnalysisRepository
     security_monitor: SecurityMonitor | None = None
 
-    def _security_before(self) -> bool:
+    def _security_before(self, method: str) -> bool:
         monitor = self.security_monitor
-        category = request_category(self.path)
+        category = request_category(self.path, method)
         self._security_category = category
         if monitor is None or category is None:
             return True
@@ -693,7 +693,7 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
         self._send(204, {}, allow_cors=not protected, no_store=protected)
 
     def do_GET(self) -> None:
-        if not self._security_before():
+        if not self._security_before("GET"):
             return
         protected = self._is_protected_job_path()
         if self._is_matrix_card_path() and urlsplit(self.path).path.endswith(".svg"):
@@ -730,7 +730,7 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
         )
 
     def do_POST(self) -> None:
-        if not self._security_before():
+        if not self._security_before("POST"):
             return
         try:
             length = int(self.headers.get("Content-Length", "0"))

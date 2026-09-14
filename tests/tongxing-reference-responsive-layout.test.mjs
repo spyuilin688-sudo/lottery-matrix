@@ -86,15 +86,14 @@ test('Matrix 同星與號碼對照單內容使用共享 16px 水平外距且不�
   assert.match(referenceBody, /padding:\s*0 var\(--tool-page-inline\) calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\)/);
   assert.match(referenceBody, /row-gap:\s*var\(--tool-section-gap\)/);
 
-  const floatingPanel = block(responsive, '.reference-query-panel[data-floating="true"]');
-  assert.match(floatingPanel, /position:\s*fixed/);
-  assert.match(floatingPanel, /left:\s*16px/);
-  assert.match(floatingPanel, /right:\s*16px/);
-  assert.match(floatingPanel, /width:\s*auto/);
+  const floatingPanel = block(feature, '.product-header__settings-card[data-floating="true"]');
+  assert.match(floatingPanel, /position:\s*absolute/);
+  assert.match(floatingPanel, /top:\s*0/);
+  assert.match(floatingPanel, /inset-inline:\s*var\(--layout-page-inline\)/);
   assert.doesNotMatch(floatingPanel, /transform:\s*translateX/);
 
-  assert.match(block(responsive, '.tongxing-query'), /width:\s*100%/);
-  assert.match(block(responsive, '.tongxing-query'), /margin:\s*0/);
+  assert.match(block(responsive, '.tool-settings-panel'), /width:\s*100%/);
+  assert.match(block(responsive, '.tool-settings-panel'), /margin:\s*0/);
   assert.match(block(tongxing, '.tongxing-screen .ornament-title'), /margin:\s*0/);
   assert.match(block(feature, '.reference-search'), /margin:\s*0/);
 });
@@ -106,12 +105,12 @@ test('shared responsive sheet is the final owner of both tool-page content flows
 });
 
 test('Matrix 同星與號碼對照單頁首不受 390px 寬度限制 [header migration]', () => {
-  assert.match(brandHeader, /\.product-header\s*\{[^}]*width:\s*100%;[^}]*padding:\s*0 var\(--layout-page-inline\) 8px;/s);
+  assert.match(brandHeader, /\.product-header\s*\{[^}]*width:\s*100%;[^}]*padding:\s*0 var\(--layout-page-inline\);[^}]*margin-bottom:\s*var\(--layout-section-gap\);/s);
   assert.doesNotMatch(brandHeader, /\.product-header[^{]*\{[^}]*(?:max-width:\s*390px|width:\s*min\(100%, 390px\))/s);
 });
 
 test('號碼對照單 uses one responsive three-select grid without the old fixed override', () => {
-  assert.match(feature, /\.reference-query-panel \.query-selects\.three-cols\s*\{[^}]*grid-template-columns:\s*minmax\(0, \.85fr\) minmax\(0, \.8fr\) minmax\(0, 1\.75fr\)/s);
+  assert.match(feature, /\.reference-query-panel \.query-selects\.three-cols\s*\{[^}]*grid-template-columns:\s*minmax\(0, \.95fr\) minmax\(0, \.8fr\) minmax\(0, 1\.75fr\) 42px/s);
   assert.doesNotMatch(feature, /\.number-reference-screen \.query-selects\.three-cols\s*\{\s*grid-template-columns:\s*100px 92px minmax\(0, 1fr\);\s*\}/);
   assert.match(feature, /\.reference-search > div\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\) minmax\(0, 1\.7fr\);[^}]*gap:\s*6px/s);
 });
@@ -133,8 +132,8 @@ test('bounded responsive rules do not add prohibited compensation techniques', (
 });
 
 test('號碼對照單的下拉字體與內距只有一個正式規則', () => {
-  assert.equal(feature.match(/\.number-reference-screen \.reference-select select\s*\{/g)?.length, 1);
-  assert.equal(feature.match(/\.number-reference-screen \.reference-order-select select\s*\{/g)?.length, 1);
+  assert.equal(responsive.match(/\.reference-query-panel \.reference-select select\s*\{/g)?.length, 1);
+  assert.equal(responsive.match(/\.reference-query-panel \.reference-order-select select\s*\{/g)?.length, 1);
 });
 
 test('Matrix 同星使用自動網格並由 API 結果渲染鎖定與預測列', () => {
@@ -148,4 +147,3 @@ test('Matrix 同星使用自動網格並由 API 結果渲染鎖定與預測列',
   assert.match(source, /renderResultRow\(lockedEntry, "locked"\)/);
   assert.match(source, /renderResultRow\(predictedEntry, "predicted"\)/);
 });
-

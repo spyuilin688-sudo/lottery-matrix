@@ -13,23 +13,20 @@ function block(source, selector) {
   return source.slice(open + 1, close);
 }
 
-test("首頁使用指定內距、100% 功能圖片與 14px Matrix Core 外距", () => {
-  assert.match(base, /\.home-screen \.home-layout\s*\{[^}]*--home-feature-inline:\s*10px;/s);
+test("首頁使用 16px 正式內距、100% 功能圖片與對齊的 Matrix Core", () => {
+  assert.match(base, /\.home-screen \.home-layout\s*\{[^}]*--home-feature-inline:\s*16px;/s);
   assert.match(block(base, ".home-screen .home-shortcut img"), /width:\s*100%;/);
   assert.match(block(base, ".home-screen .home-shortcut img"), /height:\s*100%;/);
   assert.match(base, /\.home-screen \.matrix-status-section\s*\{[^}]*padding-inline:\s*0;/s);
-  assert.match(base, /\.home-screen \.home-bottom-group\s*\{[^}]*--home-core-width:\s*calc\(min\(100vw, 390px\) - 28px\);/s);
+  assert.match(base, /\.home-screen \.home-bottom-group\s*\{[^}]*--home-core-width:\s*calc\(min\(100vw, 390px\) - 32px\);/s);
 });
 
-test("首頁彩種選取框為 0.7px 等厚八角框並取消額外高亮陰影", () => {
+test("首頁彩種以單層圓角框與背景明暗表示選取", () => {
+  const card = block(switcher, '.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card');
   const selected = block(switcher, '.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]');
-  const selectedFrame = block(switcher, '.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::before');
-  assert.match(selected, /box-shadow:\s*none;/);
-  assert.match(selectedFrame, /--matrix-selected-frame-width:\s*\.7px;/);
-  assert.match(selectedFrame, /inset:\s*\.5px;/);
-  assert.doesNotMatch(selectedFrame, /clip-path/);
-  assert.match(selectedFrame, /var\(--lottery-selected-horizontal-gradient\)/);
-  assert.match(selectedFrame, /var\(--lottery-selected-left-edge\)/);
-  assert.match(selectedFrame, /var\(--lottery-selected-right-edge\)/);
-  assert.doesNotMatch(selectedFrame, /(?:-webkit-)?mask|mask-composite|content-box/);
+  assert.match(card, /border:\s*1px solid var\(--home-frame-muted\);/);
+  assert.match(card, /border-radius:\s*var\(--home-frame-radius\);/);
+  assert.match(card, /background-color:\s*rgba\(0, 0, 0, \.4\);/);
+  assert.match(selected, /background-color:\s*transparent;/);
+  assert.doesNotMatch(switcher, /\.lottery-card\[data-selected="true"\]::before\s*\{/);
 });

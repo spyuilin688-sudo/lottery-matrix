@@ -177,6 +177,30 @@ def test_analysis_only_worker_reemits_stable_keys_for_completed_period() -> None
     assert emitter.successful == [RESULT_KEY, STATUS_KEY]
 
 
+def test_already_analyzed_path_does_not_load_complete_history(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository = _repository()
+    _complete_analysis(repository)
+    original_list_draws = repository.list_draws
+
+    def reject_complete_history(lottery: str, limit: int | None = None) -> list[dict]:
+        if limit is None:
+            raise AssertionError("already-analyzed must not load complete history")
+        return original_list_draws(lottery, limit)
+
+    monkeypatch.setattr(repository, "list_draws", reject_complete_history)
+
+    result = run_analysis_only_worker(
+        LOTTERY,
+        repository,
+        _builders(),
+        notification_emitter=RecordingEmitter(),
+    )
+
+    assert result["status"] == "already-analyzed"
+
+
 def test_analysis_only_worker_early_transient_failure_does_not_block_analysis() -> None:
     repository = _repository(history_count=80)
     emitter = RecordingEmitter(fail_delivery={RESULT_KEY: 1})

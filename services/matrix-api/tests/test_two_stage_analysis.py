@@ -244,7 +244,7 @@ def test_sorted_active_notification_survives_newer_dormant_actual_status(entrypo
     if entrypoint == 'scheduled':
         worker.emit_ready_notifications('今彩539', '115000220', repository, emitter, set())
     else:
-        analysis_worker._emit_ready_notifications(CONFIRMED, [CONFIRMED], repository, emitter, set())
+        analysis_worker._emit_ready_notifications(CONFIRMED, repository, emitter, set())
     assert any(event['eventType'] == 'matrix_status' for event in emitter.events)
 
 

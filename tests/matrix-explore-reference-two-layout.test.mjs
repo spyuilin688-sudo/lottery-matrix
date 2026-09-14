@@ -48,9 +48,7 @@ test("temporary global debug outlines are removed instead of covered", () => {
   assert.doesNotMatch(prototype, /Temporary global container debug outlines/);
   assert.doesNotMatch(prototype, /--debug-container-/);
   assert.doesNotMatch(prototype, /outline:\s*1px solid var\(--debug-container-/);
-  const approvedTianhengArtworkScale = /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher \.matrix-page-switcher-image--tianheng\s*\{[^}]*transform:\s*scale\(1\.14\);[^}]*\}/s;
-  assert.match(layout, approvedTianhengArtworkScale);
-  assert.doesNotMatch(layout.replace(approvedTianhengArtworkScale, ''), /!important|zoom\s*:|scale\s*\(|margin(?:-[a-z]+)?\s*:\s*-/);
+  assert.doesNotMatch(layout, /!important|zoom\s*:|scale\s*\(|margin(?:-[a-z]+)?\s*:\s*-/);
 });
 
 test("the six result columns retain usable proportional width at supported mobile sizes", () => {

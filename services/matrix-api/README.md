@@ -104,7 +104,7 @@ upserts `lottery_draws`. It owns 天天樂 acquisition status in
 
 The dedicated Railway 天天樂 process reads a bounded set of recent
 `lottery_draws` from Supabase and batch-checks their
-`period:matrix-python-v13` progress rows. It processes a new tail in order and
+`period:matrix-python-v14-sorted` progress rows. It processes a new tail in order and
 repairs bounded analysis gaps such as a late-backfilled period between two
 completed periods. Full-history reads restart if concurrent ingestion shifts an
 offset page, so no duplicated draw reaches the algorithms. It does not
@@ -139,16 +139,22 @@ running twice.
 
 Matrix background analysis writes its run/artifact data to the existing Supabase Matrix analysis tables. Matrix Explore is read by the PWA through the existing Supabase RPCs `matrix_explore_list` and `matrix_explore_validation`; the legacy AppDeploy app is not used for Matrix Explore or administrator requests.
 
-## Matrix Explore canonical v12 core
+## Algorithm specification and runtime versions
 
-`app.domain.explore_engine` is the only production Explore/Status core for the
-`matrix-python-v13` analysis version. It builds a complete-history occurrence
+`v12` names the canonical Explore algorithm specification in
+`docs/specs/Matrix_Explore_Canonical_v12_20260902.md`; it is not a deploy or
+artifact version. `v13` introduced the Tianheng phase and is retained only as a
+historical artifact version. The current runtime/result artifact versions are
+`<period>:matrix-python-v14-sorted` and, where the source provides draw order,
+`<period>:matrix-python-v14-draw`. The Railway execution version is the deployed
+Git commit SHA and is recorded separately.
+
+`app.domain.explore_engine` is the only production Explore/Status core. It builds a complete-history occurrence
 index per lottery/order and reuses cached range cells across the thirteen source
 periods. Drag reads only the locked cell; add and sum reuse their range cells.
 Only fully finalized and valid results are persisted.
 
-The authoritative behavior is documented in
-`docs/specs/Matrix_Explore_Canonical_v12_20260902.md`. Every reference cell for
+Every reference cell for
 the same locked condition is finalized before a result is emitted. Each
 persisted Explore row includes its validation payload for the
 `matrix_explore_validation` RPC and the expandable road details in the PWA.
@@ -166,5 +172,10 @@ Matrix Status continues to consume only Explore and Tianyan.
 
 ```bash
 uv sync
-uv run pytest -q
+uv run pytest -q tests/test_security_monitor.py tests/test_api_server_http.py
+uv run pytest -q tests/test_analysis_worker_notifications.py tests/test_fantasy5_card_notifications.py
 ```
+
+Choose only the directly affected test files for each change; the repository CI
+scope job expands that selection. Do not use an unbounded `pytest` invocation as
+the standard local verification command.

@@ -116,7 +116,6 @@ def _emit_early_notifications(
     try:
         _emit_ready_notifications(
             draw,
-            [],
             repository,
             notification_emitter,
             emitted_event_keys,
@@ -127,7 +126,6 @@ def _emit_early_notifications(
 
 def _emit_ready_notifications(
     draw: dict[str, Any],
-    history: list[dict[str, Any]],
     repository: AnalysisRepository,
     notification_emitter: NotificationEventEmitter | None,
     emitted_event_keys: set[str],
@@ -219,13 +217,8 @@ def run_analysis_only_worker(
         _restore_completed_tianheng_results(
             repository, lottery, period, analysis_version,
         )
-        history = _history_through_period(
-            repository.list_draws(lottery, None),
-            period,
-        )
         _emit_ready_notifications(
             draw,
-            history,
             repository,
             notification_emitter,
             emitted_event_keys,
@@ -252,7 +245,6 @@ def run_analysis_only_worker(
     if result.get("status") == "complete":
         _emit_ready_notifications(
             draw,
-            history,
             repository,
             notification_emitter,
             emitted_event_keys,

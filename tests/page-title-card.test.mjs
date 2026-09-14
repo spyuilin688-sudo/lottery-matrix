@@ -20,8 +20,8 @@ test("confirmed feature pages use the latest integrated title artwork [header mi
 });
 
 test("integrated title artwork uses current sixteen-pixel side margins and proportional height [header migration]", () => {
-  assert.match(styles, /\.product-header\s*\{[^}]*width:\s*100%;[^}]*padding:\s*0 var\(--layout-page-inline\) 8px;/s);
-  assert.match(styles, /\.product-header__frame\s*\{[^}]*height:\s*68px;/s);
+  assert.match(styles, /\.product-header\s*\{[^}]*width:\s*100%;[^}]*padding:\s*0 var\(--layout-page-inline\);[^}]*margin-bottom:\s*var\(--layout-section-gap\);/s);
+  assert.match(styles, /\.product-header__frame\s*\{[^}]*height:\s*var\(--product-header-frame-height, 68px\);/s);
   assert.match(styles, /\.product-header__mark\s*\{[^}]*width:\s*56px;[^}]*height:\s*48px;[^}]*object-fit:\s*contain;/s);
   assert.match(styles, /\.product-header__back\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;/s);
 });
@@ -34,14 +34,16 @@ test("Matrix settings heading owns the fixed four-page control", () => {
   assert.match(switcher, /MATRIX_PAGE_ITEMS\.map/);
   assert.match(switcher, /aria-current=\{item\.screen === current \? "page" : undefined\}/);
   assert.match(featurePages, /label: "Matrix 天衡", image: "\/assets\/lottery\/functions\/天衡\.png"/);
-  assert.match(featurePages, /className="matrix-settings-heading">\s*<SectionTitle>探索設定<\/SectionTitle>\s*<MatrixPageSwitcher/s);
+  assert.match(featurePages, /className="matrix-settings-heading">\s*<SectionTitle>\{settingsName\}設定<\/SectionTitle>\s*<MatrixPageSwitcher/s);
+  assert.match(featurePages, /<SectionTitle>天工設定<\/SectionTitle>/);
   assert.doesNotMatch(featurePages, /headerAction=\{<MatrixPageSwitcher/);
   assert.match(styles, /\.matrix-settings-heading\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*space-between;/s);
 });
 
-test("status and profile flows use supplied artwork while status settings stays in bottom navigation [header migration]", () => {
+test("status and profile flows use supplied artwork while status settings stays in the page header [header migration]", () => {
   assert.match(featurePages, /showBack=\{!logoOnlyHeader \|\| \(active === "我的" && backTarget === "profile"\) \|\| title === "Matrix 筆記本"\}/);
-  assert.match(featurePages, /className="bottom-navigation-quick-settings matrix-status-settings-entry"/);
+  assert.match(featurePages, /className="header-settings-button"[^>]*aria-label="自訂觸發條件，連續點擊兩下開啟"/s);
+  assert.doesNotMatch(featurePages, /matrix-status-settings-entry/);
   assert.doesNotMatch(featurePages, /headerArtwork|status-title-trigger/);
 });
 
@@ -64,7 +66,8 @@ test("number reference title card owns refresh and explore settings [header migr
   const start = featurePages.indexOf("export function NumberReferencePage");
   const end = featurePages.indexOf("export function CalculatorPage", start);
   const referencePage = featurePages.slice(start, end);
-  assert.match(referencePage, /className="reference-title-actions title-card-compact-actions"/);
+  assert.match(referencePage, /headerAction=\{<HeaderSettingsButton[^>]*controls="reference-header-settings"/s);
+  assert.match(referencePage, /headerSettings=\{\{ id: "reference-header-settings"/);
   assert.match(referencePage, /刷新/);
   assert.match(referencePage, /探索設定/);
 });
@@ -78,12 +81,9 @@ test("home and Matrix status retain the shared Matrixbba switcher artwork", () =
   assert.doesNotMatch(homepageStyles, /lottery-card-logo|--lottery-logo-scale|lottery-switcher--independent-logos/);
   const homeFlowBodies = ruleBodies(homepageStyles, /^\.home-screen \.lottery-switcher$/);
   assert.ok(homeFlowBodies.some((body) => /margin-block-start:\s*var\(--home-gap-logo-switcher\);/.test(body)));
-  const selectedOutline = ruleBodies(
-    homepageStyles,
-    /^\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]::before$/,
-  );
-  assert.equal(selectedOutline.length, 1);
-  assert.match(selectedOutline[0], /--matrix-selected-frame-width:\s*\.7px;/);
+  assert.match(homepageStyles, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid var\(--home-frame-muted\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
+  assert.match(homepageStyles, /\.lottery-card\[data-selected="true"\]\s*\{[^}]*background-color:\s*transparent;/s);
+  assert.doesNotMatch(homepageStyles, /\.lottery-card\[data-selected="true"\]::before\s*\{/);
 });
 
 test("history filter keeps lottery date order range and submit controls without the obsolete reset", () => {
@@ -104,4 +104,3 @@ test("calculator keeps the approved compact responsive layout source", () => {
     assert.equal((styles.match(new RegExp(`(^|\\n)\\s*${escaped}\\s*\\{`, "g")) ?? []).length, 1, `${selector} must have one source`);
   }
 });
-
