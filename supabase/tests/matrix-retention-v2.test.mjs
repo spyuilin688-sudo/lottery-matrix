@@ -35,6 +35,7 @@ before(async () => {
     '20260912193421_matrix_analysis_seal_direct_writes.sql','20260912202503_avoid_unchanged_draw_writes.sql',
     '20260912230514_matrix_analysis_active_versions.sql']) await db.exec(read(`../migrations/${file}`));
   await db.exec(migration);
+  await db.exec(read('../migrations/20260914153439_matrix_storage_pending_cleanup_health.sql'));
 });
 after(async () => db.close());
 beforeEach(async () => db.exec('reset role; begin; truncate public.lottery_draws, public.matrix_analysis_runs cascade;'));
@@ -174,6 +175,48 @@ test('health exposes a damaged historical pointer until bounded cleanup retires 
   await enable(); assert.equal(await cleanup(),7);
   const healthy=await scalar('select public.matrix_analysis_storage_health()');
   assert.equal(healthy.active_unhealthy,0); assert.equal(healthy.status,'Healthy');
+});
+test('successful bounded cleanup with a remaining backlog is healthy and keeps pending counts visible',async()=>{
+  await recent(); await seed({stage:'v14-sorted',pointer:false,rows:4}); await enable();
+  assert.equal(await cleanup(2),8);
+  const health=await scalar('select public.matrix_analysis_storage_health()');
+  assert.equal(health.status,'Healthy');
+  assert.equal(health.expired_deletable_rows,9);
+  assert.equal(health.cleanup.deletable_backlog,9);
+  assert.equal(health.cleanup.last_deleted,8);
+  assert.equal(health.active_unhealthy,0);
+});
+test('newly expired rows between successful hourly runs are healthy without triggering cleanup',async()=>{
+  await recent(); await enable(); await cleanup();
+  await seed({stage:'v14-sorted',pointer:false});
+  const before=await counts();
+  const health=await scalar('select public.matrix_analysis_storage_health()');
+  assert.equal(health.status,'Healthy');
+  assert.equal(health.expired_deletable_rows,8);
+  assert.equal(health.cleanup.deletable_backlog,0);
+  assert.deepEqual(await counts(),before);
+});
+test('disabled, never completed, missing and overdue cleanup still warn with or without a backlog',async()=>{
+  await recent(); await enable();
+  assert.equal((await scalar('select public.matrix_analysis_storage_health()')).status,'Warning');
+  await cleanup();
+  await db.exec("update private.matrix_maintenance_status set cleanup_enabled=false where job_name='analysis-retention'");
+  assert.equal((await scalar('select public.matrix_analysis_storage_health()')).status,'Warning');
+  await enable();
+  await db.exec("update private.matrix_maintenance_status set last_finished_at=statement_timestamp()-interval '2 hours' where job_name='analysis-retention'");
+  assert.equal((await scalar('select public.matrix_analysis_storage_health()')).status,'Warning');
+  await seed({stage:'v14-sorted',pointer:false});
+  assert.equal((await scalar('select public.matrix_analysis_storage_health()')).status,'Warning');
+  await db.exec("delete from private.matrix_maintenance_status where job_name='analysis-retention'");
+  assert.equal((await scalar('select public.matrix_analysis_storage_health()')).status,'Warning');
+});
+test('cleanup errors override fresh success and pending rows as Critical',async()=>{
+  await recent(); await enable(); await cleanup();
+  await seed({stage:'v14-sorted',pointer:false});
+  await db.exec("update private.matrix_maintenance_status set last_error='TEST_CLEANUP_ERROR' where job_name='analysis-retention'");
+  const health=await scalar('select public.matrix_analysis_storage_health()');
+  assert.equal(health.status,'Critical');
+  assert.equal(health.expired_deletable_rows,8);
 });
 test('only service role gets public monitoring and cleanup; private data and helpers stay inaccessible',async()=>{
   for (const role of ['anon','authenticated','service_role']) {
