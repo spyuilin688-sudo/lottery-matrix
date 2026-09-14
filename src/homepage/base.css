@@ -460,7 +460,7 @@
   min-height: 0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-rows: repeat(2, auto);
-  gap: 2px;
+  gap: 4px;
   align-content: start;
 }
 
