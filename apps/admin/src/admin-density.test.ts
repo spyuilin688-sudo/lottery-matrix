@@ -41,19 +41,22 @@ describe('admin compact density', () => {
     expect(operationsCss).not.toMatch(/\.metric\s*\{/);
   });
 
-  it('separates overview groups with 8px grid gaps and keeps the record count inline', () => {
+  it('separates overview groups and gives search cards one responsive hierarchy', () => {
     expect(declarationsAt(adminCss, '.cards', 390).get('gap')).toBe('8px');
     expect(declarationsAt(adminCss, '.cards', 1000).get('gap')).toBe('8px');
     expect(operationsCss).toMatch(/\.metricDivider \{ grid-column: 1 \/ -1; height: 1px; margin: 0;/);
-    expect(operationsCss).toContain('grid-template-columns: minmax(0, 1fr) 92px minmax(64px, max-content)');
-    expect(operationsCss).toContain('.managementToolbar span { grid-column: auto; }');
-    expect(operationsCss).toMatch(/\.managementCount \{[^}]*min-width: 64px;[^}]*text-align: right;/);
+    expect(declarationsAt(operationsCss, '.managementPrimaryFilters', 1000).get('grid-template-columns')).toBe('minmax(180px, 1fr) 112px 112px minmax(64px, max-content)');
+    expect(declarationsAt(operationsCss, '.managementPrimaryFilters', 390).get('grid-template-columns')).toBe('minmax(0, 1fr) minmax(80px, auto)');
+    expect(declarationsAt(operationsCss, '.managementSecondaryFilters', 390).get('grid-template-columns')).toBe('repeat(2, minmax(0, 1fr))');
+    expect(declarationsAt(operationsCss, '.managementCount', 390).get('min-width')).toBe('64px');
+    expect(declarationsAt(operationsCss, '.managementCount', 390).get('text-align')).toBe('right');
   });
 
   it('keeps user and subscription search cards compact', () => {
     expect(operationsCss).toMatch(/\.managementToolbar \{[\s\S]*?margin-bottom: 8px;[\s\S]*?padding: 6px;/);
     expect(operationsCss).toMatch(/\.managementToolbar input \{ height: 32px; \}/);
     expect(operationsCss).toMatch(/\.managementToolbar select \{ height: 32px; \}/);
+    expect(declarationsAt(operationsCss, '.managementSecondaryFilters', 1000).get('border-top')).toBe('1px solid #292c32');
   });
 
   it('compacts transfer requests without shrinking text actions into square buttons', () => {

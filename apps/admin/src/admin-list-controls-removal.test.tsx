@@ -39,7 +39,14 @@ vi.mock('@appdeploy/client', () => ({
 
 import AdminApp from './AdminApp';
 
-it('removes the shared list filter card from admin data pages', async () => {
+async function choose(container: HTMLElement, page: string) {
+  const button = [...container.querySelectorAll('button')].find((candidate) => candidate.textContent?.includes(page));
+  expect(button, `missing navigation button for ${page}`).toBeTruthy();
+  await act(async () => { button!.click(); });
+  await waitFor(() => expect(container.querySelector('header b')?.textContent).toBe(page));
+}
+
+it('keeps the compact search card on the four operational list pages only', async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   const container = document.createElement('div');
   document.body.append(container);
@@ -49,12 +56,28 @@ it('removes the shared list filter card from admin data pages', async () => {
     await act(async () => { root.render(<AdminApp />); });
     await waitFor(() => expect(container.querySelector('header b')?.textContent).toBe('營運概覽'));
 
-    for (const page of ['用戶管理', '訂閱管理', '登入紀錄', '審計日誌', '管理員權限', '啟動碼管理']) {
-      const button = [...container.querySelectorAll('button')].find((candidate) => candidate.textContent?.includes(page));
-      expect(button, `missing navigation button for ${page}`).toBeTruthy();
-      await act(async () => { button!.click(); });
-      await waitFor(() => expect(container.querySelector('header b')?.textContent).toBe(page));
-      expect(container.querySelector('.managementToolbar'), `${page} still renders the removed filter card`).toBeNull();
+    const expected = [
+      ['用戶管理', '搜尋會員', '會員開始日期', '會員排序欄位'],
+      ['訂閱管理', '搜尋訂閱', '訂閱開始日期', '訂閱排序欄位'],
+      ['登入紀錄', '搜尋登入紀錄', '登入紀錄開始日期', '登入紀錄排序欄位'],
+      ['審計日誌', '搜尋審計日誌', '審計日誌開始日期', '審計日誌排序欄位'],
+    ] as const;
+
+    for (const [page, searchLabel, dateLabel, sortLabel] of expected) {
+      await choose(container, page);
+      const toolbar = container.querySelector('.managementToolbar');
+      expect(toolbar, `${page} should render its search card`).not.toBeNull();
+      expect(toolbar?.querySelector(`[aria-label="${searchLabel}"]`)).not.toBeNull();
+      expect(toolbar?.querySelector(`[aria-label="${dateLabel}"]`)).not.toBeNull();
+      expect(toolbar?.querySelector(`[aria-label="${sortLabel}"]`)).not.toBeNull();
+    }
+
+    await choose(container, '訂閱管理');
+    expect(container.querySelector('.managementToolbar [aria-label="篩選訂閱方案"]')).not.toBeNull();
+
+    for (const page of ['管理員權限', '啟動碼管理']) {
+      await choose(container, page);
+      expect(container.querySelector('.managementToolbar'), `${page} should stay focused on its own actions`).toBeNull();
     }
   } finally {
     await act(async () => root.unmount());

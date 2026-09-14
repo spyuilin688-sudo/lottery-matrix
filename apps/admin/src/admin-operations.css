@@ -1,8 +1,7 @@
 .managementToolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 112px minmax(64px, max-content);
-  gap: 8px;
-  align-items: center;
+  grid-template-columns: 1fr;
+  gap: 6px;
   margin-bottom: 8px;
   padding: 6px;
   border: 1px solid #292c32;
@@ -32,8 +31,58 @@
 .operationDialog input,
 .operationDialog select { padding: 6px 8px; }
 
-.managementToolbar span { color: #8f939b; font-size: 12px; white-space: nowrap; }
-.managementToolbar input, .managementToolbar select { min-width: 0; font-size: 13px; }
+.managementToolbar input,
+.managementToolbar select { min-width: 0; font-size: 13px; }
+.managementPrimaryFilters {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 112px 112px minmax(64px, max-content);
+  gap: 6px;
+  align-items: center;
+}
+.managementSearchField { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; min-width: 0; }
+.managementClearButton {
+  height: 30px;
+  padding: 3px 8px;
+  border: 1px solid #343840;
+  border-radius: 7px;
+  background: #171a20;
+  color: #c4c6cc;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.managementStatusFilter,
+.managementExtraFilter { min-width: 0; }
+.managementExtraFilter > * { width: 100%; }
+.managementCount {
+  grid-column: -2 / -1;
+  justify-self: end;
+  min-width: 64px;
+  color: #8f939b;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.managementSecondaryFilters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(130px, 1fr)) minmax(140px, 1fr) 96px;
+  gap: 6px;
+  align-items: end;
+  padding-top: 6px;
+  border-top: 1px solid #292c32;
+}
+.managementFilterLabel { display: grid; gap: 3px; min-width: 0; color: #8f939b; font-size: 11px; }
+.managementFilterLabel > span { color: inherit; font-size: inherit; white-space: nowrap; }
+.managementToolbarError { margin: -2px 0 8px; color: #efb3b3; font-size: 12px; }
+.managementToolbarError button {
+  min-height: 28px;
+  margin-left: 4px;
+  padding: 3px 8px;
+  border: 1px solid #673b3b;
+  border-radius: 7px;
+  background: #171a20;
+  color: #efb3b3;
+}
 .compactButton { height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #4b4534; background: #1b1913; color: #e1c170; border-radius: 8px; padding: 4px 8px; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .mobileManagement { display: none; }
 .managementCard { border: 1px solid #292c32; background: #111419; border-radius: 12px; padding: 14px; }
@@ -112,8 +161,10 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 
 @media (max-width: 760px) {
   .overviewCards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .managementToolbar { grid-template-columns: minmax(0, 1fr) 92px minmax(64px, max-content); gap: 6px; padding: 6px; }
-  .managementToolbar span { grid-column: auto; }
+  .managementPrimaryFilters { grid-template-columns: minmax(0, 1fr) minmax(80px, auto); }
+  .managementSearchField { grid-column: 1 / -1; }
+  .managementCount { grid-column: 2; }
+  .managementSecondaryFilters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .managementList { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .managementList table { min-width: 920px; }
   .transferRow { grid-template-columns: 1fr auto; }
@@ -126,6 +177,8 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
   .formActions { display: flex; flex-wrap: wrap; justify-content: flex-end; }
   .confirmationDialog,
   .operationDialog { padding: 12px; }
+  .paymentReversalForm { grid-template-columns: 1fr auto; }
+  .paymentReversalForm label { grid-column: 1 / -1; }
 }
 
 .activationCodeFormCard {
@@ -205,13 +258,4 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 .paymentReversalForm .paymentReversalError,
 .paymentReversalForm .transferActions { grid-column: 1 / -1; }
 .paymentReversalForm .transferActions { justify-content: flex-end; }
-.subscriptionManagementToolbar { grid-template-columns: minmax(0, 1fr) 104px minmax(64px, max-content); }
 .tableWrap .compactButton.subscriptionTableAction { min-height: 0; height: 24px; padding: 0 6px; border-radius: 6px; font-size: 11px; line-height: 1; }
-
-@media (max-width: 760px) {
-  .subscriptionManagementToolbar { grid-template-columns: minmax(0, 1fr) 88px minmax(58px, max-content); }
-  .paymentReversalForm { grid-template-columns: 1fr auto; }
-  .paymentReversalForm label { grid-column: 1 / -1; }
-}
-
-.managementCount { min-width: 64px; text-align: right; font-variant-numeric: tabular-nums; }

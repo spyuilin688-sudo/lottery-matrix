@@ -203,18 +203,15 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
     <div className="adminTodos" aria-labelledby="admin-todos-heading">
       <section className="adminTodosComposer">
         <div className="adminTodosHeadingRow">
-          <div>
-            <h1 id="admin-todos-heading">代辦事項</h1>
-            <p>所有管理員共用；只能編輯自己的留言。</p>
-          </div>
+          <h1 id="admin-todos-heading">代辦事項</h1>
           <span>{items.length} 則</span>
         </div>
         <form noValidate onSubmit={submitCreate}>
-          <label htmlFor="admin-todo-content">新增代辦</label>
+          <label className="adminTodosVisuallyHidden" htmlFor="admin-todo-content">新增代辦事項</label>
           <textarea
             className="resize-none"
             id="admin-todo-content"
-            rows={2}
+            rows={4}
             maxLength={100}
             value={draft}
             onBlur={() => setDraftTouched(true)}
@@ -244,6 +241,7 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
       </section>
 
       <div className="adminTodosFeedback" aria-live="polite">{feedback}</div>
+      <div className="adminTodosDivider" aria-hidden="true" />
 
       {loading && items.length === 0 && <div className="adminTodosState" role="status">代辦事項讀取中…</div>}
       {loadError && (
@@ -273,7 +271,7 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
                     <label className="adminTodosVisuallyHidden" htmlFor={`admin-todo-edit-${item.id}`}>編輯代辦事項</label>
                     <textarea
                       className="resize-none"
-                                autoFocus
+                      autoFocus
                       id={`admin-todo-edit-${item.id}`}
                       rows={2}
                       maxLength={100}
