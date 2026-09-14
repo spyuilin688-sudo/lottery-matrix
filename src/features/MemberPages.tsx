@@ -27,7 +27,7 @@ function MembershipArtwork({ showSubscription }: { showSubscription: boolean }) 
   const source = "/assets/lottery/membership/membership-ab-reference.png";
   return (
     <div className="membership-reference-art" data-subscription-visible={showSubscription} aria-hidden="true">
-      <svg viewBox={showSubscription ? "0 0 1563 740" : "0 0 1563 387"} preserveAspectRatio="none" focusable="false">
+      <svg viewBox={showSubscription ? "0 48 1563 692" : "0 48 1563 339"} preserveAspectRatio="none" focusable="false">
         <defs>
           <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width="1563" height="1006">
             <rect width="1563" height="1006" fill="white" />

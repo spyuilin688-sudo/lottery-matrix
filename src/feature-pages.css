@@ -931,6 +931,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   container-type: inline-size;
   box-sizing: border-box;
   min-width: 0;
+  --membership-profile-height: 21.68906cqw;
   --subscription-title-top: calc(0.7031cqw + 10px);
   --subscription-title-height: 5.4cqw;
   --subscription-content-top: calc(var(--subscription-title-top) + var(--subscription-title-height) + 8px);
@@ -946,7 +947,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   display: grid;
   width: 100%;
   /* Extend only the straight frame rails between the information and button. */
-  grid-template-rows: 47.34485cqw var(--subscription-content-shift) 12.22009cqw;
+  grid-template-rows: 44.27383cqw var(--subscription-content-shift) 12.22009cqw;
   pointer-events: none;
 }
 .membership-reference-art > svg {
@@ -955,7 +956,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   height: 100%;
 }
 .membership-reference-art[data-subscription-visible="false"] {
-  grid-template-rows: 24.76cqw;
+  grid-template-rows: var(--membership-profile-height);
 }
 .membership-reference-art > .subscription-heading-art,
 .membership-reference-art > .subscription-information-art {
@@ -964,15 +965,15 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   height: 22.58477cqw;
 }
 .membership-reference-art > .subscription-heading-art {
-  top: calc(24.76cqw + var(--subscription-title-top) - 2.8cqw);
+  top: calc(var(--membership-profile-height) + var(--subscription-title-top) - 2.8cqw);
 }
 .membership-reference-art > .subscription-information-art {
-  top: calc(24.76cqw + var(--subscription-content-shift));
+  top: calc(var(--membership-profile-height) + var(--subscription-content-shift));
 }
 .membership-reference-art > .subscription-heading-mark {
   position: absolute;
   left: 4.15867cqw;
-  top: calc(24.76cqw + var(--subscription-title-top) + var(--subscription-title-height) / 2);
+  top: calc(var(--membership-profile-height) + var(--subscription-title-top) + var(--subscription-title-height) / 2);
   width: 5.24632cqw;
   height: 7.16571cqw;
   transform: translateY(-50%);
@@ -993,12 +994,12 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .profile-card {
   top: 0;
-  height: 24.76cqw;
+  height: var(--membership-profile-height);
 }
 .profile-avatar {
   position: absolute;
   left: 7.294cqw;
-  top: 6.718cqw;
+  top: 3.64698cqw;
   width: 14.203cqw;
   height: 14.203cqw;
   overflow: hidden;
@@ -1016,7 +1017,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .profile-copy {
   position: absolute;
   left: 25.21cqw;
-  top: 8.89cqw;
+  top: 5.81898cqw;
   /* Use the available width up to 4px before the auth button at 78.44cqw. */
   right: calc(21.56cqw + 4px);
   width: auto;
@@ -1053,7 +1054,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .profile-logout {
   position: absolute;
   left: 78.44cqw;
-  top: 13.76cqw;
+  top: 10.68898cqw;
   transform: translateY(-50%);
   display: grid;
   box-sizing: border-box;
@@ -1075,7 +1076,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .profile-logout > span { white-space: nowrap; }
 .profile-logout:disabled { cursor: wait; opacity: .56; }
 .subscription-status-card {
-  top: 24.76cqw;
+  top: var(--membership-profile-height);
   height: calc(34.80494cqw + var(--subscription-content-shift));
 }
 .subscription-status-card > .section-title {
