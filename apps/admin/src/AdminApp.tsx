@@ -363,7 +363,6 @@ function AdminApp() {
         const result = await api.get("/api/dashboard");
         if (current()) setDash(result.data);
       } else if (name === "訂閱管理") {
-        // Plans are form options: read every bounded server page instead of silently truncating.
         const options: Row[] = [];
         let page = 1;
         let totalPages = 1;
@@ -942,9 +941,9 @@ function AdminApp() {
           </>)}{" "}
           {tableMap[active] && !["用戶管理", "訂閱管理"].includes(active) && (
             <>
-              <div className="toolbar">
-                <div>{listPage.total} 筆資料</div>
-                {active === "啟動碼管理" && (
+              {active === "啟動碼管理" && (
+                <div className="toolbar">
+                  <div>{listPage.total} 筆資料</div>
                   <div className="activationCodeToolbarActions">
                     {activationCopyFeedback && <span className="activationCopyStatus" role="status">{activationCopyFeedback}</span>}
                     <button
@@ -969,8 +968,8 @@ function AdminApp() {
                       </button>
                     )}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
               {showForm && active === "啟動碼管理" && (
                 <div className="formCard activationCodeFormCard">
                   <h3>建立啟動碼</h3>
@@ -1481,18 +1480,6 @@ function Revenue({
 }) {
   return (
     <>
-      {isSuper && (
-        <div className="revenueActions">
-          <button
-            className="compactButton revenueResetButton"
-            onClick={onReset}
-            disabled={busy}
-            aria-busy={busy}
-          >
-            {busy ? "重設中…" : "重設收入"}
-          </button>
-        </div>
-      )}
       <Cards
         items={[
           ["今日收入", money(d.todayRevenue)],
@@ -1503,7 +1490,19 @@ function Revenue({
         ]}
       />
       <div className="panel">
-        <h2>收入成長曲線</h2>
+        <div className="revenueChartHeader">
+          <h2>收入成長曲線</h2>
+          {isSuper && (
+            <button
+              className="compactButton revenueResetButton"
+              onClick={onReset}
+              disabled={busy}
+              aria-busy={busy}
+            >
+              {busy ? "重設中…" : "重設收入"}
+            </button>
+          )}
+        </div>
         <div className="emptyChart">
           依 subscriptionRecords 實際收入資料累積
         </div>
