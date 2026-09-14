@@ -43,6 +43,18 @@ describe('admin UX system pass', () => {
     expect(operationsCss).not.toContain('.managementFilterLabel');
   });
 
+  it('keeps table values readable instead of permanently clipping them into ellipses', () => {
+    const sharedCells = declarations(adminCss, ':is(th,td)');
+    const bodyCells = declarations(adminCss, 'td');
+    const headers = declarations(adminCss, 'th');
+
+    expect(sharedCells.get('overflow')).not.toBe('hidden');
+    expect(sharedCells.get('text-overflow')).not.toBe('ellipsis');
+    expect(bodyCells.get('white-space')).toBe('normal');
+    expect(bodyCells.get('overflow-wrap')).toBe('anywhere');
+    expect(headers.get('white-space')).toBe('nowrap');
+  });
+
   it('caps the first operational list column instead of wasting width on member names', () => {
     const firstColumn = declarations(operationsCss, '.managementToolbar + .managementList th:first-child,\n.managementToolbar + .managementList td:first-child');
     expect(firstColumn.get('width')).toBe('124px');
