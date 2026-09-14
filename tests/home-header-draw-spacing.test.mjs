@@ -14,20 +14,26 @@ const ruleBody = (source, selector) => {
   return match[1];
 };
 
-test("開獎期數前後文字為 10px，期數數字維持 13px", () => {
+test("開獎期數前後文字為 10px，與數字各留 1px 並垂直置中", () => {
   const issue = ruleBody(base, ".home-screen .latest-draw-card .draw-issue");
   const issueNumber = ruleBody(base, ".home-screen .latest-draw-card .draw-issue strong");
   assert.match(issue, /font-size:\s*10px;/);
+  assert.match(issue, /gap:\s*1px;/);
+  assert.match(issue, /align-items:\s*center;/);
+  assert.match(issue, /height:\s*15px;/);
   assert.match(issueNumber, /font-size:\s*13px;/);
+  assert.match(issueNumber, /line-height:\s*15px;/);
 });
 
-test("首頁設定齒輪為 18px 且位於標題卡右上角 4px", () => {
+test("首頁設定齒輪為 18px，視覺圖示距標題卡上方與右側各 4px", () => {
   const icon = ruleBody(prototype, ".header-settings-button svg");
   const position = ruleBody(logoSpacing, ".home-screen .home-brand-frame > .header-settings-button");
   assert.match(icon, /width:\s*18px;/);
   assert.match(icon, /height:\s*18px;/);
-  assert.match(position, /top:\s*4px;/);
-  assert.match(position, /right:\s*4px;/);
+  assert.match(position, /top:\s*0;/);
+  assert.match(position, /right:\s*0;/);
+  assert.match(position, /padding:\s*4px 4px 0 0;/);
+  assert.match(position, /place-items:\s*start end;/);
 });
 
 test("Matrix Core 上下間距共用同一個 9 至 12px 響應式規則", () => {
