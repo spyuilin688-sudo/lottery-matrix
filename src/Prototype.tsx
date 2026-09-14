@@ -35,6 +35,8 @@ export type DrawOrder = "順球" | "落球";
 type LotteryOption = {
   id: LotteryId;
   logo: string;
+  logoSize: [number, number];
+  logoViewBox: string;
 };
 
 export type DrawResultData = {
@@ -67,18 +69,26 @@ const LOTTERIES: LotteryOption[] = [
   {
     id: "今彩539",
     logo: "/assets/lottery/jincai-539-logo.png",
+    logoSize: [1774, 887],
+    logoViewBox: "276 138 1276 583",
   },
   {
     id: "天天樂",
     logo: "/assets/lottery/fantasy-5-logo.png",
+    logoSize: [1536, 1024],
+    logoViewBox: "263 157 1036 626",
   },
   {
     id: "六合彩",
     logo: "/assets/lottery/mark-six-logo.png",
+    logoSize: [1254, 1254],
+    logoViewBox: "243 293 796 566",
   },
   {
     id: "大樂透",
     logo: "/assets/lottery/lotto-649-logo.png",
+    logoSize: [1672, 941],
+    logoViewBox: "331 160 1086 579",
   },
 ];
 
@@ -175,7 +185,7 @@ export function LotterySwitcher({ selected, onChange, className = "" }: LotteryS
       data-testid="lottery-switcher"
     >
       <div className="lottery-switcher-hit-grid" role="radiogroup" aria-label="選擇彩種">
-        {LOTTERIES.map((lottery) => {
+        {LOTTERIES.map((lottery, index) => {
           const isSelected = lottery.id === selected;
           return (
             <button
@@ -185,12 +195,27 @@ export function LotterySwitcher({ selected, onChange, className = "" }: LotteryS
               data-selected={isSelected}
               key={lottery.id}
               onClick={() => onChange(lottery.id)}
+              tabIndex={isSelected ? 0 : -1}
+              onKeyDown={(event) => {
+                const nextIndex = event.key === "Home" ? 0
+                  : event.key === "End" ? LOTTERIES.length - 1
+                  : event.key === "ArrowRight" || event.key === "ArrowDown" ? (index + 1) % LOTTERIES.length
+                  : event.key === "ArrowLeft" || event.key === "ArrowUp" ? (index + LOTTERIES.length - 1) % LOTTERIES.length
+                  : null;
+                if (nextIndex === null) return;
+                event.preventDefault();
+                onChange(LOTTERIES[nextIndex].id);
+                event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="radio"]')[nextIndex]?.focus();
+              }}
               role="radio"
               aria-checked={isSelected}
               aria-label={lottery.id}
               type="button"
             >
-              <span className="clean-hit-label">{lottery.id}</span>
+              {/* Intrinsic alpha bounds remove empty asset margins without changing the Logo. */}
+              <svg className="lottery-selector-logo" viewBox={lottery.logoViewBox} aria-hidden="true" focusable="false">
+                <image href={lottery.logo} width={lottery.logoSize[0]} height={lottery.logoSize[1]} />
+              </svg>
             </button>
           );
         })}

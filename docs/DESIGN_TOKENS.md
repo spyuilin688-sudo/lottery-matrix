@@ -25,14 +25,14 @@ Token 更新必須先在 canonical CSS owner 完成，並在同一 changeset 同
 | `--lottery-gold-500` | `#c49145` | 標籤金色 |
 | `--lottery-gold-300` | `#f4ce67` | 選取與亮金狀態 |
 | `--home-frame-bright` | `#f0d58c` | 首頁開獎資訊（含時間格）與 Matrix Core 的 1px 明亮金框 |
-| `--home-frame-gold` | `#d6b66f` | 四個 Matrix 狀態的 1px 標準金框；保留既有 Logo 與導覽用途 |
-| `--home-frame-muted` | `#8a713f` | 彩種與四大功能的 1px 低亮度金框 |
+| `--home-frame-gold` | `#d6b66f` | 四個 Matrix 狀態的 1px 標準金框；Selector 框與導覽分隔線以透明度引用 |
+| `--home-frame-muted` | `#8a713f` | 四大功能的 1px 低亮度金框 |
 | `--layout-page-inline` | `16px` | 一般手機頁面與首頁內容區統一使用 16px 左右留白 |
 | `--layout-section-gap` | `8px` | 主要區段節奏 |
 | `--lottery-card-radius` | `10px` | 標準卡片圓角 |
-| `--bottom-navigation-height` | `72px` | 固定底部導覽高度 |
-| `--bottom-nav-panel-950` | `#030708` | PD01 導覽與底部安全區底色 |
-| `--bottom-nav-icon-default` | `#e0bd75` | PD01 未選中圖示 |
+| `--bottom-navigation-height` | `70px` | 固定底部導覽高度 |
+| `--bottom-nav-panel-950` | `#030708` | 保留的深色面板 token；導覽改用 panel-900 |
+| `--bottom-nav-icon-default` | `#c3beb6` | 保留的未選中圖示色；導覽圖示改繼承文字 currentColor |
 | `--bottom-nav-text-default` | `#c3beb6` | PD01 未選中文字 |
 | `--bottom-nav-text-active` | `#ffe2a0` | PD01 選中文字 |
 
@@ -45,3 +45,5 @@ Token 更新必須先在 canonical CSS owner 完成，並在同一 changeset 同
 ```
 
 工程調整時，需先確認是否為全域 Token。不得為了單一頁面直接更改會影響其他既有元件的 Token。
+
+導覽背景與安全區使用 `--bottom-nav-panel-900: #07101a`；選中圖示、文字與 12×2px 指示線共用 `--bottom-nav-gold: #e5b34d`。未選中圖示與文字繼承 `--bottom-nav-text-default: #c3beb6`，按鈕透明度 .7。

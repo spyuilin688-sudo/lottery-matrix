@@ -22,7 +22,7 @@ const tokenTrace = [
   ["--layout-page-inline", "16px"],
   ["--layout-section-gap", "8px"],
   ["--lottery-card-radius", "10px"],
-  ["--bottom-navigation-height", "72px"],
+  ["--bottom-navigation-height", "70px"],
 ];
 
 function escapeRegExp(value) {

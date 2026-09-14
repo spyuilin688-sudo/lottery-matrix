@@ -47,8 +47,8 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
   border: 0;
-  border-top: 1px solid var(--home-frame-muted);
-  background: var(--bottom-nav-panel-950);
+  border-top: 1px solid color-mix(in srgb, var(--home-frame-gold) 14%, transparent);
+  background: var(--bottom-nav-panel-900);
   isolation: isolate;
   overflow: hidden;
 }
@@ -66,13 +66,14 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  border: 1px solid transparent;
-  border-radius: var(--home-frame-radius);
+  border: 0;
   background: transparent;
   font: inherit;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   color: var(--bottom-nav-text-default);
+  opacity: .7;
+  transition: color 180ms ease-out, opacity 180ms ease-out;
   cursor: pointer;
 }
 
@@ -80,8 +81,7 @@
   width: 24px;
   height: 24px;
   flex-shrink: 0;
-  color: var(--bottom-nav-icon-default);
-  transition: color 180ms ease-out;
+  color: currentColor;
 }
 
 .bottom-navigation-label {
@@ -89,33 +89,42 @@
   font-weight: 500;
   line-height: 14px;
   white-space: nowrap;
-  transition: color 180ms ease-out;
 }
 
 .bottom-navigation-item[data-selected="true"] {
-  border-color: var(--home-frame-gold);
-  background: rgba(214, 182, 111, .10);
-  color: var(--bottom-nav-text-active);
+  color: var(--bottom-nav-gold);
+  opacity: 1;
 }
 
-.bottom-navigation-item[data-selected="true"] .bottom-navigation-icon {
-  color: var(--bottom-nav-gold-bright);
+.bottom-navigation-item::after {
+  position: absolute;
+  bottom: 0;
+  width: 12px;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+  content: "";
+  opacity: 0;
+  transition: opacity 180ms ease-out;
 }
 
-.bottom-navigation-item:active .bottom-navigation-icon {
-  color: var(--bottom-nav-gold-bright);
+.bottom-navigation-item[data-selected="true"]::after {
+  opacity: 1;
+}
+
+.bottom-navigation-item:active {
   opacity: .75;
 }
 
 @media (hover: hover) {
   .bottom-navigation-item:hover {
-    color: var(--bottom-nav-text-active);
+    opacity: 1;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bottom-navigation-icon,
-  .bottom-navigation-label {
+  .bottom-navigation-item,
+  .bottom-navigation-item::after {
     transition: none;
   }
 }
