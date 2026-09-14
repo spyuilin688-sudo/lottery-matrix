@@ -8,27 +8,6 @@
   --home-frame-shadow-active: inset 0 0 10px color-mix(in srgb, var(--lottery-gold-300) 18%, transparent), 0 0 7px color-mix(in srgb, var(--lottery-gold-300) 24%, transparent);
 }
 
-.home-screen .matrix-status-card[data-status="ACTIVE"] {
-  --home-status-tone: var(--matrix-status-active);
-}
-
-.home-screen .matrix-status-card[data-status="FOCUS"] {
-  --home-status-tone: var(--matrix-status-focus);
-}
-
-.home-screen .matrix-status-card[data-status="RESONANCE"] {
-  --home-status-tone: var(--matrix-status-resonance);
-}
-
-.home-screen .matrix-status-card[data-status="CRITICAL"] {
-  --home-status-tone: var(--matrix-status-critical);
-}
-
-.home-screen .matrix-status-card:active {
-  --home-status-glow: color-mix(in srgb, var(--home-status-tone) 26%, transparent);
-  box-shadow: 0 0 5px var(--home-status-glow);
-}
-
 .home-screen .draw-issue strong,
 .home-screen .draw-date,
 .home-screen .next-draw-value {

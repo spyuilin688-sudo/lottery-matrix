@@ -255,3 +255,7 @@ Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封
 `feature-page-adjustments.css` 單獨擁有通知頁的最終 8px 內容間距、29px 批次按鈕、600 標題字重與時間選單。`matrix-explore-spacing.css` 單獨擁有結果卡 13px 外距公式及 100% 寬度；responsive 樣式只經此檔的既有 import 載入一次。移除四個只負責後置覆寫的樣式檔，完整清單與尺寸驗證見 `docs/qa/css-cleanup.md`。
 
 會員卡的 1563×1006 素材由既有 SVG 分片顯示；430px 畫布上，素材容器寬 418px，圖內左右框線對齊其他 398px 卡片。`feature-pages.css` 的 `.membership-card-stack` 保留既有 `calc(100% + 20px)` 與 `-10px` 素材幾何，並作為唯一來源，不在 JSX 或另一 CSS 再補償。首頁狀態卡外觀與共用間距由 `homepage/base.css` 擁有。
+
+
+
+2026-09-15 首頁四彩種狀態卡：`src/homepage/base.css` 單獨繪製與首頁一致的 1px 細金框（`--home-frame-gold`）與 8px 圓角（`--home-frame-radius`）。原狀態 PNG 的文字、中央光環、色彩與彩種 Logo 保留；僅裁去圖片邊緣內建的彩色框，不縮放、不位移、不改圖檔。移除舊切角及按狀態變色的外光暈；載入與失敗使用同一金框，按下沿用首頁亮度回饋。四張卡的寬高、排列、間距與資料邏輯不變。
