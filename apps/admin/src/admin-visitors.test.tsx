@@ -10,20 +10,30 @@ vi.mock('@appdeploy/client', () => ({
 }));
 import AdminApp from './AdminApp';
 
-it('shows the three visitor counts alongside existing member counts', async () => {
+it('prioritizes operational overview metrics and groups Matrix Pro subscription counts without a fake chart', async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   const container = document.createElement('div'); document.body.append(container);
   const root = createRoot(container);
   try {
     await act(async () => { root.render(<AdminApp />); });
+
     const metrics = [...container.querySelectorAll('.metric')].map(el => el.textContent);
-    expect(metrics).toContain('本日瀏覽人數2');
-    expect(metrics).toContain('本月瀏覽人數7');
-    expect(metrics).toContain('總瀏覽人數12');
-    expect(metrics).toContain('總用戶數4');
-    const grid = container.querySelector('.overviewCards')!;
-    expect(grid.children).toHaveLength(9);
-    expect(grid.children[4].getAttribute('role')).toBe('separator');
-    expect([...grid.children].slice(5)).toHaveLength(4);
+    expect(metrics).toEqual([
+      '本日瀏覽人數2',
+      '本月瀏覽人數7',
+      '總瀏覽人數12',
+      '總用戶數4',
+      '即將到期用戶數0',
+    ]);
+
+    expect(container.querySelector('[role="separator"]')).toBeNull();
+    expect(container.querySelector('.emptyChart')).toBeNull();
+
+    const subscriptionPanel = [...container.querySelectorAll('.panel')]
+      .find(panel => panel.querySelector('h2')?.textContent === 'Matrix Pro 訂閱');
+    expect(subscriptionPanel).toBeTruthy();
+    expect(subscriptionPanel?.textContent).toContain('月費用戶數1');
+    expect(subscriptionPanel?.textContent).toContain('季費用戶數1');
+    expect(subscriptionPanel?.textContent).toContain('年費用戶數1');
   } finally { await act(async () => root.unmount()); container.remove(); }
 });
