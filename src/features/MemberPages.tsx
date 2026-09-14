@@ -719,15 +719,6 @@ export function ManualTransferPage({ onNavigate }: { onNavigate: Navigate }) {
           <div><dt>金額</dt><dd>{`NT$${plan.amount.toLocaleString("en-US")}`}</dd></div>
         </dl>
       </section>
-      <section className="panel detail-card manual-transfer-bank-card">
-        <h2>轉帳資料</h2>
-        <dl>
-          <div><dt>銀行</dt><dd>連線銀行</dd></div>
-          <div><dt>銀行代碼</dt><dd>824</dd></div>
-          <div className="manual-transfer-bank-row"><dt>帳號</dt><dd className="manual-transfer-account">111023004501</dd><button type="button" className="manual-transfer-copy" onClick={() => void navigator.clipboard.writeText("111023004501")}>複製帳號</button></div>
-          <div><dt>戶名</dt><dd>黎小姐</dd></div>
-        </dl>
-      </section>
       <section className="panel detail-card manual-transfer-form-card">
         <h2>回報轉帳</h2>
         <label htmlFor="manual-transfer-last-five">帳號末五碼</label>

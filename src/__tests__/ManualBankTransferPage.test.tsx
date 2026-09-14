@@ -110,11 +110,11 @@ describe('Matrix Pro manual bank transfer', () => {
     expect(screen.queryByText('2027/08/22')).not.toBeInTheDocument();
   });
 
-  it('only opens bank details after plan payment confirmation', async () => {
+  it('opens transfer reporting after plan payment confirmation', async () => {
     const onNavigate = vi.fn();
     render(<ProPlansPage onNavigate={onNavigate} />);
 
-    expect(screen.queryByText('111023004501')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '轉帳資料' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '確定付款' })).toHaveClass('primary-action', 'branded-explore-action');
     expect(screen.getByRole('checkbox', { name: '自動續訂' })).toBeDisabled();
     expect(screen.getByText(/手動轉帳不會自動扣款/)).toBeInTheDocument();
@@ -124,16 +124,15 @@ describe('Matrix Pro manual bank transfer', () => {
     expect(onNavigate).toHaveBeenCalledWith('manual-transfer');
   });
 
-  it('shows bank data, copies the account, sanitizes last five digits and submits', async () => {
+  it('omits bank details and account copying while allowing transfer reporting', async () => {
     render(<ManualTransferPage onNavigate={vi.fn()} />);
 
-    expect(await screen.findByText('連線銀行')).toBeInTheDocument();
-    expect(screen.getByText('NT$2,880')).toBeInTheDocument();
-    expect(screen.getByText('824')).toBeInTheDocument();
-    expect(screen.getByText('111023004501')).toBeInTheDocument();
-    expect(screen.getByText('黎小姐')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '複製帳號' }));
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('111023004501');
+    expect(await screen.findByText('NT$2,880')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '轉帳資料' })).not.toBeInTheDocument();
+    expect(document.querySelector('.manual-transfer-bank-card')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '複製帳號' })).not.toBeInTheDocument();
+    expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
 
     fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12a3456' } });
     expect(screen.getByLabelText('帳號末五碼')).toHaveValue('12345');
@@ -160,7 +159,7 @@ describe('Matrix Pro manual bank transfer', () => {
     render(<ManualTransferPage onNavigate={onNavigate} />);
 
     await waitFor(() => expect(onNavigate).toHaveBeenCalledWith('pro-plans'));
-    expect(screen.queryByText('111023004501')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '轉帳資料' })).not.toBeInTheDocument();
   });
 
   it('renders authenticated member payment history', async () => {
