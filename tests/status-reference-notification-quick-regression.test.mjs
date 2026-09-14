@@ -18,10 +18,10 @@ test("Matrix 狀態兩頁的彩種切換器只由頁面內距控制左右外距"
   assert.match(feature, /:is\(\.matrix-status-screen, \.matrix-custom-status-screen\) \.matrix-status-lottery-switcher\s*\{[^}]*width:\s*100%;[^}]*margin:\s*0 0 8px;/s);
 });
 
-test("彩種按鈕的選取範圍跟隨共用切角外框", () => {
-  assert.match(lotterySwitcher, /--matrix-option-cut:\s*clamp\(4px, 1\.54vw, 6px\);/);
-  assert.match(lotterySwitcher, /\.lottery-card\s*\{[^}]*clip-path:\s*polygon\(/s);
-  assert.match(lotterySwitcher, /\.lottery-card::after\s*\{[^}]*clip-path:\s*inherit;[^}]*border-radius:\s*0;[^}]*background:\s*var\(--home-octagon-frame\);/s);
+test("彩種按鈕使用共用 1px 圓角框並以亮度表示選取", () => {
+  assert.match(lotterySwitcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid var\(--home-frame-muted\);[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*background-color:\s*rgba\(0, 0, 0, \.4\);[^}]*background-blend-mode:\s*multiply;/s);
+  assert.match(lotterySwitcher, /\.lottery-card\[data-selected="true"\]\s*\{[^}]*background-color:\s*transparent;/s);
+  assert.doesNotMatch(lotterySwitcher, /\.lottery-card::(?:before|after)\s*\{|clip-path:\s*polygon\(/s);
 });
 
 test("自訂觸發四狀態維持流動寬度並縮減高度與使用圓角", () => {
@@ -32,10 +32,11 @@ test("自訂觸發四狀態維持流動寬度並縮減高度與使用圓角", ()
   assert.doesNotMatch(feature, /\.custom-status-tabs button\s*\{[^}]*border-radius:\s*8px;/s);
 });
 
-test("Matrix 狀態設定入口只由底部導覽位置承載", () => {
+test("Matrix 狀態設定入口只由頁首承載", () => {
   assert.doesNotMatch(feature, /status-title-trigger/);
   assert.doesNotMatch(adjustments, /status-title-trigger/);
-  assert.match(pages, /className="bottom-navigation-quick-settings matrix-status-settings-entry"/);
+  assert.match(pages, /className="header-settings-button"[^>]*aria-label="自訂觸發條件，連續點擊兩下開啟"/s);
+  assert.doesNotMatch(pages, /matrix-status-settings-entry/);
 });
 
 test("Matrix 同星底部在導覽清除距離外再保留 8px", () => {
