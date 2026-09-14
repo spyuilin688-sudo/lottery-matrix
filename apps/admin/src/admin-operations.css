@@ -42,10 +42,10 @@
 .managementPrimaryFilters.hasCount {
   grid-template-columns: minmax(180px, 1fr) minmax(64px, max-content);
 }
-.managementPrimaryFilters.hasStatusFilter {
+.managementPrimaryFilters.hasCount.hasStatusFilter {
   grid-template-columns: minmax(180px, 1fr) 112px minmax(64px, max-content);
 }
-.managementPrimaryFilters.hasExtraFilter {
+.managementPrimaryFilters.hasCount.hasStatusFilter.hasExtraFilter {
   grid-template-columns: minmax(180px, 1fr) 112px 112px minmax(64px, max-content);
 }
 .managementSearchField { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; min-width: 0; }
@@ -138,8 +138,9 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 .activationDeleteCell { min-width: 140px; }
 .activationDeleteRestriction { display: block; max-width: 132px; margin-top: 4px; color: #888d96; font-size: 11px; line-height: 1.35; }
 .activationDeleteCell .danger:disabled { cursor: not-allowed; opacity: .45; }
-.revenueActions { display: flex; justify-content: flex-end; margin-bottom: 8px; }
-.revenueResetButton { min-width: 88px; border-color: #6f3737; background: #241616; color: #efabab; }
+.revenueChartHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.revenueChartHeader h2 { margin: 0; }
+.revenueResetButton { height: 28px; min-height: 0; min-width: 80px; padding: 3px 8px; border-color: #6f3737; background: #241616; color: #efabab; font-size: 12px; }
 .revenueResetButton:hover:not(:disabled),
 .revenueResetButton:focus-visible { border-color: #a84a4a; background: #321b1b; color: #ffd2d2; }
 .revenueResetButton:disabled { cursor: not-allowed; opacity: .55; }
@@ -163,11 +164,10 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 @media (max-width: 760px) {
   .overviewCards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .managementPrimaryFilters { grid-template-columns: minmax(0, 1fr); }
-  .managementPrimaryFilters.hasCount,
-  .managementPrimaryFilters.hasStatusFilter { grid-template-columns: minmax(0, 1fr) minmax(64px, max-content); }
-  .managementPrimaryFilters.hasExtraFilter { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(64px, max-content); }
-  .managementSearchField { grid-column: 1 / -1; }
-  .managementCount { grid-column: -2 / -1; }
+  .managementPrimaryFilters.hasCount { grid-template-columns: minmax(0, 1fr) max-content; }
+  .managementPrimaryFilters.hasCount.hasStatusFilter { grid-template-columns: minmax(0, 1fr) 88px max-content; }
+  .managementPrimaryFilters.hasCount.hasStatusFilter.hasExtraFilter { grid-template-columns: minmax(0, 1fr) 80px 80px max-content; }
+  .managementCount { grid-column: auto; min-width: 44px; }
   .managementList { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .managementList table { min-width: 820px; }
   .transferRow { grid-template-columns: 1fr auto; }
@@ -227,7 +227,7 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 .transferPanel .transferRow:first-of-type { border-top: 0; }
 
 .paymentReversalPanel { margin-top: 8px; padding: 0; overflow: clip; }
-.paymentReversalSummary { padding: 8px 10px; color: #ece7d8; cursor: pointer; font-size: 15px; font-weight: 700; line-height: 1.4; }
+.paymentReversalSummary { padding: 7px 10px; color: #ece7d8; cursor: pointer; font-size: 13px; font-weight: 600; line-height: 1.4; }
 .paymentReversalSummary::marker { color: #cbb675; }
 .paymentReversalSummary:focus-visible { outline: 2px solid #e7c46d; outline-offset: -2px; }
 .paymentReversalSummary small { float: right; margin: 2px 0 0 10px; color: #8f939b; font-size: 11px; font-weight: 500; }

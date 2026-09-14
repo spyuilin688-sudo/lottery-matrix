@@ -3,7 +3,6 @@ import type { AdminDataPageController } from './use-admin-data-page';
 
 type Option = readonly [string, string];
 const operationalSearchCards = new Set(['會員', '訂閱', '登入紀錄', '審計日誌']);
-const searchCardOwnsCount = new Set(['會員', '訂閱']);
 
 export function AdminListControls({ page, name, statuses = [], sorts, showError = true, children, className = '' }: {
   page: AdminDataPageController;
@@ -18,7 +17,7 @@ export function AdminListControls({ page, name, statuses = [], sorts, showError 
   const composing = useRef(false);
   const [keyword, setKeyword] = useState(page.query.keyword);
   const showControls = operationalSearchCards.has(name);
-  const ownsCount = searchCardOwnsCount.has(name);
+  const ownsCount = showControls;
   const primaryClass = `managementPrimaryFilters${ownsCount ? ' hasCount' : ''}${statuses.length ? ' hasStatusFilter' : ''}${children ? ' hasExtraFilter' : ''}`;
   void sorts;
 

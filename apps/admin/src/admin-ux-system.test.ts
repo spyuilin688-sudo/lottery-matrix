@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { parse } from 'postcss';
 import { describe, expect, it } from 'vitest';
 
+const appSource = readFileSync(new URL('./AdminApp.tsx', import.meta.url), 'utf8');
 const adminSource = readFileSync(new URL('./AdminTodos.tsx', import.meta.url), 'utf8');
 const listControlsSource = readFileSync(new URL('./AdminListControls.tsx', import.meta.url), 'utf8');
 const adminCss = readFileSync(new URL('./admin.css', import.meta.url), 'utf8');
@@ -12,6 +13,20 @@ function declarations(css: string, selector: string) {
   const values = new Map<string, string>();
   parse(css).walkRules((rule) => {
     if (rule.selector !== selector) return;
+    rule.walkDecls((declaration) => values.set(declaration.prop, declaration.value));
+  });
+  return values;
+}
+
+function declarationsAt(css: string, selector: string, width: number) {
+  const values = new Map<string, string>();
+  parse(css).walkRules((rule) => {
+    if (rule.selector !== selector) return;
+    const media = rule.parent?.type === 'atrule' ? rule.parent.params : '';
+    const maximum = media.match(/max-width:\s*(\d+)px/)?.[1];
+    const minimum = media.match(/min-width:\s*(\d+)px/)?.[1];
+    if (maximum && width > Number(maximum)) return;
+    if (minimum && width < Number(minimum)) return;
     rule.walkDecls((declaration) => values.set(declaration.prop, declaration.value));
   });
   return values;
@@ -41,6 +56,15 @@ describe('admin UX system pass', () => {
     expect(listControlsSource).not.toContain('排序方向');
     expect(operationsCss).not.toContain('.managementSecondaryFilters');
     expect(operationsCss).not.toContain('.managementFilterLabel');
+  });
+
+  it('keeps search, status, plan, and count on one row at phone width', () => {
+    expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasCount.hasStatusFilter', 390).get('grid-template-columns'))
+      .toBe('minmax(0, 1fr) 88px max-content');
+    expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasCount.hasStatusFilter.hasExtraFilter', 390).get('grid-template-columns'))
+      .toBe('minmax(0, 1fr) 80px 80px max-content');
+    expect(declarationsAt(operationsCss, '.managementSearchField', 390).get('grid-column')).toBeUndefined();
+    expect(declarationsAt(operationsCss, '.managementCount', 390).get('min-width')).toBe('44px');
   });
 
   it('keeps table values readable instead of permanently clipping them into ellipses', () => {
@@ -75,5 +99,15 @@ describe('admin UX system pass', () => {
     expect(declarations(adminCss, '.toolbar').get('gap')).toBe('8px');
     expect(declarations(adminCss, '.panel').get('margin-top')).toBe('8px');
     expect(declarations(adminCss, '.formCard').get('margin-bottom')).toBe('8px');
+  });
+
+  it('keeps payment reversal heading compact and moves revenue reset into the chart panel header', () => {
+    const reversalSummary = declarations(operationsCss, '.paymentReversalSummary');
+    expect(reversalSummary.get('font-size')).toBe('13px');
+    expect(reversalSummary.get('font-weight')).toBe('600');
+    expect(appSource).toContain('className="revenueChartHeader"');
+    expect(appSource).not.toContain('className="revenueActions"');
+    expect(declarations(operationsCss, '.revenueChartHeader').get('display')).toBe('flex');
+    expect(declarations(operationsCss, '.revenueResetButton').get('height')).toBe('28px');
   });
 });
