@@ -1,13 +1,15 @@
 from random import Random
 
+import pytest
+
 from app.domain.tiangong_algorithm import calculate_tiangong
 
 
-def request(window):
+def request(window, lottery="今彩539", maximum=39, ball_count=5):
     rng = Random(1409)
     return {
-        "lottery": "今彩539", "source_window": window, "target_period": "119",
-        "draws": [{"period": str(index), "numbers": sorted(rng.sample(range(1, 40), 5))}
+        "lottery": lottery, "source_window": window, "target_period": "119",
+        "draws": [{"period": str(index), "numbers": sorted(rng.sample(range(1, maximum + 1), ball_count))}
                   for index in range(119)],
         "source_position_patterns": ["固定"],
         "stage1_position_patterns": ["固定"],
@@ -17,15 +19,29 @@ def request(window):
     }
 
 
-def test_production_search_covers_dynamic_gaps_and_preserves_all_fifty_period_results():
-    fifty = calculate_tiangong(request(50))
-    eighty = calculate_tiangong(request(80))
+@pytest.mark.parametrize("lottery,maximum,ball_count", [
+    ("今彩539", 39, 5), ("天天樂", 39, 5), ("六合彩", 49, 7), ("大樂透", 49, 7),
+])
+def test_production_search_covers_dynamic_gaps_and_preserves_all_fifty_period_results(lottery, maximum, ball_count):
+    fifty = calculate_tiangong(request(50, lottery, maximum, ball_count))
+    eighty = calculate_tiangong(request(80, lottery, maximum, ball_count))
 
-    # The 50-period selector is exactly the eligible subset of the 80-period run.
-    # This checks the production calculator rather than the legacy generator.
+    # The retired 80-period producer is retained here only as a regression
+    # reference: direct 50-period production must preserve its visible results.
     assert {row["item_id"] for row in fifty["results"]} == {
         row["item_id"] for row in eighty["results"] if 50 in row["eligible_windows"]
     }
+    old_visible = {row["item_id"]: row for row in eighty["results"]
+                   if 50 in row["eligible_windows"]}
+    assert {
+        row["item_id"]: {key: value for key, value in row.items() if key != "eligible_windows"}
+        for row in fifty["results"]
+    } == {
+        identifier: {key: value for key, value in row.items() if key != "eligible_windows"}
+        for identifier, row in old_visible.items()
+    }
+    assert fifty["evidence"] == {identifier: eighty["evidence"][identifier]
+                                  for identifier in old_visible}
     for window, response in ((50, fifty), (80, eighty)):
         assert response["metrics"]["source_stage_pair_count"] == sum(
             (window - 2 * spacing) * (window - 2 * spacing - 1) // 2

@@ -24,7 +24,7 @@ def build_tiangong_artifact(lottery: str, draw_period: str, history: list[dict[s
         draws.append({"period": str(draw["period"]), "numbers": numbers, "drawDate": draw.get("drawDate")})
     if not draws:
         raise ValueError("TIANGONG_HISTORY_REQUIRED")
-    source_window = 80
+    source_window = 50
     if len(draws) < required_history_length(source_window):
         return {
             "numberOrder": "依號碼由小到大排序",
@@ -44,7 +44,7 @@ def build_tiangong_artifact(lottery: str, draw_period: str, history: list[dict[s
     for result in results:
         identifier = str(result["item_id"])
         first, second, prediction = result["stage1_operation"], result["stage2_operation"], result["prediction"]
-        items.append({"id": identifier, "eligiblePeriodRange": 50 if 50 in result["eligible_windows"] else 80, "interval": int(result["source_spacing"]), "predictedPosition": int(prediction["position"]), "predictionNumber": str(prediction["number"]), "roadType": str(result["route_label"]), "exploreDirection": str(result["source_pattern_label"]), "firstStageDirection": str(result["stage1_pattern_label"]), "firstRoadType": "加減" if first["type"] == "add_sub" else "合值", "secondStageDirection": str(result["stage2_pattern_label"]), "secondRoadType": "加減" if second["type"] == "add_sub" else "合值"})
+        items.append({"id": identifier, "eligiblePeriodRange": source_window, "interval": int(result["source_spacing"]), "predictedPosition": int(prediction["position"]), "predictionNumber": str(prediction["number"]), "roadType": str(result["route_label"]), "exploreDirection": str(result["source_pattern_label"]), "firstStageDirection": str(result["stage1_pattern_label"]), "firstRoadType": "加減" if first["type"] == "add_sub" else "合值", "secondStageDirection": str(result["stage2_pattern_label"]), "secondRoadType": "加減" if second["type"] == "add_sub" else "合值"})
         detail = evidence[identifier]
         for row in [*detail.get("rows", []), detail.get("d_exclusion", {})]:
             for key in ("source", "stage1", "stage2"):

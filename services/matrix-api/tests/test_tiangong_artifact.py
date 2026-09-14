@@ -84,7 +84,7 @@ def test_preserves_attachment_result_order_and_keeps_evidence_detached() -> None
 
 
 def test_returns_an_empty_artifact_when_history_cannot_complete_d_exclusion() -> None:
-    artifact = build_tiangong_artifact("今彩539", "114000123", _history()[:80])
+    artifact = build_tiangong_artifact("今彩539", "114000123", _history()[:73])
 
     assert artifact["items"] == []
     assert artifact["validationById"] == {}
@@ -158,3 +158,30 @@ def test_fantasy5_uses_sorted_numbers_without_requesting_draw_order() -> None:
 
     assert received[0]["draws"][0]["numbers"] == [1, 2, 3, 4, 5]
     assert artifact["algorithmVersion"] == "v2"
+
+
+@pytest.mark.parametrize("lottery,ball_count", [
+    ("今彩539", 5), ("天天樂", 5), ("六合彩", 7), ("大樂透", 7),
+])
+def test_production_artifact_only_requests_fifty_period_two_stage_search(lottery, ball_count):
+    history = [{**row, "numbers": [str(number) for number in range(1, ball_count + 1)]}
+               for row in _history()]
+    received = []
+    build_tiangong_artifact(lottery, history[0]["period"], history,
+                           lambda payload: received.append(payload) or {"results": [], "evidence": {}})
+
+    assert len(received) == 1
+    assert received[0]["source_window"] == 50
+    assert received[0]["mode"] == "二段式"
+    assert received[0]["strict_history"] is True
+
+
+def test_fifty_period_artifact_accepts_seventy_four_draws_for_complete_d_exclusion():
+    history = _history()[:74]
+    received = []
+    build_tiangong_artifact("今彩539", history[0]["period"], history,
+                           lambda payload: received.append(payload) or {"results": [], "evidence": {}})
+
+    assert len(received) == 1
+    assert received[0]["source_window"] == 50
+    assert len(received[0]["draws"]) == 74
