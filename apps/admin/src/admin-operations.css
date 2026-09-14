@@ -14,13 +14,17 @@
 .railwayOperationControls select,
 .operationDialog input,
 .operationDialog select {
-  width: 100%;
   padding: 6px 8px;
   border: 1px solid #343840;
   border-radius: 8px;
   background: #0b0d11;
   color: #eee;
 }
+.managementToolbar input,
+.railwayOperationControls select,
+.operationDialog input,
+.operationDialog select { width: 100%; }
+.managementToolbar select { width: auto; }
 
 .managementToolbar input { height: 32px; }
 .managementToolbar select { height: 32px; }
@@ -43,10 +47,10 @@
   grid-template-columns: minmax(180px, 1fr) minmax(64px, max-content);
 }
 .managementPrimaryFilters.hasCount.hasStatusFilter {
-  grid-template-columns: minmax(180px, 1fr) 112px minmax(64px, max-content);
+  grid-template-columns: minmax(180px, 1fr) max-content minmax(64px, max-content);
 }
 .managementPrimaryFilters.hasCount.hasStatusFilter.hasExtraFilter {
-  grid-template-columns: minmax(180px, 1fr) 112px 112px minmax(64px, max-content);
+  grid-template-columns: minmax(180px, 1fr) max-content max-content minmax(64px, max-content);
 }
 .managementSearchField { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; min-width: 0; }
 .managementClearButton {
@@ -61,7 +65,7 @@
 }
 .managementStatusFilter,
 .managementExtraFilter { min-width: 0; }
-.managementExtraFilter > * { width: 100%; }
+.managementExtraFilter > * { width: auto; }
 .managementCount {
   grid-column: -2 / -1;
   justify-self: end;
@@ -165,8 +169,8 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
   .overviewCards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .managementPrimaryFilters { grid-template-columns: minmax(0, 1fr); }
   .managementPrimaryFilters.hasCount { grid-template-columns: minmax(0, 1fr) max-content; }
-  .managementPrimaryFilters.hasCount.hasStatusFilter { grid-template-columns: minmax(0, 1fr) 88px max-content; }
-  .managementPrimaryFilters.hasCount.hasStatusFilter.hasExtraFilter { grid-template-columns: minmax(0, 1fr) 80px 80px max-content; }
+  .managementPrimaryFilters.hasCount.hasStatusFilter { grid-template-columns: minmax(0, 1fr) max-content max-content; }
+  .managementPrimaryFilters.hasCount.hasStatusFilter.hasExtraFilter { grid-template-columns: minmax(0, 1fr) max-content max-content max-content; }
   .managementCount { grid-column: auto; min-width: 44px; }
   .managementList { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .managementList table { min-width: 820px; }
