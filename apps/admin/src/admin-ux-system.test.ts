@@ -2,9 +2,12 @@ import { readFileSync } from 'node:fs';
 import { parse } from 'postcss';
 import { describe, expect, it } from 'vitest';
 
+import { formatAdminRowForDisplay, formatDeviceSummary } from './admin-display';
+
 const appSource = readFileSync(new URL('./AdminApp.tsx', import.meta.url), 'utf8');
 const adminSource = readFileSync(new URL('./AdminTodos.tsx', import.meta.url), 'utf8');
 const listControlsSource = readFileSync(new URL('./AdminListControls.tsx', import.meta.url), 'utf8');
+const dataPageSource = readFileSync(new URL('./use-admin-data-page.ts', import.meta.url), 'utf8');
 const adminCss = readFileSync(new URL('./admin.css', import.meta.url), 'utf8');
 const operationsCss = readFileSync(new URL('./admin-operations.css', import.meta.url), 'utf8');
 const todoCss = readFileSync(new URL('./admin-todos.css', import.meta.url), 'utf8');
@@ -65,7 +68,7 @@ describe('admin UX system pass', () => {
       .toBe('minmax(0, 1fr) max-content max-content max-content');
     expect(declarationsAt(operationsCss, '.managementSearchField', 390).get('grid-column')).toBeUndefined();
     expect(declarationsAt(operationsCss, '.managementCount', 390).get('min-width')).toBe('44px');
-    expect(declarations(operationsCss, '.managementStatusFilter').get('width')).toBe('auto');
+    expect(declarations(operationsCss, '.managementToolbar select').get('width')).toBe('auto');
     expect(declarations(operationsCss, '.managementExtraFilter > *').get('width')).toBe('auto');
   });
 
@@ -89,10 +92,28 @@ describe('admin UX system pass', () => {
   });
 
   it('summarizes audit snapshots and device strings instead of dumping raw technical payloads', () => {
-    expect(appSource).toContain('formatAuditSnapshot');
-    expect(appSource).toContain('formatDeviceSummary');
-    expect(appSource).toMatch(/field === "beforeData" \|\| field === "afterData"/);
-    expect(appSource).toMatch(/field === "device"/);
+    const before = {
+      id: 'f7fe0227-9fc9-4880-b97d-2460aaa4f5b9',
+      name: '玄',
+      role: '營運管理員',
+      status: '啟用',
+      account: 'fsmmm023@gmail.com',
+      can_add: true,
+      can_edit: true,
+      can_view: true,
+      can_delete: false,
+    };
+    const after = { ...before, name: 'Yuilin' };
+    const device = 'Mozilla/5.0 (Linux; Android 16; CPH2629 Build/UP1A.231005.007) AppleWebKit/537.36 Chrome/140.0.0.0 Mobile Safari/537.36';
+    const row = formatAdminRowForDisplay('auditLogs', { id: 'audit-1', beforeData: before, afterData: after, device });
+
+    expect(row.beforeData).toBe('名稱：玄');
+    expect(row.afterData).toBe('名稱：Yuilin');
+    expect(String(row.beforeData)).not.toContain('f7fe0227');
+    expect(String(row.beforeData)).not.toContain('can_add');
+    expect(row.device).toBe('CPH2629 · Android 16 · Chrome 140');
+    expect(formatDeviceSummary(device)).not.toContain('Mozilla/5.0');
+    expect(dataPageSource).toContain('formatAdminRowForDisplay');
   });
 
   it('caps the first operational list column instead of wasting width on member names', () => {
