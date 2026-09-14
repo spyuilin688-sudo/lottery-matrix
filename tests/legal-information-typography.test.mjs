@@ -17,7 +17,7 @@ function fixture(t) {
           <div class="legal-info-copy">
             <p>使用者透過 LINE 登入後使用會員功能。</p>
             <ul><li>Matrix Pro 訂閱狀態</li></ul>
-            <p><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a></p>
+            <p><a href="mailto:matrix.lottery@gmail.com">matrix.lottery@gmail.com</a></p>
           </div>
         </section>
       </article></div>

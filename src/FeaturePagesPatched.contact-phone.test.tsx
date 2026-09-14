@@ -1,44 +1,29 @@
 // @vitest-environment jsdom
-import React from "react";
-import { render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
-
-vi.mock("./FeaturePagesCore", () => ({
-  FeaturePageRouter: () => (
-    <main className="contact-support-screen">
-      <div className="feature-body">
-        <section className="detail-card">
-          <a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a>
-        </section>
-      </div>
-    </main>
-  ),
-  QuickNavigationProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
-
-vi.mock("./NotificationsPagePatched", () => ({
-  NotificationsPagePatched: () => null,
-}));
-
-vi.mock("./TianyanExpandedLayoutPatch", () => ({
-  TianyanExpandedLayoutPatch: () => null,
-}));
-
+import "@testing-library/jest-dom/vitest";
+import { render, screen, within } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 import { FeaturePageRouter } from "./FeaturePagesPatched";
+import { RefundPolicyPage } from "./features/MemberPages";
 
-describe("contact support phone", () => {
-  afterEach(() => {
-    document.body.innerHTML = "";
-  });
-
+describe("contact support details", () => {
   it.each(["merchant-info", "problem-report", "business-cooperation"] as const)(
-    "does not show a phone number or dialing link on %s",
-    (contactScreen) => {
+    "shows the current support email and phone on %s",
+    async (contactScreen) => {
       render(<FeaturePageRouter screen={contactScreen} onNavigate={() => undefined} />);
 
-      expect(screen.queryByText("電話：")).toBeNull();
-      expect(screen.queryByText("(02) 2686-1828")).toBeNull();
-      expect(document.querySelector('a[href^="tel:"]')).toBeNull();
+      const support = (await screen.findByRole("heading", { name: "聯絡客服" })).closest("section")!;
+      const emails = screen.getAllByRole("link", { name: "matrix.lottery@gmail.com" });
+      expect(emails).toHaveLength(3);
+      emails.forEach((email) => expect(email).toHaveAttribute("href", "mailto:matrix.lottery@gmail.com"));
+      expect(within(support).getByRole("link", { name: "0912-403-517" })).toHaveAttribute("href", "tel:0912403517");
+      expect(document.querySelectorAll('a[href^="tel:"]')).toHaveLength(1);
+      expect(screen.queryByText("(02) 2686-1828")).not.toBeInTheDocument();
     },
   );
+
+  it("uses the current contact email for refund requests", () => {
+    render(<RefundPolicyPage onNavigate={() => undefined} />);
+
+    expect(screen.getByRole("link", { name: "matrix.lottery@gmail.com" })).toHaveAttribute("href", "mailto:matrix.lottery@gmail.com");
+  });
 });

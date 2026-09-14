@@ -192,7 +192,7 @@ describe("existing feature actions", () => {
       "問題回報",
       "商務合作",
     ]);
-    expect(screen.getAllByRole("link", { name: "Matrix1150801@gmail.com" })).toHaveLength(3);
+    expect(screen.getAllByRole("link", { name: "matrix.lottery@gmail.com" })).toHaveLength(3);
   });
 
   it("combines version information and update history into one page", async () => {
