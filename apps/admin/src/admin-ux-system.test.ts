@@ -58,13 +58,15 @@ describe('admin UX system pass', () => {
     expect(operationsCss).not.toContain('.managementFilterLabel');
   });
 
-  it('keeps search, status, plan, and count on one row at phone width', () => {
+  it('lets status and plan controls size to their text while keeping the mobile toolbar on one row', () => {
     expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasCount.hasStatusFilter', 390).get('grid-template-columns'))
-      .toBe('minmax(0, 1fr) 88px max-content');
+      .toBe('minmax(0, 1fr) max-content max-content');
     expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasCount.hasStatusFilter.hasExtraFilter', 390).get('grid-template-columns'))
-      .toBe('minmax(0, 1fr) 80px 80px max-content');
+      .toBe('minmax(0, 1fr) max-content max-content max-content');
     expect(declarationsAt(operationsCss, '.managementSearchField', 390).get('grid-column')).toBeUndefined();
     expect(declarationsAt(operationsCss, '.managementCount', 390).get('min-width')).toBe('44px');
+    expect(declarations(operationsCss, '.managementStatusFilter').get('width')).toBe('auto');
+    expect(declarations(operationsCss, '.managementExtraFilter > *').get('width')).toBe('auto');
   });
 
   it('keeps every admin data table dense by scrolling horizontally instead of crushing records vertically', () => {
@@ -84,6 +86,13 @@ describe('admin UX system pass', () => {
     expect(bodyCells.get('line-height')).toBe('1.35');
     expect(headers.get('white-space')).toBe('nowrap');
     expect(adminCss).toMatch(/\.notificationLogTable td\{[^}]*white-space:normal/);
+  });
+
+  it('summarizes audit snapshots and device strings instead of dumping raw technical payloads', () => {
+    expect(appSource).toContain('formatAuditSnapshot');
+    expect(appSource).toContain('formatDeviceSummary');
+    expect(appSource).toMatch(/field === "beforeData" \|\| field === "afterData"/);
+    expect(appSource).toMatch(/field === "device"/);
   });
 
   it('caps the first operational list column instead of wasting width on member names', () => {
