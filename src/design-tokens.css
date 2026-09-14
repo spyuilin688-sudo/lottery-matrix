@@ -29,6 +29,7 @@
   --lottery-text-primary: var(--lottery-neutral-100);
   --lottery-text-secondary: var(--lottery-neutral-400);
   --lottery-glow: rgba(244, 206, 103, 0.52);
+  --home-frame-bright: #f0d58c;
   --home-frame-gold: #d6b66f;
   --home-frame-muted: #8a713f;
   --home-frame-radius: 8px;

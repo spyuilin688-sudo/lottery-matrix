@@ -76,7 +76,7 @@ test("底部兩格時間資訊沿用主卡的單層細金框與圓角", () => {
   const itemRules = ruleBodies(css, itemSelector);
   assert.equal(itemRules.length, 1);
   assert.match(itemRules[0], /border:\s*0;[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
-  assert.match(itemRules[0], /box-shadow:\s*inset 0 0 0 1px var\(--home-frame-gold\);/);
+  assert.match(itemRules[0], /box-shadow:\s*inset 0 0 0 1px var\(--home-frame-bright\);/);
   assert.doesNotMatch(itemRules[0], /clip-path\s*:/);
   assert.equal(ruleBodies(css, `${itemSelector}::before`).length, 0);
   assert.doesNotMatch(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*border-top\s*:/s);
@@ -88,7 +88,7 @@ test("底部兩格時間資訊沿用主卡的單層細金框與圓角", () => {
 test("開獎卡使用單層細金框與簡潔背景，保留內容盒尺寸", () => {
   const cardRules = ruleBodies(css, ".home-screen .latest-draw-card").join("\n");
   assert.match(cardRules, /border:\s*0;[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
-  assert.match(cardRules, /box-shadow:\s*inset 0 0 0 1px var\(--home-frame-gold\);/);
+  assert.match(cardRules, /box-shadow:\s*inset 0 0 0 1px var\(--home-frame-bright\);/);
   assert.doesNotMatch(cardRules, /clip-path\s*:|開獎資訊卡\.png/);
   assert.equal(ruleBodies(css, ".home-screen .latest-draw-card::after").length, 0);
   assert.match(css, /\.home-screen \.latest-draw-card::before\s*\{[^}]*radial-gradient\(ellipse at 50% 100%[^}]*pointer-events:\s*none/s);

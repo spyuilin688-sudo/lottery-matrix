@@ -21,7 +21,7 @@ describe("homepage layout rules", () => {
 
   it("gives each time field its approved gold frame without a duplicate divider", () => {
     expect(css).not.toMatch(/\.next-draw-info--embedded::before\s*\{/);
-    expect(css).toMatch(/\.next-draw-info--embedded \.next-draw-item\s*\{[^}]*box-shadow:\s*inset 0 0 0 1px var\(--home-frame-gold\);/s);
+    expect(css).toMatch(/\.next-draw-info--embedded \.next-draw-item\s*\{[^}]*box-shadow:\s*inset 0 0 0 1px var\(--home-frame-bright\);/s);
     expect(css).toMatch(/\.next-draw-info--embedded \.next-draw-item\s*\{[^}]*padding-inline:\s*clamp\(6px, 2vw, 10px\);/s);
   });
 });

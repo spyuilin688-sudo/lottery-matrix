@@ -28,7 +28,7 @@ test("keeps approved thin gold frames owned by base", () => {
   assert.match(visualLanguage, /--home-frame-shadow:/);
   assert.doesNotMatch(visualLanguage, /\.home-screen \.latest-draw-card(?:::before|::after)?\s*\{/);
   assert.doesNotMatch(visualLanguage, /\.home-screen \.home-shortcut(?:::before|::after|:active|:focus-visible)\s*\{/);
-  assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*border:\s*1px solid var\(--home-frame-gold\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
+  assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*border:\s*1px solid var\(--home-frame-muted\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
   assert.match(base, /\.home-screen \.home-shortcut:active\s*\{[^}]*filter:\s*brightness\(1\.15\);/s);
   assert.doesNotMatch(base, /\.home-screen \.home-shortcut::(?:before|after)\s*\{/);
 });

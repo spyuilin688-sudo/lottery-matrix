@@ -38,18 +38,21 @@
   justify-content: center;
   border: 1px solid var(--home-frame-muted);
   border-radius: var(--home-frame-radius);
-  background-color: transparent;
+  /* Multiply the original artwork by 60%; the 1px frame stays independent. */
+  background-color: rgba(0, 0, 0, .4);
   background-image: url("/assets/lottery/status/Matrixbba.png");
+  background-blend-mode: multiply;
   background-repeat: no-repeat;
   background-size: calc(400% + 24px) 100%;
   color: transparent;
   overflow: hidden;
   cursor: pointer;
+  transition: var(--home-lottery-transition, background-color 150ms ease);
   -webkit-tap-highlight-color: transparent;
 }
 
 .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"] {
-  border-color: var(--home-frame-gold);
+  background-color: transparent;
 }
 
 .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card:focus-visible {
