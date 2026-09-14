@@ -13,6 +13,7 @@ const prototypeView = read("src/Prototype.tsx");
 const base = read("src/homepage/base.css");
 const switcher = read("src/homepage/lottery-switcher.css");
 const visual = read("src/homepage/visual-language.css");
+const logoSpacing = read("src/homepage/logo-spacing.css");
 const pages = readFeaturePagesSource();
 
 test("號碼對照單只使用一條 1px 的期數與開獎號碼分隔線", () => {
@@ -25,21 +26,23 @@ test("Matrix 同星開始探索高度上下各縮減 2px", () => {
 });
 
 test("Matrix 天工所有設定列共用同一個響應式標籤欄與選項欄", () => {
-  assert.match(feature, /\.matrix-tiangong-screen \.tiangong-settings\s*\{[^}]*--tiangong-label-column:\s*clamp\(130px, 35vw, 136px\);/s);
-  assert.match(feature, /\.matrix-tiangong-screen \.tiangong-settings \.setting-grid > label,[\s\S]*?\.tiangong-setting-row\s*\{[^}]*grid-template-columns:\s*var\(--tiangong-label-column\) minmax\(0, 1fr\);/s);
-  assert.match(feature, /\.tiangong-setting-row \.segmented\s*\{[^}]*width:\s*100%;[^}]*min-width:\s*0;/s);
+  assert.match(exploreSpacing, /\.matrix-tiangong-screen \.tiangong-settings\s*\{[^}]*--tiangong-label-column:\s*88\.8px;/s);
+  assert.match(feature, /\.matrix-tiangong-screen \.tiangong-settings \.setting-grid > label,[\s\S]*?\.matrix-tiangong-screen \.tiangong-settings \.tiangong-setting-row\s*\{[^}]*grid-template-columns:\s*var\(--tiangong-label-column\) minmax\(0, 1fr\);/s);
+  assert.match(exploreSpacing, /@media \(min-width:\s*40rem\)[\s\S]*?\.matrix-tiangong-screen \.tiangong-settings\s*\{[^}]*--tiangong-label-column:\s*104\.8px;/s);
 });
 
-test("首頁快捷設定由左下角向右與向上各移動 4px，指南文案同步", () => {
-  assert.match(prototype, /\.bottom-navigation-quick-settings\s*\{[^}]*left:\s*max\(10px, calc\(env\(safe-area-inset-left, 0px\) \+ 4px\)\);[^}]*right:\s*auto;[^}]*bottom:\s*calc\(var\(--bottom-nav-safe-area\) \+ 9px\);/s);
-  assert.match(pages, /左下角設定按鈕/);
+test("首頁快捷設定位於 Logo 卡右上角且指南文案同步", () => {
+  assert.match(logoSpacing, /\.home-screen \.home-brand-frame > \.header-settings-button\s*\{[^}]*position:\s*absolute;[^}]*top:\s*0;[^}]*right:\s*0;/s);
+  assert.doesNotMatch(prototype, /\.bottom-navigation-quick-settings\s*\{/);
+  assert.match(pages, /Logo 卡右上角設定按鈕/);
 });
 
 test("首頁狀態圖示維持位置，探索切換圖示移至設定標題同列", () => {
   assert.match(base, /\.home-screen \.matrix-status-lottery-logo\s*\{[^}]*left:\s*calc\(83\.5% - 24px\);/s);
   assert.match(feature, /\.matrix-settings-heading\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*space-between;/s);
   assert.doesNotMatch(feature, /status-title-trigger/);
-  assert.match(pages, /matrix-status-settings-entry/);
+  assert.match(pages, /className="header-settings-button"[^>]*aria-label="自訂觸發條件，連續點擊兩下開啟"/s);
+  assert.doesNotMatch(pages, /matrix-status-settings-entry/);
   assert.doesNotMatch(exploreSpacing, /\.matrix-explore-main-screen \.matrix-title-banner-actions\s*\{/);
 });
 
@@ -48,24 +51,15 @@ test("查看更多紀錄間距為 2px", () => {
 });
 
 test("首頁、Matrix 狀態與自訂頁的彩種選取框只由共用切換器樣式管理", () => {
-  assert.match(switcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card::after\s*\{[^}]*background:\s*var\(--home-octagon-frame\);/s);
-  assert.match(switcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]\s*\{[^}]*--home-frame-color:\s*var\(--lottery-gold-300\);/s);
-  assert.match(visual, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card,[\s\S]*?--home-octagon-frame:/s);
-  assert.doesNotMatch(visual.match(/:is\(\.home-screen,[\s\S]*?\n\}/)?.[0] ?? "", /--home-octagon-frame:/);
-  assert.doesNotMatch(base, /lottery-card\[data-selected="true"\]::after/);
-  assert.doesNotMatch(visual, /lottery-card\[data-selected="true"\]::after/);
+  assert.match(switcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid var\(--home-frame-muted\);[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*background-color:\s*rgba\(0, 0, 0, \.4\);/s);
+  assert.match(switcher, /\.lottery-card\[data-selected="true"\]\s*\{[^}]*background-color:\s*transparent;/s);
+  assert.doesNotMatch(`${switcher}\n${visual}`, /\.lottery-card::(?:before|after)\s*\{|--home-octagon-frame/);
   assert.match(pages, /className="lottery-switcher--home-style matrix-status-lottery-switcher"/);
 });
 
-test("首頁 Matrix Core M 與圓環貼合原圖並保留外框環流與八節點", () => {
-  assert.match(prototypeView, /className="matrix-core-symbol-energy"/);
-  assert.match(prototypeView, /className="matrix-core-energy-path matrix-core-energy-path--m" d="M1099 340V111H1129L1163 222L1197 111H1226V340"/);
-  assert.match(prototypeView, /className="matrix-core-energy-path matrix-core-energy-path--ring" cx="1163" cy="207" rx="212" ry="144"/);
-  assert.match(prototypeView, /className="matrix-core-energy-loop"/);
-  assert.equal((prototypeView.match(/className="matrix-core-node"/g) ?? []).length, 8);
-  assert.match(visual, /\.matrix-core-energy-path\s*\{[^}]*stroke-dasharray:\s*5 95;[^}]*animation:\s*matrix-core-symbol-circulation/s);
-  assert.match(visual, /@keyframes matrix-core-energy-circulation/);
-  assert.match(visual, /@keyframes matrix-core-node-pulse/);
-  assert.doesNotMatch(base, /matrix-core-stardust-scan/);
-  assert.doesNotMatch(base, /matrix-core-pulse/);
+test("首頁 Matrix Core 由單一正式圖稿與亮金圓角框呈現", () => {
+  assert.match(prototypeView, /className="matrix-core-banner home-core-box"/);
+  assert.match(prototypeView, /className="matrix-core-description"/);
+  assert.match(base, /\.home-screen \.matrix-core-banner\s*\{[^}]*border:\s*1px solid var\(--home-frame-bright\);[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*background:\s*url\("\/assets\/lottery\/home-premium\/core-artwork\.webp"\)/s);
+  assert.doesNotMatch(`${prototypeView}\n${visual}`, /matrix-core-(?:symbol-energy|energy-path|energy-loop|node)|matrix-core-energy-circulation|matrix-core-node-pulse/);
 });
