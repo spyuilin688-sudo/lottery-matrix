@@ -16,7 +16,7 @@ import "./pro-plans-carousel-peek.css";
 import "./activation-code-layout.css";
 import "./tianyan-expanded-layout-patch.css";
 import { FeaturePageRouter } from "./FeaturePagesPatched";
-import { BottomNavigation } from "./BottomNavigation";
+import { BottomNavigation, HomeQuickSettingsButton } from "./BottomNavigation";
 import { FeaturePageLoadBoundary } from "./FeaturePageLoadBoundary";
 import { useLatestLotteryDraw } from "./useLatestLotteryDraw";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
@@ -503,7 +503,12 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     <FirstVisitGuide enabled={!startupVisible} onNavigate={navigate} />
     <section className="home-screen">
       <BrandLoading visible={startupVisible} onComplete={() => setStartupVisible(false)} />
-      <header className="brand-header home-logo-box"><img className="home-logo-image" src={HOME_ASSETS.logo} alt="樂彩 Matrix" width={2154} height={634} draggable={false} /></header>
+      <header className="brand-header home-logo-box">
+        <div className="home-brand-frame">
+          <img className="home-logo-image" src={HOME_ASSETS.logo} alt="樂彩 Matrix" width={2154} height={634} draggable={false} />
+          <HomeQuickSettingsButton onOpen={() => setQuickSettingsOpen(true)} />
+        </div>
+      </header>
       <MobileScroll className="app-screen home-content">
         <div className="home-layout">
           <main className="screen-content lottery-screen" data-testid="lottery-screen" aria-label="首頁彩種切換元件預覽">
@@ -516,7 +521,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
             <HomeShortcutRow onNavigate={navigate} />
           </div>
           <HomeFreeStatement />
-          <BottomNavigation active="首頁" onNavigate={navigate} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} showQuickSettings />
+          <BottomNavigation active="首頁" onNavigate={navigate} onQuickOpen={openQuick} />
         </div>
         {quickSettings}
       </MobileScroll>

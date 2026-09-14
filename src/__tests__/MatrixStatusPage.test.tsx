@@ -41,7 +41,6 @@ vi.mock('../lib/supabase', () => ({
 
 declare const process: { cwd(): string };
 
-const featurePageAdjustmentsCss = readFileSync(`${process.cwd()}/src/feature-page-adjustments.css`, 'utf8');
 const featurePagesCss = readFileSync(`${process.cwd()}/src/feature-pages.css`, 'utf8');
 
 const statusApi = vi.hoisted(() => ({
@@ -200,30 +199,15 @@ test('切換彩種重新讀取狀態，且自訂觸發條件需連續點擊兩�
   await waitFor(() => expect(navigate).toHaveBeenCalledWith('status-settings'));
 });
 
-test('自訂觸發條件入口移至底部導覽所在的 mobile-page 點擊層', async () => {
-  const statusRule = featurePageAdjustmentsCss.match(/(?:\.matrix-status-screen\s+)?\.matrix-status-settings-entry\s*\{[^}]*\}/s)?.[0] ?? '';
-  const mobilePage = document.createElement('section');
-  mobilePage.className = 'mobile-page';
-  document.body.appendChild(mobilePage);
-
-  const { container, unmount } = render(<MatrixStatusPage onNavigate={vi.fn()} />);
+test('自訂觸發條件位於頁首，與底部導覽分開', async () => {
+  render(<MatrixStatusPage onNavigate={vi.fn()} />);
+  await screen.findByText('2 組');
   const trigger = screen.getByRole('button', { name: '自訂觸發條件，連續點擊兩下開啟' });
-
-  expect(trigger).toHaveClass('bottom-navigation-quick-settings', 'matrix-status-settings-entry');
-  expect(trigger.querySelector('.bottom-navigation-quick-settings-visual')).toBeInTheDocument();
+  expect(trigger).toHaveClass('header-settings-button');
+  expect(trigger.closest('header')).not.toBeNull();
+  expect(trigger.closest('nav')).toBeNull();
   expect(trigger.querySelector('svg')).toBeInTheDocument();
-  await waitFor(() => expect(mobilePage).toContainElement(trigger));
-  expect(trigger.parentElement).toBe(mobilePage);
-  expect(statusRule).toMatch(/^\.matrix-status-settings-entry\s*\{/);
-  expect(statusRule).toMatch(/position:\s*fixed;/);
-  expect(statusRule).toMatch(/z-index:\s*21;/);
-  expect(statusRule).toMatch(/right:\s*env\(safe-area-inset-right, 0px\);/);
-  expect(screen.queryByRole('img', { name: '自訂觸發條件' })).not.toBeInTheDocument();
-  expect(container.querySelector('.matrix-title-banner-actions')).not.toBeInTheDocument();
   expect(screen.getByTestId('lottery-switcher')).toHaveClass('lottery-switcher--home-style');
-
-  unmount();
-  mobilePage.remove();
 });
 
 for (const [code, message] of [

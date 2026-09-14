@@ -40,11 +40,11 @@ type BottomNavCallbacks = {
 
 const LOTTERIES: LotteryId[] = ["今彩539", "天天樂", "六合彩", "大樂透"];
 
-function BottomNavigationPortal({ onNavigate, onQuickOpen, onQuickConfigure, quickActive }: { onNavigate: Navigate } & BottomNavCallbacks) {
+function BottomNavigationPortal({ onNavigate, onQuickOpen, quickActive }: { onNavigate: Navigate } & BottomNavCallbacks) {
   const [host, setHost] = useState<HTMLElement | null>(null);
   useEffect(() => { setHost(document.querySelector<HTMLElement>(".mobile-page")); }, []);
   return host ? createPortal(
-    <BottomNavigation active="首頁" quickActive={Boolean(quickActive)} onNavigate={onNavigate} onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} />,
+    <BottomNavigation active="首頁" quickActive={Boolean(quickActive)} onNavigate={onNavigate} onQuickOpen={onQuickOpen} />,
     host,
   ) : null;
 }

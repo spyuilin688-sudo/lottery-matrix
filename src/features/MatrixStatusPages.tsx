@@ -9,7 +9,7 @@ import { fetchMatrixStatus, fetchMatrixStatusValidation, listCustomStatusSetting
 import { useDoubleClickAction } from "../useDoubleClickAction";
 import { ExploreValidationProcess } from "./MatrixValidation";
 import { Navigate } from "./navigation";
-import { FeatureShell, MobilePagePortal } from "./shared";
+import { FeatureShell } from "./shared";
 import { createDefaultCustomStatusConfig, normalizeCustomStatusConfig, validateCustomConfigRows } from "../../shared/matrix-status-config";
 import { CustomConditionSection } from "./CustomConditionSection";
 import { useAppDialog } from "../dialog/AppDialog";
@@ -271,7 +271,15 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
   };
 
   return (
-    <FeatureShell title="Matrix 狀態" onNavigate={onNavigate} className="matrix-status-screen">
+    <FeatureShell title="Matrix 狀態" onNavigate={onNavigate} className="matrix-status-screen" headerAction={
+        <button type="button" className="header-settings-button" aria-label="自訂觸發條件，連續點擊兩下開啟" aria-busy={checkingSettings} aria-disabled={checkingSettings} onClick={(event) => {
+          statusSettingsActivated.current = false;
+          handleStatusSettingsClick(event);
+          if (!statusSettingsActivated.current) enterPage("status-settings", () => {});
+        }}>
+          <GearIcon aria-hidden="true" />
+        </button>
+      }>
       <LotterySwitcher selected={lottery} onChange={setLottery} className="lottery-switcher--home-style matrix-status-lottery-switcher" />
       {!result && !requestError ? <p role="status" className="matrix-api-state">資料載入中</p> : null}
       {requestError ? <p role="alert" className="matrix-api-state">{requestError}</p> : null}
@@ -328,17 +336,6 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
           );
         })}
       </div>
-      <MobilePagePortal active>
-        <button type="button" className="bottom-navigation-quick-settings matrix-status-settings-entry" aria-label="自訂觸發條件，連續點擊兩下開啟" aria-busy={checkingSettings} aria-disabled={checkingSettings} onClick={(event) => {
-          statusSettingsActivated.current = false;
-          handleStatusSettingsClick(event);
-          if (!statusSettingsActivated.current) enterPage("status-settings", () => {});
-        }}>
-          <span className="bottom-navigation-quick-settings-visual">
-            <GearIcon aria-hidden="true" />
-          </span>
-        </button>
-      </MobilePagePortal>
     </FeatureShell>
   );
 }

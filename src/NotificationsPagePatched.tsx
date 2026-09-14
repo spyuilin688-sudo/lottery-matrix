@@ -96,11 +96,11 @@ function Toggle({
   return <button type="button" className="toggle" data-checked={checked} disabled={disabled} aria-label={label} aria-busy={busy || undefined} onClick={onChange}><span /></button>;
 }
 
-function NotificationBottomNavigation({ onNavigate, onQuickOpen, onQuickConfigure, quickActive }: Props) {
+function NotificationBottomNavigation({ onNavigate, onQuickOpen, quickActive }: Props) {
   const [host, setHost] = useState<HTMLElement | null>(null);
   useEffect(() => { setHost(document.querySelector<HTMLElement>(".mobile-page")); }, []);
   return host ? createPortal(
-    <BottomNavigation active="通知" quickActive={Boolean(quickActive)} onNavigate={onNavigate} onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} />,
+    <BottomNavigation active="通知" quickActive={Boolean(quickActive)} onNavigate={onNavigate} onQuickOpen={onQuickOpen} />,
     host,
   ) : null;
 }

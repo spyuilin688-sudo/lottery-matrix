@@ -10,8 +10,6 @@ type BottomNavigationProps = {
   quickActive?: boolean;
   onNavigate?: (screen: BottomNavigationTarget) => void;
   onQuickOpen?: () => void;
-  onQuickConfigure?: () => void;
-  showQuickSettings?: boolean;
 };
 
 const NAVIGATION_ITEMS = [
@@ -28,14 +26,7 @@ export function BottomNavigation({
   quickActive = false,
   onNavigate,
   onQuickOpen,
-  onQuickConfigure,
-  showQuickSettings = false,
 }: BottomNavigationProps) {
-  const handleQuickSettingsClick = useDoubleClickAction<HTMLButtonElement>(
-    onQuickConfigure,
-    QUICK_SETTINGS_DOUBLE_TAP_MS,
-  );
-
   const displayedActive = quickActive ? "快捷" : active === "通知" ? "我的" : active;
   return (
     <nav
@@ -44,14 +35,6 @@ export function BottomNavigation({
       data-testid="bottom-navigation"
       data-active={displayedActive}
     >
-      <img
-        className="bottom-navigation-artwork"
-        src="/assets/lottery/navigation/pd01-frame.svg"
-        alt=""
-        aria-hidden="true"
-        draggable={false}
-      />
-
       {NAVIGATION_ITEMS.map(({ label, screen, Icon }) => {
         const selected = displayedActive === label;
 
@@ -64,31 +47,26 @@ export function BottomNavigation({
             onClick={label === "快捷" ? onQuickOpen : () => screen && onNavigate?.(screen)}
             key={label}
           >
-            <img
-              className="bottom-navigation-active-frame"
-              src="/assets/lottery/navigation/pd01-active.svg"
-              alt=""
-              aria-hidden="true"
-              draggable={false}
-            />
             <Icon className="bottom-navigation-icon" aria-hidden="true" strokeWidth={1.6} />
             <span className="bottom-navigation-label">{label}</span>
           </button>
         );
       })}
-
-      {showQuickSettings && onQuickConfigure ? (
-        <button
-          className="bottom-navigation-quick-settings"
-          type="button"
-          aria-label="快捷設定，連續點擊兩下開啟"
-          onClick={handleQuickSettingsClick}
-        >
-          <span className="bottom-navigation-quick-settings-visual">
-            <GearIcon aria-hidden="true" />
-          </span>
-        </button>
-      ) : null}
     </nav>
+  );
+}
+
+export function HomeQuickSettingsButton({ onOpen }: { onOpen: () => void }) {
+  const handleClick = useDoubleClickAction<HTMLButtonElement>(onOpen, QUICK_SETTINGS_DOUBLE_TAP_MS);
+
+  return (
+    <button
+      className="header-settings-button"
+      type="button"
+      aria-label="快捷設定，連續點擊兩下開啟"
+      onClick={handleClick}
+    >
+      <GearIcon aria-hidden="true" />
+    </button>
   );
 }

@@ -14,11 +14,26 @@
 
 .home-screen .home-logo-image {
   display: block;
-  width: 91.9632%;
+  width: 100%;
   max-width: 100%;
   height: auto;
   object-fit: contain;
   object-position: center bottom;
   -webkit-user-drag: none;
   user-select: none;
+}
+
+.home-screen .home-brand-frame {
+  position: relative;
+  box-sizing: border-box;
+  width: calc(100% - 32px);
+  border: 1px solid var(--home-frame-gold);
+  border-radius: var(--home-frame-radius);
+  overflow: hidden;
+}
+
+.home-screen .home-brand-frame > .header-settings-button {
+  position: absolute;
+  top: 0;
+  right: 0;
 }
