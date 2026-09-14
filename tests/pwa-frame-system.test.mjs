@@ -72,3 +72,24 @@ test('frame cleanup preserves activation panel geometry and dark notification ut
   const notifications = read('src/feature-page-adjustments.css');
   assert.match(block(notifications, '.notifications-screen-v2 .notification-bulk-disable'), /background:\s*var\(--pwa-control-surface\)/);
 });
+
+
+test('requested PWA frame refinements remain canonical and scoped', () => {
+  const explore = read('src/features/MatrixExplorePage.tsx');
+  const spacing = read('src/matrix-explore-spacing.css');
+  const validation = read('src/explore-result-preview.css');
+  const homeSwitcher = read('src/homepage/lottery-switcher.css');
+  const memberPages = read('src/features/MemberPages.tsx');
+
+  assert.doesNotMatch(explore, /HistoryList/);
+  assert.doesNotMatch(explore, /historyExpanded/);
+  assert.match(css, /\.matrix-explore-screen:not\(\.matrix-tianheng-screen\):not\(\.matrix-tianyan-screen\) \.lottery-tabs,\s*\.matrix-card-body \.lottery-tabs/);
+  assert.match(css, /--lottery-tab-selected-underline:\s*var\(--pwa-frame-secondary\)/);
+  assert.match(spacing, /\.matrix-explore-main-screen \.advanced-row \{[\s\S]*?border-top:\s*1px solid var\(--pwa-frame-secondary\)/);
+  assert.match(spacing, /\.matrix-tiangong-screen \.tiangong-general-settings \.tiangong-advanced-divider \{[\s\S]*?border-bottom:\s*1px solid var\(--pwa-frame-secondary\)/);
+  assert.match(validation, /\.explore-validation-card \{[\s\S]*?border-top-color:\s*var\(--pwa-frame-secondary\)[\s\S]*?border-bottom-color:\s*var\(--pwa-frame-secondary\)/);
+  assert.match(homeSwitcher, /var\(--home-frame-bright\) 55%, transparent/);
+  assert.doesNotMatch(memberPages, /歡迎使用 樂彩 Matrix。<\/p>/);
+  assert.match(memberPages, /歡迎使用 樂彩 Matrix<\/p>/);
+  assert.match(css, /border-right-color:\s*var\(--pwa-frame-divider\)/);
+});

@@ -300,7 +300,7 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   column-gap: .375rem;
-  border-top: 1px solid var(--pwa-frame-divider);
+  border-top: 1px solid var(--pwa-frame-secondary);
   font-size: 14px;
   font-weight: 600;
 }
@@ -1030,7 +1030,7 @@
 .matrix-tiangong-screen .tiangong-general-settings .tiangong-advanced-divider {
   box-sizing: border-box;
   padding-bottom: 6px;
-  border-bottom: 1px solid var(--pwa-frame-divider);
+  border-bottom: 1px solid var(--pwa-frame-secondary);
 }
 
 .matrix-tiangong-screen .tiangong-general-settings .tiangong-advanced-divider + .tiangong-advanced-row {

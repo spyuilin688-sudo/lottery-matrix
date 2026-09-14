@@ -12,7 +12,7 @@ import { bootstrapMember, fetchMemberProfile, type MemberProfileResponse } from 
 import { getExploreEntryDefaults } from "../explore-defaults";
 import { useAppDialog } from "../dialog/AppDialog";
 import { Navigate } from "./navigation";
-import { FeatureShell, MatrixPageSwitcher, SectionTitle, SettingLabelIcon, LotteryTabs, HistoryList } from "./shared";
+import { FeatureShell, MatrixPageSwitcher, SectionTitle, SettingLabelIcon, LotteryTabs } from "./shared";
 import { ExploreValidationProcess, TianhengValidationProcess, TianyanValidationProcess, RoadValidationProcess } from "./MatrixValidation";
 
 export function MatrixExplorePage({
@@ -120,7 +120,6 @@ export function MatrixExplorePage({
   const [exploreDate, setExploreDate] = useState<ExploreDate>("本日 (最新)");
   const [exploreRange, setExploreRange] = useState(initialExploreDefaults.range);
   const [searched, setSearched] = useState(false);
-  const [historyExpanded, setHistoryExpanded] = useState(true);
   const [expandedRoad, setExpandedRoad] = useState<string | null>(null);
   const [sameCode, setSameCode] = useState(false);
   const [selectedPredictionNumber, setSelectedPredictionNumber] = useState<string | null>(null);
@@ -374,14 +373,12 @@ export function MatrixExplorePage({
 
   const changeLottery = (value: LotteryId) => {
     setLottery(value);
-    setHistoryExpanded(true);
   };
 
   const startExplore = () => {
     const nextFilters = defaultFiltersFor(hit, road);
     setSearched(true);
-    setHistoryExpanded(false);
-    setSameCode(false);
+      setSameCode(false);
     setSelectedFilters(nextFilters);
     setSelectedPredictionNumber(null);
     setResultPage(1);
@@ -608,21 +605,7 @@ export function MatrixExplorePage({
       <button type="button" className="primary-action branded-explore-action" onClick={startExplore}>
         <MagnifyingGlassIcon /><span>{isTianyan ? "開始天衍" : isTianheng ? "開始天衡" : "開始探索"}</span>
       </button>
-
-      {isExplore ? (
-        <HistoryList
-          lottery={lottery}
-          numberOrder={numberOrder}
-          onOpenHistory={() => onNavigate("history")}
-          collapsible
-          collapseControl="title"
-          showOrderText={false}
-          expanded={historyExpanded}
-          onExpandedChange={setHistoryExpanded}
-        />
-      ) : null}
-
-      {searched ? (
+{searched ? (
         <>
           <section className="panel repeat-stats-panel">
             <header className="repeat-stats-heading">

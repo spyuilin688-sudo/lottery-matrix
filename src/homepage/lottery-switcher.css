@@ -47,7 +47,7 @@
 }
 
 .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"] {
-  border-color: color-mix(in srgb, var(--home-frame-gold) 45%, transparent);
+  border-color: color-mix(in srgb, var(--home-frame-bright) 55%, transparent);
   background: color-mix(in srgb, var(--home-frame-gold) 6%, var(--lottery-neutral-950));
 }
 
