@@ -8,56 +8,43 @@ const switcher = readFileSync(new URL("../src/homepage/lottery-switcher.css", im
 const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 const feature = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 
-test("首頁指定圖示與卡片共用同一個響應式八角切角", () => {
-  assert.match(home, /--home-octagon-cut:\s*clamp\(4px, 1\.54vw, 6px\);/);
-  assert.match(home, /\.latest-draw-card,[\s\S]*?\.matrix-status-card,[\s\S]*?\.matrix-core-banner[\s\S]*?clip-path:\s*polygon\(/);
-  assert.match(switcher, /\.lottery-card\s*\{[^}]*clip-path:\s*polygon\(/s);
-  assert.match(base, /\.home-shortcut\s*\{[^}]*clip-path:\s*polygon\(/s);
-  assert.match(home, /border-radius:\s*0;/);
+test("首頁卡片各自使用單層圓角框", () => {
+  assert.match(base, /\.home-screen \.latest-draw-card\s*\{[^}]*border:\s*0;[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*box-shadow:\s*inset 0 0 0 1px var\(--home-frame-bright\);/s);
+  assert.match(switcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid var\(--home-frame-muted\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
+  assert.match(base, /\.home-screen \.matrix-core-banner\s*\{[^}]*border:\s*1px solid var\(--home-frame-bright\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
+  assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*border:\s*1px solid var\(--home-frame-muted\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
+  assert.doesNotMatch(`${base}\n${switcher}`, /(?:latest-draw-card|lottery-card|matrix-core-banner|home-shortcut)[^{}]*\{[^}]*clip-path:\s*polygon\(/s);
 });
 
-test("切換彩種、Matrix Core 與五大功能共用雙層八角框線", () => {
-  assert.match(home, /--home-frame-inset:\s*2px;/);
-  assert.match(home, /--home-frame-inner-color:/);
-  assert.match(home, /--home-octagon-frame:\s*[\s\S]*?linear-gradient\(/);
-  assert.match(switcher, /\.lottery-card\s*\{[^}]*border:\s*0;/s);
-  assert.match(base, /\.home-shortcut\s*\{[^}]*border:\s*0;/s);
-  assert.match(
-    switcher,
-    /\.lottery-card::after\s*\{[^}]*display:\s*block;[^}]*background:\s*var\(--home-octagon-frame\);[^}]*-webkit-mask:\s*none;[^}]*mask:\s*none;/s,
-  );
-  assert.match(base, /\.home-shortcut::after\s*\{[^}]*display:\s*block;[^}]*background:\s*var\(--home-octagon-frame\);/s);
-  assert.match(
-    home,
-    /\.matrix-core-banner\s*\{[^}]*border:\s*0;[^}]*background:\s*var\(--home-octagon-frame\),\s*url\("\/assets\/lottery\/functions\/matrixcore\.png"\)/s,
-  );
+test("切換彩種、Matrix Core 與四大功能不建立第二層偽元素框", () => {
+  assert.doesNotMatch(switcher, /\.lottery-card::(?:before|after)\s*\{/);
+  assert.doesNotMatch(base, /\.home-shortcut::(?:before|after)\s*\{/);
+  assert.doesNotMatch(base, /\.matrix-core-banner::(?:before|after)\s*\{/);
   assert.doesNotMatch(base, /\.home-shortcut:(?:first-child|nth-child)/);
 });
 
-test("下次開獎與剩餘時間鑲嵌在卡內並各自保留完整切角框", () => {
+test("下次開獎與剩餘時間鑲嵌在卡內並各自保留完整圓角框", () => {
   assert.match(
-    home,
+    base,
     /\.next-draw-info--embedded\s*\{[^}]*gap:\s*0;[^}]*background:\s*transparent;[^}]*overflow:\s*visible;/s,
   );
-  assert.match(
-    home,
-    /\.next-draw-info--embedded::before\s*\{[^}]*display:\s*none;/s,
-  );
-  assert.match(home, /\.next-draw-info--embedded \.next-draw-item\s*\{[^}]*border:\s*0;[^}]*background:\s*linear-gradient[^}]*clip-path:\s*polygon\(/s);
-  assert.match(home, /\.next-draw-info--embedded \.next-draw-item::before\s*\{[^}]*background:\s*var\(--home-octagon-frame\);[^}]*content:\s*"";/s);
-  assert.doesNotMatch(home, /\.next-draw-info--embedded \.next-draw-item \+ \.next-draw-item\s*\{[^}]*border-left:/s);
+  assert.doesNotMatch(base, /\.next-draw-info--embedded::before\s*\{/s);
+  assert.match(base, /\.next-draw-info--embedded \.next-draw-item\s*\{[^}]*border:\s*0;[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*background:\s*linear-gradient[^}]*box-shadow:\s*inset 0 0 0 1px var\(--home-frame-bright\);[^}]*overflow:\s*hidden;/s);
+  assert.doesNotMatch(base, /\.next-draw-info--embedded \.next-draw-item::before\s*\{/s);
+  assert.doesNotMatch(base, /\.next-draw-info--embedded \.next-draw-item \+ \.next-draw-item\s*\{[^}]*border-left:/s);
 });
 
-test("五大功能先遮蔽素材舊框再套用共用切角框", () => {
-  assert.match(base, /\.home-shortcut::before\s*\{[^}]*background:\s*var\(--lottery-neutral-950\);[^}]*-webkit-mask-composite:\s*xor;[^}]*mask-composite:\s*exclude;/s);
-  assert.match(base, /\.home-shortcut::after\s*\{[^}]*background:\s*var\(--home-octagon-frame\);/s);
+test("四大功能直接使用正式圓角框且沒有遮罩覆寫", () => {
+  assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*border:\s*1px solid var\(--home-frame-muted\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
+  assert.doesNotMatch(base, /\.home-shortcut::(?:before|after)\s*\{/);
+  assert.doesNotMatch(base, /\.home-shortcut\s*\{[^}]*(?:mask|clip-path):/s);
   assert.doesNotMatch(base, /\.home-shortcut:(?:first-child|nth-child)/);
 });
 
-test("開獎資訊卡使用切角框，狀態區共同容器外框維持隱藏", () => {
-  assert.match(home, /\.home-screen \.latest-draw-card\s*\{[^}]*border:\s*0;[^}]*box-shadow:\s*var\(--home-frame-shadow\);/s);
-  assert.match(home, /\.home-screen \.latest-draw-card::after\s*\{[^}]*background:\s*var\(--home-octagon-frame\);[^}]*content:\s*"";/s);
-  assert.match(home, /\.home-screen \.matrix-status-section\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;/s);
+test("開獎資訊卡使用單層亮金圓角框，狀態區共同容器外框維持隱藏", () => {
+  assert.match(base, /\.home-screen \.latest-draw-card\s*\{[^}]*border:\s*0;[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*box-shadow:\s*inset 0 0 0 1px var\(--home-frame-bright\);/s);
+  assert.doesNotMatch(base, /\.home-screen \.latest-draw-card::after\s*\{/s);
+  assert.match(base, /\.home-screen \.matrix-status-section\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;/s);
 });
 
 test("所有頁面隱藏原生與自訂捲動條但不關閉 overflow", () => {
