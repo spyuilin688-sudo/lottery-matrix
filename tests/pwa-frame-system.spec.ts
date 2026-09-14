@@ -55,13 +55,25 @@ for (const { screen, width } of cases) {
       await expect(page.locator('.notification-bulk-disable')).toHaveCSS('background-color', 'rgb(2, 7, 12)');
       await expect(page.locator('.notification-bulk-disable')).toHaveCSS('border-top-color', colors.tertiary);
     }
-    const controls = page.locator('.segmented button, .segmented-static, .hit-options button, .native-select, .lottery-tabs button, .matrix-card-order button');
+    const controls = page.locator('.segmented button, .segmented-static, .hit-options button, .native-select, .matrix-card-order button');
     for (const control of await controls.all()) {
       if (!(await control.isVisible())) continue;
       await expect(control).toHaveCSS('border-top-width', '1px');
       const selected = await control.evaluate(element => element.getAttribute('data-selected') === 'true' || element.classList.contains('is-selected'));
       await expect(control).toHaveCSS('border-top-color', selected ? colors.secondary : colors.tertiary);
       await expect(control).toHaveCSS('box-shadow', 'none');
+    }
+    const underlineLotteryTabs = screen === 'explore' || screen === 'matrix-card';
+    for (const tab of await page.locator('.lottery-tabs button').all()) {
+      if (!(await tab.isVisible())) continue;
+      await expect(tab).toHaveCSS('border-top-width', underlineLotteryTabs ? '0px' : '1px');
+      const selected = await tab.getAttribute('data-selected') === 'true';
+      if (underlineLotteryTabs) {
+        await expect(tab.locator('span')).toHaveCSS('border-bottom-color', selected ? colors.secondary : 'rgba(0, 0, 0, 0)');
+      } else {
+        await expect(tab).toHaveCSS('border-top-color', selected ? colors.secondary : colors.tertiary);
+      }
+      await expect(tab).toHaveCSS('box-shadow', 'none');
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath(`${screen}-${width}.png`), animations: 'disabled' });

@@ -261,11 +261,11 @@
   padding: 8px 0;
   border-top-width: 1px;
   border-top-style: solid;
-  border-top-color: var(--pwa-frame-divider);
+  border-top-color: var(--pwa-frame-secondary);
   border-right: 0;
   border-bottom-width: 1px;
   border-bottom-style: solid;
-  border-bottom-color: var(--pwa-frame-divider);
+  border-bottom-color: var(--pwa-frame-secondary);
   border-left: 0;
   border-radius: 0;
   color: #f2f5f8;
