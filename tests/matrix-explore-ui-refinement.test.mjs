@@ -33,27 +33,29 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
   assert.match(icon, /block-size:\s*1\.8rem/);
   assert.match(icon, /flex:\s*0 0 1\.8rem/);
 
-  const select = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-panel \\.select-box");
+  const select = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-panel \\.native-select");
   assert.match(select, /height:\s*24px/);
   assert.match(select, /min-height:\s*24px/);
+  assert.match(select, /border:\s*1px solid #7d6a4c/);
+  assert.match(select, /border-radius:\s*\.625rem/);
 
   const button = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented button");
-  assert.match(button, /height:\s*24px/);
-  assert.match(button, /min-height:\s*24px/);
+  assert.match(button, /height:\s*20px/);
+  assert.match(button, /min-height:\s*20px/);
   assert.match(button, /align-items:\s*center/);
   assert.match(button, /justify-content:\s*center/);
   assert.match(button, /text-align:\s*center/);
   assert.match(button, /padding:\s*\.125rem \.25rem/);
   assert.match(button, /font-size:\s*\.75rem/);
   assert.match(button, /line-height:\s*1/);
-  assert.match(button, /color:\s*#d1d5db/);
-  assert.match(button, /background:\s*transparent/);
+  assert.match(button, /color:\s*#ded6c9/);
+  assert.match(button, /background:\s*rgba\(3, 11, 17, \.35\)/);
 
   const selectedButton = ruleBlock(css, '\\.matrix-explore-main-screen \\.segmented button\\[data-selected="true"\\]');
-  assert.match(selectedButton, /border-color:\s*#c89622/);
-  assert.match(selectedButton, /background:\s*linear-gradient\(145deg, rgba\(124, 85, 12, \.25\), rgba\(31, 25, 13, \.74\)\)/);
-  assert.match(selectedButton, /color:\s*#f2cf67/);
-  assert.match(css, /\.matrix-explore-main-screen \.hit-options\s*\{[^}]*width:\s*100%;[^}]*margin:\s*8px 0 4px;[^}]*padding:\s*0 0 6px;/s);
+  assert.match(selectedButton, /border-color:\s*#c49a46/);
+  assert.match(selectedButton, /background:\s*rgba\(212, 165, 47, \.12\)/);
+  assert.match(selectedButton, /color:\s*#f1c75a/);
+  assert.match(css, /\.matrix-explore-main-screen \.hit-options\s*\{[^}]*height:\s*20px;[^}]*margin:\s*0;[^}]*padding:\s*0;/s);
 
   const badge = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented button em");
   assert.match(badge, /position:\s*absolute/);
@@ -100,13 +102,15 @@ test("Matrix Explore restores the three original date selections and keeps them 
 });
 
 
-test("Matrix settings switcher retains its artwork scale and complete outer frame", () => {
-  const switcher = ruleBlock(css, "\\.matrix-explore-main-screen \\.matrix-settings-heading \\.matrix-page-switcher");
-  assert.match(switcher, /--matrix-switcher-size:\s*calc\(2\.34rem \* \.85\)/);
-  assert.match(switcher, /opacity:\s*\.96/);
-  const switcherButton = ruleBlock(css, "\\.matrix-explore-main-screen \\.matrix-settings-heading \\.matrix-page-switcher button");
-  assert.match(switcherButton, /border:\s*1px solid #755329/);
-  assert.match(switcherButton, /border-radius:\s*clamp\(4px, 1\.2vw, 5px\)/);
-  assert.doesNotMatch(switcherButton, /clip-path/);
-  assert.match(css, /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher button::before,[\s\S]*?button::after\s*\{[^}]*display:\s*none;/s);
+test("Matrix settings switcher uses one compact text frame without artwork scaling", () => {
+  const switcher = ruleBlock(featureCss, "\\.matrix-page-switcher");
+  assert.match(switcher, /width:\s*176px/);
+  assert.match(switcher, /height:\s*26px/);
+  assert.match(switcher, /gap:\s*0/);
+  assert.match(switcher, /border:\s*1px solid rgba\(117, 83, 41, \.48\)/);
+  assert.match(switcher, /border-radius:\s*8px/);
+  const switcherButton = ruleBlock(featureCss, "\\.matrix-page-switcher button");
+  assert.match(switcherButton, /border:\s*0/);
+  assert.match(switcherButton, /border-radius:\s*0/);
+  assert.doesNotMatch(`${css}\n${featureCss}`, /matrix-page-switcher-image|scale\s*\(/);
 });
