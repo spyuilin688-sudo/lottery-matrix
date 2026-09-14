@@ -51,7 +51,7 @@ describe('admin compact density', () => {
     expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasStatusFilter', 1000).get('grid-template-columns')).toBe('minmax(180px, 1fr) 112px minmax(64px, max-content)');
     expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasExtraFilter', 1000).get('grid-template-columns')).toBe('minmax(180px, 1fr) 112px 112px minmax(64px, max-content)');
     expect(declarationsAt(operationsCss, '.managementPrimaryFilters', 390).get('grid-template-columns')).toBe('minmax(0, 1fr)');
-    expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasCount', 390).get('grid-template-columns')).toBe('minmax(0, 1fr) minmax(64px, max-content)');
+    expect(operationsCss).toMatch(/\.managementPrimaryFilters\.hasCount,\s*\.managementPrimaryFilters\.hasStatusFilter \{ grid-template-columns: minmax\(0, 1fr\) minmax\(64px, max-content\); \}/);
     expect(declarationsAt(operationsCss, '.managementCount', 390).get('min-width')).toBe('64px');
     expect(declarationsAt(operationsCss, '.managementCount', 390).get('text-align')).toBe('right');
     expect(operationsCss).not.toContain('.managementSecondaryFilters');
