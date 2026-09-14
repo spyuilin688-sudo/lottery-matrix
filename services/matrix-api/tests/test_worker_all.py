@@ -25,9 +25,50 @@ def test_runs_all_three_railway_crawler_lotteries_in_order() -> None:
 
     assert LOTTERIES == ("今彩539", "六合彩", "大樂透")
     assert calls == ["今彩539", "六合彩", "大樂透"]
-    assert result == {
-        "completed": ["今彩539", "六合彩", "大樂透"],
-        "failed": {},
+    assert result["completed"] == ["今彩539", "六合彩", "大樂透"]
+    assert result["failed"] == {}
+    assert [item["outcome"] for item in result["runs"]] == [
+        "analysis-completed",
+        "analysis-completed",
+        "analysis-completed",
+    ]
+    assert all(item["startedAt"] <= item["finishedAt"] for item in result["runs"])
+    assert all(item["durationMs"] >= 0 for item in result["runs"])
+
+
+def test_preserves_distinct_successful_worker_outcomes() -> None:
+    statuses = iter((
+        {"status": "not-due"},
+        {"status": "already-acquired", "drawPeriod": "115000221"},
+        {"status": "complete", "drawPeriod": "115000222", "repairCompleted": True},
+    ))
+
+    result = run_all_workers(lambda lottery: {"lottery": lottery, **next(statuses)})
+
+    assert [(item["lottery"], item["period"], item["outcome"]) for item in result["runs"]] == [
+        ("今彩539", None, "no-new-draw"),
+        ("六合彩", "115000221", "already-analyzed"),
+        ("大樂透", "115000222", "repair-completed"),
+    ]
+
+
+def test_preserves_worker_stage_timings_and_execution_version(monkeypatch) -> None:
+    monkeypatch.setenv("RAILWAY_GIT_COMMIT_SHA", "abc123")
+
+    result = run_all_workers(lambda lottery: {
+        "lottery": lottery,
+        "status": "complete",
+        "drawPeriod": "115000223",
+        "stageTimingsMs": {"fetch": 12, "explore": 34, "write": 56, "notification": 7},
+    })
+
+    first = result["runs"][0]
+    assert first["executionVersion"] == "abc123"
+    assert first["stageTimingsMs"] == {
+        "fetch": 12,
+        "explore": 34,
+        "write": 56,
+        "notification": 7,
     }
 
 
@@ -45,6 +86,7 @@ def test_one_lottery_failure_does_not_block_the_remaining_lotteries() -> None:
     assert calls == list(LOTTERIES)
     assert result["completed"] == ["今彩539", "大樂透"]
     assert result["failed"] == {"六合彩": "source failed"}
+    assert result["runs"][1]["outcome"] == "failed"
 
 
 def test_primary_railway_config_runs_all_scheduled_workers_on_daily_five_minute_grid() -> None:
