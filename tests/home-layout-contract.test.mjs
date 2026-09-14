@@ -20,9 +20,11 @@ function assertLastBlock(source, selector, pattern) {
   assert.match(body, pattern, `${selector} final rule missing ${pattern}`);
 }
 
-test('homepage brand header owns an 8px top gap and logo is enlarged by 5 percent', () => {
+test('homepage brand header owns an 8px top gap and the logo fills its canonical frame', () => {
   assertLastBlock(css, '.home-screen > .brand-header', /padding-top:\s*8px;/);
-  assertLastBlock(css, '.home-screen .home-logo-image', /width:\s*91\.9632%;/);
+  assertLastBlock(css, '.home-screen .home-logo-image', /width:\s*100%;/);
+  assertLastBlock(css, '.home-screen .home-brand-frame', /width:\s*calc\(100% - 32px\);/);
+  assertLastBlock(css, '.home-screen .home-brand-frame', /border:\s*1px solid var\(--home-frame-gold\);/);
 });
 
 test('homepage surfaces keep their independent responsive inline insets', () => {
@@ -32,7 +34,7 @@ test('homepage surfaces keep their independent responsive inline insets', () => 
   assertBlock(css, '.lottery-switcher--home-style', /width:\s*calc\(100% - 32px\);/);
   assertBlock(css, '.home-screen .latest-draw-card', /width:\s*calc\(100% - 32px\);/);
   assertBlock(css, '.home-screen .lottery-screen', /--home-gap-switcher-draw:\s*clamp\(7px,\s*calc\(0\.9dvh\s*\+\s*1px\),\s*9px\);/);
-  assertLastBlock(css, '.lottery-switcher--home-style', /padding-inline:\s*4px;/);
+  assertLastBlock(css, '.lottery-switcher--home-style', /padding:\s*0;/);
   assertLastBlock(css, '.lottery-switcher--home-style .lottery-switcher-hit-grid', /gap:\s*6px;/);
   assertBlock(css, '.home-screen .matrix-status-section', /width:\s*calc\(100% - 32px\);/);
 });
@@ -62,24 +64,24 @@ test('wide viewport homepage keeps content in normal top flow instead of stretch
   assert.match(css, /@media\s*\(min-width:\s*768px\)\s*\{[\s\S]*?\.home-screen \.home-layout\s*\{[\s\S]*?height:\s*auto;[\s\S]*?\}[\s\S]*?\.home-screen \.lottery-screen\s*\{[\s\S]*?height:\s*auto;[\s\S]*?\}[\s\S]*?\.home-screen \.home-bottom-group\s*\{[\s\S]*?align-self:\s*start;[\s\S]*?\}[\s\S]*?\}/);
 });
 
-test('embedded next draw info uses two independent inset octagon containers', () => {
+test('embedded next draw info uses two independent rounded bright-gold containers', () => {
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /padding:\s*0;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /gap:\s*0;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /border:\s*0;/);
-  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item', /clip-path:\s*polygon\(/);
-  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item::before', /background:\s*var\(--home-octagon-frame\);/);
+  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item', /border-radius:\s*var\(--home-frame-radius\);/);
+  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item', /box-shadow:\s*inset 0 0 0 1px var\(--home-frame-bright\);/);
+  assert.equal(blocks(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item::before').length, 0);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon', /width:\s*12px;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon', /height:\s*12px;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-label', /font-size:\s*11px;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-value', /font-size:\s*11px;/);
 });
 
-test('Matrix Core keeps its 14px inset while five shortcuts use 6px outer margins and equal columns', () => {
-  assertBlock(css, '.home-screen .home-bottom-group', /--home-core-width:\s*calc\(min\(100vw, 390px\) - 28px\);/);
+test('Matrix Core and four shortcuts share the 16px inset and equal columns', () => {
+  assertBlock(css, '.home-screen .home-bottom-group', /--home-core-width:\s*calc\(min\(100vw, 390px\) - 32px\);/);
   assertBlock(css, '.home-screen .matrix-core-banner', /width:\s*var\(--home-core-width\);/);
-  assertBlock(css, '.home-screen .home-shortcut-row', /width:\s*100%;/);
-  assertBlock(css, '.home-screen .home-shortcut-row', /padding-inline:\s*var\(--home-feature-inline\);/);
-  assertBlock(css, '.home-screen .home-shortcut-row', /column-gap:\s*var\(--home-feature-gap\);/);
-  assertBlock(css, '.home-screen .home-shortcut-row', /grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\);/);
+  assertBlock(css, '.home-screen .home-shortcut-row', /width:\s*calc\(100% - var\(--home-feature-inline\) \* 2\);/);
+  assertBlock(css, '.home-screen .home-shortcut-row', /gap:\s*var\(--home-feature-gap\);/);
+  assertBlock(css, '.home-screen .home-shortcut-row', /grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\);/);
 });
