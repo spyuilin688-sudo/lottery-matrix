@@ -73,3 +73,25 @@ test('admin builds remain required and Python uses the selected plan', () => {
   assert.match(python, /run: uv sync --frozen/);
   assert.match(python, /--run python/);
 });
+
+test('main pushes finish one same-commit release gate without cancellation', () => {
+  assert.match(
+    workflow,
+    /cancel-in-progress:\s*\$\{\{ github\.event_name == 'pull_request' \}\}/,
+  );
+
+  const gate = job('release-gate');
+  assert.match(
+    gate,
+    /needs:\s*\[scope, runtime-integrity, test-and-build, runtime-tests, admin, matrix-api\]/,
+  );
+  assert.match(gate, /if:\s*always\(\)/);
+  assert.match(gate, /scope:\s*\$\{\{ needs\.scope\.result \}\}/);
+  assert.match(gate, /runtime_integrity:\s*\$\{\{ needs\.runtime-integrity\.result \}\}/);
+  assert.match(gate, /test_and_build:\s*\$\{\{ needs\.test-and-build\.result \}\}/);
+  assert.match(gate, /runtime_tests:\s*\$\{\{ needs\.runtime-tests\.result \}\}/);
+  assert.match(gate, /admin:\s*\$\{\{ needs\.admin\.result \}\}/);
+  assert.match(gate, /matrix_api:\s*\$\{\{ needs\.matrix-api\.result \}\}/);
+  assert.match(gate, /Required CI job did not succeed/);
+  assert.match(gate, /Conditional CI job neither succeeded nor skipped/);
+});
