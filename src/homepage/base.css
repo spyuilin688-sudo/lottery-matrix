@@ -571,14 +571,15 @@
 
 .home-screen .home-shortcut-label {
   max-width: 100%;
-  color: var(--lottery-gold-300);
+  color: var(--lottery-gold-500);
   font-family: "Noto Sans TC", "Source Han Sans TC", sans-serif;
-  font-size: 16px;
+  font-size: clamp(11px, 3vw, 12px);
   font-weight: 600;
-  letter-spacing: 0.3px;
-  line-height: 1.25;
+  letter-spacing: 0.1px;
+  line-height: 1.2;
   text-align: center;
   text-shadow: none;
+  white-space: nowrap;
 }
 
 .home-screen .matrix-status-card:active,
