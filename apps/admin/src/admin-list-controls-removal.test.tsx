@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { waitFor } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 
-const emptyPage = { items: [], total: 0, currentPage: 1, totalPages: 1 };
+const emptyPage = { items: [], total: 30, currentPage: 1, totalPages: 1 };
 const dashboard = {
   todayVisitors: 0,
   monthVisitors: 0,
@@ -44,7 +44,7 @@ async function choose(container: HTMLElement, page: string) {
   await waitFor(() => expect(container.querySelector('header b')?.textContent).toBe(page));
 }
 
-it('keeps the operational search cards compact without date or sort controls', async () => {
+it('keeps operational search controls and record counts in one compact toolbar', async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   const container = document.createElement('div');
   document.body.append(container);
@@ -69,15 +69,13 @@ it('keeps the operational search cards compact without date or sort controls', a
       expect(toolbar?.querySelector('input[type="date"]')).toBeNull();
       expect(toolbar?.querySelector('[aria-label*="排序"]')).toBeNull();
       expect(toolbar?.querySelector('[aria-label*="方向"]')).toBeNull();
+      expect(toolbar?.querySelector('.managementCount')?.textContent).toContain('30 筆');
     }
 
     for (const page of ['登入紀錄', '審計日誌']) {
       await choose(container, page);
-      const countOwners = [
-        container.querySelector('.toolbar')?.textContent?.includes('筆資料'),
-        container.querySelector('.managementCount')?.textContent?.includes('筆資料'),
-      ].filter(Boolean);
-      expect(countOwners, `${page} should expose the data count in exactly one place`).toHaveLength(1);
+      expect(container.querySelector('.managementToolbar .managementCount')).not.toBeNull();
+      expect(container.querySelector('.toolbar'), `${page} should not render a second count row above search`).toBeNull();
     }
 
     await choose(container, '用戶管理');
