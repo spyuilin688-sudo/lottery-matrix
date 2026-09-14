@@ -8,9 +8,12 @@ const homepageCss = readLocalCss(new URL("../homepage-repair.css", import.meta.u
 const prototypeCss = readFileSync(new URL("../prototype.css", import.meta.url), "utf8");
 
 describe("homepage control layout rules", () => {
-  it("uses the shared Matrixbba sprite and restores selected artwork brightness", () => {
-    expect(homepageCss).toMatch(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*background-image:\s*url\("\/assets\/lottery\/status\/Matrixbba\.png"\);/s);
-    expect(homepageCss).toMatch(/\.lottery-card\[data-selected="true"\]\s*\{[^}]*background-color:\s*transparent;/s);
+  it("uses independent Logo opacity and a single frame for the compact Selector", () => {
+    expect(homepageCss).not.toMatch(/Matrixbba\.png|background-blend-mode/);
+    expect(homepageCss).toMatch(/\.lottery-selector-logo\s*\{[^}]*opacity:\s*\.6;/s);
+    expect(homepageCss).toMatch(/\.lottery-card\[data-selected="true"\] \.lottery-selector-logo\s*\{[^}]*opacity:\s*1;/s);
+    expect(homepageCss).toMatch(/border:\s*1px solid color-mix\(in srgb, var\(--home-frame-gold\) 22%, transparent\);/);
+    expect(homepageCss).toMatch(/\.lottery-card\[data-selected="true"\]\s*\{[^}]*border-color:\s*color-mix\(in srgb, var\(--home-frame-gold\) 45%, transparent\);/s);
     expect(homepageCss).not.toMatch(/\.lottery-card\[data-selected="true"\]::before\s*\{/);
   });
 
