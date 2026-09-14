@@ -21,12 +21,12 @@ test("底部導覽維持全寬且不受首頁專屬覆寫", () => {
   assert.doesNotMatch(homeCss, /home-layout > \.bottom-navigation/);
 });
 
-test("PD01 裝飾與四個真實按鈕分離，選中態只有一個正式樣式來源", () => {
+test("底部導覽移除 PD01 裝飾，四個真實按鈕與選中態只有一個正式來源", () => {
   const selectedItemRules = navigationCss.match(/\.bottom-navigation-item\[data-selected="true"\]\s*\{/g) ?? [];
   assert.equal(selectedItemRules.length, 1);
-  assert.match(navigationSource, /pd01-frame\.svg/);
-  assert.match(navigationSource, /pd01-active\.svg/);
+  assert.doesNotMatch(navigationSource, /pd01-frame\.svg|pd01-active\.svg|bottom-navigation-artwork/);
+  assert.match(navigationCss, /\.bottom-navigation\s*\{[^}]*border-top:\s*1px solid var\(--home-frame-muted\);/s);
+  assert.match(navigationCss, /\.bottom-navigation-item\[data-selected="true"\]\s*\{[^}]*border-color:\s*var\(--home-frame-gold\);[^}]*background:\s*rgba\(214, 182, 111, \.10\);/s);
   assert.match(navigationSource, /className="bottom-navigation-label">\{label\}/);
   assert.doesNotMatch(navigationSource, /NAVIGATION_ARTWORK|matrixWW[1-4]\.png/);
 });
-
