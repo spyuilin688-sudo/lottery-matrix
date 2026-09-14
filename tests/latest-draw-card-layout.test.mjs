@@ -69,11 +69,16 @@ test("特別號標籤右移、分隔線縮短且底部圖示維持 12px", () => 
   assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-icon\s*\{[^}]*width:\s*12px;[^}]*height:\s*12px;/s);
 });
 
-test("底部資訊改為參考圖的兩個獨立鑲嵌切角容器", () => {
+test("底部兩格時間資訊沿用主卡的單層細金框與圓角", () => {
   assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)[^}]*width:\s*100%[^}]*padding:\s*0;[^}]*gap:\s*0;[^}]*border:\s*0;[^}]*background:\s*transparent/s);
   assert.ok(hasRuleProperty(css, ".home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item", /gap:\s*4px;[^}]*padding-inline:\s*clamp\(6px, 2vw, 10px\);[^}]*align-items:\s*center[^}]*justify-content:\s*center/));
-  assert.ok(hasRuleProperty(css, ".home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item", /border:\s*0;[^}]*border-radius:\s*0;[^}]*background:\s*linear-gradient[^}]*clip-path:\s*polygon/));
-  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item::before\s*\{[^}]*display:\s*block;[^}]*background:\s*var\(--home-octagon-frame\)/s);
+  const itemSelector = ".home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item";
+  const itemRules = ruleBodies(css, itemSelector);
+  assert.equal(itemRules.length, 1);
+  assert.match(itemRules[0], /border:\s*0;[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
+  assert.match(itemRules[0], /box-shadow:\s*inset 0 0 0 1px var\(--home-frame-gold\);/);
+  assert.doesNotMatch(itemRules[0], /clip-path\s*:/);
+  assert.equal(ruleBodies(css, `${itemSelector}::before`).length, 0);
   assert.doesNotMatch(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*border-top\s*:/s);
   assert.doesNotMatch(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item:last-child\s*\{[^}]*border-inline-start\s*:/s);
   assert.match(css, /\.next-draw-label\s*\{[^}]*font-size:\s*11px/s);
