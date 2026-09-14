@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }) => prepareReturningVisitor(page));
 
 const pages = [
   { label: "Matrix 同星", screenSelector: ".tongxing-screen" },
-  { label: "號碼對照單", screenSelector: ".number-reference-screen" },
+  { label: "Matrix 對照", screenSelector: ".number-reference-screen" },
 ] as const;
 
 for (const width of [320, 360, 390, 430]) {
@@ -18,7 +18,7 @@ for (const width of [320, 360, 390, 430]) {
 
       const appViewport = page.getByTestId("mobile-scroll");
       const featureBody = page.locator(`${pageCase.screenSelector} .feature-body`);
-      const titleBanner = page.locator(`${pageCase.screenSelector} .matrix-title-banner`);
+      const titleBanner = page.locator(`${pageCase.screenSelector} .product-header__settings-card`);
       await expect(featureBody).toBeVisible();
       await expect(titleBanner).toBeVisible();
 
@@ -37,8 +37,8 @@ for (const width of [320, 360, 390, 430]) {
       expect(appBox!.x + appBox!.width - titleBox!.x - titleBox!.width).toBeCloseTo(16, 0);
       expect(await featureBody.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
 
-      if (pageCase.label === "號碼對照單") {
-        const settingsTrigger = page.locator(".reference-settings-trigger");
+      if (pageCase.screenSelector === ".number-reference-screen") {
+        const settingsTrigger = page.locator(".number-reference-screen .product-header__settings-toggle");
         await expect(settingsTrigger).toHaveAccessibleName("收合探索設定");
         await settingsTrigger.click();
         await expect(settingsTrigger).toHaveAccessibleName("展開探索設定");
@@ -47,8 +47,12 @@ for (const width of [320, 360, 390, 430]) {
         await expect(queryPanel).toBeVisible();
         const queryBox = await queryPanel.boundingBox();
         expect(queryBox).not.toBeNull();
-        expect(queryBox!.x - appBox!.x).toBeCloseTo(16, 0);
-        expect(appBox!.x + appBox!.width - queryBox!.x - queryBox!.width).toBeCloseTo(16, 0);
+        // The floating settings share the header's 16px outer frame and 1px border.
+        const floatingFrame = (await titleBanner.boundingBox())!;
+        expect(floatingFrame.x - appBox!.x).toBeCloseTo(16, 0);
+        expect(appBox!.x + appBox!.width - floatingFrame.x - floatingFrame.width).toBeCloseTo(16, 0);
+        expect(queryBox!.x).toBeGreaterThanOrEqual(floatingFrame.x + 1);
+        expect(queryBox!.x + queryBox!.width).toBeLessThanOrEqual(floatingFrame.x + floatingFrame.width - 1);
         expect(await queryPanel.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
       }
     }

@@ -21,6 +21,7 @@ for (const width of [320, 360, 390, 430]) {
       localStorage.clear();
     });
     await page.goto('/tests/notebook-responsive-fixture.html');
+    await expect(page.getByRole('heading', { name: 'MATRIX 筆記本', exact: true })).toBeVisible();
     await expect(page.getByRole('region', { name: '筆記列表' })).toBeVisible();
     await expectPageInsets(page);
     const toolbar = await page.locator('.notebook-heading').evaluate((heading) => {
@@ -45,6 +46,7 @@ for (const width of [320, 360, 390, 430]) {
 
     await page.getByRole('button', { name: '展開筆記：第一張筆記', exact: true }).click();
     await expect(page.getByRole('textbox', { name: '筆記內容' })).toHaveValue('保留原有內容');
+    await expect(page.getByRole('heading', { name: 'MATRIX 筆記本', exact: true })).toBeVisible();
     await expectPageInsets(page);
     const editor = page.locator('.matrix-notebook-editor');
     await expect(editor).toHaveCSS('padding-top', '8px');

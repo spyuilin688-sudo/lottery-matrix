@@ -196,7 +196,9 @@ function offlineNavigationResponse() {
 
 async function handleNavigation(event) {
   try {
-    const response = await fetch(event.request);
+    // A prior deployment's HTML may still be fresh in the HTTP cache. Revalidate
+    // before preparing its assets; complete cached shells remain the fallback.
+    const response = await fetch(event.request, { cache: "no-cache" });
     // Only the main PWA entry is an app shell. Never store admin/other documents
     // under '/', or persist a LINE callback response in the shell cache.
     const url = new URL(event.request.url);

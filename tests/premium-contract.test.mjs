@@ -25,99 +25,8 @@ const tokenTrace = [
   ["--bottom-navigation-height", "72px"],
 ];
 
-const reachableConfirmations = [
-  {
-    scope: "notebook",
-    location: "MatrixNotebookPage.returnFromNote",
-    copy: "內容尚未寫入，確定返回列表？",
-    sourcePattern: /const returnFromNote = \(\) => \{[\s\S]{0,240}?window\.confirm\("內容尚未寫入，確定返回列表？"\)/,
-  },
-  {
-    scope: "notebook",
-    location: "MatrixNotebookPage.saveNote",
-    copy: "確定寫入筆記？",
-    sourcePattern: /const saveNote = \(\) => \{[\s\S]{0,200}?window\.confirm\("確定寫入筆記？"\)/,
-  },
-  {
-    scope: "notebook",
-    location: "MatrixNotebookPage.deleteNote",
-    copy: "確定刪除此筆記？",
-    sourcePattern: /const deleteNote = \(id: string\) => \{[\s\S]{0,120}?window\.confirm\("確定刪除此筆記？"\)/,
-  },
-  {
-    scope: "notebook",
-    location: "MatrixNotebookPage.leaveSettings",
-    copy: "設定尚未儲存，確定離開？",
-    sourcePattern: /const leaveSettings = \(action: \(\) => void\) => \{[\s\S]{0,180}?window\.confirm\("設定尚未儲存，確定離開？"\)/,
-  },
-  {
-    scope: "notebook",
-    location: "MatrixNotebookPage.endTagDrag",
-    copy: "確定變更玩法順序？",
-    sourcePattern: /const endTagDrag = \(\) => \{[\s\S]{0,420}?window\.confirm\("確定變更玩法順序？"\)/,
-  },
-  {
-    scope: "notebook",
-    location: "MatrixNotebookPage.addSettingsTag",
-    copy: "確定新增「{玩法名稱}」玩法？",
-    sourcePattern: /const addSettingsTag = \(\) => \{[\s\S]{0,360}?window\.confirm\(\x60確定新增「\$\{name\}」玩法？\x60\)/,
-  },
-  {
-    scope: "notebook",
-    location: "MatrixNotebookPage.deleteSettingsTag",
-    copy: "確定刪除「{玩法名稱}」玩法？",
-    sourcePattern: /const deleteSettingsTag = \(index: number, name: string\) => \{[\s\S]{0,200}?window\.confirm\(\x60確定刪除「\$\{name\}」玩法？\x60\)/,
-  },
-  {
-    scope: "notebook",
-    location: "MatrixNotebookPage.resetSettings",
-    copy: "確定重置設定？",
-    sourcePattern: /const resetSettings = \(\) => \{[\s\S]{0,120}?window\.confirm\("確定重置設定？"\)/,
-  },
-  {
-    scope: "notebook",
-    location: "MatrixNotebookPage.saveSettings",
-    copy: "確定儲存設定？",
-    sourcePattern: /const saveSettings = \(\) => \{[\s\S]{0,120}?window\.confirm\("確定儲存設定？"\)/,
-  },
-  {
-    scope: "notebook",
-    location: "MatrixNotebookPage record-card delete action",
-    copy: "確定刪除此紀錄？",
-    sourcePattern: /className="record-status-actions"[\s\S]{0,420}?window\.confirm\("確定刪除此紀錄？"\)/,
-  },
-  {
-    scope: "notebook",
-    location: "MatrixNotebookPage tag-name input onBlur",
-    copy: "確定將「{原玩法名稱}」修改為「{新玩法名稱}」？",
-    sourcePattern: /aria-label="玩法名稱"[\s\S]{0,520}?onBlur=\{\(\) => \{[\s\S]{0,180}?window\.confirm\(\x60確定將「\$\{editingTagName\.current\}」修改為「\$\{tag\.name\}」？\x60\)/,
-  },
-  {
-    scope: "plans",
-    location: "ProPlansPage.handleAutoRenewChange",
-    copy: "確定開啟自動續訂？／確定關閉自動續訂？",
-    sourcePattern: /const handleAutoRenewChange = \(\) => \{[\s\S]{0,200}?window\.confirm\(\x60確定\$\{nextState \? "開啟" : "關閉"\}自動續訂？\x60\)/,
-  },
-  {
-    scope: "plans",
-    location: "ProPlansPage.handlePayment",
-    copy: "確定以{方案名稱}進行付款？",
-    sourcePattern: /const handlePayment = \(\) => \{[\s\S]{0,120}?window\.confirm\(\x60確定以\$\{selected\.name\}進行付款？\x60\)/,
-  },
-];
-
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function assertSourceConfirmationInventory(sources) {
-  for (const { scope, location, sourcePattern } of reachableConfirmations) {
-    assert.match(
-      sources[scope],
-      sourcePattern,
-      `source confirmation mismatch for ${location}`,
-    );
-  }
 }
 
 test("declares the intentional minimum Premium manifest", () => {
@@ -148,11 +57,11 @@ test("keeps every shared feature title card eight pixels from page content", () 
 
   assert.match(
     featureStyles,
-    /\\.product-header\\s*\\{[^}]*margin-bottom:\\s*var\\(--layout-section-gap\\);/s,
+    /\.product-header\s*\{[^}]*margin-bottom:\s*var\(--layout-section-gap\);/s,
   );
   assert.doesNotMatch(
     featureStyles,
-    /(?:profile|notifications|calculator|draw-history|tongxing|number-reference)-screen[^{}]*>\\s*\\.product-header\\s*\\{[^}]*margin-bottom:/s,
+    /(?:profile|notifications|calculator|draw-history|tongxing|number-reference)-screen[^{}]*>\s*\.product-header\s*\{[^}]*margin-bottom:/s,
   );
 });
 
@@ -196,10 +105,8 @@ test("routes every reachable confirmation through the shared accessible dialog o
   const contract = readFileSync("UX-CONTRACT.md", "utf8");
   const featurePages = readFeaturePagesSource();
   const dialogSource = readFileSync("src/dialog/AppDialog.tsx", "utf8");
-  const notebookSource = featurePages.slice(
-    featurePages.indexOf("export function MatrixNotebookPage"),
-    featurePages.indexOf("export function NotesPage"),
-  );
+  // The retired NotesPage export cannot delimit the notebook module.
+  const notebookSource = readFileSync("src/features/NotebookPages.tsx", "utf8");
   const plansSource = featurePages.slice(
     featurePages.indexOf("function ProPlansPage"),
     featurePages.indexOf("function AboutMatrixPage"),
@@ -217,7 +124,17 @@ test("routes every reachable confirmation through the shared accessible dialog o
   assert.match(featurePages, /import \{ useAppDialog \} from "\.\.\/dialog\/AppDialog"/);
   assert.match(notebookSource, /const confirmCurrent = async \(options: AppDialogOptions\) =>/);
   assert.equal(notebookSource.match(/appDialog\.confirm\(/g)?.length, 1);
-  assert.ok((notebookSource.match(/confirmCurrent\(/g) ?? []).length >= 10);
+  // DESIGN retains only list/editor operations after record/settings mode retirement.
+  assert.equal((notebookSource.match(/confirmCurrent\(/g) ?? []).length, 3);
+  for (const action of ["leaveWithDraft", "saveNote", "deleteNote"]) {
+    const start = notebookSource.indexOf(`const ${action} = async `);
+    assert.notEqual(start, -1, `${action} must remain an asynchronous action`);
+    const end = notebookSource.indexOf("\n  const ", start);
+    assert.notEqual(end, -1, `${action} must have a bounded source section`);
+    assert.match(notebookSource.slice(start, end), /await confirmCurrent\(/);
+  }
+  assert.match(notebookSource, /return await appDialog\.confirm\(options\) && isActive\(\)/);
+  assert.match(notebookSource, /<AppDialogProvider key=\{identity\.owner\.revision\}>/);
   assert.equal(plansSource.match(/appDialog\.confirm\(/g)?.length, 1);
   assert.equal(profileSource.match(/confirmDialog\(/g)?.length, 1);
   assert.match(featurePages, /if \(screen === "notebook"\) return <LinePageGuard [^\n]*<MatrixNotebookPage /);

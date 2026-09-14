@@ -14,12 +14,11 @@ const switcher = readFileSync("src/homepage/lottery-switcher.css", "utf8");
 const tokens = readFileSync("src/design-tokens.css", "utf8");
 const source = readFeaturePagesSource();
 
-test("Matrix 狀態的自訂觸發條件固定於底部導覽右側", () => {
-  assert.doesNotMatch(feature, /status-title-trigger/);
-  assert.match(prototype, /\.bottom-navigation\s*\{[^}]*z-index:\s*20;/s);
-  assert.match(notification, /\.matrix-status-settings-entry\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*21;[^}]*right:\s*max\(10px, calc\(env\(safe-area-inset-right, 0px\) \+ 4px\)\);[^}]*bottom:\s*calc\(env\(safe-area-inset-bottom, 0px\) \+ 9px\);/s);
-  assert.doesNotMatch(notification, /\.matrix-status-screen \.matrix-status-settings-entry/);
-  assert.match(source, /className="bottom-navigation-quick-settings matrix-status-settings-entry"/);
+test("Matrix 狀態的自訂觸發條件使用共用標題操作區", () => {
+  const status = readFileSync("src/features/MatrixStatusPages.tsx", "utf8");
+  assert.match(status, /<FeatureShell[^>]*headerAction=\{\s*<button[^>]*className="header-settings-button"[^>]*aria-label="自訂觸發條件，連續點擊兩下開啟"/s);
+  assert.doesNotMatch(status, /bottom-navigation-quick-settings|matrix-status-settings-entry/);
+  assert.match(feature, /\.product-header__actions\s*\{[^}]*position:\s*absolute;[^}]*right:\s*4px;[^}]*display:\s*flex;/s);
 });
 
 test("自訂觸發條件沿用首頁彩種切換並使用 8px 下間距", () => {
@@ -44,11 +43,11 @@ test("Matrix 指南移除標題下方重複卡片", () => {
   assert.match(source, /<nav[^>]*className="guide-category-strip"/);
 });
 
-test("Matrix 探索、天衍、天工共用設定標題同列的點擊切換器", () => {
+test("Matrix 探索、天衍、天工共用設定標題同列的文字切換器", () => {
   assert.doesNotMatch(source, /headerAction=\{<MatrixPageSwitcher/);
   assert.match(feature, /\.matrix-settings-heading\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*space-between;/s);
-  assert.match(feature, /\.matrix-page-switcher\s*\{[^}]*display:\s*flex;[^}]*gap:\s*8px;/s);
-  assert.match(explore, /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher\s*\{[^}]*--matrix-switcher-size:\s*calc\(2\.34rem \* \.85\)/s);
+  assert.match(feature, /\.matrix-page-switcher\s*\{[^}]*width:\s*176px;[^}]*height:\s*26px;[^}]*gap:\s*0;[^}]*border-radius:\s*8px;/s);
+  assert.match(feature, /\.matrix-page-switcher button\[aria-current="page"\]\s*\{[^}]*font-weight:\s*700;/s);
 });
 
 test("六合彩三色球號在首頁、近10期與歷史紀錄共用白色球心定位", () => {
@@ -93,6 +92,11 @@ test("通知內容採較緊密比例，右側動作固定欄對齊", () => {
   assert.match(notification, /\.notifications-screen-v2 \.notification-actions\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*56px 38px;[^}]*gap:\s*8px;/s);
 });
 
-test("歷史標題卡的既有定位仍是頁面共同比照來源", () => {
-  assert.match(responsive, /\.draw-history-screen \.matrix-title-banner-actions,[\s\S]*?top:\s*100%;[\s\S]*?transform:\s*translateY\(-87\.5%\);/);
+test("歷史篩選入口沿用共用標題操作區", () => {
+  const history = readFileSync("src/features/LegacyHistoryPage.tsx", "utf8");
+  const shell = readFileSync("src/features/shared.tsx", "utf8");
+  assert.match(history, /headerAction=\{historyTitleActions\}/);
+  assert.match(history, /className="history-filter-trigger title-card-compact-action"/);
+  assert.match(shell, /<BrandHeader[\s\S]*?action=\{headerAction\}/);
+  assert.doesNotMatch(responsive, /\.draw-history-screen \.matrix-title-banner-actions/);
 });

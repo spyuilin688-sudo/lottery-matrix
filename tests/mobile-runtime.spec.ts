@@ -190,8 +190,12 @@ for (const width of MOBILE_WIDTHS) {
     await expect(page.getByRole("button", { name: "複製推薦碼", exact: true })).toBeVisible();
     await expectNoHorizontalDocumentOverflow(page);
 
-    await page.goto("/tests/runtime-fixture.html?fixture=notes");
-    await expect(page.getByRole("button", { name: "紀錄設定", exact: true })).toBeDisabled();
+    // DESIGN: the notebook provides only the list and editor; legacy record mode was retired.
+    await page.goto("/tests/notebook-responsive-fixture.html");
+    await expect(page.getByRole("region", { name: "筆記列表" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "新增筆記", exact: true })).toBeEnabled();
+    await expect(page.getByRole("button", { name: "紀錄設定", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "切換至紀錄模式", exact: true })).toHaveCount(0);
     await expectNoHorizontalDocumentOverflow(page);
   });
 
