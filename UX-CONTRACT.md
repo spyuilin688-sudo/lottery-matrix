@@ -335,3 +335,13 @@ After result notification dispatch, the trusted producer requests immediate back
 天天樂在同星、對照單、歷史紀錄、探索、天衡、天衍、牌單與首頁開獎資訊卡停用落球控制，並立即切回順球。共用排序規則先正規化畫面及查詢值，再同步原有 state／限時快取；舊快取中的天天樂落球值不會進入初次結果或查詢。歷史頁即時切換彩種時也正規化已套用的排序。同星與對照單保留尚未重新提交前的結果及其原彩種／排序。切回其他彩種後落球恢復可選；牌單仍須存在對應期數的落球檔案。即使舊天天樂 manifest 含落球 URL，頁面也只預覽與下載順球。此規則不改動其他彩種的兩階段資料更新、API 權限或後端演算法。
 
 2026-09-15 彩種 Selector：共用 LotterySwitcher 保留現有 onChange 查詢流程與 radio 語意。只有選中項目參與 Tab 順序；左右／上下方向鍵循環切換、Home／End 選首尾，焦點與 aria-checked 同步。視覺規格由 DESIGN.md、src/homepage/lottery-switcher.css 擁有。底部導覽由 src/prototype.css 擁有 70px 加安全區高度，選中只以金色圖文與小指示線表示；四個入口及快捷行為不變。
+
+## Shared PWA frame contract (2026-09-15)
+
+- Canonical palette and semantic aliases: `src/design-tokens.css`; role mapping: `docs/DESIGN_TOKENS.md`.
+- Shared title/content/control frame owners: `src/feature-pages.css`. Actual routes are resolved through `FeaturePagesPatched` → `FeaturePagesCore` → `features/router`.
+- Bright/standard/muted tiers are 1px; internal separators use the shared 18% gold token. Selected controls use standard gold text/border and the shared 6% surface.
+- Merged title/settings cards retain exactly one outer frame. Borderless layout wrappers and membership artwork remain intentionally borderless.
+- Native selects and segmented/hit options reuse canonical styles; no decorative pseudo-element frame layers or per-page gold literals.
+- Ball geometry/appearance, result semantics, homepage artwork/motion and functional state transitions are not changed by this contract.
+- Focused evidence: `tests/pwa-frame-system.test.mjs` and `tests/pwa-frame-system.spec.ts`. No full-project test command is permitted.

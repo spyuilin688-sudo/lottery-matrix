@@ -20,7 +20,7 @@ function calculatorStyles() {
     <main class="calculator-screen">
       <div class="feature-body">
         <nav class="mode-tabs"><button data-selected="true">連碰</button><button>立柱</button></nav>
-        <section class="calculator-panel column-panel">
+        <section class="panel calculator-panel column-panel">
           <header>
             <div class="calculator-heading">
               <div class="section-title"><span></span>連碰設定</div>
@@ -32,7 +32,7 @@ function calculatorStyles() {
           <div class="quick-actions"><button>全部設為 2</button><button class="clear-button"><svg></svg>清除</button></div>
           <div class="column-grid"><div><span>第 1 柱</span><button>−</button><strong>1</strong><button>＋</button></div></div>
         </section>
-        <section class="calculation-results">
+        <section class="panel calculation-results">
           <div class="section-title"><span></span>計算結果</div>
           <div><article><span>二星</span><strong>2</strong></article></div>
         </section>
@@ -51,11 +51,12 @@ test('calculator compact styles render at the approved sizes without shrinking n
   assert.equal(firstTab.height, '36px');
   assert.equal(firstTab.minHeight, '36px');
   assert.equal(firstTab.fontSize, '18px');
-  assert.equal(firstTab.borderRightColor, tabs.borderRightColor);
+  // Internal separators are intentionally quieter than the outer frame.
+  assert.match(block(feature, '.calculator-screen .mode-tabs button'), /border-right:\s*1px solid var\(--pwa-frame-divider\)/);
 
   assert.equal(style('.calculator-panel').paddingTop, '8px');
   assert.equal(style('.calculator-panel').paddingRight, '4px');
-  assert.equal(style('.calculator-panel').borderColor, 'rgb(117, 83, 41)');
+  assert.match(block(feature, '.panel'), /border:\s*1px solid var\(--pwa-frame-secondary\)/);
   assert.match(block(feature, '.calculator-screen > .feature-body'), /padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\)/);
   assert.equal(style('.calculator-screen .feature-body').getPropertyValue('--layout-page-inline'), '16px');
   assert.equal(style('.column-panel').paddingBottom, '4px');
@@ -76,7 +77,7 @@ test('calculator compact styles render at the approved sizes without shrinking n
   assert.equal(style('.calculation-results').paddingRight, '4px');
   assert.equal(style('.calculation-results').paddingBottom, '6px');
   assert.equal(style('.calculation-results').paddingLeft, '4px');
-  assert.equal(style('.calculation-results').borderColor, 'rgb(117, 83, 41)');
+  assert.match(block(feature, '.calculation-results article'), /border:\s*1px solid var\(--pwa-frame-secondary\)/);
   assert.equal(style('.calculation-results article').height, '60px');
   assert.equal(style('.calculation-results article').paddingTop, '6px');
   assert.equal(style('.calculation-results article').paddingBottom, '6px');

@@ -56,7 +56,7 @@
   width: 100%;
   margin-top: 0;
   height: 1px;
-  background: rgba(170, 167, 162, .36);
+  background: var(--pwa-frame-divider);
   content: "";
 }
 

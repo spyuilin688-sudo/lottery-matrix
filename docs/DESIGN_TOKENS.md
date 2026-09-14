@@ -47,3 +47,36 @@ Token 更新必須先在 canonical CSS owner 完成，並在同一 changeset 同
 工程調整時，需先確認是否為全域 Token。不得為了單一頁面直接更改會影響其他既有元件的 Token。
 
 導覽背景與安全區使用 `--bottom-nav-panel-900: #07101a`；選中圖示、文字與 12×2px 指示線共用 `--bottom-nav-gold: #e5b34d`。未選中圖示與文字繼承 `--bottom-nav-text-default: #c3beb6`，按鈕透明度 .7。
+
+## PWA frame hierarchy — 2026-09-15
+
+The approved homepage palette is the sole color source. Runtime ownership remains
+`src/design-tokens.css`; non-home production pages consume these semantic aliases.
+
+| Runtime token | Exact value | Role |
+|---|---|---|
+| `--pwa-frame-primary` | `var(--home-frame-bright)` | 1px title/main-card frame |
+| `--pwa-frame-secondary` | `var(--home-frame-gold)` | 1px content/result/table frame |
+| `--pwa-frame-tertiary` | `var(--home-frame-muted)` | 1px resting control frame |
+| `--pwa-frame-divider` | `color-mix(in srgb, var(--home-frame-gold) 18%, transparent)` | Quiet internal table/section lines |
+| `--pwa-frame-radius` | `var(--home-frame-radius)` | Shared 8px frame radius |
+| `--pwa-control-surface` | `var(--lottery-neutral-950)` | Resting control surface |
+| `--pwa-control-selected` | `color-mix(in srgb, var(--home-frame-gold) 6%, var(--lottery-neutral-950))` | Selected control/CTA surface |
+
+Title frames remain in `.product-header__frame` and `.product-header__settings-card`.
+The merged settings header owns one outer frame; its nested title frame remains 0px.
+`.panel` owns content frames. `.select-box, .native-select` owns real control borders;
+cut-corner pseudo-element frames and their scoped overrides are removed. Segmented
+controls and hit options share one resting/selected appearance owner. Existing
+page-specific rules retain layout responsibilities only where that appearance is
+already inherited. CTA sparkle opacity is .20 with no extra lower-edge glow.
+
+These rules supersede older non-home frame colors, corner radii and ornamental
+gold-glow descriptions only. Existing geometry, accessibility focus indicators,
+semantic error/success colors, number marks, lottery balls, embedded membership
+artwork, homepage animation and approved homepage spacing remain unchanged.
+Intentional borderless inner wrappers do not gain a second frame. No route,
+component behavior, copy, API or worker changes are included.
+
+Verification: `tests/pwa-frame-system.test.mjs` and
+`tests/pwa-frame-system.spec.ts` (real production router, isolated test responses).

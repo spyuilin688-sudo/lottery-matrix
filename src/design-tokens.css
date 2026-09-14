@@ -33,6 +33,15 @@
   --home-frame-gold: #d6b66f;
   --home-frame-muted: #8a713f;
   --home-frame-radius: 8px;
+
+  /* PWA frame hierarchy: aliases of the approved homepage palette. */
+  --pwa-frame-primary: var(--home-frame-bright);
+  --pwa-frame-secondary: var(--home-frame-gold);
+  --pwa-frame-tertiary: var(--home-frame-muted);
+  --pwa-frame-divider: color-mix(in srgb, var(--home-frame-gold) 18%, transparent);
+  --pwa-frame-radius: var(--home-frame-radius);
+  --pwa-control-surface: var(--lottery-neutral-950);
+  --pwa-control-selected: color-mix(in srgb, var(--home-frame-gold) 6%, var(--lottery-neutral-950));
   --bottom-nav-panel-950: #030708;
   --bottom-nav-panel-900: #07101a;
   --bottom-nav-panel-850: #09131f;

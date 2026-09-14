@@ -33,9 +33,8 @@
 }
 
 .number-reference-screen .reference-row[data-has-special="true"] > span > button[data-special="true"] {
-  border-left: 1px solid rgba(212, 168, 72, .55);
+  border-left: 1px solid var(--pwa-frame-divider);
   background: rgba(92, 70, 160, .22);
-  box-shadow: inset 0 0 0 1px rgba(212, 168, 72, .55);
   color: #f4f1e8;
   font-weight: 400;
   text-shadow: none;
@@ -55,10 +54,6 @@
   background: rgba(224, 124, 24, .68);
   box-shadow: inset 0 0 0 1px rgba(226, 153, 51, .82);
   color: #fff7e9;
-}
-
-.number-reference-screen .reference-row > .reference-issue + span {
-  border-left: 1px solid rgba(161, 112, 40, .78);
 }
 
 .number-reference-screen .reference-results-end {

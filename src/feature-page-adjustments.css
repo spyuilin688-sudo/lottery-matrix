@@ -32,7 +32,7 @@
   box-sizing: border-box;
   width: 100%;
   padding: 0 12px;
-  border-radius: var(--lottery-card-radius);
+  border-radius: var(--pwa-frame-radius);
   font: inherit;
   font-size: 14px;
   font-weight: 700;
@@ -43,8 +43,9 @@
 }
 
 .notifications-screen-v2 .notification-bulk-disable {
-  border: 1px solid rgba(216, 195, 141, .72);
-  color: #D8C38D;
+  border: 1px solid var(--pwa-frame-tertiary);
+  background: var(--pwa-control-surface);
+  color: var(--lottery-text-secondary);
 }
 
 .notifications-screen-v2 .notification-bulk-actions button:not(.notification-bulk-disable):hover {
@@ -73,10 +74,10 @@
 
 .notifications-screen-v2 :is(.notification-group, .notification-system-group) {
   overflow: hidden;
-  border: 1px solid rgba(170, 119, 46, .82);
-  border-radius: 12px;
+  border: 1px solid var(--pwa-frame-secondary);
+  border-radius: var(--pwa-frame-radius);
   background: #020c12;
-  box-shadow: inset 0 0 10px rgba(150, 102, 34, .04);
+  box-shadow: none;
 }
 
 .notifications-screen-v2 .notification-row {
@@ -101,7 +102,7 @@
   right: 0;
   left: 0;
   height: 1px;
-  background: rgba(170, 119, 46, .82);
+  background: var(--pwa-frame-secondary);
   pointer-events: none;
   content: "";
 }
@@ -118,7 +119,7 @@
   right: 0;
   left: 0;
   height: 1px;
-  background: rgba(170, 119, 46, .24);
+  background: var(--pwa-frame-divider);
   pointer-events: none;
   content: "";
 }
@@ -226,8 +227,8 @@
   box-sizing: border-box;
   z-index: 1;
   padding: 0 1.4px;
-  border: .7px solid #f6c95f;
-  border-radius: 2.1px;
+  border: 1px solid var(--pwa-frame-tertiary);
+  border-radius: var(--pwa-frame-radius);
   color: #f6c95f;
   font-size: 4.2px;
   font-weight: 600;
@@ -270,9 +271,9 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  border: 1px solid rgba(211, 166, 66, .62);
-  border-radius: 2px;
-  background: transparent;
+  border: 1px solid var(--pwa-frame-tertiary);
+  border-radius: var(--pwa-frame-radius);
+  background: var(--pwa-control-surface);
   color: #d2aa56;
   font-size: clamp(8px, 2.4vw, 10px);
   font-weight: 600;
@@ -379,7 +380,7 @@
 
 .notifications-screen-v2 .notification-inline-settings-content {
   padding: 6px 4px 8px;
-  border-top: 1px solid rgba(170, 119, 46, .24);
+  border-top: 1px solid var(--pwa-frame-divider);
 }
 
 .notifications-screen-v2 .notification-matrix-grid {
@@ -438,10 +439,10 @@
   align-items: center;
   justify-content: center;
   gap: 3px;
-  border: 1px solid #4f4537;
-  border-radius: 9px;
-  background: #081016;
-  color: #d9d3c8;
+  border: 1px solid var(--pwa-frame-tertiary);
+  border-radius: var(--pwa-frame-radius);
+  background: var(--pwa-control-surface);
+  color: var(--lottery-text-secondary);
   font-size: 11px;
   line-height: 1;
   white-space: nowrap;
@@ -457,9 +458,9 @@
 }
 
 .notifications-screen-v2 .notification-choice:has(input:checked) {
-  border-color: #b78520;
-  background: rgba(191, 132, 18, .16);
-  color: #f1c85d;
+  border-color: var(--pwa-frame-secondary);
+  background: var(--pwa-control-selected);
+  color: var(--pwa-frame-secondary);
 }
 
 .notifications-screen-v2 .notification-choice span {
@@ -506,7 +507,6 @@
   margin-inline: 8px;
   height: 21px;
   min-height: 21px;
-  border-radius: 12px;
 }
 
 .notifications-screen-v2 .notification-bet-grid .notification-grid-time-row + .notification-grid-time-row {
@@ -527,23 +527,9 @@
   padding: 5px 4px 6px;
 }
 
-.notifications-screen-v2 .notification-time-select::before {
-  border-radius: 12px;
-  background: #344A66;
-  clip-path: none;
-  filter: none;
-}
-
-.notifications-screen-v2 .notification-time-select::after {
-  border-radius: 11px;
-  background: #101C2C;
-  clip-path: none;
-}
-
-.notifications-screen-v2 .notification-time-select:focus-within::before,
-.notifications-screen-v2 .notification-time-select:has(select option:checked:not([value=""]))::before {
-  background: #D8C38D;
-  filter: none;
+.notifications-screen-v2 .notification-time-select:has(select option:checked:not([value=""])) {
+  background: var(--pwa-control-selected);
+  border-color: var(--pwa-frame-secondary);
 }
 
 .notifications-screen-v2 .notification-time-select select:has(option:checked[value=""]) {
@@ -569,10 +555,6 @@
   gap: 8px;
 }
 
-.calculator-screen .calculation-results article {
-  border-color: #755329;
-}
-
 /* Final visual-language owners for the refined pages. */
 .matrix-guide-screen .guide-category-strip {
   display: flex;
@@ -580,8 +562,8 @@
   margin: 8px 4px 6px;
   padding: 3px 0;
   gap: 6px;
-  border-top: 1px solid rgba(196, 145, 69, .42);
-  border-bottom: 1px solid rgba(196, 145, 69, .42);
+  border-top: 1px solid var(--pwa-frame-divider);
+  border-bottom: 1px solid var(--pwa-frame-divider);
   border-radius: 0;
   background: transparent;
   box-shadow: none;
@@ -608,9 +590,9 @@
   grid-template-columns: auto auto;
   align-items: center;
   gap: 5.616px;
-  border: 1px solid rgba(196, 145, 69, .42);
-  border-radius: 12px;
-  background: #061019;
+  border: 1px solid var(--pwa-frame-tertiary);
+  border-radius: var(--pwa-frame-radius);
+  background: var(--pwa-control-surface);
   color: #d4cdc2;
   white-space: nowrap;
   font-size: 16.848px;
@@ -630,9 +612,9 @@
 }
 
 .matrix-guide-screen .guide-category-strip .guide-category-card[data-selected="true"] {
-  border-color: #f4ce67;
-  background: rgba(196, 145, 69, .12);
-  color: #f4ce67;
+  border-color: var(--pwa-frame-secondary);
+  background: var(--pwa-control-selected);
+  color: var(--pwa-frame-secondary);
   box-shadow: none;
 }
 
@@ -649,9 +631,7 @@
   min-height: 0;
   margin-top: 0;
   padding: 14px;
-  border-color: rgba(196, 145, 69, .42);
-  border-radius: 12px;
-  box-shadow: none;
+
 }
 
 .matrix-guide-screen .guide-preview header {
@@ -665,7 +645,7 @@
   width: 18px;
   height: 18px;
   place-items: center;
-  border: 1px solid rgba(196, 145, 69, .42);
+  border: 1px solid var(--pwa-frame-tertiary);
   border-radius: 50%;
   color: #c49145;
   font-size: 10px;
@@ -682,7 +662,7 @@
 .matrix-guide-screen .guide-preview .guide-summary {
   margin: 10px 0 0;
   padding-bottom: 6px;
-  border-bottom: 1px solid rgba(196, 145, 69, .42);
+  border-bottom: 1px solid var(--pwa-frame-divider);
   color: #d4cdc2;
   font-size: 13px;
   line-height: 1.75;
@@ -695,7 +675,7 @@
 
 .matrix-guide-screen .guide-detail-block {
   padding: 8px 0;
-  border-bottom: 1px solid rgba(196, 145, 69, .42);
+  border-bottom: 1px solid var(--pwa-frame-divider);
 }
 
 .matrix-guide-screen .guide-detail-block:last-child {
