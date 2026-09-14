@@ -7,6 +7,7 @@ const WORKER_FILE = "push-service-worker.js";
 const BUILD_STAMP = /\n?\/\/ matrix-build:[a-f0-9]{16}\s*$/;
 const CACHE_VERSION = /matrix-pwa-shell-(?:__BUILD_ID__|[a-f0-9]{16})/g;
 const BUILD_ASSETS = /const BUILD_ASSET_PATHS = \[[^;]*\];/;
+const SOURCE_SHA = /const BUILD_SOURCE_SHA = ["'](?:__SOURCE_SHA__|[a-f0-9]{7,40}|unknown)["'];/;
 
 async function listFiles(root, directory = root) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -18,7 +19,7 @@ async function listFiles(root, directory = root) {
   return nested.flat();
 }
 
-export async function stampPwaWorker(outDir) {
+export async function stampPwaWorker(outDir, options = {}) {
   const files = (await listFiles(outDir))
     .filter((file) => file !== WORKER_FILE)
     .sort();
@@ -27,6 +28,7 @@ export async function stampPwaWorker(outDir) {
   const template = (await readFile(workerPath, "utf8"))
     .replace(BUILD_STAMP, "")
     .replace(CACHE_VERSION, "matrix-pwa-shell-__BUILD_ID__")
+    .replace(SOURCE_SHA, 'const BUILD_SOURCE_SHA = "__SOURCE_SHA__";')
     .replace(BUILD_ASSETS, "const BUILD_ASSET_PATHS = [];")
     .trimEnd();
   hash.update(WORKER_FILE).update("\0").update(template).update("\0");
@@ -39,8 +41,11 @@ export async function stampPwaWorker(outDir) {
   }
 
   const buildId = hash.digest("hex").slice(0, 16);
+  const candidateSha = String(options.sourceSha || process.env.CF_PAGES_COMMIT_SHA || process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GITHUB_SHA || "unknown").trim().toLowerCase();
+  const sourceSha = /^[a-f0-9]{7,40}$/.test(candidateSha) ? candidateSha : "unknown";
   const worker = template
     .replace(CACHE_VERSION, `matrix-pwa-shell-${buildId}`)
+    .replace(SOURCE_SHA, `const BUILD_SOURCE_SHA = "${sourceSha}";`)
     .replace(BUILD_ASSETS, `const BUILD_ASSET_PATHS = ${JSON.stringify(files.filter(file => /^assets\/.*\.(?:css|m?js)$/.test(file)).map(file => `/${file}`))};`)
     .trimEnd();
   await writeFile(workerPath, `${worker}\n// matrix-build:${buildId}\n`);
