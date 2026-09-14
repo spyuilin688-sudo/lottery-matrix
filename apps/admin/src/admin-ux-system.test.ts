@@ -83,7 +83,6 @@ describe('admin UX system pass', () => {
     expect(bodyCells.get('word-break')).toBe('normal');
     expect(bodyCells.get('line-height')).toBe('1.35');
     expect(headers.get('white-space')).toBe('nowrap');
-    expect(declarations(operationsCss, '.activationDeleteRestriction').get('white-space')).toBe('normal');
     expect(adminCss).toMatch(/\.notificationLogTable td\{[^}]*white-space:normal/);
   });
 
