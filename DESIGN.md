@@ -145,7 +145,12 @@ components:
 
 首頁由品牌、彩種切換、最新開獎、下次開獎、Matrix 狀態、Matrix Core、功能入口與底部導覽組成，詳見 `docs/COMPONENT_MAP.md`。Matrix Core 與四大功能入口保持分離。表格、歷史卡與彩球不因文件化而改變密度、順序或響應式幾何。
 
-2026-09-14 首頁 Logo、彩種切換、Matrix Core 與四大功能外框統一為 1px 細金線、8px 圓角，直接修改既有樣式來源，不新增疊框、遮罩或覆寫層。Logo、Core 與功能列對齊 16px 左右邊界；Core 維持 654:181 比例、功能列上方 8px 間距。四張卡單列等寬、間距 6px，高度由 90px 降到 76px，圖片在剩餘空間以 contain 等比例顯示，名稱字級不變。功能列本身保持 0 內距、0 外框。`src/homepage/base.css` 擁有 Core 與功能卡，`logo-spacing.css` 擁有 Logo，`lottery-switcher.css` 單獨擁有彩種切換；移除舊九宮格金框及彩種切角多色描邊。彩種選中項以亮金線區分，維持原有 radio 操作與 sprite。所有圖片檔不變；啟動／聚合／共振卡的霓虹邊框已嵌入原圖，本輪保留原圖，不加金色覆蓋層。四大功能仍依序為 Matrix 同星、Matrix 對照、Matrix 牌單、Matrix 指南；Core 說明與箭頭為真實 UI。
+2026-09-14 首頁 Logo、彩種切換、Matrix Core 與四大功能外框統一為 1px 細金線、8px 圓角，直接修改既有樣式來源，不新增疊框、遮罩或覆寫層。Logo、Core 與功能列對齊 16px 左右邊界；Core 維持 654:181 比例、功能列上方 8px 間距。四張卡單列等寬、間距 6px，高度由 90px 降到 76px，圖片在剩餘空間以 contain 等比例顯示，名稱字級不變。功能列本身保持 0 內距、0 外框。`src/homepage/base.css` 擁有 Core 與功能卡，`logo-spacing.css` 擁有 Logo，`lottery-switcher.css` 單獨擁有彩種切換；移除舊九宮格金框及彩種切角多色描邊。彩種選中項以圖片亮度區分（詳見下方三層金框規格），維持原有 radio 操作與 sprite。所有圖片檔不變；啟動／聚合／共振卡的霓虹邊框已嵌入原圖，本輪保留原圖，不加金色覆蓋層。四大功能仍依序為 Matrix 同星、Matrix 對照、Matrix 牌單、Matrix 指南；Core 說明與箭頭為真實 UI。
+
+
+2026-09-15 首頁三層金框與彩種亮度：開獎資訊卡（含底部兩格時間）與 Matrix Core 使用 1px 明亮金框 `--home-frame-bright: #f0d58c`；四個 Matrix 狀態維持 1px 標準金框 `--home-frame-gold: #d6b66f`；彩種與四大功能使用 1px 低亮度金框 `--home-frame-muted: #8a713f`。框色由 `src/design-tokens.css` 唯一提供，`base.css` 與 `lottery-switcher.css` 的原有元件規則直接取用。Logo、底部導覽、8px 圓角、卡片尺寸與既有間距保留。
+
+共用圖片式彩種切換（首頁、Matrix 狀態與自訂狀態）以未選中 60%、選中 100% 原始亮度區分。`lottery-switcher.css` 在既有背景色使用 40% 黑色與 `background-blend-mode: multiply`，選中時背景色回到透明，僅壓暗 sprite 圖片；四個 1px 暗金框與焦點輪廓不受影響。切換使用 150ms background-color 過渡，沿用 `base.css` 既有 reduced-motion 區段停用過渡；不增加短線、疊框、圖片元素、灰階、位移或圖檔修改。選取語意、radio 點擊與既有查詢行為保留。
 
 
 Matrix 探索、天衡、天衍、天工與狀態頁的驗證過程，依鎖定條件整組交替使用 `#152A42`、`#0E1D30`。探索、天衡、天衍與天工的左、中、右三欄共用同組底色，欄間與列間間距統一透出純黑 `#000`；狀態頁維持既有頁面背景。既有結果的期號、特別號與欄寬依產生該結果的彩種呈現，探索設定尚未提交時不改變結果版面。版路摘要的公式序列以獨立文字節點呈現，加減版路例如 `+5`、`.`、`15`，合值序列為 `合值`、`5`、`.`、`15`（不顯示 `+`）；相鄰文字節點間距皆為 1px。

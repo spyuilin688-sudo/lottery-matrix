@@ -24,6 +24,9 @@ Token 更新必須先在 canonical CSS owner 完成，並在同一 changeset 同
 | `--lottery-neutral-950` | `#02070c` | 應用背景 |
 | `--lottery-gold-500` | `#c49145` | 標籤金色 |
 | `--lottery-gold-300` | `#f4ce67` | 選取與亮金狀態 |
+| `--home-frame-bright` | `#f0d58c` | 首頁開獎資訊（含時間格）與 Matrix Core 的 1px 明亮金框 |
+| `--home-frame-gold` | `#d6b66f` | 四個 Matrix 狀態的 1px 標準金框；保留既有 Logo 與導覽用途 |
+| `--home-frame-muted` | `#8a713f` | 彩種與四大功能的 1px 低亮度金框 |
 | `--layout-page-inline` | `16px` | 一般手機頁面與首頁內容區統一使用 16px 左右留白 |
 | `--layout-section-gap` | `8px` | 主要區段節奏 |
 | `--lottery-card-radius` | `10px` | 標準卡片圓角 |

@@ -8,9 +8,9 @@ const homepageCss = readLocalCss(new URL("../homepage-repair.css", import.meta.u
 const prototypeCss = readFileSync(new URL("../prototype.css", import.meta.url), "utf8");
 
 describe("homepage control layout rules", () => {
-  it("uses the shared Matrixbba sprite and scoped selection frame", () => {
+  it("uses the shared Matrixbba sprite and restores selected artwork brightness", () => {
     expect(homepageCss).toMatch(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*background-image:\s*url\("\/assets\/lottery\/status\/Matrixbba\.png"\);/s);
-    expect(homepageCss).toMatch(/\.lottery-card\[data-selected="true"\]\s*\{[^}]*border-color:\s*var\(--home-frame-gold\);/s);
+    expect(homepageCss).toMatch(/\.lottery-card\[data-selected="true"\]\s*\{[^}]*background-color:\s*transparent;/s);
     expect(homepageCss).not.toMatch(/\.lottery-card\[data-selected="true"\]::before\s*\{/);
   });
 

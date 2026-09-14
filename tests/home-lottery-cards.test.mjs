@@ -18,6 +18,14 @@ test("each lottery button restores its previous artwork quarter and logo size", 
   assert.doesNotMatch(css, /lottery-card-logo|--lottery-logo-scale|lottery-switcher--independent-logos/);
 });
 
-test("homepage keeps the approved unselected readability adjustment", () => {
-  assert.match(css, /\.home-screen \.home-switcher-box > \.lottery-switcher-hit-grid > \.lottery-card:not\(\[data-selected="true"\]\)\s*\{[^}]*grayscale\(\.35\) brightness\(\.82\);/s);
+test("lottery selection dims only the original artwork and keeps one muted frame", () => {
+  const card = css.match(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{([^}]*)\}/s)?.[1] ?? "";
+  const selected = css.match(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]\s*\{([^}]*)\}/s)?.[1] ?? "";
+  assert.match(card, /background-color:\s*rgba\(0, 0, 0, \.4\);/);
+  assert.match(card, /background-blend-mode:\s*multiply;/);
+  assert.match(card, /border:\s*1px solid var\(--home-frame-muted\);/);
+  assert.match(card, /transition:\s*var\(--home-lottery-transition, background-color 150ms ease\);/);
+  assert.match(selected, /background-color:\s*transparent;/);
+  assert.doesNotMatch(card + selected, /(?:filter|opacity|transform|border-color):/);
+  assert.doesNotMatch(css, /\.lottery-card(?:::[a-z]+|\[data-selected="true"\]::[a-z]+)\s*\{/);
 });
