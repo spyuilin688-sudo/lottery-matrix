@@ -378,7 +378,7 @@ export function MatrixExplorePage({
   const startExplore = () => {
     const nextFilters = defaultFiltersFor(hit, road);
     setSearched(true);
-      setSameCode(false);
+    setSameCode(false);
     setSelectedFilters(nextFilters);
     setSelectedPredictionNumber(null);
     setResultPage(1);
@@ -605,7 +605,7 @@ export function MatrixExplorePage({
       <button type="button" className="primary-action branded-explore-action" onClick={startExplore}>
         <MagnifyingGlassIcon /><span>{isTianyan ? "開始天衍" : isTianheng ? "開始天衡" : "開始探索"}</span>
       </button>
-{searched ? (
+      {searched ? (
         <>
           <section className="panel repeat-stats-panel">
             <header className="repeat-stats-heading">

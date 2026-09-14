@@ -83,7 +83,7 @@ test('requested PWA frame refinements remain canonical and scoped', () => {
 
   assert.doesNotMatch(explore, /HistoryList/);
   assert.doesNotMatch(explore, /historyExpanded/);
-  assert.match(css, /\.matrix-explore-screen:not\(\.matrix-tianheng-screen\):not\(\.matrix-tianyan-screen\) \.lottery-tabs,\s*\.matrix-card-body \.lottery-tabs/);
+  assert.match(css, /\.matrix-explore-screen:not\(\.matrix-tianheng-screen\):not\(\.matrix-tianyan-screen\):not\(\.matrix-tiangong-screen\) \.lottery-tabs,\s*\.matrix-card-body \.lottery-tabs/);
   assert.match(css, /--lottery-tab-selected-underline:\s*var\(--pwa-frame-secondary\)/);
   assert.match(spacing, /\.matrix-explore-main-screen \.advanced-row \{[\s\S]*?border-top:\s*1px solid var\(--pwa-frame-secondary\)/);
   assert.match(spacing, /\.matrix-tiangong-screen \.tiangong-general-settings \.tiangong-advanced-divider \{[\s\S]*?border-bottom:\s*1px solid var\(--pwa-frame-secondary\)/);

@@ -65,7 +65,7 @@
   margin: 0 0 var(--lottery-tabs-bottom-gap, 8px);
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
-.matrix-explore-screen:not(.matrix-tianheng-screen):not(.matrix-tianyan-screen) .lottery-tabs,
+.matrix-explore-screen:not(.matrix-tianheng-screen):not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .lottery-tabs,
 .matrix-card-body .lottery-tabs {
   --lottery-tab-border-width: 0px;
   --lottery-tab-border-color: transparent;
