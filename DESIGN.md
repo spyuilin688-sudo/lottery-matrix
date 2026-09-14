@@ -22,7 +22,7 @@ rounded:
 spacing:
   page-inline: "16px"
   section-gap: "8px"
-  bottom-navigation-height: "72px"
+  bottom-navigation-height: "70px"
 components:
   app-canvas:
     backgroundColor: "{colors.background}"
@@ -95,9 +95,9 @@ components:
 | `--layout-page-inline` | `16px` | 一般手機頁面與首頁內容區統一使用 16px 左右留白 |
 | `--layout-section-gap` | `8px` | 主要區段節奏 |
 | `--lottery-card-radius` | `10px` | 標準卡片圓角 |
-| `--bottom-navigation-height` | `72px` | 固定底部導覽高度 |
+| `--bottom-navigation-height` | `70px` | 固定底部導覽高度 |
 
-頂端與底部使用 `env(safe-area-inset-*)`，內容清除量由 `--layout-bottom-nav-clearance` 推導。資料面板可擁有內部捲動，但不得讓新容器遮住 72px 導覽或安全區；載入、失敗與 busy 狀態保留控制尺寸。 所有頁面保留滑動功能，但隱藏原生與應用程式捲動條。
+頂端與底部使用 `env(safe-area-inset-*)`，內容清除量由 `--layout-bottom-nav-clearance` 推導。資料面板可擁有內部捲動，但不得讓新容器遮住 70px 導覽或安全區；載入、失敗與 busy 狀態保留控制尺寸。 所有頁面保留滑動功能，但隱藏原生與應用程式捲動條。
 
 ## Elevation & Depth
 
@@ -137,7 +137,7 @@ components:
 
 同日清理牌單可命中的共用舊規則：`.feature-screen` 合併於原本較後方的正式容器規則，保留既有套用順序；內容底部由非首頁的直接子層規則單獨保留「底部導覽避讓值 + 8px」。共用 48px 操作高度明確排除牌單下載變體，44px 由 `.matrix-card-download-action` 單獨擁有；品牌裝飾 `::before` 與 `::after` 各自設定位置。外層 `.app-screen` 背景僅由 `src/prototype.css` 擁有，移除 `src/styles.css` 的舊白底。品牌背景、選取狀態、安全區與鍵盤避讓沿用現有行為。
 
-2026-09-14：依使用者確認的細金框示意圖，共用底部導覽改為滿寬單一 1px 金線上緣，四個等寬入口依序為首頁、快捷、計算機、我的。主體維持 72px，下方接瀏覽器安全區；內距左右各至少 8px、上下各 6px、項目間距 4px。圖示 24px、文字 12px、圖文距離 4px；選中項使用 1px 細金框、8px 圓角、淡金底、亮金文字與 `aria-current`。移除元件中的 PD01 階梯框與拱框引用，保留素材檔不修改。`src/prototype.css` 是唯一樣式來源，沿用 180ms 色彩轉換與 reduced motion。
+2026-09-14：依使用者確認的細金框示意圖，共用底部導覽改為滿寬單一 1px 金線上緣，四個等寬入口依序為首頁、快捷、計算機、我的。主體維持 70px，下方接瀏覽器安全區；內距左右各至少 8px、上下各 6px、項目間距 4px。圖示 24px、文字 12px、圖文距離 4px；選中項使用 1px 細金框、8px 圓角、淡金底、亮金文字與 `aria-current`。移除元件中的 PD01 階梯框與拱框引用，保留素材檔不修改。`src/prototype.css` 是唯一樣式來源，沿用 180ms 色彩轉換與 reduced motion。
 
 首頁快捷設定移到 Logo 卡右上角；Matrix 狀態頁的自訂觸發條件移到既有頁首 action slot，避免占用底部四個入口。兩者共用 22px 金色齒輪、44px 觸控區，保留 800ms 內雙擊、鍵盤、權限及設定流程。首頁框線由 `--home-frame-gold: #d6b66f`、`--home-frame-muted: #8a713f`、`--home-frame-radius: 8px` 統一；未選中導覽圖示與文字均為 `#c3beb6`，選中文字沿用 `#ffe2a0`。
 
@@ -148,9 +148,9 @@ components:
 2026-09-14 首頁 Logo、彩種切換、Matrix Core 與四大功能外框統一為 1px 細金線、8px 圓角，直接修改既有樣式來源，不新增疊框、遮罩或覆寫層。Logo、Core 與功能列對齊 16px 左右邊界；Core 維持 654:181 比例、功能列上方 8px 間距。四張卡單列等寬、間距 6px，高度由 90px 降到 76px，圖片在剩餘空間以 contain 等比例顯示，名稱字級不變。功能列本身保持 0 內距、0 外框。`src/homepage/base.css` 擁有 Core 與功能卡，`logo-spacing.css` 擁有 Logo，`lottery-switcher.css` 單獨擁有彩種切換；移除舊九宮格金框及彩種切角多色描邊。彩種選中項以圖片亮度區分（詳見下方三層金框規格），維持原有 radio 操作與 sprite。所有圖片檔不變；啟動／聚合／共振卡的霓虹邊框已嵌入原圖，本輪保留原圖，不加金色覆蓋層。四大功能仍依序為 Matrix 同星、Matrix 對照、Matrix 牌單、Matrix 指南；Core 說明與箭頭為真實 UI。
 
 
-2026-09-15 首頁三層金框與彩種亮度：開獎資訊卡（含底部兩格時間）與 Matrix Core 使用 1px 明亮金框 `--home-frame-bright: #f0d58c`；四個 Matrix 狀態維持 1px 標準金框 `--home-frame-gold: #d6b66f`；彩種與四大功能使用 1px 低亮度金框 `--home-frame-muted: #8a713f`。框色由 `src/design-tokens.css` 唯一提供，`base.css` 與 `lottery-switcher.css` 的原有元件規則直接取用。Logo、底部導覽、8px 圓角、卡片尺寸與既有間距保留。
+2026-09-15 首頁三層金框與彩種亮度：開獎資訊卡（含底部兩格時間）與 Matrix Core 使用 1px 明亮金框 `--home-frame-bright: #f0d58c`；四個 Matrix 狀態維持 1px 標準金框 `--home-frame-gold: #d6b66f`；四大功能使用 1px 低亮度金框 `--home-frame-muted: #8a713f`；彩種改依下述選取狀態使用標準金色透明框。框色由 `src/design-tokens.css` 唯一提供，`base.css` 與 `lottery-switcher.css` 的原有元件規則直接取用。Logo 與主次金框保留；彩種 Selector 及底部導覽依下述更新規格。
 
-共用圖片式彩種切換（首頁、Matrix 狀態與自訂狀態）以未選中 60%、選中 100% 原始亮度區分。`lottery-switcher.css` 在既有背景色使用 40% 黑色與 `background-blend-mode: multiply`，選中時背景色回到透明，僅壓暗 sprite 圖片；四個 1px 暗金框與焦點輪廓不受影響。切換使用 150ms background-color 過渡，沿用 `base.css` 既有 reduced-motion 區段停用過渡；不增加短線、疊框、圖片元素、灰階、位移或圖檔修改。選取語意、radio 點擊與既有查詢行為保留。
+共用彩種 Selector（首頁、Matrix 狀態與自訂狀態）由 `lottery-switcher.css` 單獨擁有：四格間距 8px，原流動高度減 10px，但窄畫面至少保留 44px 點擊高度。使用既有四個獨立 Logo，SVG viewBox 依原檔 alpha 邊界排除透明留白；不改圖檔、不加補償位移。移除含背景與內建框線的 Matrixbba sprite 渲染。未選中：標準金框透明度 22%、內容透明度 60%、應用主背景；選中：框 45%、內容 100%、6% 淡金底。原有 1px 框、8px 圓角不變；180ms 過渡只改框、底色、內容透明度與按壓亮度，無發光。reduced-motion 由 `base.css` 既有區段停用。按鈕維持 radio 語意，單一 Tab 入口，方向鍵循環選中並移動焦點，Home／End 跳到首尾。
 
 
 Matrix 探索、天衡、天衍、天工與狀態頁的驗證過程，依鎖定條件整組交替使用 `#152A42`、`#0E1D30`。探索、天衡、天衍與天工的左、中、右三欄共用同組底色，欄間與列間間距統一透出純黑 `#000`；狀態頁維持既有頁面背景。既有結果的期號、特別號與欄寬依產生該結果的彩種呈現，探索設定尚未提交時不改變結果版面。版路摘要的公式序列以獨立文字節點呈現，加減版路例如 `+5`、`.`、`15`，合值序列為 `合值`、`5`、`.`、`15`（不顯示 `+`）；相鄰文字節點間距皆為 1px。
@@ -263,6 +263,10 @@ Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封
 
 
 
-2026-09-15 首頁四彩種狀態卡：`src/homepage/base.css` 單獨繪製與首頁一致的 1px 細金框（`--home-frame-gold`）與 8px 圓角（`--home-frame-radius`）。原狀態 PNG 的文字、中央光環、色彩與彩種 Logo 保留；僅裁去圖片邊緣內建的彩色框，不縮放、不位移、不改圖檔。移除舊切角及按狀態變色的外光暈；載入與失敗使用同一金框，按下沿用首頁亮度回饋。四張卡的寬高、排列、間距與資料邏輯不變。
+2026-09-15 首頁四彩種狀態卡：`src/homepage/base.css` 單獨繪製與首頁一致的 1px 細金框（`--home-frame-gold`）與 8px 圓角（`--home-frame-radius`）。原狀態 PNG 的文字、中央光環與彩種 Logo 保留；圖片飽和度為 87%，背景圖亮度 92%、次要彩種 Logo 亮度 85%，由既有圖片規則控制；僅裁去圖片邊緣內建的彩色框，不縮放、不位移、不改圖檔。移除舊切角及按狀態變色的外光暈；載入與失敗使用同一金框，按下沿用首頁亮度回饋。四張卡統一 1.9 寬高比，圖片以 contain 填入，避免不同狀態原圖比例造成兩列高度差；排列、間距與資料邏輯不變。
 
 首頁四彩種狀態卡依使用者最新要求，水平與垂直卡片間距統一為 4px，由 `src/homepage/base.css` 的既有 `.matrix-status-card-grid` 單獨控制；維持 1px 細金框、8px 圓角與兩欄兩列。
+
+### 底部導覽選取樣式 — 2026-09-15
+
+`prototype.css` 為唯一樣式來源：高度 70px 加 safe-area、`--bottom-nav-panel-900` 深藍底、14% 標準金的 1px 上分隔線。選中圖示與文字共用 `--bottom-nav-gold`，100% 透明度、12×2px 指示線；未選中灰白 `--bottom-nav-text-default`，70% 透明度。移除選中大框與底色；圖示維持 Lucide 24px、strokeWidth 1.6。180ms 顏色與透明度切換，reduced-motion 停用；四個路由與快捷開啟方式不變。

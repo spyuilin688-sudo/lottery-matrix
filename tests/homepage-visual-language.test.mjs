@@ -45,11 +45,12 @@ test("status cards share the thin gold frame in every load and press state", () 
   assert.match(base, /\.matrix-status-card:active,[\s\S]*?filter:\s*brightness\(1\.15\);/);
 });
 
-test("removes only the artwork perimeter without moving or resizing the content", () => {
+test("status artwork fits the same card ratio without compensating offsets", () => {
   const artwork = base.match(/\.home-screen \.matrix-status-artwork\s*\{([^}]*)\}/s)[1];
   assert.match(artwork, /clip-path:\s*inset\(6% 4% round 4px\);/);
   assert.match(artwork, /width:\s*100%;/);
-  assert.match(artwork, /height:\s*auto;/);
+  assert.match(artwork, /height:\s*100%;/);
+  assert.match(base, /\.home-screen \.matrix-status-card\s*\{[^}]*aspect-ratio:\s*1\.9;/s);
   assert.doesNotMatch(artwork, /(?:^|;)\s*(?:transform|position|margin|scale):/);
 });
 

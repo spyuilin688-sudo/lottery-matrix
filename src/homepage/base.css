@@ -468,6 +468,7 @@
   appearance: none;
   position: relative;
   display: block;
+  aspect-ratio: 1.9;
   min-width: 0;
   min-height: 0;
   padding: 0;
@@ -483,7 +484,7 @@
 .home-screen .matrix-status-artwork {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
   max-width: none;
   max-height: none;
   object-fit: contain;
@@ -491,6 +492,7 @@
   pointer-events: none;
   /* Remove the baked-in perimeter frame without scaling or moving the artwork. */
   clip-path: inset(6% 4% round 4px);
+  filter: saturate(.87) brightness(.92);
 }
 
 .home-screen .matrix-status-card[data-load-state="loading"] .matrix-status-artwork,
@@ -521,6 +523,7 @@
   object-fit: contain;
   transform: translate(-50%, -50%);
   pointer-events: none;
+  filter: saturate(.87) brightness(.85);
 }
 
 .home-screen .home-shortcut-row {
@@ -593,6 +596,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card,
+  .lottery-switcher--home-style .lottery-selector-logo,
   .home-screen .matrix-core-banner,
   .home-screen .home-shortcut {
     --home-lottery-transition: none;
