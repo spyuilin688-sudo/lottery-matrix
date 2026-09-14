@@ -11,11 +11,12 @@ test("底部導覽只由共用樣式控制，不再受首頁覆寫", () => {
   assert.doesNotMatch(prototype, /calc\(var\(--layout-bottom-nav-clearance\) \+ 36px\)/);
 });
 
-test("底部導覽底圖不使用超寬、負位移或額外高度強制拉伸", () => {
-  const artworkRule = prototype.match(/\.bottom-navigation-artwork\s*\{[^}]+\}/s)?.[0] ?? "";
+test("底部導覽不再使用可拉伸裝飾底圖，正式容器直接貼底", () => {
+  const navigationRule = prototype.match(/\.bottom-navigation\s*\{[^}]+\}/s)?.[0] ?? "";
 
-  assert.match(artworkRule, /inset:\s*0;/);
-  assert.match(artworkRule, /width:\s*100%;/);
-  assert.match(artworkRule, /height:\s*var\(--bottom-navigation-height\);/);
-  assert.doesNotMatch(artworkRule, /-2%|-1px|104%|\+ 2px/);
+  assert.doesNotMatch(prototype, /\.bottom-navigation-artwork\s*\{/);
+  assert.match(navigationRule, /inset:\s*auto 0 0;/);
+  assert.match(navigationRule, /width:\s*100%;/);
+  assert.match(navigationRule, /height:\s*calc\(var\(--bottom-navigation-height\) \+ var\(--bottom-nav-safe-area\)\);/);
+  assert.doesNotMatch(navigationRule, /-2%|-1px|104%|\+ 2px/);
 });
