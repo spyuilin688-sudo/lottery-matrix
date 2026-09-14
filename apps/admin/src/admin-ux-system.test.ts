@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs';
 import { parse } from 'postcss';
 import { describe, expect, it } from 'vitest';
 
-const appSource = readFileSync(new URL('./AdminApp.tsx', import.meta.url), 'utf8');
 const adminSource = readFileSync(new URL('./AdminTodos.tsx', import.meta.url), 'utf8');
 const listControlsSource = readFileSync(new URL('./AdminListControls.tsx', import.meta.url), 'utf8');
 const adminCss = readFileSync(new URL('./admin.css', import.meta.url), 'utf8');
@@ -44,13 +43,11 @@ describe('admin UX system pass', () => {
     expect(operationsCss).not.toContain('.managementFilterLabel');
   });
 
-  it('gives the member name column a realistic width instead of consuming table space', () => {
-    expect(appSource).toContain('className="managementList tableWrap userManagementList"');
-    expect(appSource).toContain('className="userManagementNameCol"');
-    expect(appSource).toContain('className="userManagementTimeCol"');
-    expect(declarations(operationsCss, '.userManagementList table').get('table-layout')).toBe('fixed');
-    expect(declarations(operationsCss, '.userManagementNameCol').get('width')).toBe('124px');
-    expect(declarations(operationsCss, '.userManagementTimeCol').get('width')).toBe('148px');
+  it('caps the first operational list column instead of wasting width on member names', () => {
+    const firstColumn = declarations(operationsCss, '.managementToolbar + .managementList th:first-child,\n.managementToolbar + .managementList td:first-child');
+    expect(firstColumn.get('width')).toBe('124px');
+    expect(firstColumn.get('max-width')).toBe('124px');
+    expect(declarations(operationsCss, '.managementList table').get('width')).toBe('max-content');
   });
 
   it('keeps page actions smaller than form confirmation and header touch targets', () => {
