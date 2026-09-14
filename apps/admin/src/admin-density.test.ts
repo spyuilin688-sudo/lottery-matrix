@@ -5,8 +5,8 @@ import { parse } from 'postcss';
 const adminCss = readFileSync(new URL('./admin.css', import.meta.url), 'utf8');
 const operationsCss = readFileSync(new URL('./admin-operations.css', import.meta.url), 'utf8');
 const statusCss = readFileSync(new URL('./system-status.css', import.meta.url), 'utf8');
-
 const profileCss = readFileSync(new URL('./profile-name.css', import.meta.url), 'utf8');
+
 const declarationsAt = (css: string, selector: string, width: number) => {
   const values = new Map<string, string>();
   parse(css).walkRules(candidate => {
@@ -27,6 +27,7 @@ describe('admin compact density', () => {
     expect(declarationsAt(profileCss, '.nameDialog input', 390).get('padding')).toBe('6px 8px');
     expect(operationsCss).not.toMatch(/\.nameDialog(?: h2| input)?\s*\{/);
   });
+
   it('keeps the sticky title bar compact while content remains centered', () => {
     expect(adminCss).toMatch(/header\{min-height:46px;height:auto;/);
     expect(adminCss).toMatch(/header\{[^}]*align-items:center/);
@@ -41,22 +42,23 @@ describe('admin compact density', () => {
     expect(operationsCss).not.toMatch(/\.metric\s*\{/);
   });
 
-  it('separates overview groups and gives search cards one responsive hierarchy', () => {
+  it('separates overview groups and gives compact search cards responsive columns', () => {
     expect(declarationsAt(adminCss, '.cards', 390).get('gap')).toBe('8px');
     expect(declarationsAt(adminCss, '.cards', 1000).get('gap')).toBe('8px');
     expect(operationsCss).toMatch(/\.metricDivider \{ grid-column: 1 \/ -1; height: 1px; margin: 0;/);
-    expect(declarationsAt(operationsCss, '.managementPrimaryFilters', 1000).get('grid-template-columns')).toBe('minmax(180px, 1fr) 112px 112px minmax(64px, max-content)');
-    expect(declarationsAt(operationsCss, '.managementPrimaryFilters', 390).get('grid-template-columns')).toBe('minmax(0, 1fr) minmax(80px, auto)');
-    expect(declarationsAt(operationsCss, '.managementSecondaryFilters', 390).get('grid-template-columns')).toBe('repeat(2, minmax(0, 1fr))');
+    expect(declarationsAt(operationsCss, '.managementPrimaryFilters', 1000).get('grid-template-columns')).toBe('minmax(180px, 1fr) minmax(64px, max-content)');
+    expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasStatusFilter', 1000).get('grid-template-columns')).toBe('minmax(180px, 1fr) 112px minmax(64px, max-content)');
+    expect(declarationsAt(operationsCss, '.managementPrimaryFilters.hasExtraFilter', 1000).get('grid-template-columns')).toBe('minmax(180px, 1fr) 112px 112px minmax(64px, max-content)');
     expect(declarationsAt(operationsCss, '.managementCount', 390).get('min-width')).toBe('64px');
     expect(declarationsAt(operationsCss, '.managementCount', 390).get('text-align')).toBe('right');
+    expect(operationsCss).not.toContain('.managementSecondaryFilters');
   });
 
   it('keeps user and subscription search cards compact', () => {
     expect(operationsCss).toMatch(/\.managementToolbar \{[\s\S]*?margin-bottom: 8px;[\s\S]*?padding: 6px;/);
     expect(operationsCss).toMatch(/\.managementToolbar input \{ height: 32px; \}/);
     expect(operationsCss).toMatch(/\.managementToolbar select \{ height: 32px; \}/);
-    expect(declarationsAt(operationsCss, '.managementSecondaryFilters', 1000).get('border-top')).toBe('1px solid #292c32');
+    expect(declarationsAt(operationsCss, '.managementList table', 390).get('min-width')).toBe('820px');
   });
 
   it('compacts transfer requests without shrinking text actions into square buttons', () => {

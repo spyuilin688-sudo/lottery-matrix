@@ -17,6 +17,8 @@ export function AdminListControls({ page, name, statuses = [], sorts, showError 
   const composing = useRef(false);
   const [keyword, setKeyword] = useState(page.query.keyword);
   const showControls = operationalSearchCards.has(name);
+  const primaryClass = `managementPrimaryFilters${statuses.length ? ' hasStatusFilter' : ''}${children ? ' hasExtraFilter' : ''}`;
+  void sorts;
 
   useEffect(() => { setKeyword(page.query.keyword); }, [page.query.keyword]);
 
@@ -24,7 +26,7 @@ export function AdminListControls({ page, name, statuses = [], sorts, showError 
     <>
       {showControls && (
         <div className={`managementToolbar ${className}`}>
-          <div className="managementPrimaryFilters">
+          <div className={primaryClass}>
             <div className="managementSearchField">
               <input
                 ref={input}
@@ -76,47 +78,6 @@ export function AdminListControls({ page, name, statuses = [], sorts, showError 
             >
               {page.loading ? '讀取中' : page.error ? '—' : `${page.total} 筆`}
             </span>
-          </div>
-          <div className="managementSecondaryFilters">
-            <label className="managementFilterLabel">
-              <span>開始日期</span>
-              <input
-                aria-label={`${name}開始日期`}
-                type="date"
-                value={page.query.startDate}
-                onChange={(event) => page.setQuery({ startDate: event.target.value })}
-              />
-            </label>
-            <label className="managementFilterLabel">
-              <span>結束日期</span>
-              <input
-                aria-label={`${name}結束日期`}
-                type="date"
-                value={page.query.endDate}
-                onChange={(event) => page.setQuery({ endDate: event.target.value })}
-              />
-            </label>
-            <label className="managementFilterLabel">
-              <span>排序</span>
-              <select
-                aria-label={`${name}排序欄位`}
-                value={page.query.sortBy}
-                onChange={(event) => page.setQuery({ sortBy: event.target.value })}
-              >
-                {sorts.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-              </select>
-            </label>
-            <label className="managementFilterLabel">
-              <span>方向</span>
-              <select
-                aria-label={`${name}排序方向`}
-                value={page.query.sortDirection}
-                onChange={(event) => page.setQuery({ sortDirection: event.target.value as 'asc' | 'desc' })}
-              >
-                <option value="desc">遞減</option>
-                <option value="asc">遞增</option>
-              </select>
-            </label>
           </div>
         </div>
       )}

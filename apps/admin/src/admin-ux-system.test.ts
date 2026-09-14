@@ -32,12 +32,22 @@ describe('admin UX system pass', () => {
     expect(divider.get('background')).toBe('#30333a');
   });
 
-  it('groups search, secondary filters, and count inside one canonical search card', () => {
+  it('keeps operational search cards limited to search, filters, and count', () => {
     expect(listControlsSource).toContain('managementPrimaryFilters');
-    expect(listControlsSource).toContain('managementSecondaryFilters');
     expect(listControlsSource).toContain('managementSearchField');
     expect(listControlsSource).toContain('managementCount');
-    expect(operationsCss).toMatch(/\.managementSecondaryFilters \{[^}]*border-top: 1px solid #292c32;/);
+    expect(listControlsSource).not.toContain('managementSecondaryFilters');
+    expect(listControlsSource).not.toContain('type="date"');
+    expect(listControlsSource).not.toContain('排序方向');
+    expect(operationsCss).not.toContain('.managementSecondaryFilters');
+    expect(operationsCss).not.toContain('.managementFilterLabel');
+  });
+
+  it('caps the first operational list column instead of wasting width on member names', () => {
+    const firstColumn = declarations(operationsCss, '.managementToolbar + .managementList th:first-child,\n.managementToolbar + .managementList td:first-child');
+    expect(firstColumn.get('width')).toBe('124px');
+    expect(firstColumn.get('max-width')).toBe('124px');
+    expect(declarations(operationsCss, '.managementList table').get('width')).toBe('max-content');
   });
 
   it('keeps page actions smaller than form confirmation and header touch targets', () => {

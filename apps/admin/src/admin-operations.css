@@ -1,7 +1,7 @@
 .managementToolbar {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 6px;
+  gap: 0;
   margin-bottom: 8px;
   padding: 6px;
   border: 1px solid #292c32;
@@ -35,9 +35,15 @@
 .managementToolbar select { min-width: 0; font-size: 13px; }
 .managementPrimaryFilters {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) 112px 112px minmax(64px, max-content);
+  grid-template-columns: minmax(180px, 1fr) minmax(64px, max-content);
   gap: 6px;
   align-items: center;
+}
+.managementPrimaryFilters.hasStatusFilter {
+  grid-template-columns: minmax(180px, 1fr) 112px minmax(64px, max-content);
+}
+.managementPrimaryFilters.hasExtraFilter {
+  grid-template-columns: minmax(180px, 1fr) 112px 112px minmax(64px, max-content);
 }
 .managementSearchField { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; min-width: 0; }
 .managementClearButton {
@@ -63,16 +69,6 @@
   text-align: right;
   white-space: nowrap;
 }
-.managementSecondaryFilters {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(130px, 1fr)) minmax(140px, 1fr) 96px;
-  gap: 6px;
-  align-items: end;
-  padding-top: 6px;
-  border-top: 1px solid #292c32;
-}
-.managementFilterLabel { display: grid; gap: 3px; min-width: 0; color: #8f939b; font-size: 11px; }
-.managementFilterLabel > span { color: inherit; font-size: inherit; white-space: nowrap; }
 .managementToolbarError { margin: -2px 0 8px; color: #efb3b3; font-size: 12px; }
 .managementToolbarError button {
   min-height: 28px;
@@ -110,7 +106,9 @@
 .transferActions button:focus-visible { border-color: #6a603f; background: #211e17; color: #f0d98f; }
 .transferActions .transferReject { color: #d98585; }
 .permissionBox span { font-size: 13px; color: #c4c6cc; }
-.managementList table { min-width: 980px; }
+.managementList table { width: max-content; min-width: 860px; }
+.managementToolbar + .managementList th:first-child,
+.managementToolbar + .managementList td:first-child { width: 124px; max-width: 124px; }
 .pagination { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 8px; }
 .pagination button { border: 1px solid #343840; background: #15181d; color: #eee; border-radius: 8px; padding: 4px 8px; min-width: 0; min-height: 30px; font-size: 12px; }
 .pagination button:disabled { opacity: .4; }
@@ -161,12 +159,13 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 
 @media (max-width: 760px) {
   .overviewCards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .managementPrimaryFilters { grid-template-columns: minmax(0, 1fr) minmax(80px, auto); }
+  .managementPrimaryFilters,
+  .managementPrimaryFilters.hasStatusFilter { grid-template-columns: minmax(0, 1fr) minmax(64px, max-content); }
+  .managementPrimaryFilters.hasExtraFilter { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(64px, max-content); }
   .managementSearchField { grid-column: 1 / -1; }
-  .managementCount { grid-column: 2; }
-  .managementSecondaryFilters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .managementCount { grid-column: -2 / -1; }
   .managementList { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .managementList table { min-width: 920px; }
+  .managementList table { min-width: 820px; }
   .transferRow { grid-template-columns: 1fr auto; }
   .transferRow > div:first-child { grid-row: 1 / span 2; }
   .transferRow .transferActions { grid-column: 2; grid-row: 2; display: flex; flex-wrap: nowrap; justify-self: end; }
