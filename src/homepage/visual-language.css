@@ -13,7 +13,6 @@
   margin-block-start: var(--home-gap-status-core);
 }
 
-.home-screen .latest-draw-card,
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
   --home-frame-inner-color: color-mix(in srgb, var(--home-frame-color) 48%, transparent);
   --home-octagon-frame:
@@ -47,35 +46,6 @@
     0 var(--home-octagon-cut)
   );
   border-radius: 0;
-}
-
-.home-screen .latest-draw-card {
-  --home-octagon-cut: clamp(6px, 2.05vw, 8px);
-  clip-path: polygon(
-    var(--home-octagon-cut) 0,
-    calc(100% - var(--home-octagon-cut)) 0,
-    100% var(--home-octagon-cut),
-    100% calc(100% - var(--home-octagon-cut)),
-    calc(100% - var(--home-octagon-cut)) 100%,
-    var(--home-octagon-cut) 100%,
-    0 calc(100% - var(--home-octagon-cut)),
-    0 var(--home-octagon-cut)
-  );
-  border: 0;
-  border-radius: 0;
-  box-shadow: var(--home-frame-shadow);
-}
-
-.home-screen .latest-draw-card::after {
-  position: absolute;
-  z-index: 4;
-  inset: 0;
-  display: block;
-  clip-path: inherit;
-  background: var(--home-octagon-frame);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lottery-gold-500) 38%, transparent);
-  content: "";
-  pointer-events: none;
 }
 
 .home-screen .matrix-status-section {
