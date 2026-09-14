@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: project-ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   SCOPE_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
@@ -190,3 +190,33 @@ jobs:
         run: uv sync --frozen
       - name: Related Matrix API files
         run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run python
+
+  release-gate:
+    needs: [scope, runtime-integrity, test-and-build, runtime-tests, admin, matrix-api]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      scope: ${{ needs.scope.result }}
+      runtime_integrity: ${{ needs.runtime-integrity.result }}
+      test_and_build: ${{ needs.test-and-build.result }}
+      runtime_tests: ${{ needs.runtime-tests.result }}
+      admin: ${{ needs.admin.result }}
+      matrix_api: ${{ needs.matrix-api.result }}
+    steps:
+      - name: Require every check for this commit
+        run: |
+          node <<'NODE'
+          const required = ['scope', 'runtime_integrity', 'admin'];
+          const conditional = ['test_and_build', 'runtime_tests', 'matrix_api'];
+          for (const name of required) {
+            if (process.env[name] !== 'success') {
+              throw new Error(`Required CI job did not succeed: ${name}=${process.env[name]}`);
+            }
+          }
+          for (const name of conditional) {
+            if (!['success', 'skipped'].includes(process.env[name])) {
+              throw new Error(`Conditional CI job neither succeeded nor skipped: ${name}=${process.env[name]}`);
+            }
+          }
+          NODE
