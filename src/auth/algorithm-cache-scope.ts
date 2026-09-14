@@ -6,14 +6,16 @@ import { logicalSessionIdentity } from './session-identity';
 let identity: string | null | undefined;
 let generation = 0;
 const listeners = new Set<() => void>();
+const initializationListeners = new Set<() => void>();
 
 export function getAlgorithmCacheScope() {
   return generation;
 }
 
-export function subscribeAlgorithmCacheScope(listener: () => void) {
+export function subscribeAlgorithmCacheScope(listener: () => void, options: { notifyOnInitialize?: boolean } = {}) {
   listeners.add(listener);
-  return () => { listeners.delete(listener); };
+  if (options.notifyOnInitialize) initializationListeners.add(listener);
+  return () => { listeners.delete(listener); initializationListeners.delete(listener); };
 }
 
 function sessionIdentity(session: Session | null) {
@@ -31,7 +33,7 @@ export function updateAlgorithmCacheSession(session: Session | null) {
     identity = next;
     generation += 1;
     clearReadCache('matrix-rpc:');
-    if (wasInitialized) listeners.forEach((listener) => listener());
+    (wasInitialized ? listeners : initializationListeners).forEach((listener) => listener());
   }
 }
 

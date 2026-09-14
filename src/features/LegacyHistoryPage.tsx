@@ -112,10 +112,6 @@ export function DrawHistoryPage({
           hidden={!filterExpanded}
           style={filterFloating ? {
             top: `${filterPanelTop}px`,
-            "--select-tech-surface": "#030b13",
-            "--select-tech-accent": "#f0bd36",
-            "--select-tech-text": "#d4d0c8",
-            "--select-tech-cut": "8px",
           } as React.CSSProperties : undefined}
         >
           <div className="history-filter-primary-row">

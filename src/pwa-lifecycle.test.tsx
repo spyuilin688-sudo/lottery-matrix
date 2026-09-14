@@ -134,6 +134,20 @@ describe("PWA install lifecycle", () => {
 });
 
 describe("PWA update lifecycle", () => {
+  it("does not reload when an update confirmation resolves after the lifecycle unmounts", async () => {
+    const serviceWorker = new ServiceWorkerContainerStub();
+    serviceWorker.controller = {};
+    installNavigator(serviceWorker);
+    const reloadPage = vi.fn();
+    const view = render(<AppDialogProvider><PwaLifecycleProvider reloadPage={reloadPage}><div>Matrix</div></PwaLifecycleProvider></AppDialogProvider>);
+    serviceWorker.dispatchEvent(new Event("controllerchange"));
+    await screen.findByRole("dialog", { name: "發現新版本" });
+    view.rerender(<AppDialogProvider><div>Lifecycle removed</div></AppDialogProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "立即更新" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(reloadPage).not.toHaveBeenCalled();
+  });
+
   it("offers an update after an existing service worker controller changes and reloads after confirmation", async () => {
     const serviceWorker = new ServiceWorkerContainerStub();
     serviceWorker.controller = {};

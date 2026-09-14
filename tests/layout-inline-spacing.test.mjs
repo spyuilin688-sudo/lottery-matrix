@@ -16,17 +16,16 @@ test('feature pages use the shared 16px source while notification keeps 18px bul
   assert.match(home, /\.home-screen \.lottery-screen\s*\{[^}]*--layout-page-inline:\s*16px;/s);
 
   assert.match(responsive, /--tool-page-inline:\s*var\(--layout-page-inline\);/);
-  const portalMatch = responsive.match(/\.history-filter-panel\[data-floating="true"\],\s*\.reference-query-panel\[data-floating="true"\],\s*\.tongxing-query\[data-floating="true"\]\s*\{([\s\S]*?)\}/);
-  assert.ok(portalMatch, 'the three portaled tool settings cards must use one shared controller');
-  assert.match(portalMatch[1], /\bleft:\s*16px\s*;/);
-  assert.match(portalMatch[1], /\bright:\s*16px\s*;/);
-
-  assert.match(explore, /padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\);/);
-  assert.match(explore, /width:\s*calc\(100% - \(var\(--layout-page-inline\) \* 2\)\);/);
+  const floatingCard = featurePages.match(/\.product-header__settings-card\[data-floating="true"\]\s*\{([^}]*)\}/);
+  assert.ok(floatingCard, 'the shared header must own floating tool settings');
+  assert.match(floatingCard[1], /position:\s*absolute;/);
+  assert.match(floatingCard[1], /inset-inline:\s*var\(--layout-page-inline\);/);
+  assert.match(explore, /\.matrix-explore-screen \.feature-body\s*\{[^}]*padding-inline:\s*13px;/s);
+  assert.match(explore, /\.matrix-explore-screen \.feature-body > :not\(\.result-panel\),[\s\S]*?margin-inline:\s*3px;/);
 
   assert.match(adjustments, /\.notifications-screen-v2\s*\{[^}]*--notification-bulk-inline:\s*18px;[^}]*--notification-list-inline:\s*16px;/s);
-  assert.match(adjustments, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding-inline:\s*var\(--notification-bulk-inline\);/s);
-  assert.match(adjustments, /\.notifications-screen-v2 \.notification-list\s*\{[^}]*margin-inline:\s*calc\(var\(--notification-list-inline\) - var\(--notification-bulk-inline\)\);/s);
+  assert.match(adjustments, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding-inline:\s*var\(--notification-list-inline\);/s);
+  assert.match(adjustments, /\.notifications-screen-v2 \.notification-list\s*\{[^}]*margin-inline:\s*0;/s);
   assert.doesNotMatch(adjustments, /\.profile-screen \.feature-body\s*\{\s*padding-inline:\s*16px;/s);
 
   assert.doesNotMatch(featurePages, /\.matrix-status-screen\s*\{\s*--layout-page-inline:\s*16px;\s*\}/);
@@ -41,9 +40,9 @@ test('feature pages use the shared 16px source while notification keeps 18px bul
 });
 
 
-test('portaled history settings retain the feature-page typeface outside the history screen subtree', () => {
+test('tool settings use the shared typeface owner', () => {
   const responsive = read('src/responsive-feature-pages.css');
-  const sharedPanel = responsive.match(/\.history-filter-panel,\s*\.reference-query-panel,\s*\.tongxing-query\s*\{([\s\S]*?)\}/);
+  const sharedPanel = responsive.match(/\.tool-settings-panel\s*\{([\s\S]*?)\}/);
   assert.ok(sharedPanel, 'tool settings panels must have a shared base rule');
   assert.match(sharedPanel[1], /font-family:\s*Inter,\s*"Noto Sans TC",\s*"PingFang TC",\s*"Microsoft JhengHei",\s*sans-serif;/);
 });

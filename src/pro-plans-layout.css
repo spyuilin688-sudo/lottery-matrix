@@ -45,14 +45,19 @@
 }
 
 .pro-plans-screen .plan-card > strong {
+  font-size: 25px;
   margin: 4px 0 6px;
 }
 
 .pro-plans-screen .plan-card h2 {
+  font-size: 13px;
   margin-bottom: 5px;
 }
 
 .pro-plans-screen .plan-card ul {
+  padding-left: 17px;
+  font-size: 11px;
+  line-height: 1.35;
   gap: 3px;
 }
 
@@ -64,6 +69,7 @@
 }
 
 .pro-plans-screen .renewal-card {
+  border-radius: 13px;
   margin: 0 0 8px;
   padding: 8px;
   border-color: #755329;
@@ -79,6 +85,8 @@
 }
 
 .pro-plans-screen .auto-renew-setting label {
+  min-height: 32px;
+  font-size: 12px;
   gap: 4px;
 }
 
@@ -88,6 +96,12 @@
 }
 
 .pro-plans-screen .confirm-payment.branded-explore-action {
+  --payment-button-font-size: clamp(15px, 4.4vw, 17px);
+  height: 38px;
+  min-height: 38px;
+  padding-block: 0;
+  font-size: var(--payment-button-font-size);
+  line-height: 1.2;
   margin: 0 0 6px;
   box-shadow: inset 0 0 18px rgba(238, 183, 52, .14);
 }

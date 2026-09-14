@@ -1,4 +1,4 @@
-import { useId, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useId, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { CheckIcon, ChevronRightIcon } from "@radix-ui/react-icons";
 import type { Session } from "@supabase/supabase-js";
 import { isActivationRedemptionError, redeemActivationCode, type ActivationRedemptionErrorCode } from "../activation/redeemActivationCode";
@@ -9,6 +9,7 @@ import { clearLineLoginAttempt, consumeLineLoginAttempt, markLineLoginAttempt } 
 import { withDeadline } from "../lib/api-resilience";
 import { getSupabaseClient } from "../lib/supabase";
 import { logicalSessionIdentity } from "../auth/session-identity";
+import { getAlgorithmCacheScope, subscribeAlgorithmCacheScope } from "../auth/algorithm-cache-scope";
 import { useAppDialog } from "../dialog/AppDialog";
 import { usePwaLifecycle } from "../pwa-lifecycle";
 import { useSubscriptionPurchaseVisible } from "../subscription-purchase-visibility";
@@ -478,19 +479,25 @@ function LegalInfoSection({ title, children }: { title: string; children: ReactN
   );
 }
 
+const subscribeMemberScope = (listener: () => void) => subscribeAlgorithmCacheScope(listener, { notifyOnInitialize: true });
+function useMemberSessionScope() {
+  return useSyncExternalStore(subscribeMemberScope, getAlgorithmCacheScope, getAlgorithmCacheScope);
+}
+
 function useSubscriptionProfile() {
-  const [profile, setProfile] = useState<MemberProfileResponse | null>(null);
-  const [error, setError] = useState(false);
+  const scope = useMemberSessionScope();
+  const [result, setResult] = useState<{ scope: number; profile: MemberProfileResponse | null; error: boolean }>({ scope, profile: null, error: false });
   useEffect(() => {
     let cancelled = false;
+    setResult({ scope, profile: null, error: false });
     void fetchMemberProfile().then((value) => {
-      if (!cancelled) setProfile(value);
+      if (!cancelled && scope === getAlgorithmCacheScope()) setResult({ scope, profile: value, error: false });
     }).catch(() => {
-      if (!cancelled) setError(true);
+      if (!cancelled && scope === getAlgorithmCacheScope()) setResult({ scope, profile: null, error: true });
     });
     return () => { cancelled = true; };
-  }, []);
-  return { profile, error };
+  }, [scope]);
+  return result.scope === scope ? result : { profile: null, error: false };
 }
 
 export function SubscriptionManagementPage({ onNavigate }: { onNavigate: Navigate }) {
@@ -671,42 +678,66 @@ export const manualTransferPlans: Record<ManualTransferPlanCode, { name: string;
 };
 
 export function ManualTransferPage({ onNavigate }: { onNavigate: Navigate }) {
+  const scope = useMemberSessionScope();
   const planCode = readManualTransferPlan();
+  return <ManualTransferForm key={`${scope}:${planCode}`} scope={scope} planCode={planCode} onNavigate={onNavigate} />;
+}
+
+function ManualTransferForm({ onNavigate, scope, planCode }: { onNavigate: Navigate; scope: number; planCode: ManualTransferPlanCode | null }) {
   const plan = planCode ? manualTransferPlans[planCode] : null;
   const [lastFive, setLastFive] = useState("");
   const [pending, setPending] = useState<MemberTransferRequest | null>(null);
   const [loading, setLoading] = useState(Boolean(plan));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const requestRevision = useRef(0);
+  const submitInFlight = useRef(false);
 
   useEffect(() => {
-    if (!plan) {
-      onNavigate("pro-plans");
-      return;
-    }
-    void fetchPendingTransferRequest()
-      .then(setPending)
-      .catch(() => setError("無法讀取轉帳申請，請稍後再試。"))
-      .finally(() => setLoading(false));
+    if (!plan) onNavigate("pro-plans");
   }, [onNavigate, plan]);
+
+  useEffect(() => {
+    if (!plan) return;
+    const revision = ++requestRevision.current;
+    const isCurrent = () => revision === requestRevision.current && scope === getAlgorithmCacheScope();
+    void fetchPendingTransferRequest()
+      .then((value) => { if (isCurrent()) setPending(value); })
+      .catch(() => { if (isCurrent()) setError("無法讀取轉帳申請，請稍後再試。"); })
+      .finally(() => { if (isCurrent()) setLoading(false); });
+    return () => { requestRevision.current += 1; };
+  }, [plan, scope]);
 
   if (!plan || !planCode) return null;
 
   const submit = async () => {
-    if (lastFive.length !== 5 || submitting || pending) return;
+    if (lastFive.length !== 5 || loading || submitInFlight.current || pending || scope !== getAlgorithmCacheScope()) return;
+    const revision = ++requestRevision.current;
+    const isCurrent = () => revision === requestRevision.current && scope === getAlgorithmCacheScope();
+    submitInFlight.current = true;
     setSubmitting(true);
     setError(null);
     try {
-      setPending(await submitTransferRequest(planCode, lastFive));
+      const value = await submitTransferRequest(planCode, lastFive);
+      if (isCurrent()) setPending(value);
     } catch (cause) {
+      if (!isCurrent()) return;
       const message = String((cause as { message?: unknown })?.message ?? cause);
       if (message.includes("PENDING_TRANSFER_EXISTS")) {
-        setPending(await fetchPendingTransferRequest());
+        try {
+          const value = await fetchPendingTransferRequest();
+          if (isCurrent()) setPending(value);
+        } catch {
+          if (isCurrent()) setError("無法讀取轉帳申請，請稍後再試。");
+        }
       } else {
         setError("提交失敗，請稍後再試。 ");
       }
     } finally {
-      setSubmitting(false);
+      if (isCurrent()) {
+        submitInFlight.current = false;
+        setSubmitting(false);
+      }
     }
   };
 
@@ -846,6 +877,10 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
       const revision = ++authRevision;
       clearTimeout(loadTimer);
       referralRequestRevision.current += 1;
+      activationRequestRevision.current += 1;
+      setActivationCode("");
+      setSubmitting(false);
+      setResultState("idle");
       setReferralSummary(null);
       setReferralCode("");
       setReferralSubmitting(false);
@@ -923,12 +958,14 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   async function handleActivation() {
     if (submitting) return;
 
+    const sessionRevision = activationRequestRevision.current;
     setSubmitting(true);
     const confirmed = await confirmDialog({
       title: "確認使用啟動碼？",
       confirmLabel: "確認",
       cancelLabel: "取消",
     });
+    if (activationRequestRevision.current !== sessionRevision) return;
     if (!confirmed) {
       setSubmitting(false);
       return;
@@ -1016,20 +1053,26 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
 }
 
 export function InviteFriendsPage({ onNavigate }: { onNavigate: Navigate }) {
+  const scope = useMemberSessionScope();
+  return <InviteFriendsContent key={scope} scope={scope} onNavigate={onNavigate} />;
+}
+
+function InviteFriendsContent({ onNavigate, scope }: { onNavigate: Navigate; scope: number }) {
   const [summary, setSummary] = useState<MemberReferralSummary | null>(null);
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
   const requestRevision = useRef(0);
   const loadReferralSummary = async () => {
+    if (scope !== getAlgorithmCacheScope()) return;
     const revision = requestRevision.current + 1;
     requestRevision.current = revision;
     setLoadState("loading");
     try {
       const nextSummary = await fetchMemberReferralSummary();
-      if (revision !== requestRevision.current) return;
+      if (revision !== requestRevision.current || scope !== getAlgorithmCacheScope()) return;
       setSummary(nextSummary);
       setLoadState("ready");
     } catch {
-      if (revision !== requestRevision.current) return;
+      if (revision !== requestRevision.current || scope !== getAlgorithmCacheScope()) return;
       setSummary(null);
       setLoadState("error");
     }
@@ -1039,7 +1082,7 @@ export function InviteFriendsPage({ onNavigate }: { onNavigate: Navigate }) {
     return () => { requestRevision.current += 1; };
   }, []);
   const copyReferralCode = async () => {
-    if (!summary?.referralCode) return;
+    if (!summary?.referralCode || scope !== getAlgorithmCacheScope()) return;
     await navigator.clipboard?.writeText(summary.referralCode);
   };
   return <ProfileDetailShell title="邀請好友" onNavigate={onNavigate}><DetailCard title="邀請好友">{loadState === "loading" ? <p role="status">推薦資料載入中</p> : loadState === "error" ? <div role="alert"><span>推薦資料載入失敗</span><button type="button" aria-label="重新載入推薦資料" onClick={() => void loadReferralSummary()}>重新載入</button></div> : summary ? <div className="referral-share-card"><strong>{summary.referralCode}</strong><p>{`推薦成功 ${summary.referralSuccessCount} 人`}</p><button type="button" aria-label="複製推薦碼" onClick={() => void copyReferralCode()}>複製推薦碼</button></div> : null}</DetailCard></ProfileDetailShell>;

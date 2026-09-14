@@ -249,3 +249,9 @@ Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封
 ### 天天樂號碼排序
 
 同星、號碼對照單、歷史紀錄、探索、天衡、天衍、牌單與首頁開獎資訊卡，切換到天天樂時只使用順球。保留落球控制的位置與名稱，以原生 `disabled` 停用選項或按鈕；輔助說明為「天天樂僅提供順球」。首頁與牌單由各自原有樣式來源定義唯一的停用狀態，透明度 .55、一般游標，尺寸與間距不變。天天樂牌單不顯示落球「待公布」，其他彩種仍沿用原本的資料就緒判斷。
+
+### 樣式來源整理 — 2026-09-14
+
+`feature-page-adjustments.css` 單獨擁有通知頁的最終 8px 內容間距、29px 批次按鈕、600 標題字重與時間選單。`matrix-explore-spacing.css` 單獨擁有結果卡 13px 外距公式及 100% 寬度；responsive 樣式只經此檔的既有 import 載入一次。移除四個只負責後置覆寫的樣式檔，完整清單與尺寸驗證見 `docs/qa/css-cleanup.md`。
+
+會員卡的 1563×1006 素材由既有 SVG 分片顯示；430px 畫布上，素材容器寬 418px，圖內左右框線對齊其他 398px 卡片。`feature-pages.css` 的 `.membership-card-stack` 保留既有 `calc(100% + 20px)` 與 `-10px` 素材幾何，並作為唯一來源，不在 JSX 或另一 CSS 再補償。首頁狀態卡外觀與共用間距由 `homepage/base.css` 擁有。

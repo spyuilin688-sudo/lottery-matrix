@@ -1,6 +1,8 @@
+import { adminBusinessDateKey, adminBusinessDateRange } from '../shared/admin-business-time';
 import { lookupLocations, memberConnectionSummaries } from './member-login-history';
 type Requester = {
   request<T = unknown>(path: string, init?: RequestInit): Promise<T>;
+  requestPage?<T = unknown>(path: string): Promise<{ items: T[]; total: number }>;
 };
 
 type WriteTransport = {
@@ -250,37 +252,187 @@ type PageRequester = Requester & {
   requestPage<T = unknown>(path: string): Promise<{ items: T[]; total: number }>;
 };
 
+export type AdminPageQuery = {
+  page?: unknown; keyword?: unknown; status?: unknown; plan?: unknown;
+  startDate?: unknown; endDate?: unknown; dateField?: unknown;
+  sortBy?: unknown; sortDirection?: unknown;
+};
+
+type PageDefinition = {
+  pageSize: number;
+  columns: Record<string, string>;
+  dates: string[];
+  keywords: string[];
+  statuses?: string[];
+  numeric?: string[];
+  identifiers?: string[];
+  relations?: Array<{ alias: string; relation: string; field: string }>;
+};
+
+const memberColumns = {
+  id: 'id', lineDisplayName: 'line_display_name', registeredAt: 'registered_at', status: 'status',
+  planName: 'current_plan(name)', planStartedAt: 'plan_started_at', planExpiresAt: 'plan_expires_at',
+  lastOnlineAt: 'last_online_at', referralCode: 'referral_code', invitationCode: 'invitation_code',
+};
+const pageDefinitions: Record<string, PageDefinition> = {
+  users: { pageSize: 30, columns: memberColumns, dates: ['registeredAt', 'planStartedAt', 'planExpiresAt', 'lastOnlineAt'], keywords: ['line_display_name', 'referral_code', 'invitation_code'], identifiers: ['auth_user_id'], relations: [{ alias: 'keyword_plan', relation: 'plans!members_current_plan_id_fkey', field: 'name' }] },
+  subscriptions: { pageSize: 30, columns: memberColumns, dates: ['planStartedAt', 'planExpiresAt', 'registeredAt', 'lastOnlineAt'], keywords: ['line_display_name', 'referral_code', 'invitation_code'], identifiers: ['auth_user_id'], relations: [{ alias: 'keyword_plan', relation: 'plans!members_current_plan_id_fkey', field: 'name' }] },
+  loginRecords: {
+    pageSize: 10, columns: { id: 'id', account: 'account', loginAt: 'login_at', logoutAt: 'logout_at', onlineMinutes: 'online_minutes', ip: 'ip', device: 'device' },
+    dates: ['loginAt', 'logoutAt'], keywords: ['account', 'ip', 'device'], numeric: ['online_minutes'], identifiers: ['admin_id'],
+  },
+  activationCodes: {
+    pageSize: 10,
+    columns: { id: 'id', batchId: 'batch_id', code: 'code', durationType: 'duration_type', createdAt: 'created_at', expiresAt: 'expires_at', redeemedAt: 'redeemed_at', status: 'status', redeemedByLineDisplayName: 'redeemed_member(line_display_name)' },
+    dates: ['createdAt', 'expiresAt', 'redeemedAt'], keywords: ['code', 'duration_type', 'status'], identifiers: ['batch_id'],
+    statuses: ['unused', 'used', 'expired'],
+    relations: [{ alias: 'keyword_member', relation: 'members!activation_codes_redeemed_by_member_id_fkey', field: 'line_display_name' }],
+  },
+  auditLogs: {
+    pageSize: 30,
+    columns: { id: 'id', operationTime: 'operation_time', admin: 'admin', operationType: 'operation_type', targetTable: 'target_table', targetId: 'target_id', content: 'content', ip: 'ip', device: 'device' },
+    dates: ['operationTime'], keywords: ['admin', 'operation_type', 'target_table', 'target_id', 'content', 'ip', 'device'], identifiers: ['admin_id'],
+  },
+  subscriptionRecords: {
+    pageSize: 30,
+    columns: { id: 'id', memberId: 'member_id', planId: 'plan_id', lineDisplayName: 'member(line_display_name)', planName: 'plan(name)', amount: 'amount', paidAt: 'paid_at', status: 'status', reversedAt: 'reversed_at', reversalReason: 'reversal_reason', reversedByName: 'reversed_by_name' },
+    dates: ['paidAt', 'reversedAt'], keywords: ['status', 'reversal_reason', 'reversed_by_name'], numeric: ['amount'], identifiers: ['member_id', 'plan_id'],
+    statuses: ['pending', 'confirmed', 'rejected', 'refunded', 'chargeback', 'cancelled'],
+    relations: [{ alias: 'keyword_member', relation: 'members', field: 'line_display_name' }, { alias: 'keyword_plan', relation: 'plans', field: 'name' }],
+  },
+  transferRequests: {
+    pageSize: 30,
+    columns: { id: 'id', memberId: 'member_id', planId: 'plan_id', lineDisplayName: 'member(line_display_name)', planName: 'plan(name)', amount: 'amount', transferredAt: 'transferred_at', submittedAt: 'submitted_at', accountLastFive: 'account_last_five', status: 'status' },
+    dates: ['submittedAt', 'transferredAt'], keywords: ['account_last_five', 'status'], numeric: ['amount'], identifiers: ['member_id', 'plan_id'],
+    statuses: ['pending', 'confirmed', 'rejected'],
+    relations: [{ alias: 'keyword_member', relation: 'members', field: 'line_display_name' }, { alias: 'keyword_plan', relation: 'plans', field: 'name' }],
+  },
+  admins: {
+    pageSize: 30,
+    columns: { id: 'id', account: 'account', name: 'name', role: 'role', status: 'status', createdAt: 'created_at', lastLoginAt: 'last_login_at' },
+    dates: ['createdAt', 'lastLoginAt'], keywords: ['account', 'name', 'role', 'status'], statuses: ['啟用', '停用', 'active', 'disabled'],
+  },
+  plans: {
+    pageSize: 30, columns: { id: 'id', name: 'name', price: 'price', durationDays: 'duration_days' },
+    dates: [], keywords: ['name'], numeric: ['price', 'duration_days'],
+  },
+};
+
+function parsePage(query: AdminPageQuery, pageSize: number) {
+  const page = Number(query.page ?? 1);
+  const offset = (page - 1) * pageSize;
+  // The only numeric ceiling is exact JavaScript integer arithmetic. Every
+  // numbered page remains available while all offsets within it are safe.
+  if (!Number.isSafeInteger(page) || page < 1 || !Number.isSafeInteger(offset)
+    || !Number.isSafeInteger(offset + pageSize - 1)) throw new AdminDataError('查詢條件不正確');
+  return page;
+}
+
+function applyAdminPageFilters(url: URL, table: string, query: AdminPageQuery, filterStatus = true) {
+  const config = pageDefinitions[table];
+  if (!config) throw new AdminDataError('Invalid table');
+  const keyword = String(query.keyword ?? '').trim();
+  const sortBy = String(query.sortBy ?? '');
+  const direction = String(query.sortDirection ?? 'desc');
+  const startDate = String(query.startDate ?? '');
+  const endDate = String(query.endDate ?? '');
+  const dateField = String(query.dateField ?? config.dates[0] ?? '');
+  if (keyword.length > 200 || (sortBy && !Object.prototype.hasOwnProperty.call(config.columns, sortBy))
+    || !['asc', 'desc'].includes(direction) || (dateField && !config.dates.includes(dateField))
+    || ((startDate || endDate) && !dateField)) throw new AdminDataError('查詢條件不正確');
+  if (sortBy) {
+    const column = config.columns[sortBy];
+    url.searchParams.set('order', `${column}.${direction}.nullslast${column === 'id' ? '' : ',id.asc'}`);
+  }
+  try {
+    const range = adminBusinessDateRange(startDate, endDate);
+    const column = config.columns[dateField];
+    if (range.start) url.searchParams.append(column, `gte.${range.start}`);
+    if (range.endExclusive) url.searchParams.append(column, `lt.${range.endExclusive}`);
+  } catch {
+    throw new AdminDataError('日期範圍不正確');
+  }
+  const status = String(query.status ?? 'all');
+  if (filterStatus && status !== 'all') {
+    if (!config.statuses?.includes(status)) throw new AdminDataError('查詢條件不正確');
+    const storedStatus = table === 'admins' ? ({ active: '啟用', disabled: '停用' }[status] ?? status) : status;
+    url.searchParams.set('status', `eq.${storedStatus}`);
+  }
+  if (!keyword) return;
+  const pattern = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const clauses = config.keywords.map(field => `${field}.imatch.${JSON.stringify(pattern)}`);
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(keyword)) {
+    clauses.push(...['id', ...(config.identifiers ?? [])].map(field => `${field}.eq.${keyword}`));
+  }
+  if (/^\d+$/.test(keyword) && Number.isSafeInteger(Number(keyword))) {
+    clauses.push(...(config.numeric ?? []).map(field => `${field}.eq.${Number(keyword)}`));
+  }
+  for (const relation of config.relations ?? []) {
+    // Empty search embeds filter the parent OR group without removing the
+    // separately selected display-name embeds from matching rows.
+    url.searchParams.set('select', `${url.searchParams.get('select')},${relation.alias}:${relation.relation}()`);
+    url.searchParams.set(`${relation.alias}.${relation.field}`, `imatch.${pattern}`);
+    clauses.push(`${relation.alias}.not.is.null`);
+  }
+  url.searchParams.set('or', `(${clauses.join(',')})`);
+}
+
+async function readAdminPage(url: URL, page: number, pageSize: number, api: PageRequester) {
+  const read = async (currentPage: number) => {
+    const offset = (currentPage - 1) * pageSize;
+    const items: Row[] = [];
+    let total = 0;
+    do {
+      url.searchParams.set('limit', String(pageSize - items.length));
+      url.searchParams.set('offset', String(offset + items.length));
+      const result = await api.requestPage<Row>(url.pathname + url.search);
+      total = result.total;
+      if (!result.items.length) break;
+      items.push(...result.items);
+    } while (items.length < pageSize && offset + items.length < total);
+    return { items, total };
+  };
+  let result = await read(page);
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(result.total / pageSize)));
+  if (currentPage !== page) result = await read(currentPage);
+  return { ...result, currentPage, totalPages: Math.max(1, Math.ceil(result.total / pageSize)) };
+}
+
+export async function listAdminTablePage(table: string, query: AdminPageQuery, api: PageRequester) {
+  const definition = getAdminTableDefinition(table);
+  if (table === 'users' || table === 'subscriptions') return listAdminMemberPage(table, query, api);
+  if (table === 'loginRecords') return listAdminLoginRecordPage(query, api);
+  const page = parsePage(query, pageDefinitions[table].pageSize);
+  const url = new URL(definition.path, 'https://supabase.invalid');
+  applyAdminPageFilters(url, table, query);
+  const result = await readAdminPage(url, page, pageDefinitions[table].pageSize, api);
+  return { ...result, items: result.items.map(definition.map) };
+}
+
 const adminLoginRecordPageSize = 10;
 
-export async function listAdminLoginRecordPage(query: { page?: unknown }, api: PageRequester) {
-  const page = Number(query.page ?? 1);
-  if (!Number.isSafeInteger(page) || page < 1 || page > 100000) throw new AdminDataError('查詢條件不正確');
+export async function listAdminLoginRecordPage(query: AdminPageQuery, api: PageRequester) {
+  const page = parsePage(query, adminLoginRecordPageSize);
   const definition = getAdminTableDefinition('loginRecords');
   const url = new URL(definition.path, 'https://supabase.invalid');
-  url.searchParams.set('limit', String(adminLoginRecordPageSize));
-  const readPage = (currentPage: number) => {
-    url.searchParams.set('offset', String((currentPage - 1) * adminLoginRecordPageSize));
-    return api.requestPage<Row>(url.pathname + url.search);
-  };
-  let result = await readPage(page);
-  const currentPage = Math.min(page, Math.max(1, Math.ceil(result.total / adminLoginRecordPageSize)));
-  if (currentPage !== page) result = await readPage(currentPage);
+  applyAdminPageFilters(url, 'loginRecords', query);
+  const result = await readAdminPage(url, page, adminLoginRecordPageSize, api);
   const items = await enrichLoginRecords(result.items.map(definition.map), api);
-  return { items, total: result.total, currentPage, totalPages: Math.max(1, Math.ceil(result.total / adminLoginRecordPageSize)) };
+  return { ...result, items };
 }
 
 export async function listAdminMemberPage(
   table: string,
-  query: { page?: unknown; keyword?: unknown; status?: unknown; plan?: unknown },
+  query: AdminPageQuery,
   api: PageRequester,
   currentDate = new Date(),
 ) {
-  const page = Number(query.page ?? 1);
+  const page = parsePage(query, 30);
   const keyword = String(query.keyword ?? '').trim();
   const status = String(query.status ?? 'all');
   const plan = String(query.plan ?? 'all');
   const planDurations: Record<string, number> = { monthly: 30, quarterly: 90, yearly: 365 };
-  if (!['users', 'subscriptions'].includes(table) || !Number.isSafeInteger(page) || page < 1 || page > 100000
+  if (!['users', 'subscriptions'].includes(table)
       || keyword.length > 200 || !['all', 'active', 'disabled'].includes(status)
       || !['all', ...Object.keys(planDurations)].includes(plan)
       || (table === 'users' && plan !== 'all')) {
@@ -293,47 +445,31 @@ export async function listAdminMemberPage(
     url.searchParams.set('plan_expires_at', `gt.${currentDate.toISOString()}`);
     url.searchParams.set('is_lifetime', 'eq.false');
   }
-  if (table === 'subscriptions' || status === 'active') {
+  if (status === 'disabled') {
+    url.searchParams.set('status', 'in.(disabled,inactive,停用)');
+  } else if (table === 'subscriptions' || status === 'active') {
     // Legacy members have NULL status. Keep the enabled-status group separate
     // from the keyword OR group so searching cannot replace either filter.
     url.searchParams.set('and', '(or(status.in.(active,啟用),status.is.null))');
-  } else if (status === 'disabled') {
-    url.searchParams.set('status', 'in.(disabled,inactive,停用)');
   }
-  if (keyword) {
-    // Literal, case-insensitive substring search. Escape regex syntax and then
-    // quote PostgREST OR values so commas/parentheses cannot alter the filters.
-    const pattern = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const plans = await listAllRows(api, `/rest/v1/plans?select=id&name=imatch.${encodeURIComponent(pattern)}&order=id.asc`);
-    const clauses = ['line_display_name', 'referral_code', 'invitation_code'].map(field => `${field}.imatch.${JSON.stringify(pattern)}`);
-    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const planIds = plans.map(plan => String(plan.id)).filter(id => uuid.test(id));
-    if (planIds.length) clauses.push(`current_plan_id.in.(${planIds.join(',')})`);
-    if (uuid.test(keyword)) clauses.push(`id.eq.${keyword}`, `auth_user_id.eq.${keyword}`);
-    url.searchParams.set('or', `(${clauses.join(',')})`);
-  }
-  url.searchParams.set('limit', '30');
-  const readPage = (currentPage: number) => {
-    url.searchParams.set('offset', String((currentPage - 1) * 30));
-    return api.requestPage<Row>(url.pathname + url.search);
-  };
-  let result = await readPage(page);
-  const currentPage = Math.min(page, Math.max(1, Math.ceil(result.total / 30)));
-  if (currentPage !== page) result = await readPage(currentPage);
+  applyAdminPageFilters(url, table, query, false);
+  const result = await readAdminPage(url, page, 30, api);
   const items = await enrichMembers(result.items.map(definition.map), api, currentDate, true);
-  return { items, total: result.total, currentPage, totalPages: Math.max(1, Math.ceil(result.total / 30)) };
+  return { ...result, items };
 }
 
 const dashboardPaymentPageSize = 1000;
 
 async function listDashboardPayments(api: Requester, resetFilter: string) {
   const rows: Row[] = [];
-  for (let offset = 0; ; offset += dashboardPaymentPageSize) {
-    const page = await api.request<Row[]>(
-      `/rest/v1/payments?select=id,amount,paid_at,status&status=eq.confirmed${resetFilter}&order=paid_at.asc,id.asc&limit=${dashboardPaymentPageSize}&offset=${offset}`,
-    );
+  for (;;) {
+    const path = `/rest/v1/payments?select=id,amount,paid_at,status&status=eq.confirmed${resetFilter}&order=paid_at.asc,id.asc&limit=${dashboardPaymentPageSize}&offset=${rows.length}`;
+    const result = api.requestPage ? await api.requestPage<Row>(path) : null;
+    const page = result ? result.items : await api.request<Row[]>(path);
+    if (page.length === 0) return rows;
     rows.push(...page);
-    if (page.length < dashboardPaymentPageSize) return rows;
+    // Supabase's configured row cap may be lower than our requested page size.
+    if (result && rows.length >= result.total) return rows;
   }
 }
 
@@ -359,7 +495,7 @@ export async function getDashboard(api: Requester, currentDate = new Date()) {
       && (resetTime === null || new Date(row.paid_at).getTime() >= resetTime))
     .map((row) => ({
       amount: Number(row.amount ?? 0),
-      paidAt: String(row.paid_at),
+      paidAt: adminBusinessDateKey(String(row.paid_at)),
     }));
   const duration = (member: Row) => Number((member.current_plan as Row | null)?.duration_days ?? 0);
   const hasCurrentFixedDurationPlan = (member: Row) => {
@@ -369,10 +505,10 @@ export async function getDashboard(api: Requester, currentDate = new Date()) {
       && expiresAt > currentDate.getTime()
       && !['停用', 'disabled', 'inactive'].includes(String(member.status ?? ''));
   };
-  const today = currentDate.toISOString().slice(0, 10);
+  const today = adminBusinessDateKey(currentDate);
   const month = today.slice(0, 7);
   const year = today.slice(0, 4);
-  const quarter = Math.floor(currentDate.getUTCMonth() / 3);
+  const quarter = Math.floor((Number(today.slice(5, 7)) - 1) / 3);
   const sum = (predicate: (payment: { amount: number; paidAt: string }) => boolean) =>
     payments.filter(predicate).reduce((total, payment) => total + payment.amount, 0);
   const expiresWithinSevenDays = members.filter((member) => {
@@ -394,9 +530,8 @@ export async function getDashboard(api: Requester, currentDate = new Date()) {
     todayRevenue: sum((payment) => payment.paidAt.startsWith(today)),
     monthRevenue: sum((payment) => payment.paidAt.startsWith(month)),
     quarterRevenue: sum((payment) => {
-      const paidAt = new Date(payment.paidAt);
-      return paidAt.getUTCFullYear() === currentDate.getUTCFullYear()
-        && Math.floor(paidAt.getUTCMonth() / 3) === quarter;
+      return payment.paidAt.startsWith(year)
+        && Math.floor((Number(payment.paidAt.slice(5, 7)) - 1) / 3) === quarter;
     }),
     yearRevenue: sum((payment) => payment.paidAt.startsWith(year)),
     cumulativeRevenue: sum(() => true),

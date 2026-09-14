@@ -2,8 +2,34 @@
 
 /* Matrix Explore: single active responsive layout source for the supplied reference. */
 .matrix-explore-main-screen {
+  --mx-history-heading-height: 60px;
+  --mx-history-heading-padding-y: 10px;
+  --mx-history-heading-padding-x: 12px;
+  --mx-history-head-height: 42px;
+  --mx-history-row-height: 58px;
+  --mx-history-columns: 72px 82px minmax(0, 1fr);
+  --mx-history-date-year-size: 13px;
+  --mx-history-date-detail-size: 12px;
+  --mx-history-ball-size: 31px;
+  --mx-history-ball-font-size: 11px;
+  --mx-history-ball-gap: 5px;
+  --mx-section-gap: 16px;
+  --mx-repeat-grid-gap-x: 7px;
+  --mx-repeat-grid-gap-y: 8px;
+  --mx-repeat-item-height: 64px;
+  --mx-repeat-number-size: 20px;
+  --mx-repeat-count-size: 12px;
+  --mx-result-head-height: 42px;
+  --mx-result-row-height: 62px;
+  --mx-result-columns: .84fr .72fr .9fr 1.08fr 1.08fr 1.18fr;
+  --mx-result-head-size: 12px;
+  --mx-result-body-size: 11.5px;
+  --mx-result-number-size: 15px;
+  --mx-result-prediction-size: 17px;
+  --mx-result-tag-size: 11px;
   --lottery-tabs-bottom-gap: 0px;
-  --matrix-explore-result-panel-extra-width: calc(var(--layout-page-inline) + var(--layout-page-inline) - 28px);
+  /* 13px result gutters: the rightmost result column receives the extra 6px. */
+  --matrix-explore-result-panel-extra-width: calc(var(--layout-page-inline) + var(--layout-page-inline) - 26px);
   --mx-history-issue-size: clamp(6px, 2.1vw, 8px);
   --road-validation-inline-padding: 4px;
   --validation-issue-font-family: inherit;
@@ -38,10 +64,9 @@
 }
 
 .matrix-explore-main-screen .feature-body > .result-panel {
-  --matrix-explore-result-panel-width: calc(100% + var(--matrix-explore-result-panel-extra-width));
+  --matrix-explore-result-panel-width: 100%;
   align-self: center;
 }
-
 
 .matrix-explore-main-screen .explore-settings,
 .matrix-explore-main-screen .history-panel,
@@ -204,7 +229,7 @@
 .matrix-explore-main-screen .native-select select {
   padding-inline: 1.75rem;
   font-size: .75rem;
-  line-height: 1;
+  line-height: 1; font-weight: 700;
 }
 
 .matrix-explore-main-screen .native-select svg {
@@ -718,10 +743,6 @@
   color: rgba(244, 206, 103, .84);
 }
 
-.matrix-explore-main-screen .road-results-head {
-  margin-bottom: 4px;
-}
-
 .matrix-explore-main-screen .repeat-stats-heading .section-title > span,
 .matrix-explore-main-screen .result-title .section-title > span {
   background: rgba(244, 206, 103, .84);
@@ -833,12 +854,6 @@
   align-items: center;
   gap: .125rem;
   text-align: center;
-}
-
-.matrix-explore-main-screen .road-results-head {
-  min-height: 32px;
-  border-bottom: 1px solid rgba(117, 83, 41, .82);
-  font-size: clamp(10px, 2.8vw, 12px);
 }
 
 .matrix-explore-main-screen .road-results article + article {
@@ -1003,7 +1018,6 @@
   }
 }
 
-
 /* Matrix Tiangong compact responsive setting layout. */
 .matrix-tiangong-screen .tiangong-settings {
   --tiangong-label-column: 88.8px;
@@ -1090,7 +1104,6 @@
   border-top: 1px solid rgba(212, 165, 47, .45);
 }
 
-
 @media (min-width: 40rem) {
   .matrix-tiangong-screen .tiangong-settings {
     --tiangong-label-column: 104.8px;
@@ -1099,6 +1112,10 @@
 
 /* Matrix Explore result table alignment and same-code grouping. */
 .matrix-explore-main-screen .road-results-head {
+  font-size: clamp(10px, 2.8vw, 12px);
+  border-bottom: 1px solid rgba(117, 83, 41, .82);
+  min-height: 32px;
+  margin-bottom: 4px;
   align-items: end;
   padding-bottom: 5px;
 }
@@ -1111,7 +1128,6 @@
   border-top: 0;
 }
 
-
 /* Matrix 探索、天衍、天工：結果卡維持 13px，其餘內容維持 16px。 */
 .matrix-explore-screen .feature-body {
   padding-inline: 13px;
@@ -1121,10 +1137,6 @@
 .matrix-explore-screen .feature-body > .matrix-explore-history-scope .history-panel {
   width: auto;
   margin-inline: 3px;
-}
-
-.matrix-explore-main-screen .feature-body > .result-panel {
-  --matrix-explore-result-panel-width: 100%;
 }
 
 /* Requested Explore and Tianyan result spacing and quieter selected filters. */
@@ -1155,7 +1167,6 @@
 .matrix-explore-main-screen:not(.matrix-tiangong-screen) .result-summary > button[data-selected="true"] b {
   color: inherit;
 }
-
 
 /* Equal heading rows keep the same visual top inset in both result cards. */
 .matrix-explore-main-screen:not(.matrix-tiangong-screen) .repeat-stats-heading,

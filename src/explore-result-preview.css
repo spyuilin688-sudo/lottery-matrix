@@ -341,6 +341,7 @@
 }
 
 .matrix-tianyan-screen .explore-validation-summary-card {
+  position: relative;
   grid-template-columns: minmax(0, 1fr);
 }
 

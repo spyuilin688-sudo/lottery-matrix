@@ -79,11 +79,7 @@ test("Pro 方案水平幾何只由專屬 layout 檔控制", () => {
     /(?:^|;)\s*(?:flex|width|min-width|max-width|margin)\s*:/,
     "共用 plan-card 不得覆寫 Pro 方案卡片寬度",
   );
-  assert.doesNotMatch(
-    ruleBody(sharedCss, ".pro-plans-screen .renewal-card"),
-    /(?:^|;)\s*(?:width|min-width|max-width|margin|margin-inline)\s*:/,
-    "共用 feature-pages 不得覆寫管理訂閱卡片的水平幾何",
-  );
+  assert.doesNotMatch(sharedCss, /\.pro-plans-screen \.renewal-card\s*\{/);
 });
 
 test("移除未載入的首頁暫時除錯覆寫檔", () => {

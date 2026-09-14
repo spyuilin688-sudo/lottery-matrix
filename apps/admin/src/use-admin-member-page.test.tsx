@@ -20,15 +20,14 @@ afterEach(() => {
 });
 
 describe('useAdminMemberPage subscription filters', () => {
-  it('does not expose members without a subscription plan', async () => {
+  it('preserves the backend subscription filter and exact count', async () => {
     const get = vi.fn(async () => ({ data: {
       items: [
         { id: 'paid', currentPlanId: 'yearly', planName: '年費方案' },
-        { id: 'none', currentPlanId: null, planName: null },
       ],
-      total: 2,
+      total: 61,
       currentPage: 1,
-      totalPages: 1,
+      totalPages: 3,
     } }));
 
     function Harness() {
@@ -37,7 +36,7 @@ describe('useAdminMemberPage subscription filters', () => {
     }
 
     await act(async () => { root.render(<Harness />); });
-    await vi.waitFor(() => expect(container.textContent).toBe('paid|1'));
+    await vi.waitFor(() => expect(container.textContent).toBe('paid|61'));
   });
 
   it('sends the compact plan filter and returns to page one when it changes', async () => {
@@ -51,9 +50,9 @@ describe('useAdminMemberPage subscription filters', () => {
     await act(async () => { root.render(<Harness />); });
     await vi.waitFor(() => expect(get).toHaveBeenCalled());
     await act(async () => { container.querySelector('button')?.click(); });
-    await vi.waitFor(() => expect(get).toHaveBeenCalledWith('/api/data/subscriptions?page=1&keyword=&status=all&plan=quarterly'));
+    await vi.waitFor(() => expect(get).toHaveBeenCalledWith('/api/data/subscriptions?page=1&keyword=&status=all&startDate=&endDate=&sortBy=planStartedAt&sortDirection=desc&plan=quarterly'));
 
-    expect(get).toHaveBeenLastCalledWith('/api/data/subscriptions?page=1&keyword=&status=all&plan=quarterly');
+    expect(get).toHaveBeenLastCalledWith('/api/data/subscriptions?page=1&keyword=&status=all&startDate=&endDate=&sortBy=planStartedAt&sortDirection=desc&plan=quarterly');
     expect(container.textContent).toBe('quarterly');
   });
 });

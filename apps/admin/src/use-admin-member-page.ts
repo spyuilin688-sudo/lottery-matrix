@@ -1,55 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useAdminDataPage } from './use-admin-data-page';
 
-type Row = Record<string, unknown> & { id: string };
-type Page = { items: Row[]; total: number; currentPage: number; totalPages: number };
-type Client = { get(path: string): Promise<{ data: Page }> };
+type Client = { get(path: string): Promise<{ data: unknown }> };
 
-function keepRowsWithPlans(page: Page): Page {
-  const items = page.items.filter(item => String(item.currentPlanId ?? '').trim() && String(item.planName ?? '').trim());
-  const removed = page.items.length - items.length;
-  if (!removed) return page;
-  const total = Math.max(0, page.total - removed);
-  return { ...page, items, total, totalPages: Math.max(1, Math.ceil(total / 30)) };
-}
-
+// Member lists keep their existing public controls and use the same server-page owner.
 export function useAdminMemberPage(table: 'users' | 'subscriptions', revision: number, client: Client) {
-  const [query, setQuery] = useState({ page: 1, keyword: '', status: 'all', plan: 'all' });
-  const [attempt, setAttempt] = useState(0);
-  const queryString = new URLSearchParams({
-    page: String(query.page),
-    keyword: query.keyword,
-    status: query.status,
-    ...(table === 'subscriptions' ? { plan: query.plan } : {}),
-  }).toString();
-  const key = `${table}:${queryString}:${revision}:${attempt}`;
-  const [result, setResult] = useState<{ key: string; data?: Page; error?: string } | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    const timer = window.setTimeout(() => {
-      client.get(`/api/data/${table}?${queryString}`).then(({ data }) => {
-        if (!Array.isArray(data.items) || !Number.isSafeInteger(data.total) || data.total < 0
-            || !Number.isSafeInteger(data.currentPage) || data.currentPage < 1
-            || !Number.isSafeInteger(data.totalPages) || data.totalPages < 1) throw new Error('Invalid member page');
-        if (active) setResult({ key, data: table === 'subscriptions' ? keepRowsWithPlans(data) : data });
-      }).catch(() => { if (active) setResult({ key, error: '列表載入失敗，請重新載入' }); });
-    }, query.keyword ? 200 : 0);
-    return () => { active = false; window.clearTimeout(timer); };
-  }, [client, table, queryString, key, query.keyword]);
-
-  const current = result?.key === key ? result : null;
+  const page = useAdminDataPage(table, revision, client, 'member-list');
   return {
-    keyword: query.keyword,
-    status: query.status,
-    plan: query.plan,
-    setKeyword: (keyword: string) => setQuery(value => ({ ...value, keyword, page: 1 })),
-    setStatus: (status: string) => setQuery(value => ({ ...value, status, page: 1 })),
-    setPlan: (plan: string) => setQuery(value => ({ ...value, plan, page: 1 })),
-    setPage: (page: number) => setQuery(value => ({ ...value, page })),
-    paged: current?.data ?? { items: [], currentPage: query.page, totalPages: query.page },
-    total: current?.data?.total ?? 0,
-    loading: current === null,
-    error: current?.error ?? '',
-    retry: () => setAttempt(value => value + 1),
+    ...page,
+    keyword: page.query.keyword, status: page.query.status, plan: page.query.plan ?? 'all',
+    setKeyword: (keyword: string) => page.setQuery({ keyword }),
+    setStatus: (status: string) => page.setQuery({ status }),
+    setPlan: (plan: string) => page.setQuery({ plan }),
+    paged: { items: page.items, currentPage: page.currentPage, totalPages: page.totalPages },
+    retry: () => { void page.refresh().catch(() => {}); },
   };
 }

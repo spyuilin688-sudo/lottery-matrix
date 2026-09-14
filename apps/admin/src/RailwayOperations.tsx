@@ -24,6 +24,8 @@ export function RailwayOperations({ client, canEdit, confirm, disabled = false, 
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const locked = useRef(false);
+  const editAllowed = useRef(canEdit);
+  editAllowed.current = canEdit;
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const run = async (action: Action) => {
@@ -41,7 +43,7 @@ export function RailwayOperations({ client, canEdit, confirm, disabled = false, 
           ? `將更新${lottery}的最新開獎資料。`
           : `將交由 Railway 復原${lottery}的資料或分析；已有工作執行中時不重複啟動。`,
         confirmLabel: `確認${label}`,
-      }) || !mounted.current) return;
+      }) || !mounted.current || !editAllowed.current) return;
       const { data } = await client.post(`/api/system-status/${targets[lottery]}/${action}`);
       let message: string;
       if (action === 'refresh' && data.refresh?.lottery === lottery && data.refresh.period) {
@@ -58,8 +60,7 @@ export function RailwayOperations({ client, canEdit, confirm, disabled = false, 
       if (mounted.current) setError(`${cause instanceof Error ? cause.message : `${label}未取得回應`}；請先重新檢查執行狀態，再決定是否重試。`);
     } finally {
       locked.current = false;
-      onBusyChange?.(false);
-      if (mounted.current) setPending(null);
+      if (mounted.current) { onBusyChange?.(false); setPending(null); }
     }
   };
   return (

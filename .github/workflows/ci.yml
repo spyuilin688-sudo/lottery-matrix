@@ -13,135 +13,171 @@ concurrency:
   group: project-ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  SCOPE_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+  SCOPE_HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
 jobs:
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      plan: ${{ steps.select.outputs.plan }}
+      node: ${{ steps.select.outputs.node }}
+      vitest: ${{ steps.select.outputs.vitest }}
+      edge: ${{ steps.select.outputs.edge }}
+      admin: ${{ steps.select.outputs.admin }}
+      python: ${{ steps.select.outputs.python }}
+      playwright: ${{ steps.select.outputs.playwright }}
+      membership: ${{ steps.select.outputs.membership }}
+    steps:
+      - name: Checkout tested head with comparison history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.SCOPE_HEAD_SHA }}
+          fetch-depth: 0
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: Select only tests related to the changed paths
+        id: select
+        run: node scripts/select-scoped-tests.mjs --base "$SCOPE_BASE_SHA" --head "$SCOPE_HEAD_SHA" --event "$GITHUB_EVENT_NAME" --github-output "$GITHUB_OUTPUT"
+
   runtime-integrity:
+    needs: scope
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ env.SCOPE_HEAD_SHA }}
           fetch-depth: 0
-
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
-
       - name: Install dependencies
         run: npm ci
-
       - name: Runtime commit atomicity
-        env:
-          RUNTIME_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          RUNTIME_HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-        run: node scripts/check-runtime-commit-integrity.mjs "$RUNTIME_BASE_SHA" "$RUNTIME_HEAD_SHA"
-
-      - name: Runtime atomic-commit regression
-        run: node --test tests/runtime-integrity-atomic-commit.test.mjs
-
+        run: node scripts/check-runtime-commit-integrity.mjs "$SCOPE_BASE_SHA" "$SCOPE_HEAD_SHA"
       - name: Runtime integrity check
         run: npm run check:runtime
-
       - name: Production build
         run: npm run build
 
   test-and-build:
+    needs: scope
+    if: needs.scope.outputs.node == 'true' || needs.scope.outputs.vitest == 'true' || needs.scope.outputs.edge == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      SCOPED_TEST_PLAN: ${{ needs.scope.outputs.plan }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
+        with:
+          ref: ${{ env.SCOPE_HEAD_SHA }}
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
-
       - name: Install dependencies
         run: npm ci
-
-      - name: Full Vitest suite
-        run: npm run test:unit
-
-      - name: Edge Function tests
-        run: npm run test:edge-functions
-
+      - name: Related root and admin backend Vitest files
+        if: needs.scope.outputs.vitest == 'true'
+        run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run vitest
+      - name: Related Edge Function files
+        if: needs.scope.outputs.edge == 'true'
+        run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run edge
       - name: Production build for packaging tests
+        if: needs.scope.outputs.node == 'true'
         run: npm run build
-
-      - name: Full Node tests
-        run: node --test tests/*.test.mjs
-
-      - name: Permission switch migration tests
-        run: node --test scripts/tests/permission-switches.test.mjs
+      - name: Related Node files
+        if: needs.scope.outputs.node == 'true'
+        run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run node
 
   runtime-tests:
+    needs: scope
+    if: needs.scope.outputs.playwright == 'true' || needs.scope.outputs.membership == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      SCOPED_TEST_PLAN: ${{ needs.scope.outputs.plan }}
+      PLAYWRIGHT_BROWSERS_PATH: .sites-runtime/playwright
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
+        with:
+          ref: ${{ env.SCOPE_HEAD_SHA }}
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
-
       - name: Install dependencies
         run: npm ci
-
       - name: Install Chromium and system dependencies
-        run: PLAYWRIGHT_BROWSERS_PATH=.sites-runtime/playwright npx playwright install --with-deps chromium
-
-      - name: Playwright runtime tests
-        run: npm run test:runtime
-
-      - name: Profile membership responsive tests
-        run: PLAYWRIGHT_BROWSERS_PATH=.sites-runtime/playwright npx playwright test --config playwright.membership-preview.config.ts
+        run: npx playwright install --with-deps chromium
+      - name: Related runtime browser files
+        if: needs.scope.outputs.playwright == 'true'
+        run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run playwright
+      - name: Related membership preview files
+        if: needs.scope.outputs.membership == 'true'
+        run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run membership
 
   admin:
+    needs: scope
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: apps/admin
+    env:
+      SCOPED_TEST_PLAN: ${{ needs.scope.outputs.plan }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
+        with:
+          ref: ${{ env.SCOPE_HEAD_SHA }}
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: apps/admin/package-lock.json
-
-      - name: Install dependencies
+          cache-dependency-path: |
+            package-lock.json
+            apps/admin/package-lock.json
+      - name: Install root dependencies
         run: npm ci
-
-      - name: Admin tests
-        run: npm test
-
+      - name: Install admin dependencies
+        working-directory: apps/admin
+        run: npm ci
+      - name: Related admin frontend files
+        if: needs.scope.outputs.admin == 'true'
+        run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run admin
       - name: Admin build
+        working-directory: apps/admin
         run: APPDEPLOY_CI_EXTERNALS=true npm run build
-
       - name: Cloudflare Pages admin build
+        working-directory: apps/admin
         run: npm run build:pages
 
   matrix-api:
+    needs: scope
+    if: needs.scope.outputs.python == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: services/matrix-api
+    env:
+      SCOPED_TEST_PLAN: ${{ needs.scope.outputs.plan }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
+        with:
+          ref: ${{ env.SCOPE_HEAD_SHA }}
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
       - name: Set up uv and Python
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
         with:
@@ -149,9 +185,8 @@ jobs:
           python-version: "3.12"
           enable-cache: true
           cache-dependency-glob: services/matrix-api/uv.lock
-
       - name: Install dependencies
+        working-directory: services/matrix-api
         run: uv sync --frozen
-
-      - name: Matrix API tests
-        run: uv run pytest -q
+      - name: Related Matrix API files
+        run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run python

@@ -45,6 +45,8 @@ vi.mock("../push-subscription", async (importOriginal) => ({
 
 import { NotificationsPagePatched } from "../NotificationsPagePatched";
 import { PushSubscriptionError } from "../push-subscription";
+import { updateAlgorithmCacheSession } from "../auth/algorithm-cache-scope";
+import type { Session } from "@supabase/supabase-js";
 
 afterEach(cleanup);
 
@@ -78,6 +80,7 @@ const storedSettings: MemberNotificationSettings = {
 };
 
 beforeEach(() => {
+  updateAlgorithmCacheSession({ access_token: 'member-a', user: { id: 'member-a' } } as Session);
   reactStateTracker.capture = false;
   reactStateTracker.updates = 0;
   memberApi.fetchNotificationSettings.mockReset().mockResolvedValue(structuredClone(storedSettings));
@@ -106,6 +109,45 @@ function pushFailure(stage: "service-worker-registration" | "browser-subscriptio
 }
 
 describe("NotificationsPagePatched", () => {
+  it("discards a queued draft on logout instead of saving it on unmount", async () => {
+    const view = render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    await waitFor(() => expect(memberApi.fetchNotificationSettings).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole("button", { name: "全部關閉" }));
+    memberApi.hasAuthenticatedMemberSession.mockResolvedValue(false);
+    act(() => updateAlgorithmCacheSession(null));
+    view.unmount();
+    expect(memberApi.saveNotificationSettings).not.toHaveBeenCalled();
+  });
+
+  it("rejects an old settings read after another member signs in", async () => {
+    const old = deferred<MemberNotificationSettings>();
+    memberApi.fetchNotificationSettings.mockReturnValueOnce(old.promise);
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    await waitFor(() => expect(memberApi.fetchNotificationSettings).toHaveBeenCalledTimes(1));
+    const newer = structuredClone(storedSettings);
+    newer.settings.bet = false;
+    memberApi.fetchNotificationSettings.mockResolvedValue(newer);
+    act(() => updateAlgorithmCacheSession({ access_token: 'member-b', user: { id: 'member-b' } } as Session));
+    await waitFor(() => expect(memberApi.fetchNotificationSettings).toHaveBeenCalledTimes(2));
+    await act(async () => old.resolve(structuredClone(storedSettings)));
+    const row = document.querySelector<HTMLElement>('[data-notification-key="bet"]')!;
+    expect(within(row).getByRole('button', { name: '開啟選號提醒' })).toHaveAttribute('data-checked', 'false');
+  });
+
+  it("does not retry a previous member's failed save after the account changes", async () => {
+    const oldSave = deferred<MemberNotificationSettings>();
+    memberApi.saveNotificationSettings.mockReturnValueOnce(oldSave.promise);
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    await waitFor(() => expect(memberApi.fetchNotificationSettings).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole("button", { name: "全部關閉" }));
+    await waitFor(() => expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(1));
+    act(() => updateAlgorithmCacheSession({ access_token: 'member-b', user: { id: 'member-b' } } as Session));
+    await act(async () => oldSave.reject(new Error('old account offline')));
+    await waitFor(() => expect(memberApi.fetchNotificationSettings).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText('通知設定尚未儲存，請重試')).toBeNull();
+    expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(1);
+  });
+
   it("removes the retired winning notification and uses the settings title", async () => {
     render(<NotificationsPagePatched onNavigate={vi.fn()} />);
     expect(screen.queryByText("中獎通知")).toBeNull();
@@ -748,4 +790,3 @@ it("失敗後切回原設定仍確認儲存最新選擇，確認前保留提示"
     vi.useRealTimers();
   }
 });
-

@@ -347,8 +347,10 @@ def test_supabase_full_history_restarts_when_a_draw_is_prepended_between_pages()
     assert fake_client.last_ranges == [
         (0, 999),
         (1000, 1999),
+        (1002, 2001),
         (0, 999),
         (1000, 1999),
+        (1002, 2001),
     ]
 
 
@@ -619,8 +621,9 @@ def test_supabase_chunk_queries_use_composite_upsert_and_ordered_minimal_read() 
     assert fake_client.last_filters == [
         ("lottery", "今彩539"), ("draw_period", "115000205"),
         ("analysis_version", "v1"), ("kind", "explore"),
-    ]
-    assert fake_client.last_orders == [("chunk_index", False)]
+    ] * 2
+    assert fake_client.last_orders == [("chunk_index", False)] * 2
+    assert fake_client.last_gt_filters == [("chunk_index", 1)]
 
 
 def test_supabase_chunk_reads_use_keyset_pagination_to_avoid_statement_timeout() -> None:
@@ -637,8 +640,8 @@ def test_supabase_chunk_reads_use_keyset_pagination_to_avoid_statement_timeout()
 
     assert [chunk["chunk_index"] for chunk in chunks] == [0, 1, 2]
     assert fake_client.last_ranges == []
-    assert fake_client.last_limits == [2, 2]
-    assert fake_client.last_gt_filters == [("chunk_index", 1)]
+    assert fake_client.last_limits == [2, 2, 2]
+    assert fake_client.last_gt_filters == [("chunk_index", 1), ("chunk_index", 2)]
 
 
 def test_supabase_chunk_summary_processes_pages_without_accumulating_full_read() -> None:
@@ -674,8 +677,8 @@ def test_supabase_chunk_summary_processes_pages_without_accumulating_full_read()
 
     assert count == 3
     assert fake_client.last_ranges == []
-    assert fake_client.last_limits == [2, 2]
-    assert fake_client.last_gt_filters == [("chunk_index", 1)]
+    assert fake_client.last_limits == [2, 2, 2]
+    assert fake_client.last_gt_filters == [("chunk_index", 1), ("chunk_index", 2)]
 
 
 def test_supabase_chunk_write_compacts_large_payload() -> None:

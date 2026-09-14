@@ -22,7 +22,7 @@ test('the branded action retains all 16 gradient layers without parser iteration
 
 test('the transfer action retains all eight layers within the JSDOM grammar matcher budget', (t) => {
   const warn = t.mock.method(console, 'warn');
-  const css = readFileSync(new URL('../src/mobile-layout-polish.css', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
   const body = ruleBodies(css, /^\.manual-transfer-submit\.confirm-payment::before$/).join('\n');
   // JSDOM extends CSS Tree with these syntaxes. Validate directly so its lazy
   // style evaluation and shared value caches cannot hide a parser regression.

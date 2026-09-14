@@ -6,7 +6,15 @@ const operationsCss = readFileSync(new URL('./admin-operations.css', import.meta
 const adminCss = readFileSync(new URL('./admin.css', import.meta.url), 'utf8');
 const statusCss = readFileSync(new URL('./system-status.css', import.meta.url), 'utf8');
 const appSource = readFileSync(new URL('./AdminApp.tsx', import.meta.url), 'utf8');
-const rule = (css: string, selector: string) => css.match(new RegExp(`${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
+const rule = (css: string, selector: string) => {
+  let declarations = '';
+  parse(css).walkRules((candidate) => {
+    if (!declarations && candidate.selector === selector) {
+      declarations = candidate.nodes.map(node => node.toString()).join(';');
+    }
+  });
+  return declarations;
+};
 const statusStyles = parse(statusCss);
 const statusDeclarationsAt = (selector: string, viewportWidth: number) => {
   const declarations = new Map<string, string>();
@@ -27,8 +35,12 @@ const statusDeclarationsAt = (selector: string, viewportWidth: number) => {
 
 describe('admin interface styles', () => {
   it('keeps primary action buttons visible inside form action rows', () => {
-    expect(rule(operationsCss, '.formActions .primary')).toMatch(/background\s*:/);
-    expect(rule(operationsCss, '.formActions .primary')).toMatch(/color\s*:\s*#111/);
+    expect(rule(adminCss, '.primary,.loginPrimary,.formActions .primary')).toMatch(/background\s*:/);
+    expect(rule(adminCss, '.primary,.loginPrimary,.formActions .primary')).toMatch(/color\s*:\s*#111/);
+    expect(rule(operationsCss, '.formActions .primary')).toBe('');
+    expect(rule(adminCss, '.primary')).toMatch(/width:auto/);
+    expect(rule(adminCss, '.loginPrimary')).toMatch(/width:100%/);
+    expect(rule(adminCss, '.loginPrimary')).toMatch(/padding:12px 16px/);
   });
 
   it('uses compact vertical spacing from the single shared table rule', () => {
@@ -123,7 +135,7 @@ describe('admin interface styles', () => {
 
   it('renders GitHub API health separately from read-only workflow facts', () => {
     expect(appSource).toContain('<details className="statusDetails">');
-    expect(appSource).toContain('getGithubStatusFacts(item).map');
+    expect(appSource).toContain('...getGithubStatusFacts(item)');
     expect(appSource).not.toContain('dispatchGithub');
     expect(appSource).not.toContain('retryGithub');
   });

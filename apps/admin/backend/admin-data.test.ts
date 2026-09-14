@@ -191,11 +191,11 @@ describe('listAdminLoginRecordPage', () => {
     const requestPage = vi.fn(async () => ({ items: [{
       id: 'login-11', account: 'operator@example.com', login_at: '2026-09-10T10:00:00Z',
       logout_at: null, online_minutes: 5, ip: '1.2.3.4', device: 'Chrome',
-    }], total: 21 }));
+    }], total: 11 }));
 
     const result = await listAdminLoginRecordPage({ page: 2 }, { request, requestPage });
 
-    expect(result).toMatchObject({ total: 21, currentPage: 2, totalPages: 3, items: [expect.objectContaining({ estimatedRegion: '台灣・台北市' })] });
+    expect(result).toMatchObject({ total: 11, currentPage: 2, totalPages: 2, items: [expect.objectContaining({ estimatedRegion: '台灣・台北市' })] });
     const url = new URL(requestPage.mock.calls[0][0], 'https://example.test');
     expect(url.searchParams.get('limit')).toBe('10');
     expect(url.searchParams.get('offset')).toBe('10');
@@ -294,5 +294,66 @@ describe('complete admin data pagination', () => {
       return [{ id: 'first' }];
     });
     await expect(listAdminTable('auditLogs', { request })).rejects.toThrow('page unavailable');
+  });
+});
+
+describe('dashboard complete Taipei revenue', () => {
+  it('keeps reading confirmed payments after capped short pages using actual returned offsets', async () => {
+    const rows = Array.from({ length: 1105 }, (_, index) => ({ id: String(index), amount: 10, paid_at: '2026-09-06T01:00:00Z', status: 'confirmed' }));
+    const request = fixtureRequest(async path => path.includes('/payments?') ? rows : [], 137);
+    const dashboard = await getDashboard({ request }, new Date('2026-09-06T02:00:00Z'));
+    expect(dashboard).toMatchObject({ todayRevenue: 11050, cumulativeRevenue: 11050 });
+    const offsets = request.mock.calls.filter(([path]) => path.includes('/payments?')).map(([path]) => Number(new URL(path, 'https://test').searchParams.get('offset')));
+    expect(offsets).toEqual([0, 137, 274, 411, 548, 685, 822, 959, 1096, 1105]);
+  });
+
+  it.each([
+    ['2026-09-14T01:00:00Z', '2026-09-13T15:59:59.999Z', '2026-09-13T16:00:00Z', { todayRevenue: 20, monthRevenue: 30, quarterRevenue: 30, yearRevenue: 30 }],
+    ['2026-10-01T01:00:00Z', '2026-09-30T15:59:59.999Z', '2026-09-30T16:00:00Z', { todayRevenue: 20, monthRevenue: 20, quarterRevenue: 20, yearRevenue: 30 }],
+    ['2027-01-01T01:00:00Z', '2026-12-31T15:59:59.999Z', '2026-12-31T16:00:00Z', { todayRevenue: 20, monthRevenue: 20, quarterRevenue: 20, yearRevenue: 20 }],
+  ])('buckets revenue by Asia/Taipei boundaries at %s', async (now, before, boundary, expected) => {
+    const request = fixtureRequest(async path => path.includes('/payments?') ? [
+      { amount: 10, paid_at: before, status: 'confirmed' },
+      { amount: 20, paid_at: boundary, status: 'confirmed' },
+    ] : []);
+    expect(await getDashboard({ request }, new Date(now))).toMatchObject({ ...expected, cumulativeRevenue: 30 });
+  });
+
+  it('uses total counts when available and does not stop at a capped short page', async () => {
+    const request = fixtureRequest(async () => []);
+    const requestPage = vi.fn().mockResolvedValueOnce({ items: [{ id: 'a', amount: 10, paid_at: '2026-09-14T00:00:00Z', status: 'confirmed' }], total: 2 })
+      .mockResolvedValueOnce({ items: [{ id: 'b', amount: 20, paid_at: '2026-09-14T00:00:00Z', status: 'confirmed' }], total: 2 });
+    expect(await getDashboard({ request, requestPage }, new Date('2026-09-14T01:00:00Z'))).toMatchObject({ cumulativeRevenue: 30 });
+    expect(requestPage).toHaveBeenCalledTimes(2);
+    expect(new URL(requestPage.mock.calls[1][0], 'https://test').searchParams.get('offset')).toBe('1');
+  });
+
+  it('does not publish partial revenue when a later capped page fails', async () => {
+    const request = vi.fn(async (path: string) => {
+      if (!path.includes('/payments?')) return [];
+      if (path.includes('offset=0')) return [{ amount: 10, paid_at: '2026-09-14T00:00:00Z', status: 'confirmed' }];
+      throw new Error('payment page unavailable');
+    });
+    await expect(getDashboard({ request })).rejects.toThrow('payment page unavailable');
+  });
+});
+
+describe('dashboard revenue eligibility remains unchanged', () => {
+  it('honors the reset timestamp and excludes pending and reversed payments across capped pages', async () => {
+    const resetAt = '2026-09-13T16:30:00.000Z';
+    const payments = [
+      { id: 'before-reset', amount: 900, paid_at: '2026-09-13T16:29:59.999Z', status: 'confirmed' },
+      { id: 'at-reset', amount: 100, paid_at: resetAt, status: 'confirmed' },
+      { id: 'after-reset', amount: 50, paid_at: '2026-09-13T16:31:00Z', status: 'confirmed' },
+      ...['pending', 'rejected', 'refunded', 'chargeback', 'cancelled'].map(status => ({ id: status, amount: 700, paid_at: resetAt, status })),
+    ];
+    const request = fixtureRequest(async path => path.includes('/admin_revenue_settings?') ? [{ reset_at: resetAt }] : path.includes('/payments?') ? payments : [], 2);
+    const result = await getDashboard({ request }, new Date('2026-09-14T01:00:00Z'));
+    expect(result).toMatchObject({ todayRevenue: 150, monthRevenue: 150, quarterRevenue: 150, yearRevenue: 150, cumulativeRevenue: 150 });
+    for (const [path] of request.mock.calls.filter(([path]) => path.includes('/payments?'))) {
+      const query = new URL(path, 'https://test').searchParams;
+      expect(query.get('status')).toBe('eq.confirmed');
+      expect(query.get('paid_at')).toBe(`gte.${resetAt}`);
+    }
   });
 });

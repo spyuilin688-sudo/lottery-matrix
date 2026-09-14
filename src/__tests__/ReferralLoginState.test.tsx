@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const auth = vi.hoisted(() => ({
@@ -10,10 +10,15 @@ const auth = vi.hoisted(() => ({
   receive: null as null | ((event: string, session: unknown) => void),
 }));
 const referral = vi.hoisted(() => ({ fetchSummary: vi.fn() }));
+const activation = vi.hoisted(() => ({ redeem: vi.fn() }));
 vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ auth }) }));
 vi.mock('../member-api', async (original) => ({
   ...await original<typeof import('../member-api')>(),
   fetchMemberReferralSummary: referral.fetchSummary,
+}));
+vi.mock('../activation/redeemActivationCode', async (original) => ({
+  ...await original<typeof import('../activation/redeemActivationCode')>(),
+  redeemActivationCode: activation.redeem,
 }));
 import { ActivationCodePage } from '../features/MemberPages';
 import { AppDialogProvider } from '../dialog/AppDialog';
@@ -22,6 +27,15 @@ const session = { user: { id: 'member-1' }, access_token: 'test-session' };
 const summary = { referralCode: 'MATRIX-7H4K9P', referralSuccessCount: 3,
   hasInvitationCode: false, canSubmitReferralCode: true };
 const showPage = () => render(<AppDialogProvider><ActivationCodePage onNavigate={vi.fn()} /></AppDialogProvider>);
+const nextSession = { user: { id: 'member-2' }, access_token: 'next-session' };
+const code = 'A7K9-P2XM-4Q8R-N6TY';
+
+async function openActivationConfirmation() {
+  fireEvent.click(screen.getByRole('button', { name: '啟動碼' }));
+  fireEvent.change(screen.getByRole('textbox', { name: '啟動碼' }), { target: { value: code } });
+  fireEvent.click(within(document.getElementById('activation-code-panel')!).getByRole('button', { name: '確認' }));
+  return screen.findByRole('dialog');
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -31,6 +45,8 @@ beforeEach(() => {
     return { data: { subscription: { unsubscribe: auth.unsubscribe } } };
   });
   referral.fetchSummary.mockResolvedValue(summary);
+  activation.redeem.mockReset();
+  activation.redeem.mockResolvedValue({});
 });
 
 describe('referral page login state', () => {
@@ -92,5 +108,36 @@ describe('referral page login state', () => {
     act(() => auth.receive?.('SIGNED_IN', session));
     expect(input).toHaveValue('MATRIX-FRIEND');
     expect(screen.getByText(summary.referralCode)).toBeVisible();
+  });
+
+  it('does not redeem an old activation confirmation after the account changes', async () => {
+    auth.getSession.mockResolvedValue({ data: { session }, error: null });
+    showPage();
+    await screen.findByText(summary.referralCode);
+    const dialog = await openActivationConfirmation();
+    act(() => auth.receive?.('SIGNED_IN', nextSession));
+    await act(async () => { fireEvent.click(within(dialog).getByRole('button', { name: '確認' })); });
+    expect(activation.redeem).not.toHaveBeenCalled();
+    expect(screen.getByRole('textbox', { name: '啟動碼' })).toHaveValue('');
+  });
+
+  it.each(['success', 'failure'])('ignores old activation %s after an account change', async (outcome) => {
+    let resolve!: () => void;
+    let reject!: (error: Error) => void;
+    activation.redeem.mockImplementationOnce(() => new Promise<void>((yes, no) => { resolve = yes; reject = no; }));
+    auth.getSession.mockResolvedValue({ data: { session }, error: null });
+    showPage();
+    await screen.findByText(summary.referralCode);
+    const dialog = await openActivationConfirmation();
+    fireEvent.click(within(dialog).getByRole('button', { name: '確認' }));
+    await waitFor(() => expect(activation.redeem).toHaveBeenCalledWith(code));
+    act(() => auth.receive?.('SIGNED_IN', nextSession));
+    await act(async () => {
+      if (outcome === 'success') resolve();
+      else reject(Object.assign(new Error('used'), { code: 'ACTIVATION_CODE_ALREADY_USED' }));
+    });
+    expect(screen.getByRole('textbox', { name: '啟動碼' })).toHaveValue('');
+    expect(screen.queryByText('啟動成功')).not.toBeInTheDocument();
+    expect(screen.queryByText('啟動碼已使用')).not.toBeInTheDocument();
   });
 });

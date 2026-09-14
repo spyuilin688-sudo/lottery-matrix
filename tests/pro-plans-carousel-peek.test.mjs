@@ -16,7 +16,6 @@ test("會員方案卡由正式版面 owner 控制左右間距並顯示跟隨方�
   const router = readFileSync(routerPath, "utf8");
   const dotsCss = readFileSync(overridePath, "utf8");
   const layoutCss = readFileSync(layoutPath, "utf8");
-  const mobileLayoutCss = readFileSync(mobileLayoutPath, "utf8");
 
   assert.match(router, /import\s+["']\.\/pro-plans-layout\.css["'];/);
   assert.match(router, /import\s+["']\.\/pro-plans-carousel-peek\.css["'];/);
@@ -25,7 +24,7 @@ test("會員方案卡由正式版面 owner 控制左右間距並顯示跟隨方�
   assert.match(layoutCss, /\.pro-plans-screen\s+\.plan-card\s*\{[^}]*flex:\s*0\s+0\s+100%;/s);
   assert.match(layoutCss, /\.pro-plans-screen\s+\.pro-plans-checkout\s*\{[^}]*margin-inline:\s*var\(--pro-plans-checkout-inline\);/s);
   assert.doesNotMatch(layoutCss, /flex:\s*0\s+0\s+calc\(100%|margin-inline:\s*-[\d.]+px|width:\s*calc\(100%\s*\+|transform:\s*translateX/);
-  assert.doesNotMatch(mobileLayoutCss, /\.pro-plans-screen/);
+  assert.equal(existsSync(mobileLayoutPath), false);
 
   for (const index of [0, 1, 2]) {
     assert.match(

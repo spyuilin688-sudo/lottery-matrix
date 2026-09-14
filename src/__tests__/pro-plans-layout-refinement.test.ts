@@ -9,7 +9,7 @@ declare const process: { cwd(): string };
 const ownerPath = `${process.cwd()}/src/pro-plans-layout.css`;
 const ownerExists = existsSync(ownerPath);
 const ownerCss = ownerExists ? readFileSync(ownerPath, "utf8") : "";
-const mobileCss = readFileSync(`${process.cwd()}/src/mobile-layout-polish.css`, "utf8");
+const retiredMobilePath = `${process.cwd()}/src/mobile-layout-polish.css`;
 const css = [
   readFileSync(`${process.cwd()}/src/feature-pages.css`, "utf8"),
   ownerCss,
@@ -59,7 +59,7 @@ describe("Matrix Pro plan layout refinement", () => {
     expect(ownerCss).not.toMatch(/\.pro-plans-screen \.confirm-payment\.branded-explore-action\s*\{[^}]*margin-inline\s*:/s);
     expect(ownerCss).not.toMatch(/margin-inline:\s*-[\d.]+px/);
     expect(ownerCss).not.toMatch(/width:\s*calc\(100%\s*\+/);
-    expect(mobileCss).not.toMatch(/\.pro-plans-screen/);
+    expect(existsSync(retiredMobilePath)).toBe(false);
   });
 
   it("uses the approved card sizing and visual hierarchy", () => {

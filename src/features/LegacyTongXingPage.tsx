@@ -144,10 +144,6 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
         hidden={!settingsExpanded}
         style={settingsFloating ? {
           top: `${settingsPanelTop}px`,
-          "--select-tech-surface": "#030b13",
-          "--select-tech-accent": "#f0bd36",
-          "--select-tech-text": "#d4d0c8",
-          "--select-tech-cut": "8px",
         } as React.CSSProperties : undefined}
       >
         <div className="query-selects">

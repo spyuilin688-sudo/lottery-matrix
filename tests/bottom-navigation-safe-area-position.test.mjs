@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { ruleBodies } from "./helpers/css-rules.mjs";
 import { readLocalCss } from "./helpers/read-local-css.mjs";
 
 const navigationCss = await readFile(new URL("../src/prototype.css", import.meta.url), "utf8");
@@ -13,8 +14,10 @@ const homepageCss = readLocalCss("src/homepage-repair.css");
 test("底部導覽固定貼底並以瀏覽器 safe area 為唯一底部安全區來源", () => {
   assert.match(navigationCss, /\.bottom-navigation\s*\{[\s\S]*?--bottom-nav-safe-area:\s*env\(safe-area-inset-bottom,\s*0px\);[\s\S]*?position:\s*fixed;[\s\S]*?inset:\s*auto 0 0;/);
   assert.match(navigationCss, /height:\s*calc\(var\(--bottom-navigation-height\) \+ var\(--bottom-nav-safe-area\)\);/);
-  assert.match(navigationCss, /padding:\s*0 calc\(44px \+ env\(safe-area-inset-right, 0px\)\) var\(--bottom-nav-safe-area\) calc\(44px \+ env\(safe-area-inset-left, 0px\)\);/);
-  assert.doesNotMatch(navigationCss, /\.bottom-navigation\s*\{[^}]*?(?:margin(?:-[a-z]+)?\s*:\s*-|transform\s*:|top\s*:)/s);
+  assert.match(navigationCss, /padding:\s*6px max\(8px, env\(safe-area-inset-right, 0px\)\) calc\(6px \+ var\(--bottom-nav-safe-area\)\) max\(8px, env\(safe-area-inset-left, 0px\)\);/);
+  const navigation = ruleBodies(navigationCss, /^\.bottom-navigation$/).filter(body => /position:/.test(body));
+  assert.equal(navigation.length, 1);
+  assert.doesNotMatch(navigation[0], /(?:^|;)\s*(?:margin(?:-[a-z]+)?\s*:\s*-|transform\s*:|top\s*:)/);
 });
 
 test("fixed 底部導覽不被 mobile-page transform 改變定位基準", () => {
@@ -34,19 +37,21 @@ test("內容底部以導覽與瀏覽器安全區為基準並保留 8px 可見間
 });
 
 test("所有非首頁子頁共用正式底部安全距離加 8px", () => {
-  assert.match(featureCss, /\.feature-body\s*\{[^}]*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);/s);
+  const body = ruleBodies(featureCss, /^\.feature-body$/);
+  assert.equal(body.length, 2);
+  for (const declarations of body) assert.doesNotMatch(declarations, /padding-bottom:/);
   assert.match(featureCss, /\.feature-screen:not\(\.home-screen\) > \.feature-body\s*\{[^}]*padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s);
 });
 
 test("通知頁批次區維持 18px、列表維持 16px 左右間距並保留正式底部安全距離", () => {
   assert.match(featureAdjustmentsCss, /\.notifications-screen-v2\s*\{[^}]*--notification-bulk-inline:\s*18px;[^}]*--notification-list-inline:\s*16px;/s);
-  assert.match(featureAdjustmentsCss, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding-inline:\s*var\(--notification-bulk-inline\);[^}]*padding-block-start:\s*0;[^}]*padding-block-end:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s);
-  assert.match(featureAdjustmentsCss, /\.notifications-screen-v2 \.notification-list\s*\{[^}]*margin-inline:\s*calc\(var\(--notification-list-inline\) - var\(--notification-bulk-inline\)\);/s);
+  assert.match(featureAdjustmentsCss, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding-inline:\s*var\(--notification-list-inline\);[^}]*padding-block-start:\s*0;[^}]*padding-block-end:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s);
+  assert.match(featureAdjustmentsCss, /\.notifications-screen-v2 \.notification-list\s*\{[^}]*margin-inline:\s*0;/s);
   assert.match(tokenCss, /--layout-page-inline:\s*16px;/);
 });
 
 test("首頁固定 Logo 列由頂部安全區開始，內容保留固定底部導覽空間", () => {
-  assert.match(homepageCss, /\.home-screen\s*\{[^}]*inset:\s*var\(--layout-safe-area-top\) 0 0;[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\);[^}]*padding-top:\s*var\(--layout-safe-area-top\);/s);
+  assert.match(homepageCss, /\.home-screen\s*\{[^}]*inset:\s*0;[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\);[^}]*padding-top:\s*var\(--layout-safe-area-top\);/s);
   assert.match(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*grid-template-rows:\s*auto auto;[^}]*align-content:\s*start;[^}]*padding-top:\s*0;[^}]*padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ var\(--home-gap-features-nav\)\);/s);
   assert.doesNotMatch(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*padding-bottom:\s*8px;/s);
   assert.doesNotMatch(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*(?:\n\s*|;\s*)(?:transform|bottom|margin-block-end)\s*:/s);

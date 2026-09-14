@@ -1,6 +1,8 @@
 .matrix-explore-main-screen.matrix-tiangong-screen .tiangong-results-head,
 .matrix-explore-main-screen.matrix-tiangong-screen .tiangong-result-row {
   grid-template-columns: .8fr 2.35fr 1fr .65fr 1.45fr;
+  padding-inline: 0;
+  column-gap: 2px;
 }
 .matrix-tiangong-screen .tiangong-interval,
 .matrix-tiangong-screen .tiangong-directions,
@@ -12,15 +14,12 @@
   gap: 1.5px;
 }
 .matrix-tiangong-screen .tiangong-interval { gap: 1px; }
-.matrix-tiangong-screen .tiangong-result-row .road-type-toggle { white-space: nowrap; }
+.matrix-tiangong-screen .tiangong-result-row .road-type-toggle { white-space: nowrap;
+  width: 100%;
+  min-width: 0; }
 
 .matrix-explore-main-screen.matrix-tiangong-screen .feature-body { padding-inline: 13px; }
 .matrix-explore-main-screen.matrix-tiangong-screen .feature-body > .result-panel { width: 100%; margin-inline: 0; }
-.matrix-explore-main-screen.matrix-tiangong-screen .tiangong-results-head,
-.matrix-explore-main-screen.matrix-tiangong-screen .tiangong-result-row {
-  padding-inline: 0;
-  column-gap: 2px;
-}
 .matrix-explore-main-screen.matrix-tiangong-screen .tiangong-results-head > span {
   margin: 0;
   padding: 0;
@@ -40,6 +39,7 @@
 .matrix-tiangong-screen .tiangong-summary-card > .explore-validation-summary { grid-column: 1 / -1; padding: 4px; white-space: normal; }
 
 .matrix-tiangong-screen .tiangong-summary-card .tianyan-validation-summary-row { justify-content: flex-start; width: max-content; }
+.tiangong-summary-spacer { visibility: hidden; }
 .matrix-tiangong-screen .tiangong-summary-formula { display: inline-flex; gap: 1px; align-items: baseline; }
 .matrix-tiangong-screen .tiangong-validation-process .explore-validation-formula-expression { gap: 1px; }
 .matrix-explore-main-screen.matrix-tiangong-screen .feature-body > .repeat-stats-panel { width: calc(100% - 6px); margin-inline: 3px; padding-top: 6px; }

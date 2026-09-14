@@ -217,6 +217,7 @@ describe("existing feature actions", () => {
 
   it("shows a safe activation success and clears the redeemed code", async () => {
     render(<AppDialogProvider><FeaturePageRouter screen="activation-code" onNavigate={vi.fn()} /></AppDialogProvider>);
+    await screen.findByText("MATRIX-7H4K9P");
     fireEvent.click(screen.getByRole("button", { name: "啟動碼" }));
     const input = screen.getByRole("textbox", { name: "啟動碼" });
     fireEvent.change(input, { target: { value: "A7K9-P2XM-4Q8R-N6TY" } });
@@ -234,6 +235,7 @@ describe("existing feature actions", () => {
       code: "ACTIVATION_CODE_ALREADY_USED",
     }));
     render(<AppDialogProvider><FeaturePageRouter screen="activation-code" onNavigate={vi.fn()} /></AppDialogProvider>);
+    await screen.findByText("MATRIX-7H4K9P");
     fireEvent.click(screen.getByRole("button", { name: "啟動碼" }));
     const input = screen.getByRole("textbox", { name: "啟動碼" });
     fireEvent.change(input, { target: { value: "A7K9-P2XM-4Q8R-N6TY" } });

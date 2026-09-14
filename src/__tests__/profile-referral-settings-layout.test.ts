@@ -10,7 +10,7 @@ const readCss = (path: string) => readFileSync(`${process.cwd()}/${path}`, "utf8
 
 function mountProfileSettings() {
   const style = document.createElement("style");
-  style.textContent = `:root { --layout-page-inline: 24px; }\n${readCss("src/feature-pages.css")}\n${readCss("src/activation-code-layout.css")}\n${readCss("src/mobile-layout-polish.css")}`;
+  style.textContent = `:root { --layout-page-inline: 24px; }\n${readCss("src/feature-pages.css")}\n${readCss("src/activation-code-layout.css")}`;
   document.head.append(style);
   document.body.innerHTML = `
     <main class="activation-code-screen"><div class="feature-body">

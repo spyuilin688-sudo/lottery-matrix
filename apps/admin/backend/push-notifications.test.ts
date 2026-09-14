@@ -9,10 +9,13 @@ const config = {
 const USER_ONE = '11111111-1111-4111-8111-111111111111';
 const USER_TWO = '22222222-2222-4222-8222-222222222222';
 
-function response(body: unknown, status = 200) {
+function response(body: unknown, status = 200, total?: number) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      ...(Array.isArray(body) ? { 'Content-Range': `${body.length ? `0-${body.length - 1}` : '*'}/${total ?? body.length}` } : {}),
+    },
   });
 }
 
@@ -135,8 +138,8 @@ describe('createPushNotifications', () => {
       const range = new Headers(init?.headers).get('Range');
       if (url.includes('/rest/v1/members?')) {
         return range === '0-999'
-          ? response(memberPageOne)
-          : response([{ auth_user_id: targetUserId, line_display_name: 'stale target' }]);
+          ? response(memberPageOne, 200, 1001)
+          : response([{ auth_user_id: targetUserId, line_display_name: 'stale target' }], 200, 1001);
       }
       if (url.includes('/auth/v1/admin/users?')) {
         return url.includes('?page=1&')
@@ -149,8 +152,8 @@ describe('createPushNotifications', () => {
       }
       if (url.includes('/rest/v1/member_push_subscriptions?')) {
         return range === '0-999'
-          ? response(subscriptionPageOne)
-          : response([{ id: 'target-subscription', user_id: targetUserId }]);
+          ? response(subscriptionPageOne, 200, 1001)
+          : response([{ id: 'target-subscription', user_id: targetUserId }], 200, 1001);
       }
       return response({}, 404);
     });
@@ -259,4 +262,42 @@ describe('createPushNotifications', () => {
     expect(String(failure)).not.toContain('PRIVATE_DATABASE_DETAIL');
     expect(String(failure)).not.toContain('service-role-secret');
   });
+});
+
+it('includes every member and enabled device under a 137-row PostgREST cap', async () => {
+  const members = Array.from({ length: 1105 }, (_, index) => ({ auth_user_id: `user-${index}`, line_display_name: `會員 ${index}` }));
+  const subscriptions = members.map((member, index) => ({ id: `device-${index}`, user_id: member.auth_user_id }));
+  const fetcher = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+    const url = new URL(String(input));
+    if (url.pathname === '/auth/v1/admin/users') return response({ users: [] });
+    const rows = url.pathname === '/rest/v1/members' ? members : subscriptions;
+    const rangeStart = new Headers(init?.headers).get('Range')?.split('-')[0];
+    const start = Number(url.searchParams.get('offset') ?? rangeStart ?? 0);
+    const page = rows.slice(start, start + 137);
+    return new Response(JSON.stringify(page), { headers: { 'Content-Type': 'application/json', 'Content-Range': `${start}-${start + page.length - 1}/${rows.length}` } });
+  });
+  const result = await createPushNotifications(config, fetcher).listMemberPushStatus();
+  expect(result).toHaveLength(1105);
+  expect(result.every(member => member.pushEnabled)).toBe(true);
+  expect(result.at(-1)).toMatchObject({ userId: 'user-1104', displayName: '會員 1104', pushEnabled: true });
+  for (const table of ['members', 'member_push_subscriptions']) {
+    const offsets = fetcher.mock.calls.filter(([input]) => new URL(String(input)).pathname === `/rest/v1/${table}`).map(([input, init]) => {
+      const url = new URL(String(input));
+      return Number(url.searchParams.get('offset') ?? new Headers(init?.headers).get('Range')?.split('-')[0] ?? 0);
+    });
+    expect(offsets).toEqual([0, 137, 274, 411, 548, 685, 822, 959, 1096]);
+  }
+});
+
+it('surfaces a failure after a short capped member page instead of returning partial push status', async () => {
+  const fetcher = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+    const url = new URL(String(input));
+    if (url.pathname === '/auth/v1/admin/users') return response({ users: [] });
+    if (url.pathname === '/rest/v1/member_push_subscriptions') return new Response('[]', { headers: { 'Content-Range': '*/0' } });
+    const offset = Number(url.searchParams.get('offset') ?? new Headers(init?.headers).get('Range')?.split('-')[0] ?? 0);
+    return offset === 0
+      ? new Response(JSON.stringify([{ auth_user_id: USER_ONE }]), { headers: { 'Content-Range': '0-0/2' } })
+      : response({ message: 'later page unavailable' }, 500);
+  });
+  await expect(createPushNotifications(config, fetcher).listMemberPushStatus()).rejects.toMatchObject({ code: 'UNAVAILABLE', statusCode: 503 });
 });

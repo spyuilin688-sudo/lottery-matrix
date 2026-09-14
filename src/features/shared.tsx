@@ -240,18 +240,22 @@ export function getHistoryRecordKey(record: LotteryDrawRecord) {
   return `${issue}|${date}|${numbers}`;
 }
 
-export function useLotteryHistory(lottery: LotteryId, limit?: number) {
+export function useLotteryHistoryState(lottery: LotteryId, limit?: number) {
   const [data, setData] = useState<LotteryDrawRecord[]>([]);
-
+  const [loadState, setLoadState] = useState<"loading" | "success" | "empty" | "error">("loading");
+  const [reloadRevision, setReloadRevision] = useState(0);
 
   useEffect(() => {
     let active = true;
+    let revision = 0;
     setData([]);
+    setLoadState("loading");
 
     const refreshLotteryHistory = () => {
+      const current = ++revision;
       fetchLotteryHistory(lottery, limit)
         .then((records) => {
-          if (!active) return;
+          if (!active || current !== revision) return;
 
           const seen = new Set<string>();
           const uniqueRecords = records.filter((record) => {
@@ -261,10 +265,12 @@ export function useLotteryHistory(lottery: LotteryId, limit?: number) {
             return true;
           });
 
-          setData(typeof limit === "number" ? uniqueRecords.slice(0, limit) : uniqueRecords);
+          const next = typeof limit === "number" ? uniqueRecords.slice(0, limit) : uniqueRecords;
+          setData(next);
+          setLoadState(next.length ? "success" : "empty");
         })
         .catch(() => {
-          if (active) setData([]);
+          if (active && current === revision) setLoadState("error");
         });
     };
 
@@ -275,9 +281,13 @@ export function useLotteryHistory(lottery: LotteryId, limit?: number) {
       active = false;
       unsubscribe();
     };
-  }, [lottery, limit]);
+  }, [lottery, limit, reloadRevision]);
 
-  return data;
+  return { data, loadState, reload: () => setReloadRevision((current) => current + 1) };
+}
+
+export function useLotteryHistory(lottery: LotteryId, limit?: number) {
+  return useLotteryHistoryState(lottery, limit).data;
 }
 
 export function getHistoryLimit(range: string) {
@@ -356,7 +366,7 @@ export function HistoryList({
   expanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
 }) {
-  const history = useLotteryHistory(lottery, 10);
+  const { data: history, loadState, reload } = useLotteryHistoryState(lottery, 10);
   const displayedHistory = useMemo(() => [...history].reverse(), [history]);
   const order = getHistoryOrder(numberOrder);
   const [internalExpanded, setInternalExpanded] = useState(!collapsible);
@@ -422,6 +432,9 @@ export function HistoryList({
         className="history-table"
         hidden={collapsible && !expanded}
       >
+        {loadState === "error" ? <div role="alert"><span>近10期開獎號碼載入失敗</span><button type="button" aria-label="重新載入近10期開獎號碼" onClick={reload}>重新載入</button></div> : null}
+        {loadState === "loading" ? <p role="status">近10期開獎號碼載入中</p> : null}
+        {loadState === "empty" ? <p>目前沒有近10期開獎號碼。</p> : null}
         <div className="history-row history-head">
           <span>期數</span><span>日期</span><span>開獎號碼</span>
         </div>

@@ -19,7 +19,8 @@ function ruleBlock(source, selectorPattern) {
 test("Matrix Explore control rows match the compact mobile reference density", () => {
   assert.match(css, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*row-gap:\s*8px/s);
   assert.match(css, /\.explore-settings\s*\{[^}]*padding:\s*6px/s);
-  assert.match(css, /\.hit-advanced-panel\s*\{[^}]*padding:\s*6px 6px 4px/s);
+  assert.doesNotMatch(css, /\.hit-advanced-panel\s*\{/);
+  assert.match(css, /\.matrix-explore-main-screen \.explore-condition-row/);
 
   const title = ruleBlock(css, "\\.matrix-explore-main-screen \\.panel \\.section-title");
   assert.match(title, /min-height:\s*1\.25rem/);
@@ -48,28 +49,28 @@ test("Matrix Explore control rows match the compact mobile reference density", (
   assert.match(icon, /inline-size:\s*1\.8rem/);
   assert.match(icon, /block-size:\s*1\.8rem/);
 
-  const select = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-panel \\.select-box");
+  const select = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-panel \\.native-select");
   assert.match(select, /height:\s*24px/);
   assert.match(select, /min-height:\s*24px/);
 
   const three = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented\\.three");
-  assert.match(three, /display:\s*flex/);
+  assert.match(three, /display:\s*grid/);
   assert.match(three, /gap:\s*\.375rem/);
-  assert.doesNotMatch(three, /grid-template-columns/);
+  assert.match(three, /grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
 
   const two = ruleBlock(css, "\\.matrix-explore-main-screen \\.hit-options");
-  assert.match(two, /display:\s*flex/);
+  assert.match(two, /display:\s*grid/);
   assert.match(two, /gap:\s*\.375rem/);
 
   const button = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented button");
-  assert.match(button, /height:\s*24px/);
-  assert.match(button, /min-height:\s*24px/);
+  assert.match(button, /height:\s*20px/);
+  assert.match(button, /min-height:\s*20px/);
   assert.match(button, /padding:\s*\.125rem \.25rem/);
-  assert.match(button, /border:\s*1px solid #4a4030/);
+  assert.match(button, /border:\s*1px solid #7d6a4c/);
 
   const hitButton = ruleBlock(css, "\\.matrix-explore-main-screen \\.hit-options button");
-  assert.match(hitButton, /height:\s*28px/);
-  assert.match(hitButton, /min-height:\s*28px/);
+  assert.match(hitButton, /height:\s*20px/);
+  assert.match(hitButton, /min-height:\s*20px/);
   assert.match(hitButton, /box-sizing:\s*border-box/);
   assert.match(hitButton, /padding:\s*\.125rem \.25rem/);
   assert.match(hitButton, /flex:\s*1 1 0/);
@@ -110,9 +111,9 @@ test("Matrix Explore statistics and results use compact target density", () => {
   assert.match(css, /\.matrix-explore-main-screen \.repeat-stats-panel\s*\{[^}]*margin-top:\s*4px;[^}]*padding:\s*10px 6px;/s);
   assert.match(css, /\.matrix-explore-main-screen \.result-panel\s*\{[^}]*padding:\s*6px 6px 12px;/s);
   assert.match(tokens, /--layout-page-inline:\s*16px;/);
-  assert.match(css, /\.matrix-explore-main-screen\s*\{[^}]*--matrix-explore-result-panel-extra-width:\s*calc\(var\(--layout-page-inline\) \+ var\(--layout-page-inline\) - 28px\);/s);
-  assert.match(css, /\.matrix-explore-main-screen \.feature-body > \.result-panel\s*\{[^}]*--matrix-explore-result-panel-width:\s*calc\(100% \+ var\(--matrix-explore-result-panel-extra-width\)\);[^}]*align-self:\s*center;/s);
-  assert.match(css, /\.matrix-explore-main-screen \.feature-brand-header,\s*\.matrix-explore-main-screen \.feature-body > :not\(\.result-panel\)\s*\{[^}]*width:\s*100%;/s);
+  assert.match(css, /\.matrix-explore-main-screen\s*\{[^}]*--matrix-explore-result-panel-extra-width:\s*calc\(var\(--layout-page-inline\) \+ var\(--layout-page-inline\) - 26px\);/s);
+  assert.match(css, /\.matrix-explore-main-screen \.feature-body > \.result-panel\s*\{[^}]*--matrix-explore-result-panel-width:\s*100%;[^}]*align-self:\s*center;/s);
+  assert.match(css, /\.matrix-explore-main-screen \.feature-body > :not\(\.result-panel\)\s*\{[^}]*width:\s*100%;/s);
   assert.match(css, /\.matrix-explore-main-screen \.explore-settings,[\s\S]*?\.matrix-explore-main-screen \.result-panel\s*\{[^}]*width:\s*var\(--matrix-explore-result-panel-width, 100%\);/s);
   assert.match(css, /--road-validation-inline-padding:\s*4px;/);
   assert.match(featureSource, /className="road-validation-process(?:\s+[^"\s]+)*"\s+aria-label="天工驗證過程"/);
@@ -136,7 +137,11 @@ test("Matrix Explore statistics and results use compact target density", () => {
   assert.match(resultTitle, /margin-bottom:\s*8px/);
 
   assert.match(css, /\.matrix-explore-main-screen \.road-results-head,[\s\S]*?\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 1\.08fr\) minmax\(0, 1\.23fr\) minmax\(0, 1\.6fr\) minmax\(0, 1\.35fr\) minmax\(0, 1\.6fr\);/s);
-  assert.match(css, /\.matrix-explore-main-screen \.road-results-head\s*\{[^}]*min-height:\s*32px;[^}]*border-bottom:\s*1px solid rgba\(117, 83, 41, \.82\)/s);
+  const resultHeads = ruleBodies(css, /^\.matrix-explore-main-screen \.road-results-head$/).filter(body => /min-height:/.test(body));
+  assert.equal(resultHeads.length, 1);
+  const [resultHead] = resultHeads;
+  assert.match(resultHead, /min-height:\s*32px;/);
+  assert.match(resultHead, /border-bottom:\s*1px solid rgba\(117, 83, 41, \.82\)/);
   assert.match(css, /\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*min-height:\s*0;[^}]*padding:\s*6px 0/s);
   assert.match(css, /\.matrix-explore-main-screen \.road-results \.tag\s*\{[^}]*padding:\s*\.125rem \.25rem;[^}]*font-size:\s*\.5625rem/s);
   assert.match(css, /\.matrix-explore-main-screen \.road-result-row > strong\s*\{[^}]*font-size:\s*\.875rem/s);

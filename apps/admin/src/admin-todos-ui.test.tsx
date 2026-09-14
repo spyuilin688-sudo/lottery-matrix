@@ -85,6 +85,27 @@ describe('AdminTodos', () => {
     expect(button(container, '建立').disabled).toBe(false);
   });
 
+  it('does not delete after its pending confirmation outlives the panel', async () => {
+    const client = clientWith();
+    const confirmation = deferred<boolean>();
+    await act(async () => root.render(<AdminTodos client={client} admin={{ id: 'admin-owner', role: '營運管理員' }} requestConfirmation={() => confirmation.promise} />));
+    await settle();
+    await act(async () => button(container, '刪除').click());
+    await act(async () => root.render(<div>其他頁面</div>));
+    await act(async () => confirmation.resolve(true));
+    expect(client.delete).not.toHaveBeenCalled();
+  });
+
+  it('handles a failed confirmation and releases the delete lock for retry', async () => {
+    const client = clientWith();
+    await act(async () => root.render(<AdminTodos client={client} admin={{ id: 'admin-owner', role: '營運管理員' }} requestConfirmation={async () => { throw new Error('confirmation failed'); }} />));
+    await settle();
+    await act(async () => button(container, '刪除').click());
+    expect(client.delete).not.toHaveBeenCalled();
+    expect(button(container, '刪除').disabled).toBe(false);
+    expect(container.textContent).toContain('刪除失敗');
+  });
+
   it('shows edit/delete only for the owner and delete-only for a super administrator', async () => {
     const client = clientWith([
       item(),

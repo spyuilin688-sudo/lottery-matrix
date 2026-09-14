@@ -8,7 +8,7 @@ import { fetchNumberReference, type MatrixNumberOrder, type NumberReferenceReque
 import { normalizeLookupNumber } from "../feature-tool-logic";
 import { Navigate } from "./navigation";
 import { HeaderSettingsButton } from "./BrandHeader";
-import { useTimedState, useLotteryHistory, getHistoryLimit, getHistoryOrder, FeatureShell, LOTTERIES, updateLookupInputValues, finalizeLookupInputValues, getDrawIssue, getHistoryDrawNumbers } from "./shared";
+import { useTimedState, useLotteryHistoryState, getHistoryLimit, getHistoryOrder, FeatureShell, LOTTERIES, updateLookupInputValues, finalizeLookupInputValues, getDrawIssue, getHistoryDrawNumbers } from "./shared";
 
 export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const [lottery, setLottery] = useTimedState<LotteryId>("reference-lottery", "今彩539");
@@ -29,9 +29,10 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   useEffect(() => () => { queryRevision.current += 1; }, []);
   const [referenceItems, setReferenceItems] = useState<NumberReferenceItem[] | null>(null);
   const [referenceLoadState, setReferenceLoadState] = useState<"idle" | "loading" | "success" | "empty" | "error">("idle");
-  const history = useLotteryHistory(appliedLottery, getHistoryLimit(appliedRange));
+  const { data: history, loadState: historyLoadState, reload: reloadHistory } = useLotteryHistoryState(appliedLottery, getHistoryLimit(appliedRange));
   const fallbackHistory = useMemo(() => [...history].reverse(), [history]);
   const displayedHistory = referenceItems ?? fallbackHistory;
+  const displayedLoadState = referenceLoadState === "idle" ? historyLoadState : referenceLoadState;
   const referenceWindow = useReferenceWindow(displayedHistory.length);
   const historyOrder = getHistoryOrder(appliedOrder);
   useEffect(() => subscribeLotteryRefresh(appliedLottery, () => {
@@ -192,13 +193,13 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
       headerAction={<HeaderSettingsButton expanded={queryExpanded} controls="reference-header-settings" onClick={toggleQueryPanel} />}
       headerSettings={{ id: "reference-header-settings", expanded: queryExpanded, floating: queryFloating, content: queryPanel, onClose: () => { setQueryExpanded(false); setQueryFloating(false); } }}
     >
-      {referenceLoadState === "error" ? <div className="panel" role="alert"><span>號碼對照資料載入失敗</span><button type="button" aria-label="重新載入號碼對照資料" onClick={() => void startReferenceSearch()}>重新載入</button></div> : null}
-      {referenceLoadState === "loading" ? <p role="status">號碼對照資料載入中</p> : null}
-      <section className="panel reference-table-panel" hidden={referenceLoadState === "error" || referenceLoadState === "loading"}>
+      {displayedLoadState === "error" ? <div className="panel" role="alert"><span>號碼對照資料載入失敗</span><button type="button" aria-label="重新載入號碼對照資料" onClick={() => referenceLoadState === "idle" ? reloadHistory() : void startReferenceSearch()}>重新載入</button></div> : null}
+      {displayedLoadState === "loading" ? <p role="status">號碼對照資料載入中</p> : null}
+      <section className="panel reference-table-panel" hidden={displayedLoadState === "error" || displayedLoadState === "loading"}>
         <header><h2>{appliedLottery}（{appliedOrder}）</h2></header>
         <div className="reference-table">
           <div className="reference-row head"><span>期數</span><span>開獎號碼</span></div>
-          <div ref={referenceWindow.ref} className="reference-window" style={{ position: "relative", height: displayedHistory.length * referenceWindow.rowHeight }}
+          <div ref={referenceWindow.ref} className="reference-window" style={{ height: displayedHistory.length * referenceWindow.rowHeight }}
             onFocusCapture={event => { const row = (event.target as HTMLElement).closest<HTMLElement>("[data-reference-index]"); if (row) referenceWindow.setFocusedIndex(Number(row.dataset.referenceIndex)); }}
             onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) referenceWindow.setFocusedIndex(null); }}>
           {referenceWindow.indices.map((recordIndex) => {
@@ -214,7 +215,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
                 className="reference-row"
                 data-reference-index={recordIndex}
                 data-striped={recordIndex % 2 === 0}
-                style={{ position: "absolute", top: recordIndex * referenceWindow.rowHeight }}
+                style={{ top: recordIndex * referenceWindow.rowHeight }}
                 data-row-marked={markedRows.has(issue)}
                 data-has-special={Boolean(draw.special)}
                 key={issue}
@@ -259,4 +260,3 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
     </FeatureShell>
   );
 }
-

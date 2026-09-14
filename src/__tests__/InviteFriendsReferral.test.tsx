@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const memberApi = vi.hoisted(() => ({
@@ -19,6 +19,7 @@ vi.mock('../member-api', async (importOriginal) => ({
 
 import { FeaturePageRouter } from '../FeaturePagesPatched';
 import { AppDialogProvider } from '../dialog/AppDialog';
+import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
 
 const summary = {
   referralCode: 'MATRIX-7H4K9P',
@@ -30,6 +31,7 @@ const summary = {
 describe('invite friends referral summary', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    updateAlgorithmCacheSession({ access_token: 'member-a', user: { id: 'member-a' } } as never);
     memberApi.fetchMemberReferralSummary.mockResolvedValue(summary);
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -70,5 +72,18 @@ describe('invite friends referral summary', () => {
 
     expect(await screen.findByText('MATRIX-7H4K9P')).toBeVisible();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  test('account changes replace referral data and ignore an old member response', async () => {
+    let finishOld!: (value: unknown) => void;
+    memberApi.fetchMemberReferralSummary.mockReturnValueOnce(new Promise(resolve => { finishOld = resolve; }))
+      .mockResolvedValue({ ...summary, referralCode: 'NEW-MEMBER' });
+    render(<FeaturePageRouter screen="invite-friends" onNavigate={vi.fn()} />);
+    act(() => updateAlgorithmCacheSession({ access_token: 'member-b', user: { id: 'member-b' } } as never));
+    await screen.findByText('NEW-MEMBER');
+    await act(async () => finishOld({ ...summary, referralCode: 'OLD-MEMBER' }));
+    expect(screen.queryByText('OLD-MEMBER')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '複製推薦碼' }));
+    await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalledWith('NEW-MEMBER'));
   });
 });

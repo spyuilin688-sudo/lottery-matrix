@@ -4,6 +4,7 @@ import {
   type MemberNotificationSettings,
 } from '../backend/member-notification-settings';
 import { getSupabaseClient } from './lib/supabase';
+import { getAlgorithmCacheScope } from './auth/algorithm-cache-scope';
 
 export type MemberBootstrapResponse = {
   memberId: string;
@@ -85,15 +86,22 @@ function isDefinitivelyInvalidMemberSession(error: unknown) {
 
 async function memberRpc<T>(name: string, args?: Record<string, unknown>) {
   const client = getSupabaseClient();
+  const scope = getAlgorithmCacheScope();
+  const assertCurrentMember = () => {
+    if (scope !== getAlgorithmCacheScope()) throw new Error('MEMBER_SESSION_CHANGED');
+  };
   const request = () => args
     ? client.rpc(name, args)
     : client.rpc(name);
 
   let { data, error } = await request();
+  assertCurrentMember();
   if (!error) return data as T;
   if (!isMemberAuthError(error)) throw error;
 
   const { data: userData, error: userError } = await client.auth.getUser();
+  // Recovery must never replay captured write arguments or sign out a newer member.
+  assertCurrentMember();
   if (userError && !isDefinitivelyInvalidMemberSession(userError)) throw userError;
   if (userError || !userData.user) {
     try {
@@ -101,10 +109,12 @@ async function memberRpc<T>(name: string, args?: Record<string, unknown>) {
     } catch {
       // A rejected server session can still be cleared from local auth storage by Supabase.
     }
+    assertCurrentMember();
     throw new Error('MEMBER_SESSION_EXPIRED');
   }
 
   ({ data, error } = await request());
+  assertCurrentMember();
   if (error) throw error;
   return data as T;
 }

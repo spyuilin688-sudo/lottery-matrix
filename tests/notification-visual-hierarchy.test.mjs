@@ -62,10 +62,10 @@ test("通知批次按鈕列維持 18px、通知卡片維持 16px 左右外距", 
 
   assert.match(screen[0], /--notification-bulk-inline:\s*18px;/);
   assert.match(screen[0], /--notification-list-inline:\s*16px;/);
-  assert.match(featureBody[0], /padding-inline:\s*var\(--notification-bulk-inline\);/);
-  assert.match(bulk[0], /width:\s*100%;/);
-  assert.match(bulk[0], /margin-inline:\s*0;/);
-  assert.match(list[0], /margin-inline:\s*calc\(var\(--notification-list-inline\) - var\(--notification-bulk-inline\)\);/);
+  assert.match(featureBody[0], /padding-inline:\s*var\(--notification-list-inline\);/);
+  assert.match(bulk[0], /width:\s*auto;/);
+  assert.match(bulk[0], /margin-inline:\s*calc\(var\(--notification-bulk-inline\) - var\(--notification-list-inline\)\);/);
+  assert.match(list[0], /margin-inline:\s*0;/);
 });
 
 test("四個 Matrix Pro 標籤由單一 3px owner 往下重疊圖示", () => {
@@ -85,8 +85,7 @@ test("四個 Matrix Pro 標籤由單一 3px owner 往下重疊圖示", () => {
 
 
 test("通知批次按鈕區與通知列表維持 8px 間距", () => {
-  const mobileCss = readFileSync(new URL("../src/mobile-layout-polish.css", import.meta.url), "utf8");
-  const content = ruleBodies(mobileCss, /^\.notifications-screen-v2 \.notification-content$/);
+  const content = ruleBodies(css, /^\.notifications-screen-v2 \.notification-content$/);
   assert.equal(content.length, 1);
   assert.match(content[0], /row-gap:\s*8px;/);
 });

@@ -3,6 +3,14 @@ import { describe, expect, it, vi } from 'vitest';
 import { apiPath, json, router } from '../../../supabase/functions/admin-api/runtime';
 
 describe('Supabase admin Edge runtime', () => {
+  it('deploys the canonical admin route and resolves its shared business timezone helper', () => {
+    const handlerSource = readFileSync(new URL('../../../supabase/functions/admin-api/handler.ts', import.meta.url), 'utf8');
+    expect(handlerSource).toContain("import { handler as canonicalHandler } from '../../../apps/admin/backend/index.ts'");
+    const importMap = JSON.parse(readFileSync(new URL('../../../supabase/functions/admin-api/deno.json', import.meta.url), 'utf8'));
+    expect(importMap.imports['../../../apps/admin/shared/admin-business-time'])
+      .toBe('../../../apps/admin/shared/admin-business-time.ts');
+  });
+
   it('maps every new permission settings module into the Edge bundle', () => {
     const importMap = JSON.parse(readFileSync(
       new URL('../../../supabase/functions/admin-api/deno.json', import.meta.url),

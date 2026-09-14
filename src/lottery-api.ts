@@ -460,7 +460,9 @@ export async function fetchLotteryHistory(
         const query = new URLSearchParams({ pageSize: String(size) });
         if (cursor) query.set('cursor', JSON.stringify(cursor));
         const data = await requestJson<LotteryHistoryResponse>(`/api/matrix/history/${encodeURIComponent(lottery)}?${query}`);
-        return Array.isArray(data) ? { items: data } : { ...data, items: data.items ?? [] };
+        const items = Array.isArray(data) ? data : data?.items;
+        assertArrayField(items, 'items');
+        return Array.isArray(data) ? { items } : { ...data, items };
       }, limit);
       // A superseded response must not restore persistent data or reach callers.
       if (!isCurrent()) return fetchLotteryHistory(lottery, limit);

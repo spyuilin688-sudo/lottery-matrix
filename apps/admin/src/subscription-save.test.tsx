@@ -87,6 +87,12 @@ describe('subscription expiry save recovery', () => {
     expect(app.api.put).not.toHaveBeenCalled();
   });
 
+  it('opens the expiry editor on the Taiwan calendar day across UTC midnight', async () => {
+    app.state.expiresAt = '2026-09-11T20:30:00Z';
+    const editor = await openEditor();
+    expect((within(editor).getByLabelText('到期日') as HTMLInputElement).value).toBe('2026-09-12');
+  });
+
   it('preserves the entered date after a failed write and closes only after an explicit successful retry', async () => {
     app.state.writeError = new Error('Request failed with status code 503');
     const editor = await openEditor();

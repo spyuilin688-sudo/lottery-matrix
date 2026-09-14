@@ -39,13 +39,14 @@ body,
   width: 100%;
   min-width: 0;
   max-width: 100%;
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  touch-action: pan-y;
   overscroll-behavior-x: contain;
   overscroll-behavior-y: auto;
   user-select: none;
 }
 
-.mobile-carousel { overflow-x: auto; overflow-y: hidden; touch-action: pan-y; }
 .mobile-carousel[data-dragging="true"] { cursor: none; }
 .mobile-carousel-content { display: flex; width: max-content; min-width: 100%; transform: translateX(var(--mobile-carousel-overdrag)); will-change: transform; }
 .mobile-carousel-scrollbar { position: absolute; z-index: 4; inset: 0; opacity: 0; pointer-events: none; transition: opacity 150ms ease; }
@@ -210,7 +211,7 @@ button {
   position: absolute;
   overflow: hidden;
   border-radius: 42px;
-  background: #ffffff;
+  background: var(--lottery-neutral-950);
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
   cursor: none;
   z-index: 1;
@@ -246,19 +247,6 @@ button {
 .device-screen [contenteditable="true"] {
   -webkit-user-select: auto;
   user-select: auto;
-}
-
-.device-screen:active,
-.device-screen:active * {
-  cursor: none !important;
-}
-
-.device-screen input,
-.device-screen textarea,
-.device-screen button,
-.device-screen a,
-.device-screen [role="button"] {
-  cursor: none !important;
 }
 
 .device-screen[data-cursor-debug="true"],

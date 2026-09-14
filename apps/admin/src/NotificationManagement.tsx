@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatAdminDateTime } from './admin-operations';
 import {
   TEST_PUSH_BODY,
@@ -51,6 +51,8 @@ export function NotificationManagement({ client, canEdit }: Props) {
   const [memberRequests] = useState(createLatestRequestGate);
   const [logRequests] = useState(createLatestRequestGate);
   const [sendRequests] = useState(createLatestRequestGate);
+  const editAllowed = useRef(canEdit);
+  editAllowed.current = canEdit;
   const [exclusiveSend] = useState(createExclusiveAction);
   const [exclusiveMemberRetry] = useState(createExclusiveAction);
   const [exclusiveLogRetry] = useState(createExclusiveAction);
@@ -115,7 +117,7 @@ export function NotificationManagement({ client, canEdit }: Props) {
       logRequests.dispose();
       sendRequests.dispose();
     };
-  }, []);
+  }, [client]);
 
   const send = () => {
     if (!sendAvailable || !selectedMember) return;
@@ -126,13 +128,13 @@ export function NotificationManagement({ client, canEdit }: Props) {
       setSendResult(null);
       try {
         const result = await sendTestPush(client, selectedMember.userId);
-        if (!sendRequests.canCommit(request)) return;
+        if (!sendRequests.canCommit(request) || !editAllowed.current) return;
         setSendResult(result);
         const memberRefresh = loadMembers();
         void loadLogs();
         await memberRefresh;
       } catch (cause) {
-        if (sendRequests.canCommit(request)) {
+        if (sendRequests.canCommit(request) && editAllowed.current) {
           if (isNoActiveSubscriptionsError(cause)) {
             setMembers((current) => current.map((member) => member.userId === selectedMember.userId
               ? { ...member, pushEnabled: false }

@@ -937,23 +937,27 @@ class SupabaseAnalysisRepository:
         self,
         lottery: str,
         limit: int | None,
+        since_date: str | None = None,
     ) -> list[dict[str, Any]]:
         draws: list[dict[str, Any]] = []
         offset = 0
         while limit is None or len(draws) < limit:
             page_size = DRAW_PAGE_SIZE if limit is None else min(DRAW_PAGE_SIZE, limit - len(draws))
-            response = (
+            query = (
                 self.client.table("lottery_draws")
                 .select("period,draw_date,numbers,sorted_numbers,draw_order_numbers,result_status")
                 .eq("lottery", lottery)
                 .order("draw_date", desc=True, nullsfirst=False)
                 .order("period", desc=True)
                 .range(offset, offset + page_size - 1)
-                .execute()
             )
+            if since_date is not None:
+                query = query.gte("draw_date", since_date)
+            response = query.execute()
             page = [dict(draw) for draw in response.data]
             draws.extend(page)
-            if len(page) < page_size:
+            # A server-side row cap may be smaller than the requested range.
+            if not page:
                 break
             offset += len(page)
 
@@ -987,16 +991,11 @@ class SupabaseAnalysisRepository:
         return duplicate_found
 
     def list_draws_since(self, lottery: str, since_date: str) -> list[dict[str, Any]]:
-        response = (
-            self.client.table("lottery_draws")
-            .select("period,draw_date,numbers,sorted_numbers,draw_order_numbers,result_status")
-            .eq("lottery", lottery)
-            .gte("draw_date", since_date)
-            .order("draw_date", desc=True, nullsfirst=False)
-            .order("period", desc=True)
-            .execute()
-        )
-        return [self._normalize_draw(dict(draw)) for draw in response.data]
+        for _ in range(DRAW_SNAPSHOT_MAX_ATTEMPTS):
+            draws = self._list_draw_rows(lottery, None, since_date)
+            if not self._has_duplicate_draw_periods(draws):
+                return [self._normalize_draw(draw) for draw in draws]
+        raise ValueError("DRAW_HISTORY_UNSTABLE")
 
     def begin_run(
         self,
@@ -1216,12 +1215,12 @@ class SupabaseAnalysisRepository:
                 query = query.gt("chunk_index", last_chunk_index)
             response = query.execute()
             page = [dict(chunk) for chunk in response.data]
-            yield from page
-            if len(page) < ARTIFACT_CHUNK_PAGE_SIZE:
+            if not page:
                 break
             next_chunk_index = int(page[-1]["chunk_index"])
             if last_chunk_index is not None and next_chunk_index <= last_chunk_index:
                 raise ValueError("ANALYSIS_CHUNK_PAGINATION_STALLED")
+            yield from page
             last_chunk_index = next_chunk_index
 
     def read_artifact_chunks(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> list[dict[str, Any]]:

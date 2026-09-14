@@ -19,44 +19,41 @@ test('三頁標題操作按鈕由響應式內距縮減高度且維持原文字�
   const css = fs.readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
   const actions = ruleBodies(css, /^\.product-header__actions$/);
   assert.equal(actions.length, 1);
-  assert.match(actions[0], /grid-area:\s*actions;/);
+  assert.match(actions[0], /position:\s*absolute;[^}]*right:\s*4px;[^}]*bottom:\s*0px;/s);
   assert.match(actions[0], /min-width:\s*0;/);
-  assert.doesNotMatch(actions[0], /translate|position:\s*absolute/);
+  assert.match(actions[0], /width:\s*var\(--product-header-action-width\);/);
+  assert.doesNotMatch(actions[0], /translate/);
   const control = ruleBodies(responsive, /^\.title-card-compact-action$/);
   assert.equal(control.length, 1);
   assert.match(control[0], /font-size:\s*clamp\(7\.2px, 2\.1vw, 9px\);/);
 });
 
 test('同星、對照單、歷史、計算機與 Matrix Explore 使用指定外距 [header migration]', () => {
-  assert.match(feature, /\.product-header\s*\{[^}]*width:\s*100%;[^}]*padding:\s*0 var\(--layout-page-inline\) 8px;/s);
+  assert.match(feature, /\.product-header\s*\{[^}]*width:\s*100%;[^}]*padding:\s*0 var\(--layout-page-inline\);[^}]*margin-bottom:\s*var\(--layout-section-gap\);/s);
   assert.match(responsive, /--tool-page-inline:\s*var\(--layout-page-inline\);/);
   assert.doesNotMatch(explore, /matrix-title-banner/);
 });
 
-test('三個浮動設定卡固定於 viewport、左右 16px 且 top 使用 viewport 座標', () => {
-  for (const selector of [
-    /^\.tongxing-query\[data-floating="true"\]$/,
-    /^\.history-filter-panel\[data-floating="true"\]$/,
-    /^\.reference-query-panel\[data-floating="true"\]$/,
-  ]) {
-    const bodies = ruleBodies(responsive, selector);
-    assert.equal(bodies.length, 1);
-    assert.match(bodies[0], /position:\s*fixed;/);
-    assert.match(bodies[0], /left:\s*16px;/);
-    assert.match(bodies[0], /right:\s*16px;/);
+test('三個工具設定由 sticky 頁首提供定位且保留左右 16px', () => {
+  const floating = ruleBodies(feature, /^\.product-header__settings-card\[data-floating="true"\]$/);
+  assert.equal(floating.length, 1);
+  assert.match(floating[0], /position:\s*absolute;[^}]*top:\s*0;[^}]*inset-inline:\s*var\(--layout-page-inline\);/s);
+  assert.match(coreSource, /headerSettings=\{\{ id: "history-header-settings"/);
+  assert.match(coreSource, /headerSettings=\{\{ id: "tongxing-header-settings"/);
+  const reference = fs.readFileSync('src/features/NumberReferencePage.tsx', 'utf8');
+  assert.match(reference, /headerSettings=\{\{ id: "reference-header-settings"/);
+  for (const activeSource of [coreSource, reference]) {
+    assert.doesNotMatch(activeSource, /set(?:Filter|Settings|Query)PanelTop|<MobilePagePortal/);
   }
-  assert.match(source, /setFilterPanelTop\(\(header\?\.getBoundingClientRect\(\)\.bottom \?\? 0\) \+ 8\)/);
-  assert.match(source, /setSettingsPanelTop\(\(header\?\.getBoundingClientRect\(\)\.bottom \?\? 0\) \+ 8\)/);
-  assert.match(source, /setQueryPanelTop\(\(header\?\.getBoundingClientRect\(\)\.bottom \?\? 0\) \+ 8\)/);
 });
 
-test('設定區沿用目前深色直角與原生選單圖層契約', () => {
-  assert.ok(ruleBodies(feature, /^\.history-filter-panel \.select-box::after$/).some((body) => /display:\s*none;/.test(body)));
-  assert.ok(ruleBodies(feature, /^\.reference-query-panel \.select-box::after$/).some((body) => /display:\s*none;/.test(body)));
-  assert.ok(ruleBodies(responsive, /^\.history-filter-primary-row \.select-box::after$/).some((body) => /display:\s*block;/.test(body)));
-  assert.ok(ruleBodies(tongxing, /^\.tongxing-query \.query-selects \.select-box::after$/).some((body) => /display:\s*block;/.test(body)));
+test('設定第一列使用共用小切角，第二列保留直角與原生選單', () => {
+  assert.ok(ruleBodies(feature, /^\.history-filter-secondary-row \.select-box::after$/).some((body) => /display:\s*none;/.test(body)));
+  assert.ok(ruleBodies(responsive, /^\.tool-settings-primary-row \.select-box$/).some((body) => /border-radius:\s*0;/.test(body)));
+  assert.ok(ruleBodies(responsive, /^\.tool-settings-primary-row \.select-box::after$/).some((body) => /display:\s*block;/.test(body)));
+  assert.ok(ruleBodies(responsive, /^\.tongxing-query \.same-star-period-select$/).some((body) => /--select-tech-cut:\s*4px;/.test(body)));
   assert.match(feature, /\.history-filter-panel select\s*\{[^}]*font-size:\s*clamp\(/s);
-  assert.match(feature, /\.number-reference-screen \.reference-select select\s*\{[^}]*font-size:\s*clamp\(/s);
+  assert.match(responsive, /\.reference-query-panel \.reference-select select\s*\{[^}]*font-size:\s*clamp\(/s);
   const tongxingSelect = ruleBodies(tongxing, /^\.tongxing-query \.same-star-period-select select$/);
   assert.ok(tongxingSelect.some((body) => /font-size:\s*clamp\(9px, 3vw, 12px\);/.test(body)));
 });
@@ -81,7 +78,7 @@ test('通知與底部品牌頁移除固定 Logo 特例和小螢幕強拉', () =>
   assert.doesNotMatch(responsive, /\.bottom-nav-brand-screen \.shared-brand-logo\s*\{[^}]*width:\s*75%/s);
   assert.doesNotMatch(responsive, /bottom-nav-brand-screen\.notifications-screen[^}]*margin-bottom:\s*4px/s);
   assert.doesNotMatch(responsive, /@media \(max-width:\s*360px\)[\s\S]*?notification-heading/);
-  assert.match(responsive, /\.notification-heading\s*\{[^}]*grid-template-columns:\s*clamp\(/s);
+  assert.match(feature, /\.notification-heading\s*\{[^}]*grid-template-columns:\s*clamp\(/s);
 });
 
 test('同星結果群組使用目前卡框、間距與雙列背景辨識', () => {

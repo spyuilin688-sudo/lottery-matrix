@@ -63,11 +63,6 @@
   flex: 0 0 10px;
 }
 
-
-
-
-
-
 .tool-settings-reset {
   box-sizing: border-box;
   display: inline-flex;
@@ -92,6 +87,10 @@
 .draw-history-screen .history-filter-trigger {
   font-size: clamp(7.2px, 2.1vw, 9px);
   gap: 1px;
+}
+
+.draw-history-screen .history-reset-trigger {
+  min-height: calc(10px + clamp(3.5px, 1vw, 4px) + clamp(3.5px, 1vw, 4px));
 }
 
 .tool-settings-reset:hover {
@@ -374,44 +373,4 @@
 
 .notifications-screen .feature-body {
   gap: 4px;
-}
-
-.notifications-screen:not(.notifications-screen-v2) .notification-list { gap: 6px; }
-
-.notifications-screen:not(.notifications-screen-v2) .notification-row {
-  height: auto;
-  min-height: 0;
-}
-
-.notifications-screen:not(.notifications-screen-v2) .notification-heading {
-  grid-template-columns: clamp(40px, 12.3vw, 48px) minmax(0, 1fr) clamp(64px, 19.5vw, 76px) 42px;
-  column-gap: clamp(4px, 1.5vw, 6px);
-}
-
-.notifications-screen:not(.notifications-screen-v2) .notification-icon {
-  width: clamp(40px, 11.3vw, 44px);
-  height: clamp(40px, 11.3vw, 44px);
-}
-
-.notifications-screen:not(.notifications-screen-v2) .notification-icon img {
-  width: clamp(40px, 11.3vw, 44px);
-  height: clamp(40px, 11.3vw, 44px);
-}
-
-.notifications-screen:not(.notifications-screen-v2) .notification-row h2 {
-  gap: 2px;
-  font-size: 14px;
-  line-height: 18px;
-}
-
-.notifications-screen:not(.notifications-screen-v2) .notification-row h2 em {
-  height: 18px;
-  padding-inline: 6px;
-  font-size: 10px;
-  line-height: 16px;
-}
-
-.notifications-screen:not(.notifications-screen-v2) .notification-row h2 em + span {
-  font-size: 14px;
-  line-height: 18px;
 }

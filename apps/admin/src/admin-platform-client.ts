@@ -48,35 +48,45 @@ export function createAdminApiClient(options: AdminApiClientOptions = {}) {
   const timeoutMs = options.timeoutMs ?? 15_000;
 
   async function request(method: string, path: string, body?: unknown) {
+    const url = adminApiPath(path);
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort('ADMIN_API_TIMEOUT'), timeoutMs);
+    let timeout: ReturnType<typeof setTimeout>;
+    const deadline = new Promise<never>((_, reject) => {
+      timeout = setTimeout(() => {
+        reject(new AdminApiError('ADMIN_API_TIMEOUT', 504));
+        controller.abort('ADMIN_API_TIMEOUT');
+      }, timeoutMs);
+    });
     try {
-      const headers = new Headers({ Accept: 'application/json' });
-      if (body !== undefined) headers.set('Content-Type', 'application/json');
-      const bearer = await options.bearerToken?.();
-      if (bearer) headers.set('Authorization', `Bearer ${bearer}`);
-      const response = await fetcher(adminApiPath(path), {
-        method,
-        headers,
-        body: body === undefined ? undefined : JSON.stringify(body),
-        credentials: 'same-origin',
-        cache: 'no-store',
-        redirect: 'error',
-        signal: controller.signal,
-      });
-      let data: unknown = null;
-      if (response.status !== 204) {
-        try { data = await response.json(); }
-        catch { throw new AdminApiError('ADMIN_API_INVALID_RESPONSE', 503); }
-      }
-      if (!response.ok) throw new AdminApiError(failureMessage(data), response.status);
-      return { data };
+      return await Promise.race([deadline, (async () => {
+        const headers = new Headers({ Accept: 'application/json' });
+        if (body !== undefined) headers.set('Content-Type', 'application/json');
+        const bearer = await options.bearerToken?.();
+        if (controller.signal.aborted) throw new AdminApiError('ADMIN_API_TIMEOUT', 504);
+        if (bearer) headers.set('Authorization', `Bearer ${bearer}`);
+        const response = await fetcher(url, {
+          method,
+          headers,
+          body: body === undefined ? undefined : JSON.stringify(body),
+          credentials: 'same-origin',
+          cache: 'no-store',
+          redirect: 'error',
+          signal: controller.signal,
+        });
+        let data: unknown = null;
+        if (response.status !== 204) {
+          try { data = await response.json(); }
+          catch { throw new AdminApiError('ADMIN_API_INVALID_RESPONSE', response.ok ? 503 : response.status); }
+        }
+        if (!response.ok) throw new AdminApiError(failureMessage(data), response.status);
+        return { data };
+      })()]);
     } catch (cause) {
       if (cause instanceof AdminApiError) throw cause;
       if (controller.signal.aborted) throw new AdminApiError('ADMIN_API_TIMEOUT', 504);
       throw new AdminApiError('ADMIN_API_UNAVAILABLE', 503);
     } finally {
-      clearTimeout(timeout);
+      clearTimeout(timeout!);
     }
   }
 
@@ -92,8 +102,10 @@ let ownerClient: SupabaseClient | null = null;
 
 async function ownerBearerToken() {
   if (!ownerClient) return null;
-  const { data, error } = await ownerClient.auth.getSession();
-  if (error) return null;
+  const { data, error } = await ownerClient.auth.getSession().catch(() => {
+    throw new AdminApiError('ADMIN_AUTH_SESSION_UNAVAILABLE', 503);
+  });
+  if (error) throw new AdminApiError('ADMIN_AUTH_SESSION_UNAVAILABLE', 503);
   return data.session?.access_token ?? null;
 }
 

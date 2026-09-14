@@ -1,6 +1,9 @@
 import { loadAdminBootstrap, createActivationBatchSubmitter } from "./admin-recovery";
 import { useAdminMemberPage } from "./use-admin-member-page";
-import { paginateAdminRows } from "./admin-table-pagination";
+import { useAdminDataPage, type AdminDataPageController } from "./use-admin-data-page";
+import { AdminListControls } from "./AdminListControls";
+import { readAdminDataPage } from "./admin-table-pagination";
+import { adminBusinessDateKey } from "../shared/admin-business-time";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, auth } from "@appdeploy/client";
 import {
@@ -272,14 +275,10 @@ function AdminApp() {
   const [loginPassword, setLoginPassword] = useState("");
   const [admin, setAdmin] = useState<Record<string, unknown> | null>(null);
   const [active, setActive] = useState("營運概覽");
-  const [rows, setRows] = useState<Row[]>([]);
-  const [tablePage, setTablePage] = useState(1);
-  const [loginPageMeta, setLoginPageMeta] = useState({ total: 0, currentPage: 1, totalPages: 1 });
+
   const [memberListRevision, setMemberListRevision] = useState(0);
   const [plans, setPlans] = useState<Row[]>([]);
-  const [transfers, setTransfers] = useState<Row[]>([]);
-  const [payments, setPayments] = useState<PaymentRecord[] | null>(null);
-  const [paymentLoadError, setPaymentLoadError] = useState("");
+
   const [dash, setDash] = useState<Dashboard | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -295,17 +294,33 @@ function AdminApp() {
   const [selectedActivationCodeIds, setSelectedActivationCodeIds] = useState<Set<string>>(new Set());
   const [activationCopyFeedback, setActivationCopyFeedback] = useState("");
   const activationCopyFeedbackTimer = useRef<number | null>(null);
-  const paymentLoadVersion = useRef(0);
+  const loadVersion = useRef(0);
+  const loadPending = useRef(false);
+  const viewVersion = useRef(0);
+  const bootVersion = useRef(0);
+  const authVersion = useRef(0);
+  const authPending = useRef(false);
+  const confirmationRef = useRef<ConfirmationRequest | null>(null);
+  confirmationRef.current = confirmation;
+  const mounted = useRef(true);
   const activeRef = useRef(active);
   const signedRef = useRef(signed);
   const adminIdRef = useRef(String(admin?.id ?? ""));
   activeRef.current = active;
   signedRef.current = signed;
   adminIdRef.current = String(admin?.id ?? "");
-  const requestConfirmation = (request: Omit<ConfirmationRequest, "resolve">) =>
-    new Promise<boolean>((resolve) => setConfirmation({ ...request, resolve }));
+  const requestConfirmation = (request: Omit<ConfirmationRequest, "resolve">) => {
+    const current = captureView();
+    confirmationRef.current?.resolve(false);
+    return new Promise<boolean>((resolve) => {
+      const pending = { ...request, resolve: (confirmed: boolean) => resolve(confirmed && current()) };
+      confirmationRef.current = pending;
+      setConfirmation(pending);
+    });
+  };
   const finishConfirmation = (confirmed: boolean) => {
-    confirmation?.resolve(confirmed);
+    confirmationRef.current?.resolve(confirmed);
+    confirmationRef.current = null;
     setConfirmation(null);
   };
   const can = (k: string) =>
@@ -319,81 +334,67 @@ function AdminApp() {
       (admin?.modulePermissions as Record<string, Record<string, boolean>> | undefined)?.[module]?.[action]
       ?? admin?.role === "超級管理員",
     ) && can(operation);
-  const isCurrentPaymentLoad = (version: number, expectedAdminId: string) => (
-    version === paymentLoadVersion.current
-    && signedRef.current
-    && activeRef.current === "訂閱管理"
-    && adminIdRef.current === expectedAdminId
-  );
-  const load = async (name = active, expectedAdminId = String(admin?.id ?? ""), requestedTablePage = 1) => {
-    if (name === "用戶管理" || name === "訂閱管理") setMemberListRevision(value => value + 1);
-    const paymentRequestVersion = name === "訂閱管理" ? ++paymentLoadVersion.current : null;
-    if (paymentRequestVersion !== null) {
-      setPayments(null);
-      setPaymentLoadError("");
-    }
+  const sessionKey = signed ? String(admin?.id ?? "") : "";
+  const mainTable = active === "管理員權限" ? "admins" : tableMap[active];
+  const listPage = useAdminDataPage(signed && mainTable && !["users", "subscriptions"].includes(mainTable) ? mainTable : null, memberListRevision, api, sessionKey);
+  const paymentPage = useAdminDataPage(signed && active === "訂閱管理" ? "subscriptionRecords" : null, memberListRevision, api, sessionKey);
+  const transferPage = useAdminDataPage(signed && active === "訂閱管理" ? "transferRequests" : null, memberListRevision, api, sessionKey);
+  const rows = listPage.items;
+  const captureView = (trackRead = false) => {
+    const read = loadVersion.current;
+    const view = viewVersion.current;
+    const adminId = adminIdRef.current;
+    const name = activeRef.current;
+    return () => mounted.current && view === viewVersion.current && adminId === adminIdRef.current && name === activeRef.current && (!trackRead || read === loadVersion.current);
+  };
+  const load = async (name = activeRef.current, expectedAdminId = adminIdRef.current) => {
+    if (!mounted.current || !signedRef.current || name !== activeRef.current || expectedAdminId !== adminIdRef.current) return;
+    const version = ++loadVersion.current;
+    loadPending.current = true;
+    const validView = captureView();
+    const current = () => validView() && signedRef.current && version === loadVersion.current;
+    setMemberListRevision(value => value + 1);
     setBusy(true);
     setError("");
+    setDash(null);
+    setPlans([]);
     try {
-      if (name === "營運概覽") {
+      if (name === "營運概覽" || name === "收入報表") {
         const result = await api.get("/api/dashboard");
-        setDash(result.data);
-        setRows([]);
-      } else if (name === "收入報表") {
-        const r = await api.get("/api/dashboard");
-        setDash(r.data);
-        setRows([]);
-      } else if (name === "管理員權限") {
-        const r = await api.get("/api/data/admins");
-        setRows(r.data.items || []);
+        if (current()) setDash(result.data);
       } else if (name === "訂閱管理") {
-        const [plansResult, transfersResult, paymentRead] = await Promise.all([
-          api.get("/api/data/plans"),
-          api.get("/api/data/transferRequests"),
-          api.get("/api/data/subscriptionRecords").then(
-            (result: { data: { items?: Row[] } }) => ({ ok: true as const, result }),
-            () => ({ ok: false as const }),
-          ),
-        ]);
-        setPlans(plansResult.data.items || []);
-        setTransfers(transfersResult.data.items || []);
-        if (paymentRequestVersion !== null && isCurrentPaymentLoad(paymentRequestVersion, expectedAdminId)) {
-          if (paymentRead.ok) setPayments((paymentRead.result.data.items || []).map(paymentRecord));
-          else setPaymentLoadError("付款紀錄載入失敗，請重新載入");
-        }
-      } else if (name === "登入紀錄") {
-        const result = await api.get(`/api/data/loginRecords?page=${requestedTablePage}`);
-        const page = result.data;
-        setRows(page.items || []);
-        setTablePage(Number(page.currentPage || 1));
-        setLoginPageMeta({ total: Number(page.total || 0), currentPage: Number(page.currentPage || 1), totalPages: Number(page.totalPages || 1) });
-      } else if (name === "用戶管理" || name === "權限切換" || name === "系統設定" || name === "通知管理" || name === "代辦事項") {
-        setRows([]);
-      } else {
-        const t = tableMap[name];
-        if (t) {
-          const r = await api.get(`/api/data/${t}`);
-          setRows(r.data.items || []);
-        }
+        // Plans are form options: read every bounded server page instead of silently truncating.
+        const options: Row[] = [];
+        let page = 1;
+        let totalPages = 1;
+        do {
+          const result = await api.get(`/api/data/plans?page=${page}`);
+          if (!current()) return;
+          const resultPage = readAdminDataPage(result.data);
+          if (resultPage.currentPage !== page || (resultPage.total > 0 && resultPage.items.length === 0)) {
+            throw new Error("方案列表分頁資料不完整，請重新載入");
+          }
+          options.push(...resultPage.items);
+          totalPages = resultPage.totalPages;
+          page = resultPage.currentPage + 1;
+        } while (page <= totalPages);
+        if (current()) setPlans(options);
       }
-    } catch (e) {
-      if (
-        paymentRequestVersion !== null
-        && isCurrentPaymentLoad(paymentRequestVersion, expectedAdminId)
-      ) {
-        setPayments(null);
-        setPaymentLoadError("付款紀錄載入失敗，請重新載入");
-      }
-      setError(e instanceof Error ? e.message : "資料讀取失敗");
+    } catch (cause) {
+      if (current()) setError(cause instanceof Error ? cause.message : "資料讀取失敗");
     } finally {
-      setBusy(false);
+      if (current()) { loadPending.current = false; setBusy(false); }
     }
   };
   const boot = async (showError = false) => {
+    const version = ++bootVersion.current;
+    const validView = captureView();
+    const current = () => mounted.current && version === bootVersion.current && validView();
     setBusy(true);
     if (showError) setError("");
     try {
       const bootstrap = await loadAdminBootstrap(api);
+      if (!current()) return;
       if (bootstrap.kind !== 'ready') {
         setBootstrapUnavailable(bootstrap.kind === 'unavailable');
         if (bootstrap.kind === 'unauthorized') {
@@ -417,29 +418,33 @@ function AdminApp() {
       setActive(initial);
       await load(initial, initialAdminId);
     } catch (e) {
-      setBootstrapUnavailable(true);
-      setError(e instanceof Error ? e.message : "無法載入後台");
-    } finally { setBusy(false); }
+      if (current()) { setBootstrapUnavailable(true); setError(e instanceof Error ? e.message : "無法載入後台"); }
+    } finally { if (mounted.current && version === bootVersion.current && !signedRef.current) setBusy(false); }
   };
-  useEffect(() => { void boot(false); }, []);
+  useEffect(() => {
+    mounted.current = true;
+    void boot(false);
+    return () => { mounted.current = false; viewVersion.current += 1; loadVersion.current += 1; bootVersion.current += 1; authVersion.current += 1; confirmationRef.current?.resolve(false); };
+  }, []);
   useEffect(() => () => {
     if (activationCopyFeedbackTimer.current !== null) window.clearTimeout(activationCopyFeedbackTimer.current);
   }, []);
   const clearActivationSelection = () => {
+    if (activationCopyFeedbackTimer.current !== null) window.clearTimeout(activationCopyFeedbackTimer.current);
+    activationCopyFeedbackTimer.current = null;
     setActivationSelectionMode(false);
     setSelectedActivationCodeIds(new Set());
     setActivationCopyFeedback("");
   };
   const choose = (name: string) => {
-    paymentLoadVersion.current += 1;
+    viewVersion.current += 1;
+    loadVersion.current += 1;
+    bootVersion.current += 1;
     activeRef.current = name;
-    if (name !== "訂閱管理") {
-      setPayments(null);
-      setPaymentLoadError("");
-    }
+    confirmationRef.current?.resolve(false);
+    confirmationRef.current = null;
+    setConfirmation(null);
     clearActivationSelection();
-    setTablePage(1);
-    setLoginPageMeta({ total: 0, currentPage: 1, totalPages: 1 });
     setActive(name);
     setDrawer(false);
     setShowForm(false);
@@ -455,70 +460,55 @@ function AdminApp() {
   useEffect(() => {
     if (signed && active === "訂閱管理" && window.location.hash === "#transfer-requests") document.getElementById("transfer-requests")?.scrollIntoView?.({ block: "start" });
   }, [signed, active, busy]);
-  const signIn = async () => {
+  const runAuthentication = async (operation: (current: () => boolean) => Promise<void>) => {
+    if (authPending.current) return;
+    authPending.current = true;
+    const version = ++authVersion.current;
+    const current = () => mounted.current && version === authVersion.current;
+    setBusy(true);
     setError("");
-    try {
-      await api.post("/api/admin-login", { account: loginAccount, password: loginPassword });
-      setLoginPassword("");
-      await boot(true);
-    } catch (e) { setError(e instanceof Error ? e.message : "登入失敗"); }
+    try { await operation(current); }
+    catch (cause) { if (current()) setError(cause instanceof Error ? cause.message : "登入失敗"); }
+    finally { authPending.current = false; if (current() && !loadPending.current) setBusy(false); }
   };
-  const setupOwnerCredential = async () => {
-    setError("");
+  const signIn = () => runAuthentication(async current => {
+    await api.post("/api/admin-login", { account: loginAccount, password: loginPassword });
+    if (!current()) return;
+    setLoginPassword("");
+    await boot(true);
+  });
+  const setupOwnerCredential = () => runAuthentication(async current => {
     if (!loginPassword) { setError("請先輸入要設定的管理員密碼"); return; }
-    try {
-      const result = await auth.signIn({ email: loginAccount, password: loginPassword });
-      const account = String(result.user.email || "");
-      await api.post("/api/admin-credential-bootstrap", { password: loginPassword });
-      await auth.signOut();
-      setLoginAccount(account);
-      await api.post("/api/admin-login", { account, password: loginPassword });
-      setLoginPassword("");
-      await boot(true);
-    } catch (e) {
-      const code = (e as { code?: string }).code;
-      setError(code === "popup_blocked" ? "瀏覽器阻擋登入視窗" : code === "popup_closed" ? "已取消登入" : e instanceof Error ? e.message : "首次設定失敗");
-    }
-  };
-  const signOut = async () => {
+    const result = await auth.signIn({ email: loginAccount, password: loginPassword });
+    if (!current()) return;
+    const account = String(result.user.email || "");
+    await api.post("/api/admin-credential-bootstrap", { password: loginPassword });
+    if (!current()) return;
+    await auth.signOut();
+    if (!current()) return;
+    setLoginAccount(account);
+    await api.post("/api/admin-login", { account, password: loginPassword });
+    if (!current()) return;
+    setLoginPassword("");
+    await boot(true);
+  });
+  const signOut = () => runAuthentication(async current => {
+    viewVersion.current += 1;
+    loadVersion.current += 1;
+    loadPending.current = false;
+    bootVersion.current += 1;
+    confirmationRef.current?.resolve(false);
+    setConfirmation(null);
     await api.post("/api/admin-logout");
-    paymentLoadVersion.current += 1;
+    if (!current()) return;
     signedRef.current = false;
     adminIdRef.current = "";
-    setPayments(null);
-    setPaymentLoadError("");
     setSigned(false);
     setAdmin(null);
-  };
-  const refreshPayments = async () => {
-    const requestVersion = ++paymentLoadVersion.current;
-    const expectedAdminId = String(admin?.id ?? "");
-    setPayments(null);
-    setPaymentLoadError("");
-    let result;
-    try {
-      result = await api.get("/api/data/subscriptionRecords");
-    } catch (cause) {
-      if (
-        requestVersion === paymentLoadVersion.current
-        && signedRef.current
-        && activeRef.current === "訂閱管理"
-        && adminIdRef.current === expectedAdminId
-      ) {
-        setPaymentLoadError("付款紀錄載入失敗，請重新載入");
-      }
-      throw cause;
-    }
-    if (
-      requestVersion !== paymentLoadVersion.current
-      || !signedRef.current
-      || activeRef.current !== "訂閱管理"
-      || adminIdRef.current !== expectedAdminId
-    ) {
-      throw new Error("付款紀錄重新載入已取消");
-    }
-    setPayments((result.data.items || []).map(paymentRecord));
-  };
+    setDash(null);
+    setPlans([]);
+  });
+  const refreshPayments = paymentPage.refresh;
   const openProfileName = () => {
     setProfileName(String(admin?.name || ""));
     setShowProfileName(true);
@@ -527,40 +517,31 @@ function AdminApp() {
     await runConfirmed(
       () => requestConfirmation({ title: "確認修改名稱", message: `管理員名稱將修改為「${profileName.trim() || "未填寫"}」`, confirmLabel: "確認修改" }),
       async () => {
+        const current = captureView(true);
         setBusy(true);
         setError("");
         try {
           const updated = await saveOwnAdminName(api, profileName);
+          if (!current()) return;
           setAdmin((current) => ({ ...current, ...updated }));
           setShowProfileName(false);
         } catch (e) {
-          setError(e instanceof Error ? e.message : "管理員名稱更新失敗");
+          if (current()) setError(e instanceof Error ? e.message : "管理員名稱更新失敗");
         } finally {
-          setBusy(false);
+          if (current()) setBusy(false);
         }
       },
     );
   };
   const fields = useMemo(() => labels[tableMap[active]] || [], [active]);
-  const pagedTable = useMemo(() => paginateAdminRows(active, rows, tablePage), [active, rows, tablePage]);
   useEffect(() => {
-    if (tablePage === pagedTable.page) return;
-    setTablePage(pagedTable.page);
-    if (active === "啟動碼管理") {
-      setSelectedActivationCodeIds(new Set());
-      setActivationCopyFeedback("");
-    }
-  }, [active, pagedTable.page, tablePage]);
+    setSelectedActivationCodeIds(new Set());
+    setActivationCopyFeedback("");
+  }, [active, JSON.stringify(listPage.query)]);
   const changeTablePage = (page: number) => {
-    if (active === "登入紀錄") {
-      void load("登入紀錄", adminIdRef.current, page);
-      return;
-    }
-    setTablePage(page);
-    if (active === "啟動碼管理") {
-      setSelectedActivationCodeIds(new Set());
-      setActivationCopyFeedback("");
-    }
+    listPage.setPage(page);
+    setSelectedActivationCodeIds(new Set());
+    setActivationCopyFeedback("");
   };
   const openActivationCodeForm = () => {
     setForm({ durationType: isSuper ? "30_days" : "7_days", quantity: "10" });
@@ -572,16 +553,18 @@ function AdminApp() {
     await runConfirmed(
       () => requestConfirmation({ title: "確認建立啟動碼", message: `將建立 ${quantity} 組啟動碼。`, confirmLabel: "確認建立" }),
       async () => {
+        const current = captureView(true);
         setBusy(true);
         try {
           await activationBatchSubmitter.current.submit(adminIdRef.current, durationType, quantity);
+          if (!current()) return;
           setShowForm(false);
           setForm({});
           await load(active);
         } catch (e) {
-          setError(e instanceof Error ? e.message : "批次建立失敗");
+          if (current()) setError(e instanceof Error ? e.message : "批次建立失敗");
         } finally {
-          setBusy(false);
+          if (current()) setBusy(false);
         }
       },
     );
@@ -596,15 +579,17 @@ function AdminApp() {
         tone: "danger",
       }),
       async () => {
+        const current = captureView(true);
         setBusy(true);
         setError("");
         try {
           await deleteActivationCode(api, id);
+          if (!current()) return;
           await load("啟動碼管理");
         } catch (e) {
-          setError(e instanceof Error ? e.message : "刪除啟動碼失敗");
+          if (current()) setError(e instanceof Error ? e.message : "刪除啟動碼失敗");
         } finally {
-          setBusy(false);
+          if (current()) setBusy(false);
         }
       },
     );
@@ -640,11 +625,13 @@ function AdminApp() {
       showActivationCopyFeedback("請先勾選啟動碼");
       return;
     }
+    const current = captureView();
     try {
       await writeClipboardText(codes.join("\n"));
+      if (!current()) return;
       showActivationCopyFeedback(`已複製 ${codes.length} 組啟動碼`);
     } catch {
-      showActivationCopyFeedback("複製失敗");
+      if (current()) showActivationCopyFeedback("複製失敗");
     }
   };
   const saveAdmin = async () => {
@@ -655,19 +642,21 @@ function AdminApp() {
         confirmLabel: editingAdmin ? "確認修改" : "確認新增",
       }),
       async () => {
+        const current = captureView(true);
         setBusy(true);
         setError("");
         try {
           if (editingAdmin) await api.put(`/api/admins/${editingAdmin}`, adminForm);
           else await api.post("/api/admins", adminForm);
+          if (!current()) return;
           setAdminForm(defaultAdmin());
           setEditingAdmin(null);
           setShowForm(false);
           await load("管理員權限");
         } catch (e) {
-          setError(e instanceof Error ? e.message : "管理員儲存失敗");
+          if (current()) setError(e instanceof Error ? e.message : "管理員儲存失敗");
         } finally {
-          setBusy(false);
+          if (current()) setBusy(false);
         }
       },
     );
@@ -694,14 +683,16 @@ function AdminApp() {
     await runConfirmed(
       () => requestConfirmation({ title: "確認刪除管理員", message: "刪除後將無法使用此管理員帳號。", confirmLabel: "確認刪除", tone: "danger" }),
       async () => {
+        const current = captureView(true);
         setBusy(true);
         try {
           await api.delete(`/api/admins/${id}`);
+          if (!current()) return;
           await load("管理員權限");
         } catch (e) {
-          setError(e instanceof Error ? e.message : "刪除管理員失敗");
+          if (current()) setError(e instanceof Error ? e.message : "刪除管理員失敗");
         } finally {
-          setBusy(false);
+          if (current()) setBusy(false);
         }
       },
     );
@@ -715,15 +706,17 @@ function AdminApp() {
         tone: "danger",
       }),
       async () => {
+        const current = captureView(true);
         setBusy(true);
         setError("");
         try {
           await api.post("/api/revenue/reset");
+          if (!current()) return;
           await load("收入報表");
         } catch (e) {
-          setError(e instanceof Error ? e.message : "收入重設失敗");
+          if (current()) setError(e instanceof Error ? e.message : "收入重設失敗");
         } finally {
-          setBusy(false);
+          if (current()) setBusy(false);
         }
       },
     );
@@ -739,7 +732,7 @@ function AdminApp() {
         <div className="brand">樂彩 Matrix</div>
         <h1>營運後台</h1>
         <p role="alert">後台連線異常，請重新載入</p>
-        <button onClick={() => void boot(true)} disabled={busy}>重新載入</button>
+        <button className="loginPrimary" onClick={() => void boot(true)} disabled={busy}>重新載入</button>
       </div></div>
     );
   if (!signed)
@@ -752,8 +745,8 @@ function AdminApp() {
           <div className="adminLoginForm">
             <label>管理員帳號<input autoComplete="username" value={loginAccount} onChange={(event) => setLoginAccount(event.target.value)} /></label>
             <label>密碼<input type="password" autoComplete="current-password" value={loginPassword} onChange={(event) => setLoginPassword(event.target.value)} /></label>
-            <button onClick={signIn} disabled={busy}>登入營運後台</button>
-            <button className="credentialSetupButton" onClick={setupOwnerCredential} disabled={busy}>超級管理員首次設定</button>
+            <button className="loginPrimary" onClick={signIn} disabled={busy}>登入營運後台</button>
+            <button className="credentialSetupButton loginPrimary" onClick={setupOwnerCredential} disabled={busy}>超級管理員首次設定</button>
           </div>
           {error && <div className="error">{error}</div>}
         </div>
@@ -826,15 +819,17 @@ function AdminApp() {
           {active === "收入報表" && dash && <Revenue d={dash} isSuper={Boolean(isSuper)} onReset={resetRevenue} busy={busy} />}{" "}
           {active === "權限切換" && (
             <PermissionSwitches
+              key={sessionKey}
               client={api}
               canEdit={Boolean(isSuper)}
               confirm={requestConfirmation}
             />
           )}{" "}
           {active === "系統設定" && <SystemSettings canEdit={can("edit")} confirm={requestConfirmation} />}{" "}
-          {active === "通知管理" && <NotificationManagement client={api} canEdit={can("edit")} />}{" "}
+          {active === "通知管理" && <NotificationManagement key={sessionKey} client={api} canEdit={can("edit")} />}{" "}
           {active === "代辦事項" && admin && (
             <AdminTodos
+              key={sessionKey}
               client={api}
               admin={{ id: String(admin.id ?? ""), role: String(admin.role ?? "") }}
               requestConfirmation={requestConfirmation}
@@ -842,6 +837,7 @@ function AdminApp() {
           )}{" "}
           {active === "用戶管理" && (
             <UserManager
+              key={sessionKey}
               revision={memberListRevision}
               canEdit={moduleCan("users", "edit", "edit")}
               onStatus={async (id, status) => {
@@ -853,15 +849,17 @@ function AdminApp() {
                     tone: status === "disabled" ? "danger" : "default",
                   }),
                   async () => {
+                    const current = captureView(true);
                     setBusy(true);
                     setError("");
                     try {
                       await saveMemberStatus(api, id, status);
+                      if (!current()) return;
                       await load("用戶管理");
                     } catch (e) {
-                      setError(e instanceof Error ? e.message : "會員狀態更新失敗");
+                      if (current()) setError(e instanceof Error ? e.message : "會員狀態更新失敗");
                     } finally {
-                      setBusy(false);
+                      if (current()) setBusy(false);
                     }
                   },
                 );
@@ -870,11 +868,11 @@ function AdminApp() {
           )}{" "}
           {active === "訂閱管理" && (
             <SubscriptionManager
+              key={sessionKey}
               revision={memberListRevision}
               plans={plans}
-              transfers={transfers}
-              payments={payments}
-              paymentLoadError={paymentLoadError}
+              transferPage={transferPage}
+              paymentPage={paymentPage}
               isSuper={isSuper}
               canEdit={moduleCan("subscriptions", "edit", "edit")}
               confirm={requestConfirmation}
@@ -884,13 +882,15 @@ function AdminApp() {
                 return runConfirmed(
                   () => requestConfirmation({ title: "確認修改訂閱", message: `會員 ${id} 的訂閱資料將更新。`, confirmLabel: "確認修改" }),
                   async () => {
+                    const current = captureView(true);
                     setBusy(true);
                     setError("");
                     try {
                       await saveSubscription(api, id, payload);
+                      if (!current()) return;
                       await load("訂閱管理");
                     } finally {
-                      setBusy(false);
+                      if (current()) setBusy(false);
                     }
                   },
                 );
@@ -904,23 +904,28 @@ function AdminApp() {
                     tone: decision === "rejected" ? "danger" : "default",
                   }),
                   async () => {
+                    const current = captureView(true);
                     setBusy(true);
                     setError("");
                     try {
                       await api.put(`/api/transfer-requests/${id}`, { decision });
+                      if (!current()) return;
                       await load("訂閱管理");
                     } catch (e) {
-                      setError(e instanceof Error ? e.message : "轉帳審核失敗");
+                      if (current()) setError(e instanceof Error ? e.message : "轉帳審核失敗");
                     } finally {
-                      setBusy(false);
+                      if (current()) setBusy(false);
                     }
                   },
                 );
               }}
             />
           )}{" "}
-          {active === "管理員權限" && (
+          {active === "管理員權限" && (<>
+            <AdminListControls page={listPage} name="管理員" statuses={[["啟用", "啟用"], ["停用", "停用"]]} sorts={[["createdAt", "建立時間"], ["account", "帳號"], ["name", "名稱"]]} />
             <AdminManager
+              busy={busy || listPage.loading}
+              emptyMessage={listPage.loading ? "資料讀取中" : listPage.error ? "資料載入失敗" : "目前沒有資料"}
               rows={rows}
               isSuper={Boolean(isSuper)}
               showForm={showForm}
@@ -933,11 +938,12 @@ function AdminApp() {
               onEdit={editAdmin}
               onDelete={deleteAdmin}
             />
-          )}{" "}
+            <Pagination page={listPage.currentPage} totalPages={listPage.totalPages} onPage={changeTablePage} disabled={listPage.loading || Boolean(listPage.error)} />
+          </>)}{" "}
           {tableMap[active] && !["用戶管理", "訂閱管理"].includes(active) && (
             <>
               <div className="toolbar">
-                <div>{active === "登入紀錄" ? loginPageMeta.total : rows.length} 筆資料</div>
+                <div>{listPage.total} 筆資料</div>
                 {active === "啟動碼管理" && (
                   <div className="activationCodeToolbarActions">
                     {activationCopyFeedback && <span className="activationCopyStatus" role="status">{activationCopyFeedback}</span>}
@@ -1007,8 +1013,12 @@ function AdminApp() {
                   </div>
                 </div>
               )}
+              <AdminListControls page={listPage} name={active} statuses={active === "啟動碼管理" ? [["unused", "未使用"], ["used", "已使用"], ["expired", "已到期"]] : []}
+                sorts={active === "啟動碼管理" ? [["createdAt", "建立時間"], ["expiresAt", "到期時間"], ["code", "啟動碼"]] : active === "審計日誌" ? [["operationTime", "操作時間"], ["admin", "管理員"]] : [["loginAt", "登入時間"], ["account", "管理員帳號"]]} />
+              {listPage.loading && <div role="status" className="loading">資料讀取中…</div>}
               <DataTable
-                rows={pagedTable.items}
+                emptyMessage={listPage.loading ? "資料讀取中" : listPage.error ? "資料載入失敗" : "目前沒有資料"}
+                rows={rows}
                 fields={fields}
                 canDelete={active === "啟動碼管理" && moduleCan("activationCodes", "edit", "delete")}
                 onDelete={deleteCode}
@@ -1021,11 +1031,7 @@ function AdminApp() {
                   ? (row) => redeemedActivationCode(row) ? "已兌換，僅超級管理員可刪除" : ""
                   : undefined}
               />
-              {active === "登入紀錄" ? (
-                <Pagination page={loginPageMeta.currentPage} totalPages={loginPageMeta.totalPages} onPage={changeTablePage} disabled={busy} />
-              ) : pagedTable.pageSize > 0 && (
-                <Pagination page={pagedTable.page} totalPages={pagedTable.totalPages} onPage={changeTablePage} disabled={busy} />
-              )}
+              <Pagination page={listPage.currentPage} totalPages={listPage.totalPages} onPage={changeTablePage} disabled={listPage.loading || Boolean(listPage.error)} />
             </>
           )}
         </section>
@@ -1073,7 +1079,8 @@ function UserManager({
   canEdit: boolean;
   onStatus: (id: string, status: "active" | "disabled") => Promise<void>;
 }) {
-  const { keyword, setKeyword, status, setStatus, setPage, paged, total, loading, error, retry } = useAdminMemberPage("users", revision, api);
+  const memberPage = useAdminMemberPage("users", revision, api);
+  const { setPage, paged, loading, error } = memberPage;
   const [userInfo, setUserInfo] = useState<Row | null>(null);
   const fields = ["lineDisplayName", "registeredAt", "lastOnlineAt", "recentOnlineMinutes", "status", "recentIp", "estimatedRegion"];
   const statusText = (value: unknown) => String(value) === "disabled" || String(value) === "停用" ? "停用" : "啟用";
@@ -1082,16 +1089,7 @@ function UserManager({
     : field === "recentOnlineMinutes" ? `${Number(row[field] || 0)} 分鐘` : displayValue(field, row[field]);
   return (
     <>
-      <div className="managementToolbar">
-        <input aria-label="搜尋會員" maxLength={200} placeholder="搜尋會員、方案、推薦碼或邀請碼" value={keyword} onChange={(event) => { setKeyword(event.target.value); }} />
-        <select aria-label="篩選會員狀態" value={status} onChange={(event) => { setStatus(event.target.value); }}>
-          <option value="all">全部狀態</option>
-          <option value="active">啟用</option>
-          <option value="disabled">停用</option>
-        </select>
-        <span className="managementCount" aria-label={loading ? "資料讀取中" : error ? "資料載入失敗" : `共 ${total} 筆資料`}>{loading ? "讀取中" : error ? "—" : `${total} 筆`}</span>
-      </div>
-      {error && <p role="alert">{error} <button type="button" onClick={retry}>重新載入列表</button></p>}
+      <AdminListControls page={memberPage} name="會員" statuses={[["active", "啟用"], ["disabled", "停用"]]} sorts={[["registeredAt", "註冊時間"], ["lastOnlineAt", "最後上線時間"], ["lineDisplayName", "LINE 名稱"]]} />
       <div className="managementList tableWrap" aria-busy={loading}>
         <table>
           <thead><tr>{fields.map((field) => <th key={field}>{zh[field] || field}</th>)}<th>用戶資訊</th></tr></thead>
@@ -1118,9 +1116,8 @@ type SubscriptionPayload = {
 function SubscriptionManager({
   revision,
   plans,
-  transfers,
-  payments,
-  paymentLoadError,
+  transferPage,
+  paymentPage,
   isSuper,
   canEdit,
   confirm,
@@ -1131,9 +1128,8 @@ function SubscriptionManager({
 }: {
   revision: number;
   plans: Row[];
-  transfers: Row[];
-  payments: PaymentRecord[] | null;
-  paymentLoadError: string;
+  transferPage: AdminDataPageController;
+  paymentPage: AdminDataPageController;
   isSuper: boolean;
   canEdit: boolean;
   confirm: (request: Omit<ConfirmationRequest, "resolve">) => Promise<boolean>;
@@ -1142,7 +1138,8 @@ function SubscriptionManager({
   onSubscription: (id: string, payload: SubscriptionPayload) => Promise<boolean>;
   onTransfer: (id: string, decision: "confirmed" | "rejected") => Promise<void>;
 }) {
-  const { keyword, setKeyword, plan, setPlan, setPage, paged, total, loading, error, retry } = useAdminMemberPage("subscriptions", revision, api);
+  const memberPage = useAdminMemberPage("subscriptions", revision, api);
+  const { plan, setPlan, setPage, paged, loading, error } = memberPage;
   const [editing, setEditing] = useState<Row | null>(null);
   const [action, setAction] = useState<SubscriptionPayload["action"]>("activate");
   const [planId, setPlanId] = useState("");
@@ -1151,6 +1148,8 @@ function SubscriptionManager({
   const [submitting, setSubmitting] = useState(false);
   const expiryInputRef = useRef<HTMLInputElement>(null);
   const subscriptionSubmitLock = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const [userInfo, setUserInfo] = useState<Row | null>(null);
   const open = (row: Row, nextAction: SubscriptionPayload["action"]) => {
     if (subscriptionSubmitLock.current) return;
@@ -1158,7 +1157,7 @@ function SubscriptionManager({
     setAction(nextAction);
     setSaveError("");
     setPlanId(String(row.currentPlanId || plans[0]?.id || ""));
-    setExpiresAt(String(row.planExpiresAt || "").slice(0, 10));
+    setExpiresAt(row.planExpiresAt ? adminBusinessDateKey(String(row.planExpiresAt)) : "");
   };
   const submit = async () => {
     if (!editing || subscriptionSubmitLock.current) return;
@@ -1175,12 +1174,12 @@ function SubscriptionManager({
     setSaveError("");
     try {
       const saved = await onSubscription(editing.id, payload);
-      if (saved) setEditing(null);
+      if (mounted.current && saved) setEditing(null);
     } catch {
-      setSaveError("訂閱更新失敗，請確認日期與連線後重試");
+      if (mounted.current) setSaveError("訂閱更新失敗，請確認日期與連線後重試");
     } finally {
       subscriptionSubmitLock.current = false;
-      setSubmitting(false);
+      if (mounted.current) setSubmitting(false);
     }
   };
   const actionText: Record<SubscriptionPayload["action"], string> = {
@@ -1188,14 +1187,11 @@ function SubscriptionManager({
   };
   return (
     <>
-      <div className="managementToolbar subscriptionManagementToolbar">
-        <input aria-label="搜尋訂閱" maxLength={200} placeholder="搜尋會員或方案" value={keyword} onChange={(event) => { setKeyword(event.target.value); }} />
-        <select aria-label="篩選訂閱方案" value={plan} onChange={(event) => { setPlan(event.target.value); }}>
+      <AdminListControls page={memberPage} name="訂閱" className="subscriptionManagementToolbar" statuses={[["active", "啟用"], ["disabled", "停用"]]} sorts={[["planStartedAt", "開始時間"], ["planExpiresAt", "到期時間"], ["lineDisplayName", "LINE 名稱"]]}>
+        <select aria-label="篩選訂閱方案" value={plan} onChange={(event) => setPlan(event.target.value)}>
           <option value="all">全部方案</option><option value="monthly">月費</option><option value="quarterly">季費</option><option value="yearly">年費</option>
         </select>
-        <span className="managementCount" aria-label={loading ? "資料讀取中" : error ? "資料載入失敗" : `共 ${total} 筆資料`}>{loading ? "讀取中" : error ? "—" : `${total} 筆`}</span>
-      </div>
-      {error && <p role="alert">{error} <button type="button" onClick={retry}>重新載入列表</button></p>}
+      </AdminListControls>
       <div className="managementList tableWrap" aria-busy={loading}>
         <table>
           <thead><tr><th>LINE名稱</th><th>訂閱方案</th><th>開始時間</th><th>到期時間</th><th>自動續訂</th><th>調整到期日</th><th>用戶資訊</th></tr></thead>
@@ -1223,24 +1219,29 @@ function SubscriptionManager({
         </div>
       )}
       {userInfo && <UserInfoDialog key={userInfo.id} row={userInfo} client={api} module="subscriptions" onClose={() => setUserInfo(null)} />}
+      <AdminListControls page={paymentPage} showError={false} name="付款紀錄" statuses={[["confirmed", "已付款"], ["refunded", "已退款"], ["chargeback", "已刷退"], ["cancelled", "已取消"]]} sorts={[["paidAt", "付款時間"], ["amount", "付款金額"]]} />
       <PaymentReversalPanel
-        payments={payments}
-        loadError={paymentLoadError}
+        key={JSON.stringify(paymentPage.query)}
+        payments={paymentPage.loading || paymentPage.error ? null : paymentPage.items.map(paymentRecord)}
+        loadError={paymentPage.error ? "付款紀錄載入失敗，請重新載入" : ""}
         canEdit={canEdit}
         confirm={confirm}
         onRecord={onPaymentReversal}
         onRefresh={onPaymentRefresh}
       />
+      <Pagination page={paymentPage.currentPage} totalPages={paymentPage.totalPages} onPage={paymentPage.setPage} disabled={paymentPage.loading || Boolean(paymentPage.error)} />
       <div className="panel transferPanel" id="transfer-requests">
         <h2>轉帳申請</h2>
         <AdminTransferPush client={api} isSuper={isSuper} />
-        {transfers.length === 0 ? <div className="empty">目前沒有資料</div> : transfers.map((row) => (
+        <AdminListControls page={transferPage} name="轉帳申請" statuses={[["pending", "待確認"], ["confirmed", "已確認"], ["rejected", "已拒絕"]]} sorts={[["submittedAt", "申請時間"], ["amount", "轉帳金額"]]} />
+        {transferPage.loading ? <div role="status" className="loading">資料讀取中…</div> : transferPage.error ? null : transferPage.items.length === 0 ? <div className="empty">目前沒有資料</div> : transferPage.items.map((row) => (
           <div className="transferRow" key={row.id}>
             <div><b>{text(row.lineDisplayName)}</b><span>{text(row.planName)}／{money(Number(row.amount))}／末五碼 {text(row.accountLastFive)}</span></div>
             <span>{({ pending: "待確認", confirmed: "已確認", rejected: "已拒絕" } as Record<string, string>)[String(row.status)] || text(row.status)}</span>
             {canEdit && row.status === "pending" && <div className="transferActions"><button onClick={() => onTransfer(row.id, "confirmed")}>確認</button><button className="transferReject" onClick={() => onTransfer(row.id, "rejected")}>拒絕</button></div>}
           </div>
         ))}
+        <Pagination page={transferPage.currentPage} totalPages={transferPage.totalPages} onPage={transferPage.setPage} disabled={transferPage.loading || Boolean(transferPage.error)} />
       </div>
     </>
   );
@@ -1258,6 +1259,8 @@ function Pagination({ page, totalPages, onPage, disabled = false }: { page: numb
 
 function AdminManager({
   rows,
+  busy,
+  emptyMessage,
   isSuper,
   showForm,
   setShowForm,
@@ -1270,6 +1273,8 @@ function AdminManager({
   onDelete,
 }: {
   rows: Row[];
+  busy: boolean;
+  emptyMessage: string;
   isSuper: boolean;
   showForm: boolean;
   setShowForm: (v: boolean) => void;
@@ -1362,7 +1367,7 @@ function AdminManager({
           </div>
           <div className="formActions">
             <button onClick={() => setShowForm(false)}>取消</button>
-            <button className="primary" onClick={onSave}>
+            <button className="primary" onClick={onSave} disabled={busy}>
               儲存
             </button>
           </div>
@@ -1385,7 +1390,7 @@ function AdminManager({
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={7} className="empty">
-                  目前沒有資料
+                  {emptyMessage}
                 </td>
               </tr>
             ) : (
@@ -1404,12 +1409,13 @@ function AdminManager({
                     {isSuper && (
                       <td>
                         <div className="rowActions">
-                          <button onClick={() => onEdit(r)}>
+                          <button onClick={() => onEdit(r)} disabled={busy}>
                             <Pencil size={15} />
                           </button>
                           <button
                             className="danger"
                             onClick={() => onDelete(r.id)}
+                            disabled={busy}
                           >
                             <Trash2 size={15} />
                           </button>
@@ -1516,69 +1522,90 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
   const [statusNotice, setStatusNotice] = useState("");
   const [focusRequest, setFocusRequest] = useState<{ id: string; outcome: Exclude<SystemStatusActionOutcome, "failure"> } | null>(null);
   const requestInFlight = useRef(false);
+  const requestSequence = useRef(0);
+  const mounted = useRef(true);
+  const captureRequest = () => {
+    const sequence = ++requestSequence.current;
+    return () => mounted.current && sequence === requestSequence.current;
+  };
   const statusSectionRef = useRef<HTMLElement | null>(null);
   const refresh = async () => {
     if (requestInFlight.current) return;
     requestInFlight.current = true;
+    const current = captureRequest();
     setChecking(true);
     setStatusError("");
     setStatusNotice("");
     try {
       const result = await loadSystemStatus(api);
+      if (!current()) return;
       setItems(result.items);
       setCheckedAt(result.checkedAt);
     } catch (cause) {
+      if (!current()) return;
       setStatusError(cause instanceof Error ? cause.message : "連線狀態檢查失敗");
     } finally {
       requestInFlight.current = false;
-      setChecking(false);
+      if (current()) setChecking(false);
     }
   };
   const retry = async (id: string) => {
     if (requestInFlight.current) return;
     requestInFlight.current = true;
+    const current = captureRequest();
     setRetryingId(id);
     setStatusError("");
     setStatusNotice("");
     try {
       const next = await retrySystemStatus(api, id);
+      if (!current()) return;
       setItems((current) => current.map((item) => item.id === id ? next : item));
       setCheckedAt(next.checkedAt);
       setStatusNotice(`${next.name} 重新呼叫完成，API 連線${next.ok ? "正常" : "仍為異常"}`);
       setFocusRequest({ id, outcome: "success" });
     } catch (cause) {
+      if (!current()) return;
       setStatusError(cause instanceof Error ? cause.message : "API 重新呼叫失敗");
     } finally {
       requestInFlight.current = false;
-      setRetryingId("");
+      if (current()) setRetryingId("");
     }
   };
   const refreshCrawler = async (item: SystemStatusItem) => {
     if (requestInFlight.current || !canRefreshCrawler(item, canEdit)) return;
     requestInFlight.current = true;
+    const current = captureRequest();
     setRefreshingId(item.id);
     setStatusError("");
     setStatusNotice("");
     try {
       const result = await refreshCrawlerSystemStatus(api, item.id);
+      if (!current()) return;
       setStatusNotice(`${result.lottery} 已手動更新至 ${result.period} 期`);
       try {
         const next = await loadSystemStatus(api);
+      if (!current()) return;
         setItems(next.items);
         setCheckedAt(next.checkedAt);
         setFocusRequest({ id: item.id, outcome: "success" });
       } catch {
+        if (!current()) return;
         setStatusError("開獎資料已更新，但狀態重新檢查失敗");
         setFocusRequest({ id: item.id, outcome: "partial-success" });
       }
     } catch (cause) {
+      if (!current()) return;
       setStatusError(cause instanceof Error ? cause.message : "開獎資料手動更新失敗");
     } finally {
       requestInFlight.current = false;
-      setRefreshingId("");
+      if (current()) setRefreshingId("");
     }
   };
-  useEffect(() => { void refresh(); }, []);
+  useEffect(() => {
+    mounted.current = true;
+    void refresh();
+    return () => { mounted.current = false; requestSequence.current += 1; requestInFlight.current = false; };
+  }, []);
   useEffect(() => {
     if (!focusRequest) return;
     focusSystemStatusAfterAction(statusSectionRef.current, focusRequest.id, focusRequest.outcome);
@@ -1676,6 +1703,7 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
 }
 function DataTable({
   rows,
+  emptyMessage = "目前沒有資料",
   fields,
   canDelete,
   onDelete,
@@ -1683,6 +1711,7 @@ function DataTable({
   getDeleteDisabledReason,
 }: {
   rows: Row[];
+  emptyMessage?: string;
   fields: string[];
   canDelete: boolean;
   onDelete: (id: string) => void;
@@ -1709,7 +1738,7 @@ function DataTable({
           {rows.length === 0 ? (
             <tr>
               <td colSpan={fields.length + (canDelete ? 1 : 0) + (selection?.enabled ? 1 : 0)} className="empty">
-                目前沒有資料
+                {emptyMessage}
               </td>
             </tr>
           ) : (

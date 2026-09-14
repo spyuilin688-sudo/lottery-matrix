@@ -43,6 +43,13 @@ it('rejects repeated continuation cursors instead of looping', async () => {
   await expect(fetchLotteryHistory('今彩539')).rejects.toThrow('INVALID_HISTORY_CURSOR');
 });
 
+it.each([{}, { items: null }])('rejects a missing history collection instead of reporting empty success: %j', async (payload) => {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async url => String(url).includes('/latest/')
+    ? response({ item: latest, revision: 'r1' })
+    : response(payload));
+  await expect(fetchLotteryHistory('今彩539')).rejects.toThrow('Lottery API invalid response: items');
+});
+
 it('invalidates history when only an older draw revision changes', async () => {
   let revision='r1';
   vi.spyOn(globalThis,'fetch').mockImplementation(async url => String(url).includes('/latest/')

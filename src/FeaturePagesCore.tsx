@@ -99,11 +99,13 @@ function useLotteryHistory(lottery: LotteryId, limit?: number) {
   const [reloadRevision, setReloadRevision] = useState(0);
   useEffect(() => {
     let active = true;
+    let revision = 0;
     setData([]);
     setLoadState("loading");
     const refresh = () => {
+      const current = ++revision;
       fetchLotteryHistory(lottery, limit).then((records) => {
-        if (!active) return;
+        if (!active || current !== revision) return;
         const seen = new Set<string>();
         const uniqueRecords = records.filter((record) => {
           const key = getHistoryRecordKey(record);
@@ -114,7 +116,7 @@ function useLotteryHistory(lottery: LotteryId, limit?: number) {
         const nextData = typeof limit === "number" ? uniqueRecords.slice(0, limit) : uniqueRecords;
         setData(nextData);
         setLoadState(nextData.length > 0 ? "success" : "empty");
-      }).catch(() => { if (active) setLoadState("error"); });
+      }).catch(() => { if (active && current === revision) setLoadState("error"); });
     };
     refresh();
     const unsubscribe = subscribeLotteryRefresh(lottery, refresh);

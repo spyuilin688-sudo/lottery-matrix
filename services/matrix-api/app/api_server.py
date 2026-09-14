@@ -273,7 +273,8 @@ def _history(repository: AnalysisRepository, lottery: str, limit: int | None) ->
         rows = [dict(row) for row in response.data]
         for row in rows:
             append_unique(_normalize_supabase_draw(row))
-        if len(rows) < page_size:
+        # A short page can be the server row cap, not the end of history.
+        if not rows:
             break
         offset += len(rows)
         if remaining is not None:

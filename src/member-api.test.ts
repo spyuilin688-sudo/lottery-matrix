@@ -25,6 +25,17 @@ import {
   submitMemberReferralCode,
   submitTransferRequest,
 } from './member-api';
+import { updateAlgorithmCacheSession } from './auth/algorithm-cache-scope';
+
+function switchMember(id: string) {
+  updateAlgorithmCacheSession({ user: { id }, access_token: id } as never);
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>(done => { resolve = done; });
+  return { promise, resolve };
+}
 
 const settings = {
   settings: { bet: true, result: true, status: true, card: true, collision: false, system: true, expiry: true },
@@ -35,6 +46,7 @@ const settings = {
 } satisfies import('./member-api').MemberNotificationSettings;
 
 beforeEach(() => {
+  switchMember('member-a');
   supabase.rpc.mockReset().mockResolvedValue({ data: {}, error: null });
   supabase.auth.getSession.mockReset().mockResolvedValue({ data: { session: { access_token: 'token' } }, error: null });
   supabase.auth.getUser.mockReset().mockResolvedValue({ data: { user: { id: 'current-user' } }, error: null });
@@ -42,6 +54,44 @@ beforeEach(() => {
 });
 
 describe('member Supabase RPC', () => {
+  it.each(['notification', 'transfer'] as const)('does not replay a previous member %s write after its auth failure arrives', async kind => {
+    const old = deferred<unknown>();
+    supabase.rpc.mockReturnValueOnce(old.promise);
+    const pending = kind === 'notification' ? saveNotificationSettings(settings) : submitTransferRequest('month', '12345');
+    switchMember('member-b');
+    old.resolve({ data: null, error: { code: 'PGRST301' } });
+    await expect(pending).rejects.toThrow('MEMBER_SESSION_CHANGED');
+    expect(supabase.rpc).toHaveBeenCalledTimes(1);
+    expect(supabase.auth.getUser).not.toHaveBeenCalled();
+    expect(supabase.auth.signOut).not.toHaveBeenCalled();
+  });
+
+  it.each(['valid', 'invalid'] as const)('does not replay or sign out a new member after old-member verification returns %s', async outcome => {
+    const verification = deferred<unknown>();
+    supabase.rpc.mockResolvedValueOnce({ data: null, error: { code: 'PGRST301' } });
+    supabase.auth.getUser.mockReturnValueOnce(verification.promise);
+    const pending = submitTransferRequest('month', '12345');
+    await vi.waitFor(() => expect(supabase.auth.getUser).toHaveBeenCalledTimes(1));
+    switchMember('member-b');
+    verification.resolve(outcome === 'valid'
+      ? { data: { user: { id: 'member-b' } }, error: null }
+      : { data: { user: null }, error: { status: 401, code: 'bad_jwt' } });
+    await expect(pending).rejects.toThrow('MEMBER_SESSION_CHANGED');
+    expect(supabase.rpc).toHaveBeenCalledTimes(1);
+    expect(supabase.auth.signOut).not.toHaveBeenCalled();
+  });
+
+  it.each([false, true])('does not expose a previous member successful read after account change (recovery=%s)', async recovery => {
+    const old = deferred<unknown>();
+    if (recovery) supabase.rpc.mockResolvedValueOnce({ data: null, error: { code: 'PGRST301' } });
+    supabase.rpc.mockReturnValueOnce(old.promise);
+    const pending = fetchMemberProfile();
+    if (recovery) await vi.waitFor(() => expect(supabase.rpc).toHaveBeenCalledTimes(2));
+    switchMember('member-b');
+    old.resolve({ data: { planName: 'previous-member-private-plan' }, error: null });
+    await expect(pending).rejects.toThrow('MEMBER_SESSION_CHANGED');
+  });
+
   it('reports whether a current authenticated member session exists', async () => {
     await expect(hasAuthenticatedMemberSession()).resolves.toBe(true);
     supabase.auth.getSession.mockResolvedValue({ data: { session: null }, error: null });

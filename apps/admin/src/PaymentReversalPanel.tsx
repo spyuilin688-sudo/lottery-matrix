@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { formatAdminDateTime } from './admin-operations';
 import { runConfirmed } from './admin-confirmation';
 
 export type PaymentReversalStatus = 'refunded' | 'chargeback' | 'cancelled';
@@ -218,7 +219,7 @@ export function PaymentReversalPanel({ payments, loadError = '', canEdit, confir
                 <strong>{payment.lineDisplayName || payment.memberId}</strong>
                 <span>{payment.planName || payment.planId || '未標示方案'} · NT${Number(payment.amount).toLocaleString('en-US')}</span>
                 <span>付款 {payment.id}</span>
-                {payment.paidAt && <span>付款時間 {new Date(payment.paidAt).toLocaleString('zh-TW')}</span>}
+                {payment.paidAt && <span>付款時間 {formatAdminDateTime(payment.paidAt)}</span>}
                 {payment.reversalReason && (
                   <span>沖銷原因 {payment.reversalReason}{payment.reversedByName ? `／${payment.reversedByName}` : ''}</span>
                 )}
@@ -266,8 +267,7 @@ export function PaymentReversalPanel({ payments, loadError = '', canEdit, confir
                     沖銷原因
                     <textarea
                       className="resize-none"
-                      style={{ resize: 'none' }}
-                      ref={reasonRef}
+                                ref={reasonRef}
                       aria-label="沖銷原因"
                       aria-invalid={Boolean(error)}
                       aria-describedby={error ? `payment-reversal-error-${payment.id}` : `payment-reversal-help-${payment.id}`}

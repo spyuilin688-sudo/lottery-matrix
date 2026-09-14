@@ -8,39 +8,6 @@
   --home-frame-shadow-active: inset 0 0 10px color-mix(in srgb, var(--lottery-gold-300) 18%, transparent), 0 0 7px color-mix(in srgb, var(--lottery-gold-300) 24%, transparent);
 }
 
-.home-screen .home-bottom-group {
-  margin-block-start: var(--home-gap-status-core);
-}
-
-.home-screen .matrix-status-card {
-  clip-path: polygon(
-    var(--home-octagon-cut) 0,
-    calc(100% - var(--home-octagon-cut)) 0,
-    100% var(--home-octagon-cut),
-    100% calc(100% - var(--home-octagon-cut)),
-    calc(100% - var(--home-octagon-cut)) 100%,
-    var(--home-octagon-cut) 100%,
-    0 calc(100% - var(--home-octagon-cut)),
-    0 var(--home-octagon-cut)
-  );
-  border-radius: 0;
-}
-
-.home-screen .matrix-status-section {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.home-screen .matrix-status-card {
-  --home-status-tone: var(--lottery-gold-300);
-  --home-status-glow: color-mix(in srgb, var(--home-status-tone) 18%, transparent);
-  border-radius: 0;
-  background: var(--lottery-card-bg);
-  box-shadow: 0 0 3px var(--home-status-glow);
-}
-
 .home-screen .matrix-status-card[data-status="ACTIVE"] {
   --home-status-tone: var(--matrix-status-active);
 }

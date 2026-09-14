@@ -1,14 +1,12 @@
-type Row = Record<string, unknown> & { id: string };
+export type AdminRow = Record<string, unknown> & { id: string };
+export type AdminDataPage = { items: AdminRow[]; total: number; currentPage: number; totalPages: number };
 
-const pageSizes: Record<string, number> = {
-  啟動碼管理: 10,
-};
-
-export function paginateAdminRows(active: string, rows: Row[], requestedPage: number) {
-  const pageSize = pageSizes[active] ?? 0;
-  if (pageSize === 0) return { items: rows, page: 1, totalPages: 1, pageSize };
-  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
-  const page = Math.min(Math.max(1, requestedPage), totalPages);
-  const start = (page - 1) * pageSize;
-  return { items: rows.slice(start, start + pageSize), page, totalPages, pageSize };
+// Counts and page boundaries are authoritative server results; never slice a returned page.
+export function readAdminDataPage(value: unknown): AdminDataPage {
+  const page = value as AdminDataPage;
+  if (!Array.isArray(page?.items) || !Number.isSafeInteger(page.total) || page.total < 0
+      || !Number.isSafeInteger(page.currentPage) || page.currentPage < 1
+      || !Number.isSafeInteger(page.totalPages) || page.totalPages < 1
+      || page.currentPage > page.totalPages) throw new Error('Invalid admin page');
+  return page;
 }

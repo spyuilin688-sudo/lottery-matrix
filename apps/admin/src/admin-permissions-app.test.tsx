@@ -43,6 +43,7 @@ const app = vi.hoisted(() => {
     cumulativeRevenue: 0,
   };
   const get = vi.fn(async (url: string) => {
+    const path = url.split("?")[0];
     if (url === '/api/bootstrap') return {
       data: {
         admin: state.admin,
@@ -50,7 +51,7 @@ const app = vi.hoisted(() => {
     };
     if (url === '/api/dashboard') return { data: dashboard };
     if (url === '/api/permission-settings') return { data: state.permissionSettings };
-    if (url === '/api/data/admins') return { data: { items: [otherAdmin] } };
+    if (path === '/api/data/admins') return { data: { items: [otherAdmin], total: 1, currentPage: 1, totalPages: 1 } };
     if (url.startsWith('/api/data/users?')) return { data: { items: [{ id: 'member-1', status: 'active' }], total: 1, currentPage: 1, totalPages: 1 } };
     if (url.startsWith('/api/data/subscriptions?')) {
       if (state.nextSubscriptionRead) {
@@ -60,19 +61,19 @@ const app = vi.hoisted(() => {
       }
       return { data: { items: [{ id: 'member-1', status: 'active' }], total: 1, currentPage: 1, totalPages: 1 } };
     }
-    if (url === '/api/data/subscriptionRecords') {
+    if (path === '/api/data/subscriptionRecords') {
       if (state.failPaymentRead) throw new Error('payment offline');
       return { data: { items: [{
       id: 'payment-1', memberId: 'member-1', lineDisplayName: '王小明', planId: 'plan-1',
       planName: '月費方案', amount: 2880, paidAt: '2026-09-01T02:00:00Z', status: 'confirmed',
-      }] } };
+      }], total: 1, currentPage: 1, totalPages: 1 } };
     }
-    if (url === '/api/data/plans' || url === '/api/data/transferRequests') return { data: { items: [] } };
-    if (url === '/api/data/activationCodes') return { data: { items: [
+    if (path === '/api/data/plans' || path === '/api/data/transferRequests') return { data: { items: [], total: 0, currentPage: 1, totalPages: 1 } };
+    if (path === '/api/data/activationCodes') return { data: { items: [
       { id: 'code-1', code: 'ABCD-EFGH-IJKL-MNOP', status: 'unused', redeemedAt: null, redeemedByLineDisplayName: null },
       { id: 'code-2', code: 'QRST-UVWX-YZ12-3456', status: 'used', redeemedAt: '2026-09-05T01:00:00Z', redeemedByLineDisplayName: '兌換者' },
-    ] } };
-    return { data: { items: [] } };
+    ], total: 2, currentPage: 1, totalPages: 1 } };
+    return { data: { items: [], total: 0, currentPage: 1, totalPages: 1 } };
   });
   return {
     state,
@@ -135,7 +136,7 @@ describe('administrator operation permission editing', () => {
       await settle();
       expect(container.querySelector('#transfer-requests')).not.toBeNull();
       expect(container.querySelector('[aria-label="新轉帳手機通知"]')).not.toBeNull();
-      expect(app.api.get).toHaveBeenCalledWith('/api/data/transferRequests');
+      expect(app.api.get).toHaveBeenCalledWith(expect.stringContaining('/api/data/transferRequests?page=1&'));
     } finally { window.history.replaceState(null, '', '/'); }
   });
 
@@ -158,7 +159,7 @@ describe('administrator operation permission editing', () => {
     await act(async () => buttonWithText(container, '訂閱管理')?.click());
     await settle();
 
-    expect(app.api.get).toHaveBeenCalledWith('/api/data/subscriptionRecords');
+    expect(app.api.get).toHaveBeenCalledWith(expect.stringContaining('/api/data/subscriptionRecords?page=1&'));
     const open = container.querySelector<HTMLButtonElement>('[aria-label="記錄沖銷 payment-1"]');
     expect(open).not.toBeNull();
     await act(async () => open?.click());

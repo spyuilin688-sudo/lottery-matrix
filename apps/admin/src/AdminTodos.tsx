@@ -47,43 +47,62 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
   const mounted = useRef(true);
   const requestSequence = useRef(0);
   const mutation = useRef(false);
+  const lastAdmin = useRef(`${admin.id}:${admin.role}`);
+  const identity = useRef({ client, id: admin.id, role: admin.role });
+  identity.current = { client, id: admin.id, role: admin.role };
+  const captureContext = () => {
+    const expected = identity.current;
+    return () => mounted.current && identity.current.client === expected.client && identity.current.id === expected.id && identity.current.role === expected.role;
+  };
   const mutationBlocked = loading || Boolean(loadError);
 
   const load = async () => {
     const request = ++requestSequence.current;
+    const current = captureContext();
     setLoading(true);
     setLoadError('');
     try {
       const next = await listAdminTodos(client);
-      if (mounted.current && request === requestSequence.current) setItems(next);
+      if (current() && request === requestSequence.current) setItems(next);
     } catch (cause) {
-      if (mounted.current && request === requestSequence.current) {
+      if (current() && request === requestSequence.current) {
         setLoadError(formatAdminTodoError(cause, '代辦事項讀取失敗，請重新讀取'));
       }
     } finally {
-      if (mounted.current && request === requestSequence.current) setLoading(false);
+      if (current() && request === requestSequence.current) setLoading(false);
     }
   };
 
   useEffect(() => {
     mounted.current = true;
+    mutation.current = false;
+    setBusy(null);
+    if (lastAdmin.current !== `${admin.id}:${admin.role}`) setItems([]);
+    lastAdmin.current = `${admin.id}:${admin.role}`;
+    setEditingId(null);
+    setDraft('');
+    setEditDraft('');
+    setFeedback('');
+    setFormError('');
+    setEditError('');
     void load();
     return () => {
       mounted.current = false;
       requestSequence.current += 1;
     };
-  }, [client]);
+  }, [client, admin.id, admin.role]);
 
-  const runMutation = async (action: Exclude<BusyAction, null>, operation: () => Promise<void>) => {
+  const runMutation = async (action: Exclude<BusyAction, null>, operation: (isCurrent: () => boolean) => Promise<void>) => {
     if (mutation.current || mutationBlocked) return;
     mutation.current = true;
+    const isCurrent = captureContext();
+    requestSequence.current += 1;
     setBusy(action);
     setFeedback('');
     try {
-      await operation();
+      await operation(isCurrent);
     } finally {
-      mutation.current = false;
-      if (mounted.current) setBusy(null);
+      if (isCurrent()) { mutation.current = false; setBusy(null); }
     }
   };
 
@@ -95,16 +114,16 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
       return;
     }
     setFormError('');
-    await runMutation({ kind: 'create' }, async () => {
+    await runMutation({ kind: 'create' }, async (isCurrent) => {
       try {
         const created = await createAdminTodo(client, draft.trim());
-        if (!mounted.current) return;
+        if (!isCurrent()) return;
         setItems((current) => [created, ...current.filter((item) => item.id !== created.id)]);
         setDraft('');
         setDraftTouched(false);
         setFeedback('代辦事項已建立');
       } catch (cause) {
-        if (mounted.current) setFormError(formatAdminTodoError(cause, '建立失敗，內容已保留，請再試一次'));
+        if (isCurrent()) setFormError(formatAdminTodoError(cause, '建立失敗，內容已保留，請再試一次'));
       }
     });
   };
@@ -130,16 +149,16 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
       return;
     }
     setEditError('');
-    await runMutation({ kind: 'edit', id: item.id }, async () => {
+    await runMutation({ kind: 'edit', id: item.id }, async (isCurrent) => {
       try {
         const updated = await updateAdminTodo(client, item.id, editDraft.trim());
-        if (!mounted.current) return;
+        if (!isCurrent()) return;
         setItems((current) => current.map((candidate) => candidate.id === updated.id ? updated : candidate));
         setEditingId(null);
         setEditDraft('');
         setFeedback('代辦事項已更新');
       } catch (cause) {
-        if (mounted.current) setEditError(formatAdminTodoError(cause, '儲存失敗，草稿已保留，請再試一次'));
+        if (isCurrent()) setEditError(formatAdminTodoError(cause, '儲存失敗，草稿已保留，請再試一次'));
       }
     });
   };
@@ -158,32 +177,23 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
 
   const remove = async (item: AdminTodo) => {
     if (mutation.current || mutationBlocked || !canDeleteAdminTodo(item, admin)) return;
-    mutation.current = true;
-    setBusy({ kind: 'confirm', id: item.id });
-    setFeedback('');
-    const confirmed = await requestConfirmation({
-      title: '確認刪除代辦事項',
-      message: `「${item.content}」刪除後無法復原。`,
-      confirmLabel: '確認刪除',
-      tone: 'danger',
+    await runMutation({ kind: 'confirm', id: item.id }, async isCurrent => {
+      try {
+        const confirmed = await requestConfirmation({
+          title: '確認刪除代辦事項',
+          message: `「${item.content}」刪除後無法復原。`,
+          confirmLabel: '確認刪除', tone: 'danger',
+        });
+        if (!confirmed || !isCurrent() || !canDeleteAdminTodo(item, identity.current)) return;
+        setBusy({ kind: 'delete', id: item.id });
+        await deleteAdminTodo(client, item.id);
+        if (!isCurrent()) return;
+        setItems(current => current.filter(candidate => candidate.id !== item.id));
+        setFeedback('代辦事項已刪除');
+      } catch (cause) {
+        if (isCurrent()) setFeedback(formatAdminTodoError(cause, '刪除失敗，代辦事項仍保留，請再試一次'));
+      }
     });
-    if (!confirmed) {
-      mutation.current = false;
-      if (mounted.current) setBusy(null);
-      return;
-    }
-    setBusy({ kind: 'delete', id: item.id });
-    try {
-      await deleteAdminTodo(client, item.id);
-      if (!mounted.current) return;
-      setItems((current) => current.filter((candidate) => candidate.id !== item.id));
-      setFeedback('代辦事項已刪除');
-    } catch (cause) {
-      if (mounted.current) setFeedback(formatAdminTodoError(cause, '刪除失敗，代辦事項仍保留，請再試一次'));
-    } finally {
-      mutation.current = false;
-      if (mounted.current) setBusy(null);
-    }
   };
 
   const draftInvalid = draftTouched && !isValidAdminTodoContent(draft);
@@ -203,7 +213,6 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
           <label htmlFor="admin-todo-content">新增代辦</label>
           <textarea
             className="resize-none"
-            style={{ resize: 'none' }}
             id="admin-todo-content"
             rows={2}
             maxLength={100}
@@ -264,8 +273,7 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
                     <label className="adminTodosVisuallyHidden" htmlFor={`admin-todo-edit-${item.id}`}>編輯代辦事項</label>
                     <textarea
                       className="resize-none"
-                      style={{ resize: 'none' }}
-                      autoFocus
+                                autoFocus
                       id={`admin-todo-edit-${item.id}`}
                       rows={2}
                       maxLength={100}

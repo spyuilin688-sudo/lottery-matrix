@@ -47,7 +47,7 @@ export function TiangongValidationProcess({ validation, loading, lottery = "今�
             {separator}<span>下 <i className="validation-summary-future">{validation.evidence.stage1_distance ?? "—"}</i> 期開</span>
           </span>
           <span className="tianyan-validation-summary-row">
-            <span><span className="tiangong-summary-prefix" aria-hidden="true" style={{visibility:"hidden"}}>開 <i className="validation-summary-primary">{prediction.source.number}</i> </span>{summaryPosition(prediction.stage1.position)}</span>
+            <span><span className="tiangong-summary-prefix tiangong-summary-spacer" aria-hidden="true">開 <i className="validation-summary-primary">{prediction.source.number}</i> </span>{summaryPosition(prediction.stage1.position)}</span>
             {separator}<span>{summaryDirection(item.secondStageDirection)}</span>
             {separator}{summaryFormula(second)}
             {separator}<span>下 <i className="validation-summary-future">{validation.evidence.stage2_distance ?? "—"}</i> 期開</span>

@@ -20,15 +20,15 @@ test("visual-language layer does not override homepage spacing geometry", () => 
   assert.doesNotMatch(visualLanguage, /\.home-screen \.home-layout\s*\{[^}]*(?:grid-template-rows|align-content|padding-bottom)\s*:/s);
   assert.doesNotMatch(visualLanguage, /\.home-screen \.matrix-status-section\s*\{[^}]*(?:flex|height|overflow)\s*:/s);
   assert.doesNotMatch(visualLanguage, /\.home-screen \.matrix-status-card-grid\s*\{[^}]*(?:height|grid-template-rows|align-content)\s*:/s);
-  assert.match(visualLanguage, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*var\(--home-gap-status-core\);/s);
+  assert.match(base, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*var\(--home-gap-status-core\);/s);
 });
 
-test("keeps four-feature framing owned by base alongside existing octagon treatments", () => {
+test("keeps approved thin gold frames owned by base", () => {
   assert.match(visualLanguage, /--home-frame-border:/);
   assert.match(visualLanguage, /--home-frame-shadow:/);
-  assert.match(visualLanguage, /\.home-screen \.latest-draw-card::after\s*\{[^}]*background:\s*var\(--home-octagon-frame\);/s);
+  assert.doesNotMatch(visualLanguage, /\.home-screen \.latest-draw-card(?:::before|::after)?\s*\{/);
   assert.doesNotMatch(visualLanguage, /\.home-screen \.home-shortcut(?:::before|::after|:active|:focus-visible)\s*\{/);
-  assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*border:\s*4px solid transparent;[^}]*border-image:/s);
+  assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*border:\s*1px solid var\(--home-frame-gold\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
   assert.match(base, /\.home-screen \.home-shortcut:active\s*\{[^}]*filter:\s*brightness\(1\.15\);/s);
   assert.doesNotMatch(base, /\.home-screen \.home-shortcut::(?:before|after)\s*\{/);
 });
@@ -44,7 +44,7 @@ test("preserves the four semantic Matrix status tones", () => {
 });
 
 test("keeps idle status glow restrained and strengthens it only while pressed", () => {
-  assert.match(visualLanguage, /--home-status-glow:\s*color-mix\(in srgb, var\(--home-status-tone\) 18%, transparent\);/);
+  assert.match(base, /--home-status-glow:\s*color-mix\(in srgb, var\(--home-status-tone\) 18%, transparent\);/);
   assert.match(visualLanguage, /\.home-screen \.matrix-status-card:active\s*\{[^}]*26%/s);
 });
 
@@ -56,6 +56,6 @@ test("does not replace or redraw existing homepage artwork", () => {
 test("derives homepage colors from the canonical runtime tokens", () => {
   assert.match(visualLanguage, /var\(--lottery-gold-500\)/);
   assert.match(visualLanguage, /var\(--lottery-gold-300\)/);
-  assert.match(visualLanguage, /var\(--lottery-card-bg\)/);
+  assert.match(base, /var\(--lottery-card-bg\)/);
   assert.match(visualLanguage, /var\(--matrix-status-active\)/);
 });

@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 declare const process: { cwd(): string };
 
 const readCss = (path: string) => readFileSync(`${process.cwd()}/${path}`, "utf8");
-const notificationCss = () => `${readCss("src/design-tokens.css")}\n${readCss("src/feature-pages.css")}\n${readCss("src/feature-page-adjustments.css")}\n${readCss("src/notification-visual-refinement.css")}`;
+const notificationCss = () => `${readCss("src/design-tokens.css")}\n${readCss("src/feature-pages.css")}\n${readCss("src/feature-page-adjustments.css")}`;
 
 function mountStyles(css: string) {
   const style = document.createElement("style");
@@ -41,9 +41,9 @@ describe("notification visual refinement", () => {
     const content = getComputedStyle(document.querySelector(".notification-content")!);
     const list = getComputedStyle(document.querySelector(".notification-list")!);
 
-    expect(featureBody.paddingBlockStart).toBe("4px");
+    expect(featureBody.paddingBlockStart).toBe("0px");
     expect(featureBody.paddingBlockEnd).toBe("calc(var(--layout-bottom-nav-clearance) + 8px)");
-    expect(content.rowGap).toBe("16px");
+    expect(content.rowGap).toBe("8px");
     expect(list.gap).toBe("8px");
   });
 
@@ -146,8 +146,8 @@ describe("notification visual refinement", () => {
     const source = readCss("src/NotificationsPagePatched.tsx");
 
     expect(title.fontWeight).toBe("600");
-    expect(enable.height).toBe("32px");
-    expect(disable.height).toBe("32px");
+    expect(enable.height).toBe("29px");
+    expect(disable.height).toBe("29px");
     expect(css).not.toMatch(/\.notification-bulk-enable\s*\{[^}]*background:\s*var\(--lottery-gold-600\)/s);
     expect(source).toMatch(/className="notification-bulk-enable primary-action branded-explore-action"/);
     expect(source).toMatch(/className="notification-bulk-disable branded-explore-action"/);
@@ -177,7 +177,7 @@ describe("notification visual refinement", () => {
     expect(getComputedStyle(selects[1]).height).toBe("21px");
     expect(getComputedStyle(document.querySelectorAll(".notification-grid-time-row")[1]).marginBlockStart).toBe("1px");
 
-    const css = readCss("src/notification-visual-refinement.css");
+    const css = readCss("src/feature-page-adjustments.css");
     expect(css).toMatch(/\.notification-time-select::before\s*\{[^}]*background:\s*#344A66/s);
     expect(css).toMatch(/\.notification-time-select::after\s*\{[^}]*background:\s*#101C2C/s);
     expect(css).toMatch(/\.notification-time-select:focus-within::before,[\s\S]*#D8C38D/s);

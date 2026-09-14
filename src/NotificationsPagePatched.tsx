@@ -18,6 +18,7 @@ import {
   type PushStatus,
 } from "./push-subscription";
 import { resolveWebPushPublicKey } from "./push-public-key";
+import { getAlgorithmCacheScope, subscribeAlgorithmCacheScope } from "./auth/algorithm-cache-scope";
 
 type Navigate = (screen: ScreenId) => void;
 type Props = {
@@ -145,9 +146,12 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
   const scheduleLatestSaveRef = useRef<(delayMs: number) => void>(() => undefined);
   const pushOperationRevision = useRef(0);
   const pushScreenActive = useRef(false);
+  const settingsScope = useRef(getAlgorithmCacheScope());
   latestNotificationSettings.current = notificationSettings;
 
   const flushLatestSave = (mode: "normal" | "unmount" = "normal") => {
+    const scope = settingsScope.current;
+    if (scope !== getAlgorithmCacheScope()) return;
     if (notificationSettingsLoadState.current !== "ready" || (mode === "normal" && !componentActive.current)) return;
     if (saveInFlight.current) {
       if (mode === "unmount") flushAfterInFlightOnUnmount.current = true;
@@ -162,16 +166,19 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     let failed = false;
     void saveNotificationSettings(snapshot)
       .then(() => {
+        if (scope !== getAlgorithmCacheScope()) return;
         lastSavedSettings.current = serialized;
         retryDelay.current = SAVE_RETRY_INITIAL_MS;
       })
       .catch(() => {
+        if (scope !== getAlgorithmCacheScope()) return;
         failed = true;
         // A lost response may still have committed. Reconfirm the latest draft,
         // even if the user has since restored the previously saved values.
         lastSavedSettings.current = "";
       })
       .finally(() => {
+        if (scope !== getAlgorithmCacheScope()) return;
         saveInFlight.current = false;
         const dirty = JSON.stringify(latestNotificationSettings.current) !== lastSavedSettings.current;
         if (componentActive.current) {
@@ -207,6 +214,33 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
   flushLatestSaveRef.current = flushLatestSave;
   scheduleLatestSaveRef.current = scheduleLatestSave;
 
+  useEffect(() => subscribeAlgorithmCacheScope(() => {
+    // Auth changes invalidate ownership before queued promises or unmount flushes run.
+    settingsScope.current = getAlgorithmCacheScope();
+    notificationSettingsLoadState.current = "loading";
+    pendingLoadEdits.current = [];
+    lastSavedSettings.current = "";
+    if (saveTimer.current !== null) clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+    saveInFlight.current = false;
+    flushAfterInFlightOnUnmount.current = false;
+    retryDelay.current = SAVE_RETRY_INITIAL_MS;
+    const defaults = createDefaultNotificationSettings();
+    latestNotificationSettings.current = defaults;
+    setNotificationSettings(defaults);
+    setSaveBusy(false);
+    setSaveFailed(false);
+    setNotificationSettingsControlsBlocked(true);
+    setNotificationSettingsLoadUiState("loading");
+    setNotificationSettingsReloadRevision((revision) => revision + 1);
+    pushOperationRevision.current += 1;
+    setPushBusy(false);
+    setPushAuthenticated(null);
+    setPushStatus({ supported: true, permission: "default", enabled: false });
+    setPushNotice("checking");
+    setPushCheckRevision((revision) => revision + 1);
+  }, { notifyOnInitialize: true }), []);
+
   useEffect(() => {
     pushScreenActive.current = true;
     return () => {
@@ -217,13 +251,16 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
 
   useEffect(() => {
     let active = true;
+    const scope = settingsScope.current;
+    // Auth events synchronously change this ref before old requests settle.
+    const isCurrent = () => active && scope === settingsScope.current;
     componentActive.current = true;
     if (notificationSettingsReloadRevision > 0) {
       notificationSettingsLoadState.current = "loading";
       setNotificationSettingsLoadUiState("loading");
     }
     void hasAuthenticatedMemberSession().then((authenticated) => {
-      if (!active) return null;
+      if (!isCurrent()) return null;
       if (!authenticated) {
         pendingLoadEdits.current = [];
         notificationSettingsLoadState.current = "unauthenticated";
@@ -233,7 +270,8 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
       }
       return fetchNotificationSettings();
     }).then((stored) => {
-      if (!active || !stored) return;
+      if (!isCurrent() || !stored) return;
+      settingsScope.current = getAlgorithmCacheScope();
       const merged = pendingLoadEdits.current.reduce((current, edit) => edit(current), stored);
       pendingLoadEdits.current = [];
       lastSavedSettings.current = JSON.stringify(stored);
@@ -243,7 +281,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
       setNotificationSettingsLoadUiState("ready");
       setNotificationSettingsControlsBlocked(false);
     }).catch(() => {
-      if (!active) return;
+      if (!isCurrent()) return;
       pendingLoadEdits.current = [];
       notificationSettingsLoadState.current = "failed";
       setNotificationSettingsLoadUiState("failed");
@@ -503,4 +541,3 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     </main>
   );
 }
-

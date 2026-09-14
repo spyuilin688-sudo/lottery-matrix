@@ -24,6 +24,7 @@
     "../../../apps/admin/backend/matrix-storage-status": "../../../apps/admin/backend/matrix-storage-status.ts",
     "../../../apps/admin/backend/notification-calendar-status": "../../../apps/admin/backend/notification-calendar-status.ts",
     "../../../apps/admin/backend/service-evidence": "../../../apps/admin/backend/service-evidence.ts",
-    "../../../apps/admin/backend/native-notification-status": "../../../apps/admin/backend/native-notification-status.ts"
+    "../../../apps/admin/backend/native-notification-status": "../../../apps/admin/backend/native-notification-status.ts",
+    "../../../apps/admin/shared/admin-business-time": "../../../apps/admin/shared/admin-business-time.ts"
   }
 }

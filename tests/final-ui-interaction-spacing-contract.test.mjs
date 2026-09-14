@@ -14,15 +14,15 @@ const notificationsSource = readFileSync(new URL("../src/NotificationsPagePatche
 
 test("首頁狀態區、Matrix Core 與五大功能使用指定節奏", () => {
   assert.doesNotMatch(homeCss, /\.home-screen \.home-layout\s*\{[^}]*row-gap:/s);
-  assert.match(homeVisualCss, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*var\(--home-gap-status-core\);/s);
-  assert.match(homeCss, /\.home-screen \.home-layout\s*\{[^}]*--home-gap-status-core:\s*clamp\(9px,\s*1\.35dvh,\s*12px\);[^}]*--home-gap-core-features:\s*clamp\(14px,\s*1\.75dvh,\s*17px\);[^}]*--home-gap-features-nav:\s*clamp\(8px,\s*1\.15dvh,\s*12px\);/s);
+  assert.match(homeCss, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*var\(--home-gap-status-core\);/s);
+  assert.match(homeCss, /\.home-screen \.home-layout\s*\{[^}]*--home-gap-status-core:\s*clamp\(9px,\s*1\.35dvh,\s*12px\);[^}]*--home-gap-core-features:\s*8px;[^}]*--home-gap-features-nav:\s*clamp\(8px,\s*1\.15dvh,\s*12px\);/s);
   assert.match(homeCss, /\.home-bottom-group\s*\{[^}]*gap:\s*var\(--home-gap-core-features\);/s);
   assert.doesNotMatch(homeCss, /\.home-bottom-group\s*\{[^}]*(?:--home-gap-core-features\s*:|padding-bottom:\s*8px)/s);
 });
 
-test("通知選號提醒時間控制項為 23px 且兩列相距 6px", () => {
-  assert.match(adjustmentCss, /\.notifications-screen-v2 \.notification-time-select\s*\{[^}]*height:\s*23px;[^}]*min-height:\s*23px;/s);
-  assert.match(adjustmentCss, /\.notification-bet-grid \.notification-grid-time-row \+ \.notification-grid-time-row\s*\{[^}]*margin-block-start:\s*2px;/s);
+test("通知選號提醒時間控制項為 21px 且第二列外距 1px", () => {
+  assert.match(adjustmentCss, /\.notifications-screen-v2 \.notification-time-select\s*\{[^}]*height:\s*21px;[^}]*min-height:\s*21px;/s);
+  assert.match(adjustmentCss, /\.notification-bet-grid \.notification-grid-time-row \+ \.notification-grid-time-row\s*\{[^}]*margin-block-start:\s*1px;/s);
 });
 
 test("開獎結果與 Matrix 牌單共用同一選項渲染器與樣式", () => {

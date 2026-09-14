@@ -11,7 +11,7 @@ import {
   type ModuleKey,
   type PermissionKey,
 } from './admin-auth';
-import { createAdminData, getDashboard, listAdminLoginRecordPage, listAdminTable, listAdminMemberPage } from './admin-data';
+import { createAdminData, getDashboard, listAdminLoginRecordPage, listAdminTablePage, listAdminMemberPage } from './admin-data';
 import { createAdminTodos } from './admin-todos';
 import { createAdminTransferPush } from './admin-transfer-push';
 import { createAdminCredentialAuth, type CredentialAdmin } from './admin-credential-auth';
@@ -552,7 +552,7 @@ const routes: Record<string, unknown> = {
       if (ctx.params.table === 'loginRecords') {
         return json(await listAdminLoginRecordPage(ctx.query ?? {}, supabase));
       }
-      return json(await listAdminTable(ctx.params.table, supabase));
+      return json(await listAdminTablePage(ctx.params.table, ctx.query ?? {}, supabase));
     } catch (cause) {
       return fail(cause);
     }

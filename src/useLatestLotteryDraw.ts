@@ -10,24 +10,26 @@ export function useLatestLotteryDraw(lottery: NumberBallLottery) {
 
   useEffect(() => {
     let active = true;
+    let revision = 0;
     setData(null);
     setLoading(true);
     setError(null);
 
     const refreshLatestDraw = () => {
+      const current = ++revision;
       fetchLatestLotteryDraw(lottery)
         .then((record) => {
-          if (active) {
+          if (active && current === revision) {
             setData(record);
             setError(null);
           }
         })
         .catch((reason: unknown) => {
-          if (!active) return;
+          if (!active || current !== revision) return;
           setError(reason instanceof Error ? reason.message : '讀取開獎資料失敗');
         })
         .finally(() => {
-          if (active) setLoading(false);
+          if (active && current === revision) setLoading(false);
         });
     };
 

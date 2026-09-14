@@ -9,7 +9,7 @@
 .notifications-screen-v2 .feature-body {
   box-sizing: border-box;
   width: 100%;
-  padding-inline: var(--notification-bulk-inline);
+  padding-inline: var(--notification-list-inline);
   padding-block-start: 0;
   padding-block-end: calc(var(--layout-bottom-nav-clearance) + 8px);
 }
@@ -17,13 +17,13 @@
 .notifications-screen-v2 .notification-content {
   display: grid;
   width: 100%;
-  row-gap: 16px;
+  row-gap: 8px;
 }
 
 .notifications-screen-v2 .notification-bulk-actions {
   display: grid;
-  width: 100%;
-  margin-inline: 0;
+  width: auto;
+  margin-inline: calc(var(--notification-bulk-inline) - var(--notification-list-inline));
   grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: 8px;
 }
@@ -31,8 +31,6 @@
 .notifications-screen-v2 .notification-bulk-actions button {
   box-sizing: border-box;
   width: 100%;
-  height: 32px;
-  min-height: 32px;
   padding: 0 12px;
   border-radius: var(--lottery-card-radius);
   font: inherit;
@@ -40,6 +38,8 @@
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
+  height: 29px;
+  min-height: 29px;
 }
 
 .notifications-screen-v2 .notification-bulk-disable {
@@ -62,7 +62,7 @@
 
 .notifications-screen-v2 .notification-list {
   display: grid;
-  margin-inline: calc(var(--notification-list-inline) - var(--notification-bulk-inline));
+  margin-inline: 0;
   gap: 8px;
 }
 
@@ -178,9 +178,9 @@
   overflow: hidden;
   color: #f2f2f2;
   font-size: 14px;
-  font-weight: 700;
   line-height: 18px;
   letter-spacing: 0;
+  font-weight: 600;
 }
 
 .notifications-screen-v2 .notification-title h2 span {
@@ -258,7 +258,6 @@
   gap: 8px;
 }
 
-
 .notifications-screen-v2 .notification-settings-toggle {
   display: inline-flex;
   box-sizing: border-box;
@@ -280,7 +279,6 @@
   line-height: 1;
   white-space: nowrap;
 }
-
 
 .notifications-screen-v2 .notification-settings-toggle:active {
   opacity: .86;
@@ -505,13 +503,14 @@
 .notifications-screen-v2 .notification-time-select {
   width: auto;
   min-width: 0;
-  height: 23px;
-  min-height: 23px;
   margin-inline: 8px;
+  height: 21px;
+  min-height: 21px;
+  border-radius: 12px;
 }
 
 .notifications-screen-v2 .notification-bet-grid .notification-grid-time-row + .notification-grid-time-row {
-  margin-block-start: 2px;
+  margin-block-start: 1px;
 }
 
 .notifications-screen-v2 .notification-time-select select {
@@ -521,6 +520,34 @@
   line-height: 1;
   text-align: center;
   text-align-last: center;
+  color: #D8C38D;
+}
+
+.notifications-screen-v2 .notification-inline-settings-content:has(.notification-bet-grid) {
+  padding: 5px 4px 6px;
+}
+
+.notifications-screen-v2 .notification-time-select::before {
+  border-radius: 12px;
+  background: #344A66;
+  clip-path: none;
+  filter: none;
+}
+
+.notifications-screen-v2 .notification-time-select::after {
+  border-radius: 11px;
+  background: #101C2C;
+  clip-path: none;
+}
+
+.notifications-screen-v2 .notification-time-select:focus-within::before,
+.notifications-screen-v2 .notification-time-select:has(select option:checked:not([value=""]))::before {
+  background: #D8C38D;
+  filter: none;
+}
+
+.notifications-screen-v2 .notification-time-select select:has(option:checked[value=""]) {
+  color: var(--lottery-neutral-400);
 }
 
 .calculator-screen .calculation-results {
@@ -713,9 +740,6 @@
   background: #c49145;
   content: "";
 }
-
-
-
 
 @media (prefers-reduced-motion: reduce) {
   .notifications-screen-v2 .notification-inline-settings {

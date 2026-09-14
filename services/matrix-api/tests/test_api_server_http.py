@@ -162,14 +162,20 @@ def test_card_preflight_allows_frontend_request_id_and_cards_are_readable(lotter
     numbers = ["01", "02", "03", "04", "05"]
     if lottery in {"六合彩", "大樂透"}:
         numbers += ["06", "07"]
+    draw_order = (list(reversed(numbers[:-1])) + numbers[-1:]
+                  if len(numbers) == 7 else list(reversed(numbers)))
     repository.upsert_draw({
         "lottery": lottery,
         "period": "115000215",
         "drawDate": "2026-09-05",
         "numbers": numbers,
         "sortedNumbers": numbers,
-        "drawOrderNumbers": list(reversed(numbers)),
+        "drawOrderNumbers": None if lottery == "天天樂" else draw_order,
     })
+    if lottery != "天天樂":
+        # The current publication contract exposes raw cards only after analysis.
+        from tests.test_card_publication import complete_analysis
+        complete_analysis(repository, lottery)
     origin = "https://matrixlottery.idv.tw"
     path = f"/api/matrix/cards/{quote(lottery, safe='')}"
     with running_server(repository) as address:
@@ -197,7 +203,9 @@ def test_card_preflight_allows_frontend_request_id_and_cards_are_readable(lotter
         manifest = json.loads(body)
         assert manifest["lottery"] == lottery
         assert manifest["period"] == "115000215"
-        for order in ("draw", "sorted"):
+        expected_orders = ("sorted",) if lottery == "天天樂" else ("draw", "sorted")
+        assert set(manifest["cards"]) == set(expected_orders)
+        for order in expected_orders:
             response, body = request(address, "GET", manifest["cards"][order]["url"], {
                 "Origin": origin,
             })

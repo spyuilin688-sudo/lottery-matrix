@@ -1,3 +1,4 @@
+import { formatAdminDateTime } from './admin-operations';
 import { useEffect, useRef, useState } from 'react';
 import './permission-switches.css';
 
@@ -46,7 +47,7 @@ const definitions: Array<{
 const permissionRefreshIntervalMs = 60 * 60 * 1000;
 
 function checkedTimeLabel(value: string) {
-  return new Date(value).toLocaleString('zh-TW', { hour12: false });
+  return formatAdminDateTime(value);
 }
 
 function settingsFrom(value: unknown): MatrixPermissionSettings | null {
@@ -84,81 +85,90 @@ export function PermissionSwitches({
   const [notice, setNotice] = useState('');
   const [checkedAt, setCheckedAt] = useState<string | null>(null);
   const requestVersion = useRef(0);
+  const mounted = useRef(true);
+  const identity = useRef({ client, canEdit });
+  identity.current = { client, canEdit };
   const savingRef = useRef(false);
 
   const read = async (showLoading: boolean) => {
     if (!showLoading && savingRef.current) return null;
     const version = ++requestVersion.current;
+    const current = () => mounted.current && identity.current.client === client && version === requestVersion.current;
     if (showLoading) setLoading(true);
     setError('');
     try {
       const response = await client.get('/api/permission-settings');
       const next = settingsFrom(response.data);
       if (!next) throw new Error('INVALID_PERMISSION_SETTINGS');
-      if (version === requestVersion.current) {
+      if (current()) {
         setSettings(next);
         setCheckedAt(new Date().toISOString());
       }
       return next;
     } catch {
-      if (version === requestVersion.current) {
+      if (current()) {
         if (showLoading) setSettings(null);
         setError('權限設定載入失敗，請重新載入');
       }
       return null;
     } finally {
-      if (version === requestVersion.current && showLoading) setLoading(false);
+      if (current() && showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
+    mounted.current = true;
+    savingRef.current = false;
+    setSaving(null);
     void read(true);
     const interval = window.setInterval(() => { void read(false); }, permissionRefreshIntervalMs);
     return () => {
+      mounted.current = false;
       window.clearInterval(interval);
       requestVersion.current += 1;
     };
-  }, []);
+  }, [client]);
 
   const change = async (definition: typeof definitions[number]) => {
-    if (!canEdit || !settings || saving) return;
+    if (!canEdit || !settings || savingRef.current) return;
+    const current = () => mounted.current && identity.current.client === client && identity.current.canEdit;
     const nextValue = !settings[definition.key];
     const action = nextValue ? '開啟' : '關閉';
-    const confirmed = await confirm({
-      title: `確認${action}${definition.label}`,
-      message: `將${action}${definition.consequence}。`,
-      confirmLabel: `確認${action}`,
-    });
-    if (!confirmed || !settings || saving) return;
-
     const expectedRevision = settings.revision;
-    requestVersion.current += 1;
     savingRef.current = true;
     setSaving(definition.key);
     setError('');
     setNotice('');
     try {
-      const response = await client.put(`/api/permission-settings/${definition.key}`, {
-        value: nextValue,
-        expectedRevision,
+      const confirmed = await confirm({
+        title: `確認${action}${definition.label}`,
+        message: `將${action}${definition.consequence}。`,
+        confirmLabel: `確認${action}`,
       });
+      if (!confirmed || !current()) return;
+      requestVersion.current += 1;
+      const response = await client.put(`/api/permission-settings/${definition.key}`, {
+        value: nextValue, expectedRevision,
+      });
+      if (!current()) return;
       const updated = settingsFrom(response.data);
       if (!updated) throw new Error('INVALID_PERMISSION_SETTINGS');
       setSettings(updated);
       setCheckedAt(new Date().toISOString());
       setNotice(`${definition.label}已${nextValue ? '開啟' : '關閉'}`);
     } catch (cause) {
+      if (!current()) return;
       const conflict = cause instanceof Error && cause.message.includes('SETTINGS_CONFLICT');
       savingRef.current = false;
       const refreshed = await read(false);
+      if (!current()) return;
       setError(conflict
         ? '設定已由其他管理員更新，已重新載入目前狀態，請再確認一次'
         : refreshed
           ? '權限設定儲存失敗，已重新載入目前狀態，請再試一次'
           : '權限設定儲存結果無法確認，請重新載入');
     } finally {
-      savingRef.current = false;
-      setSaving(null);
+      if (mounted.current && identity.current.client === client) { savingRef.current = false; setSaving(null); }
     }
   };
 

@@ -3,10 +3,6 @@
   display: none;
 }
 
-.matrix-tianyan-screen .explore-validation-summary-card {
-  position: relative;
-}
-
 .matrix-tianyan-screen .explore-validation-summary-card > .explore-validation-consecutive-tag {
   position: absolute;
   top: 2px;

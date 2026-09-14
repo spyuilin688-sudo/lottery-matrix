@@ -34,6 +34,7 @@ vi.mock('../lib/supabase', () => ({
 }));
 
 import { FeaturePageRouter } from '../FeaturePagesPatched';
+import { HistoryList } from '../features/shared';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -53,6 +54,25 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('data page request failures are not normal empty data', () => {
+  test('initial number-reference history shows a failure and retries the actual history read', async () => {
+    lotteryApi.fetchLotteryHistory.mockRejectedValueOnce(new Error('history offline'));
+    render(<FeaturePageRouter screen="reference" onNavigate={vi.fn()} />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('號碼對照資料載入失敗');
+    lotteryApi.fetchLotteryHistory.mockResolvedValue([{ period: 'recovered', numbers: ['01'] }]);
+    fireEvent.click(screen.getByRole('button', { name: '重新載入號碼對照資料' }));
+    expect(await screen.findByText('recovered')).toBeVisible();
+    expect(lotteryApi.fetchNumberReference).not.toHaveBeenCalled();
+  });
+
+  test('recent history distinguishes load failure from an empty list and can retry', async () => {
+    lotteryApi.fetchLotteryHistory.mockRejectedValueOnce(new Error('history offline'));
+    render(<HistoryList lottery="今彩539" numberOrder="依號碼由小到大排序" onOpenHistory={vi.fn()} />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('近10期開獎號碼載入失敗');
+    lotteryApi.fetchLotteryHistory.mockResolvedValue([{ period: 'recovered', numbers: ['01'] }]);
+    fireEvent.click(screen.getByRole('button', { name: '重新載入近10期開獎號碼' }));
+    expect(await screen.findByText('recovered')).toBeVisible();
+  });
+
   test('歷史開獎號碼 API 失敗時顯示 error + retry', async () => {
     lotteryApi.fetchLotteryHistory.mockRejectedValue(new Error('history offline'));
     render(<FeaturePageRouter screen="history" onNavigate={vi.fn()} />);

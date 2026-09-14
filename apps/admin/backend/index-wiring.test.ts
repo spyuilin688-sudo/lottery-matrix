@@ -740,6 +740,28 @@ describe('payment reversal route wiring', () => {
     expect(wiring.requestPage).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['activationCodes', 'activationCodes', 'createdAt', 'created_at', '10'],
+    ['auditLogs', null, 'operationTime', 'operation_time', '30'],
+    ['subscriptionRecords', 'subscriptions', 'paidAt', 'paid_at', '30'],
+    ['transferRequests', 'subscriptions', 'submittedAt', 'submitted_at', '30'],
+    ['admins', 'admins', 'createdAt', 'created_at', '30'],
+    ['plans', 'subscriptions', 'price', 'price', '30'],
+  ])('routes %s through database pagination and sorting after existing authorization', async (table, module, sortBy, column, limit) => {
+    wiring.requestPage.mockClear();
+    wiring.requireModulePermission.mockClear();
+    const route = 'GET /api/data/:table';
+    const context = await authenticate(route, sessionContext({ table }));
+    const routeHandler = routes[route][2] as (input: typeof context & { query: Record<string, string> }) => Promise<unknown>;
+    await expect(routeHandler({ ...context, query: { page: '2', sortBy: sortBy!, sortDirection: 'asc' } }))
+      .resolves.toMatchObject({ body: { total: 61, currentPage: 2 } });
+    const query = new URL(wiring.requestPage.mock.calls[0][0], 'https://example.test').searchParams;
+    expect(query.get('limit')).toBe(limit);
+    expect(query.get('offset')).toBe(limit);
+    expect(query.get('order')).toBe(`${column}.asc.nullslast,id.asc`);
+    if (module) expect(wiring.requireModulePermission).toHaveBeenCalledWith(wiring.admin, module, 'view');
+  });
+
   it('maps subscriptionRecords reads to subscription view permission', async () => {
     wiring.requireModulePermission.mockClear();
     const route = 'GET /api/data/:table';

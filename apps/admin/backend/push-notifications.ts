@@ -116,15 +116,19 @@ export function createPushNotifications(
 
   async function listAllRows(path: string) {
     const result: Row[] = [];
-    for (let start = 0; ; start += PAGE_SIZE) {
-      const rows = await supabase.request<Row[]>(path, {
+    for (;;) {
+      const start = result.length;
+      const page = await supabase.request<{ items: Row[]; total: number }>(path, {
         headers: {
           Range: `${start}-${start + PAGE_SIZE - 1}`,
           'Range-Unit': 'items',
+          Prefer: 'count=exact',
         },
-      });
-      result.push(...rows);
-      if (rows.length < PAGE_SIZE) return result;
+      }, true);
+      result.push(...page.items);
+      // PostgREST may cap a range below PAGE_SIZE. Advance by actual rows and
+      // use its exact count (or an empty response) to detect the final page.
+      if (page.items.length === 0 || result.length >= page.total) return result;
     }
   }
 

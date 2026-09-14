@@ -4,7 +4,6 @@
   --activation-section-gap: 8px;
 }
 
-
 /* Keep the two main panels on the same responsive 16px page inset. */
 .activation-code-screen > .feature-body {
   padding-inline: var(--layout-page-inline);
@@ -43,6 +42,8 @@
   letter-spacing: .25px;
   scale: .9;
   transform-origin: left center;
+  align-items: center;
+  gap: 3px;
 }
 
 .activation-code-screen .referral-input-card .code-entry-block,
@@ -59,10 +60,6 @@
   content: "";
 }
 
-.activation-code-screen .referral-copy-button {
-  align-items: center;
-  gap: 3px;
-}
 
 .activation-code-screen .referral-copy-button svg {
   width: 12px;

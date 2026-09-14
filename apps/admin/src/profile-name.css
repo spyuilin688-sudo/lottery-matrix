@@ -14,12 +14,12 @@
   display: grid;
   place-items: center;
   padding: 16px;
-  background: #000a;
+  background: #000a; overflow-y: auto;
 }
 
 .nameDialog {
   width: min(380px, 100%);
-  padding: 20px;
+  padding: 14px;
   border: 1px solid #8c6d28;
   border-radius: 12px;
   background: #111419;
@@ -27,8 +27,8 @@
 }
 
 .nameDialog h2 {
-  margin: 0 0 16px;
-  font-size: 19px;
+  margin: 0 0 10px;
+  font-size: 17px;
   line-height: 1.4;
 }
 
@@ -40,16 +40,20 @@
 .nameDialog input {
   width: 100%;
   margin-top: 6px;
-  padding: 11px;
+  padding: 6px 8px;
   border: 1px solid #343840;
   border-radius: 8px;
   background: #0b0d11;
   color: #eee;
+  min-height: 34px;
 }
 
 @media (max-width: 760px) {
   .actions .profileName {
     max-width: 92px;
     padding: 0 9px;
+  }
+  .nameDialog {
+    padding: 12px;
   }
 }

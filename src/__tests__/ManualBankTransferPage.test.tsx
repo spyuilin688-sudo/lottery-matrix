@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import '@testing-library/jest-dom/vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const memberApi = vi.hoisted(() => ({
@@ -25,10 +25,36 @@ vi.mock('../dialog/AppDialog', () => ({
 
 import { ManualTransferPage, PaymentHistoryPage, ProPlansPage } from '../FeaturePages';
 import { SubscriptionManagementPage } from '../features/MemberPages';
+import { getSupabaseClient } from '../lib/supabase';
+import type { Session } from '@supabase/supabase-js';
+import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: Error) => void;
+  const promise = new Promise<T>((done, fail) => { resolve = done; reject = fail; });
+  return { promise, resolve, reject };
+}
+
+const pendingTransfer = { id: 'pending-1', planName: '月費方案', amount: 2880,
+  accountLastFive: '54321', submittedAt: '2026-08-30T08:00:00Z', status: 'pending' };
+const switchMember = (member: string) => updateAlgorithmCacheSession({ access_token: member, user: { id: member } } as Session);
+
+function authenticatePaymentHistory() {
+  const auth = getSupabaseClient().auth;
+  vi.spyOn(auth, 'getSession').mockResolvedValue({
+    data: { session: { access_token: 'payment-member', user: { id: 'payment-member' } } as Session },
+    error: null,
+  });
+  vi.spyOn(auth, 'onAuthStateChange').mockReturnValue({
+    data: { subscription: { id: 'payment-fixture', callback: () => undefined, unsubscribe: vi.fn() } },
+  });
+}
 
 describe('Matrix Pro manual bank transfer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    switchMember('member-a');
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-09-07T00:00:00Z'));
     memberApi.fetchMemberProfile.mockResolvedValue({
@@ -48,13 +74,24 @@ describe('Matrix Pro manual bank transfer', () => {
     });
   });
 
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
   it('shows actual member information in subscription management', async () => {
     render(<SubscriptionManagementPage onNavigate={vi.fn()} />);
     expect(await screen.findByText('2027/11/05')).toBeInTheDocument();
     expect(screen.getByText('年費方案')).toBeInTheDocument();
     expect(screen.queryByText('2027/07/23')).not.toBeInTheDocument();
+  });
+
+  it('replaces subscription data on account change and ignores the previous member response', async () => {
+    const old = deferred<unknown>();
+    memberApi.fetchMemberProfile.mockReturnValueOnce(old.promise).mockResolvedValue({ planName: 'new-member-plan', isLifetime: false });
+    render(<SubscriptionManagementPage onNavigate={vi.fn()} />);
+    act(() => switchMember('member-b'));
+    await screen.findByText('new-member-plan');
+    await act(async () => old.resolve({ planName: 'old-member-plan', isLifetime: false }));
+    expect(screen.queryByText('old-member-plan')).not.toBeInTheDocument();
+    expect(screen.getByText('new-member-plan')).toBeInTheDocument();
   });
 
   it('shows lifetime membership without a fabricated expiry', async () => {
@@ -153,6 +190,68 @@ describe('Matrix Pro manual bank transfer', () => {
     expect(screen.getByRole('button', { name: '提交' })).toBeDisabled();
   });
 
+  it('does not refetch pending transfers merely because the navigation callback changes', async () => {
+    const old = deferred<unknown>();
+    memberApi.fetchPendingTransferRequest.mockReturnValueOnce(old.promise);
+    const view = render(<ManualTransferPage onNavigate={vi.fn()} />);
+    view.rerender(<ManualTransferPage onNavigate={vi.fn()} />);
+    expect(memberApi.fetchPendingTransferRequest).toHaveBeenCalledTimes(1);
+    await act(async () => old.resolve(pendingTransfer));
+    expect(screen.getByText('已有待確認申請')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '提交' })).toBeDisabled();
+  });
+
+  it.each(['success', 'failure'] as const)('ignores a previous member pending-transfer read %s', async outcome => {
+    const old = deferred<unknown>();
+    memberApi.fetchPendingTransferRequest.mockReturnValueOnce(old.promise).mockResolvedValue(pendingTransfer);
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+    act(() => switchMember('member-b'));
+    await screen.findByText('已有待確認申請');
+    await act(async () => outcome === 'success' ? old.resolve(null) : old.reject(new Error('old-member-offline')));
+    expect(screen.getByText('已有待確認申請')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '提交' })).toBeDisabled();
+  });
+
+  it('discards previous member transfer submission results and clears their draft on account change', async () => {
+    const oldSubmit = deferred<unknown>();
+    memberApi.submitTransferRequest.mockReturnValueOnce(oldSubmit.promise);
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12345' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    act(() => switchMember('member-b'));
+    await waitFor(() => expect(memberApi.fetchPendingTransferRequest).toHaveBeenCalledTimes(2));
+    await act(async () => oldSubmit.resolve(pendingTransfer));
+    expect(screen.getByLabelText('帳號末五碼')).toHaveValue('');
+    expect(screen.queryByText('已有待確認申請')).not.toBeInTheDocument();
+  });
+
+  it('does not start recovery reads after an old submission reports an existing transfer for another member', async () => {
+    const oldSubmit = deferred<unknown>();
+    memberApi.submitTransferRequest.mockReturnValueOnce(oldSubmit.promise);
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12345' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    act(() => switchMember('member-b'));
+    await waitFor(() => expect(memberApi.fetchPendingTransferRequest).toHaveBeenCalledTimes(2));
+    await act(async () => oldSubmit.reject(new Error('PENDING_TRANSFER_EXISTS')));
+    expect(memberApi.fetchPendingTransferRequest).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('shows a recoverable error when reloading an existing pending transfer fails', async () => {
+    memberApi.fetchPendingTransferRequest.mockResolvedValueOnce(null).mockRejectedValueOnce(new Error('offline'));
+    memberApi.submitTransferRequest.mockRejectedValueOnce(new Error('PENDING_TRANSFER_EXISTS'));
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12345' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('無法讀取轉帳申請，請稍後再試。');
+    expect(screen.getByRole('button', { name: '提交' })).toBeEnabled();
+  });
+
   it('returns to plans without exposing bank data when no plan was selected', async () => {
     selection.readManualTransferPlan.mockReturnValue(null);
     const onNavigate = vi.fn();
@@ -163,6 +262,7 @@ describe('Matrix Pro manual bank transfer', () => {
   });
 
   it('renders authenticated member payment history', async () => {
+    authenticatePaymentHistory();
     memberApi.fetchMemberPaymentHistory.mockResolvedValue([{
       id: 'payment-1', planName: '季費方案', amount: 4580,
       submittedAt: '2026-08-30T08:00:00Z', status: 'confirmed',
@@ -177,6 +277,7 @@ describe('Matrix Pro manual bank transfer', () => {
   });
 
   it('prefers completed payment reversal statuses in member payment history', async () => {
+    authenticatePaymentHistory();
     memberApi.fetchMemberPaymentHistory.mockResolvedValue([
       { id: 'payment-1', planName: '月費方案', amount: 2880, submittedAt: '2026-09-01T00:00:00Z', status: 'refunded' },
       { id: 'payment-2', planName: '季費方案', amount: 4580, submittedAt: '2026-09-02T00:00:00Z', status: 'chargeback' },

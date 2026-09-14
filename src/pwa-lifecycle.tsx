@@ -36,6 +36,10 @@ function isStandalone() {
   return isPwaDisplayMode();
 }
 
+function reloadCurrentPage() {
+  window.location.reload();
+}
+
 function isIosDevice() {
   if (typeof navigator === "undefined") return false;
   const userAgent = navigator.userAgent ?? "";
@@ -46,7 +50,7 @@ function isIosDevice() {
 
 export function PwaLifecycleProvider({
   children,
-  reloadPage = () => window.location.reload(),
+  reloadPage = reloadCurrentPage,
 }: {
   children: ReactNode;
   reloadPage?: () => void;
@@ -57,6 +61,7 @@ export function PwaLifecycleProvider({
   const updatePromptedRef = useRef(false);
 
   useEffect(() => {
+    let active = true;
     const mediaQueries = PWA_DISPLAY_QUERIES.map((query) => window.matchMedia?.(query));
     const refreshInstalledState = () => setInstalled(isStandalone());
     const handleBeforeInstallPrompt = (event: Event) => {
@@ -91,6 +96,7 @@ export function PwaLifecycleProvider({
         confirmLabel: "立即更新",
         cancelLabel: "稍後",
       }).then((confirmed) => {
+        if (!active) return;
         if (confirmed) reloadPage();
         else updatePromptedRef.current = false;
       });
@@ -98,6 +104,7 @@ export function PwaLifecycleProvider({
 
     serviceWorker?.addEventListener("controllerchange", handleControllerChange);
     return () => {
+      active = false;
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
       for (const media of mediaQueries) {

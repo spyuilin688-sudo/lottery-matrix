@@ -39,13 +39,13 @@ Inter、Noto Sans TC、system-ui；資料與次要資訊 12–13px，區段標�
 
 ## Components
 
-Runtime ownership（Model B）：src/admin.css 擁有基本排版，src/admin-operations.css 擁有共用密度和管理清單，src/system-status.css、src/admin-transfer-push.css、src/admin-todos.css 擁有各自元件。CSS 為來源，本文件是鏡像。
+Runtime ownership（Model B）：src/admin.css 單獨擁有基本排版、共用密度與 primary／loginPrimary／formActions 按鈕幾何；src/admin-operations.css 擁有管理清單的專屬結構；src/profile-name.css 擁有姓名對話框與 modal 捲動；src/system-status.css、src/admin-transfer-push.css、src/admin-todos.css 擁有各自元件。CSS 為來源，本文件是鏡像。
 
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 |---|---|---|---|---|
 | Select/Listbox | 原生 select | src/AdminApp.tsx、src/NotificationManagement.tsx | OS 原生選單；平台控制開啟後幾何 | 權限與通知元件測試 |
 | Date | 原生日期欄位 | src/AdminApp.tsx | OS 原生日期選擇與在地化 | 既有編輯流程 |
-| Form | 既有 formGrid / formActions | src/admin-operations.css | 登入按鈕維持整列、管理動作依內容 | admin-profile、admin-confirmation |
+| Form | 既有 formGrid / formActions | src/admin.css（共用按鈕）、src/admin-operations.css（表單 grid） | loginPrimary 維持整列；primary 與 form action 依內容 | admin-button-styles、admin-density、admin-confirmation |
 | Scrollbar | CSS 原生捲動條 | src/admin.css | 表格水平捲動，頁面自然捲動 | 密度與窄版版面檢查 |
 | Permission Switches | 權限切換工作區 | src/PermissionSwitches.tsx、src/permission-switches.css | 全角色只讀／超級管理員可修改 | permission-switches、admin-permissions-app |
 
