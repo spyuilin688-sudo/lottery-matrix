@@ -2,7 +2,7 @@
   width: min(680px, 100%);
   min-width: 0;
   display: grid;
-  gap: 6px;
+  gap: 0;
 }
 
 .adminTodosComposer,
@@ -15,9 +15,8 @@
 }
 
 .adminTodosComposer { padding: 10px; }
-.adminTodosHeadingRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.adminTodosHeadingRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .adminTodosHeadingRow h1 { margin: 0; color: #ece7d8; font-size: 15px; }
-.adminTodosHeadingRow p { margin: 3px 0 0; color: #8d919a; font-size: 12px; line-height: 1.5; }
 .adminTodosHeadingRow > span { flex: 0 0 auto; color: #cbb675; font-size: 12px; }
 .adminTodos form { display: grid; min-width: 0; gap: 6px; margin-top: 8px; }
 .adminTodos label { color: #b7bac1; font-size: 12px; font-weight: 700; }
@@ -35,6 +34,7 @@
   font-size: 13px;
   line-height: 1.5;
 }
+.adminTodosComposer textarea { min-height: 104px; }
 .adminTodos textarea[aria-invalid="true"] { border-color: #a95757; }
 .adminTodos textarea:focus-visible,
 .adminTodos button:focus-visible { outline: 2px solid #e7c46d; outline-offset: 2px; }
@@ -67,7 +67,9 @@
 .adminTodos button:disabled { opacity: .45; cursor: not-allowed; }
 .adminTodos button.primary { border-color: #b48a35; background: linear-gradient(180deg, #d4ad55, #a77924); color: #111; font-weight: 800; }
 
-.adminTodosFeedback { min-height: 18px; color: #8ed7a3; font-size: 12px; }
+.adminTodosFeedback { margin-top: 8px; color: #8ed7a3; font-size: 12px; }
+.adminTodosFeedback:empty { display: none; }
+.adminTodosDivider { height: 1px; margin: 12px 0; background: #30333a; }
 .adminTodosState { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px; color: #8d919a; font-size: 13px; }
 .adminTodosStateError { border-color: #673b3b; color: #efb3b3; }
 .adminTodosList { display: grid; min-width: 0; gap: 0; border: 1px solid #292c32; border-radius: 10px; overflow: hidden; background: #111419; }
@@ -88,7 +90,6 @@
 .adminTodosVisuallyHidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 
 @media (max-width: 480px) {
-  .adminTodos { gap: 8px; }
   .adminTodosComposer,
   .adminTodoCard { padding: 10px; }
   .adminTodosFormFooter { display: grid; grid-template-columns:minmax(0, 1fr) auto auto; }
