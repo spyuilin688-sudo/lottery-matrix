@@ -5,6 +5,7 @@ import { parse } from 'postcss';
 const adminCss = readFileSync(new URL('./admin.css', import.meta.url), 'utf8');
 const operationsCss = readFileSync(new URL('./admin-operations.css', import.meta.url), 'utf8');
 const statusCss = readFileSync(new URL('./system-status.css', import.meta.url), 'utf8');
+const permissionCss = readFileSync(new URL('./permission-switches.css', import.meta.url), 'utf8');
 const profileCss = readFileSync(new URL('./profile-name.css', import.meta.url), 'utf8');
 
 const declarationsAt = (css: string, selector: string, width: number) => {
@@ -28,9 +29,14 @@ describe('admin compact density', () => {
     expect(operationsCss).not.toMatch(/\.nameDialog(?: h2| input)?\s*\{/);
   });
 
-  it('keeps the sticky title bar compact while content remains centered', () => {
-    expect(adminCss).toMatch(/header\{min-height:46px;height:auto;/);
-    expect(adminCss).toMatch(/header\{[^}]*align-items:center/);
+  it('keeps the sticky title bar in the shell owner instead of leaking into page headers', () => {
+    expect(declarationsAt(adminCss, '.shell > main > header', 1000).get('position')).toBe('sticky');
+    expect(declarationsAt(adminCss, '.shell > main > header', 1000).get('min-height')).toBe('46px');
+    expect(declarationsAt(adminCss, '.shell > main > header', 390).get('padding')).toBe('0 10px');
+    expect(declarationsAt(adminCss, 'header', 1000).size).toBe(0);
+    for (const css of [statusCss, permissionCss]) {
+      expect(css).not.toMatch(/(?:systemStatusHeader|statusGroupHeader|permissionSwitchesHeader)[^{]*\{[^}]*(?:position:\s*static|z-index:\s*auto|backdrop-filter:\s*none)/);
+    }
   });
 
   it('reduces overview and revenue card height at desktop and mobile widths', () => {

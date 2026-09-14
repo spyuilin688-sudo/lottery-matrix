@@ -1,5 +1,5 @@
 .systemStatusSection { min-width: 0; }
-.systemStatusHeader { position: static; top: auto; z-index: auto; width: 100%; min-height: 0; height: auto; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; justify-content: stretch; gap: 8px; margin-bottom: 8px; padding: 0; border-bottom: 0; background: transparent; backdrop-filter: none; }
+.systemStatusHeader { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; justify-content: stretch; gap: 8px; margin-bottom: 8px; padding: 0; }
 .systemStatusHeader h2 { margin: 0 0 4px; font-size: 15px; line-height: 1.4; }
 .systemStatusHeader span { color: #888d96; font-size: 12px; }
 .systemStatusHeader button { width: auto; min-height: 32px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
@@ -11,7 +11,7 @@
 .statusRowActions button:disabled { cursor: not-allowed; opacity: .55; }
 .statusGroups { display: grid; gap: 8px; }
 .statusGroup { min-width: 0; }
-.statusGroupHeader { position: static; top: auto; z-index: auto; min-height: 0; height: auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; margin-bottom: 4px; border-bottom: 1px solid #343943; background: transparent; backdrop-filter: none; }
+.statusGroupHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; margin-bottom: 4px; border-bottom: 1px solid #343943; }
 .statusGroupHeader h3 { margin: 0; color: #e1c170; font-size: 13px; line-height: 1.4; }
 .statusGroupHeader span { color: #888d96; font-size: 11px; }
 .statusRows { display: grid; gap: 8px; background: transparent; }

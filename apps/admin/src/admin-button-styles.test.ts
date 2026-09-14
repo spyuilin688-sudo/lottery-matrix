@@ -117,11 +117,13 @@ describe('admin interface styles', () => {
     expect(appSource).not.toContain('className="statusCard"');
   });
 
-  it('keeps semantic status headers in normal flow despite the admin shell header rule', () => {
-    expect(rule(statusCss, '.systemStatusHeader')).toMatch(/position: static;/);
-    expect(rule(statusCss, '.systemStatusHeader')).toMatch(/min-height: 0;/);
-    expect(rule(statusCss, '.statusGroupHeader')).toMatch(/position: static;/);
-    expect(rule(statusCss, '.statusGroupHeader')).toMatch(/min-height: 0;/);
+  it('keeps semantic status headers in normal flow by scoping the shell header owner', () => {
+    expect(rule(adminCss, '.shell > main > header')).toMatch(/position:sticky/);
+    expect(rule(adminCss, 'header')).toBe('');
+    expect(rule(statusCss, '.systemStatusHeader')).not.toMatch(/position\s*:/);
+    expect(rule(statusCss, '.statusGroupHeader')).not.toMatch(/position\s*:/);
+    expect(rule(statusCss, '.systemStatusHeader')).not.toMatch(/z-index\s*:/);
+    expect(rule(statusCss, '.statusGroupHeader')).not.toMatch(/z-index\s*:/);
   });
 
   it('shows complete row diagnostics and explicit watchdog cadence', () => {
