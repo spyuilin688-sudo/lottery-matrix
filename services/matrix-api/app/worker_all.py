@@ -9,6 +9,7 @@ from typing import Any
 import httpx
 
 from app.repositories.analysis_repository import create_supabase_repository
+from app.scraping.resilient_source import wrap_source_with_tinyfish
 from app.scraping.sources import LatestDrawSource
 from app.settings import load_settings
 from app.services.marksix_calendar import sync_marksix_calendar
@@ -101,7 +102,11 @@ def main() -> int:
         calendar = sync_marksix_calendar(repository, client)
         if calendar['status'] != 'not-due':
             print(f"六合彩 calendar {calendar['status']}")
-        source = LatestDrawSource(client)
+        source = wrap_source_with_tinyfish(
+            LatestDrawSource(client),
+            client,
+            settings,
+        )
         notification_emitter = create_notification_emitter(settings, client)
         if notification_emitter is None:
             run_one = lambda lottery: run_scheduled_worker(
