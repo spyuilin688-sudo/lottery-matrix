@@ -63,7 +63,7 @@ for (const { screen, width } of cases) {
       await expect(control).toHaveCSS('border-top-color', selected ? colors.secondary : colors.tertiary);
       await expect(control).toHaveCSS('box-shadow', 'none');
     }
-    const underlineLotteryTabs = screen === 'explore' || screen === 'matrix-card';
+    const underlineLotteryTabs = ['explore', 'tianheng', 'tianyan', 'tiangong', 'matrix-card'].includes(screen);
     for (const tab of await page.locator('.lottery-tabs button').all()) {
       if (!(await tab.isVisible())) continue;
       await expect(tab).toHaveCSS('border-top-width', underlineLotteryTabs ? '0px' : '1px');

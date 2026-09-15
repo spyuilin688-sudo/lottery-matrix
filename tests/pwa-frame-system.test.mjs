@@ -50,12 +50,31 @@ test('selects use a real thin frame instead of cut-corner pseudo layers', () => 
   }
 });
 
-test('CTA frame remains thin and decorative double-frame glow is removed', () => {
+test('generic CTA frame stays thin while branded CTA restores the approved legacy treatment', () => {
   const action = block(css, '.primary-action, .gold-button');
   assert.match(action, /border:\s*1px solid var\(--pwa-frame-primary\)/);
-  assert.match(block(css, '.branded-explore-action'), /box-shadow:\s*none/);
-  assert.doesNotMatch(css, /\.branded-explore-action::after\s*\{/);
+  const branded = block(css, '.branded-explore-action');
+  assert.match(branded, /border:\s*1px solid #c99a2e/);
+  assert.match(branded, /border-radius:\s*9px/);
+  assert.match(branded, /background:\s*[\s\S]*radial-gradient\(circle at 50% 135%, rgba\(234, 171, 35, \.34\), transparent 55%\)/);
+  assert.match(branded, /box-shadow:\s*[\s\S]*inset 0 0 18px rgba\(238, 183, 52, \.14\)/);
+  assert.match(block(css, '.branded-explore-action::before'), /opacity:\s*\.78/);
+  const lowerEnergy = block(css, '.branded-explore-action::after');
+  assert.match(lowerEnergy, /background:\s*linear-gradient\(90deg, transparent, rgba\(242, 190, 59, \.75\), transparent\)/);
+  assert.match(lowerEnergy, /box-shadow:\s*0 0 8px rgba\(242, 190, 59, \.55\)/);
   assert.doesNotMatch(css, /\.matrix-ticket::before\s*\{/);
+
+  const adjustments = read('src/feature-page-adjustments.css');
+  assert.doesNotMatch(adjustments, /\.matrix-explore-main-screen \.primary-action\.branded-explore-action/);
+
+  const exploreSource = read('src/features/MatrixExplorePage.tsx');
+  const tiangongSource = read('src/features/MatrixTiangongPage.tsx');
+  const cardSource = read('src/features/MatrixCardPage.tsx');
+  const memberSource = read('src/features/MemberPages.tsx');
+  assert.match(exploreSource, /className="primary-action branded-explore-action"/);
+  assert.match(tiangongSource, /className="primary-action branded-explore-action"/);
+  assert.match(cardSource, /className="primary-action branded-explore-action matrix-card-download-action"/);
+  assert.match(memberSource, /confirm-payment primary-action branded-explore-action/);
 });
 
 test('tables distinguish the outer frame from their quieter internal dividers', () => {
@@ -83,7 +102,10 @@ test('requested PWA frame refinements remain canonical and scoped', () => {
 
   assert.doesNotMatch(explore, /HistoryList/);
   assert.doesNotMatch(explore, /historyExpanded/);
-  assert.match(css, /\.matrix-explore-screen:not\(\.matrix-tianheng-screen\):not\(\.matrix-tianyan-screen\):not\(\.matrix-tiangong-screen\) \.lottery-tabs,\s*\.matrix-card-body \.lottery-tabs/);
+  assert.match(css, /\.matrix-explore-screen \.lottery-tabs,\s*\.matrix-card-body \.lottery-tabs/);
+  assert.doesNotMatch(css, /matrix-tianheng-screen[^\{]*\.lottery-tabs/);
+  assert.doesNotMatch(css, /matrix-tianyan-screen[^\{]*\.lottery-tabs/);
+  assert.doesNotMatch(css, /matrix-tiangong-screen[^\{]*\.lottery-tabs/);
   assert.match(css, /--lottery-tab-selected-underline:\s*var\(--pwa-frame-secondary\)/);
   assert.match(spacing, /\.matrix-explore-main-screen \.advanced-row \{[\s\S]*?border-top:\s*1px solid var\(--pwa-frame-secondary\)/);
   assert.match(spacing, /\.matrix-tiangong-screen \.tiangong-general-settings \.tiangong-advanced-divider \{[\s\S]*?border-bottom:\s*1px solid var\(--pwa-frame-secondary\)/);

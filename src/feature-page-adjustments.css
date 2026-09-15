@@ -753,8 +753,7 @@
 
 /* Restore the former branded search action without changing current control dimensions. */
 .tongxing-query .primary-action.branded-explore-action,
-.reference-query-panel .reference-search .gold-button.branded-explore-action,
-.matrix-explore-main-screen .primary-action.branded-explore-action {
+.reference-query-panel .reference-search .gold-button.branded-explore-action {
   border: 1px solid #c99a2e;
   border-radius: 9px;
   background:

@@ -292,7 +292,7 @@ The merged settings header owns one outer frame; its nested title frame remains 
 cut-corner pseudo-element frames and their scoped overrides are removed. Segmented
 controls and hit options share one resting/selected appearance owner. Existing
 page-specific rules retain layout responsibilities only where that appearance is
-already inherited. CTA sparkle opacity is .20 with no extra lower-edge glow.
+already inherited. Generic CTAs keep the thin shared frame. `.branded-explore-action` is the intentional legacy branded CTA variant used by Matrix Explore/Tianheng/Tianyan/Tiangong, Matrix Card download and Pro payment; it retains the darker gold metallic surface, 1px `#c99a2e` frame, 9px radius, .78 sparkle layer and lower-edge energy line. Matrix Explore/Tianheng/Tianyan/Tiangong and Matrix Card also share the approved borderless lottery selector with a selected gold underline.
 
 These rules supersede older non-home frame colors, corner radii and ornamental
 gold-glow descriptions only. Existing geometry, accessibility focus indicators,
