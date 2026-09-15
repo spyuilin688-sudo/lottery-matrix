@@ -52,53 +52,14 @@ jobs:
 
           adjustment_path = Path("src/feature-page-adjustments.css")
           adjustment = adjustment_path.read_text(encoding="utf-8")
-          old_adjustment = '''.notifications-screen-v2 .toggle::before {
-            top: 0;
-            width: 38px;
-            height: 18px;
-            border: 1px solid #46505B;
-            border-radius: 9px;
-            background: #111923;
-          }
-
-          .notifications-screen-v2 .toggle[data-checked="true"]::before {
-            border-color: #D7AE55;
-            background: rgba(202, 160, 70, .28);
-          }
-'''.replace("          ", "")
-          new_adjustment = '''.notifications-screen-v2 .toggle::before {
-            top: 0;
-            width: 38px;
-            height: 18px;
-            border-radius: 9px;
-          }
-'''.replace("          ", "")
+          old_adjustment = ".notifications-screen-v2 .toggle::before {\n  top: 0;\n  width: 38px;\n  height: 18px;\n  border: 1px solid #46505B;\n  border-radius: 9px;\n  background: #111923;\n}\n\n.notifications-screen-v2 .toggle[data-checked=\"true\"]::before {\n  border-color: #D7AE55;\n  background: rgba(202, 160, 70, .28);\n}\n"
+          new_adjustment = ".notifications-screen-v2 .toggle::before {\n  top: 0;\n  width: 38px;\n  height: 18px;\n  border-radius: 9px;\n}\n"
           if old_adjustment not in adjustment:
               raise SystemExit("notification-v2 track override changed unexpectedly")
           adjustment = adjustment.replace(old_adjustment, new_adjustment, 1)
 
-          old_thumb = '''.notifications-screen-v2 .toggle span {
-            top: 2px;
-            width: 14px;
-            height: 14px;
-            background: #929AA3;
-          }
-
-          .notifications-screen-v2 .toggle[data-checked="true"] span {
-            transform: translateX(20px);
-            background: #FFF9EA;
-          }
-'''.replace("          ", "")
-          new_thumb = '''.notifications-screen-v2 .toggle span {
-            top: 2px;
-            width: 14px;
-            height: 14px;
-          }
-
-          .notifications-screen-v2 .toggle[data-checked="true"] span {
-            transform: translateX(20px);
-          }
-'''.replace("          ", "")
+          old_thumb = ".notifications-screen-v2 .toggle span {\n  top: 2px;\n  width: 14px;\n  height: 14px;\n  background: #929AA3;\n}\n\n.notifications-screen-v2 .toggle[data-checked=\"true\"] span {\n  transform: translateX(20px);\n  background: #FFF9EA;\n}\n"
+          new_thumb = ".notifications-screen-v2 .toggle span {\n  top: 2px;\n  width: 14px;\n  height: 14px;\n}\n\n.notifications-screen-v2 .toggle[data-checked=\"true\"] span {\n  transform: translateX(20px);\n}\n"
           if old_thumb not in adjustment:
               raise SystemExit("notification-v2 thumb override changed unexpectedly")
           adjustment = adjustment.replace(old_thumb, new_thumb, 1)
