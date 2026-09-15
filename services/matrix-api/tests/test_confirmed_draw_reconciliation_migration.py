@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-MIGRATION = Path(__file__).parents[2] / "supabase" / "migrations" / "20260916090000_reconcile_confirmed_same_period_draws.sql"
+MIGRATION = Path(__file__).parents[3] / "supabase" / "migrations" / "20260916090000_reconcile_confirmed_same_period_draws.sql"
 
 
 def test_confirmed_same_period_correction_reuses_existing_reconciliation_lifecycle():
