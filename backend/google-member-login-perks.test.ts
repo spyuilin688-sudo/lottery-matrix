@@ -36,6 +36,8 @@ function memberFetcher(authUser: unknown) {
   });
 }
 
+const taipeiTuesdayNoon = new Date('2026-09-15T04:00:00Z');
+
 describe('backend login promotional entitlement parity', () => {
   it.each([
     ['Google', { id: 'auth-1', app_metadata: { provider: 'google' } }],
@@ -44,21 +46,21 @@ describe('backend login promotional entitlement parity', () => {
     const member = await createMemberAuth(
       config,
       memberFetcher(authUser),
-      () => new Date('2026-09-15T16:00:00Z'),
+      () => taipeiTuesdayNoon,
     ).requireMember('Bearer token');
 
     expect(member.loginPerksEligible).toBe(true);
-    expect(resolveMatrixEntitlements(member, new Date('2026-09-15T16:00:00Z')).canUseSeven).toBe(true);
+    expect(resolveMatrixEntitlements(member, taipeiTuesdayNoon).canUseSeven).toBe(true);
   });
 
   it('does not give the Tue/Fri login perk to an email-only member', async () => {
     const member = await createMemberAuth(
       config,
       memberFetcher({ id: 'auth-1', app_metadata: { provider: 'email' } }),
-      () => new Date('2026-09-15T16:00:00Z'),
+      () => taipeiTuesdayNoon,
     ).requireMember('Bearer token');
 
     expect(member.loginPerksEligible).toBe(false);
-    expect(resolveMatrixEntitlements(member, new Date('2026-09-15T16:00:00Z')).canUseSeven).toBe(false);
+    expect(resolveMatrixEntitlements(member, taipeiTuesdayNoon).canUseSeven).toBe(false);
   });
 });
