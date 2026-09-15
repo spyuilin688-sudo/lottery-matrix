@@ -1,1 +1,0 @@
-RED target: the new focused Matrix API and admin tests must fail before production implementation because TinyFish telemetry repository methods, `/jobs/status` payload, admin worker parser, and TinyFish API inventory entry do not exist yet.
