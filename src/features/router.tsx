@@ -13,7 +13,6 @@ import { NotificationsPage } from "./LegacyNotificationsPage";
 import {
   ProfilePage,
   SubscriptionManagementPage,
-  PaymentHistoryPage,
   ProPlansPage,
   ManualTransferPage,
   AboutMatrixPage,
@@ -28,6 +27,7 @@ import {
   PrivacyPolicyPage,
   DisclaimerPage,
 } from "./MemberPages";
+import { PaymentHistoryPage } from "./PaymentHistoryPage";
 import { MatrixCustomStatusPage, MatrixStatusPage } from "./MatrixStatusPages";
 import { LinePageGuard } from "../auth/LinePageGuard";
 import { useSubscriptionPurchaseVisible } from "../subscription-purchase-visibility";
