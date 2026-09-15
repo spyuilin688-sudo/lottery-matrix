@@ -7,16 +7,6 @@
   white-space: nowrap;
 }
 
-.modalBackdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  background: #000a; overflow-y: auto;
-}
-
 .nameDialog {
   width: min(380px, 100%);
   padding: 14px;
