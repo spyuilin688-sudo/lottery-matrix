@@ -57,12 +57,14 @@ test('訪客可以讀取二期探索驗證過程', async () => {
   await expect(fetchExploreValidation({ lottery: '今彩539', drawPeriod: '115000210', analysisVersion: '115000210:matrix-python-v13' }, 'guest-row', { explorePeriods: 2, exploreRange: '標準範圍' })).resolves.toMatchObject({ itemId: 'guest-row' });
 });
 
-test('匿名使用者即使 session lookup 失敗仍可使用探索', async () => {
+test('session lookup 失敗時不把未知身分降級成匿名查詢', async () => {
   sdk.getSession.mockResolvedValue({ data: { session: null }, error: new Error('session unavailable') });
   await start();
-  expect(await screen.findByText('22.26')).toBeTruthy();
-  expect(sdk.rpc).toHaveBeenCalledWith('matrix_explore_list', { p_request: expect.objectContaining({ explorePeriods: 2 }) });
-  expect(screen.queryByRole('dialog', { name: '請先登入' })).toBeNull();
+  expect((await screen.findByRole('dialog', { name: '請先登入' })).textContent).toContain('請先登入後再使用 Matrix 探索');
+  fireEvent.click(screen.getByRole('button', { name: '知道了' }));
+  expect((await screen.findByRole('alert')).textContent).toBe('請先登入後再使用 Matrix 探索');
+  expect(screen.queryByText('無符合設定條件')).toBeNull();
+  expect(document.querySelector('.result-count')).toBeNull();
 });
 
 test('載入中不顯示零筆或空結果，成功空回應才顯示', async () => {
@@ -88,16 +90,15 @@ test('訪客讀取仍遵守 RPC 的會員權限拒絕', async () => {
   expect(document.querySelector('.result-count')).toBeNull();
 });
 
-test('未登入也可以呼叫天衍與天工', async () => {
-  await expect(fetchTianyanList({ lottery: '今彩539', selectedStreaks: ['準5進6'], sameCode: false })).resolves.toBeTruthy();
-  await expect(fetchTiangongList({ lottery: '今彩539', periodRange: 50, mode: 'two-stage', hitCondition: '準2進3', exploreDirections: ['固定'], firstStageDirections: ['固定'], firstRoadTypes: ['加減'] })).resolves.toBeTruthy();
-  expect(sdk.rpc).toHaveBeenCalledWith('matrix_tianyan_list', { p_request: expect.objectContaining({ lottery: '今彩539' }) });
-  expect(sdk.rpc).toHaveBeenCalledWith('matrix_tiangong_list', { p_request: expect.objectContaining({ lottery: '今彩539', periodRange: 50 }) });
+test('天衍與天工仍要求登入', async () => {
+  await expect(fetchTianyanList({ lottery: '今彩539', selectedStreaks: ['準5進6'], sameCode: false })).rejects.toMatchObject({ code: 'AUTH_REQUIRED' });
+  await expect(fetchTiangongList({ lottery: '今彩539', periodRange: 50, mode: 'two-stage', hitCondition: '準2進3', exploreDirections: ['固定'], firstStageDirections: ['固定'], firstRoadTypes: ['加減'] })).rejects.toMatchObject({ code: 'AUTH_REQUIRED' });
+  expect(sdk.rpc).not.toHaveBeenCalled();
 });
 
-test('訪客選擇七期仍會送出探索請求', async () => {
-  await expect(fetchExploreList({ lottery: '今彩539', numberOrder: '依號碼由小到大排序', explorePeriods: 7, exploreDateOffset: 0, exploreRange: '標準範圍', ruleCount: 1, roadTypes: ['加減'], selectedStreaks: ['準5進6'], sameCode: false })).resolves.toBeTruthy();
-  expect(sdk.rpc).toHaveBeenCalledWith('matrix_explore_list', { p_request: expect.objectContaining({ explorePeriods: 7 }) });
+test('訪客選擇七期時須登入，且不送出探索請求', async () => {
+  await expect(fetchExploreList({ lottery: '今彩539', numberOrder: '依號碼由小到大排序', explorePeriods: 7, exploreDateOffset: 0, exploreRange: '標準範圍', ruleCount: 1, roadTypes: ['加減'], selectedStreaks: ['準5進6'], sameCode: false })).rejects.toMatchObject({ code: 'AUTH_REQUIRED' });
+  expect(sdk.rpc).not.toHaveBeenCalled();
 });
 
 test('Matrix 探索進頁選取會員實際最高期數及範圍', async () => {

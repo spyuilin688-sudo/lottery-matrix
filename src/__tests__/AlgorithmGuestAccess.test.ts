@@ -29,58 +29,77 @@ vi.mock('../permission-settings', () => ({
   }),
 }));
 
+const response = {
+  lottery: '今彩539',
+  drawPeriod: '115000210',
+  analysisVersion: 'registered-access-v1',
+  status: 'complete',
+  items: [],
+  duplicateStats: [],
+  total: 0,
+};
+
 beforeEach(() => {
   resetReadCacheForTests();
   updateAlgorithmCacheSession(null);
   sdk.getSession.mockReset().mockResolvedValue({ data: { session: null }, error: null });
-  sdk.rpc.mockReset().mockResolvedValue({
-    data: {
-      lottery: '今彩539',
-      drawPeriod: '115000210',
-      analysisVersion: 'guest-access-v1',
-      status: 'complete',
-      items: [],
-      duplicateStats: [],
-      total: 0,
-    },
-    error: null,
-  });
+  sdk.rpc.mockReset().mockResolvedValue({ data: response, error: null });
 });
 
-test('未登入可直接讀取四套演算法的完整查詢', async () => {
+test('未登入只保留探索二期與天衡三期基本查詢', async () => {
   await expect(fetchExploreList({
     lottery: '今彩539',
     numberOrder: '依號碼由小到大排序',
-    explorePeriods: 13,
+    explorePeriods: 2,
     exploreDateOffset: 0,
-    exploreRange: '完整範圍',
+    exploreRange: '標準範圍',
     ruleCount: 1,
     roadTypes: ['加減'],
-    selectedStreaks: ['準9進10'],
+    selectedStreaks: ['準5進6'],
     sameCode: false,
   })).resolves.toBeTruthy();
 
   await expect(fetchTianhengList({
     lottery: '今彩539',
     numberOrder: '依號碼由小到大排序',
-    explorePeriods: 13,
+    explorePeriods: 3,
     exploreDateOffset: 0,
-    exploreRange: '完整範圍',
+    exploreRange: '標準範圍',
     ruleCount: 1,
     roadTypes: ['加減'],
-    selectedStreaks: ['準9進10'],
+    selectedStreaks: ['準5進6'],
     sameCode: false,
   })).resolves.toBeTruthy();
 
+  expect(sdk.rpc.mock.calls.map(([name]) => name)).toEqual([
+    'matrix_explore_list',
+    'matrix_tianheng_list',
+  ]);
+});
+
+test('未登入即使免費會員開關開啟也不能直接使用探索七期與十三期', async () => {
+  for (const explorePeriods of [7, 13] as const) {
+    await expect(fetchExploreList({
+      lottery: '今彩539',
+      numberOrder: '依號碼由小到大排序',
+      explorePeriods,
+      exploreDateOffset: 0,
+      exploreRange: '標準範圍',
+      ruleCount: 1,
+      roadTypes: ['加減'],
+      selectedStreaks: ['準5進6'],
+      sameCode: false,
+    })).rejects.toMatchObject({ code: 'AUTH_REQUIRED' });
+  }
+  expect(sdk.rpc).not.toHaveBeenCalled();
+});
+
+test('未登入即使免費會員開關開啟也不能使用天衍與天工', async () => {
   await expect(fetchTianyanList({
     lottery: '今彩539',
-    explorePeriods: 13,
-    exploreRange: '完整範圍',
-    numberOrder: '依號碼由小到大排序',
-    exploreDateOffset: 0,
-    selectedStreaks: ['準11進12'],
+    selectedStreaks: ['準5進6'],
     sameCode: false,
-  })).resolves.toBeTruthy();
+  })).rejects.toMatchObject({ code: 'AUTH_REQUIRED' });
 
   await expect(fetchTiangongList({
     lottery: '今彩539',
@@ -90,14 +109,7 @@ test('未登入可直接讀取四套演算法的完整查詢', async () => {
     exploreDirections: ['固定'],
     firstStageDirections: ['固定'],
     firstRoadTypes: ['加減'],
-    secondStageDirections: ['固定'],
-    secondRoadTypes: ['加減'],
-  })).resolves.toBeTruthy();
+  })).rejects.toMatchObject({ code: 'AUTH_REQUIRED' });
 
-  expect(sdk.rpc.mock.calls.map(([name]) => name)).toEqual([
-    'matrix_explore_list',
-    'matrix_tianheng_list',
-    'matrix_tianyan_list',
-    'matrix_tiangong_list',
-  ]);
+  expect(sdk.rpc).not.toHaveBeenCalled();
 });
