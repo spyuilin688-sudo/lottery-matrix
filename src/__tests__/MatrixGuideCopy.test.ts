@@ -16,7 +16,7 @@ describe("Matrix guide copy", () => {
     expect(source).toContain("複合版路每組使用 1 個鎖定條件與 2 條規則");
     expect(source).toContain("每條規則各驗證 1 個球位");
     expect(source).toContain("固定使用五十期、二段式與準 2 進 3");
-    expect(source).toContain("準 3 進 4 排除");
+    expect(source).toContain("準 3 進 4排除");
     expect(source).toContain("輸入 2 至 3 個指定號碼後");
     expect(source).toContain("至少輸入 2 個、最多 3 個號碼");
     expect(source).toContain("可選擇 1 至 30 期");
@@ -24,7 +24,7 @@ describe("Matrix guide copy", () => {
     expect(source).toContain("可輸入 0 至 3 個探索號碼");
     expect(source).toContain("點擊底部「快捷」：已設定快捷功能時直接開啟；尚未設定時會先開啟快捷設定。");
     expect(source).toContain("在首頁設定按鈕連續點擊兩下可變更快捷功能。");
-    expect(source).toContain("首頁點選「查看更多紀錄」，可查閱歷史開獎號碼。");
+    expect(source).toContain("首頁點選查看更多紀錄，可查閱歷史開獎號碼。");
   });
 
   it("removes stale guide phrases", () => {
