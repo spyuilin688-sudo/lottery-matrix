@@ -37,7 +37,8 @@ import { clearLineLoginCallbackError, readLineLoginCallbackError } from './auth/
 const lineLoginError = readLineLoginCallbackError(new URL(window.location.href));
 
 installGlobalInputBehavior();
-installGoogleLoginEntry();
+const stopGoogleLoginEntry = installGoogleLoginEntry();
+if (import.meta.hot) import.meta.hot.dispose(stopGoogleLoginEntry);
 
 const linePwaWorkerReady = 'serviceWorker' in navigator
   ? registerPushServiceWorker()
