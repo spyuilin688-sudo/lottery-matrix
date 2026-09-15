@@ -1,5 +1,5 @@
 import { subscribeLotteryRefresh } from "../lottery-data-refresh";
-import { useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useContext, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDownIcon, ChevronRightIcon } from "@radix-ui/react-icons";
 import { type LotteryId, type DrawOrder } from "../Prototype";
@@ -16,6 +16,18 @@ import { Navigate, QuickNavigationContext, ScreenId, useQuickNavigation } from "
 export { QUICK_CACHE_MS, useTimedState } from "../use-timed-state";
 
 export const LOTTERIES: LotteryId[] = ["今彩539", "天天樂", "六合彩", "大樂透"];
+
+const LOTTERY_TABS_SESSION_KEY = "matrix-core-lottery";
+
+function getPersistedLotteryTab(): LotteryId | null {
+  if (typeof window === "undefined") return null;
+  const value = window.sessionStorage.getItem(LOTTERY_TABS_SESSION_KEY);
+  return LOTTERIES.includes(value as LotteryId) ? value as LotteryId : null;
+}
+
+function persistLotteryTab(value: LotteryId) {
+  if (typeof window !== "undefined") window.sessionStorage.setItem(LOTTERY_TABS_SESSION_KEY, value);
+}
 
 export function updateLookupInputValues(values: string[], index: number, rawValue: string) {
   const candidate = sanitizeReferenceNumber(rawValue);
@@ -168,14 +180,32 @@ export function LotteryTabs({
   selected: LotteryId;
   onChange: (value: LotteryId) => void;
 }) {
+  const [tabSelection, setTabSelection] = useState<LotteryId>(() => getPersistedLotteryTab() ?? selected);
+
+  useLayoutEffect(() => {
+    const persisted = getPersistedLotteryTab();
+    if (persisted && persisted !== selected) {
+      setTabSelection(persisted);
+      onChange(persisted);
+      return;
+    }
+    setTabSelection(selected);
+  }, [selected, onChange]);
+
+  const selectLottery = (value: LotteryId) => {
+    persistLotteryTab(value);
+    setTabSelection(value);
+    onChange(value);
+  };
+
   return (
     <div className="lottery-tabs" role="tablist" aria-label="彩種">
       {LOTTERIES.map((item) => (
         <button
           type="button"
           role="tab"
-          aria-selected={selected === item}
-          tabIndex={selected === item ? 0 : -1}
+          aria-selected={tabSelection === item}
+          tabIndex={tabSelection === item ? 0 : -1}
           onKeyDown={(event) => {
             const index = LOTTERIES.indexOf(item);
             const next = event.key === "ArrowRight" ? (index + 1) % LOTTERIES.length
@@ -183,11 +213,11 @@ export function LotteryTabs({
               : event.key === "Home" ? 0 : event.key === "End" ? LOTTERIES.length - 1 : -1;
             if (next < 0) return;
             event.preventDefault();
-            onChange(LOTTERIES[next]);
+            selectLottery(LOTTERIES[next]);
             event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
           }}
-          data-selected={selected === item}
-          onClick={() => onChange(item)}
+          data-selected={tabSelection === item}
+          onClick={() => selectLottery(item)}
           key={item}
         >
           <span>{item}</span>
