@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('react-dom/client', () => ({ default: { createRoot: mocks.createRoot } }));
 vi.mock('../../input-behavior', () => ({ installGlobalInputBehavior: vi.fn() }));
+vi.mock('../google-auth-entry', () => ({ installGoogleLoginEntry: vi.fn(() => vi.fn()) }));
 vi.mock('../../push-subscription', () => ({ registerPushServiceWorker: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../../visitor-counts', () => ({ installVisitorTracking: vi.fn(() => vi.fn()) }));
 vi.mock('../line-pwa-diagnostics', () => ({ flushLinePwaDiagnostics: vi.fn() }));
