@@ -358,9 +358,10 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
     setSigningInProvider("google");
     setAuthState("signing-in");
     try {
-      const result = await signInWithGoogle();
-      if (result.kind !== "oauth-url") throw new Error(result.reason);
-      window.location.assign(result.url);
+      // Supabase signInWithOAuth owns the browser redirect. Keep the UI in the
+      // signing-in state until navigation unloads this page or the auth callback
+      // restores a session.
+      await signInWithGoogle();
     } catch {
       setSigningInProvider(null);
       setAuthState("anonymous");

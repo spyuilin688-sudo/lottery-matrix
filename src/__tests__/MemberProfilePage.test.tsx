@@ -80,7 +80,7 @@ beforeEach(() => {
   lineAuth.signInWithLine.mockReset().mockResolvedValue(undefined);
   lineAuth.signOutFromMatrix.mockReset().mockResolvedValue(undefined);
   lineAuth.reconcilePendingLineLogoutPresence.mockReset();
-  googleAuth.signInWithGoogle.mockReset().mockResolvedValue({ kind: "unavailable", reason: "not-configured" });
+  googleAuth.signInWithGoogle.mockReset().mockResolvedValue(undefined);
   appDialog.confirm.mockReset().mockResolvedValue(true);
   appDialog.alert.mockReset().mockResolvedValue(undefined);
   pwaLifecycle.usePwaLifecycle.mockReset().mockReturnValue({
@@ -237,7 +237,7 @@ describe("ProfilePage member API", () => {
     expect(screen.getByText("MY ACCOUNT")).toBeVisible();
   });
 
-  it("未登入時同時顯示 Google 登入，失敗使用共用危險提示", async () => {
+  it("Google 登入啟動後維持登入中，交由 Supabase OAuth 接手導向", async () => {
     supabase.auth.getSession.mockResolvedValueOnce({ data: { session: null }, error: null });
     render(<ProfilePage onNavigate={vi.fn()} />);
 
@@ -246,11 +246,22 @@ describe("ProfilePage member API", () => {
     fireEvent.click(googleLogin);
 
     await waitFor(() => expect(googleAuth.signInWithGoogle).toHaveBeenCalledTimes(1));
-    expect(appDialog.alert).toHaveBeenCalledWith({
+    expect(screen.getByRole("button", { name: "Google 登入中…" })).toBeDisabled();
+    expect(appDialog.alert).not.toHaveBeenCalledWith(expect.objectContaining({ title: "登入失敗" }));
+  });
+
+  it("Google OAuth 啟動失敗時恢復登入按鈕並使用共用危險提示", async () => {
+    supabase.auth.getSession.mockResolvedValueOnce({ data: { session: null }, error: null });
+    googleAuth.signInWithGoogle.mockRejectedValueOnce(new Error("GOOGLE_OAUTH_FAILED"));
+    render(<ProfilePage onNavigate={vi.fn()} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Google 登入" }));
+
+    await waitFor(() => expect(appDialog.alert).toHaveBeenCalledWith({
       title: "登入失敗",
       description: "Google 登入目前無法使用，請稍後再試。",
       tone: "danger",
-    });
+    }));
     expect(screen.getByRole("button", { name: "Google 登入" })).toBeEnabled();
   });
 
