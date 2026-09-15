@@ -31,6 +31,7 @@ from app.schedule import next_lottery_draw_time
 from app.scraping.sources import LatestDrawSource
 from app.services.draw_refresh import DrawRefreshService
 from app.services.notification_events import notification_emitter_context
+from app.services.tinyfish_status import tinyfish_status_payload
 from app.settings import load_settings
 from app.worker import create_notification_emitter, run_scheduled_worker
 from app.worker_all import create_railway_ssl_context
@@ -473,7 +474,11 @@ def handle_api_request(
             if not _status_token_authorized(request_monitor_token):
                 return 403, {"error": "FORBIDDEN"}
             try:
-                return 200, {"items": repository.list_job_statuses()}
+                settings = load_settings()
+                return 200, {
+                    "items": repository.list_job_statuses(),
+                    "tinyfish": tinyfish_status_payload(repository, settings),
+                }
             except Exception:
                 return 503, {"error": "STATUS_UNAVAILABLE"}
         if method == "POST" and path == "/jobs/refresh":

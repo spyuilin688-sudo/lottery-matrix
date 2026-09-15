@@ -1,4 +1,4 @@
-export type ApiLocation = 'Supabase' | 'GitHub' | 'Railway';
+export type ApiLocation = 'Supabase' | 'GitHub' | 'Railway' | 'TinyFish';
 export type ApiCheckEvidence = 'live' | 'registered' | 'options' | 'inherited' | 'reported' | 'query' | 'data' | 'no-sample';
 export type ApiCheckMode = 'live' | 'registry' | 'service';
 
@@ -91,6 +91,7 @@ export const apiStatusInventory: readonly ApiStatusDefinition[] = [
   { id: 'line-logout-function', name: 'LINE 登出', group: '會員', location: 'Supabase', endpoint: '/functions/v1/line-logout', checkMode: 'live', description: '處理會員登出。' },
   ...supabaseRpcInventory,
   { id: 'github-fantasy5-workflow', name: '天天樂 GitHub Actions 爬蟲', group: '排程', location: 'GitHub', endpoint: '/repos/spyuilin688-sudo/lottery-matrix/actions/workflows/fantasy5-crawler.yml', checkMode: 'live', description: '查看天天樂爬蟲排程與最近一次執行結果。' },
+  { id: 'tinyfish-fallback', name: 'TinyFish 備援抓取', group: '資料來源', location: 'TinyFish', endpoint: '/jobs/status#tinyfish', checkMode: 'service', description: '顯示 TinyFish Fetch 備援設定與最近使用結果；API Key 僅顯示是否已設定。' },
   { id: 'railway-health', name: 'Railway 主機連線', group: '系統', location: 'Railway', endpoint: '/health', checkMode: 'live', description: '確認 Railway Worker 服務可正常回應。' },
   { id: 'railway-jobs-status', name: 'Railway 排程狀態 API', group: '排程', location: 'Railway', endpoint: '/jobs/status', checkMode: 'live', description: '取得四個彩種排程執行狀態。' },
   { id: 'railway-jobs-refresh', name: 'Railway 手動更新 API', group: '排程', location: 'Railway', endpoint: '/jobs/refresh', checkMode: 'service', description: '手動觸發指定彩種資料更新。' },
