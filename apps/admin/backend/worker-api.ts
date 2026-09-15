@@ -81,7 +81,7 @@ export type WorkerRecovery = {
 const jobNameByLottery: Record<CrawlerLottery, string> = {
   今彩539: 'matrix-539-refresh-v2',
   天天樂: 'matrix-fantasy5-refresh-v2',
- 六合彩: 'matrix-marksix-refresh-v2',
+  六合彩: 'matrix-marksix-refresh-v2',
   大樂透: 'matrix-649-refresh-v2',
 } as const;
 type Lottery = CrawlerLottery;
@@ -257,7 +257,15 @@ function parseJobs(value: unknown): RailwayJobs | null {
     byLottery.set(item.lottery, item);
   }
   if (byLottery.size !== lotteries.length) return null;
-  const tinyfish = parseTinyFish(value.tinyfish);
+  const tinyfish = value.tinyfish === undefined
+    ? {
+        configured: false,
+        fetchEnabled: false,
+        browserEnabled: false,
+        browserMaxDurationSeconds: 60,
+        lastFallbacks: [],
+      }
+    : parseTinyFish(value.tinyfish);
   if (!tinyfish) return null;
   return { items: lotteries.map((lottery) => byLottery.get(lottery)!), tinyfish };
 }
