@@ -35,7 +35,7 @@ old_css = '''.profile-card[data-auth-layout="multiple"] .profile-logout {
 new_css = '''.profile-card[data-auth-layout="multiple"] .profile-logout {
   min-height: 32px;
   height: 8.9cqw;
-  border: 1px solid var(--pwa-frame-secondary);
+  border: 1px solid #b98a31;
   background: #030a0d;
 }
 '''
@@ -45,4 +45,4 @@ css = css.replace(old_css, new_css, 1)
 
 member_path.write_text(member, encoding="utf-8")
 css_path.write_text(css, encoding="utf-8")
-print("Masked the raster single-login capsule for anonymous two-provider state and gave both live buttons their own outline.")
+print("Masked the raster single-login capsule for anonymous two-provider state and gave both live buttons their own canonical gold outline.")
