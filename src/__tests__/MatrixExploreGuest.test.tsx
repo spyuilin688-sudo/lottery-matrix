@@ -57,14 +57,12 @@ test('訪客可以讀取二期探索驗證過程', async () => {
   await expect(fetchExploreValidation({ lottery: '今彩539', drawPeriod: '115000210', analysisVersion: '115000210:matrix-python-v13' }, 'guest-row', { explorePeriods: 2, exploreRange: '標準範圍' })).resolves.toMatchObject({ itemId: 'guest-row' });
 });
 
-test('登入提示使用探索名稱且不顯示空結果', async () => {
+test('匿名使用者即使 session lookup 失敗仍可使用探索', async () => {
   sdk.getSession.mockResolvedValue({ data: { session: null }, error: new Error('session unavailable') });
   await start();
-  expect((await screen.findByRole('dialog', { name: '請先登入' })).textContent).toContain('請先登入後再使用 Matrix 探索');
-  fireEvent.click(screen.getByRole('button', { name: '知道了' }));
-  expect((await screen.findByRole('alert')).textContent).toBe('請先登入後再使用 Matrix 探索');
-  expect(screen.queryByText('無符合設定條件')).toBeNull();
-  expect(document.querySelector('.result-count')).toBeNull();
+  expect(await screen.findByText('22.26')).toBeTruthy();
+  expect(sdk.rpc).toHaveBeenCalledWith('matrix_explore_list', { p_request: expect.objectContaining({ explorePeriods: 2 }) });
+  expect(screen.queryByRole('dialog', { name: '請先登入' })).toBeNull();
 });
 
 test('載入中不顯示零筆或空結果，成功空回應才顯示', async () => {
