@@ -34,9 +34,9 @@ describe('Matrix member authentication', () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
-  it('uses the Auth user id to resolve the member, plan and confirmed referrals', async () => {
+  it('uses the Auth user id to resolve the member, provider perks, plan and confirmed referrals', async () => {
     const fetcher = sequenceFetcher([
-      jsonResponse({ id: 'auth-1' }),
+      jsonResponse({ id: 'auth-1', app_metadata: { provider: 'custom:line' } }),
       jsonResponse([{
         id: 'member-1',
         auth_user_id: 'auth-1',
@@ -56,6 +56,7 @@ describe('Matrix member authentication', () => {
       plan: 'quarterly',
       active: true,
       referralSuccessCount: 2,
+      loginPerksEligible: true,
     });
 
     expect(fetcher).toHaveBeenNthCalledWith(1, 'https://db.test/auth/v1/user', {
@@ -83,7 +84,12 @@ describe('Matrix member authentication', () => {
     await expect(
       createMemberAuth(config, fetcher, () => new Date('2026-08-21T00:00:00Z'))
         .requireMember('Bearer token'),
-    ).resolves.toMatchObject({ plan: 'monthly', active: false, referralSuccessCount: 0 });
+    ).resolves.toMatchObject({
+      plan: 'monthly',
+      active: false,
+      referralSuccessCount: 0,
+      loginPerksEligible: false,
+    });
   });
 
   it('rejects a disabled member before resolving member-only access', async () => {
