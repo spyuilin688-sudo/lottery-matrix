@@ -6,6 +6,12 @@ type SupabaseConfig = {
   serviceRoleKey: string;
 };
 
+type AuthUser = {
+  id?: unknown;
+  app_metadata?: unknown;
+  identities?: unknown;
+};
+
 type MemberRow = {
   id?: unknown;
   auth_user_id?: unknown;
@@ -40,6 +46,33 @@ async function readJson(response: Response, fallback: MatrixAccessError | Error)
   return response.json() as Promise<unknown>;
 }
 
+function normalizedProvider(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function loginPerksEligible(user: AuthUser) {
+  const providers = new Set<string>();
+  if (user.app_metadata && typeof user.app_metadata === 'object') {
+    const metadata = user.app_metadata as { provider?: unknown; providers?: unknown };
+    const provider = normalizedProvider(metadata.provider);
+    if (provider) providers.add(provider);
+    if (Array.isArray(metadata.providers)) {
+      for (const value of metadata.providers) {
+        const listedProvider = normalizedProvider(value);
+        if (listedProvider) providers.add(listedProvider);
+      }
+    }
+  }
+  if (Array.isArray(user.identities)) {
+    for (const identity of user.identities) {
+      if (!identity || typeof identity !== 'object') continue;
+      const provider = normalizedProvider((identity as { provider?: unknown }).provider);
+      if (provider) providers.add(provider);
+    }
+  }
+  return providers.has('custom:line') || providers.has('google');
+}
+
 function planOf(row: MemberRow): MatrixPlan {
   if (row.is_lifetime === true) return 'lifetime';
   const name = String(row.current_plan?.name ?? '');
@@ -71,7 +104,7 @@ export function createMemberAuth(
           headers: { apikey: config.anonKey, Authorization: `Bearer ${token}` },
         }),
         new MatrixAccessError('AUTH_REQUIRED', 401),
-      ) as { id?: unknown };
+      ) as AuthUser;
       const authUserId = String(authUser.id ?? '').trim();
       if (!authUserId) throw new MatrixAccessError('AUTH_REQUIRED', 401);
 
@@ -120,6 +153,7 @@ export function createMemberAuth(
         plan,
         active: isActive(member, plan, now()),
         referralSuccessCount,
+        loginPerksEligible: loginPerksEligible(authUser),
         ...(typeof member.line_trial_started_at === 'string'
           ? { lineTrialStartedAt: member.line_trial_started_at } : {}),
       };
