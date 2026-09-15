@@ -12,6 +12,7 @@ export type MemberContext = {
   plan: MatrixPlan;
   active: boolean;
   referralSuccessCount: number;
+  loginPerksEligible?: boolean;
   lineTrialStartedAt?: string | null;
 };
 
@@ -21,6 +22,7 @@ export const anonymousMatrixMember: MemberContext = {
   plan: 'free',
   active: false,
   referralSuccessCount: 0,
+  loginPerksEligible: false,
 };
 
 export type MatrixEntitlements = {
@@ -60,6 +62,9 @@ export function resolveMatrixEntitlements(
     || member.plan === 'lifetime'
   );
   const customizable = paid && member.plan !== 'trial';
+  // Runtime auth always sets this explicitly from the Supabase identity provider.
+  // Undefined is kept eligible only for older injected route/test fixtures.
+  const loginPerksEligible = member.loginPerksEligible !== false;
   const trialStart = Date.parse(member.lineTrialStartedAt ?? '');
   const trialElapsed = now.getTime() - trialStart;
   const hasRegistrationTrial = Boolean(member.authUserId && member.memberId)
@@ -68,7 +73,7 @@ export function resolveMatrixEntitlements(
   return {
     canUseSeven: paid
       || referrals >= 15
-      || (Boolean(member.authUserId && member.memberId) && isTuesdayOrFriday)
+      || (loginPerksEligible && Boolean(member.authUserId && member.memberId) && isTuesdayOrFriday)
       || (referrals >= 10 && isMondayOrThursday),
     canUseThirteen: paid,
     canUseFullRange: paid || referrals >= 50 || (referrals >= 30 && isTuesdayOrFriday),
