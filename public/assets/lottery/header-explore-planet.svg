@@ -1,119 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 136" fill="none">
-  <defs>
-    <radialGradient id="ambient" cx="0" cy="0" r="1" gradientTransform="translate(448 66) rotate(5) scale(450 118)" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#8f611b" stop-opacity=".10"/>
-      <stop offset=".42" stop-color="#3a2609" stop-opacity=".055"/>
-      <stop offset="1" stop-color="#010407" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="planetBody" cx="0" cy="0" r="1" gradientTransform="translate(708 10) rotate(125) scale(174 154)" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#a88035" stop-opacity=".58"/>
-      <stop offset=".24" stop-color="#6f5522" stop-opacity=".53"/>
-      <stop offset=".56" stop-color="#2a1e0b" stop-opacity=".89"/>
-      <stop offset="1" stop-color="#070604" stop-opacity=".99"/>
-    </radialGradient>
-    <linearGradient id="planetRim" x1="648" y1="0" x2="688" y2="136" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#fff4c7" stop-opacity=".98"/>
-      <stop offset=".22" stop-color="#ffd36f" stop-opacity=".94"/>
-      <stop offset=".58" stop-color="#dc9b2b" stop-opacity=".82"/>
-      <stop offset="1" stop-color="#75440b" stop-opacity=".08"/>
-    </linearGradient>
-    <linearGradient id="orbitGold" x1="12" y1="104" x2="806" y2="38" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#8e5b12" stop-opacity="0"/>
-      <stop offset=".14" stop-color="#d8941e" stop-opacity=".20"/>
-      <stop offset=".32" stop-color="#ffe39a" stop-opacity=".70"/>
-      <stop offset=".52" stop-color="#d89a2d" stop-opacity=".28"/>
-      <stop offset=".72" stop-color="#ffdfa0" stop-opacity=".84"/>
-      <stop offset=".9" stop-color="#c88217" stop-opacity=".26"/>
-      <stop offset="1" stop-color="#6f4309" stop-opacity="0"/>
-    </linearGradient>
-    <linearGradient id="orbitDim" x1="6" y1="112" x2="802" y2="24" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#8a5c16" stop-opacity=".03"/>
-      <stop offset=".27" stop-color="#bd7d18" stop-opacity=".14"/>
-      <stop offset=".66" stop-color="#e0aa43" stop-opacity=".27"/>
-      <stop offset="1" stop-color="#70410a" stop-opacity=".03"/>
-    </linearGradient>
-    <clipPath id="planetClip">
-      <circle cx="786" cy="56" r="132"/>
-    </clipPath>
-    <filter id="softGlow" x="-100%" y="-100%" width="300%" height="300%">
-      <feGaussianBlur stdDeviation="2.6"/>
-    </filter>
-    <filter id="planetGlow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="3.3"/>
-    </filter>
-    <filter id="grain" x="0" y="0" width="100%" height="100%">
-      <feTurbulence type="fractalNoise" baseFrequency=".82" numOctaves="2" seed="23" stitchTiles="stitch"/>
-      <feColorMatrix type="matrix" values="0 0 0 0 .74 0 0 0 0 .55 0 0 0 0 .22 0 0 0 .12 0"/>
-    </filter>
-  </defs>
-
-  <rect width="800" height="136" fill="#010407"/>
-  <rect width="800" height="136" fill="url(#ambient)"/>
-  <rect width="800" height="136" filter="url(#grain)" opacity=".14"/>
-
-  <g fill="#efc26a">
-    <circle cx="29" cy="31" r=".48" opacity=".24"/><circle cx="58" cy="101" r=".55" opacity=".18"/>
-    <circle cx="92" cy="54" r=".42" opacity=".28"/><circle cx="126" cy="20" r=".58" opacity=".24"/>
-    <circle cx="163" cy="115" r=".52" opacity=".28"/><circle cx="198" cy="37" r=".40" opacity=".18"/>
-    <circle cx="236" cy="92" r=".56" opacity=".27"/><circle cx="274" cy="23" r=".45" opacity=".22"/>
-    <circle cx="311" cy="110" r=".50" opacity=".26"/><circle cx="349" cy="43" r=".44" opacity=".22"/>
-    <circle cx="388" cy="18" r=".46" opacity=".19"/><circle cx="427" cy="106" r=".52" opacity=".23"/>
-    <circle cx="468" cy="34" r=".42" opacity=".24"/><circle cx="507" cy="116" r=".48" opacity=".22"/>
-    <circle cx="548" cy="25" r=".53" opacity=".22"/><circle cx="584" cy="101" r=".45" opacity=".20"/>
-    <circle cx="621" cy="41" r=".52" opacity=".27"/><circle cx="654" cy="112" r=".40" opacity=".18"/>
-    <circle cx="687" cy="27" r=".52" opacity=".28"/><circle cx="709" cy="89" r=".42" opacity=".20"/>
-  </g>
-
-  <g id="upperOrbit">
-    <path d="M-48 42C80 1 214 5 347 29C474 52 600 53 835 12" stroke="url(#orbitDim)" stroke-width=".8"/>
-    <path d="M-34 55C94 12 219 17 350 38C486 60 613 57 840 20" stroke="url(#orbitDim)" stroke-width=".62" stroke-opacity=".78"/>
-    <path d="M21 8C150 -9 255 1 352 28C469 61 570 64 700 31" stroke="url(#orbitDim)" stroke-width=".58" stroke-opacity=".66"/>
-    <path d="M53 -9C165 18 240 31 342 33C472 35 584 17 706 -6" stroke="#d8992b" stroke-width=".42" stroke-opacity=".18"/>
-  </g>
-
-  <g id="lowerOrbit">
-    <path d="M-36 119C107 74 231 73 348 91C477 111 600 104 838 43" stroke="url(#orbitDim)" stroke-width="1.02"/>
-    <path d="M-27 108C116 66 239 66 356 84C487 104 607 94 839 34" stroke="url(#orbitGold)" stroke-width="1.38"/>
-    <path d="M-20 99C118 62 247 61 366 78C501 98 626 84 838 26" stroke="url(#orbitDim)" stroke-width=".82"/>
-    <path d="M-14 126C137 83 260 80 383 97C512 115 635 101 844 49" stroke="url(#orbitDim)" stroke-width=".62" stroke-opacity=".72"/>
-  </g>
-
-  <g clip-path="url(#planetClip)">
-    <circle cx="786" cy="56" r="132" fill="url(#planetBody)"/>
-    <ellipse cx="752" cy="22" rx="126" ry="43" fill="#e0b55f" opacity=".06"/>
-    <path d="M650 7C699 -6 759 -3 844 17M642 34C701 17 771 21 861 40M643 66C708 49 780 55 869 78M651 100C711 87 781 93 856 113" stroke="#ddb25b" stroke-width=".72" stroke-opacity=".17"/>
-    <path d="M686 -22C665 20 655 66 666 118M715 -25C691 19 681 70 694 128" stroke="#f4cb70" stroke-width=".58" stroke-opacity=".12"/>
-  </g>
-
-  <g id="planetAtmosphere">
-    <circle cx="786" cy="56" r="134.5" stroke="#f2bd4f" stroke-width="4.8" stroke-opacity=".12" filter="url(#planetGlow)"/>
-    <circle cx="786" cy="56" r="132" stroke="url(#planetRim)" stroke-width="2.35"/>
-    <circle cx="786" cy="56" r="137" stroke="#efbd5a" stroke-width=".68" stroke-opacity=".2"/>
-  </g>
-
-  <g filter="url(#softGlow)">
-    <circle cx="145" cy="23" r="6" fill="#e3a128" opacity=".18"/>
-    <circle cx="511" cy="96" r="7" fill="#e0a22b" opacity=".24"/>
-    <circle cx="706" cy="36" r="7" fill="#f4bb3b" opacity=".18"/>
-    <circle cx="736" cy="96" r="8" fill="#ffc95c" opacity=".28"/>
-  </g>
-
-  <g>
-    <circle cx="145" cy="23" r="1.15" fill="#fff3c7"/>
-    <path d="M134 23H156M145 15V31" stroke="#eeb950" stroke-width=".38" stroke-opacity=".48"/>
-
-    <circle cx="511" cy="96" r="1.3" fill="#fff6cf"/>
-    <circle cx="511" cy="96" r="3.1" fill="none" stroke="#edb64a" stroke-opacity=".38"/>
-    <path d="M498 96H524M511 86V106" stroke="#efbf5b" stroke-width=".42" stroke-opacity=".52"/>
-
-    <circle cx="706" cy="36" r="1.05" fill="#fff2c1"/>
-    <path d="M696 36H716M706 29V43" stroke="#e8aa31" stroke-width=".38" stroke-opacity=".46"/>
-  </g>
-
-  <g id="rightStarFlare">
-    <circle cx="736" cy="96" r="1.5" fill="#fff8d8"/>
-    <circle cx="736" cy="96" r="3.5" fill="none" stroke="#f0b94f" stroke-opacity=".46"/>
-    <path d="M718 96H754M736 82V110" stroke="#ffd074" stroke-width=".52" stroke-opacity=".65"/>
-    <path d="M726 86L746 106M746 86L726 106" stroke="#d99a29" stroke-width=".34" stroke-opacity=".36"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 136" fill="none"><defs>
+<radialGradient id="amb" cx="0" cy="0" r="1" gradientTransform="translate(470 68) scale(455 118)" gradientUnits="userSpaceOnUse"><stop stop-color="#6b4613" stop-opacity=".11"/><stop offset="1" stop-color="#010407" stop-opacity="0"/></radialGradient>
+<radialGradient id="pb" cx="0" cy="0" r="1" gradientTransform="translate(668 10) rotate(31) scale(242 202)" gradientUnits="userSpaceOnUse"><stop stop-color="#9e742d" stop-opacity=".62"/><stop offset=".22" stop-color="#624516" stop-opacity=".82"/><stop offset=".50" stop-color="#2a1d09" stop-opacity=".97"/><stop offset=".78" stop-color="#100c05"/><stop offset="1" stop-color="#040403"/></radialGradient>
+<linearGradient id="shade" x1="650" y1="0" x2="760" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#010101" stop-opacity="0"/><stop offset=".28" stop-color="#010101" stop-opacity=".18"/><stop offset=".62" stop-color="#010101" stop-opacity=".58"/><stop offset="1" stop-color="#010101" stop-opacity=".9"/></linearGradient>
+<linearGradient id="rim" x1="654" y1="-24" x2="661" y2="144" gradientUnits="userSpaceOnUse"><stop stop-color="#fff9e0"/><stop offset=".19" stop-color="#ffe9a9"/><stop offset=".5" stop-color="#f2bd50" stop-opacity=".96"/><stop offset=".82" stop-color="#b66f14" stop-opacity=".54"/><stop offset="1" stop-color="#603707" stop-opacity=".05"/></linearGradient>
+<linearGradient id="orb" x1="15" y1="111" x2="790" y2="45" gradientUnits="userSpaceOnUse"><stop stop-color="#6b3d07" stop-opacity="0"/><stop offset=".16" stop-color="#ce8b1c" stop-opacity=".34"/><stop offset=".33" stop-color="#ffe7a6" stop-opacity=".9"/><stop offset=".53" stop-color="#c8861c" stop-opacity=".36"/><stop offset=".72" stop-color="#ffebba"/><stop offset=".9" stop-color="#cd8619" stop-opacity=".34"/><stop offset="1" stop-color="#6b3d07" stop-opacity="0"/></linearGradient>
+<clipPath id="pc"><circle cx="786" cy="56" r="132"/></clipPath>
+<filter id="planetMicroTexture" x="-10%" y="-20%" width="120%" height="140%"><feTurbulence type="fractalNoise" baseFrequency=".035 .09" numOctaves="3" seed="37"/></filter>
+<filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="3"/></filter>
+<filter id="og" x="-10%" y="-100%" width="120%" height="300%"><feGaussianBlur stdDeviation="2.2"/></filter>
+</defs>
+<rect width="800" height="136" fill="#010407"/><rect width="800" height="136" fill="url(#amb)"/>
+<g id="upperOrbit" opacity=".22" stroke="#b57a18" stroke-linecap="round"><path d="M-38 43C84 5 211 8 340 29C470 51 590 52 749 28" stroke-width=".65"/><path d="M-24 56C96 17 221 18 350 38C475 57 594 55 756 27" stroke-width=".52"/><path d="M54 9C170 -5 258 6 356 31C459 58 552 61 668 36" stroke-width=".48"/></g>
+<g id="heroOrbitGlow" filter="url(#og)" opacity=".78"><path d="M-40 111C121 61 247 66 364 84C493 104 610 94 770 54" stroke="#dfa127" stroke-width="5"/></g>
+<g id="lowerOrbit"><path d="M-36 119C111 75 233 75 350 92C479 111 598 105 771 59" stroke="#b57918" stroke-opacity=".22"/><path d="M-30 109C117 65 241 67 357 84C487 104 605 95 772 53" stroke="url(#orb)" stroke-width="1.55"/><path d="M-18 100C116 62 245 61 367 78C500 97 620 85 772 48" stroke="#c18825" stroke-width=".7" stroke-opacity=".22"/></g>
+<g clip-path="url(#pc)"><circle cx="786" cy="56" r="132" fill="url(#pb)"/><image id="planetSurfaceTexture" x="642" y="-82" width="295" height="280" href="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA0JCgsKCA0LCgsODg0PEyAVExISEyccHhcgLikxMC4pLSwzOko+MzZGNywtQFdBRkxOUlNSMj5aYVpQYEpRUk//2wBDAQ4ODhMREyYVFSZPNS01T09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0//wAARCABgAGADASIAAhEBAxEB/8QAGQABAQEBAQEAAAAAAAAAAAAAAgMBAAQH/8QALRABAAICAQQBAwMEAgMAAAAAAQIRACESAzFBUSIyYXETkaEEQoGxFCNyweH/xAAXAQEBAQEAAAAAAAAAAAAAAAABAAID/8QAGBEBAQEBAQAAAAAAAAAAAAAAAAERIVH/2gAMAwEAAhEDEQA/APnnw+IP/k1nHDltSP8ALnR4KeL77zmOhG68es5tJzGhB15zCaP1Nrb98pfG20H+cj2bM1AZJTyb7HbEXXcMnF1x/nL9OLuUmuJrWFMTjKncq86yzIlDyt6b7YJwrZ8h84oDBCULvaezCklSIU2XhjBlGiI+fvWZLc2rS9GE1LTT7vJOmnK0vVd86iTrubVxdUP1eMWyg94PpdGIOHTlKVB++bMYzYla1pzOpLZvVds0lyDl9MfXfAhO3uutVk+0rj4ytqSLu99sIsbqrT1jAHTsldWDvKykSNDV+W8wjJHtXa8Z03V+6K85WqAKiC1W8p0pxg2x5XpvBwR3/nODSVrAqciUeJGpX8Uw/Tqjkd7xaAqRvvrZm1H6qQ9YJFh8RxPxjRK+Rsxyfj405yHA0crx1M6wkuNUdwu8ypTNmwrK9TpVN+UPdDgjIJCDR333cN4gQ6ct0/8AvOomsnT/ALx8SQsq7+82IXx0I7XLVhQ6Q9NY3yjdiZO3t9++emXWWJEoBv7pmx6MZMoRtn4ujM76ceb9SQ3e6w8tdvtfrHKNjpeOrw/Hjf8AddV4/wA5oMHkgWrox8UFOw1s84TX9uzf5xc7imyPr25Io9KYEqrdGsqdGH6TMlylEucXw3nmjJDujfjPT0eoEZylTKRx4p3++ZutRISfUseEvN6rMiRFijZ2ry5kI+Xsec1q5VqI+e/5xDYLPqDq5PatYeCcjetZklZJr8nbMuli7/D5xSsPhGM3jcZXWcdZOVAbsQ7YEqJH/J98DqTGqb/bDNWqRsFJNL++dMiskkEXdHjH+mvSjo2/VfYyPHkAO3xlE07bkfTqs6NcJfHet+syEFlRjrhxlbUvXrGoFVvz5feImRlZ8nv+HNlofjLjLYusAqNg/wC8kbNIsW+/n3h8P72+cmtq4+VgIflywM8/J8ZTpdGXVlHlIjHxJ7awS5FFVZf5w2kqXtklepKMaISENXkZN6A79/eWiEZ/9p8ez9si/F+zlFTgyQiK21xzgTl3HHFgy5JRe6zoR5DsPu5FkIyJFEr+xnq/of8AjEpH9UKJ8ad3k5T6pM6nJ5Tj+PH+sjANCoOu2ZvYZxbqdeZL+7glcX1h4J0YdWGkk37PWEi8mMZR2Vd50+pIhwqNVWjvlngSlO4Uxib2+XCKsed04Hz5vzmxGwr8XnTGS5apu77PbN5bHX+slZrFZLzWWIoy4oici8XTgTkAqvc9ZKXayqXxjGo2JeCNsjQvhrKQOnxWct00B3cmdQluQWu83cIkr+oT3WFaUZxsJFHHy5NaGr4uYD3IKJhZXuvGWDSZBYx8/tmWJ63/ABgkfIL+9esxb7v/AMxxa//Z" preserveAspectRatio="xMidYMid slice" opacity=".68"/><rect x="642" y="-82" width="295" height="280" fill="#b78334" filter="url(#planetMicroTexture)" opacity=".13"/><circle cx="786" cy="56" r="132" fill="url(#shade)"/></g>
+<ellipse id="planetLimbGlow" cx="657" cy="54" rx="27" ry="111" fill="#d99a28" opacity=".16" filter="url(#glow)"/>
+<g id="planetAtmosphere"><circle cx="786" cy="56" r="134.5" stroke="#f3b63e" stroke-width="7" stroke-opacity=".24" filter="url(#glow)"/><circle cx="786" cy="56" r="132" stroke="url(#rim)" stroke-width="2.5"/><circle cx="786" cy="56" r="136" stroke="#e7a327" stroke-width=".6" stroke-opacity=".2"/></g>
+<g fill="#e9bb62"><circle cx="102" cy="33" r=".5" opacity=".35"/><circle cx="145" cy="22" r="1.2"/><circle cx="354" cy="106" r=".6" opacity=".28"/><circle cx="506" cy="96" r="1.1"/><circle cx="618" cy="28" r=".55" opacity=".3"/></g>
+<g opacity=".72" stroke="#f2c25d" stroke-width=".45"><path d="M132 22H158M145 12V32"/><path d="M493 96H519M506 86V106"/></g>
+<g id="rightStarFlare"><circle cx="684" cy="94" r="7.5" fill="#ffc55a" opacity=".22" filter="url(#glow)"/><circle cx="684" cy="94" r="1.5" fill="#fff9df"/><path d="M665 94H703M684 79V109" stroke="#ffd67a" stroke-width=".55" stroke-opacity=".75"/></g>
 </svg>
