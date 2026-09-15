@@ -5,7 +5,6 @@ import {
 } from "./FeaturePagesCore";
 import type { LotteryId } from "./Prototype";
 import { NotificationsPagePatched } from "./NotificationsPagePatched";
-import { TianyanExpandedLayoutPatch } from "./TianyanExpandedLayoutPatch";
 import { FeaturePageLoadBoundary } from "./FeaturePageLoadBoundary";
 
 export { QuickNavigationProvider };
@@ -54,7 +53,6 @@ export function FeaturePageRouter({
         onQuickConfigure={onQuickConfigure}
         quickActive={quickActive}
       />
-      <TianyanExpandedLayoutPatch active={screen === "tianyan"} />
     </FeaturePageLoadBoundary>
   );
 }
