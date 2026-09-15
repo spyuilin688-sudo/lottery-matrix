@@ -75,7 +75,7 @@
   text-align: right;
   white-space: nowrap;
 }
-.managementToolbarError { margin: -2px 0 8px; color: #efb3b3; font-size: 12px; }
+.managementToolbarError { margin: 0 0 8px; color: #efb3b3; font-size: 12px; }
 .managementToolbarError button {
   min-height: 28px;
   margin-left: 4px;
@@ -125,9 +125,6 @@
 .userInfoRows b { font-size: 13px; overflow-wrap: anywhere; }
 
 /* Shared hierarchy and rhythm across every admin surface. */
-header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
-.actions button,
-.menu { min-width: 40px; min-height: 40px; }
 .overviewCards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .metricDivider { grid-column: 1 / -1; height: 1px; margin: 0; background: #30333a; }
 .transferPanel { margin-top: 8px; }
