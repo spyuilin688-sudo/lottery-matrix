@@ -11,10 +11,11 @@ const memberPagesSource = readSource("src/features/MemberPages.tsx");
 const activationLayoutCss = readSource("src/activation-code-layout.css");
 
 describe("activation code requested layout", () => {
-  it("removes the redundant visible referral labels while preserving the input accessible name", () => {
-    expect(memberPagesSource).not.toContain('<span className="referral-code-label">推薦碼：</span>');
-    expect(memberPagesSource).not.toContain("<h2>輸入推薦碼</h2>");
+  it("removes the redundant referral copy from the visible layout while preserving the input accessible name", () => {
     expect(memberPagesSource).toMatch(/<input id="referral-code"[\s\S]*?aria-label="推薦碼"/);
+    const matches = [...activationLayoutCss.matchAll(/\.activation-code-screen \.referral-code-label,\s*\.activation-code-screen \.referral-input-card > h2\s*\{([^}]*)\}/g)];
+    expect(matches).toHaveLength(1);
+    expect(matches[0][1]).toContain("display: none;");
   });
 
   it("draws the divider directly under the activation-code toggle from its canonical layout owner", () => {
