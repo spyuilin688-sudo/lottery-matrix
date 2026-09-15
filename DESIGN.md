@@ -273,6 +273,8 @@ Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封
 
 ### Matrix 演算法頁面資訊顏色 — 2026-09-15
 
+同碼開啟時，不同結果號碼組別之間使用 1px、72% 標準金的組間分隔線；組內一般列線維持 28%。由 `src/matrix-explore-spacing.css` 的既有 `article[data-number-group-start="true"]` 規則單獨擁有，四彩種與四種演算法共用，不新增覆寫層。
+
 探索、天衡、天衍、天工共用 `.matrix-explore-main-screen` 的頁面色彩變體，四彩種一致套用。`src/matrix-explore-spacing.css` 在既有根節點設定細框線 `--pwa-frame-divider` 為標準金的 28%，摘要分隔符 `--explore-validation-summary-border-color` 使用摘要外框的 `--pwa-frame-secondary`。`src/explore-result-preview.css` 的既有分隔符規則同時處理兩種摘要分隔符類別；其他頁面保留原分隔符預設色。重複號碼統計小卡的次數使用暖灰白 `#c6c0b8`，移除原 72% 透明度，沿用字級、字重、尺寸與篩選操作。
 
 ## PWA frame hierarchy — 2026-09-15

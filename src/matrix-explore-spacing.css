@@ -1076,7 +1076,7 @@
 }
 
 .matrix-explore-main-screen .road-results article[data-number-group-start="true"] {
-  border-top: 1px solid var(--pwa-frame-divider);
+  border-top: 1px solid color-mix(in srgb, var(--pwa-frame-secondary) 72%, transparent);
 }
 
 .matrix-explore-main-screen .road-results article:first-child {
