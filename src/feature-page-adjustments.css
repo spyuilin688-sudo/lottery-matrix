@@ -546,11 +546,64 @@
   align-items: stretch;
 }
 
-.profile-card[data-auth-layout="multiple"] .profile-logout {
+.profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider] {
   width: 100%;
   height: 8.9cqw;
   min-height: 32px;
+  padding: 0 4px;
+  grid-template-columns: 12px auto auto;
+  align-items: center;
+  justify-content: center;
+  column-gap: 2px;
   border-radius: 999px;
+  font-size: clamp(9px, 2.3cqw, 11px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, .24);
+}
+
+.profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider]::before {
+  display: block;
+  width: 12px;
+  height: 12px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  content: "";
+}
+
+.profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider]::after {
+  content: "登入";
+  white-space: nowrap;
+}
+
+.profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider][aria-busy="true"]::after {
+  content: "";
+}
+
+.profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider="line"] {
+  border: 1px solid #d7b65b;
+  background: #06c755;
+  color: #ffffff;
+}
+
+.profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider="line"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fff' d='M12 3C6.48 3 2 6.72 2 11.31c0 4.11 3.56 7.56 8.36 8.21.33.07.77.22.88.5.1.26.07.66.03.92l-.14.87c-.04.26-.2 1.02.88.56 1.08-.45 5.82-3.43 7.94-5.87C21.42 14.89 22 13.25 22 11.31 22 6.72 17.52 3 12 3Z'/%3E%3Ctext x='12' y='13.1' text-anchor='middle' font-family='Arial,sans-serif' font-size='4.2' font-weight='700' fill='%2306c755'%3ELINE%3C/text%3E%3C/svg%3E");
+}
+
+.profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider="google"] {
+  border: 1px solid #d7b65b;
+  background: #ffffff;
+  color: #202124;
+}
+
+.profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider="google"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M12 3a9 9 0 0 1 6.36 2.64' stroke='%23EA4335' stroke-width='3.2' stroke-linecap='round'/%3E%3Cpath d='M18.36 5.64A9 9 0 0 1 21 12' stroke='%23FBBC05' stroke-width='3.2' stroke-linecap='round'/%3E%3Cpath d='M21 12a9 9 0 0 1-9 9' stroke='%2334A853' stroke-width='3.2' stroke-linecap='round'/%3E%3Cpath d='M12 21a9 9 0 1 1 0-18' stroke='%234285F4' stroke-width='3.2' stroke-linecap='round'/%3E%3Cpath d='M21 12h-8' stroke='%234285F4' stroke-width='3.2' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+.profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider]:disabled {
+  filter: saturate(.72);
 }
 
 .calculator-screen .calculation-results {
