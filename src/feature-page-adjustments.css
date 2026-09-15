@@ -777,13 +777,14 @@
   box-shadow: none;
 }
 
-/* Explore title card: right-edge planet limb with restrained orbital traces. */
+/* Explore title card: visible right-side planet body with restrained orbital traces. */
 .feature-brand-header[data-product-header="Matrix 探索"] .product-header__frame {
   background-image:
-    radial-gradient(ellipse 46% 118% at 111% 50%, rgba(155, 126, 55, .115) 0 57%, rgba(223, 187, 93, .20) 58% 58.75%, rgba(126, 96, 34, .055) 59.4% 63%, transparent 64%),
-    radial-gradient(ellipse 72% 36% at 104% 53%, transparent 64%, rgba(224, 184, 85, .16) 65% 65.7%, transparent 67%),
-    linear-gradient(157deg, transparent 0 52%, rgba(217, 172, 72, .12) 52.35% 52.68%, transparent 53.08%),
-    linear-gradient(169deg, transparent 0 63%, rgba(217, 172, 72, .085) 63.25% 63.55%, transparent 64%),
+    radial-gradient(circle at 91% 50%, rgba(166, 132, 57, .24) 0 25%, rgba(118, 88, 29, .18) 25.8% 29%, rgba(239, 204, 111, .32) 29.7% 30.45%, rgba(111, 79, 24, .10) 31.2% 34%, transparent 35%),
+    radial-gradient(circle at 96% 30%, rgba(244, 210, 120, .16) 0 7%, transparent 22%),
+    radial-gradient(ellipse 78% 37% at 91% 53%, transparent 58%, rgba(229, 187, 87, .24) 59% 59.7%, transparent 61%),
+    linear-gradient(157deg, transparent 0 51.5%, rgba(217, 172, 72, .16) 51.85% 52.2%, transparent 52.65%),
+    linear-gradient(169deg, transparent 0 62.5%, rgba(217, 172, 72, .12) 62.8% 63.15%, transparent 63.6%),
     var(--product-header-background);
   background-position: center;
   background-size: cover;
