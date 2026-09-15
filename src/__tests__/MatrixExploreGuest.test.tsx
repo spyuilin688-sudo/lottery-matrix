@@ -90,15 +90,16 @@ test('訪客讀取仍遵守 RPC 的會員權限拒絕', async () => {
   expect(document.querySelector('.result-count')).toBeNull();
 });
 
-test('天衍與天工仍要求登入', async () => {
-  await expect(fetchTianyanList({ lottery: '今彩539', selectedStreaks: ['準5進6'], sameCode: false })).rejects.toMatchObject({ code: 'AUTH_REQUIRED' });
-  await expect(fetchTiangongList({ lottery: '今彩539', periodRange: 50, mode: 'two-stage', hitCondition: '準2進3', exploreDirections: ['固定'], firstStageDirections: ['固定'], firstRoadTypes: ['加減'] })).rejects.toMatchObject({ code: 'AUTH_REQUIRED' });
-  expect(sdk.rpc).not.toHaveBeenCalled();
+test('未登入也可以呼叫天衍與天工', async () => {
+  await expect(fetchTianyanList({ lottery: '今彩539', selectedStreaks: ['準5進6'], sameCode: false })).resolves.toBeTruthy();
+  await expect(fetchTiangongList({ lottery: '今彩539', periodRange: 50, mode: 'two-stage', hitCondition: '準2進3', exploreDirections: ['固定'], firstStageDirections: ['固定'], firstRoadTypes: ['加減'] })).resolves.toBeTruthy();
+  expect(sdk.rpc).toHaveBeenCalledWith('matrix_tianyan_list', { p_request: expect.objectContaining({ lottery: '今彩539' }) });
+  expect(sdk.rpc).toHaveBeenCalledWith('matrix_tiangong_list', { p_request: expect.objectContaining({ lottery: '今彩539', periodRange: 50 }) });
 });
 
-test('訪客選擇七期時須登入，且不送出探索請求', async () => {
-  await expect(fetchExploreList({ lottery: '今彩539', numberOrder: '依號碼由小到大排序', explorePeriods: 7, exploreDateOffset: 0, exploreRange: '標準範圍', ruleCount: 1, roadTypes: ['加減'], selectedStreaks: ['準5進6'], sameCode: false })).rejects.toMatchObject({ code: 'AUTH_REQUIRED' });
-  expect(sdk.rpc).not.toHaveBeenCalled();
+test('訪客選擇七期仍會送出探索請求', async () => {
+  await expect(fetchExploreList({ lottery: '今彩539', numberOrder: '依號碼由小到大排序', explorePeriods: 7, exploreDateOffset: 0, exploreRange: '標準範圍', ruleCount: 1, roadTypes: ['加減'], selectedStreaks: ['準5進6'], sameCode: false })).resolves.toBeTruthy();
+  expect(sdk.rpc).toHaveBeenCalledWith('matrix_explore_list', { p_request: expect.objectContaining({ explorePeriods: 7 }) });
 });
 
 test('Matrix 探索進頁選取會員實際最高期數及範圍', async () => {
