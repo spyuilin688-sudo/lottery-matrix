@@ -5,31 +5,12 @@ import { hasLineSession, hasMemberSession } from '../LinePageGuard';
 function session(provider: string): Session {
   return {
     access_token: `${provider}-access-token`,
-    token_type: 'bearer',
-    expires_in: 3600,
-    expires_at: Math.floor(Date.now() / 1000) + 3600,
-    refresh_token: `${provider}-refresh-token`,
     user: {
       id: `${provider}-user`,
-      aud: 'authenticated',
-      role: 'authenticated',
-      email: provider === 'google' ? 'member@example.com' : undefined,
       app_metadata: { provider, providers: [provider] },
-      user_metadata: {},
-      identities: [{
-        identity_id: `${provider}-identity`,
-        id: `${provider}-identity`,
-        user_id: `${provider}-user`,
-        identity_data: {},
-        provider,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        last_sign_in_at: new Date().toISOString(),
-      }],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      identities: [{ provider }],
     },
-  };
+  } as Session;
 }
 
 describe('member page session guards', () => {
