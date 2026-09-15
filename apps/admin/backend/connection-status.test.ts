@@ -3,7 +3,7 @@ import { createConnectionStatus } from './connection-status';
 import type { WorkerStatus } from './worker-api';
 import type { WatchdogStatus } from './watchdog-status';
 
-const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Content-Range': '0-0/0' } });
 const healthyWorkerStatus: WorkerStatus = {
   ok: true,
   health: {
