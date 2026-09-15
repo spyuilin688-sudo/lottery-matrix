@@ -28,6 +28,7 @@
   display: grid;
   width: 100%;
   min-width: 0;
+  margin-bottom: 8px;
   grid-template-columns: minmax(0, .85fr) minmax(0, 1.65fr);
   gap: var(--control-gap);
 }
@@ -56,7 +57,7 @@
   display: grid;
   width: 100%;
   min-width: 0;
-  margin: var(--layout-section-gap, 8px) 0;
+  margin: 0 0 8px;
   grid-template-columns: repeat(3, minmax(0, .8fr)) max-content minmax(66px, 1.15fr) max-content;
   gap: var(--control-gap);
   align-items: center;
