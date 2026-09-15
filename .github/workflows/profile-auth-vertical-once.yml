@@ -1,0 +1,82 @@
+name: Profile auth vertical once
+
+on:
+  push:
+    branches:
+      - style/profile-auth-vertical-20260915
+
+permissions:
+  contents: write
+
+jobs:
+  vertical-layout:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: style/profile-auth-vertical-20260915
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Add vertical layout regression first
+        run: python3 scripts/profile-auth-vertical-test-once.py
+
+      - name: Verify regression is red before production CSS
+        shell: bash
+        run: |
+          set +e
+          npx vitest run src/__tests__/MemberProfilePage.test.tsx -t '未登入時 LINE 與 Google 登入按鈕垂直排列' --reporter=verbose > /tmp/profile-auth-red.log 2>&1
+          status=$?
+          set -e
+          cat /tmp/profile-auth-red.log
+          if [ "$status" -eq 0 ]; then
+            echo 'Expected vertical-layout regression to fail before CSS change.' >&2
+            exit 1
+          fi
+          grep -F '未登入時 LINE 與 Google 登入按鈕垂直排列' /tmp/profile-auth-red.log
+
+      - name: Apply canonical vertical layout CSS
+        run: python3 scripts/profile-auth-vertical-css-once.py
+
+      - name: Verify focused profile tests
+        run: npx vitest run src/__tests__/MemberProfilePage.test.tsx
+
+      - name: Verify protected runtime integrity
+        run: npm run check:runtime
+
+      - name: Verify Cloudflare Pages build
+        run: npm run build:pages
+
+      - name: Verify only intended source files changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --name-only -- src | sort > /tmp/changed-source.txt
+          cat > /tmp/allowed-source.txt <<'EOF'
+          src/__tests__/MemberProfilePage.test.tsx
+          src/feature-pages.css
+          EOF
+          sort -o /tmp/allowed-source.txt /tmp/allowed-source.txt
+          diff -u /tmp/allowed-source.txt /tmp/changed-source.txt
+
+      - name: Remove one-off files and commit verified change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/profile-auth-vertical-once.yml scripts/profile-auth-vertical-test-once.py scripts/profile-auth-vertical-css-once.py
+          git add src/__tests__/MemberProfilePage.test.tsx src/feature-pages.css
+          git commit -m 'Stack profile login buttons vertically'
+          git push origin HEAD:style/profile-auth-vertical-20260915
