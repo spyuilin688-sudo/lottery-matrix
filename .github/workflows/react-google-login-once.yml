@@ -1,0 +1,72 @@
+name: React Google login once
+
+on:
+  push:
+    branches:
+      - fix/react-google-login-20260915
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/react-google-login-20260915
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply exact source refactor
+        run: python3 scripts/react-google-login-once.py
+
+      - name: Run focused auth and profile tests only
+        run: >-
+          npx vitest run
+          src/__tests__/ProfileGoogleLoginOwnership.test.ts
+          src/__tests__/MemberProfilePage.test.tsx
+          src/auth/__tests__/google-auth.test.ts
+          src/auth/__tests__/google-logout.test.ts
+          src/auth/__tests__/google-member-session-bridge.test.tsx
+          src/auth/__tests__/member-page-guard.test.ts
+
+      - name: Verify protected runtime integrity
+        run: npm run check:runtime
+
+      - name: Verify only intended files changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --name-only | sort > /tmp/changed.txt
+          cat > /tmp/allowed.txt <<'EOF'
+          src/__tests__/MemberProfilePage.test.tsx
+          src/auth/google-auth-entry.ts
+          src/feature-pages.css
+          src/features/MemberPages.tsx
+          src/main.tsx
+          EOF
+          sort -o /tmp/allowed.txt /tmp/allowed.txt
+          diff -u /tmp/allowed.txt /tmp/changed.txt
+
+      - name: Remove one-off runner and commit verified refactor
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/react-google-login-once.yml scripts/react-google-login-once.py
+          git add src/__tests__/MemberProfilePage.test.tsx src/auth/google-auth-entry.ts src/feature-pages.css src/features/MemberPages.tsx src/main.tsx
+          git commit -m "Move Google login into React profile flow"
+          git push origin HEAD:fix/react-google-login-20260915
