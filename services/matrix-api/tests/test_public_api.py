@@ -114,6 +114,16 @@ def test_health_returns_503_when_database_probe_fails(monkeypatch) -> None:
     }
 
 
+def _expected_tinyfish_status() -> dict:
+    return {
+        "configured": False,
+        "fetchEnabled": True,
+        "browserEnabled": False,
+        "browserMaxDurationSeconds": 60,
+        "lastFallbacks": [],
+    }
+
+
 def test_jobs_status_returns_repository_operational_rows(monkeypatch) -> None:
     monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
     repository = OperationalRepository()
@@ -127,7 +137,10 @@ def test_jobs_status_returns_repository_operational_rows(monkeypatch) -> None:
     )
 
     assert status == 200
-    assert payload == {"items": repository.status_rows}
+    assert payload == {
+        "items": repository.status_rows,
+        "tinyfish": _expected_tinyfish_status(),
+    }
     assert repository.status_reads == 1
 
 
@@ -173,7 +186,10 @@ def test_jobs_status_accepts_the_configured_header_token(monkeypatch) -> None:
     )
 
     assert status == 200
-    assert payload == {"items": repository.status_rows}
+    assert payload == {
+        "items": repository.status_rows,
+        "tinyfish": _expected_tinyfish_status(),
+    }
     assert repository.status_reads == 1
 
 
