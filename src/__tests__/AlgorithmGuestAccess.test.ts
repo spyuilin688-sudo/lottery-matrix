@@ -46,7 +46,7 @@ beforeEach(() => {
   sdk.rpc.mockReset().mockResolvedValue({ data: response, error: null });
 });
 
-test('未登入只保留探索二期與天衡三期基本查詢', async () => {
+test('未登入只保留探索二期基本查詢', async () => {
   await expect(fetchExploreList({
     lottery: '今彩539',
     numberOrder: '依號碼由小到大排序',
@@ -59,6 +59,12 @@ test('未登入只保留探索二期與天衡三期基本查詢', async () => {
     sameCode: false,
   })).resolves.toBeTruthy();
 
+  expect(sdk.rpc.mock.calls.map(([name]) => name)).toEqual([
+    'matrix_explore_list',
+  ]);
+});
+
+test('未登入不能使用天衡三期', async () => {
   await expect(fetchTianhengList({
     lottery: '今彩539',
     numberOrder: '依號碼由小到大排序',
@@ -69,12 +75,9 @@ test('未登入只保留探索二期與天衡三期基本查詢', async () => {
     roadTypes: ['加減'],
     selectedStreaks: ['準5進6'],
     sameCode: false,
-  })).resolves.toBeTruthy();
+  })).rejects.toMatchObject({ code: 'AUTH_REQUIRED' });
 
-  expect(sdk.rpc.mock.calls.map(([name]) => name)).toEqual([
-    'matrix_explore_list',
-    'matrix_tianheng_list',
-  ]);
+  expect(sdk.rpc).not.toHaveBeenCalled();
 });
 
 test('未登入即使免費會員開關開啟也不能直接使用探索七期與十三期', async () => {
