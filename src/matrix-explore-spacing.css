@@ -1021,24 +1021,6 @@
   row-gap: 0;
 }
 
-.matrix-tiangong-screen .tiangong-general-settings .setting-grid > * + * {
-  margin-top: 7px;
-}
-
-.matrix-tiangong-screen .tiangong-general-settings .setting-grid > label:first-child + label {
-  margin-top: 10px;
-}
-
-.matrix-tiangong-screen .tiangong-general-settings .tiangong-advanced-divider {
-  box-sizing: border-box;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--pwa-frame-secondary);
-}
-
-.matrix-tiangong-screen .tiangong-general-settings .tiangong-advanced-divider + .tiangong-advanced-row {
-  margin-top: 4px;
-}
-
 .matrix-tiangong-screen .tiangong-general-settings .tiangong-advanced-panel {
   width: 100%;
   margin-top: 0;
@@ -1072,9 +1054,9 @@
 }
 
 .matrix-tiangong-screen .tiangong-stage-settings .tiangong-stage-block + .tiangong-stage-block {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--pwa-frame-divider);
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--pwa-frame-secondary);
 }
 
 @media (min-width: 40rem) {
