@@ -14,6 +14,10 @@ export function hasLineSession(session: Session | null) {
   ));
 }
 
+export function hasMemberSession(session: Session | null) {
+  return Boolean(session?.access_token && session.user?.id);
+}
+
 /** Check before changing the screen or shortcut state, so denial keeps the origin. */
 export function useLinePageEntry() {
   const { alert } = useAppDialog();
@@ -38,7 +42,7 @@ export function useLinePageEntry() {
     void withDeadline(() => client.auth.getSession(), { signal: controller.signal }).then(({ data, error }) => {
       if (controller.signal.aborted) return;
       if (error && !authEventObserved) throw error;
-      if (hasLineSession(authEventObserved ? latestSession : data.session)) enter();
+      if (hasMemberSession(authEventObserved ? latestSession : data.session)) enter();
       else void alert({ title: '請先登入', description: `請先登入後再使用 ${title}` });
     }).catch(() => {
       if (!controller.signal.aborted) void alert({ title: '登入狀態確認失敗', description: '請稍後再試一次。' });
@@ -79,7 +83,7 @@ export function LinePageGuard({ title, onNavigate, children }: {
     };
     const acceptSession = (session: Session | null) => {
       if (!active || denied) return;
-      if (hasLineSession(session)) setAccess('allowed');
+      if (hasMemberSession(session)) setAccess('allowed');
       else deny();
     };
 
