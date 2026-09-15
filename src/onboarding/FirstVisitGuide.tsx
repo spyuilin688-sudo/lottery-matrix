@@ -35,7 +35,7 @@ export function FirstVisitGuide({ enabled, onNavigate }: { enabled: boolean; onN
         title: <SubscriptionCopy formal="免費註冊會員" alternative="使用教學" />,
         description: <SubscriptionCopy
           formal="點擊下方「我的」，可使用 LINE 或 Google 登入。新註冊 LINE 會員可使用 Pro 演算法：天衍 2 天、天工 1 天。點擊首頁下方的 Matrix Core，即可進入探索。"
-          alternative="Matrix 探索二期與天衡三期基本查詢可直接使用；較高期數、完整範圍、天衍與天工請先使用 LINE 或 Google 登入。新註冊 LINE 會員另有天衍 2 天、天工 1 天試用。"
+          alternative="Matrix 探索二期基本查詢可直接使用；天衡、較高期數、完整範圍、天衍與天工請先使用 LINE 或 Google 登入。新註冊 LINE 會員另有天衍 2 天、天工 1 天試用。"
         />,
         confirmLabel: <SubscriptionCopy formal="免費註冊" alternative="開始使用" />,
         cancelLabel: '知道了',
