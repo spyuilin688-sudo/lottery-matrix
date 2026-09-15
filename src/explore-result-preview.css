@@ -250,7 +250,6 @@
 }
 
 .explore-validation-card {
-  --explore-validation-summary-border-color: #e6b76a;
   --explore-validation-summary-font-size: 13px;
   --explore-validation-row-min-height: clamp(27px, 7.18vw, 28px);
   position: relative;
@@ -721,8 +720,9 @@
   color: #f2f5f8;
 }
 
-.explore-validation-summary-separator {
-  color: var(--explore-validation-summary-border-color);
+.explore-validation-summary-separator,
+.matrix-explore-main-screen .validation-summary-divider {
+  color: var(--explore-validation-summary-border-color, #e6b76a);
   font-style: normal;
 }
 
