@@ -780,7 +780,7 @@
 /* Explore title card: visible right-side planet body with restrained orbital traces. */
 .feature-brand-header[data-product-header="Matrix 探索"] .product-header__frame {
   background-image:
-    radial-gradient(circle at 91% 50%, rgba(166, 132, 57, .24) 0 25%, rgba(118, 88, 29, .18) 25.8% 29%, rgba(239, 204, 111, .32) 29.7% 30.45%, rgba(111, 79, 24, .10) 31.2% 34%, transparent 35%),
+    radial-gradient(circle at 91% 50%, rgba(166, 132, 57, .24) 0 25%, rgba(118, 88, 29, .38) 25.8% 29%, rgba(239, 204, 111, .32) 29.7% 30.45%, rgba(111, 79, 24, .10) 31.2% 34%, transparent 35%),
     radial-gradient(circle at 96% 30%, rgba(244, 210, 120, .16) 0 7%, transparent 22%),
     radial-gradient(ellipse 78% 37% at 91% 53%, transparent 58%, rgba(229, 187, 87, .24) 59% 59.7%, transparent 61%),
     linear-gradient(157deg, transparent 0 51.5%, rgba(217, 172, 72, .16) 51.85% 52.2%, transparent 52.65%),
