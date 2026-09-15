@@ -18,6 +18,10 @@ DEFAULT_ENDPOINT_LIMITS = {
     "public_compute": (60, 10.0),
     "unauthorized": (30, 2.0),
 }
+DATABASE_POLICY_CATEGORIES = {
+    "public_read": "public_query",
+    "public_compute": "public_query",
+}
 
 
 class EndpointRateLimiter:
@@ -72,6 +76,11 @@ def request_category(target: str, method: str = "GET"):
     return "unauthorized"
 
 
+def database_policy_category(category: str) -> str:
+    """Map local endpoint cost classes to the canonical database policy taxonomy."""
+    return DATABASE_POLICY_CATEGORIES.get(category, category)
+
+
 class SecurityMonitor:
     def __init__(self, url, key, *, enforce=False, trust_direct_peer=False, client=None,
                  queue_size=256, observation_timeout=0.75, endpoint_limiter=None):
@@ -100,8 +109,9 @@ class SecurityMonitor:
 
     def _enqueue(self, category, source, trusted, outcome):
         future = Future()
+        payload_category = database_policy_category(category)
         try:
-            self._queue.put_nowait(({"p_category": category, "p_source": source,
+            self._queue.put_nowait(({"p_category": payload_category, "p_source": source,
                                      "p_trusted": trusted, "p_outcome": outcome}, future))
         except Full:
             self.dropped += 1
