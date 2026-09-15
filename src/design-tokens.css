@@ -38,7 +38,7 @@
   --pwa-frame-primary: var(--home-frame-bright);
   --pwa-frame-secondary: var(--home-frame-gold);
   --pwa-frame-tertiary: var(--home-frame-muted);
-  --pwa-frame-divider: color-mix(in srgb, var(--home-frame-gold) 18%, transparent);
+  --pwa-frame-divider: color-mix(in srgb, var(--home-frame-gold) 38%, transparent);
   --pwa-frame-radius: var(--home-frame-radius);
   --pwa-control-surface: var(--lottery-neutral-950);
   --pwa-control-selected: color-mix(in srgb, var(--home-frame-gold) 6%, var(--lottery-neutral-950));
