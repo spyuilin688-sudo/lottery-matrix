@@ -464,17 +464,9 @@ async function cachedMatrixResultRpc<T extends { lottery: NumberBallLottery; ana
   request: unknown,
 ): Promise<T> {
   const client = getSupabaseClient();
-  // Visitor-eligible RPCs still rely on their database rules to decide
-  // access to the requested period and range.
-  const sessionOptions = {
-    allowGuest: (
-      (name === 'matrix_explore_list' || name === 'matrix_explore_validation')
-        && (request as { explorePeriods?: number }).explorePeriods === 2
-    ) || (
-      (name === 'matrix_tianheng_list' || name === 'matrix_tianheng_validation')
-        && (request as { explorePeriods?: number }).explorePeriods === 3
-    ),
-  };
+  // Algorithm reads can start without a member session. The database RPCs remain
+  // authoritative for the global free-access switch and feature entitlements.
+  const sessionOptions = { allowGuest: true };
   const scope = await readAlgorithmCacheScope(client, sessionOptions);
   const permissionSettings = await refreshPermissionSettings();
   const assertCurrentSession = async () => {
