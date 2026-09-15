@@ -2,6 +2,8 @@
 
 /* Matrix Explore: single active responsive layout source for the supplied reference. */
 .matrix-explore-main-screen {
+  --pwa-frame-divider: color-mix(in srgb, var(--home-frame-gold) 28%, transparent);
+  --explore-validation-summary-border-color: var(--pwa-frame-secondary);
   --mx-history-heading-height: 60px;
   --mx-history-heading-padding-y: 10px;
   --mx-history-heading-padding-x: 12px;
@@ -763,8 +765,8 @@
 
 .matrix-explore-main-screen .result-summary small {
   margin-top: 0;
+  color: #c6c0b8;
   font-size: clamp(.5rem, 2.2vw, .625rem);
-  opacity: .72;
 }
 
 .matrix-explore-main-screen .explore-result-disclaimer {
