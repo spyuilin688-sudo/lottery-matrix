@@ -10,6 +10,7 @@ from app.repositories.analysis_repository import (
     JOB_NAME_BY_LOTTERY,
     create_supabase_repository,
 )
+from app.scraping.resilient_source import wrap_source_with_tinyfish
 from app.scraping.sources import LatestDrawSource
 from app.services.draw_refresh import DrawRefreshService, DrawSource
 from app.settings import load_settings
@@ -198,7 +199,12 @@ def main() -> int:
         settings.supabase_secret_key,
     )
     with httpx.Client() as client:
-        result = run_fantasy5_crawler(repository, LatestDrawSource(client))
+        source = wrap_source_with_tinyfish(
+            LatestDrawSource(client),
+            client,
+            settings,
+        )
+        result = run_fantasy5_crawler(repository, source)
     print(f'{result["lottery"]} {result["drawPeriod"] or "-"} {result["status"]}')
     return 0
 
