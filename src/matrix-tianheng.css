@@ -27,19 +27,12 @@
   grid-column: 1;
 }
 
-.matrix-tianheng-screen .tianheng-summary-lines .tianyan-validation-summary-row:first-child > span:nth-child(2),
-.matrix-tianheng-screen .tianheng-summary-lines .tianyan-validation-summary-row:first-child > span:nth-child(4) {
-  display: contents;
-}
-
-.matrix-tianheng-screen .tianheng-summary-lines .tianyan-validation-summary-row:first-child > span:nth-child(2) > .validation-summary-primary {
+.matrix-tianheng-screen .tianheng-summary-lines .tianyan-validation-summary-row:first-child > span:nth-child(2) {
+  display: grid;
   grid-row: 1;
-  grid-column: 2;
-}
-
-.matrix-tianheng-screen .tianheng-summary-lines .tianyan-validation-summary-row:first-child > span:nth-child(2) > .validation-summary-position {
-  grid-row: 1;
-  grid-column: 4;
+  grid-column: 2 / 6;
+  grid-template-columns: subgrid;
+  align-items: baseline;
 }
 
 .matrix-tianheng-screen .tianheng-summary-lines .tianyan-validation-summary-row:first-child > span:nth-child(3) {
@@ -47,14 +40,12 @@
   grid-column: 6;
 }
 
-.matrix-tianheng-screen .tianheng-summary-lines .tianyan-validation-summary-row:first-child > span:nth-child(4) > .validation-summary-primary {
+.matrix-tianheng-screen .tianheng-summary-lines .tianyan-validation-summary-row:first-child > span:nth-child(4) {
+  display: grid;
   grid-row: 1;
-  grid-column: 7;
-}
-
-.matrix-tianheng-screen .tianheng-summary-lines .tianyan-validation-summary-row:first-child > span:nth-child(4) > .validation-summary-position {
-  grid-row: 1;
-  grid-column: 9;
+  grid-column: 7 / 11;
+  grid-template-columns: subgrid;
+  align-items: baseline;
 }
 
 .matrix-tianheng-screen .tianheng-summary-lines .tianyan-validation-summary-row:nth-child(2) {
