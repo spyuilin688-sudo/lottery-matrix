@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { DetailCard, paymentStatusLabels, ProfileDetailShell } from "./MemberPages";
+import { paymentStatusLabels, ProfileDetailShell } from "./MemberPages";
 import type { Navigate } from "./navigation";
 import { usePaymentHistory } from "./use-payment-history";
 import "./payment-history.css";
@@ -61,7 +61,9 @@ export function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
 
   return (
     <ProfileDetailShell title="付款紀錄" onNavigate={onNavigate} className="payment-ledger-screen">
-      <DetailCard title="付款紀錄">{content}</DetailCard>
+      <section className="panel detail-card payment-ledger-card" aria-label="付款紀錄">
+        {content}
+      </section>
     </ProfileDetailShell>
   );
 }
