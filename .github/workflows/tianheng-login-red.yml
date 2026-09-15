@@ -1,18 +1,97 @@
-name: Tianheng login red
+name: Tianheng login apply once
 on:
   push:
     branches:
       - fix/tianheng-require-login-20260915
 permissions:
-  contents: read
+  contents: write
 jobs:
   focused:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npx vitest run src/__tests__/AlgorithmGuestAccess.test.ts --reporter=verbose
+      - name: Install dependencies
+        run: npm ci
+      - name: Require login for Tianheng
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise RuntimeError(f'{path}: expected one match, found {count}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          replace_once(
+              'src/matrix-algorithm-api.ts',
+              """  // Keep the legacy public basics available without an account. Higher periods,
+  // full range, Tianyan and Tiangong require an authenticated member session;
+  // the database remains authoritative for that member's actual entitlement.
+  const sessionOptions = {
+    allowGuest: (
+      (name === 'matrix_explore_list' || name === 'matrix_explore_validation')
+        && (request as { explorePeriods?: number }).explorePeriods === 2
+    ) || (
+      (name === 'matrix_tianheng_list' || name === 'matrix_tianheng_validation')
+        && (request as { explorePeriods?: number }).explorePeriods === 3
+    ),
+  };
+""",
+              """  // Only the legacy Matrix Explore two-period read remains public. Tianheng,
+  // higher Explore periods, full range, Tianyan and Tiangong require a member session;
+  // the database remains authoritative for that member's actual entitlement.
+  const sessionOptions = {
+    allowGuest: (name === 'matrix_explore_list' || name === 'matrix_explore_validation')
+      && (request as { explorePeriods?: number }).explorePeriods === 2,
+  };
+""",
+          )
+
+          replace_once(
+              'src/onboarding/FirstVisitGuide.tsx',
+              'alternative="Matrix 探索二期與天衡三期基本查詢可直接使用；較高期數、完整範圍、天衍與天工請先使用 LINE 或 Google 登入。新註冊 LINE 會員另有天衍 2 天、天工 1 天試用。"',
+              'alternative="Matrix 探索二期基本查詢可直接使用；天衡、較高期數、完整範圍、天衍與天工請先使用 LINE 或 Google 登入。新註冊 LINE 會員另有天衍 2 天、天工 1 天試用。"',
+          )
+
+          replace_once(
+              'src/__tests__/FirstVisitGuideGuest.test.tsx',
+              "  expect(dialog.textContent).toContain('探索二期');\n  expect(dialog.textContent).toContain('LINE 或 Google 登入');\n",
+              "  expect(dialog.textContent).toContain('探索二期');\n  expect(dialog.textContent).toContain('天衡、較高期數');\n  expect(dialog.textContent).not.toContain('天衡三期基本查詢可直接使用');\n  expect(dialog.textContent).toContain('LINE 或 Google 登入');\n",
+          )
+
+          Path('supabase/migrations/20260915154500_tianheng_requires_login.sql').write_text(
+              """-- Tianheng is member-only. Matrix Explore two-period remains the only anonymous algorithm read.
+revoke execute on function public.matrix_tianheng_list(jsonb) from anon;
+revoke execute on function public.matrix_tianheng_validation(jsonb) from anon;
+""",
+              encoding='utf-8',
+          )
+          PY
+      - name: Focused access tests
+        run: npx vitest run src/__tests__/AlgorithmGuestAccess.test.ts src/__tests__/MatrixExploreGuest.test.tsx src/__tests__/FirstVisitGuideGuest.test.tsx src/matrix-algorithm-api.test.ts --reporter=verbose
+      - name: Protected runtime integrity
+        run: npm run check:runtime
+      - name: Cloudflare Pages production build
+        run: npm run build:pages
+      - name: Commit verified change and remove one-off workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/tianheng-login-red.yml
+          git add src/matrix-algorithm-api.ts src/onboarding/FirstVisitGuide.tsx src/__tests__/FirstVisitGuideGuest.test.tsx src/__tests__/AlgorithmGuestAccess.test.ts supabase/migrations/20260915154500_tianheng_requires_login.sql
+          git commit -m 'Require login for Tianheng'
+          git push origin HEAD:fix/tianheng-require-login-20260915
