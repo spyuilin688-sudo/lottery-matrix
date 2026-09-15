@@ -22,6 +22,11 @@
   gap: 8px;
 }
 
+.activation-code-screen .referral-code-label,
+.activation-code-screen .referral-input-card > h2 {
+  display: none;
+}
+
 .activation-code-screen .referral-code-value {
   font-size: 14px;
 }
@@ -94,5 +99,6 @@
 
 .activation-code-screen .activation-card-toggle {
   min-height: 32px;
+  border-bottom: 1px solid var(--pwa-frame-divider);
 }
 
