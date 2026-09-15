@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { apiStatusInventory } from './api-status-inventory';
 
 describe('api status inventory', () => {
-  it('lists every current Supabase, GitHub and Railway endpoint once', () => {
+  it('lists every current Supabase, GitHub, Railway and TinyFish endpoint once', () => {
     expect(apiStatusInventory).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: 'admin-api', location: 'Supabase', endpoint: '/admin/api/_healthcheck' }),
       expect.objectContaining({ id: 'supabase-watchdog-heartbeat', location: 'Supabase' }),
@@ -20,11 +20,12 @@ describe('api status inventory', () => {
         location: 'GitHub',
         endpoint: '/repos/spyuilin688-sudo/lottery-matrix/actions/workflows/fantasy5-crawler.yml',
       }),
+      expect.objectContaining({ id: 'tinyfish-fallback', location: 'TinyFish', endpoint: '/jobs/status#tinyfish', checkMode: 'service' }),
       expect.objectContaining({ id: 'railway-health', location: 'Railway', endpoint: '/health' }),
       expect.objectContaining({ id: 'railway-jobs-recover', endpoint: '/jobs/recover', checkMode: 'service' }),
       expect.objectContaining({ id: 'railway-number-reference', endpoint: '/api/matrix/number-reference' }),
     ]));
-    expect(apiStatusInventory).toHaveLength(65);
+    expect(apiStatusInventory).toHaveLength(66);
     expect(new Set(apiStatusInventory.map((item) => item.id)).size).toBe(apiStatusInventory.length);
     expect(apiStatusInventory.every((item) => item.name && item.group && item.endpoint)).toBe(true);
   });
