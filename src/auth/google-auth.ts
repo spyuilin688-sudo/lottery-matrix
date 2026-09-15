@@ -1,13 +1,12 @@
 import { getSupabaseClient } from "../lib/supabase";
 
 export async function signInWithGoogle() {
-  const redirectTo = `${window.location.origin}${window.location.pathname}`;
+  const redirectTo = new URL("/", window.location.origin).href;
   const { error } = await getSupabaseClient().auth.signInWithOAuth({
     provider: "google",
     options: {
       redirectTo,
       queryParams: {
-        access_type: "offline",
         prompt: "select_account",
       },
     },
