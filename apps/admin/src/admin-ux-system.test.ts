@@ -128,7 +128,7 @@ describe('admin UX system pass', () => {
     expect(toolbarAction.get('height')).toBe('30px');
     expect(toolbarAction.get('font-size')).toBe('12px');
     expect(declarations(adminCss, '.formActions button').get('min-height')).toBe('32px');
-    expect(declarations(operationsCss, '.actions button,\n.menu').get('min-height')).toBe('40px');
+    expect(declarations(adminCss, '.actions button,.menu').get('height')).toBe('40px');
   });
 
   it('uses an eight-pixel section rhythm for page toolbars, panels, and expandable forms', () => {
