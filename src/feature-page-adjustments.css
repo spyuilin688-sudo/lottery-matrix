@@ -746,6 +746,7 @@
 .matrix-explore-main-screen:not(.matrix-tiangong-screen) .explore-settings .advanced-panel > label {
   box-sizing: border-box;
   min-height: 39px;
+  margin: 0;
   padding: 5px 6px;
   border: 0;
   border-radius: 0;
@@ -753,7 +754,7 @@
   box-shadow: none;
 }
 
-.matrix-explore-main-screen:not(.matrix-tiangong-screen) .explore-settings .setting-grid > :not(:last-child),
+.matrix-explore-main-screen .explore-settings .setting-grid > :not(:last-child),
 .matrix-explore-main-screen:not(.matrix-tiangong-screen) .explore-settings .advanced-panel > :not(:last-child) {
   border-bottom: 1px solid var(--pwa-frame-divider);
 }
