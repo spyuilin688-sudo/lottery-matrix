@@ -22,7 +22,7 @@ import { usePaymentHistory } from "./use-payment-history";
 /** Keep the approved raster artwork intact; mask sample text and the sample photo.
  *  All visible member data and interactive labels are rendered by ProfilePage.
  */
-function MembershipArtwork({ showSubscription }: { showSubscription: boolean }) {
+function MembershipArtwork({ showSubscription, maskAuthPill }: { showSubscription: boolean; maskAuthPill: boolean }) {
   const maskId = useId();
   const headingClipId = `${maskId}-heading`;
   const informationClipId = `${maskId}-information`;
@@ -36,7 +36,9 @@ function MembershipArtwork({ showSubscription }: { showSubscription: boolean }) 
             <circle cx="225" cy="216" r="111" fill="black" />
             <rect x="388" y="132" width="490" height="81" fill="black" />
             <rect x="388" y="235" width="516" height="57" fill="black" />
-            <rect x="1280" y="180" width="145" height="67" fill="black" />
+            {maskAuthPill
+              ? <rect className="profile-auth-pill-mask" x="1235" y="145" width="285" height="110" rx="55" fill="black" />
+              : <rect className="profile-auth-pill-mask" x="1280" y="180" width="145" height="67" fill="black" />}
             <rect x="145" y="423" width="410" height="84" fill="black" />
             <rect x="320" y="528" width="473" height="207" fill="black" />
             <rect x="906" y="528" width="430" height="207" fill="black" />
@@ -397,7 +399,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   return (
     <FeatureShell title="我的" onNavigate={onNavigate} active="我的" className="profile-screen" compactHeader>
       <div className="membership-card-stack">
-        <MembershipArtwork showSubscription={subscriptionPurchaseVisible} />
+        <MembershipArtwork showSubscription={subscriptionPurchaseVisible} maskAuthPill={authState === "anonymous" || authState === "signing-in"} />
         <section className="panel membership-card profile-card" data-auth-layout={authState === "anonymous" || authState === "signing-in" ? "multiple" : "single"}>
           <div className="profile-avatar">
             <img

@@ -253,6 +253,14 @@ describe("ProfilePage member API", () => {
     expect(cardStyle.getPropertyValue("--profile-auth-zone-width").trim()).toBe("15.48cqw");
     expect(parseFloat(getComputedStyle(lineLogin).minHeight)).toBe(32);
     expect(parseFloat(getComputedStyle(googleLogin).minHeight)).toBe(32);
+    expect(getComputedStyle(lineLogin).borderTopStyle).toBe("solid");
+    expect(getComputedStyle(googleLogin).borderTopStyle).toBe("solid");
+    const authPillMask = document.querySelector<SVGRectElement>(".membership-reference-art .profile-auth-pill-mask");
+    expect(authPillMask).not.toBeNull();
+    expect(authPillMask?.getAttribute("x")).toBe("1235");
+    expect(authPillMask?.getAttribute("y")).toBe("145");
+    expect(authPillMask?.getAttribute("width")).toBe("285");
+    expect(authPillMask?.getAttribute("height")).toBe("110");
   });
 
   it("Google 登入啟動後維持登入中，交由 Supabase OAuth 接手導向", async () => {
