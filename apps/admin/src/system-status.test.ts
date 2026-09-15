@@ -32,7 +32,7 @@ describe('system status client', () => {
       { lottery: '今彩539', ok: true, period: '123', records: 2 }, { lottery: '六合彩', ok: false }, { lottery: '天天樂', ok: true, skipped: true },
     ] } };
     const facts = getServiceEvidenceFacts(base);
-    expect(facts).toEqual(expect.arrayContaining([{ label: '今彩539', value: '123 期 · 2 筆 · 通過' }, { label: '六合彩', value: '檢查未通過' }, { label: '天天樂', value: '沒有驗證樣本' }]));
+    expect(facts).toEqual(expect.arrayContaining([{ label: '今彩539', value: '123 期 · 測試條件 2筆 · 通過' }, { label: '六合彩', value: '檢查未通過' }, { label: '天天樂', value: '沒有驗證樣本' }]));
     expect(JSON.stringify(facts)).not.toContain('private');
   });
   it('loads the system status endpoint', async () => {
