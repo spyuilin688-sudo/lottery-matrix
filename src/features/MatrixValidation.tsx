@@ -712,7 +712,7 @@ export function TianhengValidationProcess({
                   <span className="tianyan-validation-summary-row" data-testid="tianheng-summary-row">
                     <span>開</span>
                     <span className="validation-summary-primary">{item.firstNumber}{" "}</span>
-                    <span>第 <i className="validation-summary-position">{item.firstLockedPosition}</i> 顆、同期<i className="validation-summary-primary">{item.secondNumber}</i> 第 <i className="validation-summary-position">{item.secondLockedPosition}</i> 顆</span>
+                    <span>第 <i className="validation-summary-position">{item.firstLockedPosition}</i> 顆、同期{" "}<i className="validation-summary-primary">{item.secondNumber}</i> 第 <i className="validation-summary-position">{item.secondLockedPosition}</i> 顆</span>
                   </span>
                   <span className="tianyan-validation-summary-row" data-testid="tianheng-summary-row">
                     {summaryDirection()}
