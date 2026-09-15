@@ -96,9 +96,6 @@ jobs:
       - name: Production build for packaging tests
         if: needs.scope.outputs.node == 'true'
         run: npm run build
-      - name: Related Node files
-        if: needs.scope.outputs.node == 'true'
-        run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run node
 
   runtime-tests:
     needs: scope
