@@ -29,7 +29,9 @@ def _worker_outcome(result: dict[str, Any]) -> str:
     status = str(result.get("status") or "")
     if status == "complete":
         return "already-analyzed" if result.get("skipped") else "analysis-completed"
-    if status in {"already-acquired", "already-analyzed"}:
+    if status == "already-acquired":
+        return "already-acquired"
+    if status == "already-analyzed":
         return "already-analyzed"
     if status in {"not-acquired", "not-due", "waiting-draw"}:
         return "no-new-draw"
@@ -37,7 +39,7 @@ def _worker_outcome(result: dict[str, Any]) -> str:
         return "skipped"
     if status == "notification-only":
         return status
-    return "analysis-completed" if status == "running" else "skipped"
+    return "running" if status == "running" else "skipped"
 
 
 def _execution_version() -> str:

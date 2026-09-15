@@ -47,7 +47,7 @@ def test_preserves_distinct_successful_worker_outcomes() -> None:
 
     assert [(item["lottery"], item["period"], item["outcome"]) for item in result["runs"]] == [
         ("今彩539", None, "no-new-draw"),
-        ("六合彩", "115000221", "already-analyzed"),
+        ("六合彩", "115000221", "already-acquired"),
         ("大樂透", "115000222", "repair-completed"),
     ]
 
