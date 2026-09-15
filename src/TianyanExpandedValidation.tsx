@@ -1,22 +1,13 @@
-import { Fragment, useEffect, useLayoutEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { ExploreValidationSummary } from "./ExploreValidationSummary";
 import { fetchLotteryHistory, type LotteryDrawRecord } from "./lottery-api";
-import {
-  fetchTianyanList,
-  fetchTianyanValidation,
-  type TianyanApiRow,
-  type TianyanValidation,
-  type TianyanRuleValidation,
+import type {
+  MatrixNumberOrder,
+  TianyanApiRow,
+  TianyanRuleValidation,
+  TianyanValidation,
 } from "./matrix-algorithm-api";
 import type { NumberBallLottery } from "./NumberBall";
-
-type ActiveTianyanTarget = {
-  itemId: string;
-  button: HTMLElement;
-  section: HTMLElement;
-  root: HTMLElement;
-};
 
 type FormulaModel = {
   position: number;
@@ -39,20 +30,6 @@ export type TianyanPatchedValidationRow = {
     | { kind: "result"; numbers: number[] };
 };
 
-type ResolvedTianyanLayout = {
-  lottery: NumberBallLottery;
-  item: TianyanApiRow;
-  validation: TianyanValidation;
-  historyNumbers: Map<string, Array<string | number>>;
-};
-
-type PortalHosts = {
-  summary: HTMLElement;
-  groups: HTMLElement;
-};
-
-const TIANyan_LOTTERIES: NumberBallLottery[] = ["今彩539", "天天樂", "六合彩", "大樂透"];
-
 function displayNumber(value: string | number) {
   return String(value).padStart(2, "0");
 }
@@ -68,41 +45,8 @@ function displayValidationPeriod(lottery: NumberBallLottery, value: string | num
   return normalizePeriodKey(lottery, value);
 }
 
-function findActiveTianyanTarget(): ActiveTianyanTarget | null {
-  const root = document.querySelector<HTMLElement>(".matrix-tianyan-screen");
-  if (!root) return null;
-  const section = root.querySelector<HTMLElement>('section[aria-label="天衍驗證過程"]');
-  const button = root.querySelector<HTMLElement>(
-    '.road-result-row[aria-expanded="true"][aria-label^="收合版路 "]',
-  );
-  if (!section || !button) return null;
-  const match = button.getAttribute("aria-label")?.match(/^收合版路\s+(.+)$/);
-  if (!match?.[1]) return null;
-  return { itemId: match[1], button, section, root };
-}
-
-function readLottery(section: HTMLElement): NumberBallLottery | null {
-  const lottery = section.dataset.lottery as NumberBallLottery | undefined;
-  return lottery && TIANyan_LOTTERIES.includes(lottery) ? lottery : null;
-}
-
-function readExploreDateOffset(root: HTMLElement): 0 | 1 | 2 | null {
-  const selected = Array.from(root.querySelectorAll<HTMLButtonElement>('button[data-selected="true"]'))
-    .map((button) => button.textContent?.trim() ?? "")
-    .find((label) => /^(本日|昨日|前日)/.test(label));
-  if (!selected) return null;
-  if (selected.startsWith("前日")) return 2;
-  if (selected.startsWith("昨日")) return 1;
-  return 0;
-}
-
-function readConsecutive(button: HTMLElement) {
-  const text = button.querySelector<HTMLElement>(".result-consecutive")?.textContent?.replace(/\s+/g, "").trim();
-  return text && /^準\d+進\d+$/.test(text) ? text : null;
-}
-
-function historyRecordNumbers(record: LotteryDrawRecord, item: TianyanApiRow) {
-  const values = item.numberOrder === "依實際開獎順序排序"
+function historyRecordNumbers(record: LotteryDrawRecord, numberOrder: MatrixNumberOrder) {
+  const values = numberOrder === "依實際開獎順序排序"
     ? record.drawOrderNumbers ?? []
     : record.sortedNumbers?.length ? record.sortedNumbers : record.numbers;
   return [...values];
@@ -110,13 +54,13 @@ function historyRecordNumbers(record: LotteryDrawRecord, item: TianyanApiRow) {
 
 function buildHistoryNumbers(
   lottery: NumberBallLottery,
-  item: TianyanApiRow,
+  numberOrder: MatrixNumberOrder,
   records: LotteryDrawRecord[],
 ) {
   const lookup = new Map<string, Array<string | number>>();
   records.forEach((record) => {
     const period = normalizePeriodKey(lottery, record.period ?? record.issue);
-    if (period) lookup.set(period, historyRecordNumbers(record, item));
+    if (period) lookup.set(period, historyRecordNumbers(record, numberOrder));
   });
   return lookup;
 }
@@ -204,6 +148,7 @@ export function buildTianyanHistoricalRows(
       right: { kind: "lock" },
     },
   }];
+
   for (const { rule, index } of matchedRules) {
     const periodKey = normalizePeriodKey(lottery, rule.validationPeriod);
     const numbers = periodKey === sourcePeriodKey
@@ -231,10 +176,7 @@ export function buildTianyanHistoricalRows(
       ...target.row.sourceNumbers,
       ...(!target.row.lockedNumbers.includes(rule.baseNumber) ? [rule.baseNumber] : []),
     ]);
-    target.row.right = appendFormula(
-      target.row.right,
-      formulaFromHistoricalRule(lottery, rule),
-    );
+    target.row.right = appendFormula(target.row.right, formulaFromHistoricalRule(lottery, rule));
   }
 
   return [
@@ -288,6 +230,7 @@ export function buildTianyanCurrentRows(
       right: { kind: "lock" },
     },
   }];
+
   for (const [index, rule] of [rule1, rule2].entries()) {
     const periodKey = normalizePeriodKey(lottery, rule.validationPeriod);
     const numbers = periodKey === sourcePeriodKey
@@ -317,6 +260,7 @@ export function buildTianyanCurrentRows(
     ]);
     target.row.right = appendFormula(target.row.right, currentFormula(rule));
   }
+
   return orderedRows
     .sort((left, right) => left.offset - right.offset || left.order - right.order)
     .map(({ row }) => row);
@@ -517,165 +461,216 @@ function PatchedValidationGroup({
   );
 }
 
-async function resolveTianyanLayout(target: ActiveTianyanTarget): Promise<ResolvedTianyanLayout | null> {
-  const lottery = readLottery(target.section);
-  const consecutive = readConsecutive(target.button);
-  if (!lottery || !consecutive) return null;
+type FallbackRow = {
+  key: string;
+  period: string;
+  numbers: Array<string | number>;
+  sourceNumber?: number;
+  hitNumbers?: number[];
+};
 
-  const detectedOffset = readExploreDateOffset(target.root);
-  const offsets: Array<0 | 1 | 2> = detectedOffset === null ? [0, 1, 2] : [detectedOffset];
-  let listResponse: Awaited<ReturnType<typeof fetchTianyanList>> | null = null;
-  let item: TianyanApiRow | undefined;
-
-  for (const exploreDateOffset of offsets) {
-    const candidate = await fetchTianyanList({
-      lottery,
-      exploreDateOffset,
-      selectedStreaks: [consecutive],
-      sameCode: false,
-    });
-    const matched = candidate.items.find((row) => row.id === target.itemId);
-    if (matched) {
-      listResponse = candidate;
-      item = matched;
-      break;
-    }
-  }
-  if (!listResponse || !item) return null;
-
-  const validationResponse = await fetchTianyanValidation(
-    {
-      lottery,
-      drawPeriod: listResponse.drawPeriod,
-      analysisVersion: listResponse.analysisVersion,
-    },
-    target.itemId,
+function FallbackValidationGroup({
+  lottery,
+  keyValue,
+  rows,
+  formulas,
+}: {
+  lottery: NumberBallLottery;
+  keyValue: string;
+  rows: FallbackRow[];
+  formulas: ReactNode[];
+}) {
+  return (
+    <div
+      className="explore-validation-group"
+      data-lottery={lottery}
+      data-road-type="複合版路"
+      data-row-count={rows.length}
+      data-wide-numbers={rows.some((row) => row.numbers.length >= 6) ? "true" : "false"}
+      key={keyValue}
+    >
+      <div className="explore-validation-issues explore-validation-numeric-text">
+        {rows.map((row) => (
+          <span className="explore-validation-issue" key={`${row.key}-period`}>
+            {displayValidationPeriod(lottery, row.period)}
+          </span>
+        ))}
+      </div>
+      <div className="explore-validation-numbers-card">
+        {rows.map((row) => (
+          <div className="explore-validation-draw-row explore-validation-number-row" key={`${row.key}-numbers`}>
+            <span className="explore-validation-numbers explore-validation-numeric-text">
+              {row.numbers.map(displayNumber).map((value, index) => {
+                const state = row.sourceNumber !== undefined && value === displayNumber(row.sourceNumber)
+                  ? "hit"
+                  : (row.hitNumbers ?? []).some((hit) => value === displayNumber(hit)) ? "step" : "";
+                const number = (
+                  <i className={state ? `explore-validation-number explore-validation-number--${state}` : "explore-validation-number"}>{value}</i>
+                );
+                return index === 6 && (lottery === "六合彩" || lottery === "大樂透") ? (
+                  <span className="explore-validation-special-number" key={`${value}-${index}`}>
+                    <i className="explore-validation-special-separator" aria-hidden="true">+</i>
+                    {number}
+                  </span>
+                ) : <Fragment key={`${value}-${index}`}>{number}</Fragment>;
+              })}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="explore-validation-formulas">
+        {rows.map((row, index) => (
+          <span className="explore-validation-formula-row" key={`${row.key}-formula`}>{formulas[index] ?? ""}</span>
+        ))}
+      </div>
+    </div>
   );
-  const validation = validationResponse.validation;
-
-  let historyNumbers = buildHistoryNumbers(lottery, item, await fetchLotteryHistory(lottery, 1000));
-  if (!hasRequiredPeriods(lottery, historyNumbers, validation)) {
-    historyNumbers = buildHistoryNumbers(lottery, item, await fetchLotteryHistory(lottery, 5000));
-  }
-  if (!hasRequiredPeriods(lottery, historyNumbers, validation)) return null;
-
-  return { lottery, item, validation, historyNumbers };
 }
 
-export function TianyanExpandedLayoutPatch({ active }: { active: boolean }) {
-  const [target, setTarget] = useState<ActiveTianyanTarget | null>(null);
-  const [resolved, setResolved] = useState<ResolvedTianyanLayout | null>(null);
-  const [hosts, setHosts] = useState<PortalHosts | null>(null);
+function fallbackFormula(
+  position: number,
+  baseNumber: number,
+  algorithmType: string,
+  ruleValue: number,
+  calculationResult: number,
+) {
+  return (
+    <span className="explore-validation-formula-expression">
+      <span className="explore-validation-formula-position">
+        <span>第</span><span>{position}</span><span>顆</span>
+      </span>
+      <span>{displayNumber(baseNumber)}</span>
+      {algorithmType.startsWith("合值")
+        ? <><span>合值</span><span>{ruleValue}</span></>
+        : <span>{`+${ruleValue}`}</span>}
+      <span>=</span><span>{displayNumber(calculationResult)}</span>
+    </span>
+  );
+}
 
-  useLayoutEffect(() => {
-    if (!active) {
-      setTarget(null);
-      return;
-    }
-    const updateTarget = () => {
-      const next = findActiveTianyanTarget();
-      setTarget((current) => (
-        current?.itemId === next?.itemId
-        && current?.button === next?.button
-        && current?.section === next?.section
-          ? current
-          : next
-      ));
-    };
-    updateTarget();
-    const observer = new MutationObserver(updateTarget);
-    observer.observe(document.body, {
-      subtree: true,
-      childList: true,
-      attributes: true,
-      attributeFilter: ["aria-expanded"],
-    });
-    return () => observer.disconnect();
-  }, [active]);
+function TianyanFallbackGroups({
+  lottery,
+  validation,
+}: {
+  lottery: NumberBallLottery;
+  validation: TianyanValidation;
+}) {
+  const currentFormulas = validation.rules.slice(0, 2).map((rule) => fallbackFormula(
+    rule.validationPosition,
+    rule.currentBaseNumber,
+    rule.algorithmType,
+    rule.ruleValue,
+    rule.currentPredictionNumber,
+  ));
+  return (
+    <div className="explore-validation-groups">
+      {validation.historicalValidation.map((row) => {
+        const matchedRules = [row.rule1, row.rule2].filter((rule) => rule.hit);
+        if (!matchedRules.length) return null;
+        return (
+          <FallbackValidationGroup
+            lottery={lottery}
+            keyValue={`${validation.itemId}-${row.group}-${row.predictionPeriod}`}
+            key={`${validation.itemId}-${row.group}-${row.predictionPeriod}`}
+            rows={[
+              { key: `source-${row.group}`, period: row.sourcePeriod, numbers: row.sourceNumbers, sourceNumber: row.lockedNumber },
+              ...matchedRules.slice(1).map((_, index) => ({ key: `formula-${row.group}-${index}`, period: "", numbers: [] })),
+              { key: `prediction-${row.group}`, period: row.predictionPeriod, numbers: row.predictionNumbers, hitNumbers: row.hitNumbers },
+            ]}
+            formulas={[
+              ...matchedRules.map((rule) => fallbackFormula(
+                rule.validationPosition,
+                rule.baseNumber,
+                rule.algorithmType,
+                rule.ruleValue,
+                rule.calculationResult,
+              )),
+              <>［{" "}<strong className="explore-validation-result-number">{row.hitNumbers.map(displayNumber).join("、")}</strong>{" "}］</>,
+            ]}
+          />
+        );
+      })}
+      {validation.sourceA && currentFormulas.length === 2 ? (
+        <FallbackValidationGroup
+          lottery={lottery}
+          keyValue={`${validation.itemId}-current`}
+          rows={[
+            { key: "current-source", period: validation.sourceA.sourcePeriod, numbers: validation.sourceA.sourceNumbers, sourceNumber: validation.sourceA.lockedNumber },
+            { key: "current-formula-2", period: "", numbers: [] },
+          ]}
+          formulas={currentFormulas}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+export function TianyanExpandedValidationGroups({
+  lottery,
+  numberOrder,
+  validation,
+}: {
+  lottery: NumberBallLottery;
+  numberOrder: MatrixNumberOrder;
+  validation: TianyanValidation;
+}) {
+  const [historyNumbers, setHistoryNumbers] = useState<Map<string, Array<string | number>> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    setResolved(null);
-    if (!active || !target) return () => { cancelled = true; };
-    void resolveTianyanLayout(target)
-      .then((next) => {
-        if (!cancelled) setResolved(next);
-      })
-      .catch(() => {
-        if (!cancelled) setResolved(null);
-      });
-    return () => { cancelled = true; };
-  }, [active, target]);
+    setHistoryNumbers(null);
 
-  useLayoutEffect(() => {
-    setHosts(null);
-    if (!active || !target || !resolved) return;
-    const originalHeader = target.section.querySelector<HTMLElement>(
-      ".explore-validation-summary-card:not(.tianyan-expanded-layout-summary-host)",
-    );
-    const originalGroups = target.section.querySelector<HTMLElement>(
-      ".explore-validation-groups:not(.tianyan-expanded-layout-groups-host)",
-    );
-    const parent = originalHeader?.parentElement;
-    if (!originalHeader || !originalGroups || !parent || originalGroups.parentElement !== parent) return;
+    const resolve = async () => {
+      const required = requiredRulePeriods(lottery, validation);
+      if (required.length === 0) {
+        if (!cancelled) setHistoryNumbers(new Map());
+        return;
+      }
 
-    const summaryHost = document.createElement("header");
-    summaryHost.className = "explore-validation-summary-card tianyan-expanded-layout-summary-host";
-    const groupsHost = document.createElement("div");
-    groupsHost.className = "explore-validation-groups tianyan-expanded-layout-groups-host";
-    const headerWasHidden = originalHeader.hidden;
-    const groupsWereHidden = originalGroups.hidden;
-
-    parent.insertBefore(summaryHost, originalHeader);
-    parent.insertBefore(groupsHost, originalHeader);
-    originalHeader.hidden = true;
-    originalGroups.hidden = true;
-    setHosts({ summary: summaryHost, groups: groupsHost });
-
-    return () => {
-      originalHeader.hidden = headerWasHidden;
-      originalGroups.hidden = groupsWereHidden;
-      summaryHost.remove();
-      groupsHost.remove();
+      let lookup = buildHistoryNumbers(lottery, numberOrder, await fetchLotteryHistory(lottery, 1000));
+      if (!hasRequiredPeriods(lottery, lookup, validation)) {
+        lookup = buildHistoryNumbers(lottery, numberOrder, await fetchLotteryHistory(lottery, 5000));
+      }
+      if (!cancelled && hasRequiredPeriods(lottery, lookup, validation)) {
+        setHistoryNumbers(lookup);
+      }
     };
-  }, [active, resolved, target]);
 
-  if (!resolved || !hosts) return null;
+    void resolve().catch(() => {
+      if (!cancelled) setHistoryNumbers(null);
+    });
+    return () => { cancelled = true; };
+  }, [lottery, numberOrder, validation]);
 
-  const historicalGroups = resolved.validation.historicalValidation
+  if (!historyNumbers) {
+    return <TianyanFallbackGroups lottery={lottery} validation={validation} />;
+  }
+
+  const historicalGroups = validation.historicalValidation
     .map((group) => ({
       key: group.group,
-      rows: buildTianyanHistoricalRows(resolved.lottery, group, resolved.historyNumbers),
+      rows: buildTianyanHistoricalRows(lottery, group, historyNumbers),
     }))
     .filter((group): group is { key: string; rows: TianyanPatchedValidationRow[] } => Boolean(group.rows));
-  const currentRows = buildTianyanCurrentRows(resolved.lottery, resolved.validation, resolved.historyNumbers);
+  const currentRows = buildTianyanCurrentRows(lottery, validation, historyNumbers);
 
   return (
-    <>
-      {createPortal(
-        <TianyanPatchedSummary lottery={resolved.lottery} item={resolved.item} validation={resolved.validation} />,
-        hosts.summary,
-      )}
-      {createPortal(
-        <>
-          {historicalGroups.map((group) => (
-            <PatchedValidationGroup
-              lottery={resolved.lottery}
-              rows={group.rows}
-              groupKey={group.key}
-              key={group.key}
-            />
-          ))}
-          {currentRows.length ? (
-            <PatchedValidationGroup
-              lottery={resolved.lottery}
-              rows={currentRows}
-              groupKey="current"
-            />
-          ) : null}
-        </>,
-        hosts.groups,
-      )}
-    </>
+    <div className="explore-validation-groups">
+      {historicalGroups.map((group) => (
+        <PatchedValidationGroup
+          lottery={lottery}
+          rows={group.rows}
+          groupKey={group.key}
+          key={group.key}
+        />
+      ))}
+      {currentRows.length ? (
+        <PatchedValidationGroup
+          lottery={lottery}
+          rows={currentRows}
+          groupKey="current"
+        />
+      ) : null}
+    </div>
   );
 }
