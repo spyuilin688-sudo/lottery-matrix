@@ -535,42 +535,42 @@
   color: var(--lottery-neutral-400);
 }
 
-/* Keep the two anonymous sign-in actions aligned with the masked artwork zone. */
+/* Keep the anonymous sign-in actions visually subordinate to member identity. */
 .profile-card[data-auth-layout="multiple"] {
-  --profile-auth-zone-right: 2.75cqw;
-  --profile-auth-zone-width: 16.8cqw;
+  --profile-auth-zone-right: 4.1cqw;
+  --profile-auth-zone-width: 15.4cqw;
 }
 
 .profile-card[data-auth-layout="multiple"] .profile-auth-actions {
   grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
-  gap: .75cqw;
+  gap: 1cqw;
 }
 
 .profile-card[data-auth-layout="multiple"] .profile-logout {
   width: 100%;
-  height: clamp(30px, 8.2cqw, 32px);
-  min-height: 30px;
-  border-radius: 9px;
+  height: clamp(26px, 7cqw, 28px);
+  min-height: 26px;
+  border-radius: 7px;
 }
 
 .profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider] {
-  padding: 0 6px;
-  grid-template-columns: 12px auto;
+  padding: 0 5px;
+  grid-template-columns: 11px auto;
   align-items: center;
   justify-content: center;
-  column-gap: 4px;
-  font-size: clamp(9px, 2.3cqw, 11px);
+  column-gap: 3px;
+  font-size: clamp(8.5px, 2.1cqw, 10px);
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, .22);
+  box-shadow: none;
 }
 
 .profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider]::before {
   display: block;
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
