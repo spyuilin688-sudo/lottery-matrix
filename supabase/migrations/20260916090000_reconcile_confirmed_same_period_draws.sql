@@ -102,7 +102,6 @@ begin
             or (select count(*) from jsonb_array_elements(pending) e where e->>'period'=estimate->>'period')>1
             or exists(select 1 from public.lottery_draws d where d.lottery=incoming.lottery
               and d.period=estimate->>'period' and d.id is distinct from existing.id
-              and d.id is distinct from period_match.id
               and not exists(select 1 from jsonb_array_elements(pending) e where (e->>'id')::bigint=d.id)) then
             raise exception 'DRAW_PERIOD_DATE_CONFLICT';
           end if;
