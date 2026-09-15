@@ -141,7 +141,7 @@ describe('Matrix status artifact orchestration', () => {
     }));
   });
 
-  it('sorts custom cards by status priority and their evidence roads by the formal road order', () => {
+  it('sorts custom cards by status priority and evidence roads by the Matrix Explore default result order', () => {
     const active = custom('ACTIVE', {
       oneCodeGroups: [{ id: 'ordered-roads', rows: [
         { consecutive: '準7進8', roadType: '拖牌', numberOrder: '依號碼由小到大排序', sameCodeQuantity: 1 },
@@ -149,11 +149,11 @@ describe('Matrix status artifact orchestration', () => {
       ] }],
     });
     const result = buildMatrixStatusArtifact(explore([
-      row({ id: 'drag', algorithmType: '拖牌' }),
-      row({ id: 'add', algorithmType: '加減' }),
+      row({ id: 'drag', algorithmType: '拖牌', predictionDistance: 1, lockedPosition: 2 }),
+      row({ id: 'add', algorithmType: '加減', predictionDistance: 2, lockedPosition: 1 }),
     ]), null, [active, custom('CRITICAL')], entitlements);
     expect(result.cards.map((card) => card.status)).toEqual(['CRITICAL', 'RESONANCE', 'FOCUS', 'ACTIVE']);
-    expect(result.cards.find((card) => card.id === 'custom:ACTIVE:ordered-roads:08')?.roads.map((road) => road.algorithmType)).toEqual(['加減', '拖牌']);
+    expect(result.cards.find((card) => card.id === 'custom:ACTIVE:ordered-roads:08')?.roads.map((road) => road.id)).toEqual(['drag:08', 'add:08']);
   });
 
   it('counts two composite rule contributions even when they predict the same code', () => {

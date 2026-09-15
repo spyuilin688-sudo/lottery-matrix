@@ -199,14 +199,50 @@ test('切換彩種重新讀取狀態，且自訂觸發條件需連續點擊兩�
   await waitFor(() => expect(navigate).toHaveBeenCalledWith('status-settings'));
 });
 
-test('自訂觸發條件位於頁首，與底部導覽分開', async () => {
+
+test.each(['六合彩', '大樂透'] as const)('%s 第 7 球沿用探索頁標籤顯示特別號', async (lottery) => {
+  statusApi.fetchMatrixStatus.mockResolvedValueOnce({
+    kind: 'status', lottery, drawPeriod: '114000123', analysisVersion: 'v1:status',
+    summary: { status: 'RESONANCE', count: 1, message: '具備強烈共振效應' },
+    counts: { ACTIVE: 0, FOCUS: 0, RESONANCE: 1, CRITICAL: 0 },
+    cards: [{
+      id: 'special-card', ruleId: 'RESONANCE-1', status: 'RESONANCE', hitType: 'one-code', result: ['08'],
+      sameCodeRoadCount: 1, sameCodeRoadCountLocked: false,
+      roads: [{
+        id: 'special-road', locked: false, result: ['08'], algorithmType: '加減', numberOrder: '依號碼由小到大排序',
+        streak: 7, predictionDistance: 1, position: 7, lockedNumber: '05', explorePeriods: 13,
+        validationItemId: 'special-source',
+      }],
+    }],
+    customTriggers: [], detailLocked: false,
+  });
+
+  render(<MatrixStatusPage onNavigate={vi.fn()} initialLottery={lottery} />);
+  await screen.findByText('1 組');
+  fireEvent.click(screen.getByRole('button', { name: /•共振/ }));
+  const roadRow = await screen.findByRole('button', { name: '展開版路 special-road' });
+  expect(roadRow).toHaveTextContent('特別號');
+  expect(roadRow).not.toHaveTextContent('順球7');
+  expect(statusApi.fetchMatrixStatus).toHaveBeenCalledWith(lottery);
+});
+
+test('自訂觸發條件位於標題卡右上角，與底部導覽分開', async () => {
   render(<MatrixStatusPage onNavigate={vi.fn()} />);
   await screen.findByText('2 組');
   const trigger = screen.getByRole('button', { name: '自訂觸發條件，連續點擊兩下開啟' });
+  const frame = trigger.closest('.product-header__frame');
+  const actions = trigger.closest('.product-header__actions');
   expect(trigger).toHaveClass('header-settings-button');
-  expect(trigger.closest('header')).not.toBeNull();
+  expect(frame).not.toBeNull();
+  expect(actions).not.toBeNull();
+  expect(actions).toHaveAttribute('data-placement', 'top-right');
+  expect(frame).toContainElement(trigger);
   expect(trigger.closest('nav')).toBeNull();
   expect(trigger.querySelector('svg')).toBeInTheDocument();
+  const placementRule = featurePagesCss.match(/\.product-header__actions\[data-placement="top-right"\]\s*\{[^}]*\}/s)?.[0] ?? '';
+  expect(placementRule).toMatch(/top:\s*0;/);
+  expect(placementRule).toMatch(/right:\s*0;/);
+  expect(placementRule).toMatch(/bottom:\s*auto;/);
   expect(screen.getByTestId('lottery-switcher')).toHaveClass('lottery-switcher--home-style');
 });
 

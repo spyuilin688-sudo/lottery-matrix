@@ -96,8 +96,14 @@ export function MatrixStatusTriggerCard({
                 onClick={() => onToggleRoad(card.id, road)}
               >
                 <span className="tag">
-                  <span>{road.numberOrder === "依實際開獎順序排序" ? "落球" : "順球"}</span>
-                  <span className="numeric-text">{road.position}</span>
+                  {road.position === 7 ? (
+                    <span>特別號</span>
+                  ) : (
+                    <>
+                      <span>{road.numberOrder === "依實際開獎順序排序" ? "落球" : "順球"}</span>
+                      <span className="numeric-text">{road.position}</span>
+                    </>
+                  )}
                 </span>
                 <span className="result-number numeric-text">{road.lockedNumber}</span>
                 <span className="result-period"><span>下</span><span className="numeric-text">{road.predictionDistance}</span><span>期</span></span>
@@ -271,7 +277,7 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
   };
 
   return (
-    <FeatureShell title="Matrix 狀態" onNavigate={onNavigate} className="matrix-status-screen" headerAction={
+    <FeatureShell title="Matrix 狀態" onNavigate={onNavigate} className="matrix-status-screen" headerActionPlacement="top-right" headerAction={
         <button type="button" className="header-settings-button" aria-label="自訂觸發條件，連續點擊兩下開啟" aria-busy={checkingSettings} aria-disabled={checkingSettings} onClick={(event) => {
           statusSettingsActivated.current = false;
           handleStatusSettingsClick(event);

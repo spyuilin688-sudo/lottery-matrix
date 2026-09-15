@@ -2398,6 +2398,16 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   justify-content: flex-end;
   gap: 6px;
 }
+.product-header__actions[data-placement="top-right"] {
+  top: 0;
+  right: 0;
+  bottom: auto;
+}
+.product-header__actions[data-placement="top-right"] > .header-settings-button {
+  padding: 4px 4px 0 0;
+  place-items: start end;
+}
+
 .feature-body {
   box-sizing: border-box;
   width: 100%;

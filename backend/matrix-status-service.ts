@@ -151,10 +151,8 @@ function tianyanRoads(artifact: TianyanArtifact | null): StatusRoad[] {
 }
 
 function sortedStatusRoads(roads: StatusRoad[]) {
-  const typeOrder: Record<StatusRoad['algorithmType'], number> = { 加減: 0, 合值: 1, 拖牌: 2, 複合: 3 };
   return [...roads].sort((left, right) => (
-    typeOrder[left.algorithmType] - typeOrder[right.algorithmType]
-    || right.streak - left.streak
+    right.streak - left.streak
     || left.predictionDistance - right.predictionDistance
     || left.position - right.position
     || left.id.localeCompare(right.id)

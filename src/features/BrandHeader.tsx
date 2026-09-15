@@ -64,11 +64,12 @@ export function HeaderSettingsButton({ expanded, controls, onClick, label = "探
   );
 }
 
-export function BrandHeader({ title, onBack, backHref, action, settings, showBack = true }: {
+export function BrandHeader({ title, onBack, backHref, action, actionPlacement = "bottom-right", settings, showBack = true }: {
   title: string;
   onBack?: () => void;
   backHref?: string;
   action?: ReactNode;
+  actionPlacement?: "bottom-right" | "top-right";
   settings?: HeaderSettings;
   showBack?: boolean;
 }) {
@@ -95,7 +96,7 @@ export function BrandHeader({ title, onBack, backHref, action, settings, showBac
         <h1 data-title-fit={titleFit}>{displayTitle}</h1>
         <span>{PAGE_SUBTITLES[title] ?? "LOTTERY MATRIX"}</span>
       </div>
-      {action ? <div className="product-header__actions">{action}</div> : null}
+      {action ? <div className="product-header__actions" data-placement={actionPlacement}>{action}</div> : null}
     </div>
   );
   return (
