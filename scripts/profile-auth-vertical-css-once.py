@@ -10,7 +10,9 @@ if text.count(old) != 1:
 text = text.replace(old, new, 1)
 old_button = '''  min-height: 44px;\n  height: 12.3cqw;\n'''
 new_button = '''  min-height: var(--profile-auth-button-min-height);\n  height: var(--profile-auth-button-height);\n'''
-if text.count(old_button) != 1:
+match_count = text.count(old_button)
+print(f"profile auth button sizing match count={match_count}")
+if match_count != 1:
     raise RuntimeError("profile auth button sizing block changed; refusing to patch")
 text = text.replace(old_button, new_button, 1)
 path.write_text(text, encoding="utf-8")
