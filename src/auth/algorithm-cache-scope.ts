@@ -51,14 +51,7 @@ export async function readAlgorithmCacheScope(
     && (returnedIdentity !== identity || returnedIdentity === startedIdentity)) {
     throw new MatrixApiError('AUTH_REQUIRED', 401);
   }
-  if (error) {
-    // Public algorithm reads must not depend on Auth being available. Only a
-    // genuinely sessionless lookup may fall back to the anonymous cache scope;
-    // protected callers and ambiguous authenticated failures remain rejected.
-    if (!options.allowGuest || returnedSession) throw new MatrixApiError('AUTH_REQUIRED', 401);
-    updateAlgorithmCacheSession(null);
-    return generation;
-  }
+  if (error) throw new MatrixApiError('AUTH_REQUIRED', 401);
   updateAlgorithmCacheSession(returnedSession);
   if (!identity && !options.allowGuest) throw new MatrixApiError('AUTH_REQUIRED', 401);
   return generation;

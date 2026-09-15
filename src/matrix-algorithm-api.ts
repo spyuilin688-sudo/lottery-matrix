@@ -464,9 +464,18 @@ async function cachedMatrixResultRpc<T extends { lottery: NumberBallLottery; ana
   request: unknown,
 ): Promise<T> {
   const client = getSupabaseClient();
-  // Algorithm reads can start without a member session. The database RPCs remain
-  // authoritative for the global free-access switch and feature entitlements.
-  const sessionOptions = { allowGuest: true };
+  // Keep the legacy public basics available without an account. Higher periods,
+  // full range, Tianyan and Tiangong require an authenticated member session;
+  // the database remains authoritative for that member's actual entitlement.
+  const sessionOptions = {
+    allowGuest: (
+      (name === 'matrix_explore_list' || name === 'matrix_explore_validation')
+        && (request as { explorePeriods?: number }).explorePeriods === 2
+    ) || (
+      (name === 'matrix_tianheng_list' || name === 'matrix_tianheng_validation')
+        && (request as { explorePeriods?: number }).explorePeriods === 3
+    ),
+  };
   const scope = await readAlgorithmCacheScope(client, sessionOptions);
   const permissionSettings = await refreshPermissionSettings();
   const assertCurrentSession = async () => {
