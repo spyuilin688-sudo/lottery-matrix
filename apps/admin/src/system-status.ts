@@ -168,7 +168,15 @@ export function getServiceEvidenceFacts(item: SystemStatusItem): SystemStatusFac
   if (Array.isArray(item.detail.samples)) for (const sample of item.detail.samples) {
     if (!isRecord(sample) || typeof sample.lottery !== 'string') continue;
     const suffix = sample.ok !== true ? '檢查未通過' : sample.skipped ? '沒有驗證樣本' : sample.waiting ? '等待資料更新' : '通過';
-    const parts = [typeof sample.period === 'string' ? `${sample.period} 期` : '', Number.isInteger(sample.records) ? `${sample.records} 筆` : '', suffix].filter(Boolean);
+    const formatCount = (value: unknown) => typeof value === 'number' && Number.isInteger(value) ? value.toLocaleString('zh-TW') : undefined;
+    const testRecords = formatCount(sample.records);
+    const storedRecords = formatCount(sample.storedRecords);
+    const parts = [
+      typeof sample.period === 'string' ? `${sample.period} 期` : '',
+      testRecords !== undefined ? `測試條件 ${testRecords}筆` : '',
+      storedRecords !== undefined ? `實際儲存結果 ${storedRecords}筆` : '',
+      suffix,
+    ].filter(Boolean);
     facts.push({ label: sample.lottery, value: parts.join(' · ') });
   }
   return facts;
