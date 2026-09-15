@@ -29,6 +29,7 @@ from app.scraping.sources import (
 TINYFISH_FETCH_URL = "https://api.fetch.tinyfish.ai"
 TINYFISH_AGENT_URL = "https://agent.tinyfish.ai/v1/automation/run"
 SUPPORTED_LOTTERIES = frozenset({"今彩539", "天天樂", "六合彩", "大樂透"})
+TinyFishTelemetry = Callable[[str, str, str | None, str | None], None]
 
 
 def _month_label(now: datetime, offset: int) -> str:
@@ -312,9 +313,34 @@ class TinyFishLatestFallback:
 
 
 class ResilientLatestDrawSource:
-    def __init__(self, primary: Any, fallback: Any) -> None:
+    def __init__(
+        self,
+        primary: Any,
+        fallback: Any,
+        *,
+        telemetry: TinyFishTelemetry | None = None,
+    ) -> None:
         self.primary = primary
         self.fallback = fallback
+        self.telemetry = telemetry
+
+    def _report(
+        self,
+        lottery: str,
+        status: str,
+        period: str | None,
+        error: str | None,
+    ) -> None:
+        if self.telemetry is None:
+            return
+        try:
+            self.telemetry(lottery, status, period, error)
+        except Exception as telemetry_error:
+            print(json.dumps({
+                "event": "tinyfish_telemetry_callback_failed",
+                "lottery": lottery,
+                "error": type(telemetry_error).__name__,
+            }, ensure_ascii=False, separators=(",", ":")))
 
     def fetch(self, lottery: str) -> MatrixDraw:
         try:
@@ -323,8 +349,11 @@ class ResilientLatestDrawSource:
             if lottery not in SUPPORTED_LOTTERIES or str(primary_error) == "UNKNOWN_LOTTERY":
                 raise
             try:
-                return self.fallback.fetch_latest(lottery)
+                draw = self.fallback.fetch_latest(lottery)
+                self._report(lottery, "success", str(draw.get("period") or "") or None, None)
+                return draw
             except Exception as fallback_error:
+                self._report(lottery, "failed", None, type(fallback_error).__name__)
                 print(json.dumps({
                     "event": "tinyfish_fallback_exhausted",
                     "lottery": lottery,
@@ -356,6 +385,7 @@ def wrap_source_with_tinyfish(
     settings: Any,
     *,
     now: Callable[[], datetime] | None = None,
+    telemetry: TinyFishTelemetry | None = None,
 ) -> Any:
     api_key = str(getattr(settings, "tinyfish_api_key", "") or "").strip()
     fetch_enabled = _setting_bool(settings, "tinyfish_fetch_fallback_enabled", True)
@@ -374,4 +404,4 @@ def wrap_source_with_tinyfish(
         browser_max_duration_seconds=duration,
         now=now,
     )
-    return ResilientLatestDrawSource(primary, fallback)
+    return ResilientLatestDrawSource(primary, fallback, telemetry=telemetry)
