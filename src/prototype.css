@@ -7,8 +7,8 @@
   overflow: hidden;
 }
 
-/* Feature title cards own a 14px gap; the homepage uses a separate header structure. */
-.feature-brand-header {
+/* Feature pages inherit the title-card/content gap from their shared screen root. */
+.feature-screen:not(.home-screen) {
   --layout-section-gap: 14px;
 }
 
