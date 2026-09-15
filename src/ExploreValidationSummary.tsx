@@ -113,8 +113,15 @@ export function ExploreValidationSummary({ children, layout = "explore" }: {
         let fontSize = maximumFontSize;
         // Re-measure fixed gaps as the shared font shrinks, keeping both rows aligned.
         for (let pass = 0; pass < 4; pass += 1) {
-          const scale = Math.min(1, ...rows.map((row, index) =>
-            (index === 0 ? firstRowWidth : contentWidth) / Math.max(1, row.getBoundingClientRect().width)));
+          const scale = Math.min(1, ...rows.map((row, index) => {
+            // A display:contents row has no box. Measure its rendered contents,
+            // including the natural grid indent from the summary's left edge.
+            const range = document.createRange();
+            range.selectNodeContents(row);
+            const bounds = range.getBoundingClientRect();
+            const requiredWidth = bounds.right - contentLeft;
+            return (index === 0 ? firstRowWidth : contentWidth) / Math.max(1, requiredWidth);
+          }));
           if (scale >= 1) break;
           fontSize = Math.max(1, fontSize * scale * .98);
           summary.style.setProperty("--explore-summary-fit-font-size", `${fontSize}px`);

@@ -607,9 +607,6 @@ export function TianhengValidationProcess({
     <>［{" "}<strong className="explore-validation-result-number">{values(hitNumbers).join("、")}</strong>{" "}］</>
   );
   const divider = <i className="validation-summary-divider" aria-hidden="true">｜</i>;
-  const summaryLocked = (number: string, position: number) => (
-    <span><i className="validation-summary-primary">{number}</i> 第 <i className="validation-summary-position">{position}</i> 顆</span>
-  );
   const summaryDirection = () => {
     const offset = item.algorithmType === "拖牌" ? 0 : item.referenceOffset ?? 0;
     if (offset === 0) return <i className="validation-summary-position">同期</i>;
@@ -714,9 +711,8 @@ export function TianhengValidationProcess({
                 <span className="tianyan-validation-summary-lines tianheng-summary-lines" aria-label="版路摘要">
                   <span className="tianyan-validation-summary-row" data-testid="tianheng-summary-row">
                     <span>開</span>
-                    {summaryLocked(item.firstNumber, item.firstLockedPosition)}
-                    <span>、同期</span>
-                    {summaryLocked(item.secondNumber, item.secondLockedPosition)}
+                    <span className="validation-summary-primary">{item.firstNumber}{" "}</span>
+                    <span>第 <i className="validation-summary-position">{item.firstLockedPosition}</i> 顆、同期<i className="validation-summary-primary">{item.secondNumber}</i> 第 <i className="validation-summary-position">{item.secondLockedPosition}</i> 顆</span>
                   </span>
                   <span className="tianyan-validation-summary-row" data-testid="tianheng-summary-row">
                     {summaryDirection()}
