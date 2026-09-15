@@ -1287,7 +1287,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .about-brand-info p { margin-bottom: 7px; color: #9f988e; font-size: 11px; line-height: 1.6; }
 .about-brand-info span { color: #c9c2b8; }
 .status-list { display: grid; gap: 12px; }
-.status-block { --tone: #d58b2d; --border: #8a561d; border: 1px solid var(--pwa-frame-secondary); border-radius: var(--pwa-frame-radius); overflow: hidden; background: rgba(4, 11, 16, .96); }
+.status-block { --tone: #d58b2d; --border: #8a561d; border: 1px solid var(--border); border-radius: var(--pwa-frame-radius); overflow: hidden; background: rgba(4, 11, 16, .96); }
 .status-block[data-tone="purple"] { --tone: #bd62d4; --border: #804687; }
 .status-block[data-tone="blue"] { --tone: #2eb1ee; --border: #1e6d94; }
 .status-block[data-tone="green"] { --tone: #44cf62; --border: #247839; }
@@ -1298,7 +1298,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .status-block > button em { color: var(--tone); font-style: normal; }
 .status-block > button svg[data-open="true"] { transform: rotate(180deg); }
 .status-detail { padding: 0 10px 10px; }
-.status-detail article { margin-top: 8px; border: 1px solid var(--pwa-frame-secondary); border-radius: var(--pwa-frame-radius); overflow: hidden; }
+.status-detail article { margin-top: 8px; border: 1px solid var(--border); border-radius: var(--pwa-frame-radius); overflow: hidden; }
 .status-detail h3 { margin: 0; padding: 14px; color: var(--tone); font-size: 20px; font-weight: 500; }
 .status-detail p { display: grid; margin: 0; padding: 10px; grid-template-columns: 58px 32px 44px 52px 1fr 35px; align-items: center; border-top: 1px solid var(--pwa-frame-divider); color: #c8c1b6; font-size: 9px; }
 .status-detail p > span:first-child { padding: 4px; border: 1px solid var(--pwa-frame-tertiary); border-radius: 999px; text-align: center; }
@@ -1530,7 +1530,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .matrix-status-screen .matrix-status-trigger-group {
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--pwa-frame-secondary);
+  border: 1px solid var(--border);
   border-radius: var(--pwa-frame-radius);
   background: #030a0f;
 }
@@ -1601,6 +1601,11 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   border-bottom: 1px solid var(--pwa-frame-divider);
   color: #d2a52a;
   font-size: clamp(9px, 2.8vw, 12px);
+}
+.matrix-status-screen .road-results-head > span:first-child,
+.matrix-status-screen .road-result-row > :first-child {
+  box-sizing: border-box;
+  padding-left: 2px;
 }
 .matrix-status-screen .matrix-status-road-results > article {
   margin-top: 0;
@@ -1799,6 +1804,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .matrix-custom-status-screen .custom-status-road-options label:has(input:enabled):hover { border-color: var(--pwa-frame-secondary); }
 .matrix-custom-status-screen .custom-status-road-options label:has(input:enabled):active { filter: brightness(.9); }
 .matrix-custom-status-screen .custom-status-road-options label:has(input:focus-visible) { outline: 2px solid var(--lottery-gold-300); outline-offset: 2px; }
+.matrix-custom-status-screen .custom-status-road-options input:disabled { opacity: 0; }
 .matrix-custom-status-screen .custom-status-road-or { color: #aaa7a2; text-align: center; font-size: 11px; }
 .matrix-custom-status-screen .custom-status-or,
 .matrix-custom-status-screen .custom-status-and {
@@ -1837,7 +1843,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   outline: 2px solid var(--lottery-gold-300); outline-offset: 2px;
 }
 .matrix-custom-status-screen .custom-status-editor :is(button,input,select):disabled { opacity: .55; cursor: default; }
-.matrix-custom-status-screen .custom-status-road-options input:disabled { opacity: 0; }
 .matrix-custom-status-screen .custom-status-editor [aria-invalid="true"] { border-color: #efb064; outline: 1px solid #efb064; }
 .matrix-guide-screen .guide-intro { min-height: 82px; }
 .matrix-guide-screen .guide-intro img { width: 62px; height: 62px; }
