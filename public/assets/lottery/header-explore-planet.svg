@@ -32,12 +32,6 @@
       <stop offset=".72" stop-color="#edbd59" stop-opacity=".34"/>
       <stop offset="1" stop-color="#7c4d0b" stop-opacity=".04"/>
     </linearGradient>
-    <radialGradient id="flare" cx="0" cy="0" r="1" gradientTransform="translate(0 0) scale(1)" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#fff9df"/>
-      <stop offset=".15" stop-color="#ffe198" stop-opacity=".95"/>
-      <stop offset=".42" stop-color="#e6a52a" stop-opacity=".48"/>
-      <stop offset="1" stop-color="#b66f08" stop-opacity="0"/>
-    </radialGradient>
     <clipPath id="planetClip">
       <circle cx="810" cy="68" r="104"/>
     </clipPath>
@@ -58,7 +52,7 @@
     <circle cx="42" cy="28" r=".55" opacity=".34"/><circle cx="69" cy="99" r=".45" opacity=".2"/>
     <circle cx="103" cy="45" r=".65" opacity=".26"/><circle cx="145" cy="22" r=".5" opacity=".22"/>
     <circle cx="182" cy="111" r=".6" opacity=".3"/><circle cx="236" cy="19" r=".4" opacity=".24"/>
-    <circle cx="302" cy="101" r=".55" opacity=".18"/><circle cx="342" cy="30" r=".45" opacity=".26"/>
+    <circle cx="302" cy="101" r=".55" opacity=".38"/><circle cx="342" cy="30" r=".45" opacity=".26"/>
     <circle cx="397" cy="18" r=".5" opacity=".2"/><circle cx="441" cy="111" r=".65" opacity=".25"/>
     <circle cx="493" cy="35" r=".4" opacity=".22"/><circle cx="538" cy="99" r=".55" opacity=".28"/>
     <circle cx="584" cy="25" r=".65" opacity=".2"/><circle cx="621" cy="111" r=".45" opacity=".22"/>
@@ -97,6 +91,4 @@
     <circle cx="681" cy="67" r="1.2" fill="#fff0bd"/>
     <path d="M669 67H693M681 58V76" stroke="#e8ad35" stroke-width=".4" stroke-opacity=".48"/>
   </g>
-
-  <rect width="430" height="136" fill="url(#leftFade)" opacity="0"/>
 </svg>
