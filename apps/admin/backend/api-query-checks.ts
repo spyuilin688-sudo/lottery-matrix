@@ -9,7 +9,7 @@ const draw = (value: unknown, lottery: string): boolean => record(value)
   && new Set(value.numbers).size === value.numbers.length
   && value.numbers.every((number: unknown) => typeof number === 'string' && /^\d{2}$/.test(number) && Number(number) >= 1 && Number(number) <= (['今彩539', '天天樂'].includes(lottery) ? 39 : 49));
 // Visible rows in card_renderer.card_layout; actual order requires every row.
-const cardHistorySize: Record<string, number> = { 今彩539: 227, 六合彩: 171, 大樂透: 171 };
+const cardHistorySize: Record<string, number> = { 今彩539: 227, 香港彩: 171, 大樂透: 171 };
 const actualOrderAvailable = (value: Record<string, any>, lottery: string) => {
   if (!draw(value, lottery) || !['confirmed', 'preliminary'].includes(value.resultStatus)) throw new Error('回傳資料格式不符。');
   const actual = value.drawOrderNumbers;
@@ -38,7 +38,7 @@ export function createApiQueryChecks(options: {
   let active = 0;
   let expired = false;
   const queue: Array<() => void> = [];
-  const request = async (url: string, init: RequestInit = {}): Promise<any> => {
+  const request = async <T = any>(url: string, init: RequestInit = {}, parse: (response: Response) => Promise<T> = async (response) => (await response.json()) as T): Promise<T> => {
     if (active >= 4) await new Promise<void>((resolve) => queue.push(resolve));
     else active += 1;
     const controller = new AbortController();
@@ -49,7 +49,7 @@ export function createApiQueryChecks(options: {
       const work = async () => {
         const response = await options.fetcher(url, { ...init, cache: 'no-store', redirect: 'error', signal: controller.signal });
         if (!response.ok) throw new Error(`查詢失敗（HTTP ${response.status}）。`);
-        return response.json();
+        return parse(response);
       };
       return await Promise.race([work(), new Promise<never>((_, reject) => {
         timer = setTimeout(() => { expired = true; controller.abort(); reject(new Error('查詢逾時，請重新檢查。')); }, remaining);
@@ -83,6 +83,40 @@ export function createApiQueryChecks(options: {
       body: JSON.stringify({ p_request: body }),
     });
   };
+  const storedCounts = new Map<string, Promise<number>>();
+  const storedResultCount = (lottery: string, kind: 'explore' | 'tianheng', drawPeriod: string, analysisVersion: string) => {
+    const key = `${kind}:${lottery}:${drawPeriod}:${analysisVersion}:sorted`;
+    let result = storedCounts.get(key);
+    if (!result) {
+      result = (async () => {
+        const current = await (config ??= options.loadSupabaseConfig());
+        const table = kind === 'tianheng' ? 'matrix_tianheng_results' : 'matrix_explore_results';
+        const query = new URLSearchParams({
+          select: 'item_id',
+          lottery: `eq.${lottery}`,
+          draw_period: `eq.${drawPeriod}`,
+          analysis_version: `eq.${analysisVersion}`,
+          number_order: 'eq.依號碼由小到大排序',
+        });
+        return request<number>(`${current.url}/rest/v1/${table}?${query}`, {
+          method: 'HEAD',
+          headers: {
+            apikey: current.serviceRoleKey,
+            Authorization: `Bearer ${current.serviceRoleKey}`,
+            Prefer: 'count=exact',
+            Range: '0-0',
+          },
+        }, async (response) => {
+          const contentRange = response.headers.get('Content-Range');
+          const match = contentRange?.match(/\/(\d+)$/);
+          if (!match) throw new Error('回傳資料格式不符。');
+          return Number(match[1]);
+        });
+      })();
+      storedCounts.set(key, result);
+    }
+    return result;
+  };
   const lists = new Map<string, Promise<any>>();
   const analysis = (lottery: string, kind: 'explore' | 'tianheng') => {
     const key = `${kind}:${lottery}`;
@@ -96,6 +130,14 @@ export function createApiQueryChecks(options: {
     }
     return result;
   };
+  const representativeItems = (items: any[]) => {
+    const byRoadType = new Map<string, any>();
+    for (const item of items) {
+      const roadType = record(item) && typeof item.algorithmType === 'string' ? item.algorithmType : '';
+      if (roadType && !byRoadType.has(roadType)) byRoadType.set(roadType, item);
+    }
+    return byRoadType.size > 0 ? [...byRoadType.values()] : items.slice(0, 1);
+  };
   return async (id: string) => {
     if (!queryCheckIds.has(id)) throw new Error('不支援此查詢檢查。');
     const samples = await Promise.all(lotteries.map(async (lottery) => {
@@ -103,13 +145,16 @@ export function createApiQueryChecks(options: {
         if (id.startsWith('supabase-rpc-')) {
           const kind = id.includes('_tianheng_') ? 'tianheng' : 'explore';
           const list = await analysis(lottery, kind);
+          const storedRecords = await storedResultCount(lottery, kind, list.drawPeriod, list.analysisVersion);
           if (id.endsWith('_validation')) {
-            if (!list.items.length) return { lottery, ok: true, skipped: true };
-            const itemId = list.items[0].id;
-            const value = await rpc(`matrix_${kind}_validation`, { lottery, drawPeriod: list.drawPeriod, analysisVersion: list.analysisVersion, itemId, explorePeriods: kind === 'tianheng' ? 3 : 2, exploreRange: '標準範圍' });
-            if (!record(value) || value.status !== 'complete' || value.lottery !== lottery || value.itemId !== itemId || value.drawPeriod !== list.drawPeriod || value.analysisVersion !== list.analysisVersion || !record(value.validation) || !Array.isArray(value.validation.ruleSets)) throw new Error('回傳資料格式不符。');
+            if (!list.items.length) return { lottery, ok: true, period: list.drawPeriod, records: list.total, storedRecords, skipped: true };
+            for (const item of representativeItems(list.items)) {
+              const itemId = item.id;
+              const value = await rpc(`matrix_${kind}_validation`, { lottery, drawPeriod: list.drawPeriod, analysisVersion: list.analysisVersion, itemId, explorePeriods: kind === 'tianheng' ? 3 : 2, exploreRange: '標準範圍' });
+              if (!record(value) || value.status !== 'complete' || value.lottery !== lottery || value.itemId !== itemId || value.drawPeriod !== list.drawPeriod || value.analysisVersion !== list.analysisVersion || !record(value.validation) || !Array.isArray(value.validation.ruleSets)) throw new Error('回傳資料格式不符。');
+            }
           }
-          return { lottery, ok: true, period: list.drawPeriod, records: list.total };
+          return { lottery, ok: true, period: list.drawPeriod, records: list.total, storedRecords };
         }
         const base = await (workerUrl ??= options.loadWorkerUrl());
         if (!base) throw new Error('尚未設定 Railway API 位址。');
