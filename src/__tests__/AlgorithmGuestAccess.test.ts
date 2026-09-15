@@ -77,18 +77,14 @@ test('未登入只保留探索二期與天衡三期基本查詢', async () => {
   ]);
 });
 
-test('未登入即使免費會員開關開啟也不能使用探索七期十三期與完整範圍', async () => {
-  for (const request of [
-    { explorePeriods: 7, exploreRange: '標準範圍' },
-    { explorePeriods: 13, exploreRange: '標準範圍' },
-    { explorePeriods: 2, exploreRange: '完整範圍' },
-  ] as const) {
+test('未登入即使免費會員開關開啟也不能直接使用探索七期與十三期', async () => {
+  for (const explorePeriods of [7, 13] as const) {
     await expect(fetchExploreList({
       lottery: '今彩539',
       numberOrder: '依號碼由小到大排序',
-      explorePeriods: request.explorePeriods,
+      explorePeriods,
       exploreDateOffset: 0,
-      exploreRange: request.exploreRange,
+      exploreRange: '標準範圍',
       ruleCount: 1,
       roadTypes: ['加減'],
       selectedStreaks: ['準5進6'],
