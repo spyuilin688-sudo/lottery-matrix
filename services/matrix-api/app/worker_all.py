@@ -13,6 +13,7 @@ from app.scraping.resilient_source import wrap_source_with_tinyfish
 from app.scraping.sources import LatestDrawSource
 from app.settings import load_settings
 from app.services.marksix_calendar import sync_marksix_calendar
+from app.services.tinyfish_status import create_tinyfish_telemetry
 from app.worker import create_notification_emitter, run_scheduled_worker
 
 
@@ -106,6 +107,7 @@ def main() -> int:
             LatestDrawSource(client),
             client,
             settings,
+            telemetry=create_tinyfish_telemetry(repository),
         )
         notification_emitter = create_notification_emitter(settings, client)
         if notification_emitter is None:
