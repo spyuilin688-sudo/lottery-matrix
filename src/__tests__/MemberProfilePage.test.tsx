@@ -16,6 +16,7 @@ const lineAuth = vi.hoisted(() => ({
   signOutFromMatrix: vi.fn(),
   reconcilePendingLineLogoutPresence: vi.fn(),
 }));
+const googleAuth = vi.hoisted(() => ({ signInWithGoogle: vi.fn() }));
 const appDialog = vi.hoisted(() => ({ confirm: vi.fn(), alert: vi.fn() }));
 const pwaLifecycle = vi.hoisted(() => ({ usePwaLifecycle: vi.fn() }));
 const supabase = vi.hoisted(() => {
@@ -47,6 +48,7 @@ vi.mock("../auth/line-auth", () => ({
   signOutFromMatrix: lineAuth.signOutFromMatrix,
   reconcilePendingLineLogoutPresence: lineAuth.reconcilePendingLineLogoutPresence,
 }));
+vi.mock("../auth/google-auth", () => ({ signInWithGoogle: googleAuth.signInWithGoogle }));
 vi.mock("../lib/supabase", () => ({ getSupabaseClient: supabase.getClient }));
 vi.mock("../dialog/AppDialog", () => ({ useAppDialog: () => appDialog }));
 vi.mock("../pwa-lifecycle", () => ({ usePwaLifecycle: pwaLifecycle.usePwaLifecycle }));
@@ -78,6 +80,7 @@ beforeEach(() => {
   lineAuth.signInWithLine.mockReset().mockResolvedValue(undefined);
   lineAuth.signOutFromMatrix.mockReset().mockResolvedValue(undefined);
   lineAuth.reconcilePendingLineLogoutPresence.mockReset();
+  googleAuth.signInWithGoogle.mockReset().mockResolvedValue({ kind: "unavailable", reason: "not-configured" });
   appDialog.confirm.mockReset().mockResolvedValue(true);
   appDialog.alert.mockReset().mockResolvedValue(undefined);
   pwaLifecycle.usePwaLifecycle.mockReset().mockReturnValue({
@@ -143,10 +146,10 @@ describe("ProfilePage member API", () => {
     expect(memberApi.fetchMemberPaymentHistory).not.toHaveBeenCalled();
   });
 
-  it("LINE 暱稱為資訊文字，不呈現輸入框邊線", async () => {
+  it("會員名稱為資訊文字，不呈現輸入框邊線", async () => {
     render(<ProfilePage onNavigate={vi.fn()} />);
     await screen.findByRole("button", { name: "登出" });
-    const nickname = screen.getByText("LINE 暱稱：");
+    const nickname = screen.getByText("會員名稱：");
     expect(getComputedStyle(nickname).borderTopWidth).toBe("0px");
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
@@ -232,6 +235,23 @@ describe("ProfilePage member API", () => {
 
     expect(screen.getByRole("heading", { name: "我的", level: 1 })).toBeVisible();
     expect(screen.getByText("MY ACCOUNT")).toBeVisible();
+  });
+
+  it("未登入時同時顯示 Google 登入，失敗使用共用危險提示", async () => {
+    supabase.auth.getSession.mockResolvedValueOnce({ data: { session: null }, error: null });
+    render(<ProfilePage onNavigate={vi.fn()} />);
+
+    const googleLogin = await screen.findByRole("button", { name: "Google 登入" });
+    expect(screen.getByRole("button", { name: "LINE 登入" })).toBeInTheDocument();
+    fireEvent.click(googleLogin);
+
+    await waitFor(() => expect(googleAuth.signInWithGoogle).toHaveBeenCalledTimes(1));
+    expect(appDialog.alert).toHaveBeenCalledWith({
+      title: "登入失敗",
+      description: "Google 登入目前無法使用，請稍後再試。",
+      tone: "danger",
+    });
+    expect(screen.getByRole("button", { name: "Google 登入" })).toBeEnabled();
   });
 
   it("未登入時在既有會員卡顯示 LINE 登入並啟動登入流程", async () => {
@@ -502,7 +522,7 @@ describe("ProfilePage member API", () => {
     supabase.auth.getSession.mockResolvedValueOnce({ data: { session: staleSession }, error: null });
     render(<ProfilePage onNavigate={vi.fn()} />);
     expect(await screen.findByRole("button", { name: "登出" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "LINE 頭貼" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "會員頭貼" })).toBeInTheDocument();
 
     act(() => { supabase.emitAuthState("SIGNED_OUT", staleSession); });
 
@@ -531,7 +551,7 @@ describe("ProfilePage member API", () => {
     expect(screen.queryByRole("button", { name: "LINE 登入" })).not.toBeInTheDocument();
   });
 
-  it("LINE 有頭貼時顯示 LINE 頭貼", async () => {
+  it("會員登入有頭貼時顯示會員頭貼", async () => {
     supabase.auth.getSession.mockResolvedValueOnce({
       data: {
         session: {
@@ -544,7 +564,7 @@ describe("ProfilePage member API", () => {
 
     render(<ProfilePage onNavigate={vi.fn()} />);
 
-    expect(await screen.findByRole("img", { name: "LINE 頭貼" })).toHaveAttribute(
+    expect(await screen.findByRole("img", { name: "會員頭貼" })).toHaveAttribute(
       "src",
       "https://profile.line-scdn.net/member-avatar",
     );
@@ -559,7 +579,7 @@ describe("ProfilePage member API", () => {
     );
   });
 
-  it("顯示 LINE 暱稱，長暱稱在固定框內縮小並省略", async () => {
+  it("顯示會員名稱，長名稱在固定框內縮小並省略", async () => {
     const nickname = "這是一個很長的 LINE 會員暱稱";
     supabase.auth.getSession.mockResolvedValueOnce({
       data: {
@@ -573,7 +593,7 @@ describe("ProfilePage member API", () => {
 
     render(<ProfilePage onNavigate={vi.fn()} />);
 
-    const nicknameFrame = await screen.findByText(`LINE 暱稱：${nickname}`);
+    const nicknameFrame = await screen.findByText(`會員名稱：${nickname}`);
     expect(screen.queryByText(/LINE ID：/)).not.toBeInTheDocument();
     expect(nicknameFrame).toHaveAttribute("data-name-fit", "compact");
     // Nickname text scales with the artwork container; jsdom preserves cqw units.
@@ -594,7 +614,7 @@ describe("ProfilePage member API", () => {
     expect(memberApi.bootstrapMember.mock.invocationCallOrder[0]).toBeLessThan(
       memberApi.fetchMemberProfile.mock.invocationCallOrder[0],
     );
-    expect(screen.getByText("LINE 暱稱：")).toBeInTheDocument();
+    expect(screen.getByText("會員名稱：")).toBeInTheDocument();
     expect(screen.getByText("年費方案")).toBeInTheDocument();
     expect(screen.getByText("2026/09/22")).toBeInTheDocument();
     expect(screen.getByText("剩餘 10 天")).toBeInTheDocument();
@@ -630,7 +650,7 @@ describe("ProfilePage member API", () => {
 
     render(<ProfilePage onNavigate={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getByText("LINE 暱稱：")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("會員名稱：")).toBeInTheDocument());
     expect(screen.queryByText("2027/07/23")).not.toBeInTheDocument();
     expect(screen.queryByText(/剩餘 .* 天/)).not.toBeInTheDocument();
   });

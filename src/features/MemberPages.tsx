@@ -5,6 +5,7 @@ import { isActivationRedemptionError, redeemActivationCode, type ActivationRedem
 import { bootstrapMember, fetchMemberProfile, fetchMemberReferralSummary, fetchPendingTransferRequest, submitMemberReferralCode, submitTransferRequest, type MemberProfileResponse, type MemberReferralSummary, type MemberTransferRequest, type ManualTransferPlanCode } from "../member-api";
 import { readManualTransferPlan, saveManualTransferPlan } from "../manual-transfer-selection";
 import { reconcilePendingLineLogoutPresence, signInWithLine, signOutFromMatrix } from "../auth/line-auth";
+import { signInWithGoogle } from "../auth/google-auth";
 import { clearLineLoginAttempt, consumeLineLoginAttempt, markLineLoginAttempt } from "../auth/line-login-attempt";
 import { withDeadline } from "../lib/api-resilience";
 import { getSupabaseClient } from "../lib/supabase";
@@ -171,6 +172,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   const [authRetrying, setAuthRetrying] = useState(false);
   const [authCheckRevision, setAuthCheckRevision] = useState(0);
   const lineLoginInProgress = useRef(false);
+  const [signingInProvider, setSigningInProvider] = useState<"line" | "google" | null>(null);
   const [lineAvatarUrl, setLineAvatarUrl] = useState<string | null>(null);
   const [lineNickname, setLineNickname] = useState<string | null>(null);
   const [memberUserId, setMemberUserId] = useState<string | null>(null);
@@ -194,6 +196,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
         setMemberProfile(null);
       }
       setAuthRetrying(false);
+      setSigningInProvider(null);
       setAuthState(session ? "authenticated" : "anonymous");
       setLineAvatarUrl(lineAvatarFromSession(session));
       setLineNickname(lineNicknameFromSession(session));
@@ -290,6 +293,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
         setLineNickname(null);
         await alertDialog({ title: "已登出", tone: "success" });
       } else {
+        setSigningInProvider("line");
         setAuthState("signing-in");
         markLineLoginAttempt();
         lineLoginInProgress.current = true;
@@ -345,7 +349,26 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
         tone: "danger",
       });
     } finally {
+      if (action === "login") setSigningInProvider(null);
       setAuthState((current) => current === "signing-in" ? "anonymous" : current);
+    }
+  };
+  const handleGoogleAuthAction = async () => {
+    if (authRetrying || authState !== "anonymous") return;
+    setSigningInProvider("google");
+    setAuthState("signing-in");
+    try {
+      const result = await signInWithGoogle();
+      if (result.kind !== "oauth-url") throw new Error(result.reason);
+      window.location.assign(result.url);
+    } catch {
+      setSigningInProvider(null);
+      setAuthState("anonymous");
+      await alertDialog({
+        title: "登入失敗",
+        description: "Google 登入目前無法使用，請稍後再試。",
+        tone: "danger",
+      });
     }
   };
   const handleInstallAction = async () => {
@@ -374,11 +397,11 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
     <FeatureShell title="我的" onNavigate={onNavigate} active="我的" className="profile-screen" compactHeader>
       <div className="membership-card-stack">
         <MembershipArtwork showSubscription={subscriptionPurchaseVisible} />
-        <section className="panel membership-card profile-card">
+        <section className="panel membership-card profile-card" data-auth-layout={authState === "anonymous" || authState === "signing-in" ? "multiple" : "single"}>
           <div className="profile-avatar">
             <img
               src={lineAvatarUrl ?? "/assets/lottery/matrix-profile-avatar.jpg"}
-              alt={lineAvatarUrl ? "LINE 頭貼" : "Matrix 預設頭貼"}
+              alt={lineAvatarUrl ? "會員頭貼" : "Matrix 預設頭貼"}
             />
           </div>
           <div className="profile-copy">
@@ -386,22 +409,43 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
             <p
               className="profile-nickname"
               data-name-fit={lineNickname && Array.from(lineNickname).length > 12 ? "compact" : "regular"}
-            >LINE 暱稱：{lineNickname ?? ""}</p>
+            >會員名稱：{lineNickname ?? ""}</p>
           </div>
-          {authState !== "initializing" ? <button
-            type="button"
-            className="profile-logout"
-            data-auth-state={authState}
-            onClick={() => void handleAuthAction()}
-            disabled={authRetrying || authState === "signing-in" || authState === "signing-out"}
-            aria-busy={authRetrying || authState === "signing-in" || authState === "signing-out"}
-          ><span>{
-            authState === "authenticated" ? "登出"
-              : authState === "signing-in" ? "登入中…"
+          {authState !== "initializing" ? <div className="profile-auth-actions">
+            {authState === "anonymous" || authState === "signing-in" ? <>
+              <button
+                type="button"
+                className="profile-logout"
+                data-auth-state={authState}
+                data-login-provider="line"
+                aria-label={signingInProvider === "line" ? "登入中…" : "LINE 登入"}
+                onClick={() => void handleAuthAction()}
+                disabled={authState === "signing-in"}
+                aria-busy={signingInProvider === "line"}
+              ><span>{signingInProvider === "line" ? "登入中…" : "LINE"}</span></button>
+              <button
+                type="button"
+                className="profile-logout"
+                data-auth-state={authState}
+                data-login-provider="google"
+                aria-label={signingInProvider === "google" ? "Google 登入中…" : "Google 登入"}
+                onClick={() => void handleGoogleAuthAction()}
+                disabled={authState === "signing-in"}
+                aria-busy={signingInProvider === "google"}
+              ><span>{signingInProvider === "google" ? "登入中…" : "Google"}</span></button>
+            </> : <button
+              type="button"
+              className="profile-logout"
+              data-auth-state={authState}
+              onClick={() => void handleAuthAction()}
+              disabled={authRetrying || authState === "signing-out"}
+              aria-busy={authRetrying || authState === "signing-out"}
+            ><span>{
+              authState === "authenticated" ? "登出"
                 : authState === "signing-out" ? "登出中…"
-                  : authState === "degraded" ? "重新檢查"
-                    : "LINE 登入"
-          }</span></button> : null}
+                  : "重新檢查"
+            }</span></button>}
+          </div> : null}
         </section>
         {subscriptionPurchaseVisible && <section className="panel membership-card subscription-status-card">
           <SectionTitle>目前訂閱狀態</SectionTitle>
@@ -1120,7 +1164,7 @@ export function ServiceInfoPage({ onNavigate }: { onNavigate: Navigate }) {
         <ul className="legal-info-lotteries">{["今彩539", "天天樂", "六合彩", "大樂透"].map((item) => <li key={item}>{item}</li>)}</ul>
       </LegalInfoSection>
       <LegalInfoSection title="五、使用方式">
-        <p>使用者透過 LINE 登入後，可查看會員資訊、訂閱資訊及目前帳號可使用的功能。</p>
+        <p>使用者透過 LINE 或 Google 登入後，可查看會員資訊、訂閱資訊及目前帳號可使用的功能。</p>
         <p>Matrix 天衡以同一期的兩個球位與對應號碼共同作為條件，比對歷史紀錄。可設定天衡期數、版路類型、天衡條件及進階選項，按下「開始天衡」後查看天衡結果、重複號碼統計及版路驗證過程。</p>
         <p>不同會員狀態可使用的功能及權限，依目前帳號顯示為準。</p>
       </LegalInfoSection>
@@ -1172,7 +1216,7 @@ export function MemberTermsPage({ onNavigate }: { onNavigate: Navigate }) {
   const subscriptionPurchaseVisible = useSubscriptionPurchaseVisible();
   const sections: Array<[string, React.ReactNode]> = [
     ["一、服務範圍", <p>樂彩 Matrix 提供 {subscriptionPurchaseVisible ? "Matrix 分析" : "Matrix 查詢"}、歷史資料查詢、號碼紀錄、計算工具、牌單及通知等功能。</p>],
-    ["二、會員登入", <p>使用者透過 LINE 登入後使用會員功能。</p>],
+    ["二、會員登入", <p>使用者透過 LINE 或 Google 登入後使用會員功能。</p>],
     ["三、Matrix Pro 訂閱", <><p>Matrix Pro 提供月方案、季方案及年方案。</p><p>使用者可自行選擇是否開啟自動續訂。</p><p>開啟自動續訂後，系統將於目前方案到期時，依原訂閱方案自動續訂並扣款。</p><p>使用者可於方案到期前，先行關閉自動續訂；關閉之後，已付款的 Matrix Pro 仍可使用至到期日，期滿後不再自動續訂。</p></>],
     ["四、訂閱方案", <><ul className="legal-info-plans">{[
       "月方案：30 天，NT$2,880",
@@ -1193,9 +1237,9 @@ export function PrivacyPolicyPage({ onNavigate }: { onNavigate: Navigate }) {
   const subscriptionPurchaseVisible = useSubscriptionPurchaseVisible();
   return (
     <LegalInfoDocument title="隱私權政策" onNavigate={onNavigate}>
-      <LegalInfoSection title="一、蒐集的資料"><DetailList items={["登入 LINE 所提供的帳號識別資料", ...(subscriptionPurchaseVisible ? ["Matrix Pro 訂閱狀態", "訂閱到期日"] : []), "啟動碼使用紀錄", "推薦碼使用紀錄", "推薦成功人數", "通知設定"]} /></LegalInfoSection>
+      <LegalInfoSection title="一、蒐集的資料"><DetailList items={["登入服務所提供的帳號識別資料", ...(subscriptionPurchaseVisible ? ["Matrix Pro 訂閱狀態", "訂閱到期日"] : []), "啟動碼使用紀錄", "推薦碼使用紀錄", "推薦成功人數", "通知設定"]} /></LegalInfoSection>
       <LegalInfoSection title="二、使用目的"><DetailList items={["會員登入與帳號識別", ...(subscriptionPurchaseVisible ? ["顯示會員及訂閱狀態", "Matrix Pro 啟用、續訂及權限管理"] : []), "提供使用者已選擇的功能", ...(subscriptionPurchaseVisible ? ["推薦活動資格與獎勵管理"] : []), "系統通知與服務通知"]} /></LegalInfoSection>
-      <LegalInfoSection title="三、第三方服務"><p>目前已確認使用 LINE 登入。</p></LegalInfoSection>
+      <LegalInfoSection title="三、第三方服務"><p>目前使用 LINE 與 Google 登入服務。</p></LegalInfoSection>
       <LegalInfoSection title="四、資料使用範圍"><p>蒐集之資料，僅用於本政策所載之使用目的及提供樂彩 Matrix 服務，不會於未經使用者同意或法律另有規定之情況下，提供予第三方。</p></LegalInfoSection>
       <LegalInfoSection title="五、資料安全"><p>樂彩 Matrix 將採取合理之安全措施保護會員資料，避免未經授權之存取、使用、修改或洩漏。</p></LegalInfoSection>
       <LegalInfoSection title="六、隱私權政策調整"><p>樂彩 Matrix 保留修改本隱私權政策之權利，更新後將公布於本頁面，並自公告日起生效。</p></LegalInfoSection>
@@ -1212,7 +1256,7 @@ export function DisclaimerPage({ onNavigate }: { onNavigate: Navigate }) {
       <LegalInfoSection title="三、使用者決定"><p>使用者應自行決定如何使用服務內提供的資料、{subscriptionPurchaseVisible ? "功能及分析結果" : "功能及查詢結果"}，並自行承擔相關決定所產生的結果。</p></LegalInfoSection>
       <LegalInfoSection title="四、資料差異"><p>如服務內資料與官方公布資料不同，請以官方公布資料為準。</p></LegalInfoSection>
       <LegalInfoSection title="五、系統與服務"><p>樂彩 Matrix 不保證服務持續不中斷、完全無錯誤，或所有功能於任何時間皆可正常使用。</p><p>如因系統維護、更新、網路異常、第三方服務或其他原因造成服務中斷、延遲或資料顯示異常，將依實際情況處理。</p></LegalInfoSection>
-      <LegalInfoSection title="六、第三方服務"><p>本服務使用 LINE 登入、金流服務或其他第三方服務。</p><p>第三方服務之使用方式、資料處理及服務狀態，依各第三方服務提供者之規定辦理。</p></LegalInfoSection>
+      <LegalInfoSection title="六、第三方服務"><p>本服務使用 LINE、Google 登入、金流服務或其他第三方服務。</p><p>第三方服務之使用方式、資料處理及服務狀態，依各第三方服務提供者之規定辦理。</p></LegalInfoSection>
       <LegalInfoSection title="七、責任範圍"><p>因使用或無法使用樂彩 Matrix 所提供的資料、{subscriptionPurchaseVisible ? "功能、分析結果或第三方服務" : "功能、查詢結果或第三方服務"}所產生的影響，應依實際情況及相關法令認定。</p></LegalInfoSection>
       <LegalInfoSection title="八、內容調整"><p>樂彩 Matrix 得依服務實際運作需要調整功能、內容及相關說明。</p><p>如涉及會員權益或重要內容調整，將於服務內公告。</p></LegalInfoSection>
       <LegalInfoSection title="九、最終說明"><p>本聲明與免責事項如與中華民國法令的強制或禁止規定不同，依相關法令辦理。</p><p>樂彩 Matrix 保留服務內容、功能說明、資料呈現、規則內容、修改、解釋及最終決定之權利。</p></LegalInfoSection>

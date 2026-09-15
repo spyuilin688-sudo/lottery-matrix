@@ -17,7 +17,6 @@ import "./line-pwa-return-fallback.css";
 
 import { registerPushServiceWorker } from "./push-subscription";
 import { finishLineLoginPopup } from './auth/line-login-popup';
-import { installGoogleLoginEntry } from './auth/google-auth-entry';
 import { getSupabaseClient } from './lib/supabase';
 import {
   hasLineOAuthCallback,
@@ -37,7 +36,6 @@ import { clearLineLoginCallbackError, readLineLoginCallbackError } from './auth/
 const lineLoginError = readLineLoginCallbackError(new URL(window.location.href));
 
 installGlobalInputBehavior();
-installGoogleLoginEntry();
 
 const linePwaWorkerReady = 'serviceWorker' in navigator
   ? registerPushServiceWorker()
