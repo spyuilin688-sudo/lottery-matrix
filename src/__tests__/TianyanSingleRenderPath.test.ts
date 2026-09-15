@@ -9,8 +9,14 @@ describe("Tianyan single render path", () => {
     expect(router).not.toContain("TianyanExpandedLayoutPatch");
   });
 
-  it("keeps Tianyan expanded layout helpers free of DOM observers, portals and duplicate Tianyan API reads", () => {
-    const layout = source("../TianyanExpandedLayoutPatch.tsx");
+  it("renders expanded Tianyan validation from the canonical validation component", () => {
+    const validation = source("../features/MatrixValidation.tsx");
+    expect(validation).toContain("TianyanExpandedValidationGroups");
+    expect(validation).toContain("numberOrder={item.numberOrder}");
+  });
+
+  it("keeps the canonical expanded renderer free of DOM observers, portals and duplicate Tianyan API reads", () => {
+    const layout = source("../TianyanExpandedValidation.tsx");
     expect(layout).not.toContain("MutationObserver");
     expect(layout).not.toContain("createPortal");
     expect(layout).not.toContain("fetchTianyanList");
