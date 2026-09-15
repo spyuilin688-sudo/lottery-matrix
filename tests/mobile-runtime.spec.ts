@@ -184,7 +184,8 @@ for (const width of MOBILE_WIDTHS) {
     await page.getByRole("button", { name: "我的推薦碼/啟動碼", exact: true }).click();
 
     const referral = page.locator(".referral-input-card");
-    await expect(referral.getByRole("heading", { name: "輸入推薦碼", exact: true })).toBeVisible();
+    await expect(referral.getByRole("heading", { name: "輸入推薦碼", exact: true })).toHaveCount(0);
+    await expect(page.locator(".referral-code-label")).toBeHidden();
     await expect(referral.getByRole("button", { name: "確認", exact: true })).toBeDisabled();
     await expect(page.getByRole("button", { name: "邀請好友", exact: true })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "複製推薦碼", exact: true })).toBeVisible();
