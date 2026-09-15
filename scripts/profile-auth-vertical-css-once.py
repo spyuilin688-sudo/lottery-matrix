@@ -8,12 +8,10 @@ new = '''.profile-card {\n  --profile-auth-zone-right: 6.08cqw;\n  --profile-aut
 if text.count(old) != 1:
     raise RuntimeError("profile auth layout block changed; refusing to patch")
 text = text.replace(old, new, 1)
-old_button = '''  min-height: 44px;\n  height: 12.3cqw;\n'''
-new_button = '''  min-height: var(--profile-auth-button-min-height);\n  height: var(--profile-auth-button-height);\n'''
-match_count = text.count(old_button)
-print(f"profile auth button sizing match count={match_count}")
-if match_count != 1:
-    raise RuntimeError("profile auth button sizing block changed; refusing to patch")
+old_button = '''.profile-logout {\n  position: static;\n  display: grid;\n  box-sizing: border-box;\n  width: 100%;\n  min-width: 0;\n  min-height: 44px;\n  height: 12.3cqw;\n  padding: 0;\n'''
+new_button = '''.profile-logout {\n  position: static;\n  display: grid;\n  box-sizing: border-box;\n  width: 100%;\n  min-width: 0;\n  min-height: var(--profile-auth-button-min-height);\n  height: var(--profile-auth-button-height);\n  padding: 0;\n'''
+if text.count(old_button) != 1:
+    raise RuntimeError("canonical profile logout sizing block changed; refusing to patch")
 text = text.replace(old_button, new_button, 1)
 path.write_text(text, encoding="utf-8")
 print("Applied vertical auth layout CSS.")
