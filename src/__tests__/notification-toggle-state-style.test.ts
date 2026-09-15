@@ -6,30 +6,40 @@ import { describe, expect, it } from "vitest";
 
 declare const process: { cwd(): string };
 
-const css = readFileSync(`${process.cwd()}/src/feature-page-adjustments.css`, "utf8");
+const sharedCss = readFileSync(`${process.cwd()}/src/feature-pages.css`, "utf8");
+const adjustmentCss = readFileSync(`${process.cwd()}/src/feature-page-adjustments.css`, "utf8");
 
-function ruleBody(selector: string) {
+function ruleBody(css: string, selector: string) {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const match = css.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`, "s"));
   return match?.[1] ?? "";
 }
 
 describe("notification toggle state colors", () => {
-  it("uses the explicit off-state palette from the existing notification-v2 owner", () => {
-    const track = ruleBody(".notifications-screen-v2 .toggle::before");
-    const thumb = ruleBody(".notifications-screen-v2 .toggle span");
+  it("keeps the switch palette in the shared toggle owner", () => {
+    const offTrack = ruleBody(sharedCss, ".toggle::before");
+    const offThumb = ruleBody(sharedCss, ".toggle span");
+    const onTrack = ruleBody(sharedCss, '.toggle[data-checked="true"]::before');
+    const onThumb = ruleBody(sharedCss, '.toggle[data-checked="true"] span');
 
-    expect(track).toContain("border: 1px solid #46505B;");
-    expect(track).toContain("background: #111923;");
-    expect(thumb).toContain("background: #929AA3;");
+    expect(offTrack).toContain("border: 1px solid #46505B;");
+    expect(offTrack).toContain("background: #111923;");
+    expect(offThumb).toContain("background: #929AA3;");
+    expect(onTrack).toContain("border-color: #D7AE55;");
+    expect(onTrack).toContain("background: rgba(202, 160, 70, .28);");
+    expect(onThumb).toContain("background: #FFF9EA;");
   });
 
-  it("uses a gold track and warm-white thumb when the notification toggle is on", () => {
-    const track = ruleBody('.notifications-screen-v2 .toggle[data-checked="true"]::before');
-    const thumb = ruleBody('.notifications-screen-v2 .toggle[data-checked="true"] span');
+  it("does not duplicate the state palette in notification-v2 overrides", () => {
+    const offTrack = ruleBody(adjustmentCss, ".notifications-screen-v2 .toggle::before");
+    const offThumb = ruleBody(adjustmentCss, ".notifications-screen-v2 .toggle span");
+    const onTrack = ruleBody(adjustmentCss, '.notifications-screen-v2 .toggle[data-checked="true"]::before');
+    const onThumb = ruleBody(adjustmentCss, '.notifications-screen-v2 .toggle[data-checked="true"] span');
 
-    expect(track).toContain("border-color: #D7AE55;");
-    expect(track).toContain("background: rgba(202, 160, 70, .28);");
-    expect(thumb).toContain("background: #FFF9EA;");
+    expect(offTrack).not.toMatch(/(?:border(?:-color)?|background)\s*:/);
+    expect(offThumb).not.toMatch(/background\s*:/);
+    expect(onTrack).toBe("");
+    expect(onThumb).toContain("transform: translateX(20px);");
+    expect(onThumb).not.toMatch(/background\s*:/);
   });
 });
