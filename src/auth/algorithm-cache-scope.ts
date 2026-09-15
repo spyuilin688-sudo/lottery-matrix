@@ -44,14 +44,22 @@ export async function readAlgorithmCacheScope(
   const startedGeneration = generation;
   const startedIdentity = identity;
   const { data, error } = await client.auth.getSession();
+  const returnedSession = data?.session ?? null;
   // An auth event supersedes a session lookup that was already in flight.
-  const returnedIdentity = sessionIdentity(data.session);
+  const returnedIdentity = sessionIdentity(returnedSession);
   if (generation !== startedGeneration
     && (returnedIdentity !== identity || returnedIdentity === startedIdentity)) {
     throw new MatrixApiError('AUTH_REQUIRED', 401);
   }
-  if (error) throw new MatrixApiError('AUTH_REQUIRED', 401);
-  updateAlgorithmCacheSession(data.session);
+  if (error) {
+    // Public algorithm reads must not depend on Auth being available. Only a
+    // genuinely sessionless lookup may fall back to the anonymous cache scope;
+    // protected callers and ambiguous authenticated failures remain rejected.
+    if (!options.allowGuest || returnedSession) throw new MatrixApiError('AUTH_REQUIRED', 401);
+    updateAlgorithmCacheSession(null);
+    return generation;
+  }
+  updateAlgorithmCacheSession(returnedSession);
   if (!identity && !options.allowGuest) throw new MatrixApiError('AUTH_REQUIRED', 401);
   return generation;
 }
