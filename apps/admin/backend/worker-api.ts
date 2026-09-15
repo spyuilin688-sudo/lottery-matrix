@@ -41,7 +41,21 @@ export type RailwayJobItem = {
   latestDraw: RailwayLatestDraw | null;
   latestAnalysis: RailwayLatestAnalysis | null;
 };
-export type RailwayJobs = { items: RailwayJobItem[] };
+export type TinyFishFallback = {
+  lottery: CrawlerLottery;
+  status: 'success' | 'failed';
+  finishedAt: string;
+  sourcePeriod: string | null;
+  error: 'TINYFISH_FAILED' | null;
+};
+export type TinyFishStatus = {
+  configured: boolean;
+  fetchEnabled: boolean;
+  browserEnabled: boolean;
+  browserMaxDurationSeconds: number;
+  lastFallbacks: TinyFishFallback[];
+};
+export type RailwayJobs = { items: RailwayJobItem[]; tinyfish: TinyFishStatus };
 export type WorkerStatus =
   | { ok: true; health: RailwayHealth; jobs: RailwayJobs }
   | {
@@ -67,7 +81,7 @@ export type WorkerRecovery = {
 const jobNameByLottery: Record<CrawlerLottery, string> = {
   今彩539: 'matrix-539-refresh-v2',
   天天樂: 'matrix-fantasy5-refresh-v2',
-  六合彩: 'matrix-marksix-refresh-v2',
+ 六合彩: 'matrix-marksix-refresh-v2',
   大樂透: 'matrix-649-refresh-v2',
 } as const;
 type Lottery = CrawlerLottery;
@@ -89,6 +103,7 @@ export const PRODUCTION_RAILWAY_WORKER_URL =
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 const isString = (value: unknown): value is string => typeof value === 'string';
+const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean';
 const isNullableString = (value: unknown): value is string | null =>
   value === null || isString(value);
 const includes = <T extends string>(
@@ -186,6 +201,51 @@ function parseJobItem(value: unknown): RailwayJobItem | null {
   return { lottery, jobName, job, latestDraw, latestAnalysis };
 }
 
+function parseTinyFishFallback(value: unknown): TinyFishFallback | null {
+  if (!isRecord(value) || !isString(value.lottery)) return null;
+  if (!lotteries.includes(value.lottery as Lottery)) return null;
+  if (!includes(['success', 'failed'] as const, value.status)) return null;
+  if (!isString(value.finishedAt) || !isNullableString(value.sourcePeriod)) return null;
+  if (!('error' in value) || !isNullableString(value.error)) return null;
+  if (value.error !== null && value.error !== 'TINYFISH_FAILED') return null;
+  return {
+    lottery: value.lottery as Lottery,
+    status: value.status,
+    finishedAt: value.finishedAt,
+    sourcePeriod: value.sourcePeriod,
+    error: value.error,
+  };
+}
+
+function parseTinyFish(value: unknown): TinyFishStatus | null {
+  if (!isRecord(value)) return null;
+  if (!isBoolean(value.configured)
+      || !isBoolean(value.fetchEnabled)
+      || !isBoolean(value.browserEnabled)
+      || typeof value.browserMaxDurationSeconds !== 'number'
+      || !Number.isInteger(value.browserMaxDurationSeconds)
+      || value.browserMaxDurationSeconds < 15
+      || value.browserMaxDurationSeconds > 120
+      || !Array.isArray(value.lastFallbacks)) {
+    return null;
+  }
+  const lastFallbacks: TinyFishFallback[] = [];
+  const seen = new Set<Lottery>();
+  for (const raw of value.lastFallbacks) {
+    const fallback = parseTinyFishFallback(raw);
+    if (!fallback || seen.has(fallback.lottery)) return null;
+    seen.add(fallback.lottery);
+    lastFallbacks.push(fallback);
+  }
+  return {
+    configured: value.configured,
+    fetchEnabled: value.fetchEnabled,
+    browserEnabled: value.browserEnabled,
+    browserMaxDurationSeconds: value.browserMaxDurationSeconds,
+    lastFallbacks,
+  };
+}
+
 function parseJobs(value: unknown): RailwayJobs | null {
   if (!isRecord(value) || !Array.isArray(value.items) || value.items.length !== 4) {
     return null;
@@ -197,7 +257,9 @@ function parseJobs(value: unknown): RailwayJobs | null {
     byLottery.set(item.lottery, item);
   }
   if (byLottery.size !== lotteries.length) return null;
-  return { items: lotteries.map((lottery) => byLottery.get(lottery)!) };
+  const tinyfish = parseTinyFish(value.tinyfish);
+  if (!tinyfish) return null;
+  return { items: lotteries.map((lottery) => byLottery.get(lottery)!), tinyfish };
 }
 
 function parseRefresh(
