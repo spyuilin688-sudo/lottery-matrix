@@ -720,9 +720,9 @@
   content: "";
 }
 
-/* Explore settings use two grouped row containers; child rows are separated inside the group. */
-.matrix-explore-main-screen:not(.matrix-tianheng-screen):not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-settings .setting-grid,
-.matrix-explore-main-screen:not(.matrix-tianheng-screen):not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-settings .advanced-panel {
+/* Matrix Core settings share one grouped-frame language across all four algorithms. */
+.matrix-explore-main-screen .explore-settings .setting-grid,
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .explore-settings .advanced-panel {
   gap: 0;
   overflow: hidden;
   border: 1px solid var(--pwa-frame-tertiary);
@@ -731,9 +731,10 @@
   box-shadow: none;
 }
 
-.matrix-explore-main-screen:not(.matrix-tianheng-screen):not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-settings .setting-grid > label,
-.matrix-explore-main-screen:not(.matrix-tianheng-screen):not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-settings .setting-grid > .explore-condition-row,
-.matrix-explore-main-screen:not(.matrix-tianheng-screen):not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-settings .advanced-panel > label {
+.matrix-explore-main-screen .explore-settings .setting-grid > label,
+.matrix-explore-main-screen .explore-settings .setting-grid > .explore-condition-row,
+.matrix-explore-main-screen .explore-settings .setting-grid > .tiangong-setting-row,
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .explore-settings .advanced-panel > label {
   box-sizing: border-box;
   min-height: 39px;
   padding: 5px 6px;
@@ -743,8 +744,8 @@
   box-shadow: none;
 }
 
-.matrix-explore-main-screen:not(.matrix-tianheng-screen):not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-settings .setting-grid > :not(:last-child),
-.matrix-explore-main-screen:not(.matrix-tianheng-screen):not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-settings .advanced-panel > :not(:last-child) {
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .explore-settings .setting-grid > :not(:last-child),
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .explore-settings .advanced-panel > :not(:last-child) {
   border-bottom: 1px solid var(--pwa-frame-divider);
 }
 
@@ -776,14 +777,16 @@
   box-shadow: none;
 }
 
-/* Explore title-card background: right-edge planet limb with low-contrast orbital traces. */
+/* Explore title card: restrained black-gold orbital field, without glow spill. */
 .feature-brand-header[data-product-header="Matrix 探索"] .product-header__frame {
   background-image:
-    radial-gradient(circle at 111% 52%, rgba(205, 169, 78, .085) 0 34%, rgba(232, 198, 112, .13) 34.5% 35.2%, rgba(189, 146, 56, .045) 35.8% 41%, transparent 42%),
-    radial-gradient(ellipse 66% 23% at 103% 57%, transparent 64%, rgba(230, 190, 91, .14) 65% 65.8%, transparent 67%),
-    linear-gradient(158deg, transparent 0 48%, rgba(222, 181, 88, .105) 48.4% 48.8%, transparent 49.3%),
-    linear-gradient(166deg, transparent 0 59%, rgba(222, 181, 88, .075) 59.3% 59.7%, transparent 60.2%),
-    linear-gradient(149deg, transparent 0 69%, rgba(222, 181, 88, .06) 69.3% 69.7%, transparent 70.2%),
+    radial-gradient(circle at 79% 50%, rgba(205, 153, 48, .08) 0 20%, rgba(241, 202, 104, .18) 20.7% 21.35%, rgba(155, 103, 24, .055) 22% 29%, transparent 30%),
+    radial-gradient(ellipse 59% 31% at 78% 52%, transparent 61%, rgba(231, 188, 87, .16) 62% 62.65%, transparent 64%),
+    radial-gradient(circle at 65% 25%, rgba(255, 228, 153, .42) 0 .7px, transparent 1.2px),
+    radial-gradient(circle at 88% 72%, rgba(255, 214, 112, .34) 0 .65px, transparent 1.15px),
+    radial-gradient(circle at 56% 73%, rgba(236, 191, 88, .28) 0 .55px, transparent 1.05px),
+    linear-gradient(151deg, transparent 0 49%, rgba(221, 176, 73, .12) 49.35% 49.72%, transparent 50.15%),
+    linear-gradient(166deg, transparent 0 62%, rgba(221, 176, 73, .09) 62.3% 62.65%, transparent 63.1%),
     var(--product-header-background);
   background-position: center;
   background-size: cover;
