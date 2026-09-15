@@ -1,0 +1,42 @@
+name: Backend Google login perks green once
+on:
+  push:
+    branches:
+      - fix/backend-google-login-perks-20260916
+permissions:
+  contents: write
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Focused auth and entitlement tests
+        run: >-
+          npx vitest run
+          backend/google-member-login-perks.test.ts
+          backend/matrix-member-auth.test.ts
+          backend/matrix-entitlements.test.ts
+          backend/matrix-entitlements-acceptance-v1.test.ts
+          backend/matrix-status-routes.test.ts
+          backend/line-registration-trials.test.ts
+          backend/matrix-custom-status-routes.test.ts
+          backend/matrix-tianyan-routes.test.ts
+          backend/matrix-tiangong-routes.test.ts
+          --reporter=verbose
+      - name: TypeScript compile check
+        run: npx tsc --noEmit
+      - name: Remove one-off workflow
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/backend-google-login-perks-green-once.yml
+          git commit -m 'chore: remove backend login perks green workflow'
+          git push origin HEAD:fix/backend-google-login-perks-20260916
