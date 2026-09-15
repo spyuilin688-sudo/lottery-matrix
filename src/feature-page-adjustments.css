@@ -777,15 +777,9 @@
   box-shadow: none;
 }
 
-/* Explore title card: visible right-side planet body with restrained orbital traces. */
+/* Explore title card: dedicated black-gold cosmic field with right-edge planet. */
 .feature-brand-header[data-product-header="Matrix 探索"] .product-header__frame {
-  background-image:
-    radial-gradient(circle at 91% 50%, rgba(166, 132, 57, .24) 0 25%, rgba(118, 88, 29, .38) 25.8% 29%, rgba(239, 204, 111, .32) 29.7% 30.45%, rgba(111, 79, 24, .10) 31.2% 34%, transparent 35%),
-    radial-gradient(circle at 96% 30%, rgba(244, 210, 120, .16) 0 7%, transparent 22%),
-    radial-gradient(ellipse 78% 37% at 91% 53%, transparent 58%, rgba(229, 187, 87, .24) 59% 59.7%, transparent 61%),
-    linear-gradient(157deg, transparent 0 51.5%, rgba(217, 172, 72, .16) 51.85% 52.2%, transparent 52.65%),
-    linear-gradient(169deg, transparent 0 62.5%, rgba(217, 172, 72, .12) 62.8% 63.15%, transparent 63.6%),
-    var(--product-header-background);
+  background-image: url("/assets/lottery/header-explore-planet.svg");
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
