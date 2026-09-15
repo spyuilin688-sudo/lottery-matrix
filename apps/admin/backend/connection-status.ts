@@ -102,11 +102,12 @@ const jobHealthState = (detail: ReturnType<typeof safeJobDetail> | null, checked
 
 const descriptionFor = (definition: ApiStatusDefinition) => definition.description;
 const safeErrorFor = (definition: ApiStatusDefinition, workerStatus?: WorkerStatus) => {
-  if (definition.location === 'Railway' && workerStatus?.ok === false) {
+  if ((definition.location === 'Railway' || definition.location === 'TinyFish') && workerStatus?.ok === false) {
     if (workerStatus.reason === 'SUPABASE_RAILWAY_CONFIG_MISSING') return 'Supabase 尚未完成 Railway 管理 API 設定';
     if (workerStatus.reason === 'RAILWAY_ADMIN_CONFIG_MISSING') return 'Railway 管理 API 尚未完成設定';
     if (workerStatus.reason === 'RAILWAY_AUTH_FAILED') return 'Railway 管理 API 驗證失敗';
   }
+  if (definition.location === 'TinyFish') return 'TinyFish 備援狀態暫時無法取得';
   if (definition.location === 'Railway') return 'Railway Worker API 暫時無法使用';
   if (definition.location === 'GitHub') return 'GitHub Actions API 暫時無法使用';
   if (definition.checkMode === 'registry') return '無法確認資料庫內是否有此 API';
@@ -208,7 +209,7 @@ export function createConnectionStatus(dependencies: Dependencies) {
     const started = now().getTime();
     const checkEvidence: ApiCheckEvidence = queryCheckIds.has(definition.id) || definition.id === 'supabase-rpc-matrix_permission_settings' ? 'query'
       : protectedResultKinds[definition.id] ? 'data'
-      : definition.id === 'supabase-watchdog-heartbeat' || definition.id === matrixStorageStatusId || definition.id === notificationCalendarStatusId || definition.id === nativeNotificationStatusId ? 'reported'
+      : definition.id === 'supabase-watchdog-heartbeat' || definition.id === matrixStorageStatusId || definition.id === notificationCalendarStatusId || definition.id === nativeNotificationStatusId || definition.location === 'TinyFish' ? 'reported'
       : definition.endpoint.startsWith('/functions/v1/') ? 'options'
       : definition.checkMode === 'registry' ? 'registered'
       : definition.location === 'Railway' && definition.checkMode === 'service' ? 'inherited'
@@ -331,6 +332,27 @@ export function createConnectionStatus(dependencies: Dependencies) {
           ? runs.workflow_runs[0] as Row
           : undefined;
         detail = safeGithubDetail(workflow, latestRun);
+      } else if (definition.location === 'TinyFish') {
+        const status = await shared.worker();
+        if (!status.ok) throw new Error('WORKER_UNAVAILABLE');
+        const tinyfish = status.jobs.tinyfish;
+        if (!tinyfish.configured) {
+          return { ...finish(false, tinyfish, 'TinyFish API Key 尚未設定'), healthState: 'failed', checkEvidence: 'reported' };
+        }
+        if (!tinyfish.fetchEnabled) {
+          return { ...finish(false, tinyfish, 'TinyFish Fetch 備援目前關閉'), healthState: 'failed', checkEvidence: 'reported' };
+        }
+        const latest = tinyfish.lastFallbacks.reduce<(typeof tinyfish.lastFallbacks)[number] | null>((current, candidate) => {
+          if (!current) return candidate;
+          return Date.parse(candidate.finishedAt) > Date.parse(current.finishedAt) ? candidate : current;
+        }, null);
+        if (!latest) {
+          return { ...finish(true, tinyfish), healthState: 'waiting', checkEvidence: 'reported' };
+        }
+        if (latest.status === 'failed') {
+          return { ...finish(false, tinyfish, '最近一次 TinyFish 備援抓取失敗'), healthState: 'failed', checkEvidence: 'reported' };
+        }
+        return { ...finish(true, tinyfish), healthState: 'healthy', checkEvidence: 'reported' };
       } else if (definition.location === 'Railway') {
         const status = await shared.worker();
         if (definition.id === 'railway-health' && status.health) detail = status.health;
@@ -353,7 +375,7 @@ export function createConnectionStatus(dependencies: Dependencies) {
         ...finish(false, null, 'Matrix Storage 狀態暫時無法取得，請重新檢查。'), healthState: 'unknown',
       };
       if (cause instanceof Error && cause.message === 'STATUS_PROBE_TIMEOUT') return finish(false, undefined, '連線檢查逾時，請重新檢查。');
-      const workerStatus = definition.location === 'Railway' ? await shared.worker().catch(() => undefined) : undefined;
+      const workerStatus = definition.location === 'Railway' || definition.location === 'TinyFish' ? await shared.worker().catch(() => undefined) : undefined;
       return finish(false, undefined, safeErrorFor(definition, workerStatus));
     }
   };
