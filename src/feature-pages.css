@@ -913,10 +913,10 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .notification-content button:disabled,
 .notification-content input:disabled { cursor: default; }
 .toggle { position: relative; width: 46px; height: 44px; flex: 0 0 46px; padding: 0; border: 0; background: transparent; }
-.toggle::before { position: absolute; top: 8px; left: 0; box-sizing: border-box; width: 46px; height: 28px; border: 1px solid #46505C; border-radius: 14px; background: #151B22; content: ""; }
-.toggle span { position: absolute; top: 10px; left: 2px; width: 24px; height: 24px; border-radius: 50%; background: #dadada; transition: transform .18s; }
-.toggle[data-checked="true"]::before { border-color: var(--pwa-frame-secondary); background: var(--pwa-control-selected); box-shadow: none; }
-.toggle[data-checked="true"] span { transform: translateX(18px); background: white; }
+.toggle::before { position: absolute; top: 8px; left: 0; box-sizing: border-box; width: 46px; height: 28px; border: 1px solid #46505B; border-radius: 14px; background: #111923; content: ""; }
+.toggle span { position: absolute; top: 10px; left: 2px; width: 24px; height: 24px; border-radius: 50%; background: #929AA3; transition: transform .18s; }
+.toggle[data-checked="true"]::before { border-color: #D7AE55; background: rgba(202, 160, 70, .28); box-shadow: none; }
+.toggle[data-checked="true"] span { transform: translateX(18px); background: #FFF9EA; }
 .toggle:disabled { opacity: .5; }
 .toggle:disabled::before { border-color: #46505C; background: #151B22; box-shadow: none; }
 .notification-modal-backdrop { align-items: flex-end; }
