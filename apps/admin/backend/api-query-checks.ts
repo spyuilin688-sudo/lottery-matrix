@@ -9,7 +9,7 @@ const draw = (value: unknown, lottery: string): boolean => record(value)
   && new Set(value.numbers).size === value.numbers.length
   && value.numbers.every((number: unknown) => typeof number === 'string' && /^\d{2}$/.test(number) && Number(number) >= 1 && Number(number) <= (['今彩539', '天天樂'].includes(lottery) ? 39 : 49));
 // Visible rows in card_renderer.card_layout; actual order requires every row.
-const cardHistorySize: Record<string, number> = { 今彩539: 227, 香港彩: 171, 大樂透: 171 };
+const cardHistorySize: Record<string, number> = { 今彩539: 227, 六合彩: 171, 大樂透: 171 };
 const actualOrderAvailable = (value: Record<string, any>, lottery: string) => {
   if (!draw(value, lottery) || !['confirmed', 'preliminary'].includes(value.resultStatus)) throw new Error('回傳資料格式不符。');
   const actual = value.drawOrderNumbers;
