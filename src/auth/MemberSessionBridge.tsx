@@ -7,6 +7,7 @@ import { cleanupBrowserPushSubscription } from '../push-subscription';
 import { startMemberOnlineTracking } from '../member-online';
 import { postMemberOnline } from '../member-online-api';
 import { logicalSessionIdentity } from './session-identity';
+import { isLineProviderSession } from './session-provider';
 import { updateAlgorithmCacheSession } from './algorithm-cache-scope';
 
 type Props = {
@@ -108,7 +109,7 @@ export function MemberSessionBridge({
         void cleanupPush().catch(() => undefined);
         updateSession(null, false);
         return;
-      } else if (session?.provider_token) {
+      } else if (session?.provider_token && isLineProviderSession(session)) {
         rememberLineProviderToken(session.provider_token);
       }
 
