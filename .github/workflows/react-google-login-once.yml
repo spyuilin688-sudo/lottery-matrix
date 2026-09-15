@@ -32,6 +32,9 @@ jobs:
       - name: Apply exact source refactor
         run: python3 scripts/react-google-login-once.py
 
+      - name: Align focused test expectations
+        run: python3 scripts/react-google-login-test-expectations-once.py
+
       - name: Run focused auth and profile tests only
         run: >-
           npx vitest run
@@ -66,7 +69,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm .github/workflows/react-google-login-once.yml scripts/react-google-login-once.py
+          git rm .github/workflows/react-google-login-once.yml scripts/react-google-login-once.py scripts/react-google-login-test-expectations-once.py
           git add src/__tests__/MemberProfilePage.test.tsx src/auth/google-auth-entry.ts src/feature-pages.css src/features/MemberPages.tsx src/main.tsx
           git commit -m "Move Google login into React profile flow"
           git push origin HEAD:fix/react-google-login-20260915
