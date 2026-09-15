@@ -9,9 +9,50 @@
   row-gap: 1.5px;
 }
 
-.matrix-tianheng-screen .tianheng-summary-lines .tianyan-validation-summary-row {
-  justify-content: flex-start;
+/* Tianheng summary uses shared grid tracks so row two starts exactly below the
+   first row's first 「第」, without positional offsets. */
+.matrix-tianheng-screen .tianheng-summary-lines {
+  display: grid;
+  grid-template-columns: repeat(10, max-content);
+  align-items: baseline;
+  column-gap: 3px;
+}
+
+.matrix-tianheng-screen .tianheng-summary-lines .tianyan-validation-summary-row:first-child {
+  display: contents;
+}
+
+.matrix-tianheng-screen .tianheng-summary-lines .tianyan-validation-summary-row:first-child > span:nth-child(1) {
+  grid-row: 1;
+  grid-column: 1;
+}
+
+.matrix-tianheng-screen .tianheng-summary-lines .tianyan-validation-summary-row:first-child > span:nth-child(2) {
+  display: grid;
+  grid-row: 1;
+  grid-column: 2 / 6;
+  grid-template-columns: subgrid;
+  align-items: baseline;
+}
+
+.matrix-tianheng-screen .tianheng-summary-lines .tianyan-validation-summary-row:first-child > span:nth-child(3) {
+  grid-row: 1;
+  grid-column: 6;
+}
+
+.matrix-tianheng-screen .tianheng-summary-lines .tianyan-validation-summary-row:first-child > span:nth-child(4) {
+  display: grid;
+  grid-row: 1;
+  grid-column: 7 / 11;
+  grid-template-columns: subgrid;
+  align-items: baseline;
+}
+
+.matrix-tianheng-screen .tianheng-summary-lines .tianyan-validation-summary-row:nth-child(2) {
+  grid-row: 2;
+  grid-column: 3 / 11;
   width: max-content;
+  justify-content: flex-start;
 }
 
 .matrix-tianheng-screen .explore-validation-summary-card {
