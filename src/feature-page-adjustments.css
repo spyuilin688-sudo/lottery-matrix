@@ -197,7 +197,6 @@
   align-items: flex-start;
   gap: 0;
 }
-
 .notifications-screen-v2 .notification-push-status {
   display: flex;
   max-width: 100%;
@@ -721,34 +720,34 @@
   content: "";
 }
 
-/* Explore-only row treatment from the selected product mock. */
+/* Explore rows are individual framed cards, not separator lines. */
 .matrix-explore-main-screen:not(.matrix-tianheng-screen):not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-settings .setting-grid {
-  row-gap: 0;
+  row-gap: 6px;
 }
 
 .matrix-explore-main-screen:not(.matrix-tianheng-screen):not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-settings .setting-grid > label,
 .matrix-explore-main-screen:not(.matrix-tianheng-screen):not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-settings .explore-condition-row {
+  box-sizing: border-box;
   min-height: 39px;
-  padding: 5px 2px;
-  border-bottom: 1px solid var(--pwa-frame-divider);
-}
-
-.matrix-explore-main-screen:not(.matrix-tianheng-screen):not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-settings .setting-grid > :last-child {
-  border-bottom: 0;
+  padding: 5px 6px;
+  border: 1px solid var(--pwa-frame-tertiary);
+  border-radius: var(--pwa-frame-radius);
+  background: var(--pwa-control-surface);
+  box-shadow: none;
 }
 
 .matrix-explore-main-screen:not(.matrix-tianheng-screen):not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-settings .advanced-panel {
-  row-gap: 0;
+  row-gap: 6px;
 }
 
 .matrix-explore-main-screen:not(.matrix-tianheng-screen):not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-settings .advanced-panel > label {
+  box-sizing: border-box;
   min-height: 39px;
-  padding: 5px 2px;
-  border-bottom: 1px solid var(--pwa-frame-divider);
-}
-
-.matrix-explore-main-screen:not(.matrix-tianheng-screen):not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-settings .advanced-panel > label:last-child {
-  border-bottom: 0;
+  padding: 5px 6px;
+  border: 1px solid var(--pwa-frame-tertiary);
+  border-radius: var(--pwa-frame-radius);
+  background: var(--pwa-control-surface);
+  box-shadow: none;
 }
 
 /* Restore the former branded search action without changing current control dimensions. */
@@ -779,26 +778,17 @@
   box-shadow: none;
 }
 
-/* Matrix Explore title-card planet ghost: decorative only, behind existing content. */
-.feature-brand-header[data-product-header="Matrix 探索"] .product-header__frame::after {
-  position: absolute;
-  z-index: 1;
-  top: -34px;
-  right: -18px;
-  width: 138px;
-  height: 138px;
-  border: 1px solid rgba(222, 169, 56, .14);
-  border-radius: 50%;
-  background:
-    radial-gradient(ellipse 72% 22% at 50% 56%, transparent 72%, rgba(226, 179, 78, .18) 74% 77%, transparent 79%),
-    radial-gradient(circle at 34% 30%, rgba(255, 228, 162, .11), rgba(184, 123, 24, .05) 42%, transparent 69%);
-  box-shadow:
-    inset -18px -12px 28px rgba(211, 151, 36, .06),
-    0 0 22px rgba(219, 165, 48, .05);
-  opacity: .58;
-  pointer-events: none;
-  transform: rotate(-11deg);
-  content: "";
+/* Explore title-card background: visible planet body, arc and diagonal orbit behind content. */
+.feature-brand-header[data-product-header="Matrix 探索"] .product-header__frame {
+  background-color: #020609;
+  background-image:
+    radial-gradient(circle at 87% 50%, rgba(248, 219, 145, .14) 0 14%, rgba(212, 151, 38, .09) 15% 24%, transparent 25%),
+    radial-gradient(ellipse 42% 15% at 87% 55%, transparent 64%, rgba(231, 181, 73, .30) 65.5% 68%, transparent 69.5%),
+    linear-gradient(154deg, transparent 0 65%, rgba(225, 171, 61, .18) 65.5% 66.1%, transparent 66.6%),
+    var(--product-header-background);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
 @media (prefers-reduced-motion: reduce) {
