@@ -1,94 +1,119 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 136" fill="none">
   <defs>
-    <radialGradient id="ambient" cx="0" cy="0" r="1" gradientTransform="translate(452 72) rotate(7) scale(430 116)" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#6f4c16" stop-opacity=".11"/>
-      <stop offset=".48" stop-color="#2c1d08" stop-opacity=".06"/>
-      <stop offset="1" stop-color="#020507" stop-opacity="0"/>
+    <radialGradient id="ambient" cx="0" cy="0" r="1" gradientTransform="translate(448 66) rotate(5) scale(450 118)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8f611b" stop-opacity=".10"/>
+      <stop offset=".42" stop-color="#3a2609" stop-opacity=".055"/>
+      <stop offset="1" stop-color="#010407" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="planetBody" cx="0" cy="0" r="1" gradientTransform="translate(746 36) rotate(122) scale(126 116)" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#8e6d2c" stop-opacity=".5"/>
-      <stop offset=".28" stop-color="#5f481d" stop-opacity=".44"/>
-      <stop offset=".62" stop-color="#241a0a" stop-opacity=".82"/>
-      <stop offset="1" stop-color="#090704" stop-opacity=".98"/>
+    <radialGradient id="planetBody" cx="0" cy="0" r="1" gradientTransform="translate(752 18) rotate(125) scale(128 112)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#a88035" stop-opacity=".54"/>
+      <stop offset=".24" stop-color="#6f5522" stop-opacity=".50"/>
+      <stop offset=".56" stop-color="#2a1e0b" stop-opacity=".88"/>
+      <stop offset="1" stop-color="#070604" stop-opacity=".99"/>
     </radialGradient>
-    <linearGradient id="planetRim" x1="708" y1="7" x2="732" y2="126" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#fff1bd" stop-opacity=".94"/>
-      <stop offset=".24" stop-color="#f7c95f" stop-opacity=".9"/>
-      <stop offset=".62" stop-color="#d18d1f" stop-opacity=".72"/>
-      <stop offset="1" stop-color="#6f4209" stop-opacity=".08"/>
+    <linearGradient id="planetRim" x1="714" y1="0" x2="731" y2="132" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff4c7" stop-opacity=".98"/>
+      <stop offset=".22" stop-color="#ffd36f" stop-opacity=".94"/>
+      <stop offset=".58" stop-color="#dc9b2b" stop-opacity=".82"/>
+      <stop offset="1" stop-color="#75440b" stop-opacity=".08"/>
     </linearGradient>
-    <linearGradient id="stream" x1="24" y1="108" x2="796" y2="49" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#7a531b" stop-opacity="0"/>
-      <stop offset=".14" stop-color="#d99e2c" stop-opacity=".26"/>
-      <stop offset=".33" stop-color="#ffe19a" stop-opacity=".76"/>
-      <stop offset=".5" stop-color="#d89a25" stop-opacity=".35"/>
-      <stop offset=".68" stop-color="#ffe9aa" stop-opacity=".88"/>
-      <stop offset=".84" stop-color="#ce8b1d" stop-opacity=".28"/>
-      <stop offset="1" stop-color="#6f430a" stop-opacity="0"/>
+    <linearGradient id="orbitGold" x1="12" y1="104" x2="806" y2="38" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8e5b12" stop-opacity="0"/>
+      <stop offset=".14" stop-color="#d8941e" stop-opacity=".20"/>
+      <stop offset=".32" stop-color="#ffe39a" stop-opacity=".70"/>
+      <stop offset=".52" stop-color="#d89a2d" stop-opacity=".28"/>
+      <stop offset=".72" stop-color="#ffdfa0" stop-opacity=".84"/>
+      <stop offset=".9" stop-color="#c88217" stop-opacity=".26"/>
+      <stop offset="1" stop-color="#6f4309" stop-opacity="0"/>
     </linearGradient>
-    <linearGradient id="streamDim" x1="0" y1="110" x2="800" y2="36" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#8a5d18" stop-opacity=".06"/>
-      <stop offset=".35" stop-color="#c28722" stop-opacity=".2"/>
-      <stop offset=".72" stop-color="#edbd59" stop-opacity=".34"/>
-      <stop offset="1" stop-color="#7c4d0b" stop-opacity=".04"/>
+    <linearGradient id="orbitDim" x1="6" y1="112" x2="802" y2="24" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8a5c16" stop-opacity=".03"/>
+      <stop offset=".27" stop-color="#bd7d18" stop-opacity=".14"/>
+      <stop offset=".66" stop-color="#e0aa43" stop-opacity=".27"/>
+      <stop offset="1" stop-color="#70410a" stop-opacity=".03"/>
     </linearGradient>
     <clipPath id="planetClip">
-      <circle cx="810" cy="68" r="104"/>
+      <circle cx="812" cy="56" r="96"/>
     </clipPath>
-    <filter id="softGlow" x="-80%" y="-80%" width="260%" height="260%">
-      <feGaussianBlur stdDeviation="2.4"/>
+    <filter id="softGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="2.6"/>
+    </filter>
+    <filter id="planetGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.3"/>
     </filter>
     <filter id="grain" x="0" y="0" width="100%" height="100%">
-      <feTurbulence type="fractalNoise" baseFrequency=".86" numOctaves="2" seed="17" stitchTiles="stitch"/>
-      <feColorMatrix type="matrix" values="0 0 0 0 .74 0 0 0 0 .56 0 0 0 0 .24 0 0 0 .13 0"/>
+      <feTurbulence type="fractalNoise" baseFrequency=".82" numOctaves="2" seed="23" stitchTiles="stitch"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 .74 0 0 0 0 .55 0 0 0 0 .22 0 0 0 .12 0"/>
     </filter>
   </defs>
 
-  <rect width="800" height="136" fill="#020507"/>
+  <rect width="800" height="136" fill="#010407"/>
   <rect width="800" height="136" fill="url(#ambient)"/>
-  <rect width="800" height="136" filter="url(#grain)" opacity=".16"/>
+  <rect width="800" height="136" filter="url(#grain)" opacity=".14"/>
 
-  <g fill="#f0c76d">
-    <circle cx="42" cy="28" r=".55" opacity=".34"/><circle cx="69" cy="99" r=".45" opacity=".2"/>
-    <circle cx="103" cy="45" r=".65" opacity=".26"/><circle cx="145" cy="22" r=".5" opacity=".22"/>
-    <circle cx="182" cy="111" r=".6" opacity=".3"/><circle cx="236" cy="19" r=".4" opacity=".24"/>
-    <circle cx="302" cy="101" r=".55" opacity=".38"/><circle cx="342" cy="30" r=".45" opacity=".26"/>
-    <circle cx="397" cy="18" r=".5" opacity=".2"/><circle cx="441" cy="111" r=".65" opacity=".25"/>
-    <circle cx="493" cy="35" r=".4" opacity=".22"/><circle cx="538" cy="99" r=".55" opacity=".28"/>
-    <circle cx="584" cy="25" r=".65" opacity=".2"/><circle cx="621" cy="111" r=".45" opacity=".22"/>
-    <circle cx="661" cy="37" r=".5" opacity=".28"/><circle cx="694" cy="92" r=".4" opacity=".2"/>
+  <g fill="#efc26a">
+    <circle cx="29" cy="31" r=".48" opacity=".24"/><circle cx="58" cy="101" r=".55" opacity=".18"/>
+    <circle cx="92" cy="54" r=".42" opacity=".28"/><circle cx="126" cy="20" r=".58" opacity=".24"/>
+    <circle cx="163" cy="115" r=".52" opacity=".28"/><circle cx="198" cy="37" r=".40" opacity=".18"/>
+    <circle cx="236" cy="92" r=".56" opacity=".27"/><circle cx="274" cy="23" r=".45" opacity=".22"/>
+    <circle cx="311" cy="110" r=".50" opacity=".26"/><circle cx="349" cy="43" r=".44" opacity=".22"/>
+    <circle cx="388" cy="18" r=".46" opacity=".19"/><circle cx="427" cy="106" r=".52" opacity=".23"/>
+    <circle cx="468" cy="34" r=".42" opacity=".24"/><circle cx="507" cy="116" r=".48" opacity=".22"/>
+    <circle cx="548" cy="25" r=".53" opacity=".22"/><circle cx="584" cy="101" r=".45" opacity=".20"/>
+    <circle cx="621" cy="41" r=".52" opacity=".27"/><circle cx="654" cy="112" r=".40" opacity=".18"/>
+    <circle cx="687" cy="27" r=".52" opacity=".28"/><circle cx="709" cy="89" r=".42" opacity=".20"/>
+  </g>
+
+  <g id="upperOrbit">
+    <path d="M-48 42C80 1 214 5 347 29C474 52 600 53 835 12" stroke="url(#orbitDim)" stroke-width=".8"/>
+    <path d="M-34 55C94 12 219 17 350 38C486 60 613 57 840 20" stroke="url(#orbitDim)" stroke-width=".62" stroke-opacity=".78"/>
+    <path d="M21 8C150 -9 255 1 352 28C469 61 570 64 700 31" stroke="url(#orbitDim)" stroke-width=".58" stroke-opacity=".66"/>
+    <path d="M53 -9C165 18 240 31 342 33C472 35 584 17 706 -6" stroke="#d8992b" stroke-width=".42" stroke-opacity=".18"/>
+  </g>
+
+  <g id="lowerOrbit">
+    <path d="M-36 119C107 74 231 73 348 91C477 111 600 104 838 43" stroke="url(#orbitDim)" stroke-width="1.02"/>
+    <path d="M-27 108C116 66 239 66 356 84C487 104 607 94 839 34" stroke="url(#orbitGold)" stroke-width="1.38"/>
+    <path d="M-20 99C118 62 247 61 366 78C501 98 626 84 838 26" stroke="url(#orbitDim)" stroke-width=".82"/>
+    <path d="M-14 126C137 83 260 80 383 97C512 115 635 101 844 49" stroke="url(#orbitDim)" stroke-width=".62" stroke-opacity=".72"/>
   </g>
 
   <g clip-path="url(#planetClip)">
-    <circle cx="810" cy="68" r="104" fill="url(#planetBody)"/>
-    <ellipse cx="791" cy="45" rx="94" ry="34" fill="#d5aa55" opacity=".055"/>
-    <path d="M698 36C733 22 774 18 828 27M692 54C738 39 785 36 844 48M693 76C747 62 794 64 852 79M703 98C750 87 797 91 844 108" stroke="#d7ad59" stroke-width=".7" stroke-opacity=".17"/>
-    <path d="M735 1C716 33 708 70 719 109M758 -5C737 31 728 74 741 123" stroke="#f1c768" stroke-width=".55" stroke-opacity=".12"/>
+    <circle cx="812" cy="56" r="96" fill="url(#planetBody)"/>
+    <ellipse cx="791" cy="30" rx="91" ry="31" fill="#e0b55f" opacity=".055"/>
+    <path d="M714 21C746 10 786 9 839 19M708 40C750 27 795 28 850 39M709 62C758 50 804 53 856 67M719 84C761 76 807 80 850 95" stroke="#ddb25b" stroke-width=".68" stroke-opacity=".16"/>
+    <path d="M745 -9C727 22 719 58 728 94M766 -10C747 23 739 61 749 105" stroke="#f4cb70" stroke-width=".52" stroke-opacity=".11"/>
   </g>
-  <circle cx="810" cy="68" r="104" stroke="url(#planetRim)" stroke-width="2.1"/>
-  <circle cx="810" cy="68" r="108" stroke="#e9bd5e" stroke-width=".65" stroke-opacity=".22"/>
 
-  <path d="M-34 115C113 68 220 69 338 89C462 110 584 103 845 31" stroke="url(#streamDim)" stroke-width="1.05"/>
-  <path d="M-28 104C120 61 235 64 348 83C470 104 584 93 844 29" stroke="url(#stream)" stroke-width="1.35"/>
-  <path d="M-22 96C114 58 244 59 356 77C492 99 617 83 842 22" stroke="url(#streamDim)" stroke-width=".8"/>
-  <path d="M-16 121C141 77 260 76 373 94C504 115 630 95 848 43" stroke="url(#streamDim)" stroke-width=".65" stroke-opacity=".72"/>
-  <path d="M55 17C166 -3 255 7 346 32C445 59 548 62 662 33" stroke="url(#streamDim)" stroke-width=".65" stroke-opacity=".55"/>
+  <g id="planetAtmosphere">
+    <circle cx="812" cy="56" r="97.5" stroke="#f2bd4f" stroke-width="4.4" stroke-opacity=".11" filter="url(#planetGlow)"/>
+    <circle cx="812" cy="56" r="96" stroke="url(#planetRim)" stroke-width="2.2"/>
+    <circle cx="812" cy="56" r="100" stroke="#efbd5a" stroke-width=".62" stroke-opacity=".19"/>
+  </g>
 
   <g filter="url(#softGlow)">
-    <circle cx="178" cy="72" r="6" fill="#e4a326" opacity=".24"/>
-    <circle cx="502" cy="91" r="7" fill="#e4a326" opacity=".3"/>
-    <circle cx="681" cy="67" r="6" fill="#f0bb43" opacity=".22"/>
+    <circle cx="145" cy="23" r="6" fill="#e3a128" opacity=".18"/>
+    <circle cx="511" cy="96" r="7" fill="#e0a22b" opacity=".24"/>
+    <circle cx="706" cy="36" r="7" fill="#f4bb3b" opacity=".18"/>
+    <circle cx="736" cy="96" r="8" fill="#ffc95c" opacity=".28"/>
   </g>
+
   <g>
-    <circle cx="178" cy="72" r="1.35" fill="#fff5ce"/>
-    <circle cx="178" cy="72" r="3.2" fill="none" stroke="#efb849" stroke-opacity=".45"/>
-    <path d="M165 72H191M178 62V82" stroke="#f3c863" stroke-width=".45" stroke-opacity=".55"/>
+    <circle cx="145" cy="23" r="1.15" fill="#fff3c7"/>
+    <path d="M134 23H156M145 15V31" stroke="#eeb950" stroke-width=".38" stroke-opacity=".48"/>
 
-    <circle cx="502" cy="91" r="1.4" fill="#fff7d5"/>
-    <circle cx="502" cy="91" r="3.4" fill="none" stroke="#efb849" stroke-opacity=".48"/>
-    <path d="M487 91H517M502 80V102" stroke="#f3c863" stroke-width=".45" stroke-opacity=".58"/>
+    <circle cx="511" cy="96" r="1.3" fill="#fff6cf"/>
+    <circle cx="511" cy="96" r="3.1" fill="none" stroke="#edb64a" stroke-opacity=".38"/>
+    <path d="M498 96H524M511 86V106" stroke="#efbf5b" stroke-width=".42" stroke-opacity=".52"/>
 
-    <circle cx="681" cy="67" r="1.2" fill="#fff0bd"/>
-    <path d="M669 67H693M681 58V76" stroke="#e8ad35" stroke-width=".4" stroke-opacity=".48"/>
+    <circle cx="706" cy="36" r="1.05" fill="#fff2c1"/>
+    <path d="M696 36H716M706 29V43" stroke="#e8aa31" stroke-width=".38" stroke-opacity=".46"/>
+  </g>
+
+  <g id="rightStarFlare">
+    <circle cx="736" cy="96" r="1.5" fill="#fff8d8"/>
+    <circle cx="736" cy="96" r="3.5" fill="none" stroke="#f0b94f" stroke-opacity=".46"/>
+    <path d="M718 96H754M736 82V110" stroke="#ffd074" stroke-width=".52" stroke-opacity=".65"/>
+    <path d="M726 86L746 106M746 86L726 106" stroke="#d99a29" stroke-width=".34" stroke-opacity=".36"/>
   </g>
 </svg>

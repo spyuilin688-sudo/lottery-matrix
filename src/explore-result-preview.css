@@ -817,7 +817,7 @@
 
 /* Matrix Explore result refinements: keep Tianyan isolated from Explore-only spacing. */
 .matrix-status-screen .explore-validation-card,
-.matrix-explore-main-screen:not(.matrix-tianyan-screen) .explore-validation-card {
+.matrix-explore-main-screen .explore-validation-card {
   padding-block: 12px;
 }
 

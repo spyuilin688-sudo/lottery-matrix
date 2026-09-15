@@ -106,3 +106,44 @@ describe("Matrix Explore validation summary formula tokens", () => {
     expect(getComputedStyle(sequence).gap).toBe("1px");
   });
 });
+
+describe('two-row summary fitting', () => {
+  it('measures contents-only rows and includes the second-row indent in the width budget', () => {
+    const style = document.createElement('style');
+    style.dataset.summaryTest = 'true';
+    style.textContent = '.explore-validation-summary { font-size: var(--explore-summary-fit-font-size, 13px); padding: 0; }';
+    document.head.append(style);
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(300);
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      const scale = Number.parseFloat(this.closest('.explore-validation-summary')?.getAttribute('style')?.match(/([\d.]+)px/)?.[1] ?? '13') / 13;
+      if (this.dataset.fit === 'first') return { left: 10, right: 10, width: 0 } as DOMRect;
+      if (this.dataset.fit === 'second') return { left: 10 + 40 * scale, right: 10 + 320 * scale, width: 280 * scale } as DOMRect;
+      if (this.className === 'explore-validation-consecutive-tag') return { left: 260, right: 310, width: 50 } as DOMRect;
+      return { left: 10, right: 310, width: 300 } as DOMRect;
+    });
+    // jsdom has no layout engine; use a Range with the text's measured bounds.
+    vi.spyOn(document, 'createRange').mockImplementation(() => {
+      let selected: HTMLElement;
+      return {
+        selectNodeContents: (node: HTMLElement) => { selected = node; },
+        getBoundingClientRect: () => {
+          const scale = Number.parseFloat(selected.closest('.explore-validation-summary')?.getAttribute('style')?.match(/([\d.]+)px/)?.[1] ?? '13') / 13;
+          return selected.dataset.fit === 'first'
+            ? { left: 10, right: 10 + 290 * scale, width: 290 * scale }
+            : { left: 10 + 40 * scale, right: 10 + 320 * scale, width: 280 * scale };
+        },
+      } as unknown as Range;
+    });
+    const { container } = render(<header>
+      <ExploreValidationSummary layout="tianyan">
+        <span className="tianyan-validation-summary-row" data-fit="first">開 33 第 4 顆、同期 40 第 5 顆</span>
+        <span className="tianyan-validation-summary-row" data-fit="second">上 9 期｜第 6 顆｜+26.33｜下 1 期開</span>
+      </ExploreValidationSummary>
+      <strong className="explore-validation-consecutive-tag">準11進12</strong>
+    </header>);
+    const summary = container.querySelector<HTMLElement>('.explore-validation-summary')!;
+    const size = Number.parseFloat(summary.style.getPropertyValue('--explore-summary-fit-font-size')) || 13;
+    expect(290 * size / 13).toBeLessThanOrEqual(246);
+    expect(320 * size / 13).toBeLessThanOrEqual(300);
+  });
+});
