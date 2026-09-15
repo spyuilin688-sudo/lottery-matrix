@@ -73,7 +73,7 @@ it('renders query samples and related operation dates with limited evidence visi
     expect(rows[1].querySelector('.statusScope')?.textContent).toContain('會員');
     expect(rows[2].querySelector('.statusBadge.limited')?.textContent).toBe('有相關紀錄');
     await act(async () => rows[0].querySelector('summary')?.click());
-    expect(rows[0].querySelector('details')?.textContent).toContain('123 期 · 2 筆 · 通過');
+    expect(rows[0].querySelector('details')?.textContent).toContain('123 期 · 測試條件 2筆 · 通過');
     await act(async () => rows[2].querySelector('summary')?.click());
     expect(rows[2].querySelector('details')?.textContent).toContain('最近相關紀錄2026/09/13');
     expect(rows[2].querySelector('details')?.textContent).toContain('通知派送略過');
