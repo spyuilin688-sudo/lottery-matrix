@@ -20,13 +20,13 @@ describe("notification-only polling boundary", () => {
   it("publishes only complete results then immediately requests notification dispatch", async () => {
     const test = setup();
     expect((await test.handler(request())).status).toBe(200);
-    expect(test.calls).toEqual(["lookup:今彩539:2026-09-05", "https://www.pilio.idv.tw/lto539/list.asp", "publish", "dispatch"]);
+    expect(test.calls).toEqual(["lookup:今彩539:2026-09-05", "https://www.pilio.idv.tw/lto539/list.asp", "publish", "lookup:大樂透:2026-09-05", "https://www.pilio.idv.tw/ltobig/list.asp", "dispatch"]);
     expect(test.results).toEqual([{ lottery: "今彩539", lotteryCode: "539", drawDate: "2026-09-05", numbers: ["03", "08", "10", "28", "38"] }]);
   });
   it("stops fetching a draw already recorded by either source", async () => {
     const test = setup({ recorded: true });
     await test.handler(request());
-    expect(test.calls).toEqual(["lookup:今彩539:2026-09-05"]);
+    expect(test.calls).toEqual(["lookup:今彩539:2026-09-05", "lookup:大樂透:2026-09-05"]);
   });
   it.each([{ failFetch: true }, { page: "<h1>not updated</h1>" }])("does not publish an unavailable result", async (options) => {
     const test = setup(options);

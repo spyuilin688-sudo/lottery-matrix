@@ -1,9 +1,9 @@
 export type PilioSource = { lottery: string; lotteryCode: string; url: string; startMinute: number; endMinute: number; mainCount: number; maximum: number };
 export type PilioResult = { lottery: string; lotteryCode: string; drawDate: string; numbers: string[] };
 export const PILIO_SOURCES: PilioSource[] = [
-  { lottery: "今彩539", lotteryCode: "539", url: "https://www.pilio.idv.tw/lto539/list.asp", startMinute: 1235, endMinute: 1240, mainCount: 5, maximum: 39 },
-  { lottery: "六合彩", lotteryCode: "marksix", url: "https://www.pilio.idv.tw/ltohk/list.asp", startMinute: 1295, endMinute: 1300, mainCount: 6, maximum: 49 },
-  { lottery: "大樂透", lotteryCode: "lotto649", url: "https://www.pilio.idv.tw/ltobig/list.asp", startMinute: 1255, endMinute: 1260, mainCount: 6, maximum: 49 },
+  { lottery: "今彩539", lotteryCode: "539", url: "https://www.pilio.idv.tw/lto539/list.asp", startMinute: 1234, endMinute: 1260, mainCount: 5, maximum: 39 },
+  { lottery: "六合彩", lotteryCode: "marksix", url: "https://www.pilio.idv.tw/ltohk/list.asp", startMinute: 1294, endMinute: 1320, mainCount: 6, maximum: 49 },
+  { lottery: "大樂透", lotteryCode: "lotto649", url: "https://www.pilio.idv.tw/ltobig/list.asp", startMinute: 1234, endMinute: 1260, mainCount: 6, maximum: 49 },
 ];
 
 export function taipeiDate(now: Date): string {

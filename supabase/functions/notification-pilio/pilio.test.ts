@@ -39,11 +39,17 @@ describe("Pilio notification-only result parsing", () => {
 
 describe("Pilio polling times use Asia/Taipei", () => {
   it.each([
-    ["2026-09-05T12:34:59Z", []], ["2026-09-05T12:35:00Z", ["539"]],
-    ["2026-09-05T12:40:59Z", ["539"]], ["2026-09-05T12:41:00Z", []],
-    ["2026-09-05T12:55:00Z", ["lotto649"]], ["2026-09-05T13:00:59Z", ["lotto649"]],
-    ["2026-09-05T13:35:00Z", ["marksix"]], ["2026-09-05T13:40:59Z", ["marksix"]],
-    ["2026-09-05T13:41:00Z", []],
+    ["2026-09-05T12:33:59Z",[]],
+    ["2026-09-05T12:34:00Z",["539","lotto649"]],
+    ["2026-09-05T12:40:59Z",["539","lotto649"]],
+    ["2026-09-05T12:45:00Z",["539","lotto649"]],
+    ["2026-09-05T13:00:59Z",["539","lotto649"]],
+    ["2026-09-05T13:01:00Z",[]],
+    ["2026-09-05T13:33:59Z",[]],
+    ["2026-09-05T13:34:00Z",["marksix"]],
+    ["2026-09-05T13:45:00Z",["marksix"]],
+    ["2026-09-05T14:00:59Z",["marksix"]],
+    ["2026-09-05T14:01:00Z",[]],
   ])("selects only the configured sources at %s", (timestamp, codes) => {
     expect(duePilioSources(new Date(timestamp as string)).map(source => source.lotteryCode)).toEqual(codes);
   });
