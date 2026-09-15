@@ -2,8 +2,8 @@ import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { DoubleArrowLeftIcon, DoubleArrowRightIcon } from "@radix-ui/react-icons";
 import { type LotteryId } from "../Prototype";
 import { ExploreValidationSummary } from "../ExploreValidationSummary";
-import { TianyanPatchedSummary } from "../TianyanExpandedLayoutPatch";
-import { type ExploreValidation, type TianhengApiRow, type TianhengValidation, type TianyanValidation } from "../matrix-algorithm-api";
+import { TianyanExpandedValidationGroups, TianyanPatchedSummary } from "../TianyanExpandedValidation";
+import { type ExploreValidation, type MatrixNumberOrder, type TianhengApiRow, type TianhengValidation, type TianyanValidation } from "../matrix-algorithm-api";
 import { ROAD_VALIDATION_SAMPLE_HISTORY } from "./shared";
 
 export function RoadValidationProcess({
@@ -403,7 +403,7 @@ export function TianyanValidationProcess({
   validation,
   loading,
 }: {
-  item: { number: string; position: number; predictionPeriod: number };
+  item: { number: string; position: number; predictionPeriod: number; numberOrder: MatrixNumberOrder };
   lottery: LotteryId;
   validation?: TianyanValidation;
   loading: boolean;
@@ -412,91 +412,7 @@ export function TianyanValidationProcess({
   if (loading) return <p className="empty-result">驗證資料載入中</p>;
   if (!validation) return <p className="empty-result">無驗證資料</p>;
 
-  type TianyanDisplayRow = {
-    key: string;
-    period: string;
-    numbers: Array<string | number>;
-    sourceNumber?: number;
-    hitNumbers?: number[];
-  };
-  const displayNumber = (value: string | number) => String(value).padStart(2, "0");
-  const values = (numbers: Array<string | number>) => numbers.map(displayNumber);
-  const validationFormula = (
-    position: number,
-    baseNumber: number,
-    algorithmType: string,
-    ruleValue: number,
-    calculationResult: number,
-  ) => (
-    <span className="explore-validation-formula-expression">
-      <span className="explore-validation-formula-position">
-        <span>第</span>
-        <span>{position}</span>
-        <span>顆</span>
-      </span>
-      <span>{displayNumber(baseNumber)}</span>
-      {algorithmType.startsWith("合值") ? (
-        <><span>合值</span><span>{ruleValue}</span></>
-      ) : <span>{`+${ruleValue}`}</span>}
-      <span>=</span>
-      <span>{displayNumber(calculationResult)}</span>
-    </span>
-  );
-  const resultFormula = (resultNumbers: Array<string | number>) => (
-    <>［{" "}<strong className="explore-validation-result-number">{values(resultNumbers).join("、")}</strong>{" "}］</>
-  );
-  const validationGroup = (key: string, rows: TianyanDisplayRow[], formulas: ReactNode[]) => (
-    <div
-      className="explore-validation-group"
-      data-lottery={lottery}
-      data-road-type="複合版路"
-      data-row-count={rows.length}
-      data-wide-numbers={rows.some((row) => row.numbers.length >= 6) ? "true" : "false"}
-      key={key}
-    >
-      <div className="explore-validation-issues explore-validation-numeric-text">
-        {rows.map((row) => (
-          <span className="explore-validation-issue" key={`${row.key}-period`}>
-            {displayValidationPeriod(lottery, row.period)}
-          </span>
-        ))}
-      </div>
-      <div className="explore-validation-numbers-card">
-        {rows.map((row) => (
-          <div className="explore-validation-draw-row explore-validation-number-row" key={`${row.key}-numbers`}>
-            <span className="explore-validation-numbers explore-validation-numeric-text">
-              {values(row.numbers).map((value, index) => {
-                const state = row.sourceNumber !== undefined && value === displayNumber(row.sourceNumber)
-                  ? "hit"
-                  : (row.hitNumbers ?? []).some((hit) => value === displayNumber(hit)) ? "step" : "";
-                const number = (
-                  <i className={state ? `explore-validation-number explore-validation-number--${state}` : "explore-validation-number"}>{value}</i>
-                );
-                return index === 6 && (lottery === "六合彩" || lottery === "大樂透") ? (
-                  <span className="explore-validation-special-number" key={`${value}-${index}`}>
-                    <i className="explore-validation-special-separator" aria-hidden="true">+</i>
-                    {number}
-                  </span>
-                ) : <Fragment key={`${value}-${index}`}>{number}</Fragment>;
-              })}
-            </span>
-          </div>
-        ))}
-      </div>
-      <div className="explore-validation-formulas">
-        {rows.map((row, index) => (
-          <span className="explore-validation-formula-row" key={`${row.key}-formula`}>{formulas[index] ?? ""}</span>
-        ))}
-      </div>
-    </div>
-  );
-  const currentFormulas = validation.rules.slice(0, 2).map((rule) => validationFormula(
-    rule.validationPosition,
-    rule.currentBaseNumber,
-    rule.algorithmType,
-    rule.ruleValue,
-    rule.currentPredictionNumber,
-  ));
+  const values = (numbers: Array<string | number>) => numbers.map((value) => String(value).padStart(2, "0"));
   return (
     <section
       className="road-validation-process explore-validation-card"
@@ -515,32 +431,11 @@ export function TianyanValidationProcess({
             validation={validation}
           />
         </header>
-        <div className="explore-validation-groups">
-          {validation.historicalValidation.map((row) => {
-            const matchedRules = [row.rule1, row.rule2].filter((rule) => rule.hit);
-            if (!matchedRules.length) return null;
-            return validationGroup(
-              `${validation.itemId}-${row.group}-${row.predictionPeriod}`,
-              [
-                { key: `source-${row.group}`, period: row.sourcePeriod, numbers: row.sourceNumbers, sourceNumber: row.lockedNumber },
-                ...matchedRules.slice(1).map((_, index) => ({ key: `formula-${row.group}-${index}`, period: "", numbers: [] })),
-                { key: `prediction-${row.group}`, period: row.predictionPeriod, numbers: row.predictionNumbers, hitNumbers: row.hitNumbers },
-              ],
-              [
-                ...matchedRules.map((rule) => validationFormula(rule.validationPosition, rule.baseNumber, rule.algorithmType, rule.ruleValue, rule.calculationResult)),
-                resultFormula(row.hitNumbers),
-              ],
-            );
-          })}
-          {validation.sourceA && currentFormulas.length === 2 ? validationGroup(
-            `${validation.itemId}-current`,
-            [
-              { key: "current-source", period: validation.sourceA.sourcePeriod, numbers: validation.sourceA.sourceNumbers, sourceNumber: validation.sourceA.lockedNumber },
-              { key: "current-formula-2", period: "", numbers: [] },
-            ],
-            currentFormulas,
-          ) : null}
-        </div>
+        <TianyanExpandedValidationGroups
+          lottery={lottery}
+          numberOrder={item.numberOrder}
+          validation={validation}
+        />
         <footer className="explore-validation-prediction">
           <DoubleArrowLeftIcon className="explore-validation-prediction-arrow explore-validation-prediction-arrow--left" aria-hidden="true" />
           <span className="explore-validation-prediction-content">
