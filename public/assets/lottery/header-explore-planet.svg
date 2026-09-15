@@ -5,13 +5,13 @@
       <stop offset=".42" stop-color="#3a2609" stop-opacity=".055"/>
       <stop offset="1" stop-color="#010407" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="planetBody" cx="0" cy="0" r="1" gradientTransform="translate(752 18) rotate(125) scale(128 112)" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#a88035" stop-opacity=".54"/>
-      <stop offset=".24" stop-color="#6f5522" stop-opacity=".50"/>
-      <stop offset=".56" stop-color="#2a1e0b" stop-opacity=".88"/>
+    <radialGradient id="planetBody" cx="0" cy="0" r="1" gradientTransform="translate(708 10) rotate(125) scale(174 154)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#a88035" stop-opacity=".58"/>
+      <stop offset=".24" stop-color="#6f5522" stop-opacity=".53"/>
+      <stop offset=".56" stop-color="#2a1e0b" stop-opacity=".89"/>
       <stop offset="1" stop-color="#070604" stop-opacity=".99"/>
     </radialGradient>
-    <linearGradient id="planetRim" x1="714" y1="0" x2="731" y2="132" gradientUnits="userSpaceOnUse">
+    <linearGradient id="planetRim" x1="648" y1="0" x2="688" y2="136" gradientUnits="userSpaceOnUse">
       <stop stop-color="#fff4c7" stop-opacity=".98"/>
       <stop offset=".22" stop-color="#ffd36f" stop-opacity=".94"/>
       <stop offset=".58" stop-color="#dc9b2b" stop-opacity=".82"/>
@@ -33,7 +33,7 @@
       <stop offset="1" stop-color="#70410a" stop-opacity=".03"/>
     </linearGradient>
     <clipPath id="planetClip">
-      <circle cx="812" cy="56" r="96"/>
+      <circle cx="786" cy="56" r="132"/>
     </clipPath>
     <filter id="softGlow" x="-100%" y="-100%" width="300%" height="300%">
       <feGaussianBlur stdDeviation="2.6"/>
@@ -79,16 +79,16 @@
   </g>
 
   <g clip-path="url(#planetClip)">
-    <circle cx="812" cy="56" r="96" fill="url(#planetBody)"/>
-    <ellipse cx="791" cy="30" rx="91" ry="31" fill="#e0b55f" opacity=".055"/>
-    <path d="M714 21C746 10 786 9 839 19M708 40C750 27 795 28 850 39M709 62C758 50 804 53 856 67M719 84C761 76 807 80 850 95" stroke="#ddb25b" stroke-width=".68" stroke-opacity=".16"/>
-    <path d="M745 -9C727 22 719 58 728 94M766 -10C747 23 739 61 749 105" stroke="#f4cb70" stroke-width=".52" stroke-opacity=".11"/>
+    <circle cx="786" cy="56" r="132" fill="url(#planetBody)"/>
+    <ellipse cx="752" cy="22" rx="126" ry="43" fill="#e0b55f" opacity=".06"/>
+    <path d="M650 7C699 -6 759 -3 844 17M642 34C701 17 771 21 861 40M643 66C708 49 780 55 869 78M651 100C711 87 781 93 856 113" stroke="#ddb25b" stroke-width=".72" stroke-opacity=".17"/>
+    <path d="M686 -22C665 20 655 66 666 118M715 -25C691 19 681 70 694 128" stroke="#f4cb70" stroke-width=".58" stroke-opacity=".12"/>
   </g>
 
   <g id="planetAtmosphere">
-    <circle cx="812" cy="56" r="97.5" stroke="#f2bd4f" stroke-width="4.4" stroke-opacity=".11" filter="url(#planetGlow)"/>
-    <circle cx="812" cy="56" r="96" stroke="url(#planetRim)" stroke-width="2.2"/>
-    <circle cx="812" cy="56" r="100" stroke="#efbd5a" stroke-width=".62" stroke-opacity=".19"/>
+    <circle cx="786" cy="56" r="134.5" stroke="#f2bd4f" stroke-width="4.8" stroke-opacity=".12" filter="url(#planetGlow)"/>
+    <circle cx="786" cy="56" r="132" stroke="url(#planetRim)" stroke-width="2.35"/>
+    <circle cx="786" cy="56" r="137" stroke="#efbd5a" stroke-width=".68" stroke-opacity=".2"/>
   </g>
 
   <g filter="url(#softGlow)">
