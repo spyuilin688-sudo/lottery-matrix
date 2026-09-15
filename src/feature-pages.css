@@ -1020,11 +1020,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   top: 0;
   height: var(--membership-profile-height);
 }
-
-.profile-card[data-auth-layout="multiple"] {
-  --profile-auth-zone-width: 34cqw;
-  --profile-auth-column-count: 2;
-}
 .profile-avatar {
   position: absolute;
   left: 7.294cqw;
@@ -1111,6 +1106,10 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   font-size: 3.5cqw;
   line-height: 1;
   cursor: pointer;
+}
+.profile-card[data-auth-layout="multiple"] .profile-logout {
+  min-height: 32px;
+  height: 8.9cqw;
 }
 .profile-logout:not([data-auth-state="authenticated"]) { font-size: 2.75cqw; }
 .profile-logout > span { white-space: nowrap; }

@@ -237,6 +237,24 @@ describe("ProfilePage member API", () => {
     expect(screen.getByText("MY ACCOUNT")).toBeVisible();
   });
 
+  it("未登入時 LINE 與 Google 登入按鈕垂直排列", async () => {
+    supabase.auth.getSession.mockResolvedValueOnce({ data: { session: null }, error: null });
+    render(<ProfilePage onNavigate={vi.fn()} />);
+
+    const googleLogin = await screen.findByRole("button", { name: "Google 登入" });
+    const lineLogin = screen.getByRole("button", { name: "LINE 登入" });
+    const card = document.querySelector<HTMLElement>('.profile-card[data-auth-layout="multiple"]');
+    const actions = card?.querySelector<HTMLElement>(".profile-auth-actions");
+    expect(card).not.toBeNull();
+    expect(actions).not.toBeNull();
+    expect(Array.from(actions!.querySelectorAll<HTMLElement>("[data-login-provider]")).map((button) => button.dataset.loginProvider)).toEqual(["line", "google"]);
+    const cardStyle = getComputedStyle(card!);
+    expect(cardStyle.getPropertyValue("--profile-auth-column-count").trim()).toBe("1");
+    expect(cardStyle.getPropertyValue("--profile-auth-zone-width").trim()).toBe("15.48cqw");
+    expect(parseFloat(getComputedStyle(lineLogin).minHeight)).toBe(32);
+    expect(parseFloat(getComputedStyle(googleLogin).minHeight)).toBe(32);
+  });
+
   it("Google 登入啟動後維持登入中，交由 Supabase OAuth 接手導向", async () => {
     supabase.auth.getSession.mockResolvedValueOnce({ data: { session: null }, error: null });
     render(<ProfilePage onNavigate={vi.fn()} />);
