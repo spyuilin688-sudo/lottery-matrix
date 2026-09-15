@@ -30,8 +30,17 @@ function syncGoogleLoginEntry() {
 }
 
 export function installGoogleLoginEntry() {
-  syncGoogleLoginEntry();
-  const observer = new MutationObserver(syncGoogleLoginEntry);
-  observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-  return () => observer.disconnect();
+  let observer: MutationObserver | null = null;
+  const start = () => {
+    if (!document.body || observer) return;
+    syncGoogleLoginEntry();
+    observer = new MutationObserver(syncGoogleLoginEntry);
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+  };
+  if (document.body) start();
+  else document.addEventListener("DOMContentLoaded", start, { once: true });
+  return () => {
+    document.removeEventListener("DOMContentLoaded", start);
+    observer?.disconnect();
+  };
 }
