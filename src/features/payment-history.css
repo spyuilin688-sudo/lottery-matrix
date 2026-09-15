@@ -2,11 +2,6 @@
   padding: 10px;
 }
 
-.payment-ledger-screen .detail-card h2 {
-  margin-bottom: 6px;
-  font-size: 15px;
-}
-
 .payment-ledger-list {
   display: grid;
   gap: 0;
