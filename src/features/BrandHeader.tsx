@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ChevronDownIcon, ChevronLeftIcon } from "@radix-ui/react-icons";
+import "../explore-header-reference.css";
 
 const CORE_HEADER_TITLES = new Set(["Matrix 探索", "Matrix 天衡", "Matrix 天衍", "Matrix 天工"]);
 const GEOMETRIC_HEADER_TITLES = new Set(["Matrix 同星", "號碼對照單", "歷史開獎號碼"]);
