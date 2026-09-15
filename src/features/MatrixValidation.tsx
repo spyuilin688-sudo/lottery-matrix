@@ -3,7 +3,7 @@ import { DoubleArrowLeftIcon, DoubleArrowRightIcon } from "@radix-ui/react-icons
 import { type LotteryId } from "../Prototype";
 import { ExploreValidationSummary } from "../ExploreValidationSummary";
 import { TianyanExpandedValidationGroups, TianyanPatchedSummary } from "../TianyanExpandedValidation";
-import { type ExploreValidation, type MatrixNumberOrder, type TianhengApiRow, type TianhengValidation, type TianyanValidation } from "../matrix-algorithm-api";
+import { type ExploreValidation, type TianhengApiRow, type TianhengValidation, type TianyanValidation } from "../matrix-algorithm-api";
 import { ROAD_VALIDATION_SAMPLE_HISTORY } from "./shared";
 
 export function RoadValidationProcess({
@@ -403,7 +403,7 @@ export function TianyanValidationProcess({
   validation,
   loading,
 }: {
-  item: { number: string; position: number; predictionPeriod: number; numberOrder: MatrixNumberOrder };
+  item: { number: string; position: number; predictionPeriod: number; numberOrder?: string };
   lottery: LotteryId;
   validation?: TianyanValidation;
   loading: boolean;
@@ -413,6 +413,9 @@ export function TianyanValidationProcess({
   if (!validation) return <p className="empty-result">無驗證資料</p>;
 
   const values = (numbers: Array<string | number>) => numbers.map((value) => String(value).padStart(2, "0"));
+  const numberOrder = item.numberOrder === "依實際開獎順序排序"
+    ? "依實際開獎順序排序"
+    : "依號碼由小到大排序";
   return (
     <section
       className="road-validation-process explore-validation-card"
@@ -433,7 +436,7 @@ export function TianyanValidationProcess({
         </header>
         <TianyanExpandedValidationGroups
           lottery={lottery}
-          numberOrder={item.numberOrder}
+          numberOrder={numberOrder}
           validation={validation}
         />
         <footer className="explore-validation-prediction">
