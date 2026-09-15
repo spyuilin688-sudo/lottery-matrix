@@ -4,11 +4,13 @@ import httpx
 import pytest
 
 from app.api_server import tinyfish_status_payload
-from app.repositories.analysis_repository import (
-    InMemoryAnalysisRepository,
-    TINYFISH_JOB_NAME_BY_LOTTERY,
-)
+from app.repositories.analysis_repository import InMemoryAnalysisRepository
 from app.scraping.resilient_source import ResilientLatestDrawSource
+from app.services.tinyfish_status import (
+    TINYFISH_JOB_NAME_BY_LOTTERY,
+    list_tinyfish_fallback_statuses,
+    record_tinyfish_fallback,
+)
 
 
 DRAW = {
@@ -71,13 +73,15 @@ def test_resilient_source_reports_failed_tinyfish_use_without_leaking_detail() -
 
 def test_tinyfish_repository_projection_uses_existing_job_status_store() -> None:
     repository = InMemoryAnalysisRepository()
-    repository.record_tinyfish_fallback(
+    record_tinyfish_fallback(
+        repository,
         "今彩539",
         "success",
         "2026-09-15T17:50:00+00:00",
         source_period="115000224",
     )
-    repository.record_tinyfish_fallback(
+    record_tinyfish_fallback(
+        repository,
         "六合彩",
         "failed",
         "2026-09-15T17:51:00+00:00",
@@ -85,7 +89,7 @@ def test_tinyfish_repository_projection_uses_existing_job_status_store() -> None
     )
 
     assert TINYFISH_JOB_NAME_BY_LOTTERY["今彩539"] in repository.job_statuses
-    assert repository.list_tinyfish_fallback_statuses() == [
+    assert list_tinyfish_fallback_statuses(repository) == [
         {
             "lottery": "今彩539",
             "status": "success",
@@ -101,12 +105,13 @@ def test_tinyfish_repository_projection_uses_existing_job_status_store() -> None
             "error": "TINYFISH_FAILED",
         },
     ]
-    assert "private-provider-detail" not in str(repository.list_tinyfish_fallback_statuses())
+    assert "private-provider-detail" not in str(list_tinyfish_fallback_statuses(repository))
 
 
 def test_tinyfish_status_payload_exposes_configuration_not_secret() -> None:
     repository = InMemoryAnalysisRepository()
-    repository.record_tinyfish_fallback(
+    record_tinyfish_fallback(
+        repository,
         "大樂透",
         "success",
         "2026-09-15T17:52:00+00:00",
