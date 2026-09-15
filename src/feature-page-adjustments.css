@@ -546,16 +546,19 @@
   align-items: stretch;
 }
 
-.profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider] {
+.profile-card[data-auth-layout="multiple"] .profile-logout {
   width: 100%;
   height: 8.9cqw;
   min-height: 32px;
+  border-radius: 999px;
+}
+
+.profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider] {
   padding: 0 4px;
   grid-template-columns: 12px auto auto;
   align-items: center;
   justify-content: center;
   column-gap: 2px;
-  border-radius: 999px;
   font-size: clamp(9px, 2.3cqw, 11px);
   font-weight: 700;
   line-height: 1;
@@ -584,7 +587,7 @@
 
 .profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider="line"] {
   border: 1px solid #d7b65b;
-  background: #06c755;
+  background: var(--profile-login-line-bg);
   color: #ffffff;
 }
 
@@ -594,7 +597,7 @@
 
 .profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider="google"] {
   border: 1px solid #d7b65b;
-  background: #ffffff;
+  background: var(--lottery-white-1000);
   color: #202124;
 }
 
