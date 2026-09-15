@@ -11,6 +11,7 @@ import { cleanupBrowserPushSubscription } from '../push-subscription';
 import { endActiveMemberOnlineSession } from '../member-online';
 import { ApiRequestError, withDeadline } from '../lib/api-resilience';
 import { logicalSessionIdentity } from './session-identity';
+import { isLineProviderSession } from './session-provider';
 import { isPwaDisplayMode } from '../pwa-display-mode';
 import { signInWithLinePopup } from './line-login-popup';
 
@@ -129,7 +130,7 @@ export async function signOutFromMatrix(
   }, () => undefined);
 
   const revokeTask = async () => {
-    if (!accessToken || isLineProviderTokenRevokedFor(accessToken)) return;
+    if (!accessToken || !isLineProviderSession(session) || isLineProviderTokenRevokedFor(accessToken)) return;
     const sessionProviderToken = session?.provider_token;
     const providerAccessToken = typeof sessionProviderToken === 'string' && sessionProviderToken.length > 0
       ? sessionProviderToken
