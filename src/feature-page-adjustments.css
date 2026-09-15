@@ -535,6 +535,24 @@
   color: var(--lottery-neutral-400);
 }
 
+/* Keep the two anonymous sign-in actions aligned with the masked artwork zone. */
+.profile-card[data-auth-layout="multiple"] {
+  --profile-auth-zone-right: 2.75cqw;
+  --profile-auth-zone-width: 18.23cqw;
+}
+
+.profile-card[data-auth-layout="multiple"] .profile-auth-actions {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.profile-card[data-auth-layout="multiple"] .profile-logout {
+  width: 100%;
+  height: 8.9cqw;
+  min-height: 32px;
+  border-radius: 999px;
+}
+
 .calculator-screen .calculation-results {
   margin-top: 8px;
   padding: 0;
