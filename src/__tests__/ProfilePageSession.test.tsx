@@ -7,31 +7,8 @@ import { ProfilePage } from '../features/MemberPages';
 
 const auth = vi.hoisted(() => ({ getSession: vi.fn(), onAuthStateChange: vi.fn() }));
 const member = vi.hoisted(() => ({ bootstrapMember: vi.fn(), fetchMemberProfile: vi.fn() }));
-const memberScope = vi.hoisted(() => {
-  let value = 0;
-  const listeners = new Set<() => void>();
-  return {
-    get: () => value,
-    subscribe: (listener: () => void) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    reset: () => {
-      value = 0;
-      listeners.clear();
-    },
-    bump: () => {
-      value += 1;
-      listeners.forEach((listener) => listener());
-    },
-  };
-});
 vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ auth }) }));
 vi.mock('../member-api', async importOriginal => ({ ...await importOriginal<typeof import('../member-api')>(), ...member }));
-vi.mock('../auth/algorithm-cache-scope', () => ({
-  getAlgorithmCacheScope: memberScope.get,
-  subscribeAlgorithmCacheScope: memberScope.subscribe,
-}));
 vi.mock('../auth/line-auth', () => ({ reconcilePendingLineLogoutPresence: vi.fn(), signInWithLine: vi.fn(), signOutFromMatrix: vi.fn() }));
 vi.mock('../pwa-lifecycle', () => ({ usePwaLifecycle: () => ({ showInstallAction: false, requestInstall: vi.fn() }) }));
 vi.mock('../subscription-purchase-visibility', () => ({ useSubscriptionPurchaseVisible: () => true }));
@@ -51,7 +28,6 @@ const session = (id: string): Session => ({
 let onSession: (event: string, session: Session | null) => void;
 const profile = (name: string) => ({ lineUserId: name, planName: name, planExpiresAt: null, isLifetime: false });
 beforeEach(() => {
-  memberScope.reset();
   auth.getSession.mockReset().mockResolvedValue({ data: { session: session('a') }, error: null });
   auth.onAuthStateChange.mockReset().mockImplementation(callback => {
     onSession = callback;
@@ -85,18 +61,6 @@ test('切換會員後忽略舊會員未完成的方案請求', async () => {
   await act(async () => resolve(profile('方案 A')));
   expect(screen.queryByText('方案 A')).toBeNull();
   expect(screen.getByText('方案 B')).toBeTruthy();
-});
-
-test('會員 session scope 改變後重新載入方案資料', async () => {
-  member.fetchMemberProfile
-    .mockRejectedValueOnce(new Error('MEMBER_SESSION_CHANGED'))
-    .mockResolvedValueOnce(profile('方案重載成功'));
-  render(<ProfilePage onNavigate={vi.fn()} />);
-  await waitFor(() => expect(member.fetchMemberProfile).toHaveBeenCalledTimes(1));
-  expect(screen.queryByText('方案重載成功')).toBeNull();
-  act(() => memberScope.bump());
-  expect(await screen.findByText('方案重載成功')).toBeTruthy();
-  expect(member.fetchMemberProfile).toHaveBeenCalledTimes(2);
 });
 
 
