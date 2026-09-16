@@ -139,13 +139,52 @@ def matrix_status_event(
 
 
 class NotificationEventEmitter:
-    def __init__(self, url: str, token: str, client: httpx.Client) -> None:
+    def __init__(
+        self,
+        url: str,
+        token: str,
+        client: httpx.Client,
+        *,
+        supabase_url: str = "",
+        supabase_service_key: str = "",
+    ) -> None:
         self._url = url.strip()
         self._token = token.strip()
         self._client = client
+        self._supabase_url = supabase_url.strip().rstrip("/")
+        self._supabase_service_key = supabase_service_key.strip()
         if bool(self._url) != bool(self._token):
             raise NotificationConfigurationError("NOTIFICATION_INGEST_CONFIGURATION_INCOMPLETE")
+        if bool(self._supabase_url) != bool(self._supabase_service_key):
+            raise NotificationConfigurationError("NOTIFICATION_PREFLIGHT_CONFIGURATION_INCOMPLETE")
         self.enabled = bool(self._url and self._token)
+
+    def exists(self, event_key: str) -> bool:
+        if not isinstance(event_key, str) or not event_key.strip():
+            raise NotificationConfigurationError("NOTIFICATION_EVENT_KEY_INVALID")
+        if not self.enabled or not self._supabase_url or not self._supabase_service_key:
+            return False
+        try:
+            response = self._client.post(
+                f"{self._supabase_url}/rest/v1/rpc/notification_event_exists_server",
+                headers={
+                    "apikey": self._supabase_service_key,
+                    "Authorization": f"Bearer {self._supabase_service_key}",
+                    "Content-Type": "application/json",
+                },
+                json={"p_event_key": event_key},
+            )
+        except httpx.TransportError:
+            # This preflight is an optimization only; DB uniqueness still protects
+            # the ingest path if the cheap read is temporarily unavailable.
+            return False
+        if response.status_code != 200:
+            return False
+        try:
+            body = response.json()
+        except ValueError:
+            return False
+        return body is True
 
     def emit(self, event: dict[str, Any]) -> dict[str, Any]:
         event_key = event.get("eventKey")
@@ -200,4 +239,10 @@ def notification_emitter_context(settings: Any) -> Iterator[NotificationEventEmi
         yield None
         return
     with httpx.Client() as client:
-        yield NotificationEventEmitter(url, token, client)
+        yield NotificationEventEmitter(
+            url,
+            token,
+            client,
+            supabase_url=str(getattr(settings, "supabase_url", "") or ""),
+            supabase_service_key=str(getattr(settings, "supabase_secret_key", "") or ""),
+        )
