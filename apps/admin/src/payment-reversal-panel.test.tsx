@@ -16,7 +16,7 @@ const paymentReversalLayoutCss = [...adminOperationsCss.matchAll(/\.(?:paymentRe
   .join('\n');
 
 const payment = {
-  id: 'payment-1', memberId: 'member-1', lineDisplayName: '王小明', planName: '月費方案',
+  id: 'payment-1', memberId: 'member-1', identityDisplay: 'LINE ID：line-user-1', planName: '月費方案',
   amount: 2880, paidAt: '2026-09-01T02:00:00Z', status: 'confirmed',
 };
 let container: HTMLDivElement;
@@ -168,7 +168,7 @@ describe('PaymentReversalPanel', () => {
 
     expect(confirm).toHaveBeenCalledWith(expect.objectContaining({
       title: '確認記錄已完成刷退', confirmLabel: '記錄已刷退', tone: 'danger',
-      message: expect.stringContaining('王小明（member-1）'),
+      message: expect.stringContaining('LINE ID：line-user-1'),
     }));
     const message = confirm.mock.calls[0][0].message;
     expect(message).toContain('payment-1');

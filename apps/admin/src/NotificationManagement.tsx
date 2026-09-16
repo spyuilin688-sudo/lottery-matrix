@@ -25,13 +25,13 @@ type Props = {
 const deliveryLogPageSize = 5;
 
 function memberName(member: PushMember) {
-  return member.displayName || member.userId;
+  return member.identityDisplay || '—';
 }
 
 function MemberAvatar({ member }: { member: PushMember }) {
   const name = memberName(member);
   if (member.pictureUrl) {
-    return <img className="notificationAvatar" src={member.pictureUrl} width="32" height="32" alt={`${name} 的 LINE 頭貼`} />;
+    return <img className="notificationAvatar" src={member.pictureUrl} width="32" height="32" alt={`${name} 的會員頭貼`} />;
   }
   return <span className="notificationAvatar notificationAvatarFallback" aria-hidden="true">{name.slice(0, 1)}</span>;
 }
@@ -203,7 +203,6 @@ export function NotificationManagement({ client, canEdit }: Props) {
                 <span className={selectedMember.pushEnabled ? 'statusBadge good' : 'statusBadge bad'}>
                   {selectedMember.pushEnabled ? '已開啟' : '未開啟'}
                 </span>
-                <small>{selectedMember.userId}</small>
               </div>
             </div>
           )}
@@ -263,7 +262,7 @@ export function NotificationManagement({ client, canEdit }: Props) {
                 <tbody>{visibleLogs.map((log) => (
                   <tr key={log.id}>
                     <td data-label="發送時間">{formatAdminDateTime(log.sentAt)}</td>
-                    <td data-label="會員">{membersById.has(log.userId) ? memberName(membersById.get(log.userId)!) : log.userId}</td>
+                    <td data-label="會員">{membersById.has(log.userId) ? memberName(membersById.get(log.userId)!) : '—'}</td>
                     <td data-label="結果"><span className={log.status === 'sent' ? 'notificationLogSuccess' : 'notificationLogFailure'}>{log.status === 'sent' ? '成功' : '失敗'}</span></td>
                     <td data-label="失敗原因">{log.failureReason || '—'}</td>
                   </tr>

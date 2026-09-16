@@ -61,8 +61,8 @@ describe('createPushNotifications', () => {
       const url = String(input);
       if (url.includes('/rest/v1/members?')) {
         return response([
-          { auth_user_id: USER_ONE, line_display_name: '持久化會員一' },
-          { auth_user_id: USER_TWO, line_display_name: '持久化會員二' },
+          { auth_user_id: USER_ONE, line_user_id: 'line-user-one', line_display_name: '持久化會員一' },
+          { auth_user_id: USER_TWO, line_user_id: null, line_display_name: '持久化會員二' },
         ]);
       }
       if (url.includes('/auth/v1/admin/users?')) {
@@ -75,6 +75,7 @@ describe('createPushNotifications', () => {
             },
             identities: [{
               provider: 'custom:line',
+              provider_id: 'line-user-one',
               identity_data: { name: 'LINE 會員一', picture: 'https://line.example/one.png' },
             }],
           },
@@ -82,8 +83,9 @@ describe('createPushNotifications', () => {
             id: USER_TWO,
             user_metadata: {},
             identities: [{
-              provider: 'custom:line',
-              identity_data: { name: 'LINE 會員二', picture: 'https://line.example/two.png' },
+              provider: 'google',
+              provider_id: 'google-user-two',
+              identity_data: { name: 'Google 會員二', picture: 'https://google.example/two.png' },
             }],
           },
         ] });
@@ -98,21 +100,27 @@ describe('createPushNotifications', () => {
     await expect(api.listMemberPushStatus()).resolves.toEqual([
       {
         userId: USER_ONE,
+        identityLabel: 'LINE ID',
+        identityValue: 'line-user-one',
+        identityDisplay: 'LINE ID：line-user-one',
         displayName: '目前會員一',
         pictureUrl: 'https://metadata.example/one.png',
         pushEnabled: true,
       },
       {
         userId: USER_TWO,
-        displayName: 'LINE 會員二',
-        pictureUrl: 'https://line.example/two.png',
+        identityLabel: 'Google ID',
+        identityValue: 'google-user-two',
+        identityDisplay: 'Google ID：google-user-two',
+        displayName: '持久化會員二',
+        pictureUrl: null,
         pushEnabled: false,
       },
     ]);
 
     const urls = fetcher.mock.calls.map(([input]) => String(input));
     expect(urls).toEqual(expect.arrayContaining([
-      expect.stringContaining('/rest/v1/members?select=auth_user_id%2Cline_display_name'),
+      expect.stringContaining('/rest/v1/members?select=auth_user_id%2Cline_user_id%2Cline_display_name'),
       expect.stringContaining('/auth/v1/admin/users?page=1&per_page=1000'),
       expect.stringContaining('/rest/v1/member_push_subscriptions?select=id%2Cuser_id&enabled=eq.true'),
     ]));
@@ -164,6 +172,9 @@ describe('createPushNotifications', () => {
     expect(members).toHaveLength(1001);
     expect(members.at(-1)).toEqual({
       userId: targetUserId,
+      identityLabel: null,
+      identityValue: null,
+      identityDisplay: null,
       displayName: 'target metadata',
       pictureUrl: 'https://metadata.example/target.png',
       pushEnabled: true,

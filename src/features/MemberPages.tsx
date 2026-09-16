@@ -6,6 +6,7 @@ import { bootstrapMember, fetchMemberProfile, fetchMemberReferralSummary, fetchP
 import { readManualTransferPlan, saveManualTransferPlan } from "../manual-transfer-selection";
 import { reconcilePendingLineLogoutPresence, signInWithLine, signOutFromMatrix } from "../auth/line-auth";
 import { signInWithGoogle } from "../auth/google-auth";
+import { providerIdentityFromSession, type ProviderIdentity } from "../auth/provider-identity";
 import { clearLineLoginAttempt, consumeLineLoginAttempt, markLineLoginAttempt } from "../auth/line-login-attempt";
 import { withDeadline } from "../lib/api-resilience";
 import { getSupabaseClient } from "../lib/supabase";
@@ -176,7 +177,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   const lineLoginInProgress = useRef(false);
   const [signingInProvider, setSigningInProvider] = useState<"line" | "google" | null>(null);
   const [lineAvatarUrl, setLineAvatarUrl] = useState<string | null>(null);
-  const [lineNickname, setLineNickname] = useState<string | null>(null);
+  const [providerIdentity, setProviderIdentity] = useState<ProviderIdentity | null>(null);
   const [memberUserId, setMemberUserId] = useState<string | null>(null);
   const memberUserIdRef = useRef<string | null>(null);
   const [memberProfile, setMemberProfile] = useState<MemberProfileResponse | null>(null);
@@ -201,7 +202,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
       setSigningInProvider(null);
       setAuthState(session ? "authenticated" : "anonymous");
       setLineAvatarUrl(lineAvatarFromSession(session));
-      setLineNickname(lineNicknameFromSession(session));
+      setProviderIdentity(providerIdentityFromSession(session));
       if (consumeLineLoginAttempt({ hasSession: Boolean(session) })) {
         void alertDialog({ title: "登入成功", tone: "success" });
       }
@@ -266,6 +267,9 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   const expiry = memberProfile?.isLifetime ? null : memberExpiryInTaipei(memberProfile?.planExpiresAt ?? null);
   const displayedPlanName = memberProfile ? memberProfile.planName ?? "免費會員" : "";
   const displayedPlanDescription = displayedPlanName === "免費會員" ? "核心功能體驗" : "享有所有 Matrix Pro 功能";
+  const visibleProviderIdentity = providerIdentity ?? (memberProfile?.lineUserId
+    ? { label: "LINE ID" as const, value: memberProfile.lineUserId }
+    : null);
   const handleAuthAction = async () => {
     if (authRetrying || authState === "initializing" || authState === "signing-in" || authState === "signing-out") return;
     if (authState === "degraded") {
@@ -292,7 +296,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
         await signOutFromMatrix();
         setAuthState("anonymous");
         setLineAvatarUrl(null);
-        setLineNickname(null);
+        setProviderIdentity(null);
         await alertDialog({ title: "已登出", tone: "success" });
       } else {
         setSigningInProvider("line");
@@ -329,7 +333,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
             setMemberProfile(null);
             setAuthState('authenticated');
             setLineAvatarUrl(lineAvatarFromSession(data.session));
-            setLineNickname(lineNicknameFromSession(data.session));
+            setProviderIdentity(providerIdentityFromSession(data.session));
             await alertDialog({ title: '登入成功', tone: 'success' });
             onNavigate('home');
             return;
@@ -411,8 +415,8 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
             <h2>樂彩玩家</h2>
             <p
               className="profile-nickname"
-              data-name-fit={memberProfile?.memberId && Array.from(memberProfile.memberId).length > 12 ? "compact" : "regular"}
-            >會員ID：{memberProfile?.memberId ?? ""}</p>
+              data-name-fit={visibleProviderIdentity?.value && Array.from(visibleProviderIdentity.value).length > 12 ? "compact" : "regular"}
+            >{visibleProviderIdentity ? `${visibleProviderIdentity.label}：${visibleProviderIdentity.value}` : ""}</p>
           </div>
           {authState !== "initializing" ? <div className="profile-auth-actions">
             {authState === "anonymous" || authState === "signing-in" ? <>

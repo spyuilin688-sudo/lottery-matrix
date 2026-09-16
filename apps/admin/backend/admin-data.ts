@@ -1,5 +1,6 @@
 import { adminBusinessDateKey, adminBusinessDateRange } from '../shared/admin-business-time';
 import { lookupLocations, memberConnectionSummaries } from './member-login-history';
+import { providerIdentityFromAuthUser, type AuthUserForIdentity } from './member-provider-identity';
 type Requester = {
   request<T = unknown>(path: string, init?: RequestInit): Promise<T>;
   requestPage?<T = unknown>(path: string): Promise<{ items: T[]; total: number }>;
@@ -50,11 +51,12 @@ export class AdminDataError extends Error {
 
 const definitions: Record<string, TableDefinition> = {
   users: {
-    path: '/rest/v1/members?select=id,auth_user_id,line_display_name,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,referral_code,invitation_code,last_online_at,total_online_seconds,online_session_count,current_plan:plans!members_current_plan_id_fkey(name,price,duration_days)&order=registered_at.desc,id.asc',
+    path: '/rest/v1/members?select=id,auth_user_id,line_user_id,line_display_name,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,referral_code,invitation_code,last_online_at,total_online_seconds,online_session_count,current_plan:plans!members_current_plan_id_fkey(name,price,duration_days)&order=registered_at.desc,id.asc',
     map: (row) => ({
       id: String(row.id),
       memberId: String(row.id),
       authUserId: row.auth_user_id,
+      lineUserId: row.line_user_id,
       lineDisplayName: row.line_display_name,
       registeredAt: row.registered_at,
       currentPlanId: row.current_plan_id,
@@ -70,13 +72,14 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   subscriptions: {
-    path: '/rest/v1/members?select=id,auth_user_id,line_display_name,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,referral_code,invitation_code,last_online_at,total_online_seconds,online_session_count,current_plan:plans!members_current_plan_id_fkey!inner(name,price,duration_days)&order=plan_started_at.desc.nullslast,id.asc',
+    path: '/rest/v1/members?select=id,auth_user_id,line_user_id,line_display_name,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,referral_code,invitation_code,last_online_at,total_online_seconds,online_session_count,current_plan:plans!members_current_plan_id_fkey!inner(name,price,duration_days)&order=plan_started_at.desc.nullslast,id.asc',
     map: (row) => {
       const plan = (row.current_plan ?? null) as Row | null;
       return {
         id: String(row.id),
         memberId: String(row.id),
         authUserId: row.auth_user_id,
+        lineUserId: row.line_user_id,
         lineDisplayName: row.line_display_name,
         registeredAt: row.registered_at,
         currentPlanId: row.current_plan_id,
@@ -108,10 +111,12 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   subscriptionRecords: {
-    path: '/rest/v1/payments?select=id,member_id,plan_id,amount,paid_at,status,reversed_at,reversal_reason,reversed_by,reversed_by_name,plan:plans(name),member:members(line_display_name)&order=paid_at.desc.nullslast,id.asc',
+    path: '/rest/v1/payments?select=id,member_id,plan_id,amount,paid_at,status,reversed_at,reversal_reason,reversed_by,reversed_by_name,plan:plans(name),member:members(auth_user_id,line_user_id,line_display_name)&order=paid_at.desc.nullslast,id.asc',
     map: (row) => ({
       id: String(row.id),
       memberId: row.member_id,
+      authUserId: (row.member as Row | null)?.auth_user_id ?? null,
+      lineUserId: (row.member as Row | null)?.line_user_id ?? null,
       lineDisplayName: (row.member as Row | null)?.line_display_name ?? null,
       planId: row.plan_id,
       planName: (row.plan as Row | null)?.name ?? null,
@@ -160,7 +165,7 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   activationCodes: {
-    path: '/rest/v1/activation_codes?select=id,batch_id,code,duration_type,created_at,expires_at,redeemed_at,status,redeemed_member:members!activation_codes_redeemed_by_member_id_fkey(id,line_display_name)&order=created_at.desc,id.asc',
+    path: '/rest/v1/activation_codes?select=id,batch_id,code,duration_type,created_at,expires_at,redeemed_at,status,redeemed_member:members!activation_codes_redeemed_by_member_id_fkey(id,auth_user_id,line_user_id,line_display_name)&order=created_at.desc,id.asc',
     map: (row) => ({
       id: String(row.id),
       batchId: row.batch_id,
@@ -169,6 +174,8 @@ const definitions: Record<string, TableDefinition> = {
       createdAt: row.created_at,
       expiresAt: row.expires_at,
       redeemedByMemberId: (row.redeemed_member as Row | null)?.id ?? null,
+      authUserId: (row.redeemed_member as Row | null)?.auth_user_id ?? null,
+      lineUserId: (row.redeemed_member as Row | null)?.line_user_id ?? null,
       redeemedByLineDisplayName: (row.redeemed_member as Row | null)?.line_display_name ?? null,
       redeemedAt: row.redeemed_at,
       status: row.status,
@@ -184,10 +191,12 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   transferRequests: {
-    path: '/rest/v1/transfer_requests?select=id,member_id,plan_id,amount,transferred_at,account_last_five,submitted_at,status,plan:plans(name),member:members(line_display_name)&order=submitted_at.desc,id.asc',
+    path: '/rest/v1/transfer_requests?select=id,member_id,plan_id,amount,transferred_at,account_last_five,submitted_at,status,plan:plans(name),member:members(auth_user_id,line_user_id,line_display_name)&order=submitted_at.desc,id.asc',
     map: (row) => ({
       id: String(row.id),
       memberId: row.member_id,
+      authUserId: (row.member as Row | null)?.auth_user_id ?? null,
+      lineUserId: (row.member as Row | null)?.line_user_id ?? null,
       lineDisplayName: (row.member as Row | null)?.line_display_name ?? null,
       planId: row.plan_id,
       planName: (row.plan as Row | null)?.name ?? null,
@@ -225,6 +234,34 @@ async function enrichLoginRecords(items: Array<Row & { id: string }>, api: Reque
   return items.map(item => ({ ...item, estimatedRegion: typeof item.ip === 'string' ? locations.get(item.ip) || null : null }));
 }
 
+type AuthUsersResponse = { users?: AuthUserForIdentity[] };
+
+async function listAllAuthUsers(api: Requester) {
+  const users: AuthUserForIdentity[] = [];
+  for (let page = 1; ; page += 1) {
+    const response = await api.request<AuthUsersResponse>(`/auth/v1/admin/users?page=${page}&per_page=${adminReadPageSize}`);
+    const current = Array.isArray(response?.users) ? response.users : [];
+    users.push(...current);
+    if (current.length < adminReadPageSize) return users;
+  }
+}
+
+async function enrichProviderIdentities(items: Array<Row & { id: string }>, api: Requester) {
+  if (!items.length) return [];
+  const needsAuth = items.some((item) => !item.lineUserId && item.authUserId);
+  const authUsers = needsAuth ? await listAllAuthUsers(api) : [];
+  const byId = new Map(authUsers.map((user) => [String(user.id ?? ''), user]));
+  return items.map((item) => {
+    const identity = providerIdentityFromAuthUser(item.lineUserId, byId.get(String(item.authUserId ?? '')));
+    return {
+      ...item,
+      identityLabel: identity?.label ?? null,
+      identityValue: identity?.value ?? null,
+      identityDisplay: identity ? `${identity.label}：${identity.value}` : null,
+    };
+  });
+}
+
 export async function listAdminTable(table: string, api: Requester, currentDate = new Date()) {
   const definition = getAdminTableDefinition(table);
   const rows = await listAllRows(api, definition.path);
@@ -232,12 +269,16 @@ export async function listAdminTable(table: string, api: Requester, currentDate 
   if (table === 'loginRecords') {
     return { items: await enrichLoginRecords(items, api) };
   }
-  if (table !== 'users' && table !== 'subscriptions') return { items };
-  return { items: await enrichMembers(items, api, currentDate) };
+  if (table === 'users' || table === 'subscriptions') return { items: await enrichMembers(items, api, currentDate) };
+  if (['subscriptionRecords', 'transferRequests', 'activationCodes'].includes(table)) {
+    return { items: await enrichProviderIdentities(items, api) };
+  }
+  return { items };
 }
 
 async function enrichMembers(items: Array<Row & { id: string }>, api: Requester, currentDate: Date, scopeMembers = false) {
   if (!items.length) return [];
+  const providerItems = await enrichProviderIdentities(items, api);
   const connections = await memberConnectionSummaries(items.map(item => String(item.authUserId ?? '')), api);
   const since = new Date(currentDate.getTime() - 3 * 86_400_000).toISOString();
   const memberFilter = scopeMembers ? `&member_id=in.(${items.map(item => encodeURIComponent(item.id)).join(',')})` : '';
@@ -248,7 +289,7 @@ async function enrichMembers(items: Array<Row & { id: string }>, api: Requester,
     if (!memberId) continue;
     secondsByMember.set(memberId, (secondsByMember.get(memberId) ?? 0) + Math.max(0, Number(session.online_seconds ?? 0)));
   }
-  return items.map((item) => ({ ...item, ...(connections.get(String(item.authUserId)) ?? { recentIp: null, estimatedRegion: null }), recentOnlineMinutes: Math.round((secondsByMember.get(String(item.id)) ?? 0) / 60) }));
+  return providerItems.map((item) => ({ ...item, ...(connections.get(String(item.authUserId)) ?? { recentIp: null, estimatedRegion: null }), recentOnlineMinutes: Math.round((secondsByMember.get(String(item.id)) ?? 0) / 60) }));
 }
 
 type PageRequester = Requester & {
@@ -409,7 +450,11 @@ export async function listAdminTablePage(table: string, query: AdminPageQuery, a
   const url = new URL(definition.path, 'https://supabase.invalid');
   applyAdminPageFilters(url, table, query);
   const result = await readAdminPage(url, page, pageDefinitions[table].pageSize, api);
-  return { ...result, items: result.items.map(definition.map) };
+  const items = result.items.map(definition.map);
+  if (['subscriptionRecords', 'transferRequests', 'activationCodes'].includes(table)) {
+    return { ...result, items: await enrichProviderIdentities(items, api) };
+  }
+  return { ...result, items };
 }
 
 const adminLoginRecordPageSize = 10;

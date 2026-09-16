@@ -2,12 +2,14 @@ import {
   createSupabaseTransport,
   type SupabaseConfig,
 } from './supabase';
+import { providerIdentityFromAuthUser } from './member-provider-identity';
 
 type ConfigSource = SupabaseConfig | (() => Promise<SupabaseConfig>);
 type Row = Record<string, unknown>;
 
 type AuthIdentity = {
   provider?: unknown;
+  provider_id?: unknown;
   identity_data?: Record<string, unknown> | null;
 };
 
@@ -31,6 +33,9 @@ type EdgeBusinessEnvelope = {
 
 export type MemberPushStatus = {
   userId: string;
+  identityLabel: 'LINE ID' | 'Google ID' | null;
+  identityValue: string | null;
+  identityDisplay: string | null;
   displayName: string | null;
   pictureUrl: string | null;
   pushEnabled: boolean;
@@ -147,7 +152,7 @@ export function createPushNotifications(
   return {
     async listMemberPushStatus(): Promise<MemberPushStatus[]> {
       const [members, authUsers, subscriptions] = await Promise.all([
-        listAllRows('/rest/v1/members?select=auth_user_id%2Cline_display_name&order=auth_user_id.asc'),
+        listAllRows('/rest/v1/members?select=auth_user_id%2Cline_user_id%2Cline_display_name&order=auth_user_id.asc'),
         listAllAuthUsers(),
         listAllRows('/rest/v1/member_push_subscriptions?select=id%2Cuser_id&enabled=eq.true&order=id.asc'),
       ]);
@@ -160,8 +165,12 @@ export function createPushNotifications(
         const userId = String(row.auth_user_id ?? '');
         const authUser = users.get(userId);
         const identity = lineIdentity(authUser);
+        const providerIdentity = providerIdentityFromAuthUser(row.line_user_id, authUser);
         return {
           userId,
+          identityLabel: providerIdentity?.label ?? null,
+          identityValue: providerIdentity?.value ?? null,
+          identityDisplay: providerIdentity ? `${providerIdentity.label}：${providerIdentity.value}` : null,
           displayName: optionalString(authUser?.user_metadata?.name)
             ?? optionalString(identity?.name)
             ?? optionalString(row.line_display_name),

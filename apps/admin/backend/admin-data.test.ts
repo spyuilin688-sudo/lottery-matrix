@@ -16,7 +16,7 @@ describe('listAdminTable', () => {
     const api = { request: fixtureRequest(async (path: string) => path.includes('member_online_sessions') ? [{ member_id: 'm1', online_seconds: 1800 }, { member_id: 'm1', online_seconds: 900 }] : [{
       id: 'm1',
       auth_user_id: 'u1',
-      line_user_id: null,
+      line_user_id: 'line-user-1',
       line_display_name: '測試暱稱',
       registered_at: '2026-08-01T00:00:00Z',
       current_plan_id: 'p1',
@@ -38,7 +38,11 @@ describe('listAdminTable', () => {
         id: 'm1',
         memberId: 'm1',
         authUserId: 'u1',
+        lineUserId: 'line-user-1',
         lineDisplayName: '測試暱稱',
+        identityLabel: 'LINE ID',
+        identityValue: 'line-user-1',
+        identityDisplay: 'LINE ID：line-user-1',
         registeredAt: '2026-08-01T00:00:00Z',
         currentPlanId: 'p1',
         planStartedAt: '2026-08-01T00:00:00Z',
@@ -57,11 +61,10 @@ describe('listAdminTable', () => {
     });
   });
 
-  it('maps subscription LINE nickname without exposing the LINE user ID', async () => {
+  it('maps subscription LINE ID as the visible provider identity', async () => {
     const api = { request: fixtureRequest(async (path: string) => path.includes('member_online_sessions') ? [] : [{ id: 'm1', auth_user_id: 'u1', line_user_id: 'internal-line-id', line_display_name: 'LINE 暱稱', current_plan: null }]) };
     const result = await listAdminTable('subscriptions', api);
-    expect(result.items[0]).toMatchObject({ lineDisplayName: 'LINE 暱稱' });
-    expect(result.items[0]).not.toHaveProperty('lineUserId');
+    expect(result.items[0]).toMatchObject({ lineUserId: 'internal-line-id', identityDisplay: 'LINE ID：internal-line-id' });
   });
 
   it('maps the transfer applicant LINE display name', async () => {
@@ -69,11 +72,11 @@ describe('listAdminTable', () => {
       id: 'transfer-1', member_id: 'member-1', plan_id: 'plan-1', amount: 1880,
       transferred_at: '2026-09-01T00:00:00Z', account_last_five: '12345',
       submitted_at: '2026-09-01T00:00:00Z', status: 'pending',
-      plan: { name: '月費方案' }, member: { line_display_name: '小明' },
+      plan: { name: '月費方案' }, member: { auth_user_id: 'auth-transfer', line_user_id: 'line-transfer', line_display_name: '小明' },
     }]) };
     const result = await listAdminTable('transferRequests', api);
-    expect(result.items[0]).toMatchObject({ id: 'transfer-1', lineDisplayName: '小明' });
-    expect(api.request).toHaveBeenCalledWith(expect.stringContaining('member:members(line_display_name)'));
+    expect(result.items[0]).toMatchObject({ id: 'transfer-1', identityDisplay: 'LINE ID：line-transfer' });
+    expect(api.request).toHaveBeenCalledWith(expect.stringContaining('member:members(auth_user_id,line_user_id,line_display_name)'));
   });
 
   it('maps payment member, plan, and reversal metadata for the administrative history', async () => {
@@ -81,17 +84,17 @@ describe('listAdminTable', () => {
       id: 'payment-1', member_id: 'member-1', plan_id: 'plan-1', amount: 2880,
       paid_at: '2026-09-01T00:00:00Z', status: 'refunded', reversed_at: '2026-09-08T00:00:00Z',
       reversal_reason: '銀行退款已完成', reversed_by_name: '管理員',
-      plan: { name: '月費方案' }, member: { line_display_name: '小明' },
+      plan: { name: '月費方案' }, member: { auth_user_id: 'auth-transfer', line_user_id: 'line-transfer', line_display_name: '小明' },
     }]) };
 
     const result = await listAdminTable('subscriptionRecords', api);
 
     expect(result.items[0]).toMatchObject({
-      id: 'payment-1', memberId: 'member-1', lineDisplayName: '小明',
+      id: 'payment-1', memberId: 'member-1', identityDisplay: 'LINE ID：line-transfer',
       planId: 'plan-1', planName: '月費方案', status: 'refunded',
       reversedAt: '2026-09-08T00:00:00Z', reversalReason: '銀行退款已完成', reversedByName: '管理員',
     });
-    expect(api.request).toHaveBeenCalledWith(expect.stringContaining('member:members(line_display_name)'));
+    expect(api.request).toHaveBeenCalledWith(expect.stringContaining('member:members(auth_user_id,line_user_id,line_display_name)'));
     expect(api.request).toHaveBeenCalledWith(expect.stringContaining('plan:plans(name)'));
   });
 
@@ -100,14 +103,14 @@ describe('listAdminTable', () => {
       id: 'code-1', batch_id: 'batch-1', code: 'ABCD-EFGH-IJKL-MNOP', duration_type: '30_days',
       created_at: '2026-09-05T00:00:00Z', expires_at: '2026-10-05T00:00:00Z',
       redeemed_by_member_id: 'member-1', redeemed_at: '2026-09-05T01:00:00Z', status: 'used',
-      redeemed_member: { id: 'member-1', line_display_name: '兌換者暱稱' },
+      redeemed_member: { id: 'member-1', auth_user_id: 'auth-code', line_user_id: 'line-code', line_display_name: '兌換者暱稱' },
     }]) };
 
     const result = await listAdminTable('activationCodes', api);
 
-    expect(result.items[0]).toMatchObject({ redeemedByMemberId: 'member-1', redeemedByLineDisplayName: '兌換者暱稱' });
+    expect(result.items[0]).toMatchObject({ redeemedByMemberId: 'member-1', identityDisplay: 'LINE ID：line-code' });
     expect(api.request).toHaveBeenCalledWith(expect.stringContaining(
-      'redeemed_member:members!activation_codes_redeemed_by_member_id_fkey(id,line_display_name)',
+      'redeemed_member:members!activation_codes_redeemed_by_member_id_fkey(id,auth_user_id,line_user_id,line_display_name)',
     ));
   });
 

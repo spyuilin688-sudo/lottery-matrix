@@ -25,7 +25,7 @@ describe('notification management client', () => {
   });
 
   it('loads member status and delivery logs from their dedicated endpoints', async () => {
-    const members = [{ userId: 'member-1', displayName: '會員一', pictureUrl: null, pushEnabled: true }];
+    const members = [{ userId: 'member-1', identityLabel: 'LINE ID', identityValue: 'line-1', identityDisplay: 'LINE ID：line-1', displayName: '會員一', pictureUrl: null, pushEnabled: true }];
     const logs = [{
       id: 'log-1',
       userId: 'member-1',
@@ -72,7 +72,7 @@ describe('notification management client', () => {
 
 describe('notification management state guards', () => {
   it('enables sending only for an editable, selected member with an active subscription', () => {
-    const enabled = { userId: 'member-1', displayName: '會員一', pictureUrl: null, pushEnabled: true };
+    const enabled = { userId: 'member-1', identityLabel: 'LINE ID', identityValue: 'line-1', identityDisplay: 'LINE ID：line-1', displayName: '會員一', pictureUrl: null, pushEnabled: true };
     const disabled = { ...enabled, pushEnabled: false };
 
     expect(canSendTestPush(null, true, false)).toBe(false);
