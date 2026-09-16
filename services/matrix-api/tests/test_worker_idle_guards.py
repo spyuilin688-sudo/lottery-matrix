@@ -6,8 +6,8 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from app import worker as worker_module
+from app.domain.explore_state import DRAW_ORDER, SORTED_ORDER
 from app.worker import (
-    ANALYSIS_VERSION,
     analysis_version_for_order,
     emit_ready_notifications,
     run_scheduled_worker,
@@ -41,8 +41,8 @@ class DurableReadyRepository:
         assert lottery == LOTTERY
         assert period == PERIOD
         if analysis_version in {
-            analysis_version_for_order(PERIOD, "sorted"),
-            analysis_version_for_order(PERIOD, "draw"),
+            analysis_version_for_order(PERIOD, SORTED_ORDER),
+            analysis_version_for_order(PERIOD, DRAW_ORDER),
         }:
             return {
                 "drawPeriod": PERIOD,
