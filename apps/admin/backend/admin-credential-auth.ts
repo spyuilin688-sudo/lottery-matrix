@@ -145,7 +145,9 @@ export function createAdminCredentialAuth(transport: Transport, now = () => new 
     const sessions = await transport.selectRows<Row>('admin_sessions', `select=login_record_id&token_hash=eq.${encodeURIComponent(tokenHash)}&limit=1`);
     const loginRecordId = typeof sessions[0]?.login_record_id === 'string' ? sessions[0].login_record_id : '';
     if (loginRecordId) {
-      await transport.updateRows('admin_login_records', `id=eq.${encodeURIComponent(loginRecordId)}&logout_at=is.null`, { logout_at: now().toISOString() });
+      try {
+        await transport.updateRows('admin_login_records', `id=eq.${encodeURIComponent(loginRecordId)}&logout_at=is.null`, { logout_at: now().toISOString() });
+      } catch { /* Login record storage failure must not prevent logout. */ }
     }
     await transport.deleteRows('admin_sessions', `token_hash=eq.${encodeURIComponent(tokenHash)}`);
   };

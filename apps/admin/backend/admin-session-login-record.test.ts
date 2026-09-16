@@ -47,3 +47,15 @@ it('links each operator session to its own login record and closes only that rec
   expect(state.loginRecords[1].logout_at).toBe('2026-09-16T09:00:00.000Z');
   expect(state.sessions).toHaveLength(1);
 });
+
+it('still removes the administrator session when logout timestamp storage fails', async () => {
+  const state = makeTransport();
+  const auth = createAdminCredentialAuth(state.transport, () => new Date('2026-09-16T09:00:00Z'));
+  state.admins.push({ id: 'a1', account: 'operator', name: 'Operator', role: '營運管理員', status: '啟用', ...await auth.passwordFields('correct', true) });
+  const login = await auth.login('operator', 'correct');
+  state.loginRecords.push({ id: login.loginRecordId, logout_at: null });
+  state.transport.updateRows.mockRejectedValueOnce(new Error('logout record unavailable'));
+  await expect(auth.logout({ cookie: 'matrix_admin_session=' + login.token })).resolves.toBeUndefined();
+  expect(state.sessions).toHaveLength(0);
+  expect(state.loginRecords[0].logout_at).toBeNull();
+});
