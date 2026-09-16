@@ -151,5 +151,14 @@ export function formatAdminRowForDisplay(table: string | null, row: AdminRow): A
   if (table === 'subscriptions' && (row.memberDisplayName == null || row.memberDisplayName === '')) {
     return { ...row, memberDisplayName: row.lineDisplayName ?? row.line_display_name ?? null };
   }
+  if (table === 'activationCodes') {
+    const memberDisplayName = row.memberDisplayName ?? row.redeemedByLineDisplayName;
+    if (memberDisplayName != null && memberDisplayName !== '') {
+      return {
+        ...row,
+        identityDisplay: row.identityDisplay ? `${memberDisplayName} · ${row.identityDisplay}` : memberDisplayName,
+      };
+    }
+  }
   return row;
 }

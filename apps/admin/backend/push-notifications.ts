@@ -2,7 +2,7 @@ import {
   createSupabaseTransport,
   type SupabaseConfig,
 } from './supabase';
-import { providerIdentityFromAuthUser } from './member-provider-identity';
+import { memberDisplayNameFromAuthUser, providerIdentityFromAuthUser } from './member-provider-identity';
 
 type ConfigSource = SupabaseConfig | (() => Promise<SupabaseConfig>);
 type Row = Record<string, unknown>;
@@ -171,9 +171,7 @@ export function createPushNotifications(
           identityLabel: providerIdentity?.label ?? null,
           identityValue: providerIdentity?.value ?? null,
           identityDisplay: providerIdentity ? `${providerIdentity.label}：${providerIdentity.value}` : null,
-          displayName: optionalString(authUser?.user_metadata?.name)
-            ?? optionalString(identity?.name)
-            ?? optionalString(row.line_display_name),
+          displayName: memberDisplayNameFromAuthUser(row.line_display_name, authUser),
           pictureUrl: optionalString(authUser?.user_metadata?.picture)
             ?? optionalString(identity?.picture),
           pushEnabled: enabledUsers.has(userId),

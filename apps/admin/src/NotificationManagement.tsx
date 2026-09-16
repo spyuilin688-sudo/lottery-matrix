@@ -25,7 +25,7 @@ type Props = {
 const deliveryLogPageSize = 5;
 
 function memberName(member: PushMember) {
-  return member.identityDisplay || '—';
+  return member.displayName || member.identityDisplay || '—';
 }
 
 function MemberAvatar({ member }: { member: PushMember }) {
