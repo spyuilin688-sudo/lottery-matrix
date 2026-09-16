@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  createMatrixStatusCompactReader,
   createMatrixStatusSourceReader,
   createMatrixStatusValidationReader,
 } from '../supabase/functions/matrix-status/source-reader';
@@ -32,6 +33,32 @@ describe('Matrix status source reader', () => {
     const read = createMatrixStatusSourceReader(() => config, fetcher);
 
     await expect(read('今彩539')).resolves.toEqual(payload);
+  });
+
+  it('reads compact status without requesting raw Explore/Tianyan sources', async () => {
+    const payload = {
+      analysisVersion: 'v1', drawPeriod: '115000210', payload: { cards: [] },
+    };
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }));
+    const read = createMatrixStatusCompactReader(() => config, fetcher);
+
+    await expect(read('今彩539', '115000210')).resolves.toEqual(payload);
+    expect(fetcher).toHaveBeenCalledWith(
+      'https://project.supabase.co/rest/v1/rpc/matrix_status_compact_get',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          apikey: 'service-role-key',
+          Authorization: 'Bearer service-role-key',
+        }),
+        body: JSON.stringify({
+          p_request: { lottery: '今彩539', drawPeriod: '115000210' },
+        }),
+      }),
+    );
   });
 
   it('keeps unexpected database failures opaque', async () => {
