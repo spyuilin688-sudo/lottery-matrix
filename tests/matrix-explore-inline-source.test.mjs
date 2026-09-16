@@ -6,7 +6,9 @@ import { ruleBodies } from "./helpers/css-rules.mjs";
 const mainSource = readFileSync("src/main.tsx", "utf8");
 const appSource = readFileSync("src/App.tsx", "utf8");
 const prototypeSource = readFileSync("src/Prototype.tsx", "utf8");
+const prototypeCss = readFileSync("src/prototype.css", "utf8");
 const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
+const headerBackgroundCss = readFileSync("src/matrix-explore-header-background.css", "utf8");
 const tiangongCss = readFileSync("src/matrix-tiangong-results.css", "utf8");
 
 function assertRule(selectorPattern, declarations) {
@@ -25,6 +27,19 @@ test("Matrix Explore stylesheet follows the feature-pages import graph", () => {
   assert.ok(appImportIndex < spacingImportIndex);
   assert.match(appSource, /import Prototype from "\.\/Prototype";/);
   assert.match(prototypeSource, /import "\.\/feature-pages\.css";/);
+});
+
+test("Matrix Explore title-card background is loaded by an existing runtime stylesheet", () => {
+  assert.match(prototypeCss, /@import\s+"\.\/matrix-explore-header-background\.css";/);
+  assert.match(
+    headerBackgroundCss,
+    /\.matrix-explore-screen\s*>\s*\.product-header\[data-product-header="Matrix 探索"\]/,
+  );
+  assert.match(
+    headerBackgroundCss,
+    /--product-header-background:\s*url\("\/assets\/lottery\/header-explore-luxury-flow\.svg"\);/,
+  );
+  assert.doesNotMatch(mainSource, /matrix-explore-header-background\.css/);
 });
 
 test("Matrix Explore panels use scoped responsive-width auto-height flow", () => {
