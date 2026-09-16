@@ -39,7 +39,8 @@ export function MatrixExplorePage({
   const permissionSettings = usePermissionSettings();
   const [exploreAccess, setExploreAccess] = useState<MemberProfileResponse['exploreEntitlements']>();
   const initializedDefaultsKey = useRef<string | null>(null);
-  const defaultsContextKey = `${title}:${permissionSettings?.revision ?? "unknown"}`;
+  const [memberSessionRevision, setMemberSessionRevision] = useState(0);
+  const defaultsContextKey = `${title}:${permissionSettings?.revision ?? "unknown"}:${memberSessionRevision}`;
   type ConsecutiveOption =
     | "準4進5"
     | "準5進6"
@@ -158,7 +159,12 @@ export function MatrixExplorePage({
       setExploreError(null);
       setSearched(false);
     };
-    const unsubscribeSession = subscribeAlgorithmCacheScope(clearResults);
+    const refreshSessionDefaults = () => {
+      setExploreAccess(undefined);
+      setMemberSessionRevision((current) => current + 1);
+      clearResults();
+    };
+    const unsubscribeSession = subscribeAlgorithmCacheScope(refreshSessionDefaults, { notifyOnInitialize: true });
     const unsubscribeData = subscribeMatrixDataRevision(clearResults);
     return () => {
       cacheGeneration.current += 1;
