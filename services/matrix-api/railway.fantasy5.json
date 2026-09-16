@@ -6,6 +6,6 @@
   "deploy": {
     "startCommand": "uv run python -u -m app.analysis_worker --lottery 天天樂",
     "restartPolicyType": "NEVER",
-    "cronSchedule": "3/10 * * * *"
+    "cronSchedule": "3 * * * *"
   }
 }
