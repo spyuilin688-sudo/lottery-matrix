@@ -5,6 +5,10 @@ import { listAdminTable, listAdminTablePage } from './admin-data';
 
 const GOOGLE_AUTH_ID = '11111111-1111-4111-8111-111111111111';
 const GOOGLE_MEMBER_ID = '22222222-2222-4222-8222-222222222222';
+const migration = readFileSync(
+  new URL('../../../supabase/migrations/20260916122500_admin_member_display_name_search.sql', import.meta.url),
+  'utf8',
+).toLowerCase();
 
 it('normalizes the redeemed LINE nickname into activation-code memberDisplayName', async () => {
   const request = vi.fn(async (path: string) => {
@@ -54,7 +58,7 @@ it('uses memberDisplayName in transfer and payment display rows before provider 
   expect(payment.identityDisplay).toBe('LINE 會員 · LINE ID：line-user');
 });
 
-it('searches transfer requests by Google nickname resolved from Auth metadata', async () => {
+it('uses a targeted RPC to search transfer requests by Google nickname', async () => {
   const googleUser = {
     id: GOOGLE_AUTH_ID,
     user_metadata: { full_name: 'Google 搜尋會員' },
@@ -64,13 +68,13 @@ it('searches transfer requests by Google nickname resolved from Auth metadata', 
       identity_data: { full_name: 'Google 搜尋會員' },
     }],
   };
-  const request = vi.fn(async (path: string) => {
-    if (path.startsWith('/auth/v1/admin/users?')) return { users: [googleUser] };
-    if (path.startsWith('/rest/v1/members?select=id,auth_user_id&auth_user_id=in.')) {
-      return path.includes('offset=0')
-        ? [{ id: GOOGLE_MEMBER_ID, auth_user_id: GOOGLE_AUTH_ID }]
-        : [];
+  const request = vi.fn(async (path: string, init?: RequestInit) => {
+    if (path === '/rest/v1/rpc/admin_member_ids_by_display_name') {
+      expect(init?.method).toBe('POST');
+      expect(JSON.parse(String(init?.body))).toEqual({ p_keyword: 'Google 搜尋會員' });
+      return [{ member_id: GOOGLE_MEMBER_ID }];
     }
+    if (path.startsWith('/auth/v1/admin/users?')) return { users: [googleUser] };
     throw new Error(`unexpected request: ${path}`);
   });
   const requestPage = vi.fn(async (path: string) => {
@@ -105,10 +109,21 @@ it('searches transfer requests by Google nickname resolved from Auth metadata', 
     sortDirection: 'desc',
   }, { request, requestPage });
 
+  expect(request.mock.calls.some(([path]) => String(path).startsWith('/rest/v1/members?select=id,auth_user_id'))).toBe(false);
   expect(result.items[0]).toMatchObject({
     memberDisplayName: 'Google 搜尋會員',
     identityDisplay: 'Google ID：google-provider-1',
   });
+});
+
+it('keeps the member-name search RPC private to the server-side service role', () => {
+  expect(migration).toContain('create or replace function public.admin_member_ids_by_display_name');
+  expect(migration).toContain('security definer');
+  expect(migration).toContain("set search_path = ''");
+  expect(migration).toContain('auth.users');
+  expect(migration).toContain('auth.identities');
+  expect(migration).toContain('revoke all on function public.admin_member_ids_by_display_name(text) from public, anon, authenticated');
+  expect(migration).toContain('grant execute on function public.admin_member_ids_by_display_name(text) to service_role');
 });
 
 it('shows both member name and provider ID in the subscription action dialog', () => {
