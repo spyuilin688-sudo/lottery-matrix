@@ -68,6 +68,9 @@ class DurableReadyRepository:
     def restore_completed_results(self, *args, **kwargs) -> None:
         raise AssertionError("completed idle period must not restore analysis results")
 
+    def cleanup_expired(self, now: datetime) -> int:
+        return 0
+
 
 class RaisingEmitter:
     enabled = True

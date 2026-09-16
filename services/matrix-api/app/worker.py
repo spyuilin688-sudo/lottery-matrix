@@ -144,7 +144,35 @@ def _latest_draw_for_period(
     return {"lottery": lottery, **latest[0]}
 
 
+def _durable_notification_event_exists(
+    repository: AnalysisRepository,
+    event: dict[str, Any],
+) -> bool:
+    checker = getattr(repository, "notification_event_exists", None)
+    if callable(checker):
+        try:
+            return bool(checker(event))
+        except Exception:
+            return False
+    client = getattr(repository, "client", None)
+    if client is None:
+        return False
+    try:
+        response = client.rpc("matrix_notification_event_exists", {
+            "p_event_key": str(event["eventKey"]),
+            "p_event_type": str(event["eventType"]),
+            "p_payload": event.get("payload") or {},
+        }).execute()
+        return bool(response.data)
+    except Exception:
+        # The durable probe is an optimization. If it is temporarily
+        # unavailable, fall through to the existing ingest unique fence rather
+        # than suppressing a real notification.
+        return False
+
+
 def _emit_notification_event(
+    repository: AnalysisRepository,
     notification_emitter: NotificationEventEmitter | None,
     event: dict[str, Any] | None,
     emitted_event_keys: set[str],
@@ -153,6 +181,9 @@ def _emit_notification_event(
         return
     event_key = str(event["eventKey"])
     if event_key in emitted_event_keys:
+        return
+    if _durable_notification_event_exists(repository, event):
+        emitted_event_keys.add(event_key)
         return
     notification_emitter.emit(event)
     emitted_event_keys.add(event_key)
@@ -169,6 +200,7 @@ def emit_ready_notifications(
         return
     draw = _latest_draw_for_period(lottery, period, repository)
     _emit_notification_event(
+        repository,
         notification_emitter,
         lottery_result_event(draw),
         emitted_event_keys,
@@ -177,6 +209,7 @@ def emit_ready_notifications(
     card_progress = repository.get_progress(lottery, period, card_version) if lottery != "天天樂" else None
     if card_progress is not None and card_progress.get("status") == "complete" and _card_ready(lottery, period, repository):
         _emit_notification_event(
+            repository,
             notification_emitter,
             matrix_card_event(draw),
             emitted_event_keys,
@@ -190,10 +223,111 @@ def emit_ready_notifications(
     if not isinstance(status_artifact, Mapping):
         return
     _emit_notification_event(
+        repository,
         notification_emitter,
         matrix_status_event(lottery, period, status_artifact, draw_date=draw["drawDate"]),
         emitted_event_keys,
     )
+
+
+def _analysis_order_complete(
+    lottery: str,
+    period: str,
+    repository: AnalysisRepository,
+    number_order: str,
+) -> bool:
+    version = analysis_version_for_order(period, number_order)
+    progress = repository.get_progress(lottery, period, version)
+    return bool(
+        progress is not None
+        and progress.get("status") == "complete"
+        and repository.has_artifact(lottery, period, version, "explore")
+        and repository.has_artifact(lottery, period, version, "status")
+    )
+
+
+def _completed_period_idle_ready(
+    lottery: str,
+    draw: dict[str, Any],
+    repository: AnalysisRepository,
+    notification_emitter: NotificationEventEmitter | None,
+) -> bool:
+    if draw.get("resultStatus", "confirmed") == "preliminary":
+        return False
+    period = str(draw.get("period") or "")
+    if not period or not _analysis_order_complete(lottery, period, repository, SORTED_ORDER):
+        return False
+
+    draw_required = lottery != "天天樂"
+    if draw_required:
+        if not has_complete_draw_order(draw, lottery_position_count(lottery)):
+            return False
+        if not _analysis_order_complete(lottery, period, repository, DRAW_ORDER):
+            return False
+        if not _card_ready(lottery, period, repository):
+            return False
+
+    if not _notification_enabled(notification_emitter):
+        return True
+
+    full_draw = {"lottery": lottery, **draw}
+    sorted_version = analysis_version_for_order(period, SORTED_ORDER)
+    status_artifact = repository.read_artifact(lottery, period, sorted_version, "status")
+    if not isinstance(status_artifact, Mapping):
+        return False
+    try:
+        events: list[dict[str, Any] | None] = [
+            lottery_result_event(full_draw),
+            matrix_status_event(
+                lottery, period, status_artifact, draw_date=str(draw.get("drawDate") or ""),
+            ),
+        ]
+        if draw_required:
+            events.append(matrix_card_event(full_draw))
+    except Exception:
+        return False
+    return all(
+        event is None or _durable_notification_event_exists(repository, event)
+        for event in events
+    )
+
+
+def _idle_exit_result(
+    lottery: str,
+    now: datetime | None,
+    repository: AnalysisRepository,
+    notification_emitter: NotificationEventEmitter | None,
+    latest: list[dict[str, Any]],
+    cycle: datetime | None,
+) -> dict[str, Any] | None:
+    if not latest:
+        return None
+    draw = latest[0]
+    if draw.get("resultStatus", "confirmed") == "preliminary":
+        return None
+
+    if cycle is not None:
+        current = now or datetime.now(cycle.tzinfo)
+        is_pre_draw_recovery = current.astimezone(cycle.tzinfo) < cycle
+        target_cycle = previous_lottery_call_time(lottery, cycle) if is_pre_draw_recovery else cycle
+        expected_draw_dates = _expected_source_draw_dates(lottery, target_cycle)
+        oldest_expected_draw_date = min(expected_draw_dates)
+        latest_draw_date = _normalized_draw_date(draw.get("drawDate"))
+        if not (
+            latest_draw_date in expected_draw_dates
+            or (is_pre_draw_recovery and latest_draw_date > oldest_expected_draw_date)
+        ):
+            return None
+
+    if not _completed_period_idle_ready(
+        lottery, draw, repository, notification_emitter,
+    ):
+        return None
+    return {
+        "lottery": lottery,
+        "drawPeriod": draw["period"],
+        "status": "not-due" if cycle is None else "already-acquired",
+    }
 
 
 def _best_effort_telemetry(write: Callable[[], None]) -> None:
@@ -347,6 +481,17 @@ def run_scheduled_worker(
 ) -> dict[str, Any]:
     emitted_event_keys: set[str] = set()
     latest = repository.list_draws(lottery, 1)
+    if allow_recovery_crawl:
+        cycle = due_call_cycle(lottery, now, allow_weekend_fallback=True)
+    else:
+        cycle = due_call_cycle(lottery, now)
+
+    idle_result = _idle_exit_result(
+        lottery, now, repository, notification_emitter, latest, cycle,
+    )
+    if idle_result is not None:
+        return idle_result
+
     def notify_cards(*, final: bool = False) -> None:
         current = repository.list_draws(lottery, 1)
         if current:
@@ -355,13 +500,16 @@ def run_scheduled_worker(
             except NotificationDeliveryError:
                 if final:
                     raise
+
     notify_cards()
     publish_current_card(lottery, repository, now)
     notify_cards()
-    if allow_recovery_crawl:
-        cycle = due_call_cycle(lottery, now, allow_weekend_fallback=True)
-    else:
-        cycle = due_call_cycle(lottery, now)
+    latest = repository.list_draws(lottery, 1)
+    idle_result = _idle_exit_result(
+        lottery, now, repository, notification_emitter, latest, cycle,
+    )
+    if idle_result is not None:
+        return idle_result
 
     if cycle is None:
         if latest:
