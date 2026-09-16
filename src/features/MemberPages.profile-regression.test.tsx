@@ -1,3 +1,4 @@
+// @ts-expect-error Vitest runs on Node; this project intentionally omits global Node types from app compilation.
 import { readFileSync } from 'node:fs';
 import { expect, test } from 'vitest';
 import { lineNicknameFromSession } from './MemberPages';
