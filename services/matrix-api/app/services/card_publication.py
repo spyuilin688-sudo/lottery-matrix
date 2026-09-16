@@ -167,12 +167,20 @@ class CardPublicationService:
                                   for card in manifest['cards'].values()},
             )
         except Exception as error:
-            # Publication is already durable; retry cleanup on the next tick.
+            # Publication is already durable. Cleanup is best-effort and can wait
+            # until the next real publication instead of forcing no-op leases.
             LOGGER.warning('Matrix card cleanup failed for %s (%s)',
                            lottery, type(error).__name__)
 
     def ensure_current(self, lottery: str, now: datetime | None = None) -> dict[str, Any] | None:
         now = now or datetime.now(UTC)
+        # published_manifest is a read-only validation of the current draw
+        # snapshot, eligible orders and immutable input digests. If it is valid,
+        # there is no publication work: avoid a write lease and Storage pruning.
+        current = published_manifest(lottery, self.repository)
+        if current is not None:
+            return current
+
         token = str(uuid4())
         state = self.cards.claim(lottery, token, now)
         if state is None:
