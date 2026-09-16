@@ -89,7 +89,7 @@ def test_one_lottery_failure_does_not_block_the_remaining_lotteries() -> None:
     assert result["runs"][1]["outcome"] == "failed"
 
 
-def test_primary_railway_config_runs_all_scheduled_workers_on_daily_five_minute_grid() -> None:
+def test_primary_railway_config_matches_deployed_worker_cadence() -> None:
     root = Path(__file__).parents[1]
     configs = [
         json.loads((root / name).read_text(encoding="utf-8"))
@@ -104,12 +104,12 @@ def test_primary_railway_config_runs_all_scheduled_workers_on_daily_five_minute_
     assert [config["deploy"]["startCommand"] for config in configs] == [
         "uv run python -u -m app.worker_all",
         "uv run python -u -m app.analysis_worker --lottery 天天樂",
-        "uv run python -u -m app.worker --lottery 六合彩 --scheduled",
+        "uv run python -u -m app.worker --lottery六合彩 --scheduled",
         "uv run python -u -m app.worker --lottery 大樂透 --scheduled",
     ]
     assert [config["deploy"]["cronSchedule"] for config in configs] == [
-        "3/5 * * * *",
-        "3/5 * * * *",
+        "3/10 * * * *",
+        "3/10 * * * *",
         "3/5 * * * *",
         "3/5 * * * *",
     ]
