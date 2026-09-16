@@ -169,7 +169,11 @@ class CardPublicationService:
             state = read_state(lottery)
             if isinstance(state, dict):
                 return state
-        return {'manifest': self.cards.read_manifest(lottery), 'last_error': None}
+        row = getattr(self.cards, 'row', None)
+        return {
+            'manifest': self.cards.read_manifest(lottery),
+            'last_error': row.get('last_error') if isinstance(row, dict) else None,
+        }
 
     def _prune(self, lottery: str, manifest: dict[str, Any],
                lease_token: str) -> str | None:
