@@ -1106,7 +1106,7 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
 
 export function InviteFriendsPage({ onNavigate }: { onNavigate: Navigate }) {
   const scope = useMemberSessionScope();
-  return <InviteFriendsContent key={`${scope}`} scope={scope} onNavigate={onNavigate} />;
+  return <InviteFriendsContent key={scope} scope={scope} onNavigate={onNavigate} />;
 }
 
 function InviteFriendsContent({ onNavigate, scope }: { onNavigate: Navigate; scope: number }) {
