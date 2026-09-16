@@ -1,4 +1,4 @@
-export const API_REQUEST_TIMEOUT_MS = 8_000;
+export const API_REQUEST_TIMEOUT_MS = 15_000;
 
 export type ApiRequestErrorCode = 'REQUEST_TIMEOUT' | 'REQUEST_ABORTED' | 'NETWORK_ERROR';
 
@@ -88,72 +88,91 @@ function cancelResponseBody(response: Response, reason?: unknown) {
 }
 
 async function drainResponseBody(response: Response, signal: AbortSignal) {
-  if (signal.aborted) {
-    cancelResponseBody(response, signal.reason);
-    throw signal.reason;
-  }
-  const bufferedBranch = response.clone();
-  const reader = bufferedBranch.body?.getReader();
-  if (!reader) return response;
-
-  const cancel = () => {
-    void reader.cancel(signal.reason).catch(() => undefined);
-    cancelResponseBody(response, signal.reason);
-  };
-  signal.addEventListener('abort', cancel, { once: true });
-  try {
-    while (!(await reader.read()).done) {
-      // Draining the clone keeps the returned branch buffered under this deadline.
+  if (!response.body) return;
+  const reader = response.body.getReader();
+  const abortPromise = new Promise<never>((_, reject) => {
+    const onAbort = () => {
+      signal.removeEventListener('abort', onAbort);
+      reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
+    };
+    if (signal.aborted) {
+      onAbort();
+      return;
     }
-    if (signal.aborted) throw signal.reason;
-    return response;
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
+  try {
+    while (true) {
+      const result = await Promise.race([reader.read(), abortPromise]);
+      if (result.done) break;
+    }
   } finally {
-    signal.removeEventListener('abort', cancel);
     reader.releaseLock();
   }
 }
 
-export function fetchWithPolicy(
+async function fetchOnce(
+  input: RequestInfo | URL,
+  init: RequestInit,
+  fetcher: typeof fetch,
+  signal: AbortSignal,
+) {
+  let response: Response | undefined;
+  try {
+    response = await fetcher(input, { ...init, signal });
+    if (signal.aborted) {
+      cancelResponseBody(response, signal.reason);
+      throw signal.reason ?? new DOMException('Aborted', 'AbortError');
+    }
+    await drainResponseBody(response.clone(), signal);
+    return response;
+  } catch (error) {
+    if (response) cancelResponseBody(response, error);
+    throw error;
+  }
+}
+
+function toPublicFetchError(error: unknown) {
+  if (error instanceof ApiRequestError) return error;
+  return new ApiRequestError('NETWORK_ERROR');
+}
+
+export async function fetchWithPolicy(
   input: RequestInfo | URL,
   init: RequestInit = {},
   options: FetchPolicyOptions = {},
-): Promise<Response> {
-  const request = typeof Request !== 'undefined' && input instanceof Request ? input : undefined;
-  const method = init.method ?? request?.method;
-  const safeRead = isSafeReadMethod(method);
-  const callerSignal = init.signal ?? request?.signal;
-  const fetcher = options.fetcher ?? globalThis.fetch;
-
-  return withDeadline(async (signal) => {
-    const attempts = safeRead ? 2 : 1;
-    for (let attempt = 0; attempt < attempts; attempt += 1) {
-      try {
-        const response = await fetcher(input, { ...init, signal });
-        if (attempt + 1 < attempts && isRetryableStatus(response.status)) {
-          cancelResponseBody(response);
-          continue;
-        }
-        return await drainResponseBody(response, signal);
-      } catch {
-        if (signal.aborted) throw signal.reason;
-        if (attempt + 1 < attempts) continue;
-        throw new ApiRequestError('NETWORK_ERROR');
+) {
+  const fetcher = options.fetcher ?? fetch;
+  const safeRead = isSafeReadMethod(init.method);
+  const maxAttempts = safeRead ? 2 : 1;
+  let lastResponse: Response | undefined;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      const response = await withDeadline(
+        (signal) => fetchOnce(input, init, fetcher, signal),
+        options,
+      );
+      lastResponse = response;
+      if (!safeRead || !isRetryableStatus(response.status) || attempt + 1 >= maxAttempts) {
+        return response;
       }
+      cancelResponseBody(response);
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.code !== 'NETWORK_ERROR') throw error;
+      if (!safeRead || attempt + 1 >= maxAttempts) throw toPublicFetchError(error);
     }
-    throw new ApiRequestError('NETWORK_ERROR');
-  }, {
-    signal: callerSignal,
-    timeoutMs: options.timeoutMs,
-  });
+  }
+  if (lastResponse) return lastResponse;
+  throw new ApiRequestError('NETWORK_ERROR');
 }
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const REQUEST_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export function withRequestId(headersInit?: HeadersInit): { headers: Headers; requestId: string } {
+export function withRequestId(headersInit?: HeadersInit) {
   const headers = new Headers(headersInit);
-  const callerId = headers.get('X-Request-ID');
-  const requestId = callerId && UUID_PATTERN.test(callerId)
-    ? callerId
+  const provided = headers.get('X-Request-ID');
+  const requestId = provided && REQUEST_ID_PATTERN.test(provided)
+    ? provided
     : crypto.randomUUID();
   headers.set('X-Request-ID', requestId);
   return { headers, requestId };
