@@ -26,9 +26,7 @@ import {
   createIndependentWatchdog,
   createSupabaseWatchdogLeaseManager,
   createSupabaseWatchdogSnapshotLoader,
-  expectedDrawDateForDueWindow,
   getGithubActionsToken,
-  type WatchdogLottery,
 } from './watchdog';
 import { createWatchdogStatusStore, type WatchdogStatus } from './watchdog-status';
 
@@ -197,7 +195,6 @@ const crawlerLotteryByStatusId: Record<string, CrawlerLottery> = {
   'cron-matrix-marksix-refresh-v2': '六合彩',
   'cron-matrix-649-refresh-v2': '大樂透',
 };
-const watchdogLotteries: WatchdogLottery[] = ['今彩539', '天天樂', '六合彩', '大樂透'];
 
 const routes: Record<string, unknown> = {
   'GET /api/_healthcheck': [async () => json({ message: 'Success' })],
@@ -683,15 +680,17 @@ export async function matrixIndependentWatchdog(
   const scheduled = event?.scheduledTime ? new Date(event.scheduledTime) : new Date();
   const at = Number.isNaN(scheduled.getTime()) ? new Date() : scheduled;
   const owner = event?.invocationId || `cron:${at.toISOString()}`;
-  const dueLotteries = watchdogLotteries.filter((lottery) =>
-    expectedDrawDateForDueWindow(lottery, at) !== null);
+  let dueLotteries: WatchdogStatus['dueLotteries'] = [];
   let watchdogResult: Record<string, unknown>;
   try {
-    watchdogResult = { ...await independentWatchdog.run(at, owner) };
+    const runResult = await independentWatchdog.run(at, owner);
+    dueLotteries = runResult.dueLotteries;
+    watchdogResult = { ...runResult };
   } catch {
     watchdogResult = {
       status: 'degraded',
       checkedAt: at.toISOString(),
+      dueLotteries,
       actions: [],
       error: 'WATCHDOG_FAILED',
     };
