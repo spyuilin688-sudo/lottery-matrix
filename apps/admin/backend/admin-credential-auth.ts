@@ -1,4 +1,4 @@
-import { getModulePermissions, getPermissions, type AdminAccount } from './admin-auth';
+import { getModulePermissions, getPermissions, shouldRecordAdminActivity, type AdminAccount } from './admin-auth';
 
 type Row = Record<string, unknown>;
 type Transport = {
@@ -102,7 +102,8 @@ export function createAdminCredentialAuth(transport: Transport, now = () => new 
     if (!Number.isSafeInteger(row.credential_version) || Number(row.credential_version) < 0) throw new AdminCredentialError('管理員登入已失效');
     const loginTime = now();
     const token = randomBase64Url(32);
-    await transport.insertRows('admin_sessions', [{ token_hash: await digestHex(token), admin_id: row.id, credential_version: row.credential_version, expires_at: new Date(loginTime.getTime() + sessionSeconds * 1000).toISOString() }]);
+    const loginRecordId = shouldRecordAdminActivity(mapAdmin(row)) ? crypto.randomUUID() : null;
+    await transport.insertRows('admin_sessions', [{ token_hash: await digestHex(token), admin_id: row.id, credential_version: row.credential_version, login_record_id: loginRecordId, expires_at: new Date(loginTime.getTime() + sessionSeconds * 1000).toISOString() }]);
     // A password change may have committed while PBKDF2 or the insert was in flight.
     const admin = await getAdminFromHeaders({ cookie: `${cookieName}=${token}` });
     // Expiry is inclusive, matching session validation. Maintenance must not
@@ -117,7 +118,7 @@ export function createAdminCredentialAuth(transport: Transport, now = () => new 
     finally {
       if (cleanupTimer !== undefined) clearTimeout(cleanupTimer);
     }
-    return { admin, token };
+    return { admin, token, loginRecordId };
   };
   const getAdminFromHeaders = async (headers?: Record<string, string | undefined>) => {
     const token = cookieToken(headers);
@@ -139,7 +140,16 @@ export function createAdminCredentialAuth(transport: Transport, now = () => new 
   };
   const logout = async (headers?: Record<string, string | undefined>) => {
     const token = cookieToken(headers);
-    if (token) await transport.deleteRows('admin_sessions', `token_hash=eq.${encodeURIComponent(await digestHex(token))}`);
+    if (!token) return;
+    const tokenHash = await digestHex(token);
+    const sessions = await transport.selectRows<Row>('admin_sessions', `select=login_record_id&token_hash=eq.${encodeURIComponent(tokenHash)}&limit=1`);
+    const loginRecordId = typeof sessions[0]?.login_record_id === 'string' ? sessions[0].login_record_id : '';
+    if (loginRecordId) {
+      try {
+        await transport.updateRows('admin_login_records', `id=eq.${encodeURIComponent(loginRecordId)}&logout_at=is.null`, { logout_at: now().toISOString() });
+      } catch { /* Login record storage failure must not prevent logout. */ }
+    }
+    await transport.deleteRows('admin_sessions', `token_hash=eq.${encodeURIComponent(tokenHash)}`);
   };
   return { passwordFields, setPassword, isConfigured, login, getAdminFromHeaders, logout, sessionCookie: (token: string) => `${cookieName}=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${sessionSeconds}`, clearSessionCookie: () => `${cookieName}=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0` };
 }

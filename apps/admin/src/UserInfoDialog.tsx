@@ -29,12 +29,30 @@ export function UserInfoDialog({ row, client, module = 'users', onClose }: {
     return () => { active = false; };
   }, [row.id, module, page, retry, client]);
   const value = (input: unknown) => input == null || input === '' ? '—' : String(input);
-  const fields = [
-    ['會員名稱', value(row.memberDisplayName)],
+  const statusValue = (input: unknown) => {
+    const status = String(input ?? '');
+    if (['disabled', 'inactive', '停用'].includes(status)) return '停用';
+    if (['active', '啟用'].includes(status)) return '啟用';
+    return value(input);
+  };
+  const fields: Array<[string, string]> = [
+    ['會員名稱', value(row.memberDisplayName ?? row.lineDisplayName)],
     [value(row.identityLabel || 'LINE ID／Google ID'), value(row.identityValue)],
     ['註冊時間', formatAdminDateTime(row.registeredAt)],
     ['最後上線時間', formatAdminDateTime(row.lastOnlineAt)],
   ];
+  if ('status' in row) fields.push(['帳號狀態', statusValue(row.status)]);
+  if ('recentOnlineMinutes' in row) fields.push(['近3日在線時間', `${Math.max(0, Number(row.recentOnlineMinutes) || 0)} 分鐘`]);
+  if ('recentIp' in row) fields.push(['最近連線IP', value(row.recentIp)]);
+  if ('estimatedRegion' in row) fields.push(['推估地區', value(row.estimatedRegion)]);
+  if (module === 'subscriptions') {
+    fields.push(
+      ['訂閱方案', value(row.planName)],
+      ['方案開始時間', formatAdminDateTime(row.planStartedAt)],
+      ['方案到期時間', row.isLifetime ? '終生' : formatAdminDateTime(row.planExpiresAt)],
+    );
+    if ('autoRenew' in row) fields.push(['自動續訂', row.autoRenew ? '是' : '否']);
+  }
   return <dialog ref={dialog} className="memberInfoDialog" aria-labelledby="member-info-title" onCancel={onClose}>
     <header className="memberInfoHeading"><h2 id="member-info-title">用戶資訊</h2><button type="button" className="compactButton" onClick={onClose} autoFocus>關閉</button></header>
     <div className="memberInfoCards">

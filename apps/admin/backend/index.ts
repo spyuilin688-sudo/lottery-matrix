@@ -245,7 +245,7 @@ const routes: Record<string, unknown> = {
       if (shouldRecordAdminActivity(login.admin)) {
         await Promise.all([
           supabase.updateRows('admin_accounts', `id=eq.${encodeURIComponent(login.admin.id)}`, { last_login_at: lastLoginAt }),
-          supabase.insertRows('admin_login_records', [{ admin_id: login.admin.id, account: login.admin.account, login_at: lastLoginAt, ...requestMetadata(ctx) }]),
+          supabase.insertRows('admin_login_records', [{ id: login.loginRecordId, admin_id: login.admin.id, account: login.admin.account, login_at: lastLoginAt, ...requestMetadata(ctx) }]),
         ]);
       }
       const response = json({ admin: { ...login.admin, lastLoginAt } });
