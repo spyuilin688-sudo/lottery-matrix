@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { planWatchdogActions, type WatchdogSnapshot } from './watchdog';
+import {
+  createIndependentWatchdog,
+  planWatchdogActions,
+  type WatchdogSnapshot,
+} from './watchdog';
 
 function snapshot(
   lottery: WatchdogSnapshot['lottery'],
@@ -24,6 +28,16 @@ function snapshot(
       leaseExpiresAt: null,
     },
   };
+}
+
+function watchdogFor(current: WatchdogSnapshot) {
+  return createIndependentWatchdog({
+    loadSnapshot: async () => [current],
+    claimLease: async () => { throw new Error('unexpected lease claim'); },
+    releaseLease: async () => { throw new Error('unexpected lease release'); },
+    recoverRailway: async () => { throw new Error('unexpected Railway recovery'); },
+    dispatchFantasy5: async () => { throw new Error('unexpected Fantasy5 dispatch'); },
+  });
 }
 
 describe('watchdog canonical draw-day calendar', () => {
@@ -57,5 +71,39 @@ describe('watchdog canonical draw-day calendar', () => {
       target: 'railway',
       reasons: ['crawler-stale'],
     }]);
+  });
+
+  it('reports no due heartbeat lottery when the canonical calendar excludes the legacy weekday', async () => {
+    const current = snapshot(
+      '六合彩',
+      '026100',
+      '2026-09-22',
+      ['2026-09-22', '2026-09-26'],
+    );
+
+    const result = await watchdogFor(current).run(
+      new Date('2026-09-24T13:43:00.000Z'),
+      'test-non-draw-thursday',
+    );
+
+    expect(result.actions).toEqual([]);
+    expect(result.dueLotteries).toEqual([]);
+  });
+
+  it('reports an explicit special draw date in heartbeat due lotteries', async () => {
+    const current = snapshot(
+      '今彩539',
+      '115000217',
+      '2026-09-06',
+      ['2026-09-05', '2026-09-06', '2026-09-07'],
+    );
+
+    const result = await watchdogFor(current).run(
+      new Date('2026-09-06T12:43:00.000Z'),
+      'test-special-sunday',
+    );
+
+    expect(result.actions).toEqual([]);
+    expect(result.dueLotteries).toEqual(['今彩539']);
   });
 });
