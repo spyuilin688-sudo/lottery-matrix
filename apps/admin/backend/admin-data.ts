@@ -253,30 +253,23 @@ async function googleMemberNameClauses(table: string, keyword: string, api: Requ
     return [];
   }
   try {
-    const needle = keyword.toLocaleLowerCase();
-    const authUsers = await listAllAuthUsers(api);
-    const authUserIds = [...new Set(authUsers
-      .filter((user) => user.identities?.some((identity) => identity.provider === 'google'))
-      .filter((user) => memberDisplayNameFromAuthUser(null, user)?.toLocaleLowerCase().includes(needle))
-      .map((user) => String(user.id ?? ''))
-      .filter((id) => UUID_PATTERN.test(id)))];
-    if (!authUserIds.length) return [];
-    if (table === 'users' || table === 'subscriptions') {
-      return [`auth_user_id.in.(${authUserIds.join(',')})`];
-    }
-    const members = await listAllRows(
-      api,
-      `/rest/v1/members?select=id,auth_user_id&auth_user_id=in.(${authUserIds.join(',')})&order=id.asc`,
-    );
-    const memberIds = [...new Set(members
-      .map((row) => String(row.id ?? ''))
+    const rows = await api.request<Row[]>('/rest/v1/rpc/admin_member_ids_by_display_name', {
+      method: 'POST',
+      body: JSON.stringify({ p_keyword: keyword }),
+    });
+    const memberIds = [...new Set((Array.isArray(rows) ? rows : [])
+      .map((row) => String(row.member_id ?? ''))
       .filter((id) => UUID_PATTERN.test(id)))];
     if (!memberIds.length) return [];
-    const field = table === 'activationCodes' ? 'redeemed_by_member_id' : 'member_id';
+    const field = table === 'users' || table === 'subscriptions'
+      ? 'id'
+      : table === 'activationCodes'
+        ? 'redeemed_by_member_id'
+        : 'member_id';
     return [`${field}.in.(${memberIds.join(',')})`];
   } catch {
-    // Google nickname matching is supplemental. Preserve the existing DB-backed
-    // keyword search when Auth lookup is temporarily unavailable.
+    // Display-name matching is supplemental. Preserve the existing DB-backed
+    // keyword search if the private lookup RPC is temporarily unavailable.
     return [];
   }
 }
