@@ -78,9 +78,11 @@ it('shows the member name and does not expose a member identity column in user m
     await waitFor(() => expect(container.querySelector('.managementList tbody')?.textContent).toContain('蔡源輝'));
 
     const header = container.querySelector('.managementList thead')?.textContent ?? '';
+    const table = container.querySelector('.managementList table')?.textContent ?? '';
     expect(header).toContain('會員名稱');
     expect(header).not.toContain('LINE ID／Google ID');
     expect(header).not.toContain('會員ID');
+    expect(table).not.toContain('U123456789');
   } finally {
     await act(async () => root.unmount());
     container.remove();
