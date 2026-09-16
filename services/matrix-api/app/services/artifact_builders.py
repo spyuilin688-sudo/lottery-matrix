@@ -203,13 +203,18 @@ def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any]) -> dict[s
             result_sets = [results]
             hit_type = "two-code"
         for result in result_sets:
-            roads.append({
+            road = {
                 "id": f'{item["id"]}:{result[0]}' if hit_type == "one-code" else item["id"],
                 "hitType": hit_type, "result": result, "algorithmType": item["algorithmType"],
                 "numberOrder": item["numberOrder"], "streak": item["highestStreak"],
                 "predictionDistance": item["predictionDistance"], "position": item["lockedPosition"],
                 "lockedNumber": item["number"], "explorePeriods": _status_source_periods(item),
-            })
+                "validationItemId": item["id"],
+            }
+            for key in ("referenceOffset", "referencePosition"):
+                if key in item:
+                    road[key] = item[key]
+            roads.append(road)
     status = evaluate_chapter15({"lottery": explore["lottery"], "drawPeriod": explore["drawPeriod"], "roads": roads})
     return {
         "lottery": explore["lottery"], "drawPeriod": explore["drawPeriod"],

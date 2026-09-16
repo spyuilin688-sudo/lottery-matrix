@@ -1,4 +1,4 @@
-export const API_REQUEST_TIMEOUT_MS = 8_000;
+export const API_REQUEST_TIMEOUT_MS = 15_000;
 
 export type ApiRequestErrorCode = 'REQUEST_TIMEOUT' | 'REQUEST_ABORTED' | 'NETWORK_ERROR';
 

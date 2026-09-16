@@ -119,6 +119,33 @@ def test_status_cards_preserve_the_source_tier_for_access_projection() -> None:
     } == {"06": 2, "08": 7, "13": 13}
 
 
+def test_status_cards_embed_source_metadata_for_compact_reads() -> None:
+    lottery = "今彩539"
+    period = "115000210"
+    item = _explore("road-source", 0)
+    item.update({
+        "highestStreak": 7,
+        "consecutive": "準7進8",
+        "predictionNumbers": ["06"],
+        "referenceOffset": -1,
+        "referencePosition": 2,
+    })
+    context = {
+        "draw": {"lottery": lottery, "period": period},
+        "artifacts": {
+            "explore": {"lottery": lottery, "drawPeriod": period, "items": [item]},
+            "tianyan": {"lottery": lottery, "drawPeriod": period, "items": []},
+        },
+    }
+
+    cards = create_artifact_builders()["status"](context)["cards"]
+    road = cards[0]["roads"][0]
+
+    assert road["validationItemId"] == "road-source"
+    assert road["referenceOffset"] == -1
+    assert road["referencePosition"] == 2
+
+
 def test_status_uses_every_canonical_result_applicable_to_full_range() -> None:
     lottery = "今彩539"
     period = "115000210"
