@@ -1,5 +1,5 @@
 import { adminBusinessDateKey, adminBusinessDateRange } from '../shared/admin-business-time';
-import { lookupLocations, memberConnectionSummaries } from './member-login-history';
+import { lookupLocations, memberConnectionSummaries, normalizeIpAddress } from './member-login-history';
 import { memberDisplayNameFromAuthUser, providerIdentityFromAuthUser, type AuthUserForIdentity } from './member-provider-identity';
 type Requester = {
   request<T = unknown>(path: string, init?: RequestInit): Promise<T>;
@@ -229,9 +229,9 @@ async function listAllRows(api: Requester, path: string) {
 }
 
 async function enrichLoginRecords(items: Array<Row & { id: string }>, api: Requester) {
-  const ips = items.map(item => typeof item.ip === 'string' ? item.ip : null);
+  const ips = items.map(item => normalizeIpAddress(item.ip));
   const locations = await lookupLocations(ips, api).catch(() => new Map<string, string | null>());
-  return items.map(item => ({ ...item, estimatedRegion: typeof item.ip === 'string' ? locations.get(item.ip) || null : null }));
+  return items.map((item, index) => ({ ...item, estimatedRegion: ips[index] ? locations.get(ips[index]!) || null : null }));
 }
 
 type AuthUsersResponse = { users?: AuthUserForIdentity[] };
