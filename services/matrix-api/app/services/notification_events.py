@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from datetime import UTC, date, datetime
+from os import environ
 from typing import Any
 
 import httpx
@@ -151,8 +152,10 @@ class NotificationEventEmitter:
         self._url = url.strip()
         self._token = token.strip()
         self._client = client
-        self._supabase_url = supabase_url.strip().rstrip("/")
-        self._supabase_service_key = supabase_service_key.strip()
+        resolved_supabase_url = supabase_url or environ.get("SUPABASE_URL", "")
+        resolved_service_key = supabase_service_key or environ.get("SUPABASE_SECRET_KEY", "")
+        self._supabase_url = resolved_supabase_url.strip().rstrip("/")
+        self._supabase_service_key = resolved_service_key.strip()
         if bool(self._url) != bool(self._token):
             raise NotificationConfigurationError("NOTIFICATION_INGEST_CONFIGURATION_INCOMPLETE")
         if bool(self._supabase_url) != bool(self._supabase_service_key):
@@ -175,8 +178,8 @@ class NotificationEventEmitter:
                 json={"p_event_key": event_key},
             )
         except httpx.TransportError:
-            # This preflight is an optimization only; DB uniqueness still protects
-            # the ingest path if the cheap read is temporarily unavailable.
+            # This preflight is an optimization only. If it is unavailable, the
+            # ingest RPC's existing unique event key remains the final race guard.
             return False
         if response.status_code != 200:
             return False
@@ -191,6 +194,8 @@ class NotificationEventEmitter:
         if not isinstance(event_key, str) or not event_key:
             raise NotificationConfigurationError("NOTIFICATION_EVENT_KEY_INVALID")
         if not self.enabled:
+            return {"created": False, "eventKey": event_key}
+        if self.exists(event_key):
             return {"created": False, "eventKey": event_key}
 
         try:
