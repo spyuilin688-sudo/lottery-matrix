@@ -12,8 +12,9 @@ afterEach(() => {
 });
 
 describe('withDeadline', () => {
-  it('rejects a stalled operation with the fixed timeout error at eight seconds', async () => {
+  it('rejects a stalled operation with the fixed timeout error at fifteen seconds', async () => {
     vi.useFakeTimers();
+    expect(API_REQUEST_TIMEOUT_MS).toBe(15_000);
     let operationSignal: AbortSignal | undefined;
     const result = withDeadline((signal) => {
       operationSignal = signal;
