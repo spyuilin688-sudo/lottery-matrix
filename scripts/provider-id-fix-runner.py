@@ -11,3 +11,8 @@ if text.count(old) != 1:
     raise SystemExit('admin member mapper patch block changed unexpectedly')
 patch.write_text(text.replace(old, new), encoding='utf-8')
 runpy.run_path(str(patch), run_name='__main__')
+
+test_path = root / 'apps/admin/backend/push-notifications.test.ts'
+test_text = test_path.read_text(encoding='utf-8')
+test_text = test_text.replace("displayName: 'Google 會員二',\n        pictureUrl: 'https://google.example/two.png',", "displayName: '持久化會員二',\n        pictureUrl: null,")
+test_path.write_text(test_text, encoding='utf-8')
