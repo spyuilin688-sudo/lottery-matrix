@@ -51,6 +51,17 @@ def _execution_version() -> str:
     )
 
 
+def _needs_formal_source_retry(repository: Any, lottery: str) -> bool:
+    list_draws = getattr(repository, "list_draws", None)
+    if not callable(list_draws):
+        return False
+    latest = list_draws(lottery, 1)
+    return bool(
+        latest
+        and latest[0].get("resultStatus", "confirmed") == "preliminary"
+    )
+
+
 def create_railway_ssl_context() -> ssl.SSLContext:
     context = ssl.create_default_context()
     if hasattr(ssl, "VERIFY_X509_STRICT"):
@@ -112,21 +123,41 @@ def main() -> int:
             telemetry=create_tinyfish_telemetry(repository),
         )
         notification_emitter = create_notification_emitter(settings, client)
-        if notification_emitter is None:
-            run_one = lambda lottery: run_scheduled_worker(
-                lottery,
-                None,
-                repository,
-                source,
-            )
-        else:
-            run_one = lambda lottery: run_scheduled_worker(
+
+        def run_one(lottery: str) -> dict[str, Any]:
+            retry_formal_source = _needs_formal_source_retry(repository, lottery)
+            if notification_emitter is None:
+                if retry_formal_source:
+                    return run_scheduled_worker(
+                        lottery,
+                        None,
+                        repository,
+                        source,
+                        allow_recovery_crawl=True,
+                    )
+                return run_scheduled_worker(
+                    lottery,
+                    None,
+                    repository,
+                    source,
+                )
+            if retry_formal_source:
+                return run_scheduled_worker(
+                    lottery,
+                    None,
+                    repository,
+                    source,
+                    notification_emitter=notification_emitter,
+                    allow_recovery_crawl=True,
+                )
+            return run_scheduled_worker(
                 lottery,
                 None,
                 repository,
                 source,
                 notification_emitter=notification_emitter,
             )
+
         result = run_all_workers(run_one)
     for run in result["runs"]:
         print(json.dumps(run, ensure_ascii=False, separators=(",", ":")))
