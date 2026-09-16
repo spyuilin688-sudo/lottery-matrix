@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { expect, it, vi } from 'vitest';
 import { UserInfoDialog } from './UserInfoDialog';
 
-it('shows four profile fields and loads five login records per page', async () => {
+it('shows provider-neutral member fields and loads five login records per page', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
   HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
@@ -13,7 +13,10 @@ it('shows four profile fields and loads five login records per page', async () =
   const get = vi.fn(async (url: string) => ({ data: { items: url.includes('page=2') ? [] : Array.from({ length: 5 }, (_, i) => ({ id: String(i), loginAt: '2026-09-07T04:00:00Z', ip: '203.0.113.1', region: '台灣・台北市' })), hasMore: !url.includes('page=2') } }));
   await act(async () => root.render(<UserInfoDialog row={{ id: 'member-1', lineDisplayName: '會員', authUserId: 'auth-1' }} client={{ get }} onClose={() => {}} />));
   expect(host.querySelectorAll('.memberInfoCard')).toHaveLength(2);
-  expect(host.querySelectorAll('dl > div')).toHaveLength(4);
+  expect(host.querySelectorAll('dl > div')).toHaveLength(3);
+  expect(host.textContent).toContain('會員ID');
+  expect(host.textContent).toContain('member-1');
+  expect(host.textContent).not.toContain('驗證用戶ID');
   expect(host.querySelectorAll('tbody tr')).toHaveLength(5);
   const next = Array.from(host.querySelectorAll('button')).find(x => x.textContent === '下一頁')!;
   await act(async () => next.click());

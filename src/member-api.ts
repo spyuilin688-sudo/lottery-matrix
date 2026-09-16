@@ -12,6 +12,7 @@ export type MemberBootstrapResponse = {
 };
 
 export type MemberProfileResponse = {
+  memberId: string;
   lineUserId: string | null;
   planName: string | null;
   planExpiresAt: string | null;

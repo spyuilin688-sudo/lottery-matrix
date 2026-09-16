@@ -97,6 +97,7 @@ beforeEach(() => {
     error: null,
   });
   memberApi.fetchMemberProfile.mockReset().mockResolvedValue({
+    memberId: "11111111-1111-4111-8111-111111111111",
     lineUserId: "line-real",
     planName: "年費方案",
     planExpiresAt: "2026-09-22T00:00:00.000Z",
@@ -146,11 +147,11 @@ describe("ProfilePage member API", () => {
     expect(memberApi.fetchMemberPaymentHistory).not.toHaveBeenCalled();
   });
 
-  it("會員名稱為資訊文字，不呈現輸入框邊線", async () => {
+  it("會員ID為資訊文字，不呈現輸入框邊線", async () => {
     render(<ProfilePage onNavigate={vi.fn()} />);
     await screen.findByRole("button", { name: "登出" });
-    const nickname = screen.getByText("會員名稱：");
-    expect(getComputedStyle(nickname).borderTopWidth).toBe("0px");
+    const memberId = await screen.findByText("會員ID：11111111-1111-4111-8111-111111111111");
+    expect(getComputedStyle(memberId).borderTopWidth).toBe("0px");
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
 
@@ -616,7 +617,7 @@ describe("ProfilePage member API", () => {
     );
   });
 
-  it("顯示會員名稱，長名稱在固定框內縮小並省略", async () => {
+  it("顯示會員ID，長ID在固定框內縮小並省略", async () => {
     const nickname = "這是一個很長的 LINE 會員暱稱";
     supabase.auth.getSession.mockResolvedValueOnce({
       data: {
@@ -630,17 +631,18 @@ describe("ProfilePage member API", () => {
 
     render(<ProfilePage onNavigate={vi.fn()} />);
 
-    const nicknameFrame = await screen.findByText(`會員名稱：${nickname}`);
+    const memberIdFrame = await screen.findByText("會員ID：11111111-1111-4111-8111-111111111111");
     expect(screen.queryByText(/LINE ID：/)).not.toBeInTheDocument();
-    expect(nicknameFrame).toHaveAttribute("data-name-fit", "compact");
-    // Nickname text scales with the artwork container; jsdom preserves cqw units.
-    expect(getComputedStyle(nicknameFrame).fontSize).toBe("2.8cqw");
-    expect(getComputedStyle(nicknameFrame).overflow).toBe("hidden");
-    expect(getComputedStyle(nicknameFrame).textOverflow).toBe("ellipsis");
-    expect(getComputedStyle(nicknameFrame).whiteSpace).toBe("nowrap");
+    expect(screen.queryByText(/會員名稱：/)).not.toBeInTheDocument();
+    expect(memberIdFrame).toHaveAttribute("data-name-fit", "compact");
+    // Member ID text scales with the existing artwork container; jsdom preserves cqw units.
+    expect(getComputedStyle(memberIdFrame).fontSize).toBe("2.8cqw");
+    expect(getComputedStyle(memberIdFrame).overflow).toBe("hidden");
+    expect(getComputedStyle(memberIdFrame).textOverflow).toBe("ellipsis");
+    expect(getComputedStyle(memberIdFrame).whiteSpace).toBe("nowrap");
   });
 
-  it("以登入會員 API 資料取代固定 LINE ID、方案與到期日", async () => {
+  it("以登入會員 API 資料顯示會員ID、方案與到期日", async () => {
     purchaseSetting.visible = true;
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-12T04:00:00.000Z"));
@@ -651,7 +653,7 @@ describe("ProfilePage member API", () => {
     expect(memberApi.bootstrapMember.mock.invocationCallOrder[0]).toBeLessThan(
       memberApi.fetchMemberProfile.mock.invocationCallOrder[0],
     );
-    expect(screen.getByText("會員名稱：")).toBeInTheDocument();
+    expect(screen.getByText("會員ID：11111111-1111-4111-8111-111111111111")).toBeInTheDocument();
     expect(screen.getByText("年費方案")).toBeInTheDocument();
     expect(screen.getByText("2026/09/22")).toBeInTheDocument();
     expect(screen.getByText("剩餘 10 天")).toBeInTheDocument();
@@ -662,6 +664,7 @@ describe("ProfilePage member API", () => {
   it("沒有付費方案與到期日時顯示免費會員核心功能體驗", async () => {
     purchaseSetting.visible = true;
     memberApi.fetchMemberProfile.mockResolvedValueOnce({
+      memberId: "member-free",
       lineUserId: "line-free",
       planName: null,
       planExpiresAt: null,
@@ -679,6 +682,7 @@ describe("ProfilePage member API", () => {
   it("終身方案不顯示 API 內的固定到期日", async () => {
     purchaseSetting.visible = true;
     memberApi.fetchMemberProfile.mockResolvedValueOnce({
+      memberId: "member-lifetime",
       lineUserId: "line-lifetime",
       planName: "終身方案",
       planExpiresAt: "2027-07-23T00:00:00.000Z",
@@ -687,7 +691,7 @@ describe("ProfilePage member API", () => {
 
     render(<ProfilePage onNavigate={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getByText("會員名稱：")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("會員ID：member-lifetime")).toBeInTheDocument());
     expect(screen.queryByText("2027/07/23")).not.toBeInTheDocument();
     expect(screen.queryByText(/剩餘 .* 天/)).not.toBeInTheDocument();
   });
@@ -697,6 +701,7 @@ describe("ProfilePage member API", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-12T04:00:00.000Z"));
     memberApi.fetchMemberProfile.mockResolvedValueOnce({
+      memberId: "member-taipei",
       lineUserId: "line-taipei",
       planName: "月費方案",
       planExpiresAt: "2026-09-12T16:00:00.000Z",
