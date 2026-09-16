@@ -1,0 +1,74 @@
+name: Scoped admin member/login fix
+
+on:
+  push:
+    branches:
+      - fix/admin-subscription-login-info-20260916
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/admin/package-lock.json
+      - name: Install root dependencies
+        run: npm ci
+      - name: Install admin dependencies
+        working-directory: apps/admin
+        run: npm ci
+      - name: Add regression tests
+        run: node scripts/agent-admin-fix.mjs tests
+      - name: Confirm regressions fail before the fix
+        shell: bash
+        run: |
+          set +e
+          (cd apps/admin && npx vitest run \
+            src/admin-subscription-login-details.test.tsx \
+            src/user-info-completeness.test.tsx \
+            backend/admin-session-login-record.test.ts \
+            backend/admin-login-logout-wiring.test.ts \
+            backend/admin-location-normalization.test.ts \
+            --reporter=verbose) > /tmp/admin-red.log 2>&1
+          code=$?
+          set -e
+          cat /tmp/admin-red.log
+          if [ "$code" -eq 0 ]; then
+            echo 'Expected the pre-fix regression suite to fail, but it passed.' >&2
+            exit 1
+          fi
+      - name: Apply bounded implementation
+        run: node scripts/agent-admin-fix.mjs implementation
+      - name: Run directly related regression tests
+        working-directory: apps/admin
+        run: npx vitest run src/admin-subscription-login-details.test.tsx src/user-info-completeness.test.tsx src/UserInfoDialog.test.tsx src/admin-user-display.test.tsx backend/admin-session-login-record.test.ts backend/admin-login-logout-wiring.test.ts backend/admin-location-normalization.test.ts backend/admin-credential-auth.test.ts backend/member-login-history.test.ts --reporter=verbose
+      - name: Build admin AppDeploy target
+        working-directory: apps/admin
+        env:
+          APPDEPLOY_CI_EXTERNALS: 'true'
+        run: npm run build
+      - name: Build Cloudflare Pages admin target
+        working-directory: apps/admin
+        run: npm run build:pages
+      - name: Commit verified scoped changes
+        shell: bash
+        run: |
+          rm scripts/agent-admin-fix.mjs .github/workflows/agent-admin-fix.yml
+          git status --short
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(admin): restore member and login details'
+          git push origin HEAD:fix/admin-subscription-login-info-20260916
