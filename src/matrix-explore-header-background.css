@@ -1,0 +1,4 @@
+/* Matrix Explore title card: background artwork only. Layout, logo and typography remain owned by the shared product header. */
+.matrix-explore-screen > .product-header[data-product-header="Matrix 探索"] {
+  --product-header-background: url("/assets/lottery/header-explore-luxury-flow.svg");
+}
