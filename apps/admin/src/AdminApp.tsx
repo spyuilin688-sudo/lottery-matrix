@@ -112,7 +112,6 @@ const tableMap: Record<string, string> = {
 const labels: Record<string, string[]> = {
   users: [
     "memberDisplayName",
-    "identityDisplay",
     "registeredAt",
     "currentPlanId",
     "planStartedAt",
@@ -1083,11 +1082,13 @@ function UserManager({
   const memberPage = useAdminMemberPage("users", revision, api);
   const { setPage, paged, loading, error } = memberPage;
   const [userInfo, setUserInfo] = useState<Row | null>(null);
-  const fields = ["memberDisplayName", "identityDisplay", "registeredAt", "lastOnlineAt", "recentOnlineMinutes", "status", "recentIp", "estimatedRegion"];
+  const fields = ["memberDisplayName", "registeredAt", "lastOnlineAt", "recentOnlineMinutes", "status", "recentIp", "estimatedRegion"];
   const statusText = (value: unknown) => String(value) === "disabled" || String(value) === "停用" ? "停用" : "啟用";
   const showValue = (field: string, row: Row) => field === "status"
     ? statusText(row[field])
-    : field === "recentOnlineMinutes" ? `${Number(row[field] || 0)} 分鐘` : displayValue(field, row[field]);
+    : field === "recentOnlineMinutes" ? `${Number(row[field] || 0)} 分鐘`
+      : field === "memberDisplayName" ? displayValue(field, row.memberDisplayName ?? row.lineDisplayName)
+        : displayValue(field, row[field]);
   return (
     <>
       <AdminListControls page={memberPage} name="會員" statuses={[["active", "啟用"], ["disabled", "停用"]]} sorts={[["registeredAt", "註冊時間"], ["lastOnlineAt", "最後上線時間"]]} />
