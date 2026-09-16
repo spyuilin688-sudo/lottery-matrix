@@ -18,11 +18,12 @@ concurrency:
 jobs:
   crawl:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 105
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
       TINYFISH_API_KEY: ${{ secrets.TINYFISH_API_KEY }}
+      FANTASY5_MAX_ATTEMPTS: "10"
     steps:
       - name: Gate daylight-saving season
         id: gate
@@ -72,4 +73,17 @@ jobs:
       - name: Fetch, validate, repair, and store Fantasy5 draws
         if: steps.gate.outputs.should_run == 'true'
         working-directory: services/matrix-api
-        run: uv run python -m app.fantasy5_crawler
+        shell: bash
+        run: |
+          set -euo pipefail
+          for ((attempt=1; attempt<=FANTASY5_MAX_ATTEMPTS; attempt++)); do
+            output="$(uv run python -m app.fantasy5_crawler)"
+            echo "$output"
+            if ! grep -qE ' not-acquired$' <<< "$output"; then
+              exit 0
+            fi
+            if (( attempt < FANTASY5_MAX_ATTEMPTS )); then
+              sleep 600
+            fi
+          done
+          echo "Fantasy5 formal source is still waiting after ${FANTASY5_MAX_ATTEMPTS} attempts."
