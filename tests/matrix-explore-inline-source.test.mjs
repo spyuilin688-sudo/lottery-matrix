@@ -7,6 +7,7 @@ const mainSource = readFileSync("src/main.tsx", "utf8");
 const appSource = readFileSync("src/App.tsx", "utf8");
 const prototypeSource = readFileSync("src/Prototype.tsx", "utf8");
 const prototypeCss = readFileSync("src/prototype.css", "utf8");
+const responsiveCss = readFileSync("src/responsive-feature-pages.css", "utf8");
 const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
 const featureAdjustmentsCss = readFileSync("src/feature-page-adjustments.css", "utf8");
 const headerArtwork = readFileSync("public/assets/lottery/header-explore-planet.svg", "utf8");
@@ -32,6 +33,7 @@ test("Matrix Explore stylesheet follows the feature-pages import graph", () => {
 
 test("Matrix Explore title-card background has one formal CSS owner and one production artwork", () => {
   assert.doesNotMatch(prototypeCss, /matrix-explore-header-background\.css/);
+  assert.doesNotMatch(responsiveCss, /matrix-explore-header-background\.css/);
   assert.equal(existsSync("src/matrix-explore-header-background.css"), false);
   assert.equal(existsSync("public/assets/lottery/header-explore-luxury-flow.svg"), false);
   assert.match(
