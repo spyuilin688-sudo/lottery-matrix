@@ -157,6 +157,7 @@ const labels: Record<string, string[]> = {
     "durationType",
     "status",
     "createdAt",
+    "memberDisplayName",
     "identityDisplay",
     "redeemedAt",
     "expiresAt",
@@ -1219,7 +1220,7 @@ function SubscriptionManager({
           </div>
         </div>
       )}
-      {userInfo && <UserInfoDialog key={userInfo.id} row={userInfo} client={api} module="subscriptions" onClose={() => setUserInfo(null)} />}
+      {userInfo && <UserInfoDialog key={userInfo.id} row={userInfo} client={api} module="subscriptions" onClose={() => setUserInfo(null)} />
       <AdminListControls page={paymentPage} showError={false} name="付款紀錄" statuses={[["confirmed", "已付款"], ["refunded", "已退款"], ["chargeback", "已刷退"], ["cancelled", "已取消"]]} sorts={[["paidAt", "付款時間"], ["amount", "付款金額"]]} />
       <PaymentReversalPanel
         key={JSON.stringify(paymentPage.query)}
@@ -1663,8 +1664,7 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
                           <div><dt>檢查時間</dt><dd>{formatAdminDateTime(item.checkedAt)}</dd></div>
                           <div><dt>回應時間</dt><dd>{item.responseMs} ms</dd></div>
                           {[...getGithubStatusFacts(item), ...getMatrixStorageFacts(item), ...getServiceEvidenceFacts(item)].map((fact) => (
-                            <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.format === "date" ? formatAdminDateTime(fact.value) : text(fact.value)}</dd></div>
-                          ))}
+                            <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.format === "date" ? formatAdminDateTime(fact.value) : text(fact.value)}</dd></div>)}
                           {item.id !== "matrix-storage" && detail?.status !== undefined && <div><dt>{typeof detail.status === "number" ? "回應代碼" : "執行結果"}</dt><dd>{formatSystemStatusValue(detail.status)}</dd></div>}
                           {finishedAt !== undefined && <div><dt>排程完成時間</dt><dd>{formatAdminDateTime(finishedAt)}</dd></div>}
                           {item.id === "supabase-watchdog-heartbeat" && (
@@ -1759,7 +1759,7 @@ function DataTable({
                     </td>
                   )}
                   {fields.map((f) => (
-                    <td key={f}>{displayValue(f, r[f])}</td>
+                    <td key={f}>{displayValue(f, f === "memberDisplayName" ? r.memberDisplayName ?? r.redeemedByLineDisplayName : r[f])}</td>
                   ))}
                   {canDelete && (
                     <td className="activationDeleteCell">
