@@ -138,23 +138,28 @@ export function lineNicknameFromSession(session: unknown) {
   if (!session || typeof session !== "object") return null;
   const user = (session as { user?: unknown }).user;
   if (!user || typeof user !== "object") return null;
-  const metadata = (user as { user_metadata?: unknown }).user_metadata;
-  if (metadata && typeof metadata === "object") {
-    const name = (metadata as { name?: unknown }).name;
-    if (typeof name === "string" && name.trim()) return name.trim();
-  }
+  const displayName = (value: unknown) => {
+    if (!value || typeof value !== "object") return null;
+    for (const key of ["name", "full_name", "display_name"] as const) {
+      const candidate = (value as Record<string, unknown>)[key];
+      if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
+    }
+    return null;
+  };
+  const metadataName = displayName((user as { user_metadata?: unknown }).user_metadata);
+  if (metadataName) return metadataName;
   const identities = (user as { identities?: unknown }).identities;
   if (!Array.isArray(identities)) return null;
-  const lineIdentity = identities.find((identity) => (
-    identity && typeof identity === "object"
-    && (identity as { provider?: unknown }).provider === "custom:line"
-  ));
-  const identityData = lineIdentity && typeof lineIdentity === "object"
-    ? (lineIdentity as { identity_data?: unknown }).identity_data
-    : null;
-  if (!identityData || typeof identityData !== "object") return null;
-  const name = (identityData as { name?: unknown }).name;
-  return typeof name === "string" && name.trim() ? name.trim() : null;
+  for (const provider of ["custom:line", "google"]) {
+    const identity = identities.find((candidate) => (
+      candidate && typeof candidate === "object"
+      && (candidate as { provider?: unknown }).provider === provider
+    ));
+    if (!identity || typeof identity !== "object") continue;
+    const identityName = displayName((identity as { identity_data?: unknown }).identity_data);
+    if (identityName) return identityName;
+  }
+  return null;
 }
 
 export type ProfileAuthState =
@@ -177,6 +182,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   const lineLoginInProgress = useRef(false);
   const [signingInProvider, setSigningInProvider] = useState<"line" | "google" | null>(null);
   const [lineAvatarUrl, setLineAvatarUrl] = useState<string | null>(null);
+  const [memberNickname, setMemberNickname] = useState<string | null>(null);
   const [providerIdentity, setProviderIdentity] = useState<ProviderIdentity | null>(null);
   const [memberUserId, setMemberUserId] = useState<string | null>(null);
   const memberUserIdRef = useRef<string | null>(null);
@@ -202,6 +208,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
       setSigningInProvider(null);
       setAuthState(session ? "authenticated" : "anonymous");
       setLineAvatarUrl(lineAvatarFromSession(session));
+      setMemberNickname(lineNicknameFromSession(session));
       setProviderIdentity(providerIdentityFromSession(session));
       if (consumeLineLoginAttempt({ hasSession: Boolean(session) })) {
         void alertDialog({ title: "登入成功", tone: "success" });
@@ -296,6 +303,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
         await signOutFromMatrix();
         setAuthState("anonymous");
         setLineAvatarUrl(null);
+        setMemberNickname(null);
         setProviderIdentity(null);
         await alertDialog({ title: "已登出", tone: "success" });
       } else {
@@ -333,6 +341,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
             setMemberProfile(null);
             setAuthState('authenticated');
             setLineAvatarUrl(lineAvatarFromSession(data.session));
+            setMemberNickname(lineNicknameFromSession(data.session));
             setProviderIdentity(providerIdentityFromSession(data.session));
             await alertDialog({ title: '登入成功', tone: 'success' });
             onNavigate('home');
@@ -403,7 +412,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   return (
     <FeatureShell title="我的" onNavigate={onNavigate} active="我的" className="profile-screen" compactHeader>
       <div className="membership-card-stack">
-        <MembershipArtwork showSubscription={subscriptionPurchaseVisible} maskAuthPill={authState === "anonymous" || authState === "signing-in"} />
+        <MembershipArtwork showSubscription={true} maskAuthPill={authState === "anonymous" || authState === "signing-in"} />
         <section className="panel membership-card profile-card" data-auth-layout={authState === "anonymous" || authState === "signing-in" ? "multiple" : "single"}>
           <div className="profile-avatar">
             <img
@@ -415,8 +424,8 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
             <h2>樂彩玩家</h2>
             <p
               className="profile-nickname"
-              data-name-fit={visibleProviderIdentity?.value && Array.from(visibleProviderIdentity.value).length > 12 ? "compact" : "regular"}
-            >{visibleProviderIdentity ? `${visibleProviderIdentity.label}：${visibleProviderIdentity.value}` : ""}</p>
+              data-name-fit={memberNickname && Array.from(memberNickname).length > 12 ? "compact" : "regular"}
+            >{memberNickname ?? ""}</p>
           </div>
           {authState !== "initializing" ? <div className="profile-auth-actions">
             {authState === "anonymous" || authState === "signing-in" ? <>
@@ -454,16 +463,16 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
             }</span></button>}
           </div> : null}
         </section>
-        {subscriptionPurchaseVisible && <section className="panel membership-card subscription-status-card">
+        <section className="panel membership-card subscription-status-card">
           <SectionTitle>目前訂閱狀態</SectionTitle>
           <div className="subscription-status-content">
             <div className="subscription-plan"><span>目前方案</span><strong>{displayedPlanName}</strong><p>{memberProfile ? displayedPlanDescription : ""}</p></div>
             <div className="subscription-expiry"><span>訂閱到期日</span><strong>{expiry?.date ?? ""}</strong><p>{expiry ? `剩餘 ${expiry.remainingDays} 天` : ""}</p></div>
           </div>
-          <button type="button" className="subscription-entry" onClick={() => onNavigate("pro-plans")}>
+          {subscriptionPurchaseVisible && <button type="button" className="subscription-entry" onClick={() => onNavigate("pro-plans")}>
             <span>訂閱方案／收費標準</span><ChevronRightIcon />
-          </button>
-        </section>}
+          </button>}
+        </section>
       </div>
       {visibleMenuGroups.map((group) => (
         <ProfileMenu title={group.title} items={group.items} onNavigate={onNavigate} key={group.title}>
