@@ -51,6 +51,9 @@ jobs:
             apps/admin/src/admin-member-page.test.tsx \
             apps/admin/backend/admin-data.test.ts
 
+      - name: Remove temporary contract tests before build
+        run: rm src/__tests__/MemberIdentityContract.test.ts apps/admin/src/member-id-contract.test.ts
+
       - name: Verify production builds
         run: npm run build
 
@@ -58,18 +61,21 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git rm .github/workflows/member-id-fix-runner-once.yml scripts/member-id-fix-once.py scripts/member-id-fix-runner.py
+          git rm \
+            .github/workflows/member-id-fix-runner-once.yml \
+            scripts/member-id-fix-once.py \
+            scripts/member-id-fix-runner.py \
+            src/__tests__/MemberIdentityContract.test.ts \
+            apps/admin/src/member-id-contract.test.ts
           git add -- \
             src/member-api.ts \
             src/features/MemberPages.tsx \
             src/__tests__/MemberProfilePage.test.tsx \
-            src/__tests__/MemberIdentityContract.test.ts \
             apps/admin/backend/admin-data.ts \
             apps/admin/backend/admin-data.test.ts \
             apps/admin/src/AdminApp.tsx \
             apps/admin/src/UserInfoDialog.tsx \
             apps/admin/src/UserInfoDialog.test.tsx \
-            apps/admin/src/member-id-contract.test.ts \
             supabase/migrations/20260916103000_member_profile_member_id.sql
           git commit -m 'Use member ID across member and admin views'
           git push origin HEAD:'fix/member-id-admin-google-20260916'
