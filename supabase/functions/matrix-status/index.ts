@@ -3,6 +3,7 @@ import { createMemberAuth } from '../../../backend/matrix-member-auth.ts';
 import type { ExploreArtifact, TianyanArtifact } from '../../../backend/matrix-status-service.ts';
 import { createMatrixStatusEdgeHandler } from './handler.ts';
 import {
+  createMatrixStatusCompactReader,
   createMatrixStatusSourceReader,
   createMatrixStatusValidationReader,
 } from './source-reader.ts';
@@ -25,11 +26,31 @@ function loadConfig() {
 
 const memberAuth = createMemberAuth(loadConfig);
 const customStatusStore = createCustomStatusStore(loadConfig);
+const readCompactStatus = createMatrixStatusCompactReader(loadConfig);
 const readStatusSources = createMatrixStatusSourceReader(loadConfig);
 const readStatusValidation = createMatrixStatusValidationReader(loadConfig);
 
 const handler = createMatrixStatusEdgeHandler({
   requireMember: (authorization) => memberAuth.requireMember(authorization),
+  async readCompactStatus(lottery: LotteryId, drawPeriod?: string) {
+    const source = await readCompactStatus(lottery, drawPeriod);
+    if (!source) return null;
+    const analysisVersion = String(source.analysisVersion ?? '').trim();
+    const resolvedPeriod = String(source.drawPeriod ?? '').trim();
+    const payload = source.payload;
+    if (
+      !analysisVersion
+      || !resolvedPeriod
+      || !payload
+      || typeof payload !== 'object'
+      || Array.isArray(payload)
+    ) return null;
+    return {
+      analysisVersion,
+      drawPeriod: resolvedPeriod,
+      payload: payload as Record<string, unknown>,
+    };
+  },
   async readStatusSources(lottery: LotteryId, drawPeriod?: string) {
     const source = await readStatusSources(lottery, drawPeriod);
     if (!source) return null;
