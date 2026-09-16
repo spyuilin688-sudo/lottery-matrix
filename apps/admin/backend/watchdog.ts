@@ -2,6 +2,7 @@ export type WatchdogLottery = '今彩539' | '天天樂' | '六合彩' | '大樂�
 
 export type WatchdogSnapshot = {
   lottery: WatchdogLottery;
+  drawDays?: string[];
   job: null | {
     status: 'running' | 'waiting_source' | 'success' | 'failed';
     startedAt: string | null;
@@ -36,7 +37,7 @@ const LOTTERIES: WatchdogLottery[] = ['今彩539', '天天樂', '六合彩', '�
 const JOB_NAME: Record<WatchdogLottery, string> = {
   今彩539: 'matrix-539-refresh-v2',
   天天樂: 'matrix-fantasy5-refresh-v2',
-  六合彩: 'matrix-marksix-refresh-v2',
+ 六合彩: 'matrix-marksix-refresh-v2',
   大樂透: 'matrix-649-refresh-v2',
 };
 const JOB_STALE_MS = 20 * 60 * 1000;
@@ -97,7 +98,14 @@ function weekday(day: LocalDay): number {
   return new Date(Date.UTC(day.year, day.month - 1, day.day)).getUTCDay();
 }
 
-function isPrimaryDrawDay(lottery: WatchdogLottery, day: LocalDay): boolean {
+function dateText(day: LocalDay): string {
+  return `${String(day.year).padStart(4, '0')}-${String(day.month).padStart(2, '0')}-${String(day.day).padStart(2, '0')}`;
+}
+
+// Compatibility only for direct pure-function callers/tests that do not load a
+// production snapshot. Production snapshots always carry drawDays from the
+// canonical Supabase resolver and never use this fallback.
+function legacyDrawDayFallback(lottery: WatchdogLottery, day: LocalDay): boolean {
   const value = weekday(day);
   if (lottery === '今彩539') return value >= 1 && value <= 6;
   if (lottery === '大樂透') return value === 2 || value === 5;
@@ -105,10 +113,27 @@ function isPrimaryDrawDay(lottery: WatchdogLottery, day: LocalDay): boolean {
   return true;
 }
 
-function isRecoveryCycleDay(lottery: WatchdogLottery, day: LocalDay): boolean {
+function isConfiguredDrawDay(
+  lottery: WatchdogLottery,
+  day: LocalDay,
+  drawDays?: readonly string[],
+): boolean {
+  if (drawDays !== undefined) return drawDays.includes(dateText(day));
+  return legacyDrawDayFallback(lottery, day);
+}
+
+function isRecoveryCycleDay(
+  lottery: WatchdogLottery,
+  day: LocalDay,
+  drawDays?: readonly string[],
+): boolean {
   return (
-    isPrimaryDrawDay(lottery, day)
-    || (lottery === '六合彩' && weekday(day) === 0)
+    isConfiguredDrawDay(lottery, day, drawDays)
+    || (
+      lottery === '六合彩'
+      && weekday(day) === 0
+      && isConfiguredDrawDay(lottery, addDays(day, -1), drawDays)
+    )
   );
 }
 
@@ -167,33 +192,34 @@ function taipeiInstant(day: LocalDay, hour: number, minute: number): number {
   return Date.UTC(day.year, day.month - 1, day.day, hour - 8, minute);
 }
 
-function nextPrimaryInstant(lottery: WatchdogLottery, cycleDay: LocalDay): number {
-  for (let offset = 1; offset <= 8; offset += 1) {
+function nextPrimaryInstant(
+  lottery: WatchdogLottery,
+  cycleDay: LocalDay,
+  drawDays?: readonly string[],
+): number {
+  for (let offset = 1; offset <= 9; offset += 1) {
     const day = addDays(cycleDay, offset);
-    if (!isPrimaryDrawDay(lottery, day)) continue;
+    if (!isConfiguredDrawDay(lottery, day, drawDays)) continue;
     const [hour, minute] = callClock(lottery, day);
     return taipeiInstant(day, hour, minute);
   }
-  throw new Error('NEXT_PRIMARY_CALL_NOT_FOUND');
-}
-
-function dateText(day: LocalDay): string {
-  return `${String(day.year).padStart(4, '0')}-${String(day.month).padStart(2, '0')}-${String(day.day).padStart(2, '0')}`;
+  return Number.POSITIVE_INFINITY;
 }
 
 export function expectedDrawDateForDueWindow(
   lottery: WatchdogLottery,
   now: Date,
+  drawDays?: readonly string[],
 ): string | null {
   const local = taipeiParts(now);
   const currentMinute = Math.floor(now.getTime() / 60_000) * 60_000;
   const previousTick = currentMinute - PHYSICAL_TICK_MINUTES * 60_000;
   for (const offset of [0, -1]) {
     const cycleDay = addDays(local, offset);
-    if (!isRecoveryCycleDay(lottery, cycleDay)) continue;
+    if (!isRecoveryCycleDay(lottery, cycleDay, drawDays)) continue;
     const [hour, minute] = callClock(lottery, cycleDay);
     const base = taipeiInstant(cycleDay, hour, minute);
-    const nextPrimary = nextPrimaryInstant(lottery, cycleDay);
+    const nextPrimary = nextPrimaryInstant(lottery, cycleDay, drawDays);
     const hasDueCheckpoint = WATCHDOG_CHECKPOINT_MINUTES.some((checkpoint) => {
       if (!checkpointAllowed(lottery, cycleDay, checkpoint)) return false;
       const dueAt = base + checkpoint * 60_000;
@@ -203,9 +229,7 @@ export function expectedDrawDateForDueWindow(
         && dueAt <= currentMinute
       );
     });
-    if (hasDueCheckpoint) {
-      return dateText(cycleDay);
-    }
+    if (hasDueCheckpoint) return dateText(cycleDay);
   }
   return null;
 }
@@ -236,7 +260,11 @@ export function planWatchdogActions(
   };
 
   for (const snapshot of snapshots) {
-    const expectedDate = expectedDrawDateForDueWindow(snapshot.lottery, now);
+    const expectedDate = expectedDrawDateForDueWindow(
+      snapshot.lottery,
+      now,
+      snapshot.drawDays,
+    );
     if (!expectedDate) continue;
     const crawlerTarget = snapshot.lottery === '天天樂' ? 'github' : 'railway';
     const drawDate = snapshot.latestDraw?.drawDate;
@@ -357,54 +385,91 @@ async function fetchJsonWithTimeout<T>(
   }
 }
 
+function drawDayRange(at: Date): { start: string; end: string } {
+  const local = taipeiParts(at);
+  return {
+    start: dateText(addDays(local, -1)),
+    end: dateText(addDays(local, 9)),
+  };
+}
+
+function calendarDrawDays(
+  calendar: Record<string, unknown>,
+  lottery: WatchdogLottery,
+): string[] {
+  const value = calendar[lottery];
+  if (!Array.isArray(value) || value.some((item) =>
+    typeof item !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(item))) {
+    throw new Error('WATCHDOG_DRAW_DAY_CALENDAR_INVALID');
+  }
+  return value;
+}
+
 export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
-  return async (): Promise<WatchdogSnapshot[]> => Promise.all(LOTTERIES.map(async (lottery) => {
-    const [jobRows, drawRows] = await Promise.all([
-      supabaseRequest<Record<string, unknown>[]>(supabase,
-        `system_job_status?select=status,started_at,updated_at&job_name=eq.${encode(JOB_NAME[lottery])}&limit=1`,
-      ),
-      supabaseRequest<Record<string, unknown>[]>(supabase,
-        `lottery_draws?select=period,draw_date&lottery=eq.${encode(lottery)}&order=draw_date.desc.nullslast,period.desc&limit=1`,
-      ),
-    ]);
-    const jobRow = jobRows[0];
-    const drawRow = drawRows[0];
-    const period = nullableString(drawRow?.period);
-    const analysisState = period ? await supabaseRequest<Record<string, unknown>>(supabase,
-      'rpc/matrix_watchdog_analysis_state',
+  return async (at: Date = new Date()): Promise<WatchdogSnapshot[]> => {
+    const range = drawDayRange(at);
+    const calendar = await supabaseRequest<Record<string, unknown>>(
+      supabase,
+      'rpc/matrix_watchdog_draw_days',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ p_lottery: lottery, p_draw_period: period }),
+        body: JSON.stringify({
+          p_start_date: range.start,
+          p_end_date: range.end,
+        }),
       },
-    ) : null;
-    const jobStatus = nullableString(jobRow?.status);
-    const analysisStatus = nullableString(analysisState?.status);
-    const visibleAnalysisStatus = (
-      analysisStatus === 'running'
-      || analysisStatus === 'complete'
-      || analysisStatus === 'failed'
-    ) ? analysisStatus : null;
-    return {
-      lottery,
-      job: jobStatus ? {
-        status: jobStatus as WatchdogSnapshot['job'] extends { status: infer T } ? T : never,
-        startedAt: nullableString(jobRow?.started_at),
-        updatedAt: nullableString(jobRow?.updated_at),
-      } : null,
-      latestDraw: period ? {
-        period,
-        drawDate: nullableString(drawRow?.draw_date),
-      } : null,
-      latestAnalysis: visibleAnalysisStatus ? {
-        drawPeriod: nullableString(analysisState?.drawPeriod) ?? '',
-        status: visibleAnalysisStatus as WatchdogSnapshot['latestAnalysis'] extends { status: infer T } ? T : never,
-        startedAt: nullableString(analysisState?.startedAt),
-        updatedAt: nullableString(analysisState?.updatedAt),
-        leaseExpiresAt: nullableString(analysisState?.leaseExpiresAt),
-      } : null,
-    };
-  }));
+    );
+
+    return Promise.all(LOTTERIES.map(async (lottery) => {
+      const [jobRows, drawRows] = await Promise.all([
+        supabaseRequest<Record<string, unknown>[]>(supabase,
+          `system_job_status?select=status,started_at,updated_at&job_name=eq.${encode(JOB_NAME[lottery])}&limit=1`,
+        ),
+        supabaseRequest<Record<string, unknown>[]>(supabase,
+          `lottery_draws?select=period,draw_date&lottery=eq.${encode(lottery)}&order=draw_date.desc.nullslast,period.desc&limit=1`,
+        ),
+      ]);
+      const jobRow = jobRows[0];
+      const drawRow = drawRows[0];
+      const period = nullableString(drawRow?.period);
+      const analysisState = period ? await supabaseRequest<Record<string, unknown>>(supabase,
+        'rpc/matrix_watchdog_analysis_state',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_lottery: lottery, p_draw_period: period }),
+        },
+      ) : null;
+      const jobStatus = nullableString(jobRow?.status);
+      const analysisStatus = nullableString(analysisState?.status);
+      const visibleAnalysisStatus = (
+        analysisStatus === 'running'
+        || analysisStatus === 'complete'
+        || analysisStatus === 'failed'
+      ) ? analysisStatus : null;
+      return {
+        lottery,
+        drawDays: calendarDrawDays(calendar, lottery),
+        job: jobStatus ? {
+          status: jobStatus as WatchdogSnapshot['job'] extends { status: infer T } ? T : never,
+          startedAt: nullableString(jobRow?.started_at),
+          updatedAt: nullableString(jobRow?.updated_at),
+        } : null,
+        latestDraw: period ? {
+          period,
+          drawDate: nullableString(drawRow?.draw_date),
+        } : null,
+        latestAnalysis: visibleAnalysisStatus ? {
+          drawPeriod: nullableString(analysisState?.drawPeriod) ?? '',
+          status: visibleAnalysisStatus as WatchdogSnapshot['latestAnalysis'] extends { status: infer T } ? T : never,
+          startedAt: nullableString(analysisState?.startedAt),
+          updatedAt: nullableString(analysisState?.updatedAt),
+          leaseExpiresAt: nullableString(analysisState?.leaseExpiresAt),
+        } : null,
+      };
+    }));
+  };
 }
 
 export function createSupabaseWatchdogLeaseManager(supabase: SupabaseReader) {
@@ -480,7 +545,7 @@ export function createFantasy5GithubDispatcher(
 }
 
 type WatchdogDependencies = {
-  loadSnapshot: () => Promise<WatchdogSnapshot[]>;
+  loadSnapshot: (at?: Date) => Promise<WatchdogSnapshot[]>;
   claimLease: (key: string, owner: string) => Promise<boolean>;
   releaseLease: (key: string, owner: string) => Promise<void>;
   recoverRailway: (lottery: WatchdogLottery, leaseOwner: string) => Promise<unknown>;
@@ -492,7 +557,7 @@ export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
     async run(at: Date = new Date(), owner = crypto.randomUUID()) {
       let snapshots: WatchdogSnapshot[];
       try {
-        snapshots = await dependencies.loadSnapshot();
+        snapshots = await dependencies.loadSnapshot(at);
       } catch {
         return { status: 'degraded', checkedAt: at.toISOString(), actions: [], error: 'STATUS_UNAVAILABLE' };
       }
