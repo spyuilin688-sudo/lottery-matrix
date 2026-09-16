@@ -56,8 +56,10 @@ jobs:
             apps/admin/backend/member-provider-identity.ts \
             apps/admin/backend/member-provider-identity.test.ts \
             apps/admin/backend/admin-data.ts \
+            apps/admin/backend/admin-data.test.ts \
             apps/admin/src/AdminApp.tsx \
             apps/admin/src/AdminApp.recovery.test.tsx \
-            apps/admin/src/UserInfoDialog.tsx
+            apps/admin/src/UserInfoDialog.tsx \
+            apps/admin/src/UserInfoDialog.test.tsx
           git commit -m 'Restore member names beside provider IDs'
           git push origin HEAD:fix/admin-member-names-provider-ids-20260916
