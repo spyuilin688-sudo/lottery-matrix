@@ -535,16 +535,16 @@
   color: var(--lottery-neutral-400);
 }
 
-/* Keep the anonymous sign-in actions visually subordinate to member identity. */
+/* Integrate anonymous sign-in actions with the Matrix black-gold member card. */
 .profile-card[data-auth-layout="multiple"] {
-  --profile-auth-zone-right: 4.1cqw;
-  --profile-auth-zone-width: 15.4cqw;
+  --profile-auth-zone-right: 4.6cqw;
+  --profile-auth-zone-width: 15.2cqw;
 }
 
 .profile-card[data-auth-layout="multiple"] .profile-auth-actions {
   grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
-  gap: 1cqw;
+  gap: .9cqw;
 }
 
 .profile-card[data-auth-layout="multiple"] .profile-logout {
@@ -555,16 +555,20 @@
 }
 
 .profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider] {
-  padding: 0 5px;
+  padding: 0 6px;
   grid-template-columns: 11px auto;
   align-items: center;
   justify-content: center;
-  column-gap: 3px;
+  column-gap: 4px;
+  border: 1px solid rgba(211, 166, 66, .72);
+  background:
+    linear-gradient(180deg, rgba(17, 20, 18, .96), rgba(3, 9, 12, .96));
+  color: #e9ddbf;
   font-size: clamp(8.5px, 2.1cqw, 10px);
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0;
-  box-shadow: none;
+  box-shadow: inset 0 1px 0 rgba(255, 231, 171, .04);
 }
 
 .profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider]::before {
@@ -577,20 +581,8 @@
   content: "";
 }
 
-.profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider="line"] {
-  border: 0;
-  background: var(--profile-login-line-bg);
-  color: #ffffff;
-}
-
 .profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider="line"]::before {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fff' d='M12 3C6.48 3 2 6.72 2 11.31c0 4.11 3.56 7.56 8.36 8.21.33.07.77.22.88.5.1.26.07.66.03.92l-.14.87c-.04.26-.2 1.02.88.56 1.08-.45 5.82-3.43 7.94-5.87C21.42 14.89 22 13.25 22 11.31 22 6.72 17.52 3 12 3Z'/%3E%3Ctext x='12' y='13.1' text-anchor='middle' font-family='Arial,sans-serif' font-size='4.2' font-weight='700' fill='%2306c755'%3ELINE%3C/text%3E%3C/svg%3E");
-}
-
-.profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider="google"] {
-  border: 0;
-  background: var(--lottery-white-1000);
-  color: #202124;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2306c755' d='M12 3C6.48 3 2 6.72 2 11.31c0 4.11 3.56 7.56 8.36 8.21.33.07.77.22.88.5.1.26.07.66.03.92l-.14.87c-.04.26-.2 1.02.88.56 1.08-.45 5.82-3.43 7.94-5.87C21.42 14.89 22 13.25 22 11.31 22 6.72 17.52 3 12 3Z'/%3E%3Ctext x='12' y='13.1' text-anchor='middle' font-family='Arial,sans-serif' font-size='4.2' font-weight='700' fill='%23fff'%3ELINE%3C/text%3E%3C/svg%3E");
 }
 
 .profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider="google"]::before {
@@ -599,6 +591,7 @@
 
 .profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider]:disabled {
   filter: saturate(.72);
+  opacity: .72;
 }
 
 .calculator-screen .calculation-results {
