@@ -257,7 +257,6 @@
   justify-content: flex-end;
   gap: 8px;
 }
-
 .notifications-screen-v2 .notification-settings-toggle {
   display: inline-flex;
   box-sizing: border-box;
@@ -844,14 +843,6 @@
   font-weight: 700;
   white-space: nowrap;
   box-shadow: none;
-}
-
-/* Explore title card: dedicated black-gold cosmic field with right-edge planet. */
-.feature-brand-header[data-product-header="Matrix 探索"] .product-header__frame {
-  background-image: url("/assets/lottery/header-explore-planet.svg");
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
 }
 
 @media (prefers-reduced-motion: reduce) {
