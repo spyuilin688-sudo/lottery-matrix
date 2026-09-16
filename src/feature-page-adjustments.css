@@ -535,8 +535,8 @@
   color: var(--lottery-neutral-400);
 }
 
-/* Expand the existing SVG mask so the legacy auth-frame artwork is fully removed. */
-.membership-reference-art .profile-auth-pill-mask {
+/* Expand the existing SVG mask only while the anonymous login controls are visible. */
+.membership-reference-art:has(+ .profile-card[data-auth-layout="multiple"]) .profile-auth-pill-mask {
   x: 1208px;
   y: 118px;
   width: 312px;
