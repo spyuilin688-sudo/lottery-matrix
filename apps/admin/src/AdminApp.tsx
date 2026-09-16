@@ -136,7 +136,6 @@ const labels: Record<string, string[]> = {
     "account",
     "loginAt",
     "logoutAt",
-    "onlineMinutes",
     "ip",
     "estimatedRegion",
     "device",
@@ -1196,10 +1195,10 @@ function SubscriptionManager({
       </AdminListControls>
       <div className="managementList tableWrap" aria-busy={loading}>
         <table>
-          <thead><tr><th>LINE ID／Google ID</th><th>訂閱方案</th><th>開始時間</th><th>到期時間</th><th>自動續訂</th><th>調整到期日</th><th>用戶資訊</th></tr></thead>
-          <tbody>{paged.items.length === 0 ? <tr><td colSpan={7} className="empty">{loading ? "資料讀取中" : error ? "資料載入失敗" : "目前沒有資料"}</td></tr> : paged.items.map((row) => (
+          <thead><tr><th>會員名稱</th><th>LINE ID／Google ID</th><th>訂閱方案</th><th>開始時間</th><th>到期時間</th><th>自動續訂</th><th>調整到期日</th><th>用戶資訊</th></tr></thead>
+          <tbody>{paged.items.length === 0 ? <tr><td colSpan={8} className="empty">{loading ? "資料讀取中" : error ? "資料載入失敗" : "目前沒有資料"}</td></tr> : paged.items.map((row) => (
             <tr key={row.id}>
-              <td>{text(row.identityDisplay)}</td><td>{text(row.planName)}</td><td>{formatAdminDateTime(row.planStartedAt)}</td><td>{row.isLifetime ? "終生" : formatAdminDateTime(row.planExpiresAt)}</td><td>{row.autoRenew ? "是" : "否"}</td>
+              <td>{text(row.memberDisplayName)}</td><td>{text(row.identityDisplay)}</td><td>{text(row.planName)}</td><td>{formatAdminDateTime(row.planStartedAt)}</td><td>{row.isLifetime ? "終生" : formatAdminDateTime(row.planExpiresAt)}</td><td>{row.autoRenew ? "是" : "否"}</td>
               <td>{canEdit && <button className="compactButton subscriptionTableAction" onClick={() => open(row, "adjustExpiry")}>調整到期日</button>}</td>
               <td><button className="compactButton subscriptionTableAction" onClick={() => setUserInfo(row)}>用戶資訊</button></td>
             </tr>
