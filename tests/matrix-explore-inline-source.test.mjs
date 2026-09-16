@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { ruleBodies } from "./helpers/css-rules.mjs";
 
 const mainSource = readFileSync("src/main.tsx", "utf8");
@@ -8,8 +8,8 @@ const appSource = readFileSync("src/App.tsx", "utf8");
 const prototypeSource = readFileSync("src/Prototype.tsx", "utf8");
 const prototypeCss = readFileSync("src/prototype.css", "utf8");
 const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
-const headerBackgroundCss = readFileSync("src/matrix-explore-header-background.css", "utf8");
-const headerArtwork = readFileSync("public/assets/lottery/header-explore-luxury-flow.svg", "utf8");
+const featureAdjustmentsCss = readFileSync("src/feature-page-adjustments.css", "utf8");
+const headerArtwork = readFileSync("public/assets/lottery/header-explore-planet.svg", "utf8");
 const tiangongCss = readFileSync("src/matrix-tiangong-results.css", "utf8");
 
 function assertRule(selectorPattern, declarations) {
@@ -30,17 +30,14 @@ test("Matrix Explore stylesheet follows the feature-pages import graph", () => {
   assert.match(prototypeSource, /import "\.\/feature-pages\.css";/);
 });
 
-test("Matrix Explore title-card background is loaded by an existing runtime stylesheet", () => {
-  assert.match(prototypeCss, /@import\s+"\.\/matrix-explore-header-background\.css";/);
+test("Matrix Explore title-card background has one formal CSS owner and one production artwork", () => {
+  assert.doesNotMatch(prototypeCss, /matrix-explore-header-background\.css/);
+  assert.equal(existsSync("src/matrix-explore-header-background.css"), false);
+  assert.equal(existsSync("public/assets/lottery/header-explore-luxury-flow.svg"), false);
   assert.match(
-    headerBackgroundCss,
-    /\.matrix-explore-screen\s*>\s*\.product-header\[data-product-header="Matrix 探索"\]/,
+    featureAdjustmentsCss,
+    /\.feature-brand-header\[data-product-header="Matrix 探索"\]\s+\.product-header__frame\s*\{[^}]*background-image:\s*url\("\/assets\/lottery\/header-explore-planet\.svg"\);/s,
   );
-  assert.match(
-    headerBackgroundCss,
-    /--product-header-background:\s*url\("\/assets\/lottery\/header-explore-luxury-flow\.svg"\);/,
-  );
-  assert.doesNotMatch(mainSource, /matrix-explore-header-background\.css/);
 });
 
 test("Matrix Explore title artwork keeps the dense black-gold reference layers without changing canvas geometry", () => {
