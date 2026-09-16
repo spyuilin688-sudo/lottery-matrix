@@ -16,6 +16,7 @@ class CardRepository(Protocol):
               keep_generation: str, lease_token: str, *,
               keep_generations: set[str] | None = None) -> None: ...
     def release(self, lottery: str, token: str, error: str | None = None) -> None: ...
+    def read_state(self, lottery: str) -> dict[str, Any]: ...
     def read_manifest(self, lottery: str) -> dict[str, Any] | None: ...
 
 
@@ -124,10 +125,19 @@ class SupabaseCardRepository:
             'lease_token': None, 'lease_until': None, 'last_error': error,
         }).eq('lottery', lottery).eq('lease_token', token).execute())
 
-    def read_manifest(self, lottery: str) -> dict[str, Any] | None:
-        rows = (self.client.table(TABLE).select('manifest')
+    def read_state(self, lottery: str) -> dict[str, Any]:
+        rows = (self.client.table(TABLE).select('manifest,last_error')
                 .eq('lottery', lottery).limit(1).execute().data)
-        return rows[0]['manifest'] if rows else None
+        if not rows:
+            return {'manifest': None, 'last_error': None}
+        row = rows[0]
+        return {
+            'manifest': row.get('manifest'),
+            'last_error': row.get('last_error'),
+        }
+
+    def read_manifest(self, lottery: str) -> dict[str, Any] | None:
+        return self.read_state(lottery)['manifest']
 
 
 def card_repository(repository: Any) -> CardRepository | None:
@@ -138,13 +148,17 @@ def card_repository(repository: Any) -> CardRepository | None:
     return SupabaseCardRepository(client) if client is not None else None
 
 
-def published_manifest(lottery: str, repository: Any) -> dict[str, Any] | None:
-    cards = card_repository(repository)
-    manifest = cards.read_manifest(lottery) if cards is not None else None
+def validate_published_manifest(
+    lottery: str,
+    repository: Any,
+    manifest: dict[str, Any] | None,
+    *,
+    require_all_orders: bool = False,
+) -> dict[str, Any] | None:
     if not manifest:
         return None
     # Import locally because the publisher depends on the storage transport.
-    from app.card_renderer import card_layout, supported_card_orders
+    from app.card_renderer import card_layout
     from app.services.card_publication import (
         complete_snapshot, order_input_digest, publication_orders, reusable_card, snapshot_digest,
     )
@@ -160,11 +174,29 @@ def published_manifest(lottery: str, repository: Any) -> dict[str, Any] | None:
         return None
     for order in orders:
         card = available.get(order)
-        if isinstance(card, dict) and 'inputDigest' in card and not reusable_card(
-            card, lottery, str(draws[0]['period']), order, order_input_digest(lottery, order, draws),
-        ):
+        if card is None:
+            if require_all_orders:
+                return None
+            continue
+        if not isinstance(card, dict):
+            return None
+        if 'inputDigest' in card:
+            if not reusable_card(
+                card, lottery, str(draws[0]['period']), order,
+                order_input_digest(lottery, order, draws),
+            ):
+                return None
+        elif require_all_orders:
+            # Legacy manifests can still be served, but are not strong enough to
+            # prove that a no-op publication tick is safe.
             return None
     return {**manifest, 'cards': {order: available[order] for order in orders if order in available}}
+
+
+def published_manifest(lottery: str, repository: Any) -> dict[str, Any] | None:
+    cards = card_repository(repository)
+    manifest = cards.read_manifest(lottery) if cards is not None else None
+    return validate_published_manifest(lottery, repository, manifest)
 
 
 def is_card_published(lottery: str, period: str, repository: Any, *, order: str = 'draw') -> bool:
