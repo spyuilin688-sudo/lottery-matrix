@@ -7,7 +7,7 @@ export type PaymentReversalStatus = 'refunded' | 'chargeback' | 'cancelled';
 export type PaymentRecord = {
   id: string;
   memberId: string;
-  lineDisplayName?: string | null;
+  identityDisplay?: string | null;
   planId?: string | null;
   planName?: string | null;
   amount: number;
@@ -128,9 +128,7 @@ export function PaymentReversalPanel({ payments, loadError = '', canEdit, confir
     setBusy(true);
     try {
       const label = reversalLabels[status];
-      const member = payment.lineDisplayName
-        ? `${payment.lineDisplayName}（${payment.memberId}）`
-        : payment.memberId;
+      const member = payment.identityDisplay || '—';
       await runConfirmed(
         () => confirm({
           title: `確認記錄已完成${label.noun}`,
@@ -216,7 +214,7 @@ export function PaymentReversalPanel({ payments, loadError = '', canEdit, confir
           return (
             <article className="paymentReversalRow" key={payment.id}>
               <div className="paymentReversalFacts">
-                <strong>{payment.lineDisplayName || payment.memberId}</strong>
+                <strong>{payment.identityDisplay || "—"}</strong>
                 <span>{payment.planName || payment.planId || '未標示方案'} · NT${Number(payment.amount).toLocaleString('en-US')}</span>
                 <span>付款 {payment.id}</span>
                 {payment.paidAt && <span>付款時間 {formatAdminDateTime(payment.paidAt)}</span>}

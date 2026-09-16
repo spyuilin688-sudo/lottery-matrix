@@ -5,8 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotificationManagement } from './NotificationManagement';
 
 const members = [
-  { userId: 'member-1', displayName: '會員一', pictureUrl: 'https://line.example/one.png', pushEnabled: true },
-  { userId: 'member-2', displayName: '會員二', pictureUrl: null, pushEnabled: false },
+  { userId: 'member-1', identityLabel: 'LINE ID', identityValue: 'line-1', identityDisplay: 'LINE ID：line-1', displayName: '會員一', pictureUrl: 'https://line.example/one.png', pushEnabled: true },
+  { userId: 'member-2', identityLabel: 'Google ID', identityValue: 'google-2', identityDisplay: 'Google ID：google-2', displayName: '會員二', pictureUrl: null, pushEnabled: false },
 ];
 const failedLog = {
   id: 'log-1',
@@ -77,19 +77,19 @@ async function chooseMember(userId: string) {
 }
 
 describe('NotificationManagement', () => {
-  it('keeps sending disabled until an active member is selected and shows the LINE profile', async () => {
+  it('keeps sending disabled until an active member is selected and shows the provider ID', async () => {
     await renderManager();
     expect(sendButton().disabled).toBe(true);
 
     await chooseMember('member-2');
-    expect(container.textContent).toContain('會員二');
+    expect(container.textContent).toContain('Google ID：google-2');
     expect(container.textContent).toContain('未開啟');
     expect(sendButton().disabled).toBe(true);
 
     await chooseMember('member-1');
-    expect(container.textContent).toContain('會員一');
+    expect(container.textContent).toContain('LINE ID：line-1');
     expect(container.textContent).toContain('已開啟');
-    expect(container.querySelector('img[alt="會員一 的 LINE 頭貼"]')).not.toBeNull();
+    expect(container.querySelector('img[alt="LINE ID：line-1 的會員頭貼"]')).not.toBeNull();
     expect(sendButton().disabled).toBe(false);
   });
 

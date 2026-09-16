@@ -3,6 +3,9 @@ export const TEST_PUSH_BODY = '手機推播已成功啟用';
 
 export type PushMember = {
   userId: string;
+  identityLabel: 'LINE ID' | 'Google ID' | null;
+  identityValue: string | null;
+  identityDisplay: string | null;
   displayName: string | null;
   pictureUrl: string | null;
   pushEnabled: boolean;
