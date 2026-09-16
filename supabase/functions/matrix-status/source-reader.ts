@@ -7,6 +7,12 @@ export type MatrixStatusSourcePayload = {
   tianyan?: unknown;
 };
 
+export type MatrixStatusCompactPayload = {
+  analysisVersion?: unknown;
+  drawPeriod?: unknown;
+  payload?: unknown;
+};
+
 export type MatrixStatusValidationSourcePayload = {
   itemId?: unknown;
   validation?: unknown;
@@ -22,6 +28,22 @@ function serviceHeaders(serviceRoleKey: string) {
   };
 }
 
+async function readAnalysisResponse<T>(
+  response: Response,
+  errorCode: string,
+): Promise<T | null> {
+  if (!response.ok) {
+    try {
+      const payload = await response.json() as { message?: unknown };
+      if (String(payload.message ?? '').includes('ANALYSIS_NOT_READY')) return null;
+    } catch {
+      // Keep provider details out of the public error response.
+    }
+    throw new Error(errorCode);
+  }
+  return response.json() as Promise<T>;
+}
+
 export function createMatrixStatusSourceReader(
   loadConfig: () => Config,
   fetcher: typeof fetch = fetch,
@@ -33,16 +55,28 @@ export function createMatrixStatusSourceReader(
       headers: serviceHeaders(config.serviceRoleKey),
       body: JSON.stringify({ p_request: { lottery, ...(drawPeriod ? { drawPeriod } : {}) } }),
     });
-    if (!response.ok) {
-      try {
-        const payload = await response.json() as { message?: unknown };
-        if (String(payload.message ?? '').includes('ANALYSIS_NOT_READY')) return null;
-      } catch {
-        // Keep provider details out of the public error response.
-      }
-      throw new Error('SUPABASE_ANALYSIS_READ_FAILED');
-    }
-    return response.json() as Promise<MatrixStatusSourcePayload>;
+    return readAnalysisResponse<MatrixStatusSourcePayload>(
+      response,
+      'SUPABASE_ANALYSIS_READ_FAILED',
+    );
+  };
+}
+
+export function createMatrixStatusCompactReader(
+  loadConfig: () => Config,
+  fetcher: typeof fetch = fetch,
+) {
+  return async (lottery: MatrixLottery, drawPeriod?: string) => {
+    const config = loadConfig();
+    const response = await fetcher(`${config.url}/rest/v1/rpc/matrix_status_compact_get`, {
+      method: 'POST',
+      headers: serviceHeaders(config.serviceRoleKey),
+      body: JSON.stringify({ p_request: { lottery, ...(drawPeriod ? { drawPeriod } : {}) } }),
+    });
+    return readAnalysisResponse<MatrixStatusCompactPayload>(
+      response,
+      'SUPABASE_ANALYSIS_READ_FAILED',
+    );
   };
 }
 
