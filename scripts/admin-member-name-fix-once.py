@@ -36,6 +36,13 @@ replace_exact(
     '''  return items.map((item) => {\n    const authUser = byId.get(String(item.authUserId ?? ''));\n    const identity = providerIdentityFromAuthUser(item.lineUserId, authUser);\n    return {\n      ...item,\n      memberDisplayName: memberDisplayNameFromAuthUser(item.lineDisplayName, authUser),\n      identityLabel: identity?.label ?? null,\n      identityValue: identity?.value ?? null,\n      identityDisplay: identity ? `${identity.label}：${identity.value}` : null,\n    };\n  });''',
 )
 
+# Existing exact-shape backend test now includes the deliberately restored display-name field.
+replace_exact(
+    'apps/admin/backend/admin-data.test.ts',
+    '''        lineUserId: 'line-user-1',\n        lineDisplayName: '測試暱稱',\n        identityLabel: 'LINE ID',''',
+    '''        lineUserId: 'line-user-1',\n        lineDisplayName: '測試暱稱',\n        memberDisplayName: '測試暱稱',\n        identityLabel: 'LINE ID',''',
+)
+
 # User management: restore member name as its own column, while keeping LINE/Google ID.
 replace_exact(
     'apps/admin/src/AdminApp.tsx',
@@ -58,4 +65,9 @@ replace_exact(
     'apps/admin/src/UserInfoDialog.tsx',
     '''  const fields = [\n    [value(row.identityLabel || 'LINE ID／Google ID'), value(row.identityValue)],\n    ['註冊時間', formatAdminDateTime(row.registeredAt)],''',
     '''  const fields = [\n    ['會員名稱', value(row.memberDisplayName)],\n    [value(row.identityLabel || 'LINE ID／Google ID'), value(row.identityValue)],\n    ['註冊時間', formatAdminDateTime(row.registeredAt)],''',
+)
+replace_exact(
+    'apps/admin/src/UserInfoDialog.test.tsx',
+    '''  await act(async () => root.render(<UserInfoDialog row={{ id: 'member-1', identityLabel: 'Google ID', identityValue: 'google-user-456' }} client={{ get }} onClose={() => {}} />));\n  expect(host.querySelectorAll('.memberInfoCard')).toHaveLength(2);\n  expect(host.querySelectorAll('dl > div')).toHaveLength(3);\n  expect(host.textContent).toContain('Google ID');''',
+    '''  await act(async () => root.render(<UserInfoDialog row={{ id: 'member-1', memberDisplayName: '余翊翔', identityLabel: 'Google ID', identityValue: 'google-user-456' }} client={{ get }} onClose={() => {}} />));\n  expect(host.querySelectorAll('.memberInfoCard')).toHaveLength(2);\n  expect(host.querySelectorAll('dl > div')).toHaveLength(4);\n  expect(host.textContent).toContain('會員名稱');\n  expect(host.textContent).toContain('余翊翔');\n  expect(host.textContent).toContain('Google ID');''',
 )
