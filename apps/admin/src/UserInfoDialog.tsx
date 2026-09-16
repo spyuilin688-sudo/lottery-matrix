@@ -42,6 +42,7 @@ export function UserInfoDialog({ row, client, module = 'users', onClose }: {
     ['最後上線時間', formatAdminDateTime(row.lastOnlineAt)],
   ];
   if ('status' in row) fields.push(['帳號狀態', statusValue(row.status)]);
+  if ('recentOnlineMinutes' in row) fields.push(['近3日在線時間', `${Math.max(0, Number(row.recentOnlineMinutes) || 0)} 分鐘`]);
   if ('recentIp' in row) fields.push(['最近連線IP', value(row.recentIp)]);
   if ('estimatedRegion' in row) fields.push(['推估地區', value(row.estimatedRegion)]);
   if (module === 'subscriptions') {
