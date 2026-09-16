@@ -16,3 +16,11 @@ test_path = root / 'apps/admin/backend/push-notifications.test.ts'
 test_text = test_path.read_text(encoding='utf-8')
 test_text = test_text.replace("displayName: 'Google 會員二',\n        pictureUrl: 'https://google.example/two.png',", "displayName: '持久化會員二',\n        pictureUrl: null,")
 test_path.write_text(test_text, encoding='utf-8')
+
+ui_test_path = root / 'apps/admin/src/notification-management-ui.test.tsx'
+ui_text = ui_test_path.read_text(encoding='utf-8')
+ui_text = ui_text.replace("it('keeps sending disabled until an active member is selected and shows the LINE profile'", "it('keeps sending disabled until an active member is selected and shows the provider ID'")
+ui_text = ui_text.replace("expect(container.textContent).toContain('會員二');", "expect(container.textContent).toContain('Google ID：google-2');")
+ui_text = ui_text.replace("expect(container.textContent).toContain('會員一');", "expect(container.textContent).toContain('LINE ID：line-1');")
+ui_text = ui_text.replace("img[alt=\"會員一 的 LINE 頭貼\"]", "img[alt=\"LINE ID：line-1 的會員頭貼\"]")
+ui_test_path.write_text(ui_text, encoding='utf-8')
