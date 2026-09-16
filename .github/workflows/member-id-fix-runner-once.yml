@@ -39,7 +39,7 @@ jobs:
           echo 'RED confirmed.'
 
       - name: Apply minimal member ID repair
-        run: python scripts/member-id-fix-once.py
+        run: python scripts/member-id-fix-runner.py
 
       - name: GREEN - verify only directly related tests
         run: |
@@ -58,7 +58,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git rm .github/workflows/member-id-fix-runner-once.yml scripts/member-id-fix-once.py
+          git rm .github/workflows/member-id-fix-runner-once.yml scripts/member-id-fix-once.py scripts/member-id-fix-runner.py
           git add -- \
             src/member-api.ts \
             src/features/MemberPages.tsx \
