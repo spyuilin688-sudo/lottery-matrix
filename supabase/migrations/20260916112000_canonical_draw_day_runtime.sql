@@ -33,13 +33,13 @@ begin
     )
     into v_days
     from (
-      select generated_at::date as day_value
+      select series.day_value::date as day_value
       from pg_catalog.generate_series(
         p_start_date::timestamp,
         p_end_date::timestamp,
         interval '1 day'
-      ) as generated_at
-      where private.notification_is_draw_day(v_lottery, generated_at::date)
+      ) as series(day_value)
+      where private.notification_is_draw_day(v_lottery, series.day_value::date)
     ) resolved;
 
     v_result := v_result || pg_catalog.jsonb_build_object(v_lottery, v_days);
