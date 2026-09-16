@@ -6,7 +6,6 @@ import { bootstrapMember, fetchMemberProfile, fetchMemberReferralSummary, fetchP
 import { readManualTransferPlan, saveManualTransferPlan } from "../manual-transfer-selection";
 import { reconcilePendingLineLogoutPresence, signInWithLine, signOutFromMatrix } from "../auth/line-auth";
 import { signInWithGoogle } from "../auth/google-auth";
-import { providerIdentityFromSession, type ProviderIdentity } from "../auth/provider-identity";
 import { clearLineLoginAttempt, consumeLineLoginAttempt, markLineLoginAttempt } from "../auth/line-login-attempt";
 import { withDeadline } from "../lib/api-resilience";
 import { getSupabaseClient } from "../lib/supabase";
@@ -183,7 +182,6 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   const [signingInProvider, setSigningInProvider] = useState<"line" | "google" | null>(null);
   const [lineAvatarUrl, setLineAvatarUrl] = useState<string | null>(null);
   const [memberNickname, setMemberNickname] = useState<string | null>(null);
-  const [providerIdentity, setProviderIdentity] = useState<ProviderIdentity | null>(null);
   const [memberUserId, setMemberUserId] = useState<string | null>(null);
   const memberUserIdRef = useRef<string | null>(null);
   const [memberProfile, setMemberProfile] = useState<MemberProfileResponse | null>(null);
@@ -209,7 +207,6 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
       setAuthState(session ? "authenticated" : "anonymous");
       setLineAvatarUrl(lineAvatarFromSession(session));
       setMemberNickname(lineNicknameFromSession(session));
-      setProviderIdentity(providerIdentityFromSession(session));
       if (consumeLineLoginAttempt({ hasSession: Boolean(session) })) {
         void alertDialog({ title: "登入成功", tone: "success" });
       }
@@ -274,9 +271,6 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   const expiry = memberProfile?.isLifetime ? null : memberExpiryInTaipei(memberProfile?.planExpiresAt ?? null);
   const displayedPlanName = memberProfile ? memberProfile.planName ?? "免費會員" : "";
   const displayedPlanDescription = displayedPlanName === "免費會員" ? "核心功能體驗" : "享有所有 Matrix Pro 功能";
-  const visibleProviderIdentity = providerIdentity ?? (memberProfile?.lineUserId
-    ? { label: "LINE ID" as const, value: memberProfile.lineUserId }
-    : null);
   const handleAuthAction = async () => {
     if (authRetrying || authState === "initializing" || authState === "signing-in" || authState === "signing-out") return;
     if (authState === "degraded") {
@@ -304,7 +298,6 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
         setAuthState("anonymous");
         setLineAvatarUrl(null);
         setMemberNickname(null);
-        setProviderIdentity(null);
         await alertDialog({ title: "已登出", tone: "success" });
       } else {
         setSigningInProvider("line");
@@ -342,7 +335,6 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
             setAuthState('authenticated');
             setLineAvatarUrl(lineAvatarFromSession(data.session));
             setMemberNickname(lineNicknameFromSession(data.session));
-            setProviderIdentity(providerIdentityFromSession(data.session));
             await alertDialog({ title: '登入成功', tone: 'success' });
             onNavigate('home');
             return;

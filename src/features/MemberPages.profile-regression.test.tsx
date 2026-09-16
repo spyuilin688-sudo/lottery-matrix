@@ -28,6 +28,13 @@ test('profile nickname UI uses the resolved nickname instead of provider ID', ()
   expect(nicknameBlock).not.toContain('visibleProviderIdentity');
 });
 
+test('profile no longer keeps the retired provider identity display state', () => {
+  expect(memberPagesSource).not.toContain('providerIdentityFromSession');
+  expect(memberPagesSource).not.toContain('ProviderIdentity');
+  expect(memberPagesSource).not.toContain('providerIdentity');
+  expect(memberPagesSource).not.toContain('visibleProviderIdentity');
+});
+
 test('current subscription status stays visible when purchase entries are hidden', () => {
   const statusStart = memberPagesSource.indexOf('className="panel membership-card subscription-status-card"');
   const statusBlock = memberPagesSource.slice(statusStart - 80, statusStart + 1400);
