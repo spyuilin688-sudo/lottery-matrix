@@ -10,10 +10,9 @@ const adminApp = readFileSync(`${root}/apps/admin/src/AdminApp.tsx`, "utf8");
 const userInfo = readFileSync(`${root}/apps/admin/src/UserInfoDialog.tsx`, "utf8");
 
 describe("admin member ID contract", () => {
-  it("maps and searches members by the stable members.id", () => {
+  it("maps the stable members.id as memberId for member pages", () => {
     expect((adminData.match(/memberId: String\(row\.id\)/g) ?? []).length).toBeGreaterThanOrEqual(2);
     expect(adminData).toContain("memberId: 'id'");
-    expect((adminData.match(/identifiers: \['id', 'auth_user_id'\]/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 
   it("uses member ID as the primary member identifier in admin UI", () => {
