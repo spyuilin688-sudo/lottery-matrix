@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import memberPagesSource from './MemberPages.tsx?raw';
 import { expect, test } from 'vitest';
 import { lineNicknameFromSession } from './MemberPages';
 
@@ -21,18 +21,16 @@ test('profile resolves the Google nickname from full_name metadata', () => {
 });
 
 test('profile nickname UI uses the resolved nickname instead of provider ID', () => {
-  const source = readFileSync(new URL('./MemberPages.tsx', import.meta.url), 'utf8');
-  const nicknameStart = source.indexOf('className="profile-nickname"');
-  const nicknameBlock = source.slice(nicknameStart, nicknameStart + 520);
+  const nicknameStart = memberPagesSource.indexOf('className="profile-nickname"');
+  const nicknameBlock = memberPagesSource.slice(nicknameStart, nicknameStart + 520);
 
   expect(nicknameBlock).toContain('memberNickname');
   expect(nicknameBlock).not.toContain('visibleProviderIdentity');
 });
 
 test('current subscription status stays visible when purchase entries are hidden', () => {
-  const source = readFileSync(new URL('./MemberPages.tsx', import.meta.url), 'utf8');
-  const statusStart = source.indexOf('className="panel membership-card subscription-status-card"');
-  const statusBlock = source.slice(statusStart - 80, statusStart + 1400);
+  const statusStart = memberPagesSource.indexOf('className="panel membership-card subscription-status-card"');
+  const statusBlock = memberPagesSource.slice(statusStart - 80, statusStart + 1400);
 
   expect(statusStart).toBeGreaterThan(-1);
   expect(statusBlock).not.toContain('{subscriptionPurchaseVisible && <section className="panel membership-card subscription-status-card">');
