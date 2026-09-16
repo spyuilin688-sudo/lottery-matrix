@@ -1,5 +1,5 @@
 import type { CustomStatusConfig } from './matrix-custom-status.ts';
-import { anonymousMatrixMember, resolveMatrixEntitlements, type MemberContext } from './matrix-entitlements.ts';
+import { anonymousMatrixMember, resolveMatrixEntitlements, type MatrixEntitlements, type MemberContext } from './matrix-entitlements.ts';
 import { MatrixAccessError } from './matrix-member-auth.ts';
 import {
   buildMatrixStatusArtifact,
@@ -14,6 +14,11 @@ type StatusSources = {
   explore: ExploreArtifact | null;
   tianyan: TianyanArtifact | null;
 };
+type CompactStatus = {
+  analysisVersion: string;
+  drawPeriod: string;
+  payload: Record<string, unknown>;
+};
 type StatusValidationSource = {
   itemId: string;
   validation: unknown;
@@ -23,6 +28,7 @@ type RouteResult = { status: number; body: Record<string, unknown> };
 type Dependencies = {
   requireMember(authorization?: string): Promise<MemberContext>;
   readStatusSources(lottery: LotteryId, drawPeriod?: string): Promise<StatusSources | null>;
+  readCompactStatus?(lottery: LotteryId, drawPeriod?: string): Promise<CompactStatus | null>;
   readStatusValidation?(
     lottery: LotteryId,
     drawPeriod: string,
@@ -51,6 +57,74 @@ function failure(cause: unknown): RouteResult {
   return { status: 400, body: { error: { code: 'INVALID_REQUEST' } } };
 }
 
+function compactRoads(value: unknown, entitlements: MatrixEntitlements) {
+  if (!Array.isArray(value)) throw new Error('INVALID_REQUEST');
+  let locked = false;
+  const roads = value.map((raw) => {
+    const road = record(raw);
+    const explorePeriods = Number(road.explorePeriods);
+    if (![2, 7, 13].includes(explorePeriods) || !Array.isArray(road.result)) {
+      throw new Error('INVALID_REQUEST');
+    }
+    const entitled = explorePeriods === 2
+      || (explorePeriods === 7 && entitlements.canUseSeven)
+      || (explorePeriods === 13 && entitlements.canUseThirteen);
+    if (entitled) return { ...road, locked: false };
+    locked = true;
+    return {
+      id: String(road.id ?? ''),
+      result: [...road.result],
+      explorePeriods,
+      locked: true,
+    };
+  });
+  roads.sort((left, right) => {
+    if (left.locked || right.locked) {
+      const leftRaw = record(value.find((item) => record(item).id === left.id));
+      const rightRaw = record(value.find((item) => record(item).id === right.id));
+      return Number(rightRaw.streak ?? 0) - Number(leftRaw.streak ?? 0)
+        || Number(leftRaw.predictionDistance ?? 0) - Number(rightRaw.predictionDistance ?? 0)
+        || Number(leftRaw.position ?? 0) - Number(rightRaw.position ?? 0)
+        || String(left.id).localeCompare(String(right.id));
+    }
+    return Number(right.streak ?? 0) - Number(left.streak ?? 0)
+      || Number(left.predictionDistance ?? 0) - Number(right.predictionDistance ?? 0)
+      || Number(left.position ?? 0) - Number(right.position ?? 0)
+      || String(left.id).localeCompare(String(right.id));
+  });
+  return { roads, locked };
+}
+
+function projectCompactStatus(
+  payloadValue: Record<string, unknown>,
+  lottery: LotteryId,
+  drawPeriod: string,
+  entitlements: MatrixEntitlements,
+) {
+  if (payloadValue.lottery !== lottery || payloadValue.drawPeriod !== drawPeriod) {
+    throw new Error('ANALYSIS_NOT_READY');
+  }
+  if (!Array.isArray(payloadValue.cards)) throw new Error('ANALYSIS_NOT_READY');
+  const cards = payloadValue.cards.map((rawCard) => {
+    const card = record(rawCard);
+    const projected = compactRoads(card.roads, entitlements);
+    return {
+      ...card,
+      sameCodeRoadCount: projected.locked ? null : Number(card.sameCodeRoadCount ?? 0),
+      sameCodeRoadCountLocked: projected.locked,
+      roads: projected.roads,
+    };
+  });
+  return {
+    ...payloadValue,
+    lottery,
+    drawPeriod,
+    cards,
+    customTriggers: [],
+    customSettings: [],
+  };
+}
+
 export function createMatrixStatusRoutes(dependencies: Dependencies) {
   const now = dependencies.now ?? (() => new Date());
   const memberFor = (authorization?: string) => authorization
@@ -64,10 +138,37 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
         const lottery = String(body.lottery ?? '') as LotteryId;
         if (!lotteries.includes(lottery)) throw new Error('INVALID_REQUEST');
         const requestedPeriod = body.drawPeriod ? String(body.drawPeriod) : undefined;
-        const [sources, configs] = await Promise.all([
-          dependencies.readStatusSources(lottery, requestedPeriod),
-          member.memberId ? dependencies.listConfigs(member.memberId) : Promise.resolve([]),
-        ]);
+        const configs = member.memberId ? await dependencies.listConfigs(member.memberId) : [];
+        const lotteryConfigs = configs.filter((config) => config.lottery === lottery);
+        const entitlements = resolveMatrixEntitlements(member, now());
+
+        if (lotteryConfigs.length === 0 && dependencies.readCompactStatus) {
+          const compact = await dependencies.readCompactStatus(lottery, requestedPeriod);
+          if (!compact?.analysisVersion || !compact.drawPeriod || !compact.payload) {
+            throw new Error('ANALYSIS_NOT_READY');
+          }
+          const artifact = projectCompactStatus(
+            compact.payload,
+            lottery,
+            compact.drawPeriod,
+            entitlements,
+          );
+          return {
+            status: 200,
+            body: {
+              kind: 'status',
+              lottery,
+              drawPeriod: compact.drawPeriod,
+              analysisVersion: `${compact.analysisVersion}:status`,
+              sourceAnalysisVersion: compact.analysisVersion,
+              ...artifact,
+              detailLocked: !entitlements.canViewFullStatus,
+              cards: artifact.cards,
+            },
+          };
+        }
+
+        const sources = await dependencies.readStatusSources(lottery, requestedPeriod);
         if (!sources?.explore || !sources.tianyan
           || sources.explore.drawPeriod !== sources.drawPeriod
           || sources.tianyan.drawPeriod !== sources.drawPeriod
@@ -75,7 +176,6 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
           || sources.tianyan.lottery !== lottery) {
           throw new Error('ANALYSIS_NOT_READY');
         }
-        const entitlements = resolveMatrixEntitlements(member, now());
         const artifact = buildMatrixStatusArtifact(
           sources.explore,
           sources.tianyan,
