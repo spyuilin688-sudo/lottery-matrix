@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { listAdminTable } from './admin-data';
+import { formatAdminRowForDisplay } from '../src/admin-display';
 import { createPushNotifications } from './push-notifications';
 
 const USER_ID = '22222222-2222-4222-8222-222222222222';
@@ -11,31 +11,22 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-it('keeps the activation-code redeemer LINE nickname as memberDisplayName', async () => {
-  const request = vi.fn(async (path: string) => path.includes('offset=0') ? [{
-    id: 'code-1',
-    batch_id: 'batch-1',
-    code: 'ABCD-EFGH-IJKL-MNOP',
-    duration_type: '30_days',
-    created_at: '2026-09-05T00:00:00Z',
-    expires_at: '2026-10-05T00:00:00Z',
-    redeemed_at: '2026-09-05T01:00:00Z',
-    status: 'used',
-    redeemed_member: {
-      id: 'member-1',
-      auth_user_id: 'auth-code',
-      line_user_id: 'line-code',
-      line_display_name: 'LINE 兌換者',
-    },
-  }] : []);
-
-  const result = await listAdminTable('activationCodes', { request });
-
-  expect(result.items[0]).toMatchObject({
-    lineDisplayName: 'LINE 兌換者',
-    memberDisplayName: 'LINE 兌換者',
+it('includes LINE and Google nicknames in activation-code display rows', () => {
+  const line = formatAdminRowForDisplay('activationCodes', {
+    id: 'code-line',
+    memberDisplayName: null,
+    redeemedByLineDisplayName: 'LINE 兌換者',
     identityDisplay: 'LINE ID：line-code',
   });
+  const google = formatAdminRowForDisplay('activationCodes', {
+    id: 'code-google',
+    memberDisplayName: 'Google 會員',
+    redeemedByLineDisplayName: null,
+    identityDisplay: 'Google ID：google-user',
+  });
+
+  expect(line.identityDisplay).toBe('LINE 兌換者 · LINE ID：line-code');
+  expect(google.identityDisplay).toBe('Google 會員 · Google ID：google-user');
 });
 
 it('uses the canonical Google full_name fallback in push-member status', async () => {
