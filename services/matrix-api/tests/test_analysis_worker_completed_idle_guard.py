@@ -107,9 +107,7 @@ def test_preliminary_fantasy5_period_never_uses_completed_idle_exit(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     repository = _completed_repository()
-    preliminary = _draw(11988, 0)
-    preliminary["resultStatus"] = "preliminary"
-    repository.upsert_draw(preliminary)
+    repository.draws[(LOTTERY, PERIOD)]["resultStatus"] = "preliminary"
     monkeypatch.setattr(
         repository,
         "notification_event_exists",
