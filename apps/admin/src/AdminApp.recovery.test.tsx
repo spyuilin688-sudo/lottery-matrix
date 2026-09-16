@@ -27,8 +27,8 @@ describe('AdminApp weak-network bootstrap',()=>{
     fireEvent.click(await screen.findByRole('button', { name: /用戶管理/ }));
     expect(await screen.findByRole('columnheader', { name: '會員名稱' })).toBeTruthy();
     expect(screen.getByRole('columnheader', { name: 'LINE ID／Google ID' })).toBeTruthy();
-    expect(screen.getByText('蔡源輝')).toBeTruthy();
-    expect(screen.getByText('LINE ID：U123456')).toBeTruthy();
+    expect(await screen.findByText('蔡源輝')).toBeTruthy();
+    expect(await screen.findByText('LINE ID：U123456')).toBeTruthy();
   });
 
   it.each(['missing-metadata', 'repeated-page'])('rejects %s plan pages instead of treating a partial options list as complete', async (kind) => {
