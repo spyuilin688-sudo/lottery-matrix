@@ -157,7 +157,6 @@ const labels: Record<string, string[]> = {
     "durationType",
     "status",
     "createdAt",
-    "memberDisplayName",
     "identityDisplay",
     "redeemedAt",
     "expiresAt",
@@ -1686,7 +1685,7 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
                             </button>
                           )}
                           {canRefreshCrawler(item, canEdit) && (
-                            <button className="compactButton statusManualRefreshButton" onClick={() => refreshCrawler(item.id ? item : item)} disabled={actionPending} aria-busy={refreshingId === item.id}>
+                            <button className="compactButton statusManualRefreshButton" onClick={() => refreshCrawler(item)} disabled={actionPending} aria-busy={refreshingId === item.id}>
                               <RefreshCw size={14} />{refreshingId === item.id ? "更新開獎資料中…" : "手動更新開獎資料"}
                             </button>
                           )}
@@ -1695,6 +1694,10 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
                     </article>
                   );
                 })}
+              </div>
+            </section>
+          );
+        })}
       </div>
     </section>
   );
@@ -1756,7 +1759,7 @@ function DataTable({
                     </td>
                   )}
                   {fields.map((f) => (
-                    <td key={f}>{displayValue(f, f === "memberDisplayName" ? r.memberDisplayName ?? r.redeemedByLineDisplayName : r[f])}</td>
+                    <td key={f}>{displayValue(f, r[f])}</td>
                   ))}
                   {canDelete && (
                     <td className="activationDeleteCell">
