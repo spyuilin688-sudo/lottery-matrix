@@ -87,7 +87,7 @@ jobs:
           - id: daily539
             lottery: 今彩539
           - id: marksix
-            lottery:六合彩
+            lottery: 六合彩
           - id: lotto649
             lottery: 大樂透
     concurrency:
