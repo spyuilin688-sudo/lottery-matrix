@@ -74,11 +74,13 @@ begin
     );
 
   if v_complete then
+    -- LEAST/GREATEST are PostgreSQL special expressions, not pg_catalog
+    -- functions; leave them unqualified so production execution is valid.
     v_started_at := case
-      when v_draw_required then pg_catalog.least(v_sorted_run.started_at, v_draw_run.started_at)
+      when v_draw_required then least(v_sorted_run.started_at, v_draw_run.started_at)
       else v_sorted_run.started_at end;
     v_updated_at := case
-      when v_draw_required then pg_catalog.greatest(v_sorted_run.updated_at, v_draw_run.updated_at)
+      when v_draw_required then greatest(v_sorted_run.updated_at, v_draw_run.updated_at)
       else v_sorted_run.updated_at end;
     return pg_catalog.jsonb_build_object(
       'drawPeriod', p_draw_period,
