@@ -120,12 +120,27 @@ async function memberRpc<T>(name: string, args?: Record<string, unknown>) {
   return data as T;
 }
 
+function isMemberSessionChanged(error: unknown) {
+  return error instanceof Error && error.message === 'MEMBER_SESSION_CHANGED';
+}
+
+async function memberSessionStableRpc<T>(name: string) {
+  try {
+    return await memberRpc<T>(name);
+  } catch (error) {
+    if (!isMemberSessionChanged(error)) throw error;
+    // Only the no-argument bootstrap/profile calls use this retry path. Bootstrap is
+    // idempotent server-side, and no member write payload is captured or replayed.
+    return memberRpc<T>(name);
+  }
+}
+
 export function bootstrapMember() {
-  return memberRpc<MemberBootstrapResponse>('member_bootstrap');
+  return memberSessionStableRpc<MemberBootstrapResponse>('member_bootstrap');
 }
 
 export function fetchMemberProfile() {
-  return memberRpc<MemberProfileResponse>('member_profile');
+  return memberSessionStableRpc<MemberProfileResponse>('member_profile');
 }
 
 export function fetchMemberReferralSummary() {
