@@ -6,7 +6,7 @@ const client = vi.hoisted(()=>({get:vi.fn(),post:vi.fn(),put:vi.fn(),delete:vi.f
 vi.mock('@appdeploy/client',()=>({api:client,auth:{signIn:vi.fn(),signOut:vi.fn()}}));
 afterEach(()=>{cleanup();vi.clearAllMocks();});
 describe('AdminApp weak-network bootstrap',()=>{
-  it('shows member name and LINE/Google ID as separate columns in user management', async () => {
+  it('shows member name without exposing LINE/Google ID in user management', async () => {
     client.get.mockImplementation(async (path: string) => {
       if (path === '/api/bootstrap') return { data: { admin: { id: 'admin-1', name: 'Owner', role: '超級管理員' } } };
       if (path === '/api/dashboard') return { data: {} };
@@ -26,9 +26,9 @@ describe('AdminApp weak-network bootstrap',()=>{
     render(<AdminApp />);
     fireEvent.click(await screen.findByRole('button', { name: /用戶管理/ }));
     expect(await screen.findByRole('columnheader', { name: '會員名稱' })).toBeTruthy();
-    expect(screen.getByRole('columnheader', { name: 'LINE ID／Google ID' })).toBeTruthy();
+    expect(screen.queryByRole('columnheader', { name: 'LINE ID／Google ID' })).toBeNull();
     expect(await screen.findByText('蔡源輝')).toBeTruthy();
-    expect(await screen.findByText('LINE ID：U123456')).toBeTruthy();
+    expect(screen.queryByText('LINE ID：U123456')).toBeNull();
   });
 
   it.each(['missing-metadata', 'repeated-page'])('rejects %s plan pages instead of treating a partial options list as complete', async (kind) => {
