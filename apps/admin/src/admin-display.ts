@@ -137,6 +137,20 @@ function changedSnapshotKeys(beforeValue: unknown, afterValue: unknown): string[
   return keys.length ? usefulKeys({ ...before, ...after }, keys) : undefined;
 }
 
+function withMemberIdentityDisplay(row: AdminRow, fallbackName?: unknown): AdminRow {
+  const rawName = row.memberDisplayName ?? fallbackName;
+  const memberDisplayName = typeof rawName === 'string' && rawName.trim() ? rawName.trim() : null;
+  if (!memberDisplayName) return row;
+  const identityDisplay = typeof row.identityDisplay === 'string' && row.identityDisplay.trim()
+    ? row.identityDisplay.trim()
+    : null;
+  if (!identityDisplay || identityDisplay === memberDisplayName) {
+    return { ...row, identityDisplay: memberDisplayName };
+  }
+  if (identityDisplay.startsWith(`${memberDisplayName} · `)) return row;
+  return { ...row, identityDisplay: `${memberDisplayName} · ${identityDisplay}` };
+}
+
 export function formatAdminRowForDisplay(table: string | null, row: AdminRow): AdminRow {
   if (table === 'auditLogs') {
     const changedKeys = changedSnapshotKeys(row.beforeData, row.afterData);
@@ -152,13 +166,10 @@ export function formatAdminRowForDisplay(table: string | null, row: AdminRow): A
     return { ...row, memberDisplayName: row.lineDisplayName ?? row.line_display_name ?? null };
   }
   if (table === 'activationCodes') {
-    const memberDisplayName = row.memberDisplayName ?? row.redeemedByLineDisplayName;
-    if (memberDisplayName != null && memberDisplayName !== '') {
-      return {
-        ...row,
-        identityDisplay: row.identityDisplay ? `${memberDisplayName} · ${row.identityDisplay}` : memberDisplayName,
-      };
-    }
+    return withMemberIdentityDisplay(row, row.redeemedByLineDisplayName);
+  }
+  if (table === 'subscriptionRecords' || table === 'transferRequests') {
+    return withMemberIdentityDisplay(row, row.lineDisplayName ?? row.line_display_name);
   }
   return row;
 }

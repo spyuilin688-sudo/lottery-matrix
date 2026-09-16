@@ -1210,7 +1210,7 @@ function SubscriptionManager({
         <div className="modalBackdrop" role="presentation">
           <div className="operationDialog" role="dialog" aria-modal="true" aria-labelledby="subscription-action-title" aria-busy={submitting}>
             <h2 id="subscription-action-title">{actionText[action]}</h2>
-            <p>{text(editing.identityDisplay)}</p>
+            <p>{text(editing.memberDisplayName ?? editing.identityDisplay)}{editing.memberDisplayName && editing.identityDisplay ? ` · ${text(editing.identityDisplay)}` : ""}</p>
             {(action === "activate" || action === "renew") && <label>方案<select disabled={submitting} value={planId} onChange={(event) => setPlanId(event.target.value)}>{plans.map((plan) => <option key={plan.id} value={plan.id}>{text(plan.name)}／{money(Number(plan.price))}／{text(plan.durationDays)} 天</option>)}</select></label>}
             {action === "adjustExpiry" && <label>到期日<input ref={expiryInputRef} type="date" disabled={submitting} value={expiresAt} aria-invalid={Boolean(saveError) && !expiresAt} aria-describedby={saveError ? "subscription-save-error" : undefined} onChange={(event) => { setExpiresAt(event.target.value); setSaveError(""); }} /></label>}
             {action === "cancel" && <p>取消後只停止自動續訂，權限保留至到期日。</p>}

@@ -11,6 +11,15 @@ const tables = [
   ['plans', 30, 'price', 'price'],
 ] as const;
 
+function expectDisplayNameRpc(request: ReturnType<typeof vi.fn>, keyword: string) {
+  expect(request).toHaveBeenCalledWith('/rest/v1/rpc/admin_member_ids_by_display_name', {
+    method: 'POST',
+    body: JSON.stringify({ p_keyword: keyword }),
+  });
+  expect(request.mock.calls.some(([path]) => String(path).startsWith('/auth/v1/admin/users?'))).toBe(false);
+  expect(request.mock.calls.some(([path]) => String(path).startsWith('/rest/v1/members?select=id,auth_user_id'))).toBe(false);
+}
+
 test.each(tables)('%s requests only the selected sorted page and preserves the database count', async (table, pageSize, sortBy, column) => {
   const request = vi.fn();
   const items = Array.from({ length: pageSize }, (_, index) => ({ id: `page-row-${index}` }));
@@ -33,7 +42,7 @@ test.each(tables.filter(([table]) => table !== 'plans'))('%s sends inclusive Tai
 });
 
 test.each(['activationCodes', 'subscriptionRecords', 'transferRequests'])('%s searches related names in the database without fetching all members or plans', async table => {
-  const request = vi.fn();
+  const request = vi.fn().mockResolvedValue([]);
   const requestPage = vi.fn().mockResolvedValue({ items: [], total: 0 });
   await listAdminTablePage(table, { keyword: '月費,(x)', status: table === 'activationCodes' ? 'used' : 'confirmed' }, { request, requestPage });
   const query = new URL(requestPage.mock.calls[0][0], 'https://test').searchParams;
@@ -45,7 +54,7 @@ test.each(['activationCodes', 'subscriptionRecords', 'transferRequests'])('%s se
     expect(query.get('or')).toContain('keyword_plan.not.is.null');
     expect(query.get('keyword_plan.name')).toBe('imatch.月費,\\(x\\)');
   }
-  expect(request).not.toHaveBeenCalled();
+  expectDisplayNameRpc(request, '月費,(x)');
 });
 
 test('safe literal keyword and status filters remain distinct for audit and administrator searches', async () => {
@@ -143,7 +152,7 @@ test.each(['users', 'subscriptions', 'loginRecords', 'activationCodes', 'auditLo
 });
 
 test('subscription name search keeps its eligible current plan separate from the empty search embed', async () => {
-  const request = vi.fn();
+  const request = vi.fn().mockResolvedValue([]);
   const requestPage = vi.fn().mockResolvedValue({ items: [], total: 0 });
   await listAdminMemberPage('subscriptions', { keyword: '季費', plan: 'quarterly', status: 'active' }, { request, requestPage }, new Date('2026-09-14T00:00:00Z'));
   const query = new URL(requestPage.mock.calls[0][0], 'https://test').searchParams;
@@ -156,5 +165,5 @@ test('subscription name search keeps its eligible current plan separate from the
   expect(query.get('is_lifetime')).toBe('eq.false');
   expect(query.get('and')).toBe('(or(status.in.(active,啟用),status.is.null))');
   expect(query.get('or')).toContain('keyword_plan.not.is.null');
-  expect(request).not.toHaveBeenCalled();
+  expectDisplayNameRpc(request, '季費');
 });

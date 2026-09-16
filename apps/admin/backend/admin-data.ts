@@ -176,6 +176,7 @@ const definitions: Record<string, TableDefinition> = {
       redeemedByMemberId: (row.redeemed_member as Row | null)?.id ?? null,
       authUserId: (row.redeemed_member as Row | null)?.auth_user_id ?? null,
       lineUserId: (row.redeemed_member as Row | null)?.line_user_id ?? null,
+      lineDisplayName: (row.redeemed_member as Row | null)?.line_display_name ?? null,
       redeemedByLineDisplayName: (row.redeemed_member as Row | null)?.line_display_name ?? null,
       redeemedAt: row.redeemed_at,
       status: row.status,
@@ -216,6 +217,7 @@ export function getAdminTableDefinition(table: string): TableDefinition {
 }
 
 const adminReadPageSize = 1000;
+const UUID_PATTERN = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 
 async function listAllRows(api: Requester, path: string) {
   const rows: Row[] = [];
@@ -243,6 +245,32 @@ async function listAllAuthUsers(api: Requester) {
     const current = Array.isArray(response?.users) ? response.users : [];
     users.push(...current);
     if (current.length < adminReadPageSize) return users;
+  }
+}
+
+async function googleMemberNameClauses(table: string, keyword: string, api: Requester) {
+  if (!keyword || keyword.length > 200 || !['users', 'subscriptions', 'subscriptionRecords', 'transferRequests', 'activationCodes'].includes(table)) {
+    return [];
+  }
+  try {
+    const rows = await api.request<Row[]>('/rest/v1/rpc/admin_member_ids_by_display_name', {
+      method: 'POST',
+      body: JSON.stringify({ p_keyword: keyword }),
+    });
+    const memberIds = [...new Set((Array.isArray(rows) ? rows : [])
+      .map((row) => String(row.member_id ?? ''))
+      .filter((id) => UUID_PATTERN.test(id)))];
+    if (!memberIds.length) return [];
+    const field = table === 'users' || table === 'subscriptions'
+      ? 'id'
+      : table === 'activationCodes'
+        ? 'redeemed_by_member_id'
+        : 'member_id';
+    return [`${field}.in.(${memberIds.join(',')})`];
+  } catch {
+    // Display-name matching is supplemental. Preserve the existing DB-backed
+    // keyword search if the private lookup RPC is temporarily unavailable.
+    return [];
   }
 }
 
@@ -374,7 +402,13 @@ function parsePage(query: AdminPageQuery, pageSize: number) {
   return page;
 }
 
-function applyAdminPageFilters(url: URL, table: string, query: AdminPageQuery, filterStatus = true) {
+function applyAdminPageFilters(
+  url: URL,
+  table: string,
+  query: AdminPageQuery,
+  filterStatus = true,
+  extraKeywordClauses: string[] = [],
+) {
   const config = pageDefinitions[table];
   if (!config) throw new AdminDataError('Invalid table');
   const keyword = String(query.keyword ?? '').trim();
@@ -406,8 +440,8 @@ function applyAdminPageFilters(url: URL, table: string, query: AdminPageQuery, f
   }
   if (!keyword) return;
   const pattern = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const clauses = config.keywords.map(field => `${field}.imatch.${JSON.stringify(pattern)}`);
-  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(keyword)) {
+  const clauses = [...config.keywords.map(field => `${field}.imatch.${JSON.stringify(pattern)}`), ...extraKeywordClauses];
+  if (UUID_PATTERN.test(keyword)) {
     clauses.push(...['id', ...(config.identifiers ?? [])].map(field => `${field}.eq.${keyword}`));
   }
   if (/^\d+$/.test(keyword) && Number.isSafeInteger(Number(keyword))) {
@@ -450,7 +484,9 @@ export async function listAdminTablePage(table: string, query: AdminPageQuery, a
   if (table === 'loginRecords') return listAdminLoginRecordPage(query, api);
   const page = parsePage(query, pageDefinitions[table].pageSize);
   const url = new URL(definition.path, 'https://supabase.invalid');
-  applyAdminPageFilters(url, table, query);
+  const keyword = String(query.keyword ?? '').trim();
+  const googleNameClauses = await googleMemberNameClauses(table, keyword, api);
+  applyAdminPageFilters(url, table, query, true, googleNameClauses);
   const result = await readAdminPage(url, page, pageDefinitions[table].pageSize, api);
   const items = result.items.map(definition.map);
   if (['subscriptionRecords', 'transferRequests', 'activationCodes'].includes(table)) {
@@ -502,7 +538,8 @@ export async function listAdminMemberPage(
     // from the keyword OR group so searching cannot replace either filter.
     url.searchParams.set('and', '(or(status.in.(active,啟用),status.is.null))');
   }
-  applyAdminPageFilters(url, table, query, false);
+  const googleNameClauses = await googleMemberNameClauses(table, keyword, api);
+  applyAdminPageFilters(url, table, query, false, googleNameClauses);
   const result = await readAdminPage(url, page, 30, api);
   const items = await enrichMembers(result.items.map(definition.map), api, currentDate, true);
   return { ...result, items };
@@ -874,7 +911,7 @@ export function createAdminData(transport: WriteTransport) {
     if (actor.role === '營運管理員' && !operatorActivationCodeDurations.includes(durationType)) {
       throw new AdminDataError('營運管理員僅可建立 7 天或 15 天啟動碼', 403);
     }
-    if (!requestId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestId)) {
+    if (!requestId || !UUID_PATTERN.test(requestId)) {
       throw new AdminDataError('啟動碼建立請求不正確');
     }
     const result = await transport.supabaseRequest<{ batchId: string; count: number }>('rpc/admin_generate_activation_code_batch', {
