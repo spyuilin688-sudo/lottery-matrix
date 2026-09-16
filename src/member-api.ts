@@ -73,6 +73,13 @@ function isMemberAuthError(error: unknown) {
   return code === 'PGRST301';
 }
 
+function isMemberRpcAuthRequired(error: unknown) {
+  if (!error || typeof error !== 'object') return false;
+  const code = 'code' in error ? String(error.code ?? '') : '';
+  const message = 'message' in error ? String(error.message ?? '') : '';
+  return code === '42501' && message === 'AUTH_REQUIRED';
+}
+
 function isDefinitivelyInvalidMemberSession(error: unknown) {
   if (!error || typeof error !== 'object') return false;
   const status = 'status' in error ? Number(error.status) : 0;
@@ -128,9 +135,18 @@ async function memberSessionStableRpc<T>(name: string) {
   try {
     return await memberRpc<T>(name);
   } catch (error) {
-    if (!isMemberSessionChanged(error)) throw error;
-    // Only the no-argument bootstrap/profile calls use this retry path. Bootstrap is
-    // idempotent server-side, and no member write payload is captured or replayed.
+    if (isMemberSessionChanged(error)) {
+      // Only the no-argument bootstrap/profile calls use this retry path. Bootstrap is
+      // idempotent server-side, and no member write payload is captured or replayed.
+      return memberRpc<T>(name);
+    }
+    if (!isMemberRpcAuthRequired(error)) throw error;
+
+    // member_profile/member_bootstrap can briefly observe AUTH_REQUIRED while the
+    // Supabase session handoff is settling. Confirm the signed-in user, then replay
+    // only these no-argument safe calls once. Write RPCs never use this wrapper.
+    const { data: userData, error: userError } = await getSupabaseClient().auth.getUser();
+    if (userError || !userData.user) throw error;
     return memberRpc<T>(name);
   }
 }
