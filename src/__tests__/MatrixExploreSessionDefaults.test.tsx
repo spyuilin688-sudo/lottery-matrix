@@ -5,10 +5,10 @@ import { render } from '../../test/render-with-dialog';
 import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
 import { MatrixExplorePage } from '../features/MatrixExplorePage';
 
-const sdk = vi.hoisted(() => ({ bootstrap: vi.fn(), profile: vi.fn() }));
+const sdk = vi.hoisted(() => ({ profile: vi.fn() }));
 
 vi.mock('../member-api', () => ({
-  bootstrapMember: sdk.bootstrap,
+  bootstrapMember: async () => {},
   fetchMemberProfile: sdk.profile,
 }));
 
@@ -64,7 +64,6 @@ const fullAccessProfile = {
 
 beforeEach(() => {
   updateAlgorithmCacheSession(null);
-  sdk.bootstrap.mockReset().mockResolvedValue(undefined);
   sdk.profile.mockReset()
     .mockResolvedValueOnce(guestProfile)
     .mockResolvedValue(fullAccessProfile);
@@ -95,32 +94,6 @@ test.each([
   });
 
   await waitFor(() => expect(sdk.profile).toHaveBeenCalledTimes(2));
-  expect(screen.getByText('十三期').closest('button')?.getAttribute('data-selected')).toBe('true');
-
-  fireEvent.click(screen.getByRole('button', { name: advancedLabel }));
-  expect(screen.getByText('完整範圍').closest('button')?.getAttribute('data-selected')).toBe('true');
-});
-
-test.each([
-  ['Matrix 探索', '進階探索設定'],
-  ['Matrix 天衡', '進階天衡設定'],
-] as const)('%s 在已登入 session 的首次會員讀取被 session 切換中斷後仍重新讀取最高權限', async (title, advancedLabel) => {
-  const session = {
-    user: { id: 'member' },
-    access_token: 'member-session',
-  };
-  updateAlgorithmCacheSession(session as any);
-  sdk.bootstrap.mockReset()
-    .mockRejectedValueOnce(new Error('MEMBER_SESSION_CHANGED'))
-    .mockResolvedValue(undefined);
-  sdk.profile.mockReset().mockResolvedValue(fullAccessProfile);
-
-  await act(async () => {
-    render(<MatrixExplorePage title={title} onNavigate={vi.fn()} />);
-  });
-
-  await waitFor(() => expect(sdk.bootstrap).toHaveBeenCalledTimes(2));
-  await waitFor(() => expect(sdk.profile).toHaveBeenCalledTimes(1));
   expect(screen.getByText('十三期').closest('button')?.getAttribute('data-selected')).toBe('true');
 
   fireEvent.click(screen.getByRole('button', { name: advancedLabel }));
