@@ -148,5 +148,8 @@ export function formatAdminRowForDisplay(table: string | null, row: AdminRow): A
     };
   }
   if (table === 'loginRecords') return { ...row, device: formatDeviceSummary(row.device) };
+  if (table === 'subscriptions' && (row.memberDisplayName == null || row.memberDisplayName === '')) {
+    return { ...row, memberDisplayName: row.lineDisplayName ?? row.line_display_name ?? null };
+  }
   return row;
 }
