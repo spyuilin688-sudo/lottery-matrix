@@ -8,6 +8,7 @@ export default defineConfig({
       "supabase/functions/admin-security-push/**/*.test.ts",
       "supabase/functions/_shared/**/*.test.ts",
       "supabase/functions/line-logout/**/*.test.ts",
+      "supabase/functions/native-notification-dispatch/**/*.test.ts",
       "supabase/functions/notification-dispatch/**/*.test.ts",
       "supabase/functions/notification-ingest/**/*.test.ts",
       "supabase/functions/notification-pilio/**/*.test.ts",
