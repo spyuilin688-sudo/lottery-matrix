@@ -39,7 +39,6 @@ const JOB_NAME: Record<WatchdogLottery, string> = {
   六合彩: 'matrix-marksix-refresh-v2',
   大樂透: 'matrix-649-refresh-v2',
 };
-const ANALYSIS_VERSION = 'matrix-python-v12';
 const JOB_STALE_MS = 20 * 60 * 1000;
 const ANALYSIS_STALE_MS = 45 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 8_000;
@@ -371,12 +370,21 @@ export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
     const jobRow = jobRows[0];
     const drawRow = drawRows[0];
     const period = nullableString(drawRow?.period);
-    const analysisRows = period ? await supabaseRequest<Record<string, unknown>[]>(supabase,
-      `matrix_analysis_runs?select=draw_period,status,started_at,updated_at,lease_expires_at&lottery=eq.${encode(lottery)}&draw_period=eq.${encode(period)}&analysis_version=eq.${encode(`${period}:${ANALYSIS_VERSION}`)}&limit=1`,
-    ) : [];
-    const analysisRow = analysisRows[0];
+    const analysisState = period ? await supabaseRequest<Record<string, unknown>>(supabase,
+      'rpc/matrix_watchdog_analysis_state',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_lottery: lottery, p_draw_period: period }),
+      },
+    ) : null;
     const jobStatus = nullableString(jobRow?.status);
-    const analysisStatus = nullableString(analysisRow?.status);
+    const analysisStatus = nullableString(analysisState?.status);
+    const visibleAnalysisStatus = (
+      analysisStatus === 'running'
+      || analysisStatus === 'complete'
+      || analysisStatus === 'failed'
+    ) ? analysisStatus : null;
     return {
       lottery,
       job: jobStatus ? {
@@ -388,12 +396,12 @@ export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
         period,
         drawDate: nullableString(drawRow?.draw_date),
       } : null,
-      latestAnalysis: analysisStatus ? {
-        drawPeriod: nullableString(analysisRow?.draw_period) ?? '',
-        status: analysisStatus as WatchdogSnapshot['latestAnalysis'] extends { status: infer T } ? T : never,
-        startedAt: nullableString(analysisRow?.started_at),
-        updatedAt: nullableString(analysisRow?.updated_at),
-        leaseExpiresAt: nullableString(analysisRow?.lease_expires_at),
+      latestAnalysis: visibleAnalysisStatus ? {
+        drawPeriod: nullableString(analysisState?.drawPeriod) ?? '',
+        status: visibleAnalysisStatus as WatchdogSnapshot['latestAnalysis'] extends { status: infer T } ? T : never,
+        startedAt: nullableString(analysisState?.startedAt),
+        updatedAt: nullableString(analysisState?.updatedAt),
+        leaseExpiresAt: nullableString(analysisState?.leaseExpiresAt),
       } : null,
     };
   }));

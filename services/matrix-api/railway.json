@@ -6,6 +6,6 @@
   "deploy": {
     "startCommand": "uv run python -u -m app.worker_all",
     "restartPolicyType": "NEVER",
-    "cronSchedule": "3/5 * * * *"
+    "cronSchedule": "3/10 * * * *"
   }
 }
