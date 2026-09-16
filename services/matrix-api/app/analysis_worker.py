@@ -7,6 +7,7 @@ from typing import Any
 from app.repositories.card_repository import is_card_published
 from app.services.card_publication import publish_current_card
 from app.repositories.analysis_repository import (
+    ARTIFACT_KINDS,
     AnalysisRepository,
     create_supabase_repository,
 )
@@ -21,7 +22,13 @@ from app.services.notification_events import (
     notification_emitter_context,
 )
 from app.settings import load_settings
-from app.worker import ANALYSIS_VERSION, _draw_from_history, _run_analysis, analysis_version_for_order
+from app.worker import (
+    ANALYSIS_VERSION,
+    _draw_from_history,
+    _durable_notification_event_exists,
+    _run_analysis,
+    analysis_version_for_order,
+)
 
 
 FANTASY5 = "天天樂"
@@ -92,6 +99,7 @@ def _notification_enabled(notification_emitter: NotificationEventEmitter | None)
 
 
 def _emit_notification_event(
+    repository: AnalysisRepository,
     notification_emitter: NotificationEventEmitter | None,
     event: dict[str, Any] | None,
     emitted_event_keys: set[str],
@@ -100,6 +108,9 @@ def _emit_notification_event(
         return
     event_key = str(event["eventKey"])
     if event_key in emitted_event_keys:
+        return
+    if _durable_notification_event_exists(repository, event):
+        emitted_event_keys.add(event_key)
         return
     notification_emitter.emit(event)
     emitted_event_keys.add(event_key)
@@ -138,6 +149,7 @@ def _emit_ready_notifications(
     if not latest or str(latest[0].get("period")) != period:
         return
     _emit_notification_event(
+        repository,
         notification_emitter,
         lottery_result_event(draw),
         emitted_event_keys,
@@ -147,6 +159,7 @@ def _emit_ready_notifications(
         lottery, period, repository, order="sorted",
     ):
         _emit_notification_event(
+            repository,
             notification_emitter,
             matrix_card_event(draw),
             emitted_event_keys,
@@ -159,9 +172,67 @@ def _emit_ready_notifications(
     if not isinstance(status_artifact, Mapping):
         return
     _emit_notification_event(
+        repository,
         notification_emitter,
         matrix_status_event(lottery, period, status_artifact, draw_date=draw["drawDate"]),
         emitted_event_keys,
+    )
+
+
+def _completed_period_idle_ready(
+    draw: dict[str, Any],
+    progress: dict[str, Any] | None,
+    repository: AnalysisRepository,
+    notification_emitter: NotificationEventEmitter | None,
+) -> bool:
+    if draw.get("resultStatus", "confirmed") != "confirmed":
+        return False
+    if progress is None or progress.get("status") != "complete":
+        return False
+
+    lottery = str(draw["lottery"])
+    period = str(draw["period"])
+    analysis_version = analysis_version_for_order(period)
+    if not all(
+        repository.has_artifact(lottery, period, analysis_version, kind)
+        for kind in ARTIFACT_KINDS
+    ):
+        return False
+
+    explore_artifact = repository.read_artifact(lottery, period, analysis_version, "explore")
+    tianheng_artifact = repository.read_artifact(lottery, period, analysis_version, "tianheng")
+    status_artifact = repository.read_artifact(lottery, period, analysis_version, "status")
+    if not isinstance(explore_artifact, Mapping) or not isinstance(tianheng_artifact, Mapping):
+        return False
+    if not isinstance(status_artifact, Mapping):
+        return False
+
+    explore_items = explore_artifact.get("items")
+    if isinstance(explore_items, list) and explore_items and not repository.has_explore_results(
+        lottery, period, analysis_version,
+    ):
+        return False
+    tianheng_items = tianheng_artifact.get("items")
+    if isinstance(tianheng_items, list) and not repository.has_tianheng_results(
+        lottery,
+        period,
+        analysis_version,
+        len(tianheng_items),
+    ):
+        return False
+    if not is_card_published(lottery, period, repository, order="sorted"):
+        return False
+
+    if not _notification_enabled(notification_emitter):
+        return True
+    events = (
+        lottery_result_event(draw),
+        matrix_card_event(draw),
+        matrix_status_event(lottery, period, status_artifact, draw_date=draw["drawDate"]),
+    )
+    return all(
+        event is None or _durable_notification_event_exists(repository, event)
+        for event in events
     )
 
 
@@ -184,11 +255,6 @@ def run_analysis_only_worker(
             "status": "waiting-draw",
         }
 
-    _emit_early_notifications(
-        {"lottery": lottery, **candidates[0]}, repository,
-        notification_emitter, emitted_event_keys,
-    )
-    publish_current_card(lottery, repository)
     periods = [str(draw["period"]) for draw in candidates]
     progress_by_period = repository.list_progress_for_periods(
         lottery,
@@ -199,9 +265,36 @@ def run_analysis_only_worker(
     period = str(selected["period"])
     analysis_version = analysis_version_for_order(period)
     draw = {"lottery": lottery, **selected}
+    latest_draw = {"lottery": lottery, **candidates[0]}
+
+    if (
+        period == str(candidates[0]["period"])
+        and _completed_period_idle_ready(
+            latest_draw,
+            progress_by_period.get(period),
+            repository,
+            notification_emitter,
+        )
+    ):
+        return {
+            "lottery": lottery,
+            "drawPeriod": period,
+            "analysisVersion": analysis_version,
+            "status": "already-analyzed",
+        }
+
     _emit_early_notifications(
-        {"lottery": lottery, **candidates[0]}, repository,
-        notification_emitter, emitted_event_keys,
+        latest_draw,
+        repository,
+        notification_emitter,
+        emitted_event_keys,
+    )
+    publish_current_card(lottery, repository)
+    _emit_early_notifications(
+        latest_draw,
+        repository,
+        notification_emitter,
+        emitted_event_keys,
     )
 
     progress = progress_by_period.get(period)
