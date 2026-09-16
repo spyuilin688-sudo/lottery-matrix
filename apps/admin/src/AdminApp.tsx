@@ -111,8 +111,7 @@ const tableMap: Record<string, string> = {
 };
 const labels: Record<string, string[]> = {
   users: [
-    "authUserId",
-    "lineDisplayName",
+    "memberId",
     "registeredAt",
     "currentPlanId",
     "planStartedAt",
@@ -123,7 +122,7 @@ const labels: Record<string, string[]> = {
     "invitationCode",
   ],
   subscriptions: [
-    "authUserId",
+    "memberId",
     "currentPlanId",
     "planName",
     "planPrice",
@@ -159,7 +158,7 @@ const labels: Record<string, string[]> = {
     "durationType",
     "status",
     "createdAt",
-    "redeemedByLineDisplayName",
+    "redeemedByMemberId",
     "redeemedAt",
     "expiresAt",
     "batchId",
@@ -189,7 +188,7 @@ const zh: Record<string, string> = {
   onlineMinutes: "本次在線時間",
   ip: "IP",
   device: "裝置資訊",
-  memberId: "會員 ID",
+  memberId: "會員ID",
   planId: "方案 ID",
   amount: "金額",
   paidAt: "付款時間",
@@ -205,7 +204,7 @@ const zh: Record<string, string> = {
   code: "啟動碼",
   durationType: "啟動期限",
   createdAt: "建立時間",
-  redeemedByLineDisplayName: "兌換會員",
+  redeemedByMemberId: "兌換會員ID",
   redeemedAt: "兌換時間",
   expiresAt: "到期時間",
   batchId: "批次",
@@ -215,7 +214,7 @@ const text = (v: unknown) =>
   typeof v === "object" && v !== null ? JSON.stringify(v) : String(v ?? "—");
 const dateFields = new Set(["registeredAt", "planStartedAt", "planExpiresAt", "loginAt", "logoutAt", "operationTime", "paidAt", "createdAt", "redeemedAt", "expiresAt", "lastLoginAt", "lastOnlineAt"]);
 const displayValue = (field: string, value: unknown) => dateFields.has(field) ? formatAdminDateTime(value) : text(value);
-const redeemedActivationCode = (row: Row) => row.status === "used" || Boolean(row.redeemedAt || row.redeemedByLineDisplayName);
+const redeemedActivationCode = (row: Row) => row.status === "used" || Boolean(row.redeemedAt || row.redeemedByMemberId);
 const paymentRecord = (row: Row): PaymentRecord => ({
   id: row.id,
   memberId: String(row.memberId ?? ""),
@@ -1081,14 +1080,14 @@ function UserManager({
   const memberPage = useAdminMemberPage("users", revision, api);
   const { setPage, paged, loading, error } = memberPage;
   const [userInfo, setUserInfo] = useState<Row | null>(null);
-  const fields = ["lineDisplayName", "registeredAt", "lastOnlineAt", "recentOnlineMinutes", "status", "recentIp", "estimatedRegion"];
+  const fields = ["memberId", "registeredAt", "lastOnlineAt", "recentOnlineMinutes", "status", "recentIp", "estimatedRegion"];
   const statusText = (value: unknown) => String(value) === "disabled" || String(value) === "停用" ? "停用" : "啟用";
   const showValue = (field: string, row: Row) => field === "status"
     ? statusText(row[field])
     : field === "recentOnlineMinutes" ? `${Number(row[field] || 0)} 分鐘` : displayValue(field, row[field]);
   return (
     <>
-      <AdminListControls page={memberPage} name="會員" statuses={[["active", "啟用"], ["disabled", "停用"]]} sorts={[["registeredAt", "註冊時間"], ["lastOnlineAt", "最後上線時間"], ["lineDisplayName", "LINE 名稱"]]} />
+      <AdminListControls page={memberPage} name="會員" statuses={[["active", "啟用"], ["disabled", "停用"]]} sorts={[["registeredAt", "註冊時間"], ["lastOnlineAt", "最後上線時間"], ["memberId", "會員ID"]]} />
       <div className="managementList tableWrap" aria-busy={loading}>
         <table>
           <thead><tr>{fields.map((field) => <th key={field}>{zh[field] || field}</th>)}<th>用戶資訊</th></tr></thead>
@@ -1186,17 +1185,17 @@ function SubscriptionManager({
   };
   return (
     <>
-      <AdminListControls page={memberPage} name="訂閱" className="subscriptionManagementToolbar" statuses={[["active", "啟用"], ["disabled", "停用"]]} sorts={[["planStartedAt", "開始時間"], ["planExpiresAt", "到期時間"], ["lineDisplayName", "LINE 名稱"]]}>
+      <AdminListControls page={memberPage} name="訂閱" className="subscriptionManagementToolbar" statuses={[["active", "啟用"], ["disabled", "停用"]]} sorts={[["planStartedAt", "開始時間"], ["planExpiresAt", "到期時間"], ["memberId", "會員ID"]]}>
         <select aria-label="篩選訂閱方案" value={plan} onChange={(event) => setPlan(event.target.value)}>
           <option value="all">全部方案</option><option value="monthly">月費</option><option value="quarterly">季費</option><option value="yearly">年費</option>
         </select>
       </AdminListControls>
       <div className="managementList tableWrap" aria-busy={loading}>
         <table>
-          <thead><tr><th>LINE名稱</th><th>訂閱方案</th><th>開始時間</th><th>到期時間</th><th>自動續訂</th><th>調整到期日</th><th>用戶資訊</th></tr></thead>
+          <thead><tr><th>會員ID</th><th>訂閱方案</th><th>開始時間</th><th>到期時間</th><th>自動續訂</th><th>調整到期日</th><th>用戶資訊</th></tr></thead>
           <tbody>{paged.items.length === 0 ? <tr><td colSpan={7} className="empty">{loading ? "資料讀取中" : error ? "資料載入失敗" : "目前沒有資料"}</td></tr> : paged.items.map((row) => (
             <tr key={row.id}>
-              <td>{text(row.lineDisplayName)}</td><td>{text(row.planName)}</td><td>{formatAdminDateTime(row.planStartedAt)}</td><td>{row.isLifetime ? "終生" : formatAdminDateTime(row.planExpiresAt)}</td><td>{row.autoRenew ? "是" : "否"}</td>
+              <td>{text(row.memberId)}</td><td>{text(row.planName)}</td><td>{formatAdminDateTime(row.planStartedAt)}</td><td>{row.isLifetime ? "終生" : formatAdminDateTime(row.planExpiresAt)}</td><td>{row.autoRenew ? "是" : "否"}</td>
               <td>{canEdit && <button className="compactButton subscriptionTableAction" onClick={() => open(row, "adjustExpiry")}>調整到期日</button>}</td>
               <td><button className="compactButton subscriptionTableAction" onClick={() => setUserInfo(row)}>用戶資訊</button></td>
             </tr>
@@ -1208,7 +1207,7 @@ function SubscriptionManager({
         <div className="modalBackdrop" role="presentation">
           <div className="operationDialog" role="dialog" aria-modal="true" aria-labelledby="subscription-action-title" aria-busy={submitting}>
             <h2 id="subscription-action-title">{actionText[action]}</h2>
-            <p>{text(editing.authUserId)}</p>
+            <p>{text(editing.memberId)}</p>
             {(action === "activate" || action === "renew") && <label>方案<select disabled={submitting} value={planId} onChange={(event) => setPlanId(event.target.value)}>{plans.map((plan) => <option key={plan.id} value={plan.id}>{text(plan.name)}／{money(Number(plan.price))}／{text(plan.durationDays)} 天</option>)}</select></label>}
             {action === "adjustExpiry" && <label>到期日<input ref={expiryInputRef} type="date" disabled={submitting} value={expiresAt} aria-invalid={Boolean(saveError) && !expiresAt} aria-describedby={saveError ? "subscription-save-error" : undefined} onChange={(event) => { setExpiresAt(event.target.value); setSaveError(""); }} /></label>}
             {action === "cancel" && <p>取消後只停止自動續訂，權限保留至到期日。</p>}
@@ -1235,7 +1234,7 @@ function SubscriptionManager({
         <AdminListControls page={transferPage} name="轉帳申請" statuses={[["pending", "待確認"], ["confirmed", "已確認"], ["rejected", "已拒絕"]]} sorts={[["submittedAt", "申請時間"], ["amount", "轉帳金額"]]} />
         {transferPage.loading ? <div role="status" className="loading">資料讀取中…</div> : transferPage.error ? null : transferPage.items.length === 0 ? <div className="empty">目前沒有資料</div> : transferPage.items.map((row) => (
           <div className="transferRow" key={row.id}>
-            <div><b>{text(row.lineDisplayName)}</b><span>{text(row.planName)}／{money(Number(row.amount))}／末五碼 {text(row.accountLastFive)}</span></div>
+            <div><b>{text(row.memberId)}</b><span>{text(row.planName)}／{money(Number(row.amount))}／末五碼 {text(row.accountLastFive)}</span></div>
             <span>{({ pending: "待確認", confirmed: "已確認", rejected: "已拒絕" } as Record<string, string>)[String(row.status)] || text(row.status)}</span>
             {canEdit && row.status === "pending" && <div className="transferActions"><button onClick={() => onTransfer(row.id, "confirmed")}>確認</button><button className="transferReject" onClick={() => onTransfer(row.id, "rejected")}>拒絕</button></div>}
           </div>

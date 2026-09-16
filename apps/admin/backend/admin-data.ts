@@ -53,6 +53,7 @@ const definitions: Record<string, TableDefinition> = {
     path: '/rest/v1/members?select=id,auth_user_id,line_display_name,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,referral_code,invitation_code,last_online_at,total_online_seconds,online_session_count,current_plan:plans!members_current_plan_id_fkey(name,price,duration_days)&order=registered_at.desc,id.asc',
     map: (row) => ({
       id: String(row.id),
+      memberId: String(row.id),
       authUserId: row.auth_user_id,
       lineDisplayName: row.line_display_name,
       registeredAt: row.registered_at,
@@ -74,6 +75,7 @@ const definitions: Record<string, TableDefinition> = {
       const plan = (row.current_plan ?? null) as Row | null;
       return {
         id: String(row.id),
+        memberId: String(row.id),
         authUserId: row.auth_user_id,
         lineDisplayName: row.line_display_name,
         registeredAt: row.registered_at,
@@ -158,7 +160,7 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   activationCodes: {
-    path: '/rest/v1/activation_codes?select=id,batch_id,code,duration_type,created_at,expires_at,redeemed_at,status,redeemed_member:members!activation_codes_redeemed_by_member_id_fkey(line_display_name)&order=created_at.desc,id.asc',
+    path: '/rest/v1/activation_codes?select=id,batch_id,code,duration_type,created_at,expires_at,redeemed_at,status,redeemed_member:members!activation_codes_redeemed_by_member_id_fkey(id,line_display_name)&order=created_at.desc,id.asc',
     map: (row) => ({
       id: String(row.id),
       batchId: row.batch_id,
@@ -166,6 +168,7 @@ const definitions: Record<string, TableDefinition> = {
       durationType: row.duration_type,
       createdAt: row.created_at,
       expiresAt: row.expires_at,
+      redeemedByMemberId: (row.redeemed_member as Row | null)?.id ?? null,
       redeemedByLineDisplayName: (row.redeemed_member as Row | null)?.line_display_name ?? null,
       redeemedAt: row.redeemed_at,
       status: row.status,
@@ -270,7 +273,7 @@ type PageDefinition = {
 };
 
 const memberColumns = {
-  id: 'id', lineDisplayName: 'line_display_name', registeredAt: 'registered_at', status: 'status',
+  id: 'id', memberId: 'id', lineDisplayName: 'line_display_name', registeredAt: 'registered_at', status: 'status',
   planName: 'current_plan(name)', planStartedAt: 'plan_started_at', planExpiresAt: 'plan_expires_at',
   lastOnlineAt: 'last_online_at', referralCode: 'referral_code', invitationCode: 'invitation_code',
 };
@@ -283,7 +286,7 @@ const pageDefinitions: Record<string, PageDefinition> = {
   },
   activationCodes: {
     pageSize: 10,
-    columns: { id: 'id', batchId: 'batch_id', code: 'code', durationType: 'duration_type', createdAt: 'created_at', expiresAt: 'expires_at', redeemedAt: 'redeemed_at', status: 'status', redeemedByLineDisplayName: 'redeemed_member(line_display_name)' },
+    columns: { id: 'id', batchId: 'batch_id', code: 'code', durationType: 'duration_type', createdAt: 'created_at', expiresAt: 'expires_at', redeemedAt: 'redeemed_at', status: 'status', redeemedByMemberId: 'redeemed_member(id)', redeemedByLineDisplayName: 'redeemed_member(line_display_name)' },
     dates: ['createdAt', 'expiresAt', 'redeemedAt'], keywords: ['code', 'duration_type', 'status'], identifiers: ['batch_id'],
     statuses: ['unused', 'used', 'expired'],
     relations: [{ alias: 'keyword_member', relation: 'members!activation_codes_redeemed_by_member_id_fkey', field: 'line_display_name' }],

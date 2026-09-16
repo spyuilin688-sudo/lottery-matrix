@@ -411,8 +411,8 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
             <h2>樂彩玩家</h2>
             <p
               className="profile-nickname"
-              data-name-fit={lineNickname && Array.from(lineNickname).length > 12 ? "compact" : "regular"}
-            >會員名稱：{lineNickname ?? ""}</p>
+              data-name-fit={memberProfile?.memberId && Array.from(memberProfile.memberId).length > 12 ? "compact" : "regular"}
+            >會員ID：{memberProfile?.memberId ?? ""}</p>
           </div>
           {authState !== "initializing" ? <div className="profile-auth-actions">
             {authState === "anonymous" || authState === "signing-in" ? <>

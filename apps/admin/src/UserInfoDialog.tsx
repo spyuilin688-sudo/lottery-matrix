@@ -30,10 +30,9 @@ export function UserInfoDialog({ row, client, module = 'users', onClose }: {
   }, [row.id, module, page, retry, client]);
   const value = (input: unknown) => input == null || input === '' ? '—' : String(input);
   const fields = [
-    ['LINE名稱', value(row.lineDisplayName)],
+    ['會員ID', value(row.memberId ?? row.id)],
     ['註冊時間', formatAdminDateTime(row.registeredAt)],
     ['最後上線時間', formatAdminDateTime(row.lastOnlineAt)],
-    ['驗證用戶ID', value(row.authUserId)],
   ];
   return <dialog ref={dialog} className="memberInfoDialog" aria-labelledby="member-info-title" onCancel={onClose}>
     <header className="memberInfoHeading"><h2 id="member-info-title">用戶資訊</h2><button type="button" className="compactButton" onClick={onClose} autoFocus>關閉</button></header>
