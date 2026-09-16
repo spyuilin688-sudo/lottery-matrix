@@ -8,6 +8,14 @@ describe('watchdog active analysis resolution', () => {
   it('treats current split v14 active analyses as complete instead of analysis-missing', async () => {
     const period = '115000215';
     const supabaseRequest = vi.fn(async (path: string) => {
+      if (path === 'rpc/matrix_watchdog_draw_days') {
+        return {
+          今彩539: ['2026-09-04', '2026-09-05'],
+          天天樂: ['2026-09-03', '2026-09-04', '2026-09-05'],
+         六合彩: ['2026-09-03', '2026-09-05'],
+          大樂透: ['2026-09-04'],
+        };
+      }
       if (path.startsWith('system_job_status?')) return [];
       if (path.startsWith('lottery_draws?')) {
         return [{ period, draw_date: '2026-09-04' }];
@@ -30,17 +38,16 @@ describe('watchdog active analysis resolution', () => {
     });
 
     const load = createSupabaseWatchdogSnapshotLoader({ supabaseRequest });
-    const snapshots = await load();
+    const checkedAt = new Date('2026-09-04T12:43:00.000Z');
+    const snapshots = await load(checkedAt);
     const snapshot = snapshots.find((item) => item.lottery === '今彩539');
 
     expect(snapshot?.latestAnalysis).toMatchObject({
       drawPeriod: period,
       status: 'complete',
     });
+    expect(snapshot?.drawDays).toContain('2026-09-04');
     expect(supabaseRequest.mock.calls.some(([path]) => String(path).includes('matrix-python-v12'))).toBe(false);
-    expect(planWatchdogActions(
-      snapshot ? [snapshot] : [],
-      new Date('2026-09-04T12:43:00.000Z'),
-    )).toEqual([]);
+    expect(planWatchdogActions(snapshot ? [snapshot] : [], checkedAt)).toEqual([]);
   });
 });
