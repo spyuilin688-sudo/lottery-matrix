@@ -9,6 +9,7 @@ const prototypeSource = readFileSync("src/Prototype.tsx", "utf8");
 const prototypeCss = readFileSync("src/prototype.css", "utf8");
 const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
 const headerBackgroundCss = readFileSync("src/matrix-explore-header-background.css", "utf8");
+const headerArtwork = readFileSync("public/assets/lottery/header-explore-luxury-flow.svg", "utf8");
 const tiangongCss = readFileSync("src/matrix-tiangong-results.css", "utf8");
 
 function assertRule(selectorPattern, declarations) {
@@ -40,6 +41,15 @@ test("Matrix Explore title-card background is loaded by an existing runtime styl
     /--product-header-background:\s*url\("\/assets\/lottery\/header-explore-luxury-flow\.svg"\);/,
   );
   assert.doesNotMatch(mainSource, /matrix-explore-header-background\.css/);
+});
+
+test("Matrix Explore title artwork keeps the dense black-gold reference layers without changing canvas geometry", () => {
+  assert.match(headerArtwork, /viewBox="0 0 800 136"/);
+  assert.match(headerArtwork, /id="starfield"/);
+  assert.match(headerArtwork, /id="flowGlow"/);
+  assert.match(headerArtwork, /id="planetSurface"/);
+  assert.ok((headerArtwork.match(/<path\b/g) ?? []).length >= 16, "expected layered gold flow paths");
+  assert.ok((headerArtwork.match(/<circle\b/g) ?? []).length >= 48, "expected dense gold star particles");
 });
 
 test("Matrix Explore panels use scoped responsive-width auto-height flow", () => {
