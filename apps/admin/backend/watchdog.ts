@@ -37,7 +37,7 @@ const LOTTERIES: WatchdogLottery[] = ['今彩539', '天天樂', '六合彩', '�
 const JOB_NAME: Record<WatchdogLottery, string> = {
   今彩539: 'matrix-539-refresh-v2',
   天天樂: 'matrix-fantasy5-refresh-v2',
- 六合彩: 'matrix-marksix-refresh-v2',
+  六合: 'matrix-marksix-refresh-v2',
   大樂透: 'matrix-649-refresh-v2',
 };
 const JOB_STALE_MS = 20 * 60 * 1000;
@@ -559,8 +559,21 @@ export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
       try {
         snapshots = await dependencies.loadSnapshot(at);
       } catch {
-        return { status: 'degraded', checkedAt: at.toISOString(), actions: [], error: 'STATUS_UNAVAILABLE' };
+        return {
+          status: 'degraded',
+          checkedAt: at.toISOString(),
+          dueLotteries: [],
+          actions: [],
+          error: 'STATUS_UNAVAILABLE',
+        };
       }
+      const dueLotteries = snapshots
+        .filter((snapshot) => expectedDrawDateForDueWindow(
+          snapshot.lottery,
+          at,
+          snapshot.drawDays,
+        ) !== null)
+        .map((snapshot) => snapshot.lottery);
       const actions = planWatchdogActions(snapshots, at);
       const results = await Promise.all(actions.map(async (action) => {
         const leaseKey = `${action.target}:${action.lottery}`;
@@ -589,6 +602,7 @@ export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
       return {
         status: degraded ? 'degraded' : 'ok',
         checkedAt: at.toISOString(),
+        dueLotteries,
         actions: results,
       };
     },
