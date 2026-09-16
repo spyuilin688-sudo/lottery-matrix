@@ -8,17 +8,19 @@ returns bigint language plpgsql security definer set search_path = '' as $$
 declare
   v_local timestamp := p_now at time zone 'Asia/Taipei';
   v_date date := v_local::date;
+  v_isodow integer := extract(isodow from v_local)::integer;
   v_minute integer := extract(hour from v_local)::integer * 60 + extract(minute from v_local)::integer;
   v_should_call boolean := false;
   v_project_url text;
   v_token text;
   v_request_id bigint;
 begin
-  -- 20:34-21:00: 今彩539 / 大樂透. 21:34-22:00: 六合彩.
-  -- A single Edge invocation checks every source due at that minute.
+  -- 20:34-21:00: 今彩539 / 大樂透. 21:34-22:00:六合彩.
+  -- Draw days are explicit here so the wrapper has no dependency on a second
+  -- scheduler helper: 539 Mon-Sat, Lotto649 Tue/Fri, Mark Six Tue/Thu/Sat.
   if v_minute between 1234 and 1260 then
     v_should_call := (
-      private.notification_is_draw_day('今彩539', v_date)
+      v_isodow between 1 and 6
       and not exists (
         select 1 from public.notification_events
         where event_type = 'lottery_result'
@@ -26,7 +28,7 @@ begin
           and payload->>'drawDate' = v_date::text
       )
     ) or (
-      private.notification_is_draw_day('大樂透', v_date)
+      v_isodow in (2, 5)
       and not exists (
         select 1 from public.notification_events
         where event_type = 'lottery_result'
@@ -35,7 +37,7 @@ begin
       )
     );
   elsif v_minute between 1294 and 1320 then
-    v_should_call := private.notification_is_draw_day('六合彩', v_date)
+    v_should_call := v_isodow in (2, 4, 6)
       and not exists (
         select 1 from public.notification_events
         where event_type = 'lottery_result'
