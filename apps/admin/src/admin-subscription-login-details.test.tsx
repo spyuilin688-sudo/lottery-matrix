@@ -57,14 +57,14 @@ it('shows member name beside provider identity in subscription management', asyn
   } finally { await act(async () => root.unmount()); container.remove(); }
 });
 
-it('shows logout time and estimated region while removing the current-session duration column', async () => {
+it('removes logout time while keeping estimated region in login records', async () => {
   const { container, root } = await renderAndOpen('登入紀錄');
   try {
     const table = [...container.querySelectorAll('table')].find((item) => item.querySelector('thead')?.textContent?.includes('管理員帳號'));
     expect(table).toBeTruthy();
     const header = table!.querySelector('thead')?.textContent ?? '';
     const body = table!.querySelector('tbody')?.textContent ?? '';
-    expect(header).toContain('登出時間');
+    expect(header).not.toContain('登出時間');
     expect(header).toContain('推估地區');
     expect(header).not.toContain('本次在線時間');
     expect(body).toContain('台灣・台北市');
