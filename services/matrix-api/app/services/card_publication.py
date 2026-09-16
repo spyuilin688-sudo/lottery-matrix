@@ -15,7 +15,12 @@ from uuid import uuid4
 
 from app import card_renderer
 from app.card_renderer import CARD_HEIGHT, CARD_WIDTH, card_layout, render_matrix_card, supported_card_orders
-from app.repositories.card_repository import CardRepository, card_repository, published_manifest
+from app.repositories.card_repository import (
+    CardRepository,
+    card_repository,
+    published_manifest,
+    validate_published_manifest,
+)
 from app.services.draw_refresh import require_complete_history
 
 LOGGER = logging.getLogger(__name__)
@@ -158,8 +163,16 @@ class CardPublicationService:
         self.cards = cards
         self.renderer = renderer
 
+    def _publication_state(self, lottery: str) -> dict[str, Any]:
+        read_state = getattr(self.cards, 'read_state', None)
+        if callable(read_state):
+            state = read_state(lottery)
+            if isinstance(state, dict):
+                return state
+        return {'manifest': self.cards.read_manifest(lottery), 'last_error': None}
+
     def _prune(self, lottery: str, manifest: dict[str, Any],
-               lease_token: str) -> None:
+               lease_token: str) -> str | None:
         try:
             self.cards.prune(
                 lottery, manifest['period'], manifest['generation'], lease_token,
@@ -167,30 +180,37 @@ class CardPublicationService:
                                   for card in manifest['cards'].values()},
             )
         except Exception as error:
-            # Publication is already durable. Cleanup is best-effort and can wait
-            # until the next real publication instead of forcing no-op leases.
+            # Publication is already durable; record cleanup failure so the next
+            # scheduled tick retries under a lease instead of taking the no-op path.
             LOGGER.warning('Matrix card cleanup failed for %s (%s)',
                            lottery, type(error).__name__)
+            return type(error).__name__
+        return None
 
     def ensure_current(self, lottery: str, now: datetime | None = None) -> dict[str, Any] | None:
         now = now or datetime.now(UTC)
-        # published_manifest is a read-only validation of the current draw
-        # snapshot, eligible orders and immutable input digests. If it is valid,
-        # there is no publication work: avoid a write lease and Storage pruning.
-        current = published_manifest(lottery, self.repository)
-        if current is not None:
-            return current
+        state = self._publication_state(lottery)
+        if not state.get('last_error'):
+            current = validate_published_manifest(
+                lottery,
+                self.repository,
+                state.get('manifest'),
+                require_all_orders=True,
+            )
+            if current is not None:
+                return current
 
         token = str(uuid4())
         state = self.cards.claim(lottery, token, now)
         if state is None:
             return published_manifest(lottery, self.repository)
         error_code = None
+        cleanup_error = None
         try:
             now = datetime.fromisoformat(state['claimed_at'])
             manifest = state['manifest']
             if manifest:
-                self._prune(lottery, manifest, token)
+                cleanup_error = self._prune(lottery, manifest, token)
             count = sum(card_layout(lottery)['column_rows'])
             draws = self.repository.list_draws(lottery, count)
             if not complete_snapshot(lottery, draws):
@@ -232,14 +252,14 @@ class CardPublicationService:
             published = {'lottery': lottery, 'period': period, 'generation': digest,
                          'generatedAt': now.isoformat(), 'cards': files}
             if self.cards.update(lottery, token, {'manifest': published}):
-                self._prune(lottery, published, token)
+                cleanup_error = self._prune(lottery, published, token)
                 return published
             return published_manifest(lottery, self.repository)
         except Exception as error:
             error_code = type(error).__name__  # Do not store transport URLs/credentials.
             raise
         finally:
-            self.cards.release(lottery, token, error_code)
+            self.cards.release(lottery, token, error_code or cleanup_error)
 
 
 def publish_current_card(lottery: str, repository: Any,
