@@ -135,7 +135,6 @@ const labels: Record<string, string[]> = {
   loginRecords: [
     "account",
     "loginAt",
-    "logoutAt",
     "ip",
     "estimatedRegion",
     "device",
