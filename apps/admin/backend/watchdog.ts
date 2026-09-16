@@ -37,7 +37,7 @@ const LOTTERIES: WatchdogLottery[] = ['今彩539', '天天樂', '六合彩', '�
 const JOB_NAME: Record<WatchdogLottery, string> = {
   今彩539: 'matrix-539-refresh-v2',
   天天樂: 'matrix-fantasy5-refresh-v2',
-  六合: 'matrix-marksix-refresh-v2',
+  六合彩: 'matrix-marksix-refresh-v2',
   大樂透: 'matrix-649-refresh-v2',
 };
 const JOB_STALE_MS = 20 * 60 * 1000;
