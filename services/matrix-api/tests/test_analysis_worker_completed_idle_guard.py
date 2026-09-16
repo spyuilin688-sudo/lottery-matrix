@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -33,20 +33,27 @@ def _completed_repository() -> InMemoryAnalysisRepository:
     for offset in range(227):
         repository.upsert_draw(_draw(11988 - offset, offset))
     repository.begin_run(LOTTERY, PERIOD, VERSION, "2026-09-04T01:00:00+00:00")
-    repository.save_artifact(LOTTERY, PERIOD, VERSION, "explore", {"items": []})
-    repository.save_artifact(
-        LOTTERY,
-        PERIOD,
-        VERSION,
-        "status",
-        {"summary": {"status": "ACTIVE"}},
-    )
+    for kind, payload in {
+        "explore": {"items": [{"id": "fixture-explore"}]},
+        "tianheng": {"items": [{"id": "fixture-tianheng"}]},
+        "tianyan": {"items": []},
+        "tiangong": {"items": []},
+        "status": {"summary": {"status": "ACTIVE"}},
+    }.items():
+        repository.save_artifact(LOTTERY, PERIOD, VERSION, kind, payload)
     repository.complete_run(
         LOTTERY,
         PERIOD,
         VERSION,
         "2026-09-04T01:10:00+00:00",
     )
+    expires_at = datetime.now(UTC) + timedelta(days=1)
+    repository.explore_results[(LOTTERY, PERIOD, VERSION, "fixture-explore")] = {
+        "expiresAt": expires_at,
+    }
+    repository.tianheng_results[(LOTTERY, PERIOD, VERSION, "fixture-tianheng")] = {
+        "expiresAt": expires_at,
+    }
     return repository
 
 
