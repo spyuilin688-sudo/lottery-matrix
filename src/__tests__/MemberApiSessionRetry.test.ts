@@ -62,13 +62,23 @@ test.each([
   expect(sdk.rpc).toHaveBeenNthCalledWith(2, rpcName);
 });
 
-test('一般 member_profile 錯誤不重試', async () => {
-  const error = { code: '42501', message: 'AUTH_REQUIRED' };
+test('member_profile 遇到暫時 AUTH_REQUIRED 時重新確認使用者並重試', async () => {
+  const profile = {
+    memberId: 'member',
+    lineUserId: 'line-member',
+    planName: '年費方案',
+    planExpiresAt: '2026-12-31T00:00:00.000Z',
+    isLifetime: false,
+  };
   sdk.scope.mockReturnValue(1);
-  sdk.rpc.mockResolvedValue({ data: null, error });
+  sdk.rpc
+    .mockResolvedValueOnce({ data: null, error: { code: '42501', message: 'AUTH_REQUIRED' } })
+    .mockResolvedValueOnce({ data: profile, error: null });
+  sdk.getUser.mockResolvedValue({ data: { user: { id: 'member' } }, error: null });
 
-  await expect(fetchMemberProfile()).rejects.toBe(error);
-  expect(sdk.rpc).toHaveBeenCalledTimes(1);
+  await expect(fetchMemberProfile()).resolves.toEqual(profile);
+  expect(sdk.getUser).toHaveBeenCalledTimes(1);
+  expect(sdk.rpc).toHaveBeenCalledTimes(2);
 });
 
 test('session 連續變更時最多只重試一次', async () => {
