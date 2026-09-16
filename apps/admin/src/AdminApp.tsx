@@ -111,6 +111,7 @@ const tableMap: Record<string, string> = {
 };
 const labels: Record<string, string[]> = {
   users: [
+    "memberDisplayName",
     "identityDisplay",
     "registeredAt",
     "currentPlanId",
@@ -169,6 +170,7 @@ const zh: Record<string, string> = {
   estimatedRegion: "推估地區",
   authUserId: "驗證用戶ID",
   lineDisplayName: "LINE名稱",
+  memberDisplayName: "會員名稱",
   identityDisplay: "LINE ID／Google ID",
   registeredAt: "註冊時間",
   lastOnlineAt: "最後上線時間",
@@ -1081,7 +1083,7 @@ function UserManager({
   const memberPage = useAdminMemberPage("users", revision, api);
   const { setPage, paged, loading, error } = memberPage;
   const [userInfo, setUserInfo] = useState<Row | null>(null);
-  const fields = ["identityDisplay", "registeredAt", "lastOnlineAt", "recentOnlineMinutes", "status", "recentIp", "estimatedRegion"];
+  const fields = ["memberDisplayName", "identityDisplay", "registeredAt", "lastOnlineAt", "recentOnlineMinutes", "status", "recentIp", "estimatedRegion"];
   const statusText = (value: unknown) => String(value) === "disabled" || String(value) === "停用" ? "停用" : "啟用";
   const showValue = (field: string, row: Row) => field === "status"
     ? statusText(row[field])

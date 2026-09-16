@@ -40,6 +40,7 @@ describe('listAdminTable', () => {
         authUserId: 'u1',
         lineUserId: 'line-user-1',
         lineDisplayName: '測試暱稱',
+        memberDisplayName: '測試暱稱',
         identityLabel: 'LINE ID',
         identityValue: 'line-user-1',
         identityDisplay: 'LINE ID：line-user-1',

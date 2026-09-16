@@ -30,6 +30,7 @@ export function UserInfoDialog({ row, client, module = 'users', onClose }: {
   }, [row.id, module, page, retry, client]);
   const value = (input: unknown) => input == null || input === '' ? '—' : String(input);
   const fields = [
+    ['會員名稱', value(row.memberDisplayName)],
     [value(row.identityLabel || 'LINE ID／Google ID'), value(row.identityValue)],
     ['註冊時間', formatAdminDateTime(row.registeredAt)],
     ['最後上線時間', formatAdminDateTime(row.lastOnlineAt)],

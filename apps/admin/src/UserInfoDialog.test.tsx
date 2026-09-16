@@ -11,9 +11,11 @@ it('shows provider-neutral member fields and loads five login records per page',
   const host = document.createElement('div'); document.body.append(host);
   const root = createRoot(host);
   const get = vi.fn(async (url: string) => ({ data: { items: url.includes('page=2') ? [] : Array.from({ length: 5 }, (_, i) => ({ id: String(i), loginAt: '2026-09-07T04:00:00Z', ip: '203.0.113.1', region: '台灣・台北市' })), hasMore: !url.includes('page=2') } }));
-  await act(async () => root.render(<UserInfoDialog row={{ id: 'member-1', identityLabel: 'Google ID', identityValue: 'google-user-456' }} client={{ get }} onClose={() => {}} />));
+  await act(async () => root.render(<UserInfoDialog row={{ id: 'member-1', memberDisplayName: '余翊翔', identityLabel: 'Google ID', identityValue: 'google-user-456' }} client={{ get }} onClose={() => {}} />));
   expect(host.querySelectorAll('.memberInfoCard')).toHaveLength(2);
-  expect(host.querySelectorAll('dl > div')).toHaveLength(3);
+  expect(host.querySelectorAll('dl > div')).toHaveLength(4);
+  expect(host.textContent).toContain('會員名稱');
+  expect(host.textContent).toContain('余翊翔');
   expect(host.textContent).toContain('Google ID');
   expect(host.textContent).toContain('google-user-456');
   expect(host.textContent).not.toContain('會員ID');
