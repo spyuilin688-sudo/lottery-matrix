@@ -104,7 +104,7 @@ def test_primary_railway_config_matches_deployed_worker_cadence() -> None:
     assert [config["deploy"]["startCommand"] for config in configs] == [
         "uv run python -u -m app.worker_all",
         "uv run python -u -m app.analysis_worker --lottery 天天樂",
-        "uv run python -u -m app.worker --lottery六合彩 --scheduled".replace("--lottery六合彩", "--lottery六合彩"),
+        "uv run python -u -m app.worker --lottery " + "六合彩 --scheduled",
         "uv run python -u -m app.worker --lottery 大樂透 --scheduled",
     ]
     assert [config["deploy"]["cronSchedule"] for config in configs] == [
