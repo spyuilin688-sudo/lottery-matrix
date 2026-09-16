@@ -86,6 +86,12 @@ class RecordingEmitter:
         self.attempts: list[str] = []
         self.successful: list[str] = []
         self.status_progress: list[str | None] = []
+        self.existing: set[str] = set()
+        self.exists_calls: list[str] = []
+
+    def exists(self, event_key: str) -> bool:
+        self.exists_calls.append(event_key)
+        return event_key in self.existing
 
     def emit(self, event: dict) -> dict:
         key = event["eventKey"]
@@ -100,11 +106,15 @@ class RecordingEmitter:
             self.fail_delivery[key] = remaining - 1
             raise NotificationDeliveryError("test delivery failure")
         self.successful.append(key)
+        self.existing.add(key)
         return {"created": True, "eventKey": key}
 
 
 class DisabledEmitter:
     enabled = False
+
+    def exists(self, event_key: str) -> bool:
+        raise AssertionError(f"disabled emitter must not check {event_key}")
 
     def emit(self, event: dict) -> dict:
         raise AssertionError(f"disabled emitter must not emit {event['eventKey']}")
@@ -218,7 +228,7 @@ def test_failed_analysis_never_emits_status() -> None:
     assert not any(key.startswith("matrix_status:") for key in emitter.attempts)
 
 
-def test_completed_period_reemits_the_same_stable_keys_on_later_invocation() -> None:
+def test_completed_period_uses_durable_event_preflight_on_later_invocation() -> None:
     repository = InMemoryAnalysisRepository()
     source = NotificationSource(history_count=226)
     emitter = RecordingEmitter(repository)
@@ -228,9 +238,11 @@ def test_completed_period_reemits_the_same_stable_keys_on_later_invocation() -> 
 
     assert first["status"] == "complete"
     assert second["status"] == "already-acquired"
-    assert emitter.successful.count(RESULT_KEY) == 2
+    assert emitter.successful.count(RESULT_KEY) == 1
     assert CARD_KEY not in emitter.attempts
-    assert emitter.successful.count(STATUS_KEY) == 2
+    assert emitter.successful.count(STATUS_KEY) == 1
+    assert emitter.exists_calls.count(RESULT_KEY) >= 2
+    assert emitter.exists_calls.count(STATUS_KEY) >= 2
 
 
 def test_disabled_notification_integration_preserves_worker_behavior() -> None:
