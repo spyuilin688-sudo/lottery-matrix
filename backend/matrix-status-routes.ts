@@ -60,8 +60,11 @@ function failure(cause: unknown): RouteResult {
 function compactRoads(value: unknown, entitlements: MatrixEntitlements) {
   if (!Array.isArray(value)) throw new Error('INVALID_REQUEST');
   let locked = false;
+  const rawById = new Map<string, Record<string, unknown>>();
   const roads = value.map((raw) => {
     const road = record(raw);
+    const roadId = String(road.id ?? '');
+    if (!rawById.has(roadId)) rawById.set(roadId, road);
     const explorePeriods = Number(road.explorePeriods);
     if (![2, 7, 13].includes(explorePeriods) || !Array.isArray(road.result)) {
       throw new Error('INVALID_REQUEST');
@@ -72,7 +75,7 @@ function compactRoads(value: unknown, entitlements: MatrixEntitlements) {
     if (entitled) return { ...road, locked: false };
     locked = true;
     return {
-      id: String(road.id ?? ''),
+      id: roadId,
       result: [...road.result],
       explorePeriods,
       locked: true,
@@ -80,8 +83,9 @@ function compactRoads(value: unknown, entitlements: MatrixEntitlements) {
   });
   roads.sort((left, right) => {
     if (left.locked || right.locked) {
-      const leftRaw = record(value.find((item) => record(item).id === left.id));
-      const rightRaw = record(value.find((item) => record(item).id === right.id));
+      const leftRaw = rawById.get(String(left.id));
+      const rightRaw = rawById.get(String(right.id));
+      if (!leftRaw || !rightRaw) throw new Error('INVALID_REQUEST');
       return Number(rightRaw.streak ?? 0) - Number(leftRaw.streak ?? 0)
         || Number(leftRaw.predictionDistance ?? 0) - Number(rightRaw.predictionDistance ?? 0)
         || Number(leftRaw.position ?? 0) - Number(rightRaw.position ?? 0)
@@ -211,30 +215,53 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
         if (!lotteries.includes(lottery) || !drawPeriod || !analysisVersion || !itemId) {
           throw new Error('INVALID_REQUEST');
         }
-        const [sources, configs] = await Promise.all([
-          dependencies.readStatusSources(lottery, drawPeriod),
-          member.memberId ? dependencies.listConfigs(member.memberId) : Promise.resolve([]),
-        ]);
-        if (!sources?.explore || !sources.tianyan
-          || sources.drawPeriod !== drawPeriod
-          || sources.explore.drawPeriod !== drawPeriod
-          || sources.tianyan.drawPeriod !== drawPeriod
-          || sources.explore.lottery !== lottery
-          || sources.tianyan.lottery !== lottery) {
-          throw new Error('ANALYSIS_NOT_READY');
+        const configs = member.memberId ? await dependencies.listConfigs(member.memberId) : [];
+        const lotteryConfigs = configs.filter((config) => config.lottery === lottery);
+        const entitlements = resolveMatrixEntitlements(member, now());
+        let visible = false;
+
+        if (lotteryConfigs.length === 0 && dependencies.readCompactStatus) {
+          const compact = await dependencies.readCompactStatus(lottery, drawPeriod);
+          if (!compact?.analysisVersion || !compact.drawPeriod || !compact.payload
+            || compact.drawPeriod !== drawPeriod) {
+            throw new Error('ANALYSIS_NOT_READY');
+          }
+          if (compact.analysisVersion !== analysisVersion) {
+            throw new Error('ANALYSIS_VERSION_MISMATCH');
+          }
+          const artifact = projectCompactStatus(
+            compact.payload,
+            lottery,
+            compact.drawPeriod,
+            entitlements,
+          );
+          visible = artifact.cards.some((card) => card.roads.some((road) => (
+            road.locked === false && road.validationItemId === itemId
+          )));
+        } else {
+          const sources = await dependencies.readStatusSources(lottery, drawPeriod);
+          if (!sources?.explore || !sources.tianyan
+            || sources.drawPeriod !== drawPeriod
+            || sources.explore.drawPeriod !== drawPeriod
+            || sources.tianyan.drawPeriod !== drawPeriod
+            || sources.explore.lottery !== lottery
+            || sources.tianyan.lottery !== lottery) {
+            throw new Error('ANALYSIS_NOT_READY');
+          }
+          if (sources.analysisVersion !== analysisVersion) {
+            throw new Error('ANALYSIS_VERSION_MISMATCH');
+          }
+          const artifact = buildMatrixStatusArtifact(
+            sources.explore,
+            sources.tianyan,
+            configs,
+            entitlements,
+          );
+          visible = artifact.cards.some((card) => card.roads.some((road) => (
+            road.locked === false && road.validationItemId === itemId
+          )));
         }
-        if (sources.analysisVersion !== analysisVersion) {
-          throw new Error('ANALYSIS_VERSION_MISMATCH');
-        }
-        const artifact = buildMatrixStatusArtifact(
-          sources.explore,
-          sources.tianyan,
-          configs,
-          resolveMatrixEntitlements(member, now()),
-        );
-        const visible = artifact.cards.some((card) => card.roads.some((road) => (
-          road.locked === false && road.validationItemId === itemId
-        )));
+
         if (!visible) throw new MatrixAccessError('FORBIDDEN', 403);
         if (!dependencies.readStatusValidation) throw new Error('SUPABASE_VALIDATION_READ_FAILED');
         const source = await dependencies.readStatusValidation(
