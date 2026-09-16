@@ -11,11 +11,29 @@ export type AuthUserIdentity = {
 
 export type AuthUserForIdentity = {
   id?: unknown;
+  user_metadata?: Record<string, unknown> | null;
   identities?: AuthUserIdentity[] | null;
 };
 
 function optionalString(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+export function memberDisplayNameFromAuthUser(
+  storedDisplayName: unknown,
+  authUser: AuthUserForIdentity | undefined | null,
+) {
+  const stored = optionalString(storedDisplayName);
+  if (stored) return stored;
+  const metadata = authUser?.user_metadata;
+  const metadataName = optionalString(metadata?.name) ?? optionalString(metadata?.full_name);
+  if (metadataName) return metadataName;
+  for (const identity of authUser?.identities ?? []) {
+    const identityName = optionalString(identity.identity_data?.name)
+      ?? optionalString(identity.identity_data?.full_name);
+    if (identityName) return identityName;
+  }
+  return null;
 }
 
 export function providerIdentityFromAuthUser(

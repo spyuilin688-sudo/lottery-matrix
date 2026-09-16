@@ -1,6 +1,6 @@
 import { adminBusinessDateKey, adminBusinessDateRange } from '../shared/admin-business-time';
 import { lookupLocations, memberConnectionSummaries } from './member-login-history';
-import { providerIdentityFromAuthUser, type AuthUserForIdentity } from './member-provider-identity';
+import { memberDisplayNameFromAuthUser, providerIdentityFromAuthUser, type AuthUserForIdentity } from './member-provider-identity';
 type Requester = {
   request<T = unknown>(path: string, init?: RequestInit): Promise<T>;
   requestPage?<T = unknown>(path: string): Promise<{ items: T[]; total: number }>;
@@ -252,9 +252,11 @@ async function enrichProviderIdentities(items: Array<Row & { id: string }>, api:
   const authUsers = needsAuth ? await listAllAuthUsers(api) : [];
   const byId = new Map(authUsers.map((user) => [String(user.id ?? ''), user]));
   return items.map((item) => {
-    const identity = providerIdentityFromAuthUser(item.lineUserId, byId.get(String(item.authUserId ?? '')));
+    const authUser = byId.get(String(item.authUserId ?? ''));
+    const identity = providerIdentityFromAuthUser(item.lineUserId, authUser);
     return {
       ...item,
+      memberDisplayName: memberDisplayNameFromAuthUser(item.lineDisplayName, authUser),
       identityLabel: identity?.label ?? null,
       identityValue: identity?.value ?? null,
       identityDisplay: identity ? `${identity.label}：${identity.value}` : null,
