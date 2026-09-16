@@ -10,7 +10,6 @@ import "./prototype.css";
 import "./homepage-repair.css";
 import "./tongxing-compact.css";
 import "./matrix-explore-spacing.css";
-import "./matrix-explore-header-background.css";
 import "./matrix-tianheng.css";
 import "./feature-page-adjustments.css";
 import "./number-reference-visual-refinement.css";
