@@ -535,6 +535,15 @@
   color: var(--lottery-neutral-400);
 }
 
+/* Expand the existing SVG mask so the legacy auth-frame artwork is fully removed. */
+.membership-reference-art .profile-auth-pill-mask {
+  x: 1208px;
+  y: 118px;
+  width: 312px;
+  height: 168px;
+  rx: 18px;
+}
+
 /* Integrate anonymous sign-in actions with the Matrix black-gold member card. */
 .profile-card[data-auth-layout="multiple"] {
   --profile-auth-zone-right: 4.6cqw;
