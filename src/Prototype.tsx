@@ -443,8 +443,12 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   const [quickSettingsOpen, setQuickSettingsOpen] = useState(false);
   const [quickTarget, setQuickTarget] = useState<ScreenId | null>(() => {
     if (typeof window === "undefined") return null;
-    const stored = window.localStorage.getItem("matrix-quick-target") as ScreenId | null;
-    return QUICK_OPTIONS.some((option) => option.screen === stored) ? stored : null;
+    try {
+      const stored = window.localStorage.getItem("matrix-quick-target") as ScreenId | null;
+      return QUICK_OPTIONS.some((option) => option.screen === stored) ? stored : null;
+    } catch {
+      return null;
+    }
   });
   const { deviceId, setDeviceId } = useMobileDevice();
   const { data: latestDraw } = useLatestLotteryDraw(selected);
@@ -475,7 +479,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       const signal = request.signal;
       // Each card settles independently; an unavailable lottery cannot block the others.
       for (const { id } of LOTTERIES) {
-        void withDeadline(() => fetchMatrixStatus(id), { signal })
+        void withDeadline((requestSignal) => fetchMatrixStatus(id, requestSignal), { signal })
           .then((result) => {
             if (!active || current !== generation) return;
             const status = toHomepageMatrixStatus(result.summary);
@@ -521,7 +525,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   const navigate = (next: ScreenId) => enterPage(next, () => { if (next === "history") setHistoryReturnScreen(screen); setQuickActive(false); setScreen(next); });
   const closeQuick = () => { if (!quickActive) return; enterPage(quickReturnScreen, () => { setQuickActive(false); setScreen(quickReturnScreen); }); };
   const openQuick = () => { if (quickActive) { closeQuick(); return; } if (!quickTarget) { setQuickSettingsOpen(true); return; } enterPage(quickTarget, () => { setQuickReturnScreen(screen); if (quickTarget === "history") setHistoryReturnScreen(screen); setQuickActive(true); setScreen(quickTarget); }); };
-  const selectQuickTarget = (next: ScreenId) => enterPage(next, () => { setQuickTarget(next); window.localStorage.setItem("matrix-quick-target", next); setQuickSettingsOpen(false); setQuickReturnScreen(screen); if (next === "history") setHistoryReturnScreen(screen); setQuickActive(true); setScreen(next); });
+  const selectQuickTarget = (next: ScreenId) => enterPage(next, () => { setQuickTarget(next); try { window.localStorage.setItem("matrix-quick-target", next); } catch {} setQuickSettingsOpen(false); setQuickReturnScreen(screen); if (next === "history") setHistoryReturnScreen(screen); setQuickActive(true); setScreen(next); });
 
   const quickSettings = quickSettingsOpen
     ? (
