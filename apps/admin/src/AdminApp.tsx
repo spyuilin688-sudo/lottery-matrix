@@ -56,12 +56,15 @@ import { AdminTransferPush } from "./AdminTransferPush";
 import { AdminTodos } from "./AdminTodos";
 import { PaymentReversalPanel, type PaymentRecord, type PaymentReversalStatus } from "./PaymentReversalPanel";
 import { PermissionSwitches } from "./PermissionSwitches";
+import { GrowthLineChart } from "./GrowthLineChart";
 type Row = Record<string, unknown> & { id: string };
 type Dashboard = {
   todayVisitors: number | null;
   monthVisitors: number | null;
   totalVisitors: number | null;
   totalUsers: number;
+  userGrowth: Array<{ date: string; value: number }>;
+  revenueGrowth: Array<{ date: string; value: number }>;
   monthlyPro: number;
   quarterlyPro: number;
   yearlyPro: number;
@@ -1463,7 +1466,11 @@ function Overview({ d }: { d: Dashboard }) {
       />
       <div className="panel">
         <h2>成長曲線</h2>
-        <div className="emptyChart">資料將依實際紀錄累積呈現</div>
+        <GrowthLineChart
+          data={d.userGrowth}
+          ariaLabel="會員累積成長曲線"
+          valueLabel="累積會員"
+        />
       </div>
     </>
   );
@@ -1504,9 +1511,12 @@ function Revenue({
             </button>
           )}
         </div>
-        <div className="emptyChart">
-          依 subscriptionRecords 實際收入資料累積
-        </div>
+        <GrowthLineChart
+          data={d.revenueGrowth}
+          ariaLabel="收入累積成長曲線"
+          valueLabel="累積收入"
+          formatValue={money}
+        />
       </div>
     </>
   );
