@@ -1,4 +1,8 @@
 import type { CustomStatusConfig } from './matrix-custom-status.ts';
+import {
+  matrixCustomStatusConfigKey,
+  type MatrixCustomStatusResult,
+} from './matrix-custom-status-result.ts';
 import { anonymousMatrixMember, resolveMatrixEntitlements, type MatrixEntitlements, type MemberContext } from './matrix-entitlements.ts';
 import { MatrixAccessError } from './matrix-member-auth.ts';
 import {
@@ -8,6 +12,10 @@ import {
 } from './matrix-status-service.ts';
 
 type LotteryId = '今彩539' | '天天樂' | '六合彩' | '大樂透';
+type StatusIdentity = {
+  analysisVersion: string;
+  drawPeriod: string;
+};
 type StatusSources = {
   analysisVersion: string;
   drawPeriod: string;
@@ -28,7 +36,13 @@ type RouteResult = { status: number; body: Record<string, unknown> };
 type Dependencies = {
   requireMember(authorization?: string): Promise<MemberContext>;
   readStatusSources(lottery: LotteryId, drawPeriod?: string): Promise<StatusSources | null>;
+  readStatusIdentity?(lottery: LotteryId, drawPeriod?: string): Promise<StatusIdentity | null>;
   readCompactStatus?(lottery: LotteryId, drawPeriod?: string): Promise<CompactStatus | null>;
+  readCustomStatus?(
+    memberId: string,
+    lottery: LotteryId,
+    drawPeriod?: string,
+  ): Promise<MatrixCustomStatusResult | null>;
   readStatusValidation?(
     lottery: LotteryId,
     drawPeriod: string,
@@ -104,6 +118,7 @@ function projectCompactStatus(
   lottery: LotteryId,
   drawPeriod: string,
   entitlements: MatrixEntitlements,
+  preserveCustom = false,
 ) {
   if (payloadValue.lottery !== lottery || payloadValue.drawPeriod !== drawPeriod) {
     throw new Error('ANALYSIS_NOT_READY');
@@ -124,9 +139,37 @@ function projectCompactStatus(
     lottery,
     drawPeriod,
     cards,
-    customTriggers: [],
-    customSettings: [],
+    ...(preserveCustom ? {} : { customTriggers: [], customSettings: [] }),
   };
+}
+
+function projectCachedCustomStatus(
+  cached: MatrixCustomStatusResult,
+  configs: CustomStatusConfig[],
+  lottery: LotteryId,
+  entitlements: MatrixEntitlements,
+) {
+  if (cached.configKey !== matrixCustomStatusConfigKey(configs, lottery)) {
+    throw new Error('ANALYSIS_NOT_READY');
+  }
+  const payload = entitlements.canUseCompositeCustomRoad
+    ? cached.compositePayload
+    : cached.standardPayload;
+  return projectCompactStatus(payload, lottery, cached.drawPeriod, entitlements, true);
+}
+
+function requireCurrentCustomResult(
+  cached: MatrixCustomStatusResult | null,
+  identity: StatusIdentity | null,
+) {
+  if (!cached?.analysisVersion || !cached.drawPeriod) throw new Error('ANALYSIS_NOT_READY');
+  if (identity && (
+    !identity.analysisVersion
+    || !identity.drawPeriod
+    || cached.drawPeriod !== identity.drawPeriod
+    || cached.analysisVersion !== identity.analysisVersion
+  )) throw new Error('ANALYSIS_NOT_READY');
+  return cached;
 }
 
 export function createMatrixStatusRoutes(dependencies: Dependencies) {
@@ -145,8 +188,47 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
         const configs = member.memberId ? await dependencies.listConfigs(member.memberId) : [];
         const lotteryConfigs = configs.filter((config) => config.lottery === lottery);
         const entitlements = resolveMatrixEntitlements(member, now());
+        const customActive = Boolean(
+          member.memberId
+          && lotteryConfigs.length > 0
+          && entitlements.canCustomizeStatus,
+        );
 
-        if (lotteryConfigs.length === 0 && dependencies.readCompactStatus) {
+        if (customActive && dependencies.readCustomStatus) {
+          const identity = dependencies.readStatusIdentity
+            ? await dependencies.readStatusIdentity(lottery, requestedPeriod)
+            : null;
+          if (dependencies.readStatusIdentity && !identity) throw new Error('ANALYSIS_NOT_READY');
+          const cached = requireCurrentCustomResult(
+            await dependencies.readCustomStatus(
+              member.memberId,
+              lottery,
+              identity?.drawPeriod ?? requestedPeriod,
+            ),
+            identity,
+          );
+          const artifact = projectCachedCustomStatus(
+            cached,
+            configs,
+            lottery,
+            entitlements,
+          );
+          return {
+            status: 200,
+            body: {
+              kind: 'status',
+              lottery,
+              drawPeriod: cached.drawPeriod,
+              analysisVersion: `${cached.analysisVersion}:status`,
+              sourceAnalysisVersion: cached.analysisVersion,
+              ...artifact,
+              detailLocked: !entitlements.canViewFullStatus,
+              cards: artifact.cards,
+            },
+          };
+        }
+
+        if (!customActive && dependencies.readCompactStatus) {
           const compact = await dependencies.readCompactStatus(lottery, requestedPeriod);
           if (!compact?.analysisVersion || !compact.drawPeriod || !compact.payload) {
             throw new Error('ANALYSIS_NOT_READY');
@@ -172,6 +254,8 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
           };
         }
 
+        // Compatibility path for non-production callers that have not supplied
+        // the precomputed readers yet. The formal Edge Function supplies them.
         const sources = await dependencies.readStatusSources(lottery, requestedPeriod);
         if (!sources?.explore || !sources.tianyan
           || sources.explore.drawPeriod !== sources.drawPeriod
@@ -218,9 +302,35 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
         const configs = member.memberId ? await dependencies.listConfigs(member.memberId) : [];
         const lotteryConfigs = configs.filter((config) => config.lottery === lottery);
         const entitlements = resolveMatrixEntitlements(member, now());
+        const customActive = Boolean(
+          member.memberId
+          && lotteryConfigs.length > 0
+          && entitlements.canCustomizeStatus,
+        );
         let visible = false;
 
-        if (lotteryConfigs.length === 0 && dependencies.readCompactStatus) {
+        if (customActive && dependencies.readCustomStatus) {
+          const identity = dependencies.readStatusIdentity
+            ? await dependencies.readStatusIdentity(lottery, drawPeriod)
+            : null;
+          if (dependencies.readStatusIdentity && !identity) throw new Error('ANALYSIS_NOT_READY');
+          const cached = requireCurrentCustomResult(
+            await dependencies.readCustomStatus(member.memberId, lottery, drawPeriod),
+            identity,
+          );
+          if (cached.analysisVersion !== analysisVersion) {
+            throw new Error('ANALYSIS_VERSION_MISMATCH');
+          }
+          const artifact = projectCachedCustomStatus(
+            cached,
+            configs,
+            lottery,
+            entitlements,
+          );
+          visible = artifact.cards.some((card) => card.roads.some((road) => (
+            road.locked === false && road.validationItemId === itemId
+          )));
+        } else if (!customActive && dependencies.readCompactStatus) {
           const compact = await dependencies.readCompactStatus(lottery, drawPeriod);
           if (!compact?.analysisVersion || !compact.drawPeriod || !compact.payload
             || compact.drawPeriod !== drawPeriod) {

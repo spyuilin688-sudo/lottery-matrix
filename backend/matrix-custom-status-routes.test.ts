@@ -23,9 +23,16 @@ function member(plan: MemberContext['plan'] = 'monthly', active = true): MemberC
 
 function routes(context = member()) {
   const store = { list: vi.fn(async () => [saved]), save: vi.fn(async (_memberId, value) => value), reset: vi.fn(async () => undefined) };
+  const recomputeStatus = vi.fn(async () => undefined);
   return {
     store,
-    routes: createMatrixCustomStatusRoutes({ requireMember: async () => context, store, now: () => new Date('2026-08-21T00:00:00Z') }),
+    recomputeStatus,
+    routes: createMatrixCustomStatusRoutes({
+      requireMember: async () => context,
+      store,
+      recomputeStatus,
+      now: () => new Date('2026-08-21T00:00:00Z'),
+    }),
   };
 }
 
@@ -44,6 +51,15 @@ describe('Matrix custom status routes', () => {
     expect(store.save).toHaveBeenCalledWith('member-1', upgraded);
   });
 
+  it('precomputes the selected lottery immediately after a custom condition is saved', async () => {
+    const { routes: api, store, recomputeStatus } = routes(member('monthly'));
+
+    await expect(api.save({ authorization: 'Bearer token', body: saved })).resolves.toMatchObject({ status: 200 });
+
+    expect(recomputeStatus).toHaveBeenCalledWith('member-1', '今彩539');
+    expect(store.save.mock.invocationCallOrder[0]).toBeLessThan(recomputeStatus.mock.invocationCallOrder[0]);
+  });
+
   it('rejects custom saves for free, trial and expired members', async () => {
     for (const context of [member('free', false), member('trial'), member('monthly', false)]) {
       await expect(routes(context).routes.save({ authorization: 'Bearer token', body: saved })).resolves.toMatchObject({ status: 403, body: { error: { code: 'FORBIDDEN' } } });
@@ -56,9 +72,11 @@ describe('Matrix custom status routes', () => {
     await expect(routes(member('quarterly')).routes.save({ authorization: 'Bearer token', body: composite })).resolves.toMatchObject({ status: 200 });
   });
 
-  it('resets exactly one selected slot to Chapter 15', async () => {
-    const { routes: api, store } = routes();
+  it('resets exactly one selected slot to Chapter 15 and refreshes the cached lottery result', async () => {
+    const { routes: api, store, recomputeStatus } = routes();
     await expect(api.reset({ authorization: 'Bearer token', body: { lottery: '今彩539', status: 'ACTIVE' } })).resolves.toEqual({ status: 200, body: { reset: true } });
     expect(store.reset).toHaveBeenCalledWith('member-1', '今彩539', 'ACTIVE');
+    expect(recomputeStatus).toHaveBeenCalledWith('member-1', '今彩539');
+    expect(store.reset.mock.invocationCallOrder[0]).toBeLessThan(recomputeStatus.mock.invocationCallOrder[0]);
   });
 });

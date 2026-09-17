@@ -1,9 +1,12 @@
 import { createCustomStatusStore } from '../../../backend/matrix-custom-status-store.ts';
+import { createCustomStatusResultStore } from '../../../backend/matrix-custom-status-result-store.ts';
+import { createMatrixCustomStatusRecomputeService } from '../../../backend/matrix-custom-status-recompute.ts';
 import { createMemberAuth } from '../../../backend/matrix-member-auth.ts';
 import type { ExploreArtifact, TianyanArtifact } from '../../../backend/matrix-status-service.ts';
 import { createMatrixStatusEdgeHandler } from './handler.ts';
 import {
   createMatrixStatusCompactReader,
+  createMatrixStatusIdentityReader,
   createMatrixStatusSourceReader,
   createMatrixStatusValidationReader,
 } from './source-reader.ts';
@@ -26,12 +29,45 @@ function loadConfig() {
 
 const memberAuth = createMemberAuth(loadConfig);
 const customStatusStore = createCustomStatusStore(loadConfig);
+const customStatusResultStore = createCustomStatusResultStore(loadConfig);
+const readStatusIdentity = createMatrixStatusIdentityReader(loadConfig);
 const readCompactStatus = createMatrixStatusCompactReader(loadConfig);
 const readStatusSources = createMatrixStatusSourceReader(loadConfig);
 const readStatusValidation = createMatrixStatusValidationReader(loadConfig);
 
+async function resolvedStatusIdentity(lottery: LotteryId, drawPeriod?: string) {
+  const identity = await readStatusIdentity(lottery, drawPeriod);
+  if (!identity) return null;
+  const analysisVersion = String(identity.analysisVersion ?? '').trim();
+  const resolvedPeriod = String(identity.drawPeriod ?? '').trim();
+  if (!analysisVersion || !resolvedPeriod) return null;
+  return { analysisVersion, drawPeriod: resolvedPeriod };
+}
+
+async function resolvedStatusSources(lottery: LotteryId, drawPeriod?: string) {
+  const source = await readStatusSources(lottery, drawPeriod);
+  if (!source) return null;
+  const analysisVersion = String(source.analysisVersion ?? '').trim();
+  const resolvedPeriod = String(source.drawPeriod ?? '').trim();
+  if (!analysisVersion || !resolvedPeriod || !source.explore || !source.tianyan) return null;
+  return {
+    analysisVersion,
+    drawPeriod: resolvedPeriod,
+    explore: source.explore as ExploreArtifact,
+    tianyan: source.tianyan as TianyanArtifact,
+  };
+}
+
+const customStatusRecompute = createMatrixCustomStatusRecomputeService({
+  readStatusSources: (lottery) => resolvedStatusSources(lottery),
+  listConfigs: (memberId) => customStatusStore.list(memberId),
+  listConfigsByLottery: (lottery) => customStatusStore.listByLottery(lottery),
+  resultStore: customStatusResultStore,
+});
+
 const handler = createMatrixStatusEdgeHandler({
   requireMember: (authorization) => memberAuth.requireMember(authorization),
+  readStatusIdentity: resolvedStatusIdentity,
   async readCompactStatus(lottery: LotteryId, drawPeriod?: string) {
     const source = await readCompactStatus(lottery, drawPeriod);
     if (!source) return null;
@@ -51,19 +87,10 @@ const handler = createMatrixStatusEdgeHandler({
       payload: payload as Record<string, unknown>,
     };
   },
-  async readStatusSources(lottery: LotteryId, drawPeriod?: string) {
-    const source = await readStatusSources(lottery, drawPeriod);
-    if (!source) return null;
-    const analysisVersion = String(source.analysisVersion ?? '').trim();
-    const resolvedPeriod = String(source.drawPeriod ?? '').trim();
-    if (!analysisVersion || !resolvedPeriod || !source.explore || !source.tianyan) return null;
-    return {
-      analysisVersion,
-      drawPeriod: resolvedPeriod,
-      explore: source.explore as ExploreArtifact,
-      tianyan: source.tianyan as TianyanArtifact,
-    };
-  },
+  readCustomStatus: (memberId, lottery, drawPeriod) => (
+    customStatusResultStore.read(memberId, lottery, drawPeriod)
+  ),
+  readStatusSources: resolvedStatusSources,
   async readStatusValidation(lottery, drawPeriod, analysisVersion, itemId) {
     const source = await readStatusValidation(lottery, drawPeriod, analysisVersion, itemId);
     const sourceItemId = String(source.itemId ?? '').trim();
@@ -71,6 +98,13 @@ const handler = createMatrixStatusEdgeHandler({
     return { itemId: sourceItemId, validation: source.validation };
   },
   listConfigs: (memberId) => customStatusStore.list(memberId),
+  authorizeInternal: (authorization) => (
+    authorization === `Bearer ${loadConfig().serviceRoleKey}`
+  ),
+  recomputeMember: (memberId, lottery) => (
+    customStatusRecompute.recomputeMember(memberId, lottery)
+  ),
+  recomputeLottery: (lottery) => customStatusRecompute.recomputeLottery(lottery),
 });
 
 Deno.serve(handler);
