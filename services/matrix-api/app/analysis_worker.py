@@ -4,6 +4,8 @@ from datetime import UTC, datetime
 from os import environ
 from typing import Any
 
+import httpx
+
 from app.repositories.card_repository import is_card_published
 from app.services.card_publication import publish_current_card
 from app.repositories.analysis_repository import (
@@ -12,6 +14,7 @@ from app.repositories.analysis_repository import (
     create_supabase_repository,
 )
 from app.services.analysis_pipeline import ArtifactBuilder
+from app.services.custom_status_recompute import recompute_custom_matrix_status
 from app.services.draw_refresh import recent_history_window, require_complete_history
 from app.services.notification_events import (
     NotificationDeliveryError,
@@ -368,6 +371,14 @@ def main(argv: list[str] | None = None) -> int:
                 lottery,
                 repository,
                 notification_emitter=notification_emitter,
+            )
+    if result.get("status") == "complete":
+        with httpx.Client() as client:
+            recompute_custom_matrix_status(
+                client,
+                settings.supabase_url,
+                settings.supabase_secret_key,
+                lottery,
             )
     print(f'{result["lottery"]} {result["drawPeriod"] or "-"} {result["status"]}')
     return 0
