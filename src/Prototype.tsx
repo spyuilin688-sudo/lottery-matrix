@@ -480,7 +480,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       void withDeadline((requestSignal) => fetchMatrixStatuses(LOTTERIES.map(({ id }) => id), requestSignal), { signal })
         .then((result) => {
           if (!active || current !== generation) return;
-          const items = new Map(result.items.map((item) => [item.lottery, item]));
+          const items = new Map(result.items.map((item) => [item.lottery, item] as const));
           for (const { id } of LOTTERIES) {
             const item = items.get(id);
             if (!item || item.status !== 200 || !('kind' in item.body) || item.body.kind !== 'status') {
