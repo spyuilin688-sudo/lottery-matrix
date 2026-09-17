@@ -20,7 +20,9 @@ function payload(value: unknown) {
 async function json(response: Response, code: string) {
   if (!response.ok) throw new Error(code);
   if (response.status === 204) return null;
-  return response.json() as Promise<unknown>;
+  const body = await response.text();
+  if (!body.trim()) return null;
+  return JSON.parse(body) as unknown;
 }
 
 export function createCustomStatusResultStore(
