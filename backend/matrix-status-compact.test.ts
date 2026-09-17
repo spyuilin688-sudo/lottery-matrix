@@ -1,5 +1,6 @@
 import { expect, it, vi } from 'vitest';
 import { createDefaultCustomStatusConfig, type MatrixLottery } from './matrix-custom-status';
+import { matrixCustomStatusConfigKey } from './matrix-custom-status-result';
 import type { MemberContext } from './matrix-entitlements';
 import { createMatrixStatusRoutes } from './matrix-status-routes';
 
@@ -91,7 +92,7 @@ it('reads a member-specific precomputed result instead of raw sources for custom
   const config = createDefaultCustomStatusConfig('今彩539', 'ACTIVE');
   const readCustomStatus = vi.fn(async () => ({
     ...compact,
-    configKey: 'current-config',
+    configKey: matrixCustomStatusConfigKey([config], '今彩539'),
     standardPayload: compact.payload,
     compositePayload: compact.payload,
   }));
@@ -118,7 +119,7 @@ it('never recomputes unchanged custom status during repeated homepage GETs', asy
   const config = createDefaultCustomStatusConfig('今彩539', 'ACTIVE');
   const readCustomStatus = vi.fn(async () => ({
     ...compact,
-    configKey: 'current-config',
+    configKey: matrixCustomStatusConfigKey([config], '今彩539'),
     standardPayload: compact.payload,
     compositePayload: compact.payload,
   }));
@@ -144,7 +145,7 @@ it.each(lotteries)('uses the precomputed member result for %s custom status', as
   const cached = compactFor(lottery, `custom:${lottery}`);
   const readCustomStatus = vi.fn(async () => ({
     ...cached,
-    configKey: `config:${lottery}`,
+    configKey: matrixCustomStatusConfigKey([config], lottery),
     standardPayload: cached.payload,
     compositePayload: cached.payload,
   }));
@@ -172,7 +173,7 @@ it('keeps precomputed custom results isolated by member id', async () => {
     const cached = compactFor('今彩539', `custom:${memberId}`);
     return {
       ...cached,
-      configKey: `config:${memberId}`,
+      configKey: matrixCustomStatusConfigKey([config], '今彩539'),
       standardPayload: cached.payload,
       compositePayload: cached.payload,
     };
