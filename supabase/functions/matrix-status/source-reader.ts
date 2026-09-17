@@ -1,5 +1,10 @@
 type MatrixLottery = '今彩539' | '天天樂' | '六合彩' | '大樂透';
 
+export type MatrixStatusIdentityPayload = {
+  analysisVersion?: unknown;
+  drawPeriod?: unknown;
+};
+
 export type MatrixStatusSourcePayload = {
   analysisVersion?: unknown;
   drawPeriod?: unknown;
@@ -42,6 +47,24 @@ async function readAnalysisResponse<T>(
     throw new Error(errorCode);
   }
   return response.json() as Promise<T>;
+}
+
+export function createMatrixStatusIdentityReader(
+  loadConfig: () => Config,
+  fetcher: typeof fetch = fetch,
+) {
+  return async (lottery: MatrixLottery, drawPeriod?: string) => {
+    const config = loadConfig();
+    const response = await fetcher(`${config.url}/rest/v1/rpc/matrix_status_identity_get`, {
+      method: 'POST',
+      headers: serviceHeaders(config.serviceRoleKey),
+      body: JSON.stringify({ p_request: { lottery, ...(drawPeriod ? { drawPeriod } : {}) } }),
+    });
+    return readAnalysisResponse<MatrixStatusIdentityPayload>(
+      response,
+      'SUPABASE_ANALYSIS_READ_FAILED',
+    );
+  };
 }
 
 export function createMatrixStatusSourceReader(
