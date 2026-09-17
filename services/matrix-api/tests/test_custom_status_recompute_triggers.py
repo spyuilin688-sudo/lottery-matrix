@@ -100,12 +100,16 @@ def test_batch_worker_does_not_recompute_already_analyzed_draws(monkeypatch) -> 
     assert recomputed == []
 
 
-def test_fantasy5_cli_recomputes_only_after_complete_analysis(monkeypatch) -> None:
+def fantasy_repository(latest_period: str):
+    return SimpleNamespace(list_draws=lambda _lottery, _limit: [{"period": latest_period}])
+
+
+def test_fantasy5_cli_recomputes_only_after_complete_latest_analysis(monkeypatch) -> None:
     settings = SimpleNamespace(
         supabase_url="https://example.test",
         supabase_secret_key="service-secret",
     )
-    repository = object()
+    repository = fantasy_repository("11999")
     recomputed: list[tuple[str, str, str]] = []
 
     monkeypatch.setattr(analysis_worker, "load_settings", lambda: settings)
@@ -133,12 +137,42 @@ def test_fantasy5_cli_recomputes_only_after_complete_analysis(monkeypatch) -> No
     assert recomputed == [("https://example.test", "service-secret", "天天樂")]
 
 
+def test_fantasy5_cli_does_not_recompute_completed_historical_gap(monkeypatch) -> None:
+    settings = SimpleNamespace(
+        supabase_url="https://example.test",
+        supabase_secret_key="service-secret",
+    )
+    repository = fantasy_repository("12000")
+    recomputed: list[str] = []
+
+    monkeypatch.setattr(analysis_worker, "load_settings", lambda: settings)
+    monkeypatch.setattr(analysis_worker, "create_supabase_repository", lambda *_: repository)
+    monkeypatch.setattr(analysis_worker, "notification_emitter_context", lambda _settings: nullcontext(None))
+    monkeypatch.setattr(
+        analysis_worker,
+        "run_analysis_only_worker",
+        lambda lottery, actual_repository: {
+            "lottery": lottery,
+            "drawPeriod": "11999",
+            "status": "complete",
+        },
+    )
+    monkeypatch.setattr(
+        analysis_worker,
+        "recompute_custom_matrix_status_once",
+        lambda _url, _key, lottery: recomputed.append(lottery),
+    )
+
+    assert analysis_worker.main(["--lottery", "天天樂"]) == 0
+    assert recomputed == []
+
+
 def test_fantasy5_cli_does_not_recompute_already_analyzed_draw(monkeypatch) -> None:
     settings = SimpleNamespace(
         supabase_url="https://example.test",
         supabase_secret_key="service-secret",
     )
-    repository = object()
+    repository = fantasy_repository("11999")
     recomputed: list[str] = []
 
     monkeypatch.setattr(analysis_worker, "load_settings", lambda: settings)
