@@ -19,6 +19,7 @@ type CustomStatusStore = {
 type Dependencies = {
   requireMember(authorization?: string): Promise<MemberContext>;
   store: CustomStatusStore;
+  recomputeStatus?(memberId: string, lottery: MatrixLottery): Promise<unknown>;
   now?: () => Date;
 };
 
@@ -35,7 +36,7 @@ function failure(cause: unknown): RouteResult {
   const code = cause instanceof Error ? cause.message : 'INVALID_REQUEST';
   if (code === 'FORBIDDEN') return { status: 403, body: { error: { code } } };
   if (code.startsWith('SUPABASE_')) return { status: 502, body: { error: { code } } };
-  return { status: 400, body: { error: { code } } };
+  return { status: 400, body: { error: { code: 'INVALID_REQUEST' } } };
 }
 
 export function createMatrixCustomStatusRoutes(dependencies: Dependencies) {
@@ -73,7 +74,11 @@ export function createMatrixCustomStatusRoutes(dependencies: Dependencies) {
         const validation = validateCustomStatusConfig(value, entitlements);
         if (validation.ok === false) throw new Error(validation.code);
         const config = normalizeCustomStatusConfig(value);
-        return { status: 200, body: { item: await dependencies.store.save(member.memberId, config) } };
+        const saved = await dependencies.store.save(member.memberId, config);
+        if (dependencies.recomputeStatus) {
+          await dependencies.recomputeStatus(member.memberId, config.lottery);
+        }
+        return { status: 200, body: { item: saved } };
       } catch (cause) {
         return failure(cause);
       }
@@ -88,6 +93,9 @@ export function createMatrixCustomStatusRoutes(dependencies: Dependencies) {
         const status = String(body.status ?? '') as CustomStatus;
         if (!lotteries.includes(lottery) || !statuses.includes(status)) throw new Error('INVALID_REQUEST');
         await dependencies.store.reset(member.memberId, lottery, status);
+        if (dependencies.recomputeStatus) {
+          await dependencies.recomputeStatus(member.memberId, lottery);
+        }
         return { status: 200, body: { reset: true } };
       } catch (cause) {
         return failure(cause);
