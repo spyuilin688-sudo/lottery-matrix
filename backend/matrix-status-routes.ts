@@ -12,6 +12,10 @@ import {
 } from './matrix-status-service.ts';
 
 type LotteryId = '今彩539' | '天天樂' | '六合彩' | '大樂透';
+type StatusIdentity = {
+  analysisVersion: string;
+  drawPeriod: string;
+};
 type StatusSources = {
   analysisVersion: string;
   drawPeriod: string;
@@ -32,6 +36,7 @@ type RouteResult = { status: number; body: Record<string, unknown> };
 type Dependencies = {
   requireMember(authorization?: string): Promise<MemberContext>;
   readStatusSources(lottery: LotteryId, drawPeriod?: string): Promise<StatusSources | null>;
+  readStatusIdentity?(lottery: LotteryId, drawPeriod?: string): Promise<StatusIdentity | null>;
   readCompactStatus?(lottery: LotteryId, drawPeriod?: string): Promise<CompactStatus | null>;
   readCustomStatus?(
     memberId: string,
@@ -153,6 +158,20 @@ function projectCachedCustomStatus(
   return projectCompactStatus(payload, lottery, cached.drawPeriod, entitlements, true);
 }
 
+function requireCurrentCustomResult(
+  cached: MatrixCustomStatusResult | null,
+  identity: StatusIdentity | null,
+) {
+  if (!cached?.analysisVersion || !cached.drawPeriod) throw new Error('ANALYSIS_NOT_READY');
+  if (identity && (
+    !identity.analysisVersion
+    || !identity.drawPeriod
+    || cached.drawPeriod !== identity.drawPeriod
+    || cached.analysisVersion !== identity.analysisVersion
+  )) throw new Error('ANALYSIS_NOT_READY');
+  return cached;
+}
+
 export function createMatrixStatusRoutes(dependencies: Dependencies) {
   const now = dependencies.now ?? (() => new Date());
   const memberFor = (authorization?: string) => authorization
@@ -176,14 +195,18 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
         );
 
         if (customActive && dependencies.readCustomStatus) {
-          const cached = await dependencies.readCustomStatus(
-            member.memberId,
-            lottery,
-            requestedPeriod,
+          const identity = dependencies.readStatusIdentity
+            ? await dependencies.readStatusIdentity(lottery, requestedPeriod)
+            : null;
+          if (dependencies.readStatusIdentity && !identity) throw new Error('ANALYSIS_NOT_READY');
+          const cached = requireCurrentCustomResult(
+            await dependencies.readCustomStatus(
+              member.memberId,
+              lottery,
+              identity?.drawPeriod ?? requestedPeriod,
+            ),
+            identity,
           );
-          if (!cached?.analysisVersion || !cached.drawPeriod) {
-            throw new Error('ANALYSIS_NOT_READY');
-          }
           const artifact = projectCachedCustomStatus(
             cached,
             configs,
@@ -287,10 +310,14 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
         let visible = false;
 
         if (customActive && dependencies.readCustomStatus) {
-          const cached = await dependencies.readCustomStatus(member.memberId, lottery, drawPeriod);
-          if (!cached?.analysisVersion || cached.drawPeriod !== drawPeriod) {
-            throw new Error('ANALYSIS_NOT_READY');
-          }
+          const identity = dependencies.readStatusIdentity
+            ? await dependencies.readStatusIdentity(lottery, drawPeriod)
+            : null;
+          if (dependencies.readStatusIdentity && !identity) throw new Error('ANALYSIS_NOT_READY');
+          const cached = requireCurrentCustomResult(
+            await dependencies.readCustomStatus(member.memberId, lottery, drawPeriod),
+            identity,
+          );
           if (cached.analysisVersion !== analysisVersion) {
             throw new Error('ANALYSIS_VERSION_MISMATCH');
           }
