@@ -193,7 +193,7 @@ def run_fantasy5_crawler(
     }
 
 
-def main() -> int:
+def run_fantasy5_crawler_once() -> dict[str, Any]:
     settings = load_settings()
     repository = create_supabase_repository(
         settings.supabase_url,
@@ -206,7 +206,11 @@ def main() -> int:
             settings,
             telemetry=create_tinyfish_telemetry(repository),
         )
-        result = run_fantasy5_crawler(repository, source)
+        return run_fantasy5_crawler(repository, source)
+
+
+def main() -> int:
+    result = run_fantasy5_crawler_once()
     print(f'{result["lottery"]} {result["drawPeriod"] or "-"} {result["status"]}')
     return 0
 
