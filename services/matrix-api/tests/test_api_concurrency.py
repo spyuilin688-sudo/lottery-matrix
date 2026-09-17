@@ -1,8 +1,24 @@
 from http.client import HTTPConnection
 from http.server import BaseHTTPRequestHandler
+from inspect import getsource, signature
 from threading import Event, Thread
 
-from app.api_server import BoundedApiServer
+from app.api_server import (
+    BoundedApiServer,
+    PUBLIC_API_MAX_CONCURRENCY,
+    create_repository,
+)
+
+
+def test_public_api_default_concurrency_budget_is_32_and_shared_with_pool():
+    assert PUBLIC_API_MAX_CONCURRENCY == 32
+    assert (
+        signature(BoundedApiServer.__init__).parameters["max_requests"].default
+        == PUBLIC_API_MAX_CONCURRENCY
+    )
+    source = getsource(create_repository)
+    assert "max_connections=PUBLIC_API_MAX_CONCURRENCY" in source
+    assert "max_keepalive_connections=PUBLIC_API_MAX_CONCURRENCY" in source
 
 
 def test_saturated_server_rejects_extra_connection_and_recovers():

@@ -59,6 +59,17 @@ export type MatrixStatusResponse = {
   detailLocked: boolean;
 };
 
+export type MatrixStatusBatchItem = {
+  lottery: LotteryId;
+  status: number;
+  body: MatrixStatusResponse | { error?: { code?: string } };
+};
+
+export type MatrixStatusBatchResponse = {
+  kind: 'status-batch';
+  items: MatrixStatusBatchItem[];
+};
+
 export type MatrixStatusValidationResponse = {
   kind: 'status-validation';
   lottery: LotteryId;
@@ -93,6 +104,10 @@ async function statusRpc<T>(name: string, args?: Record<string, unknown>) {
 
 export function fetchMatrixStatus(lottery: LotteryId, signal?: AbortSignal) {
   return fetchMatrixStatusFromFunction(lottery, signal);
+}
+
+export function fetchMatrixStatuses(lotteries: LotteryId[], signal?: AbortSignal) {
+  return statusFunction<MatrixStatusBatchResponse>({ action: 'batch', lotteries }, signal);
 }
 
 async function fetchMatrixStatusFromFunction(lottery: LotteryId, signal?: AbortSignal) {

@@ -4,6 +4,7 @@ import type { MemberContext } from './matrix-entitlements';
 import { createMatrixStatusEdgeHandler } from '../supabase/functions/matrix-status/handler';
 
 const lottery = '今彩539' as const;
+type MatrixLottery = '今彩539' | '天天樂' | '六合彩' | '大樂透';
 const drawPeriod = '115000210';
 const analysisVersion = 'v1';
 
@@ -40,11 +41,11 @@ function dependencies(member?: MemberContext) {
       active: true,
       referralSuccessCount: 0,
     }),
-    readStatusSources: vi.fn(async () => ({
+    readStatusSources: vi.fn(async (requestedLottery: MatrixLottery = lottery) => ({
       analysisVersion,
       drawPeriod,
-      explore,
-      tianyan,
+      explore: { ...explore, lottery: requestedLottery },
+      tianyan: { ...tianyan, lottery: requestedLottery },
     })),
     readStatusValidation: vi.fn(async (_lottery, _period, _version, itemId) => ({
       itemId,
@@ -80,6 +81,25 @@ describe('Matrix status Edge Function', () => {
       ['explorePeriods', 'id', 'locked', 'result'],
       ['explorePeriods', 'id', 'locked', 'result'],
     ]);
+  });
+
+  it('returns all four homepage statuses from one batch request', async () => {
+    const lotteries = ['今彩539', '天天樂', '六合彩', '大樂透'] as const;
+    const deps = dependencies();
+    const handler = createMatrixStatusEdgeHandler(deps);
+    const response = await handler(new Request('https://example.test/functions/v1/matrix-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'batch', lotteries }),
+    }));
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.kind).toBe('status-batch');
+    expect(body.items.map((item: { lottery: MatrixLottery }) => item.lottery)).toEqual(lotteries);
+    expect(body.items.every((item: { status: number }) => item.status === 200)).toBe(true);
+    expect(deps.readStatusSources).toHaveBeenCalledTimes(4);
+    expect(deps.requireMember).not.toHaveBeenCalled();
   });
 
   it('uses the authenticated member custom status configuration', async () => {
