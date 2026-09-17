@@ -1,0 +1,70 @@
+name: Custom Matrix Status Fix Check
+
+on:
+  push:
+    branches:
+      - fix/custom-matrix-status-compact-read
+
+permissions:
+  contents: read
+
+jobs:
+  matrix-status-typescript:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run targeted Matrix status tests
+        run: |
+          npx vitest run \
+            backend/matrix-status-compact.test.ts \
+            backend/matrix-status-custom-cache.test.ts \
+            backend/matrix-custom-status-routes.test.ts \
+            backend/matrix-custom-status-recompute.test.ts \
+            backend/matrix-status-edge-recompute.test.ts \
+            backend/matrix-status-edge-handler.test.ts \
+            backend/matrix-status-routes.test.ts
+
+  matrix-status-railway:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: services/matrix-api
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Compile changed Railway modules
+        run: |
+          uv run python -m py_compile \
+            app/worker_all.py \
+            app/analysis_worker.py \
+            app/services/custom_status_recompute.py
+
+      - name: Run targeted Railway tests
+        run: |
+          uv run pytest -q \
+            tests/test_custom_status_recompute.py \
+            tests/test_custom_status_recompute_triggers.py \
+            tests/test_worker_all.py \
+            tests/test_worker_all_outcome_semantics.py \
+            tests/test_fantasy5_worker_split.py \
+            tests/test_analysis_worker_completed_idle_guard.py
