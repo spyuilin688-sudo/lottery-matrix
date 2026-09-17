@@ -41,6 +41,22 @@ def test_retry_loop_retries_not_acquired_then_stops_on_success() -> None:
     assert sleeps == [600, 600]
 
 
+def test_retry_loop_stops_immediately_when_already_acquired() -> None:
+    calls = 0
+    sleeps: list[int] = []
+
+    def run_once() -> dict[str, str]:
+        nonlocal calls
+        calls += 1
+        return {"status": "already-acquired", "drawPeriod": "12002"}
+
+    result = run_retry_loop(run_once, sleeper=sleeps.append, max_attempts=10)
+
+    assert result == {"status": "already-acquired", "drawPeriod": "12002"}
+    assert calls == 1
+    assert sleeps == []
+
+
 def test_retry_loop_stops_after_max_attempts() -> None:
     attempts = 0
     sleeps: list[int] = []
