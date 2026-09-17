@@ -82,7 +82,7 @@ def test_batch_worker_does_not_enable_recovery_for_confirmed_draws(monkeypatch) 
     assert all(kwargs.get("allow_recovery_crawl") is not True for kwargs in calls)
 
 
-def test_fantasy5_workflow_retries_waiting_source_without_changing_daily_gate() -> None:
+def test_fantasy5_workflow_is_manual_backup_and_keeps_source_retry() -> None:
     workflow = (
         Path(__file__).resolve().parents[3]
         / ".github"
@@ -90,8 +90,10 @@ def test_fantasy5_workflow_retries_waiting_source_without_changing_daily_gate() 
         / "fantasy5-crawler.yml"
     ).read_text(encoding="utf-8")
 
-    assert 'cron: "33 1 * 3-11 *"' in workflow
-    assert 'cron: "33 2 * 11,12,1-3 *"' in workflow
+    assert "workflow_dispatch:" in workflow
+    assert "schedule:" not in workflow
+    assert 'cron: "33 1 * 3-11 *"' not in workflow
+    assert 'cron: "33 2 * 11,12,1-3 *"' not in workflow
     assert "not-acquired" in workflow
     assert "sleep 600" in workflow
     assert "FANTASY5_MAX_ATTEMPTS" in workflow
