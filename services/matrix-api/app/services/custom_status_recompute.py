@@ -25,3 +25,17 @@ def recompute_custom_matrix_status(
     if not isinstance(payload, dict) or not isinstance(payload.get("result"), dict):
         raise RuntimeError("CUSTOM_STATUS_RECOMPUTE_INVALID_RESPONSE")
     return dict(payload["result"])
+
+
+def recompute_custom_matrix_status_once(
+    supabase_url: str,
+    service_role_key: str,
+    lottery: str,
+) -> dict[str, Any]:
+    with httpx.Client() as client:
+        return recompute_custom_matrix_status(
+            client,
+            supabase_url,
+            service_role_key,
+            lottery,
+        )
