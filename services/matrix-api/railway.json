@@ -4,7 +4,7 @@
     "builder": "RAILPACK"
   },
   "deploy": {
-    "startCommand": "uv run pytest -q tests/test_fantasy5_railway_job.py tests/test_fantasy5_official_only_source.py tests/test_fantasy5_taipei_draw_date.py tests/test_fantasy5_forbidden_fallback.py tests/test_formal_source_retry.py",
+    "startCommand": "uv run pytest -q tests/test_fantasy5_railway_job.py tests/test_fantasy5_official_only_source.py tests/test_fantasy5_taipei_draw_date.py tests/test_fantasy5_forbidden_fallback.py tests/test_formal_source_retry.py::test_batch_worker_retries_formal_source_for_preliminary_draws tests/test_formal_source_retry.py::test_batch_worker_does_not_enable_recovery_for_confirmed_draws",
     "restartPolicyType": "NEVER"
   }
 }
