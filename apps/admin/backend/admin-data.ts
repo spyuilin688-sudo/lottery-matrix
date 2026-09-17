@@ -1,4 +1,5 @@
 import { adminBusinessDateKey, adminBusinessDateRange } from '../shared/admin-business-time';
+import { cumulativeGrowthSeries } from '../shared/admin-growth-series';
 import { lookupLocations, memberConnectionSummaries, normalizeIpAddress } from './member-login-history';
 import { memberDisplayNameFromAuthUser, providerIdentityFromAuthUser, type AuthUserForIdentity } from './member-provider-identity';
 type Requester = {
@@ -572,7 +573,7 @@ export async function getDashboard(api: Requester, currentDate = new Date()) {
     ? ''
     : `&paid_at=gte.${encodeURIComponent(new Date(resetTime).toISOString())}`;
   const [members, paymentRows, visitorStats] = await Promise.all([
-    listAllRows(api, '/rest/v1/members?select=plan_expires_at,status,current_plan:plans!members_current_plan_id_fkey(duration_days)&order=id.asc'),
+    listAllRows(api, '/rest/v1/members?select=registered_at,plan_expires_at,status,current_plan:plans!members_current_plan_id_fkey(duration_days)&order=id.asc'),
     listDashboardPayments(api, resetFilter),
     api.request<{ todayVisitors: number; monthVisitors: number; totalVisitors: number }>('/rest/v1/rpc/admin_visitor_stats', { method: 'POST', body: '{}' }).catch(() => null),
   ]);
@@ -584,6 +585,14 @@ export async function getDashboard(api: Requester, currentDate = new Date()) {
       amount: Number(row.amount ?? 0),
       paidAt: adminBusinessDateKey(String(row.paid_at)),
     }));
+  const userGrowth = cumulativeGrowthSeries(members.map((member) => ({
+    date: typeof member.registered_at === 'string' ? adminBusinessDateKey(member.registered_at) : '',
+    delta: 1,
+  })));
+  const revenueGrowth = cumulativeGrowthSeries(payments.map((payment) => ({
+    date: payment.paidAt,
+    delta: payment.amount,
+  })));
   const duration = (member: Row) => Number((member.current_plan as Row | null)?.duration_days ?? 0);
   const hasCurrentFixedDurationPlan = (member: Row) => {
     if (typeof member.plan_expires_at !== 'string') return false;
@@ -610,6 +619,8 @@ export async function getDashboard(api: Requester, currentDate = new Date()) {
     monthVisitors: visitorStats?.monthVisitors ?? null,
     totalVisitors: visitorStats?.totalVisitors ?? null,
     totalUsers: members.length,
+    userGrowth,
+    revenueGrowth,
     monthlyPro: members.filter((member) => hasCurrentFixedDurationPlan(member) && duration(member) === 30).length,
     quarterlyPro: members.filter((member) => hasCurrentFixedDurationPlan(member) && duration(member) === 90).length,
     yearlyPro: members.filter((member) => hasCurrentFixedDurationPlan(member) && duration(member) === 365).length,
