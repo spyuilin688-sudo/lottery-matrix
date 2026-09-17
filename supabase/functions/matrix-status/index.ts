@@ -6,6 +6,7 @@ import type { ExploreArtifact, TianyanArtifact } from '../../../backend/matrix-s
 import { createMatrixStatusEdgeHandler } from './handler.ts';
 import {
   createMatrixStatusCompactReader,
+  createMatrixStatusIdentityReader,
   createMatrixStatusSourceReader,
   createMatrixStatusValidationReader,
 } from './source-reader.ts';
@@ -29,9 +30,19 @@ function loadConfig() {
 const memberAuth = createMemberAuth(loadConfig);
 const customStatusStore = createCustomStatusStore(loadConfig);
 const customStatusResultStore = createCustomStatusResultStore(loadConfig);
+const readStatusIdentity = createMatrixStatusIdentityReader(loadConfig);
 const readCompactStatus = createMatrixStatusCompactReader(loadConfig);
 const readStatusSources = createMatrixStatusSourceReader(loadConfig);
 const readStatusValidation = createMatrixStatusValidationReader(loadConfig);
+
+async function resolvedStatusIdentity(lottery: LotteryId, drawPeriod?: string) {
+  const identity = await readStatusIdentity(lottery, drawPeriod);
+  if (!identity) return null;
+  const analysisVersion = String(identity.analysisVersion ?? '').trim();
+  const resolvedPeriod = String(identity.drawPeriod ?? '').trim();
+  if (!analysisVersion || !resolvedPeriod) return null;
+  return { analysisVersion, drawPeriod: resolvedPeriod };
+}
 
 async function resolvedStatusSources(lottery: LotteryId, drawPeriod?: string) {
   const source = await readStatusSources(lottery, drawPeriod);
@@ -56,6 +67,7 @@ const customStatusRecompute = createMatrixCustomStatusRecomputeService({
 
 const handler = createMatrixStatusEdgeHandler({
   requireMember: (authorization) => memberAuth.requireMember(authorization),
+  readStatusIdentity: resolvedStatusIdentity,
   async readCompactStatus(lottery: LotteryId, drawPeriod?: string) {
     const source = await readCompactStatus(lottery, drawPeriod);
     if (!source) return null;
