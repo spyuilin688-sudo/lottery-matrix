@@ -5,10 +5,14 @@ import test from 'node:test';
 const prototypeSource = readFileSync(new URL('../src/Prototype.tsx', import.meta.url), 'utf8');
 const statusApiSource = readFileSync(new URL('../src/matrix-status-api.ts', import.meta.url), 'utf8');
 
-test('homepage forwards the deadline AbortSignal into the matrix status request', () => {
+test('homepage forwards one deadline AbortSignal into one batched matrix status request', () => {
   assert.match(
     prototypeSource,
-    /withDeadline\(\(requestSignal\) => fetchMatrixStatus\(id, requestSignal\), \{ signal \}\)/,
+    /withDeadline\(\(requestSignal\) => fetchMatrixStatuses\(LOTTERIES\.map\(\(\{ id \}\) => id\), requestSignal\), \{ signal \}\)/,
+  );
+  assert.doesNotMatch(
+    prototypeSource,
+    /fetchMatrixStatus\(id, requestSignal\)/,
   );
   assert.match(
     statusApiSource,

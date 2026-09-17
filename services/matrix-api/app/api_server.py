@@ -42,6 +42,7 @@ NUMBER_ORDERS = {"依號碼由小到大排序", "依實際開獎順序排序"}
 HISTORY_RANGES = {1000, 3000, 5000}
 PAGE_SIZE = 1000
 MAX_REQUEST_BODY_BYTES = 64 * 1024
+PUBLIC_API_MAX_CONCURRENCY = 32
 SERVICE_NAME = "matrix-railway-api"
 CARD_PREFIX = "/api/matrix/cards/"
 FANTASY5_CRAWLER_ERROR = "FANTASY5_CRAWLER_GITHUB_ONLY"
@@ -775,7 +776,7 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
 class BoundedApiServer(ThreadingHTTPServer):
     """Keep parallel reads, with a fixed upper bound and no unbounded thread queue."""
 
-    def __init__(self, address, handler, *, max_requests=16):
+    def __init__(self, address, handler, *, max_requests=PUBLIC_API_MAX_CONCURRENCY):
         self._request_slots = BoundedSemaphore(max_requests)
         super().__init__(address, handler)
 
@@ -813,7 +814,10 @@ def create_repository() -> AnalysisRepository:
     # A terminated shared HTTP/2 connection caused concurrent history/Tongxing 500s.
     # Keep the PostgREST timeout while using HTTP/1.1 for this long-lived API client.
     client = httpx.Client(http2=False, timeout=httpx.Timeout(6, connect=2, pool=1),
-                         limits=httpx.Limits(max_connections=16, max_keepalive_connections=16),
+                         limits=httpx.Limits(
+                             max_connections=PUBLIC_API_MAX_CONCURRENCY,
+                             max_keepalive_connections=PUBLIC_API_MAX_CONCURRENCY,
+                         ),
                          follow_redirects=True)
     try:
         return create_supabase_repository(

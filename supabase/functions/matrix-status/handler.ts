@@ -68,6 +68,28 @@ export function createMatrixStatusEdgeHandler(dependencies: MatrixStatusEdgeDepe
       }
     }
 
+    if (action === 'batch') {
+      const requested = Array.isArray(value?.lotteries)
+        ? value.lotteries.map((item) => String(item))
+        : [];
+      if (
+        requested.length !== lotteries.length
+        || new Set(requested).size !== requested.length
+        || requested.some((item) => !lotteries.includes(item as MatrixLottery))
+      ) {
+        return json({ error: { code: 'INVALID_REQUEST' } }, 400);
+      }
+      const items = await Promise.all(requested.map(async (item) => {
+        const lottery = item as MatrixLottery;
+        const result = await routes.get({
+          authorization,
+          body: { lottery },
+        });
+        return { lottery, status: result.status, body: result.body };
+      }));
+      return json({ kind: 'status-batch', items }, 200);
+    }
+
     const route = action === 'validation' ? routes.validation : routes.get;
     const result = await route({
       authorization,

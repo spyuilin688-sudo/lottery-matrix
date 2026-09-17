@@ -22,7 +22,7 @@ import { useLatestLotteryDraw } from "./useLatestLotteryDraw";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
 import type { LotteryDrawRecord } from "./lottery-api";
 import { formatCountdown, formatNextDrawAt, nextCountdownSeconds, parseCountdown, secondsUntil } from "./countdown.mjs";
-import { fetchMatrixStatus, type MatrixStatusResponse } from "./matrix-status-api";
+import { fetchMatrixStatuses, type MatrixStatusResponse } from "./matrix-status-api";
 import { subscribeMatrixDataRevision } from "./matrix-data-revision";
 import { withDeadline } from "./lib/api-resilience";
 import { HomeFreeStatement } from "./homepage/HomeFreeStatement";
@@ -477,20 +477,27 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       request?.abort();
       request = new AbortController();
       const signal = request.signal;
-      // Each card settles independently; an unavailable lottery cannot block the others.
-      for (const { id } of LOTTERIES) {
-        void withDeadline((requestSignal) => fetchMatrixStatus(id, requestSignal), { signal })
-          .then((result) => {
-            if (!active || current !== generation) return;
-            const status = toHomepageMatrixStatus(result.summary);
+      void withDeadline((requestSignal) => fetchMatrixStatuses(LOTTERIES.map(({ id }) => id), requestSignal), { signal })
+        .then((result) => {
+          if (!active || current !== generation) return;
+          const items = new Map(result.items.map((item) => [item.lottery, item] as const));
+          for (const { id } of LOTTERIES) {
+            const item = items.get(id);
+            if (!item || item.status !== 200 || !('kind' in item.body) || item.body.kind !== 'status') {
+              setMatrixStatusLoads((previous) => ({ ...previous, [id]: "error" }));
+              continue;
+            }
+            const status = toHomepageMatrixStatus(item.body.summary);
             setMatrixStatuses((previous) => ({ ...previous, [id]: status }));
             setMatrixStatusLoads((previous) => ({ ...previous, [id]: "ready" }));
-          })
-          .catch(() => {
-            if (!active || current !== generation) return;
+          }
+        })
+        .catch(() => {
+          if (!active || current !== generation) return;
+          for (const { id } of LOTTERIES) {
             setMatrixStatusLoads((previous) => ({ ...previous, [id]: "error" }));
-          });
-      }
+          }
+        });
     };
     const queueRefresh = () => {
       if (queued !== undefined) return;
