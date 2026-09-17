@@ -165,61 +165,59 @@ class SecurityMonitor:
         )
 
     def _run(self):
-        try:
-            while not self._stop.is_set():
-                try:
-                    payload, future = self._queue.get(timeout=0.05)
-                except Empty:
-                    continue
-                result = dict(ALLOW)
-                started = monotonic()
-                try:
-                    response = self.client.post(self.url, json=payload, timeout=self.observation_timeout,
-                                                headers={"apikey": self.key, "Authorization": f"Bearer {self.key}"})
-                    response.raise_for_status()
-                    data = response.json()
-                    if not isinstance(data, dict):
-                        raise ValueError("INVALID_OBSERVATION_RESPONSE")
-                    if data.get("degraded"):
-                        raise RuntimeError("OBSERVATION_DEGRADED")
-                    if (data.get("mode") == "enforce" and data.get("allowed") is False
-                            and type(data.get("retryAfter")) is int and 1 <= data["retryAfter"] <= 3600
-                            and payload["p_trusted"]):
-                        result = {"allowed": False, "mode": "enforce", "retryAfter": data["retryAfter"]}
-                except Exception as error:
-                    self.failures += 1
-                    if self.failures == 1 or self.failures % 100 == 0:
-                        if isinstance(error, httpx.TimeoutException):
-                            reason = "timeout"
-                            stage = "transport"
-                        elif isinstance(error, httpx.ConnectError):
-                            reason = "connection-error"
-                            stage = "transport"
-                        elif isinstance(error, httpx.HTTPStatusError):
-                            reason = "http-status"
-                            stage = "response"
-                        elif isinstance(error, ValueError):
-                            reason = "malformed-response"
-                            stage = "decode"
-                        elif isinstance(error, RuntimeError):
-                            reason = "rpc-db-error"
-                            stage = "rpc"
-                        else:
-                            reason = "unexpected-error"
-                            stage = "worker"
-                        status_code = (
-                            error.response.status_code
-                            if isinstance(error, httpx.HTTPStatusError) else None
-                        )
-                        self._log_unavailable(
-                            reason, stage, (monotonic() - started) * 1000,
-                            status_code=status_code,
-                        )
-                finally:
-                    future.set_result(result)
-                    self._queue.task_done()
-        finally:
-            self.client.close()
+        while not self._stop.is_set():
+            try:
+                payload, future = self._queue.get(timeout=0.05)
+            except Empty:
+                continue
+            result = dict(ALLOW)
+            started = monotonic()
+            try:
+                response = self.client.post(self.url, json=payload, timeout=self.observation_timeout,
+                                            headers={"apikey": self.key, "Authorization": f"Bearer {self.key}"})
+                response.raise_for_status()
+                data = response.json()
+                if not isinstance(data, dict):
+                    raise ValueError("INVALID_OBSERVATION_RESPONSE")
+                if data.get("degraded"):
+                    raise RuntimeError("OBSERVATION_DEGRADED")
+                if (data.get("mode") == "enforce" and data.get("allowed") is False
+                        and type(data.get("retryAfter")) is int and 1 <= data["retryAfter"] <= 3600
+                        and payload["p_trusted"]):
+                    result = {"allowed": False, "mode": "enforce", "retryAfter": data["retryAfter"]}
+            except Exception as error:
+                self.failures += 1
+                if self.failures == 1 or self.failures % 100 == 0:
+                    if isinstance(error, httpx.TimeoutException):
+                        reason = "timeout"
+                        stage = "transport"
+                    elif isinstance(error, httpx.ConnectError):
+                        reason = "connection-error"
+                        stage = "transport"
+                    elif isinstance(error, httpx.HTTPStatusError):
+                        reason = "http-status"
+                        stage = "response"
+                    elif isinstance(error, ValueError):
+                        reason = "malformed-response"
+                        stage = "decode"
+                    elif isinstance(error, RuntimeError):
+                        reason = "rpc-db-error"
+                        stage = "rpc"
+                    else:
+                        reason = "unexpected-error"
+                        stage = "worker"
+                    status_code = (
+                        error.response.status_code
+                        if isinstance(error, httpx.HTTPStatusError) else None
+                    )
+                    self._log_unavailable(
+                        reason, stage, (monotonic() - started) * 1000,
+                        status_code=status_code,
+                    )
+            finally:
+                future.set_result(result)
+                self._queue.task_done()
+        self.client.close()
 
     def close(self):
         self._stop.set()
