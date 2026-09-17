@@ -23,7 +23,10 @@ export async function lookupLocations(ips: Array<string | null>, api: Requester,
   // name, token or login time is sent to the geolocation service.
   for (let start = 0; start < unique.length; start += 100) {
     const group = unique.slice(start, start + 100);
-    const cached = await api.request<Row[]>(`/rest/v1/member_ip_locations?select=ip,country_code,city,checked_at&ip=in.(${group.map(encodeURIComponent).join(',')})`);
+    let cached: Row[] = [];
+    try {
+      cached = await api.request<Row[]>(`/rest/v1/member_ip_locations?select=ip,country_code,city,checked_at&ip=in.(${group.map(encodeURIComponent).join(',')})`);
+    } catch { /* A cache read failure must fall through to the bounded live lookup. */ }
     for (const row of cached) {
       const key = normalizeIpAddress(row.ip);
       if (key && Date.now() - Date.parse(String(row.checked_at)) < (row.country_code ? 7 * 86400000 : 3600000)) result.set(key, locationLabel(row));
