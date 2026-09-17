@@ -217,9 +217,8 @@ class SecurityMonitor:
             finally:
                 future.set_result(result)
                 self._queue.task_done()
+        self.client.close()
 
     def close(self):
         self._stop.set()
         self._thread.join(timeout=0.4)
-        if not self._thread.is_alive():
-            self.client.close()

@@ -91,18 +91,19 @@ async function statusRpc<T>(name: string, args?: Record<string, unknown>) {
   return data as T;
 }
 
-export function fetchMatrixStatus(lottery: LotteryId) {
-  return fetchMatrixStatusFromFunction(lottery);
+export function fetchMatrixStatus(lottery: LotteryId, signal?: AbortSignal) {
+  return fetchMatrixStatusFromFunction(lottery, signal);
 }
 
-async function fetchMatrixStatusFromFunction(lottery: LotteryId) {
-  return statusFunction<MatrixStatusResponse>({ lottery });
+async function fetchMatrixStatusFromFunction(lottery: LotteryId, signal?: AbortSignal) {
+  return statusFunction<MatrixStatusResponse>({ lottery }, signal);
 }
 
-async function statusFunction<T>(body: Record<string, unknown>) {
+async function statusFunction<T>(body: Record<string, unknown>, signal?: AbortSignal) {
   const client = getSupabaseClient();
   const { data, error } = await client.functions.invoke('matrix-status', {
     body,
+    signal,
   });
   if (error) {
     let code = '';
