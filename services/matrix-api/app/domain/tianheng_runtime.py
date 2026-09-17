@@ -48,7 +48,7 @@ def evaluate_tianheng_candidates(
             metrics,
             eligible_streaks=TIANHENG_TWO_RULE_STREAKS,
             invalid_streak=12,
-            tier_label="準7+",
+            tier_label="準6+",
         )
     raise AlgorithmError("ruleCount必須是1或2")
 
