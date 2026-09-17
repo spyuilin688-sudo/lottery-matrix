@@ -4,8 +4,7 @@
     "builder": "RAILPACK"
   },
   "deploy": {
-    "startCommand": "uv run python -u -m app.worker_all",
-    "restartPolicyType": "NEVER",
-    "cronSchedule": "3/10 * * * *"
+    "startCommand": "uv run pytest -q tests/test_fantasy5_railway_job.py tests/test_fantasy5_official_only_source.py tests/test_fantasy5_taipei_draw_date.py tests/test_fantasy5_forbidden_fallback.py tests/test_formal_source_retry.py",
+    "restartPolicyType": "NEVER"
   }
 }
