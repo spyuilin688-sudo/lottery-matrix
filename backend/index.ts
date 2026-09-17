@@ -10,6 +10,7 @@ import type { TiangongArtifact } from './matrix-tiangong-service';
 import { createCustomStatusStore } from './matrix-custom-status-store';
 import { createMatrixCustomStatusRoutes } from './matrix-custom-status-routes';
 import { createMatrixStatusRoutes } from './matrix-status-routes';
+import { createMatrixStatusRecomputeClient } from './matrix-status-recompute-client';
 import type { ExploreArtifact, TianyanArtifact as StatusTianyanArtifact } from './matrix-status-service';
 import { readReadyAnalysis } from './matrix-ready-analysis';
 import { readStoredStatusExplore } from './matrix-status-analysis-reader';
@@ -48,9 +49,11 @@ const memberBootstrapRoutes = createMemberBootstrapRoutes({
     bootstrap: authorization => memberBootstrap.bootstrap(authorization),
 });
 const matrixCustomStatusStore = createCustomStatusStore(loadMatrixSupabaseConfig);
+const matrixStatusRecompute = createMatrixStatusRecomputeClient(loadMatrixSupabaseConfig);
 const matrixCustomStatusRoutes = createMatrixCustomStatusRoutes({
     requireMember: authorization => matrixMemberAuth.requireMember(authorization),
     store: matrixCustomStatusStore,
+    recomputeStatus: (memberId,lottery) => matrixStatusRecompute(memberId,lottery),
 });
 const readCompletedMatrixAnalysis = (
     kind: 'tianyan'|'tiangong',
