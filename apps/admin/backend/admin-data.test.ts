@@ -218,7 +218,13 @@ describe('getDashboard', () => {
     ]) };
     await expect(getDashboard(api, new Date('2026-08-21T12:00:00Z'))).resolves.toEqual({
       todayVisitors: 2, monthVisitors: 7, totalVisitors: 10,
-      totalUsers: 3, monthlyPro: 1, quarterlyPro: 1, yearlyPro: 1, expiring: 1,
+      totalUsers: 3,
+      userGrowth: [],
+      revenueGrowth: [
+        { date: '2026-08-01', value: 50 },
+        { date: '2026-08-21', value: 150 },
+      ],
+      monthlyPro: 1, quarterlyPro: 1, yearlyPro: 1, expiring: 1,
       todayRevenue: 100, monthRevenue: 150, quarterRevenue: 150, yearRevenue: 150, cumulativeRevenue: 150,
     });
   });
@@ -245,7 +251,7 @@ describe('getDashboard', () => {
       quarterlyPro: 1,
       yearlyPro: 1,
     });
-    expect(api.request).toHaveBeenCalledWith(expect.stringContaining('select=plan_expires_at,status,'));
+    expect(api.request).toHaveBeenCalledWith(expect.stringContaining('registered_at'));
   });
 });
 
