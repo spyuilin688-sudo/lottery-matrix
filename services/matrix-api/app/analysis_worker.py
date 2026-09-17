@@ -371,11 +371,13 @@ def main(argv: list[str] | None = None) -> int:
                 notification_emitter=notification_emitter,
             )
     if result.get("status") == "complete":
-        recompute_custom_matrix_status_once(
-            settings.supabase_url,
-            settings.supabase_secret_key,
-            lottery,
-        )
+        latest = repository.list_draws(lottery, 1)
+        if latest and str(latest[0].get("period")) == str(result.get("drawPeriod")):
+            recompute_custom_matrix_status_once(
+                settings.supabase_url,
+                settings.supabase_secret_key,
+                lottery,
+            )
     print(f'{result["lottery"]} {result["drawPeriod"] or "-"} {result["status"]}')
     return 0
 
