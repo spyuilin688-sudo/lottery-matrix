@@ -460,7 +460,7 @@ const routes: Record<string, unknown> = {
     }
   }],
 
-  'POST /api/system-status/:id/refresh': [sessionGuard, guard('edit'), async (ctx: Context) => {
+  'POST /api/system-status/:id/refresh': [sessionGuard, moduleGuard('systemSettings', 'edit', 'edit'), async (ctx: Context) => {
     const lottery = crawlerLotteryByStatusId[ctx.params.id];
     if (!lottery) return error('此項目不支援資料更新', 400);
     try {
@@ -490,7 +490,7 @@ const routes: Record<string, unknown> = {
     }
   }],
 
-  'POST /api/system-status/:id/recover': [sessionGuard, guard('edit'), async (ctx: Context) => {
+  'POST /api/system-status/:id/recover': [sessionGuard, moduleGuard('systemSettings', 'edit', 'edit'), async (ctx: Context) => {
     const lottery = crawlerLotteryByStatusId[ctx.params.id];
     if (!lottery) return error('此項目不支援復原', 400);
     try {

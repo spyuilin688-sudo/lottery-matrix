@@ -50,8 +50,16 @@ const app = vi.hoisted(() => {
       },
     };
     if (url === '/api/dashboard') return { data: dashboard };
+    if (url === '/api/system-status') return { data: {
+      checkedAt: '2026-09-18T10:00:00.000Z',
+      items: [{
+        id: 'supabase-health', name: 'Supabase 主機連線', description: '測試', group: '系統',
+        location: 'Supabase', endpoint: '/health', checkMode: 'live', checkEvidence: 'live',
+        ok: true, healthState: 'healthy', checkedAt: '2026-09-18T10:00:00.000Z', responseMs: 12, detail: {},
+      }],
+    } };
     if (url === '/api/permission-settings') return { data: state.permissionSettings };
-    if (path === '/api/data/admins') return { data: { items: [otherAdmin], total: 1, currentPage: 1, totalPages: 1 } };
+    if (path === '/api/data/admins') return { data: { items: [otherAdmin], total: 37, currentPage: 1, totalPages: 2 } };
     if (url.startsWith('/api/data/users?')) return { data: { items: [{ id: 'member-1', status: 'active' }], total: 1, currentPage: 1, totalPages: 1 } };
     if (url.startsWith('/api/data/subscriptions?')) {
       if (state.nextSubscriptionRead) {
@@ -227,6 +235,7 @@ describe('administrator operation permission editing', () => {
     await act(async () => permissionNavigation?.click());
     await settle();
 
+    expect(container.textContent).toContain('37 個管理員帳號');
     const accountCell = [...container.querySelectorAll('td')]
       .find((cell) => cell.textContent === 'other@example.com');
     expect(accountCell).toBeDefined();
@@ -301,6 +310,37 @@ describe('administrator operation permission editing', () => {
     expect(container.querySelector<HTMLInputElement>('[role="switch"][aria-label="顯示訂閱購買"]')?.disabled).toBe(true);
     expect(container.querySelector<HTMLInputElement>('[role="switch"][aria-label="註冊會員免費使用"]')?.disabled).toBe(true);
   });
+  it.each(['營運管理員', '查看人員'])('hides administrator management and Railway mutations for %s', async (role) => {
+    const operator = role === '營運管理員';
+    app.state.admin = {
+      id: 'admin-1',
+      account: 'restricted@example.com',
+      name: role,
+      role,
+      permissions: operator
+        ? { view: true, add: true, edit: true, delete: false }
+        : { view: true, add: false, edit: false, delete: false },
+      modulePermissions: {
+        users: { view: true, edit: operator },
+        subscriptions: { view: true, edit: operator },
+        activationCodes: { view: true, edit: operator },
+        systemSettings: { view: true, edit: false },
+        admins: { view: false, edit: false },
+      },
+    };
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+
+    expect(buttonWithText(container, '管理員權限')).toBeUndefined();
+    await act(async () => buttonWithText(container, '系統設定')?.click());
+    await settle();
+
+    expect(container.textContent).toContain('正常 1／1');
+    expect(container.querySelector<HTMLSelectElement>('#railway-operation-lottery')?.disabled).toBe(true);
+    expect(buttonWithText(container, '手動更新')?.disabled).toBe(true);
+    expect(buttonWithText(container, '復原')?.disabled).toBe(true);
+  });
+
   it('hides protected mutations when module access exists but the stored operation permission is disabled', async () => {
     app.state.admin = {
       id: 'admin-1',

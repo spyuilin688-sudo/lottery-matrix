@@ -761,7 +761,7 @@ function AdminApp() {
           樂彩 Matrix<small>營運後台</small>
         </div>
         <nav>
-          {modules.map(([n, I], i) => (
+          {modules.filter(([n]) => n !== "管理員權限" || moduleCan("admins", "view", "view")).map(([n, I], i) => (
             <button
               key={n}
               className={active === n ? "nav active" : "nav"}
@@ -826,7 +826,7 @@ function AdminApp() {
               confirm={requestConfirmation}
             />
           )}{" "}
-          {active === "系統設定" && <SystemSettings canEdit={can("edit")} confirm={requestConfirmation} />}{" "}
+          {active === "系統設定" && <SystemSettings canEdit={moduleCan("systemSettings", "edit", "edit")} confirm={requestConfirmation} />}{" "}
           {active === "通知管理" && <NotificationManagement key={sessionKey} client={api} canEdit={can("edit")} />}{" "}
           {active === "代辦事項" && admin && (
             <AdminTodos
@@ -925,6 +925,7 @@ function AdminApp() {
           {active === "管理員權限" && (<>
             <AdminListControls page={listPage} name="管理員" statuses={[["啟用", "啟用"], ["停用", "停用"]]} sorts={[["createdAt", "建立時間"], ["account", "帳號"], ["name", "名稱"]]} />
             <AdminManager
+              total={listPage.total}
               busy={busy || listPage.loading}
               emptyMessage={listPage.loading ? "資料讀取中" : listPage.error ? "資料載入失敗" : "目前沒有資料"}
               rows={rows}
@@ -1262,6 +1263,7 @@ function Pagination({ page, totalPages, onPage, disabled = false }: { page: numb
 
 function AdminManager({
   rows,
+  total,
   busy,
   emptyMessage,
   isSuper,
@@ -1276,6 +1278,7 @@ function AdminManager({
   onDelete,
 }: {
   rows: Row[];
+  total: number;
   busy: boolean;
   emptyMessage: string;
   isSuper: boolean;
@@ -1297,7 +1300,7 @@ function AdminManager({
   return (
     <>
       <div className="toolbar">
-        <div>{rows.length} 個管理員帳號</div>
+        <div>{total} 個管理員帳號</div>
         {isSuper && (
           <button className="primary" onClick={() => setShowForm(!showForm)}>
             <Plus size={16} />
@@ -1634,6 +1637,7 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
       {items.length === 0 && <div className="statusEmpty">{checking ? "正在檢查服務狀態…" : "目前沒有服務狀態"}</div>}
       <div className="statusGroups">
         {groupSystemStatusItems(items).map((group) => {
+          const normalCount = group.items.filter((item) => getSystemStatusPresentation(item).tone === "good").length;
           const abnormalCount = group.items.filter((item) => getSystemStatusPresentation(item).tone === "bad").length;
           const limitedCount = group.items.filter((item) => getSystemStatusPresentation(item).tone === "limited").length;
           const warningCount = group.items.filter((item) => getSystemStatusPresentation(item).tone === "warning").length;
@@ -1642,7 +1646,7 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
             <section className="statusGroup" key={group.location} aria-labelledby={groupTitleId}>
               <header className="statusGroupHeader">
                 <h3 id={groupTitleId}>{group.location}</h3>
-                <span>{group.items.length} 項 · {limitedCount} 項僅部分檢查 · {abnormalCount} 項異常{warningCount > 0 ? ` · ${warningCount} 項警告` : ""}</span>
+                <span>正常 {normalCount}／{group.items.length} · {limitedCount} 項僅部分檢查 · {abnormalCount} 項異常{warningCount > 0 ? ` · ${warningCount} 項警告` : ""}</span>
               </header>
               <div className="statusRows">
                 {group.items.map((item) => {
