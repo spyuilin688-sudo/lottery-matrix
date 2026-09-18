@@ -46,6 +46,18 @@ describe('Supabase admin Edge runtime', () => {
     expect(response.headers.get('set-cookie')).not.toContain('Path=/admin/');
   });
 
+  it('accepts writes from the production Cloudflare Pages admin origin', async () => {
+    const handler = router({
+      'POST /api/admin-login': [async () => json({ ok: true })],
+    });
+    const response = await handler(new Request('https://project.test/functions/v1/admin-api/api/admin-login', {
+      method: 'POST',
+      headers: { Origin: 'https://lottery-matrix.pages.dev', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ account: 'owner', password: 'secret' }),
+    }));
+    expect(response.status).toBe(200);
+  });
+
   it('accepts writes from the dedicated admin subdomain', async () => {
     const handler = router({
       'POST /api/admin-login': [async () => json({ ok: true })],
