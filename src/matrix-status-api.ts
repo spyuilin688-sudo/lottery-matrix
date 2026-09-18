@@ -70,6 +70,28 @@ export type MatrixStatusBatchResponse = {
   items: MatrixStatusBatchItem[];
 };
 
+export type MatrixStatusSummary = MatrixStatusResponse['summary'];
+
+export type MatrixStatusSummaryResponse = {
+  kind: 'status-summary';
+  lottery: LotteryId;
+  drawPeriod: string;
+  analysisVersion: string;
+  sourceAnalysisVersion?: string;
+  summary: MatrixStatusSummary;
+};
+
+export type MatrixStatusSummaryBatchItem = {
+  lottery: LotteryId;
+  status: number;
+  body: MatrixStatusSummaryResponse | { error?: { code?: string } };
+};
+
+export type MatrixStatusSummaryBatchResponse = {
+  kind: 'status-summary-batch';
+  items: MatrixStatusSummaryBatchItem[];
+};
+
 export type MatrixStatusValidationResponse = {
   kind: 'status-validation';
   lottery: LotteryId;
@@ -108,6 +130,10 @@ export function fetchMatrixStatus(lottery: LotteryId, signal?: AbortSignal) {
 
 export function fetchMatrixStatuses(lotteries: LotteryId[], signal?: AbortSignal) {
   return statusFunction<MatrixStatusBatchResponse>({ action: 'batch', lotteries }, signal);
+}
+
+export function fetchMatrixStatusSummaries(lotteries: LotteryId[], signal?: AbortSignal) {
+  return statusFunction<MatrixStatusSummaryBatchResponse>({ action: 'summary-batch', lotteries }, signal);
 }
 
 async function fetchMatrixStatusFromFunction(lottery: LotteryId, signal?: AbortSignal) {

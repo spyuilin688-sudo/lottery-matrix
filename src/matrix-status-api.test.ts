@@ -7,7 +7,7 @@ vi.mock('./lib/supabase', () => ({ getSupabaseClient: () => ({ rpc, functions: {
 
 import {
   fetchMatrixStatus,
-  fetchMatrixStatuses,
+  fetchMatrixStatusSummaries,
   fetchMatrixStatusValidation,
   listCustomStatusSettings,
   resetCustomStatusSetting,
@@ -27,17 +27,17 @@ describe('Matrix status Supabase RPC', () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
-  it('loads all homepage lottery statuses in one Edge Function invocation', async () => {
+  it('loads all homepage lottery status summaries in one Edge Function invocation', async () => {
     const lotteries = ['今彩539', '天天樂', '六合彩', '大樂透'] as const;
     const signal = new AbortController().signal;
-    const payload = { kind: 'status-batch', items: [] };
+    const payload = { kind: 'status-summary-batch', items: [] };
     invoke.mockResolvedValueOnce({ data: payload, error: null });
 
-    await expect(fetchMatrixStatuses([...lotteries], signal)).resolves.toEqual(payload);
+    await expect(fetchMatrixStatusSummaries([...lotteries], signal)).resolves.toEqual(payload);
 
     expect(invoke).toHaveBeenCalledTimes(1);
     expect(invoke).toHaveBeenCalledWith('matrix-status', {
-      body: { action: 'batch', lotteries: [...lotteries] },
+      body: { action: 'summary-batch', lotteries: [...lotteries] },
       signal,
     });
     expect(rpc).not.toHaveBeenCalled();

@@ -111,21 +111,29 @@ describe('Matrix status Edge Function', () => {
     ]);
   });
 
-  it('returns all four homepage statuses from one batch request', async () => {
+  it('returns summary-only data for all four homepage statuses from one batch request', async () => {
     const lotteries = ['今彩539', '天天樂', '六合彩', '大樂透'] as const;
     const deps = dependencies();
     const handler = createMatrixStatusEdgeHandler(deps);
     const response = await handler(new Request('https://example.test/functions/v1/matrix-status', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'batch', lotteries }),
+      body: JSON.stringify({ action: 'summary-batch', lotteries }),
     }));
 
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body.kind).toBe('status-batch');
+    expect(body.kind).toBe('status-summary-batch');
     expect(body.items.map((item: { lottery: MatrixLottery }) => item.lottery)).toEqual(lotteries);
     expect(body.items.every((item: { status: number }) => item.status === 200)).toBe(true);
+    for (const item of body.items) {
+      expect(item.body.kind).toBe('status-summary');
+      expect(item.body.summary).toBeTruthy();
+      expect(item.body).not.toHaveProperty('cards');
+      expect(item.body).not.toHaveProperty('counts');
+      expect(item.body).not.toHaveProperty('customTriggers');
+      expect(JSON.stringify(item.body)).not.toContain('roads');
+    }
     expect(deps.readStatusSources).toHaveBeenCalledTimes(4);
     expect(deps.requireMember).not.toHaveBeenCalled();
   });

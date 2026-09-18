@@ -22,7 +22,7 @@ import { useLatestLotteryDraw } from "./useLatestLotteryDraw";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
 import type { LotteryDrawRecord } from "./lottery-api";
 import { formatCountdown, formatNextDrawAt, nextCountdownSeconds, parseCountdown, secondsUntil } from "./countdown.mjs";
-import { fetchMatrixStatuses, type MatrixStatusResponse } from "./matrix-status-api";
+import { fetchMatrixStatusSummaries, type MatrixStatusSummary } from "./matrix-status-api";
 import { subscribeMatrixDataRevision } from "./matrix-data-revision";
 import { withDeadline } from "./lib/api-resilience";
 import { HomeFreeStatement } from "./homepage/HomeFreeStatement";
@@ -154,7 +154,7 @@ function createDormantMatrixStatus(): MatrixStatusData {
   };
 }
 
-function toHomepageMatrixStatus(summary: MatrixStatusResponse["summary"]): MatrixStatusData {
+function toHomepageMatrixStatus(summary: MatrixStatusSummary): MatrixStatusData {
   return {
     ...MATRIX_STATUS_PRESENTATIONS[summary.status],
     statusEn: summary.status,
@@ -477,13 +477,13 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       request?.abort();
       request = new AbortController();
       const signal = request.signal;
-      void withDeadline((requestSignal) => fetchMatrixStatuses(LOTTERIES.map(({ id }) => id), requestSignal), { signal })
+      void withDeadline((requestSignal) => fetchMatrixStatusSummaries(LOTTERIES.map(({ id }) => id), requestSignal), { signal })
         .then((result) => {
           if (!active || current !== generation) return;
           const items = new Map(result.items.map((item) => [item.lottery, item] as const));
           for (const { id } of LOTTERIES) {
             const item = items.get(id);
-            if (!item || item.status !== 200 || !('kind' in item.body) || item.body.kind !== 'status') {
+            if (!item || item.status !== 200 || !('kind' in item.body) || item.body.kind !== 'status-summary') {
               setMatrixStatusLoads((previous) => ({ ...previous, [id]: "error" }));
               continue;
             }
@@ -510,8 +510,8 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       queueRefresh();
     };
     refresh();
-    // Match the existing latest-draw refresh cadence; this only reads stored results.
-    const timer = setInterval(refresh, 60_000);
+    // Homepage status is precomputed data; periodic polling only needs an hourly fallback.
+    const timer = setInterval(refresh, 3_600_000);
     const unsubscribe = subscribeMatrixDataRevision(invalidate);
     document.addEventListener("visibilitychange", queueRefresh);
     window.addEventListener("online", queueRefresh);

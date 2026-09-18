@@ -98,7 +98,7 @@ export function createMatrixStatusEdgeHandler(dependencies: MatrixStatusEdgeDepe
       }
     }
 
-    if (action === 'batch') {
+    if (action === 'batch' || action === 'summary-batch') {
       const requested = Array.isArray(value?.lotteries)
         ? value.lotteries.map((item) => String(item))
         : [];
@@ -115,9 +115,26 @@ export function createMatrixStatusEdgeHandler(dependencies: MatrixStatusEdgeDepe
           authorization,
           body: { lottery },
         });
-        return { lottery, status: result.status, body: result.body };
+        if (action !== 'summary-batch' || result.status !== 200) {
+          return { lottery, status: result.status, body: result.body };
+        }
+        return {
+          lottery,
+          status: result.status,
+          body: {
+            kind: 'status-summary',
+            lottery,
+            drawPeriod: result.body.drawPeriod,
+            analysisVersion: result.body.analysisVersion,
+            sourceAnalysisVersion: result.body.sourceAnalysisVersion,
+            summary: result.body.summary,
+          },
+        };
       }));
-      return json({ kind: 'status-batch', items }, 200);
+      return json({
+        kind: action === 'summary-batch' ? 'status-summary-batch' : 'status-batch',
+        items,
+      }, 200);
     }
 
     const route = action === 'validation' ? routes.validation : routes.get;
