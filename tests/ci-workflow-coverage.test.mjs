@@ -74,6 +74,13 @@ test('admin builds remain required and Python uses the selected plan', () => {
   assert.match(python, /--run python/);
 });
 
+test('selected test jobs fail the workflow when their tests fail', () => {
+  const root = job('test-and-build');
+  const runtime = job('runtime-tests');
+  assert.doesNotMatch(root, /continue-on-error:\s*true/);
+  assert.doesNotMatch(runtime, /continue-on-error:\s*true/);
+});
+
 test('main pushes finish one same-commit release gate without cancellation', () => {
   assert.match(
     workflow,
