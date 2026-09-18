@@ -1,13 +1,13 @@
-import type { MatrixLottery } from './matrix-algorithm-shared';
+import type { MatrixLottery } from './matrix-algorithm-shared.ts';
 import {
   resolveStatusEvaluationMode,
   normalizeCustomStatusConfig,
   validateCustomStatusConfig,
   type CustomStatus,
   type CustomStatusConfig,
-} from './matrix-custom-status';
-import { resolveMatrixEntitlements, type MemberContext } from './matrix-entitlements';
-import { MatrixAccessError } from './matrix-member-auth';
+} from './matrix-custom-status.ts';
+import { resolveMatrixEntitlements, type MemberContext } from './matrix-entitlements.ts';
+import { MatrixAccessError } from './matrix-member-auth.ts';
 
 type RouteInput = { authorization?: string; body: unknown };
 type RouteResult = { status: number; body: Record<string, unknown> };
