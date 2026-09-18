@@ -155,12 +155,16 @@ export function listCustomStatusSettings() {
 }
 
 export function saveCustomStatusSetting(config: CustomStatusConfig) {
-  return statusRpc<{ item: CustomStatusConfig }>('matrix_custom_status_save', { p_config: config });
+  return statusFunction<{ item: CustomStatusConfig }>({
+    action: 'custom-save',
+    config,
+  });
 }
 
 export function resetCustomStatusSetting(lottery: LotteryId, status: CustomMatrixStatusCode) {
-  return statusRpc<Record<string, never>>('matrix_custom_status_reset', {
-    p_lottery: lottery,
-    p_status: status,
+  return statusFunction<{ reset: true }>({
+    action: 'custom-reset',
+    lottery,
+    status,
   });
 }
