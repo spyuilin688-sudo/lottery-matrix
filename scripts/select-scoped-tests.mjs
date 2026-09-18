@@ -30,6 +30,7 @@ const CONFIG_OWNERS = {
   'vitest.edge-functions.config.ts': ['tests/edge-functions-config.test.mjs'],
   'mobile-runtime.lock.json': ['tests/runtime-integrity-atomic-commit.test.mjs', 'tests/runtime-integrity-scope.test.mjs'],
   'playwright.config.ts': ['tests/mobile-runtime.spec.ts'],
+  'services/matrix-api/railway.recovery.json': ['services/matrix-api/tests/test_railway_recovery_contract.py'],
   'vite.runtime-tests.config.ts': ['tests/mobile-runtime.spec.ts'],
   'playwright.membership-preview.config.ts': ['tests/membership-preview/responsive.spec.ts'],
 };
