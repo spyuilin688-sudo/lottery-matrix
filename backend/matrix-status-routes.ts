@@ -158,6 +158,35 @@ function projectCachedCustomStatus(
   return projectCompactStatus(payload, lottery, cached.drawPeriod, entitlements, true);
 }
 
+function projectStatusSummary(
+  payloadValue: Record<string, unknown>,
+  lottery: LotteryId,
+  drawPeriod: string,
+) {
+  if (payloadValue.lottery !== lottery || payloadValue.drawPeriod !== drawPeriod) {
+    throw new Error('ANALYSIS_NOT_READY');
+  }
+  const summary = payloadValue.summary;
+  if (!summary || typeof summary !== 'object' || Array.isArray(summary)) {
+    throw new Error('ANALYSIS_NOT_READY');
+  }
+  return summary as Record<string, unknown>;
+}
+
+function currentCustomResult(
+  cached: MatrixCustomStatusResult | null,
+  identity: StatusIdentity | null,
+) {
+  if (!cached?.analysisVersion || !cached.drawPeriod) return null;
+  if (identity && (
+    !identity.analysisVersion
+    || !identity.drawPeriod
+    || cached.drawPeriod !== identity.drawPeriod
+    || cached.analysisVersion !== identity.analysisVersion
+  )) return null;
+  return cached;
+}
+
 function requireCurrentCustomResult(
   cached: MatrixCustomStatusResult | null,
   identity: StatusIdentity | null,
@@ -178,6 +207,109 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
     ? dependencies.requireMember(authorization)
     : Promise.resolve(anonymousMatrixMember);
   return {
+    async summary(input: RouteInput): Promise<RouteResult> {
+      try {
+        const member = await memberFor(input.authorization);
+        const body = record(input.body);
+        const lottery = String(body.lottery ?? '') as LotteryId;
+        if (!lotteries.includes(lottery)) throw new Error('INVALID_REQUEST');
+        const requestedPeriod = body.drawPeriod ? String(body.drawPeriod) : undefined;
+        const configs = member.memberId ? await dependencies.listConfigs(member.memberId) : [];
+        const lotteryConfigs = configs.filter((config) => config.lottery === lottery);
+        const entitlements = resolveMatrixEntitlements(member, now());
+        const customActive = Boolean(
+          member.memberId
+          && lotteryConfigs.length > 0
+          && entitlements.canCustomizeStatus,
+        );
+
+        if (customActive && dependencies.readCustomStatus) {
+          const identity = dependencies.readStatusIdentity
+            ? await dependencies.readStatusIdentity(lottery, requestedPeriod)
+            : null;
+          if (!dependencies.readStatusIdentity || identity) {
+            const cached = currentCustomResult(
+              await dependencies.readCustomStatus(
+                member.memberId,
+                lottery,
+                identity?.drawPeriod ?? requestedPeriod,
+              ),
+              identity,
+            );
+            if (
+              cached
+              && cached.configKey === matrixCustomStatusConfigKey(configs, lottery)
+            ) {
+              const payload = entitlements.canUseCompositeCustomRoad
+                ? cached.compositePayload
+                : cached.standardPayload;
+              return {
+                status: 200,
+                body: {
+                  kind: 'status-summary',
+                  lottery,
+                  drawPeriod: cached.drawPeriod,
+                  analysisVersion: `${cached.analysisVersion}:status`,
+                  sourceAnalysisVersion: cached.analysisVersion,
+                  summary: projectStatusSummary(payload, lottery, cached.drawPeriod),
+                },
+              };
+            }
+          }
+        }
+
+        if (dependencies.readCompactStatus) {
+          const compact = await dependencies.readCompactStatus(lottery, requestedPeriod);
+          if (!compact?.analysisVersion || !compact.drawPeriod || !compact.payload) {
+            throw new Error('ANALYSIS_NOT_READY');
+          }
+          return {
+            status: 200,
+            body: {
+              kind: 'status-summary',
+              lottery,
+              drawPeriod: compact.drawPeriod,
+              analysisVersion: `${compact.analysisVersion}:status`,
+              sourceAnalysisVersion: compact.analysisVersion,
+              summary: projectStatusSummary(
+                compact.payload,
+                lottery,
+                compact.drawPeriod,
+              ),
+            },
+          };
+        }
+
+        const sources = await dependencies.readStatusSources(lottery, requestedPeriod);
+        if (!sources?.explore || !sources.tianyan
+          || sources.explore.drawPeriod !== sources.drawPeriod
+          || sources.tianyan.drawPeriod !== sources.drawPeriod
+          || sources.explore.lottery !== lottery
+          || sources.tianyan.lottery !== lottery) {
+          throw new Error('ANALYSIS_NOT_READY');
+        }
+        const artifact = buildMatrixStatusArtifact(
+          sources.explore,
+          sources.tianyan,
+          customActive ? [] : configs,
+          entitlements,
+        );
+        return {
+          status: 200,
+          body: {
+            kind: 'status-summary',
+            lottery,
+            drawPeriod: sources.drawPeriod,
+            analysisVersion: `${sources.analysisVersion}:status`,
+            sourceAnalysisVersion: sources.analysisVersion,
+            summary: artifact.summary,
+          },
+        };
+      } catch (cause) {
+        return failure(cause);
+      }
+    },
+
     async get(input: RouteInput): Promise<RouteResult> {
       try {
         const member = await memberFor(input.authorization);
