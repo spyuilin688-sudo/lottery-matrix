@@ -266,7 +266,7 @@ export function planWatchdogActions(
       snapshot.drawDays,
     );
     if (!expectedDate) continue;
-    const crawlerTarget = snapshot.lottery === '天天樂' ? 'github' : 'railway';
+    const crawlerTarget: WatchdogAction['target'] = 'railway';
     const drawDate = snapshot.latestDraw?.drawDate;
     const minimumDrawDate = minimumExpectedDrawDate(snapshot.lottery, expectedDate);
     const staleDraw = (
