@@ -11,10 +11,19 @@ from app.api_server import (
     RailwayApiHandler,
     create_repository,
     handle_api_request,
+    run_lottery_recovery,
 )
+from app.fantasy5_crawler import run_fantasy5_crawler_once
+from app.recovery import RecoveryCoordinator
 from app.repositories.analysis_repository import AnalysisRepository
 from app.security_monitor import SecurityMonitor
 from app.settings import load_settings
+from app.watchdog_lease import (
+    begin_recovery_lease,
+    release_recovery_lease,
+    renew_recovery_lease,
+    terminate_on_lease_loss,
+)
 
 
 SERVICE_NAME = "matrix-railway-recovery"
@@ -47,6 +56,31 @@ def _health(repository: AnalysisRepository) -> tuple[int, dict[str, Any]]:
     }
 
 
+def run_full_lottery_recovery(
+    lottery: str,
+    *,
+    fantasy5_crawler: Callable[[], dict[str, Any]] | None = None,
+    downstream_recovery: Callable[[str], None] | None = None,
+) -> None:
+    if lottery == "天天樂":
+        result = (fantasy5_crawler or run_fantasy5_crawler_once)()
+        status = str(result.get("status") or "")
+        if status == "not-acquired":
+            return
+        if status not in {"acquired", "already-acquired"}:
+            raise RuntimeError("FANTASY5_RECOVERY_INVALID_STATUS")
+    (downstream_recovery or run_lottery_recovery)(lottery)
+
+
+_RECOVERY_COORDINATOR = RecoveryCoordinator(
+    run_full_lottery_recovery,
+    begin_lease=begin_recovery_lease,
+    renew_lease=renew_recovery_lease,
+    release_lease=release_recovery_lease,
+    on_lease_lost=terminate_on_lease_loss,
+)
+
+
 def handle_recovery_request(
     method: str,
     target: str,
@@ -73,7 +107,7 @@ def handle_recovery_request(
         repository,
         request_monitor_token=request_monitor_token,
         refresh_lottery=refresh_lottery,
-        recover_lottery=recover_lottery,
+        recover_lottery=recover_lottery or _RECOVERY_COORDINATOR.enqueue,
         request_notification_token=request_notification_token,
     )
 
