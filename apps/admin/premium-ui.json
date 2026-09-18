@@ -1,0 +1,11 @@
+{
+  "profile": "product-admin",
+  "sourceRoots": ["src"],
+  "locale": "zh-TW",
+  "canonicalMap": "DESIGN.md",
+  "requiredCapabilities": ["Select/Listbox", "Date", "Scrollbar"],
+  "ownership": {
+    "Select/Listbox": "native",
+    "Date": "native"
+  }
+}

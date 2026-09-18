@@ -1,0 +1,122 @@
+name: Matrix latest-period analysis v11
+
+on:
+  # Manual emergency recovery only. Railway owns the production schedule and
+  # the admin watchdog owns automatic recovery.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-stale:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: write
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      CURRENT_RUN_ID: ${{ github.run_id }}
+      CURRENT_RUN_NUMBER: ${{ github.run_number }}
+    steps:
+      - name: Cancel and drain older Matrix runs
+        shell: bash
+        run: |
+          set -euo pipefail
+          runs_json="$(gh api --paginate --slurp \
+            "repos/$REPOSITORY/actions/workflows/matrix-analysis.yml/runs?per_page=100")"
+          newer_run_count="$(
+            jq -r --argjson current "$CURRENT_RUN_NUMBER" \
+              '[.[] | .workflow_runs[] | select(.run_number > $current)] | length' \
+              <<< "$runs_json"
+          )"
+          if (( newer_run_count > 0 )); then
+            echo "::error::NEWER_MATRIX_RUN_EXISTS"
+            exit 1
+          fi
+
+          stale_run_ids_text="$(
+            jq -r --argjson current "$CURRENT_RUN_NUMBER" \
+              '.[] | .workflow_runs[] | select(.run_number < $current and .status != "completed") | .id' \
+              <<< "$runs_json"
+          )"
+          stale_run_ids=()
+          if [[ -n "$stale_run_ids_text" ]]; then
+            mapfile -t stale_run_ids <<< "$stale_run_ids_text"
+          fi
+
+          for stale_run_id in "${stale_run_ids[@]}"; do
+            if ! gh api --silent --method POST \
+              "repos/$REPOSITORY/actions/runs/$stale_run_id/cancel"; then
+              status="$(gh api "repos/$REPOSITORY/actions/runs/$stale_run_id" --jq '.status')"
+              if [[ "$status" != "completed" ]]; then
+                exit 1
+              fi
+            fi
+          done
+
+          deadline=$((SECONDS + 300))
+          while (( SECONDS < deadline )); do
+            remaining=0
+            for stale_run_id in "${stale_run_ids[@]}"; do
+              status="$(gh api "repos/$REPOSITORY/actions/runs/$stale_run_id" --jq '.status')"
+              if [[ "$status" != "completed" ]]; then
+                remaining=$((remaining + 1))
+              fi
+            done
+            if (( remaining == 0 )); then
+              exit 0
+            fi
+            sleep 5
+          done
+
+          echo "::error::STALE_MATRIX_RUNS_DID_NOT_STOP"
+          exit 1
+
+  analyze:
+    needs: release-stale
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - id: daily539
+            lottery: 今彩539
+          - id: marksix
+            lottery: 六合彩
+          - id: lotto649
+            lottery: 大樂透
+    concurrency:
+      group: matrix-scheduled-analysis-${{ matrix.id }}
+      cancel-in-progress: true
+    defaults:
+      run:
+        working-directory: services/matrix-api
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.28"
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: services/matrix-api/uv.lock
+
+      - name: Install production dependencies
+        run: uv sync --frozen --no-dev
+
+      - name: Refresh and analyze one lottery
+        shell: bash
+        env:
+          LOTTERY: ${{ matrix.lottery }}
+        run: uv run python -m app.worker --lottery "$LOTTERY" --scheduled

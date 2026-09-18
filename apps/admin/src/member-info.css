@@ -1,0 +1,30 @@
+.memberInfoDialog { box-sizing: border-box; width: min(620px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); padding: 12px; color: #ece7d8; background: #111419; border: 1px solid #30333a; border-radius: 12px; overflow: auto; box-shadow: 0 16px 48px #0008; }
+.memberInfoDialog::backdrop { background: #000a; }
+.memberInfoHeading { padding: 0; border: 0; background: transparent; min-height: 28px; position: static; box-shadow: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.memberInfoHeading h2 { font-size: 16px; line-height: 24px; margin: 0; }
+.memberInfoCards { display: grid; gap: 8px; }
+.memberInfoCard { min-width: 0; padding: 12px; border: 1px solid #30333a; border-radius: 8px; background: #090b0f; }
+.memberInfoCard dl { margin: 0; display: grid; gap: 8px; }
+.memberInfoCard dl > div { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 12px; font-size: 12px; line-height: 18px; }
+.memberInfoCard dt { color: #aeb2ba; }
+.memberInfoCard dd { margin: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.memberInfoCard h3 { margin: 0 0 8px; font-size: 13px; color: #e1c170; }
+.memberLoginTable { overflow-x: auto; min-height: 192px; }
+.memberInfoDialog table { min-width: 0; table-layout: fixed; width: 100%; border-collapse: collapse; font-size: 12px; }
+.memberInfoDialog th, .memberInfoDialog td { padding: 7px 8px; text-align: left; border-bottom: 1px solid #25282e; line-height: 18px; }
+.memberInfoDialog th { color: #bcb7a8; font-weight: 500; white-space: nowrap; }
+.memberInfoDialog td:first-child { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.memberInfoDialog td:nth-child(2) { max-width: 170px; overflow-wrap: anywhere; }
+.memberInfoDialog .compactButton { min-height: 28px; height: 28px; width: auto; padding: 0 8px; font-size: 12px; line-height: 26px; border: 1px solid #414037; border-radius: 6px; color: #e1c170; background: #1c1d18; cursor: pointer; }
+.memberInfoDialog button:hover:not(:disabled) { background: #2b2b22; }
+.memberInfoDialog button:focus-visible { outline: 2px solid #e1c170; outline-offset: 2px; }
+.memberInfoDialog button:disabled { opacity: .45; cursor: default; }
+.memberLoginPaging { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; font-size: 11px; color: #aeb2ba; }
+.memberLoginPaging > div { display: flex; gap: 6px; }
+.memberLocationNote { margin: 8px 0 0; font-size: 11px; line-height: 16px; color: #aeb2ba; }
+.memberStatusCell { display: flex; gap: 8px; align-items: center; }
+@media (max-width: 480px) { .memberInfoDialog { padding: 10px; } .memberInfoCard { padding: 10px; } .memberInfoCard dl > div { grid-template-columns: 84px minmax(0, 1fr); gap: 8px; } .memberInfoDialog th, .memberInfoDialog td { padding: 6px 4px; } }
+
+.memberInfoDialog th:first-child { width: 40%; }
+.memberInfoDialog th:nth-child(2) { width: 34%; }
+.memberInfoDialog td { white-space: normal; overflow-wrap: anywhere; }

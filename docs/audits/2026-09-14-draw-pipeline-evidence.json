@@ -1,0 +1,268 @@
+{
+  "baseline": "28fbac6e1d1340f9e47f4ffcdcb446e8e0bb8c18",
+  "latestRpc": [
+    {
+      "lottery": "今彩539",
+      "latest_response": {
+        "items": [
+          {
+            "period": "115000223",
+            "numbers": [
+              "01",
+              "15",
+              "32",
+              "34",
+              "39"
+            ],
+            "draw_date": "2026-09-14",
+            "result_status": "confirmed",
+            "sorted_numbers": [
+              "01",
+              "15",
+              "32",
+              "34",
+              "39"
+            ],
+            "draw_order_numbers": [
+              "39",
+              "15",
+              "01",
+              "32",
+              "34"
+            ]
+          }
+        ],
+        "revision": "f0df5f5a9ac67a61c379a7331d4bd1ba",
+        "nextCursor": null
+      }
+    },
+    {
+      "lottery": "天天樂",
+      "latest_response": {
+        "items": [
+          {
+            "period": "11999",
+            "numbers": [
+              "01",
+              "02",
+              "12",
+              "34",
+              "36"
+            ],
+            "draw_date": "2026-09-14",
+            "result_status": "confirmed",
+            "sorted_numbers": [
+              "01",
+              "02",
+              "12",
+              "34",
+              "36"
+            ],
+            "draw_order_numbers": null
+          }
+        ],
+        "revision": "7748449317a5fda84ca2e673d7955248",
+        "nextCursor": null
+      }
+    },
+    {
+      "lottery": "大樂透",
+      "latest_response": {
+        "items": [
+          {
+            "period": "115000087",
+            "numbers": [
+              "12",
+              "15",
+              "19",
+              "27",
+              "43",
+              "48",
+              "25"
+            ],
+            "draw_date": "2026-09-11",
+            "result_status": "confirmed",
+            "sorted_numbers": [
+              "12",
+              "15",
+              "19",
+              "27",
+              "43",
+              "48",
+              "25"
+            ],
+            "draw_order_numbers": [
+              "12",
+              "15",
+              "27",
+              "19",
+              "43",
+              "48",
+              "25"
+            ]
+          }
+        ],
+        "revision": "488ca8bea3c41669675d7346d0e2c03f",
+        "nextCursor": null
+      }
+    },
+    {
+      "lottery": "六合彩",
+      "latest_response": {
+        "items": [
+          {
+            "period": "026099",
+            "numbers": [
+              "09",
+              "18",
+              "24",
+              "33",
+              "40",
+              "47",
+              "11"
+            ],
+            "draw_date": "2026-09-12",
+            "result_status": "confirmed",
+            "sorted_numbers": [
+              "09",
+              "18",
+              "24",
+              "33",
+              "40",
+              "47",
+              "11"
+            ],
+            "draw_order_numbers": [
+              "09",
+              "24",
+              "33",
+              "47",
+              "18",
+              "40",
+              "11"
+            ]
+          }
+        ],
+        "revision": "5011886bc7644619e476a6fa29db7470",
+        "nextCursor": null
+      }
+    }
+  ],
+  "rowCounts": [
+    {
+      "lottery": "今彩539",
+      "rows": 7012,
+      "missing_dates": 0,
+      "no_raw": 0,
+      "preliminary": 0,
+      "different_sorted": 0
+    },
+    {
+      "lottery": "六合彩",
+      "rows": 6066,
+      "missing_dates": 1480,
+      "no_raw": 1383,
+      "preliminary": 0,
+      "different_sorted": 0
+    },
+    {
+      "lottery": "大樂透",
+      "rows": 2899,
+      "missing_dates": 0,
+      "no_raw": 0,
+      "preliminary": 0,
+      "different_sorted": 0
+    },
+    {
+      "lottery": "天天樂",
+      "rows": 11919,
+      "missing_dates": 0,
+      "no_raw": 11903,
+      "preliminary": 0,
+      "different_sorted": 0
+    }
+  ],
+  "uniqueness": [
+    {
+      "check_name": "duplicate_lottery_period",
+      "findings": 0
+    },
+    {
+      "check_name": "duplicate_lottery_date",
+      "findings": 1464
+    },
+    {
+      "check_name": "duplicate_notification_event_key",
+      "findings": 0
+    },
+    {
+      "check_name": "duplicate_result_lottery_date",
+      "findings": 0
+    }
+  ],
+  "aliasClassification": [
+    {
+      "lottery": "今彩539",
+      "duplicate_dates": 1045,
+      "equivalent_period_aliases": 1045
+    },
+    {
+      "lottery": "六合彩",
+      "duplicate_dates": 1,
+      "equivalent_period_aliases": 0
+    },
+    {
+      "lottery": "大樂透",
+      "duplicate_dates": 418,
+      "equivalent_period_aliases": 418
+    }
+  ],
+  "marksixDateConflict": [
+    {
+      "lottery": "六合彩",
+      "period": "093053",
+      "draw_date": "1993-07-13",
+      "numbers": [
+        "06",
+        "11",
+        "15",
+        "17",
+        "37",
+        "39",
+        "21"
+      ],
+      "draw_order_numbers": [
+        "11",
+        "17",
+        "37",
+        "15",
+        "39",
+        "06",
+        "21"
+      ]
+    },
+    {
+      "lottery": "六合彩",
+      "period": "093054",
+      "draw_date": "1993-07-13",
+      "numbers": [
+        "09",
+        "14",
+        "18",
+        "26",
+        "30",
+        "45",
+        "41"
+      ],
+      "draw_order_numbers": [
+        "18",
+        "45",
+        "26",
+        "30",
+        "09",
+        "14",
+        "41"
+      ]
+    }
+  ]
+}

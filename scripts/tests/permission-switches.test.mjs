@@ -1,0 +1,118 @@
+import { PGlite } from '@electric-sql/pglite';
+import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
+const db = new PGlite();
+await db.exec(`
+create role anon; create role authenticated; create role service_role;
+create schema private; create schema auth;
+create function auth.uid() returns uuid language sql stable as $f$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $f$;
+create table public.members (id uuid default gen_random_uuid(), auth_user_id uuid, status text, is_lifetime boolean default false, current_plan_id uuid, plan_expires_at timestamptz, line_user_id text, referral_code text, invitation_code text, line_trial_started_at timestamptz, registered_at timestamptz default now());
+create table public.plans(id uuid, name text);
+create table public.payments(member_id uuid,status text);
+create table public.admin_accounts(id uuid primary key, account text, name text, role text, status text);
+`);
+await db.exec(readFileSync(new URL('../../supabase/migrations/20260909215507_matrix_permission_switches.sql', import.meta.url),'utf8'));
+await db.exec(readFileSync(new URL('../../supabase/migrations/20260910225542_admin_matrix_permission_settings.sql', import.meta.url),'utf8'));
+const q = async sql => (await db.query(sql)).rows[0];
+const read = async () => (await q('select public.matrix_permission_settings() as value')).value;
+const ent = async () => (await q('select private.matrix_result_entitlements() as value')).value;
+const setUser = async uid => db.query("select set_config('request.jwt.claim.sub',$1,false)", [uid]);
+const change = async (key,value,revision) => db.query('select public.matrix_permission_settings_update($1::jsonb) as value',[JSON.stringify({key,value,expectedRevision:revision})]);
+assert.equal((await read()).registeredMemberFreeAccess,false);
+await db.exec("set role anon");
+await assert.rejects(change('registeredMemberFreeAccess',true,0), /FORBIDDEN/);
+await assert.rejects(db.query('select * from private.matrix_permission_credentials'), /permission denied/);
+await assert.rejects(db.query('update private.matrix_permission_settings set registered_member_free_access=true'), /permission denied/);
+await db.exec("reset role");
+const token='local-test-only-credential-with-48-characters-123456789';
+await db.query("insert into private.matrix_permission_credentials values(true,encode(sha256(convert_to($1,'UTF8')),'hex'))",[token]);
+await db.query("select set_config('request.headers',$1,false)",[JSON.stringify({'x-matrix-management-token':token})]);
+await db.exec("set role anon");
+assert.equal((await change('registeredMemberFreeAccess',true,0)).rows[0].value.registeredMemberFreeAccess,true);
+await assert.rejects(change('subscriptionPurchaseVisible',true,0),/SETTINGS_CONFLICT/);
+for(const bad of [null,{},[],{key:'unknown',value:true,expectedRevision:1},{key:'registeredMemberFreeAccess',value:'true',expectedRevision:1},{key:'registeredMemberFreeAccess',value:true,expectedRevision:1,extra:true},{key:'registeredMemberFreeAccess',value:true,expectedRevision:1.5}]) {
+ await assert.rejects(db.query('select public.matrix_permission_settings_update($1::jsonb)',[JSON.stringify(bad)]), /INVALID_REQUEST/);
+}
+await db.exec("reset role");
+assert.equal((await ent()).canUseThirteen,false,'guest cannot gain free access');
+const old='11111111-1111-4111-8111-111111111111', newer='22222222-2222-4222-8222-222222222222';
+await db.query("insert into public.members(auth_user_id,registered_at) values ($1,now()-interval '1 year'),($2,now())",[old,newer]);
+for(const uid of [old,newer]) {
+ await setUser(uid); const rights=await ent();
+ for(const key of ['canUseSeven','canUseThirteen','canUseFullRange','canUseTianyan','canUseTiangong']) assert.equal(rights[key],true,key);
+ for(const key of ['canViewFullStatus','canCustomizeStatus','canUseCompositeCustomRoad']) assert.equal(rights[key],false,key);
+}
+await db.query("update public.members set status='停用' where auth_user_id=$1",[newer]);
+await assert.rejects(ent(),/FORBIDDEN/);
+await setUser('33333333-3333-4333-8333-333333333333');
+await assert.rejects(ent(),/FORBIDDEN/);
+await setUser(old);
+await change('subscriptionPurchaseVisible',true,1);
+assert.equal((await ent()).canUseThirteen,true,'purchase flag is independent');
+await change('registeredMemberFreeAccess',false,2);
+assert.equal((await ent()).canUseThirteen,false);
+assert.equal((await ent()).canUseTianyan,false);
+await db.query("update public.members set is_lifetime=true where auth_user_id=$1",[old]);
+assert.equal((await ent()).canUseTiangong,true,'paid entitlement survives closing');
+assert.equal((await q('select count(*)::int as n from public.members where current_plan_id is not null or plan_expires_at is not null')).n,0);
+const superAdmin='44444444-4444-4444-8444-444444444444';
+const operator='55555555-5555-4555-8555-555555555555';
+const disabledSuper='66666666-6666-4666-8666-666666666666';
+await db.query("insert into public.admin_accounts values ($1,'owner','Owner','超級管理員','啟用'),($2,'operator','Operator','營運管理員','啟用'),($3,'disabled','Disabled','超級管理員','停用')",[superAdmin,operator,disabledSuper]);
+const adminChange = async (actor,key,value,revision) => db.query(
+ 'select public.admin_matrix_permission_settings_update($1,$2::jsonb) as value',
+ [actor,JSON.stringify({key,value,expectedRevision:revision})],
+);
+await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({role:'service_role'})]);
+await db.exec('set role service_role');
+const beforeAdminChange=await read();
+await assert.rejects(adminChange(operator,'subscriptionPurchaseVisible',false,beforeAdminChange.revision),/FORBIDDEN/);
+await assert.rejects(adminChange(disabledSuper,'subscriptionPurchaseVisible',false,beforeAdminChange.revision),/FORBIDDEN/);
+await assert.rejects(adminChange(superAdmin,'unknown',true,beforeAdminChange.revision),/INVALID_REQUEST/);
+const updatedByAdmin=(await adminChange(superAdmin,'subscriptionPurchaseVisible',false,beforeAdminChange.revision)).rows[0].value;
+assert.equal(updatedByAdmin.subscriptionPurchaseVisible,false);
+assert.equal(updatedByAdmin.registeredMemberFreeAccess,beforeAdminChange.registeredMemberFreeAccess,'admin update keeps the other switch independent');
+assert.equal(updatedByAdmin.revision,beforeAdminChange.revision+1);
+await assert.rejects(adminChange(superAdmin,'registeredMemberFreeAccess',true,beforeAdminChange.revision),/SETTINGS_CONFLICT/);
+await db.exec('reset role');
+await db.exec('set role anon');
+await assert.rejects(adminChange(superAdmin,'registeredMemberFreeAccess',true,updatedByAdmin.revision),/permission denied/);
+await db.exec('reset role');
+await db.exec(readFileSync(new URL('../../supabase/migrations/20260911052301_remove_legacy_matrix_permission_token_path.sql', import.meta.url),'utf8'));
+assert.equal((await q("select to_regprocedure('public.matrix_permission_settings_update(jsonb)') as value")).value,null);
+assert.equal((await q("select to_regclass('private.matrix_permission_credentials') as value")).value,null);
+const afterRetirement=await read();
+await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({role:'service_role'})]);
+await db.exec('set role service_role');
+const nativeAfterRetirement=(await adminChange(superAdmin,'registeredMemberFreeAccess',!afterRetirement.registeredMemberFreeAccess,afterRetirement.revision)).rows[0].value;
+assert.equal(nativeAfterRetirement.registeredMemberFreeAccess,!afterRetirement.registeredMemberFreeAccess);
+assert.equal(nativeAfterRetirement.revision,afterRetirement.revision+1);
+await db.exec('reset role');
+// Audit the production entitlement function across each current membership tier.
+// These fixtures live only in this in-memory PGlite database.
+const featureKeys = ['canUseSeven','canUseThirteen','canUseFullRange','canUseTianyan','canUseTiangong','canViewFullStatus','canCustomizeStatus','canUseCompositeCustomRoad'];
+const memberTiers = [
+  ['free', null, false, false, [false,false,false,false,false,false,false,false]],
+  ['expired', '月費方案', false, false, [false,false,false,false,false,false,false,false]],
+  ['monthly', '月費方案', true, false, [true,true,true,false,false,true,true,false]],
+  ['quarterly', '季費方案', true, false, [true,true,true,true,false,true,true,true]],
+  ['yearly', '年費方案', true, false, [true,true,true,true,true,true,true,true]],
+  ['lifetime', null, true, true, [true,true,true,true,true,true,true,true]],
+];
+for (const [index, [name, planName, active, lifetime, expected]] of memberTiers.entries()) {
+  const id = `99999999-9999-4999-8999-${String(index + 1).padStart(12, '0')}`;
+  if (planName) await db.query('insert into public.plans(id,name) values($1,$2)', [id,planName]);
+  await db.query("insert into public.members(auth_user_id,current_plan_id,is_lifetime,plan_expires_at) values($1,$2,$3,now()+$4::interval)", [id,planName ? id : null,lifetime,active ? '1 day' : '-1 day']);
+  await setUser(id);
+  for (const freeAccess of [false,true]) {
+    await db.query('update private.matrix_permission_settings set registered_member_free_access=$1',[freeAccess]);
+    const rights = await ent();
+    assert.deepEqual(featureKeys.map(key => rights[key]), expected.map((allowed, index) => allowed || (freeAccess && index < 5)), `${name}, freeAccess=${freeAccess}`);
+  }
+}
+await setUser('');
+const guestRights = await ent();
+assert.deepEqual(featureKeys.map(key => guestRights[key]), featureKeys.map(() => false), 'guest remains restricted while free switch is on');
+console.log('PASS: SQL tier matrix for free/expired/monthly/quarterly/yearly/lifetime with switch off/on, plus guest');
+console.log('PASS: settings authorization, admin role enforcement, payload validation, revision conflict, guest/old/new/disabled/missing members, five-feature scope, independent toggles, paid fallback and legacy token retirement');
+await db.close();

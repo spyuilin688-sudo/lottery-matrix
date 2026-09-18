@@ -1,0 +1,101 @@
+export const exploreEnvelope = {
+  kind: 'explore',
+  lottery: '今彩539',
+  drawPeriod: '114000123',
+  analysisVersion: '114000123:v1',
+  status: 'complete',
+  total: 1,
+  duplicateStats: [{ number: '22', count: 1 }, { number: '26', count: 1 }],
+  items: [{
+    id: 'api-item-1',
+    number: '44',
+    lockedPosition: 2,
+    predictionDistance: 3,
+    consecutive: '準5進6',
+    highestStreak: 5,
+    predictionNumbers: ['22', '26'],
+    algorithmType: '加減',
+    numberOrder: '依號碼由小到大排序',
+    explorePeriods: 13,
+    exploreDateOffset: 0,
+    ruleCount: 1,
+    referenceOffset: -7,
+    referencePosition: 4,
+  }],
+} as const;
+
+export const exploreValidationEnvelope = {
+  kind: 'explore',
+  lottery: '今彩539',
+  drawPeriod: '114000123',
+  analysisVersion: '114000123:v1',
+  status: 'complete',
+  itemId: 'api-item-1',
+  validation: {
+    itemId: 'api-item-1',
+    sourceA: {
+      sourcePeriod: '114000123',
+      sourceNumbers: ['04', '11', '20', '28', '44'],
+      sourceSortedNumbers: ['04', '11', '20', '28', '44'],
+      sourceDrawOrderNumbers: null,
+      referencePeriod: '114000116',
+      referenceNumbers: ['02', '09', '14', '21', '35'],
+      referenceSortedNumbers: ['02', '09', '14', '21', '35'],
+      referenceDrawOrderNumbers: null,
+      baseNumber: 14,
+      predictionPeriod: null,
+      predictionCompleted: false,
+    },
+    ruleSets: [{
+      rules: [{ value: 8, display: '+8', algorithmType: '加減' }],
+      predictionNumbers: [22, 26],
+      historicalValidation: [{
+        group: 'B',
+        sourcePeriod: '114000120',
+        sourceNumbers: ['03', '10', '14', '22', '31'],
+        sourceSortedNumbers: ['03', '10', '14', '22', '31'],
+        sourceDrawOrderNumbers: null,
+        referencePeriod: '114000118',
+        referenceNumbers: ['01', '08', '14', '24', '30'],
+        referenceSortedNumbers: ['01', '08', '14', '24', '30'],
+        referenceDrawOrderNumbers: null,
+        baseNumber: 14,
+        predictionPeriod: '114000123',
+        predictionNumbers: ['22', '26'],
+        candidateRules: [8],
+        matchedRules: [{ algorithmType: '加減', value: 8, display: '+8' }],
+        hitNumbers: ['22'],
+        success: true,
+      }],
+    }],
+  },
+} as const;
+
+export const tianyanEnvelope = {
+  kind: 'tianyan', lottery: '今彩539', drawPeriod: '114000123', analysisVersion: '114000123:v1', status: 'complete', total: 1,
+  duplicateStats: [{ number: '14', count: 3 }, { number: '27', count: 2 }],
+  items: [{
+    id: 'tianyan-api-1', number: '07', lockedPosition: 1, predictionDistance: 1,
+    consecutive: '準11進12', highestStreak: 11, predictionNumbers: ['14', '27'],
+    roadType: '複合', roadTypeLabel: '加減合值', hitCondition: '準5+（鎖定2碼）',
+    numberOrder: '依號碼由小到大排序', ruleIds: ['r1', 'r2'],
+  }],
+} as const;
+
+export const tianyanValidation = {
+  itemId: 'tianyan-api-1',
+  sourceA: { sourcePeriod: '114000130', sourceNumbers: [7, 11, 15, 22, 30], lockedPosition: 1, lockedNumber: 7, predictionDistance: 1 },
+  rules: [
+    { id: 'r1', validationPeriodOffset: -1, validationPeriod: '114000129', validationPosition: 2, referenceOffset: -1, referencePosition: 2, algorithmType: '加減', value: 3, ruleValue: 3, currentBaseNumber: 11, currentPredictionNumber: 14 },
+    { id: 'r2', validationPeriodOffset: -2, validationPeriod: '114000128', validationPosition: 4, referenceOffset: -2, referencePosition: 4, algorithmType: '合值', value: 5, ruleValue: 5, currentBaseNumber: 22, currentPredictionNumber: 27 },
+  ],
+  groupCount: 11, minimumIndependentHits: 4, rule1Only: 4, rule2Only: 4, bothHit: 3,
+  mergedSearchPredictionNumbers: ['14', '27'],
+  historicalValidation: [{
+    group: '1', sourcePeriod: '114000120', sourceNumbers: [7, 11, 15, 22, 30], lockedPosition: 1, lockedNumber: 7,
+    predictionPeriod: '114000123', predictionNumbers: [14, 18, 27, 31, 35],
+    rule1: { validationPeriodOffset: -1, validationPeriod: '114000119', validationPosition: 2, baseNumber: 11, algorithmType: '加減', candidateValues: [3], ruleValue: 3, calculationResult: 14, hit: true },
+    rule2: { validationPeriodOffset: -2, validationPeriod: '114000118', validationPosition: 4, baseNumber: 22, algorithmType: '合值', candidateValues: [5], ruleValue: 5, calculationResult: 27, hit: true },
+    hitType: 'bothHit', hitNumbers: [14, 27], success: true,
+  }],
+} as const;

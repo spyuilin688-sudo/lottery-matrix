@@ -1,0 +1,189 @@
+// @vitest-environment jsdom
+
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { beforeEach, expect, test, vi } from 'vitest';
+import { NumberReferencePage } from '../FeaturePages';
+
+beforeEach(() => {
+  document.body.innerHTML = '';
+  window.localStorage.clear();
+  window.sessionStorage.clear();
+  globalThis.fetch = vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ records: [] }),
+  }) as typeof fetch;
+  window.requestAnimationFrame = (callback) => {
+    callback(0);
+    return 1;
+  };
+});
+
+function mockReferenceHistory() {
+  const draw = {
+    period: '115078',
+    drawDate: '2026/08/11',
+    numbers: ['01', '02', '03', '04', '05'],
+    sortedNumbers: ['01', '02', '03', '04', '05'],
+    drawOrderNumbers: ['05', '04', '03', '02', '01'],
+  };
+  globalThis.fetch = vi.fn().mockImplementation(async (input) => new Response(JSON.stringify(
+    String(input).includes('/latest/') ? draw : { items: [draw] },
+  ), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  })) as typeof fetch;
+}
+
+test('從列表底部展開探索設定時直接顯示設定且不捲動畫面', () => {
+  const scrollIntoView = vi.fn();
+  Element.prototype.scrollIntoView = scrollIntoView;
+  const mobilePage = document.createElement('div');
+  mobilePage.className = 'mobile-page';
+  const root = document.createElement('div');
+  mobilePage.append(root);
+  document.body.append(mobilePage);
+  render(<NumberReferencePage onNavigate={vi.fn()} />, { container: root });
+
+  const header = mobilePage.querySelector<HTMLElement>('.feature-brand-header');
+  const firstInput = screen.getByRole('textbox', { name: '探索號碼 1' }) as HTMLInputElement;
+  fireEvent.change(firstInput, { target: { value: '07' } });
+  expect(screen.getByRole('button', { name: '刷新' }).parentElement?.classList.contains('query-selects')).toBe(true);
+  expect(within(header!.querySelector<HTMLElement>('.product-header__frame')!).queryByRole('button', { name: '刷新' })).toBeNull();
+  Object.defineProperty(mobilePage, 'offsetWidth', { configurable: true, value: 390 });
+  vi.spyOn(mobilePage, 'getBoundingClientRect').mockReturnValue({ top: 23, width: 195 } as DOMRect);
+  vi.spyOn(header!, 'getBoundingClientRect').mockReturnValue({ bottom: 123 } as DOMRect);
+
+  const toggle = screen.getByRole('button', { name: '收合探索設定' });
+  fireEvent.click(toggle);
+  fireEvent.click(screen.getByRole('button', { name: '展開探索設定' }));
+
+  const dialog = screen.getByRole('dialog', { name: '探索設定' });
+  expect(dialog.hidden).toBe(false);
+  expect(dialog.getAttribute('data-floating')).toBe('true');
+  expect(header!.contains(dialog)).toBe(true);
+  expect(dialog.getAttribute('style')).toBeNull();
+  expect((within(dialog).getByRole('textbox', { name: '探索號碼 1' }) as HTMLInputElement).value).toBe('07');
+  expect(scrollIntoView).not.toHaveBeenCalled();
+  fireEvent.click(within(dialog).getByRole('button', { name: '刷新' }));
+  expect((screen.getByRole('textbox', { name: '探索號碼 1' }) as HTMLInputElement).value).toBe('');
+});
+
+test('點擊已有號碼的輸入框時選取原號碼供直接取代', () => {
+  render(<NumberReferencePage onNavigate={vi.fn()} />);
+
+  const input = screen.getByRole('textbox', { name: '探索號碼 1' }) as HTMLInputElement;
+  fireEvent.change(input, { target: { value: '02' } });
+  fireEvent.click(input);
+
+  expect(input.selectionStart).toBe(0);
+  expect(input.selectionEnd).toBe(2);
+});
+
+test('三個輸入框共同限定 01 到 49、失焦補零且不可重複', () => {
+  render(<NumberReferencePage onNavigate={vi.fn()} />);
+
+  const first = screen.getByRole('textbox', { name: '探索號碼 1' }) as HTMLInputElement;
+  const second = screen.getByRole('textbox', { name: '探索號碼 2' }) as HTMLInputElement;
+
+  fireEvent.change(first, { target: { value: '0' } });
+  expect(first.value).toBe('0');
+  fireEvent.blur(first);
+  expect(first.value).toBe('');
+
+  fireEvent.change(first, { target: { value: '7' } });
+  expect(first.value).toBe('7');
+  fireEvent.blur(first);
+  expect(first.value).toBe('07');
+
+  fireEvent.change(first, { target: { value: '00' } });
+  expect(first.value).toBe('');
+  fireEvent.change(first, { target: { value: '50' } });
+  expect(first.value).toBe('');
+  fireEvent.change(first, { target: { value: '123' } });
+  expect(first.value).toBe('12');
+
+  fireEvent.change(second, { target: { value: '12' } });
+  expect(second.value).toBe('');
+  fireEvent.change(first, { target: { value: '01' } });
+  fireEvent.change(second, { target: { value: '1' } });
+  expect(second.value).toBe('1');
+  fireEvent.blur(second);
+  expect(second.value).toBe('');
+});
+
+test('已存在 01 到 04 時仍可輸入 11 到 49', () => {
+  render(<NumberReferencePage onNavigate={vi.fn()} />);
+  const first = screen.getByRole('textbox', { name: '探索號碼 1' }) as HTMLInputElement;
+  const second = screen.getByRole('textbox', { name: '探索號碼 2' }) as HTMLInputElement;
+
+  for (const [existing, values] of [
+    ['01', ['11', '19']],
+    ['02', ['21', '29']],
+    ['03', ['31', '39']],
+    ['04', ['41', '49']],
+  ] as const) {
+    fireEvent.change(first, { target: { value: existing } });
+    for (const value of values) {
+      fireEvent.change(second, { target: { value: value[0] } });
+      expect(second.value).toBe(value[0]);
+      fireEvent.change(second, { target: { value } });
+      expect(second.value).toBe(value);
+    }
+    fireEvent.change(first, { target: { value: '' } });
+    fireEvent.change(second, { target: { value: '' } });
+  }
+});
+
+test('整列標記後點擊同一期單格會保留整列並標記單格', async () => {
+  mockReferenceHistory();
+  render(<NumberReferencePage onNavigate={vi.fn()} />);
+  const issueButton = await screen.findByRole('button', { name: '115078' });
+  const row = issueButton.closest<HTMLElement>('.reference-row');
+  const numberButton = within(row!).getByRole('button', { name: '號碼 01' });
+
+  fireEvent.click(issueButton);
+  expect(issueButton.getAttribute('aria-pressed')).toBe('true');
+
+  fireEvent.click(numberButton);
+
+  expect(issueButton.getAttribute('aria-pressed')).toBe('true');
+  expect(numberButton.getAttribute('aria-pressed')).toBe('true');
+});
+
+test('單格標記後點擊同一期整列會清除單格並保留整列標記', async () => {
+  mockReferenceHistory();
+  render(<NumberReferencePage onNavigate={vi.fn()} />);
+  const issueButton = await screen.findByRole('button', { name: '115078' });
+  const row = issueButton.closest<HTMLElement>('.reference-row');
+  const numberButton = within(row!).getByRole('button', { name: '號碼 01' });
+
+  fireEvent.click(numberButton);
+  expect(numberButton.getAttribute('aria-pressed')).toBe('true');
+
+  fireEvent.click(issueButton);
+
+  expect(numberButton.getAttribute('aria-pressed')).toBe('false');
+  expect(issueButton.getAttribute('aria-pressed')).toBe('true');
+});
+
+
+test('更換號碼重新搜尋時清除先前的整列與單碼標記', async () => {
+  mockReferenceHistory();
+  render(<NumberReferencePage onNavigate={vi.fn()} />);
+  const issueButton = await screen.findByRole('button', { name: '115078' });
+  const row = issueButton.closest<HTMLElement>('.reference-row');
+  const numberButton = within(row!).getByRole('button', { name: '號碼 01' });
+
+  fireEvent.click(issueButton);
+  fireEvent.click(numberButton);
+  expect(issueButton.getAttribute('aria-pressed')).toBe('true');
+  expect(numberButton.getAttribute('aria-pressed')).toBe('true');
+
+  fireEvent.change(screen.getByRole('textbox', { name: '探索號碼 1' }), {
+    target: { value: '13' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+
+  expect((await screen.findByRole('button', { name: '115078' })).getAttribute('aria-pressed')).toBe('false');
+  expect(screen.getByRole('button', { name: '號碼 01' }).getAttribute('aria-pressed')).toBe('false');
+});

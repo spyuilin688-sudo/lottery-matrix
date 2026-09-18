@@ -1,0 +1,62 @@
+# Tests
+
+## Test 1 - 有效 Pro 統計與付款唯讀資料 [sanity]
+Viewport: desktop (1280x800)
+Covers: GET /api/dashboard, active Pro count, GET /api/data/subscriptionRecords, existing admin authentication and subscriptions view permission
+Description: 僅使用既有授權管理員工作階段；缺少工作階段或角色時明確回報未執行，不建立帳號、變更權限或付款。
+Steps:
+1. 以既有管理員工作階段開啟營運概覽，核對 Pro 人數與本次 dashboard 回應；有效 Pro 定義為未停用且訂閱到期時間仍在未來。
+2. 開啟訂閱管理的「付款紀錄與已完成沖銷」，核對伺服器付款列表的會員、方案、金額及狀態，再重新整理確認資料一致。
+3. 另以未登入工作階段開啟後台，確認受保護統計與付款資料不可讀取；有既有無訂閱查看權限工作階段時，同樣確認付款資料拒絕讀取。
+Expected: 統計與付款列表採用伺服器資料，不把空白、無效或已到期訂閱算成有效 Pro；未登入或無查看權限時不顯示私人付款資料。全程不寫入付款或會員資料。
+
+## Test 2 - 沖銷原因驗證及取消後付款不變
+Viewport: mobile (375x667)
+Covers: PaymentReversalPanel, subscriptions edit permission, reason validation, payment reversal confirmation cancellation, no-write persistence
+Description: 使用已有訂閱編輯權限管理員及一筆已確認付款；若條件不足回報未執行。只編輯草稿，禁止確認記錄任何真實付款的沖銷。
+Steps:
+1. 在訂閱管理開啟一筆已確認付款的「記錄沖銷」，原因留白後送出，確認出現原因必填提示。
+2. 填入「介面驗證草稿，請勿記錄」，選擇退款後送出以開啟確認視窗。
+3. 核對視窗顯示付款、金額、結果與原因，及只記錄外部已完成沖銷、不轉移款項、不改訂閱日期的說明；按取消。
+4. 重新整理並核對同一付款仍為已確認。若有既有唯讀管理員工作階段，確認看得到紀錄但沒有記錄沖銷操作。
+Expected: 空白原因阻止送出；取消確認不呼叫付款撤銷 PUT，也不更動資料；重新整理後付款維持已確認。手機畫面無水平溢出，長原因可閱讀，取消後仍可繼續操作。
+
+## Test 3 - 付款紀錄讀取失敗及手動重試
+Viewport: desktop (1280x800)
+Covers: GET /api/data/subscriptionRecords failure, PaymentReversalPanel load error, manual refresh, blocked reversal while records unavailable
+Description: 使用既有授權管理員工作階段，只讀取付款資料。付款撤銷成功、終態與重複請求另由具名路由測試及交易回滾測試驗證，本測試不提交正式付款撤銷。
+QA Faults:
+```json
+[{"method":"GET","path":"/api/data/subscriptionRecords","status":503,"body_json":{"error":"付款紀錄驗證暫時無法讀取"}}]
+```
+Steps:
+1. 進入訂閱管理，等待付款紀錄讀取結果。
+2. 確認付款區塊顯示載入失敗及「重新載入付款紀錄」，沒有把失敗顯示成零筆或成功。
+3. 點擊重新載入，再確認可見錯誤與重試操作；重新整理頁面後核對同樣結果。
+Expected: 注入的讀取失敗不影響其他成功載入的訂閱區塊；付款區塊顯示可見錯誤並可手動重試。付款不可讀取時不能啟動沖銷操作，不自動寫入付款或修改會員資料。沒有既有工作階段時明確回報未執行。
+
+## Test 4 - 空白訂閱期限及取消確認保留草稿
+Viewport: mobile (375x667)
+Covers: subscription expiry validation, confirmation cancellation, unchanged server subscription
+Description: 使用既有訂閱編輯權限工作階段，只編輯草稿；沒有工作階段或會員時回報未執行。此測試禁止按下「確認修改」。
+Steps:
+1. 在訂閱管理記錄一位會員原本到期時間，開啟「調整到期日」，用原生鍵盤清空日期後按「確認」。
+2. 核對編輯視窗仍開啟、顯示選擇到期日提示且焦點在日期欄位，沒有開啟確認修改視窗。
+3. 用原生日期鍵盤選擇 2026-09-11，按「確認」；確認日期在確認視窗出現後仍保留，再按確認視窗的「取消」。
+4. 核對草稿日期仍為 2026-09-11，再取消編輯並重新整理。
+Expected: 空白日期不送出 PUT；取消確認保留草稿且可以繼續編輯。重新整理後原有到期時間一致，手機上日期、錯誤及按鈕均可操作。
+
+## Test 5 - 訂閱儲存失敗保留日期並允許明確重試
+Viewport: desktop (1280x800)
+Covers: PUT /api/subscriptions/:id failure, retained expiry draft, manual retry, no automatic write retry
+Description: 只操作事先建立且禁止登入的隔離會員 f210b6e2-13b6-483a-9907-1fc69a419b5c（名稱「[API驗證] 付款沖銷測試 20260909」）。沒有授權工作階段或此測試會員時明確回報未執行；不建立帳號，也不替換成真實會員。
+QA Faults:
+```json
+[{"method":"PUT","path":"/api/subscriptions/f210b6e2-13b6-483a-9907-1fc69a419b5c","status":503,"body_json":{"error":"simulated_subscription_failure"}}]
+```
+Steps:
+1. 在訂閱管理找到上述隔離會員，開啟調整到期日，核對視窗內帳號 ID 為 653825f7-75e5-41d3-8f3f-baba6a8c4e7c，再用原生鍵盤輸入 2026-09-11。
+2. 按「確認」再按「確認修改」，等待注入的失敗回應。
+3. 核對原編輯視窗與日期保留、顯示繁體中文錯誤，沒有顯示成功或自動重送。
+4. 再次明確按「確認」及「確認修改」，核對第二次失敗仍保留日期與可操作按鈕，最後取消編輯。
+Expected: 兩次明確操作各對應一次請求；失敗不關閉草稿，不自動重送，也不顯示更新成功。取消後可繼續使用列表；不變更正式會員或訂閱。
