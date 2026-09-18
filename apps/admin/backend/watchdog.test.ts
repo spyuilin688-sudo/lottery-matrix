@@ -127,14 +127,14 @@ describe('independent Matrix watchdog planning', () => {
       healthy('天天樂', '11988', '2026-03-06'),
     ], new Date('2026-03-08T02:43:00.000Z'))).toEqual([{
       lottery: '天天樂',
-      target: 'github',
+      target: 'railway',
       reasons: ['crawler-stale'],
     }]);
     expect(planWatchdogActions([
       healthy('天天樂', '11989', '2026-03-07'),
     ], new Date('2026-03-09T01:43:00.000Z'))).toEqual([{
       lottery: '天天樂',
-      target: 'github',
+      target: 'railway',
       reasons: ['crawler-stale'],
     }]);
   });
@@ -145,22 +145,22 @@ describe('independent Matrix watchdog planning', () => {
     ], new Date('2026-09-04T01:43:00.000Z'))).toEqual([]);
   });
 
-  it('dispatches GitHub when the current Taipei Fantasy5 draw is missing', () => {
+  it('recovers on Railway when the current Taipei Fantasy5 draw is missing', () => {
     expect(planWatchdogActions([
       healthy('天天樂', '11990', '2026-09-05'),
     ], new Date('2026-09-06T01:43:00.000Z'))).toEqual([{
       lottery: '天天樂',
-      target: 'github',
+      target: 'railway',
       reasons: ['crawler-stale'],
     }]);
   });
 
-  it('dispatches only GitHub when Fantasy5 is stale at a due checkpoint', () => {
+  it('uses only Railway recovery when Fantasy5 is stale at a due checkpoint', () => {
     expect(planWatchdogActions([
       healthy('天天樂', '11988', '2026-09-02'),
     ], new Date('2026-09-04T01:43:00.000Z'))).toEqual([{
       lottery: '天天樂',
-      target: 'github',
+      target: 'railway',
       reasons: ['crawler-stale'],
     }]);
   });
@@ -279,14 +279,14 @@ describe('independent Matrix watchdog planning', () => {
       healthy('天天樂', '11988', '2026-03-06'),
     ], new Date('2026-03-08T02:43:00.000Z'))).toEqual([{
       lottery: '天天樂',
-      target: 'github',
+      target: 'railway',
       reasons: ['crawler-stale'],
     }]);
     expect(planWatchdogActions([
       healthy('天天樂', '11989', '2026-03-07'),
     ], new Date('2026-03-09T01:43:00.000Z'))).toEqual([{
       lottery: '天天樂',
-      target: 'github',
+      target: 'railway',
       reasons: ['crawler-stale'],
     }]);
   });
@@ -296,7 +296,7 @@ describe('independent Matrix watchdog planning', () => {
       healthy('天天樂', '12044', '2026-10-31'),
     ], new Date('2026-11-02T02:43:00.000Z'))).toEqual([{
       lottery: '天天樂',
-      target: 'github',
+      target: 'railway',
       reasons: ['crawler-stale'],
     }]);
   });
@@ -310,7 +310,7 @@ describe('independent Matrix watchdog planning', () => {
         healthy('天天樂', '11989', '2026-03-07'),
       ], new Date(checkedAt))).toEqual([{
         lottery: '天天樂',
-        target: 'github',
+        target: 'railway',
         reasons: ['crawler-stale'],
       }]);
     }
@@ -327,14 +327,16 @@ describe('independent Matrix watchdog planning', () => {
 });
 
 describe('independent Matrix watchdog execution', () => {
-  it('releases the GitHub dispatch lease so the next checkpoint can retry', async () => {
+  it('routes stale Fantasy5 recovery to Railway and leaves the lease for the recovery process', async () => {
     const releaseLease = vi.fn(async () => undefined);
+    const recoverRailway = vi.fn(async () => ({ status: 'accepted' }));
+    const dispatchFantasy5 = vi.fn(async () => 'dispatched');
     const watchdog = createIndependentWatchdog({
       loadSnapshot: async () => [healthy('天天樂', '11990', '2026-09-05')],
       claimLease: async () => true,
       releaseLease,
-      recoverRailway: vi.fn(async () => ({ status: 'accepted' })),
-      dispatchFantasy5: vi.fn(async () => 'dispatched'),
+      recoverRailway,
+      dispatchFantasy5,
     });
 
     await expect(watchdog.run(
@@ -342,12 +344,15 @@ describe('independent Matrix watchdog execution', () => {
       'invocation-fantasy5',
     )).resolves.toMatchObject({
       status: 'ok',
-      actions: [{ outcome: 'dispatched' }],
+      actions: [{
+        lottery: '天天樂',
+        target: 'railway',
+        outcome: 'accepted',
+      }],
     });
-    expect(releaseLease).toHaveBeenCalledWith(
-      'github:天天樂',
-      'invocation-fantasy5',
-    );
+    expect(recoverRailway).toHaveBeenCalledWith('天天樂', 'invocation-fantasy5');
+    expect(dispatchFantasy5).not.toHaveBeenCalled();
+    expect(releaseLease).not.toHaveBeenCalled();
   });
 
   it('keeps GitHub optional until the server-only Actions token is configured', async () => {
