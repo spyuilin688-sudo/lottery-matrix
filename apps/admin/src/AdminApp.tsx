@@ -1646,7 +1646,7 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
             <section className="statusGroup" key={group.location} aria-labelledby={groupTitleId}>
               <header className="statusGroupHeader">
                 <h3 id={groupTitleId}>{group.location}</h3>
-                <span>正常 {normalCount}/{group.items.length} · {limitedCount} 項僅部分檢查 · {abnormalCount} 項異常{warningCount > 0 ? ` · ${warningCount} 項警告` : ""}</span>
+                <span>正常 {normalCount}／{group.items.length} · {limitedCount} 項僅部分檢查 · {abnormalCount} 項異常{warningCount > 0 ? ` · ${warningCount} 項警告` : ""}</span>
               </header>
               <div className="statusRows">
                 {group.items.map((item) => {
