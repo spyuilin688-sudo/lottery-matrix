@@ -111,25 +111,12 @@ export function createMatrixStatusEdgeHandler(dependencies: MatrixStatusEdgeDepe
       }
       const items = await Promise.all(requested.map(async (item) => {
         const lottery = item as MatrixLottery;
-        const result = await routes.get({
+        const route = action === 'summary-batch' ? routes.summary : routes.get;
+        const result = await route({
           authorization,
           body: { lottery },
         });
-        if (action !== 'summary-batch' || result.status !== 200) {
-          return { lottery, status: result.status, body: result.body };
-        }
-        return {
-          lottery,
-          status: result.status,
-          body: {
-            kind: 'status-summary',
-            lottery,
-            drawPeriod: result.body.drawPeriod,
-            analysisVersion: result.body.analysisVersion,
-            sourceAnalysisVersion: result.body.sourceAnalysisVersion,
-            summary: result.body.summary,
-          },
-        };
+        return { lottery, status: result.status, body: result.body };
       }));
       return json({
         kind: action === 'summary-batch' ? 'status-summary-batch' : 'status-batch',
