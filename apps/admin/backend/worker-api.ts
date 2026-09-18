@@ -97,8 +97,10 @@ const analysisPhases = [
 ] as const;
 const DEFAULT_STATUS_TIMEOUT_MS = 5_000;
 const DEFAULT_MANUAL_REFRESH_TIMEOUT_MS = 90_000;
-export const PRODUCTION_RAILWAY_WORKER_URL =
+const LEGACY_PRODUCTION_RAILWAY_WORKER_URL =
   'https://heartfelt-generosity-production-9f2b.up.railway.app';
+export const PRODUCTION_RAILWAY_WORKER_URL =
+  'https://matrix-recovery-production.up.railway.app';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -327,8 +329,13 @@ export async function getWorkerConfig(
         ? reader.readSecret('MATRIX_ADMIN_STATUS_TOKEN')
         : undefined,
     ]);
-    const baseUrl = String(baseUrlValue ?? '').trim().replace(/\/+$/, '')
-      || PRODUCTION_RAILWAY_WORKER_URL;
+    const configuredBaseUrl = String(baseUrlValue ?? '').trim().replace(/\/+$/, '');
+    const baseUrl = (
+      !configuredBaseUrl
+      || configuredBaseUrl === LEGACY_PRODUCTION_RAILWAY_WORKER_URL
+    )
+      ? PRODUCTION_RAILWAY_WORKER_URL
+      : configuredBaseUrl;
     const statusToken = String(tokenValue ?? '').trim();
     return { baseUrl, statusToken };
   } catch {
