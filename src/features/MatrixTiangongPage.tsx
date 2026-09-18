@@ -41,16 +41,15 @@ export function TiangongValidationProcess({ validation, loading, lottery = "今�
       <ExploreValidationSummary layout="tianyan">
         <span className="tianyan-validation-summary-lines" aria-label="版路摘要">
           <span className="tianyan-validation-summary-row">
-            <span><span className="tiangong-summary-prefix">開 <i className="validation-summary-primary">{prediction.source.number}</i> </span>{summaryPosition(prediction.source.position)}</span>
-            {separator}<span>{summaryDirection(item.exploreDirection)}</span>
-            {separator}{summaryFormula(first)}
+            <span>{summaryDirection(item.exploreDirection)}</span>
+            {separator}<span>{summaryPosition(prediction.source.position)}{" "}{summaryFormula(first)}</span>
             {separator}<span>下 <i className="validation-summary-future">{validation.evidence.stage1_distance ?? "—"}</i> 期開</span>
           </span>
           <span className="tianyan-validation-summary-row">
-            <span><span className="tiangong-summary-prefix tiangong-summary-spacer" aria-hidden="true">開 <i className="validation-summary-primary">{prediction.source.number}</i> </span>{summaryPosition(prediction.stage1.position)}</span>
-            {separator}<span>{summaryDirection(item.secondStageDirection)}</span>
-            {separator}{summaryFormula(second)}
+            <span>{summaryDirection(item.firstStageDirection)}</span>
+            {separator}<span>{summaryPosition(prediction.stage1.position)}{" "}{summaryFormula(second)}</span>
             {separator}<span>下 <i className="validation-summary-future">{validation.evidence.stage2_distance ?? "—"}</i> 期開</span>
+            {separator}<span>{summaryDirection(item.secondStageDirection)}</span>
             {separator}<span>{positionLabel}</span>
           </span>
         </span>
