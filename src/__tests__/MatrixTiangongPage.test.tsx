@@ -298,7 +298,7 @@ test.each([
     stage1Distance: 32,
     stage2Distance: 7,
     firstRow: '由右至左｜第 3 顆 +32｜下 32 期開',
-    secondRow: '由左至右｜第 2 顆 合值36｜下 7 期開｜由左至右｜第四顆',
+    secondRow: '由左至右｜第 2 顆 合值 36｜下 7 期開｜由左至右｜第四顆',
   },
 ])('天工摘要 $name 固定兩列並保留指定空格與三組方向', ({
   sourceNumber,
