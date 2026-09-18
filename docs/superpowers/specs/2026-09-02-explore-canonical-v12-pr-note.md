@@ -1,1 +1,0 @@
-Draft PR should remain unmerged until RED→GREEN implementation and full verification complete.

@@ -1,1 +1,0 @@
-All implementation work remains on `work/explore-canonical-v12-rebuild`; no direct main writes are permitted.

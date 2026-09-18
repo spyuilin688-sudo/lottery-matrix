@@ -1,8 +1,0 @@
-[
-  {
-    "name": "matrix-independent-watchdog-v3",
-    "cron": "3/10 * * * *",
-    "handler": "matrixIndependentWatchdog",
-    "timezone": "Asia/Taipei"
-  }
-]

@@ -27,6 +27,8 @@ const files = new Map(Object.entries({
   'services/matrix-api/app/dates.py': 'today = 1',
   'services/matrix-api/tests/test_schedule.py': 'from app import schedule\n',
   'services/matrix-api/tests/test_other.py': 'def test_other(): pass',
+  'services/matrix-api/railway.recovery.json': '{"deploy":{}}',
+  'services/matrix-api/tests/test_railway_recovery_contract.py': 'def test_recovery_service_is_http_only_and_health_checked(): pass',
   'tests/mobile-runtime.spec.ts': "import { test } from '@playwright/test';",
   'tests/membership-preview/responsive.spec.ts': "import { test } from '@playwright/test';",
 }));
@@ -95,6 +97,13 @@ test('source reader helpers resolve their declared URL base, not a same-named ro
 test('Python relative imports and from-package imports select the dependent file only', () => {
   assert.deepEqual(selectTests(files, ['services/matrix-api/app/dates.py']).groups.python,
     ['services/matrix-api/tests/test_schedule.py']);
+});
+
+test('Railway recovery config changes select their explicit contract test', () => {
+  const plan = selectTests(files, ['services/matrix-api/railway.recovery.json']);
+  assert.deepEqual(plan.groups.python, [
+    'services/matrix-api/tests/test_railway_recovery_contract.py',
+  ]);
 });
 
 test('edge and directly changed browser tests use their own configurations', () => {

@@ -1,1 +1,0 @@
-Current state: specification, design, plan, and RED tests only. Production engine not yet created.
