@@ -34,23 +34,22 @@ export function TiangongValidationProcess({ validation, loading, lottery = "今�
   };
   const summaryDirection = (direction: TiangongApiRow["exploreDirection"]) => direction === "固定" ? "固定" : direction === "依序遞增" ? "由左至右" : "由右至左";
   const summaryPosition = (value: number) => value === 7 ? <span>特別號</span> : <span>第 <i className="validation-summary-position">{value}</i> 顆</span>;
-  const summaryFormula = (operation: typeof first) => <span className="tiangong-summary-formula">{operation?.type === "sum" ? <><span>合值</span><i className="validation-summary-formula">{operation.value}</i></> : <i className="validation-summary-formula">{operation ? `+${operation.residue ?? 0}` : "—"}</i>}</span>;
+  const summaryFormula = (operation: typeof first) => <span className="tiangong-summary-formula">{operation?.type === "sum" ? <><span>合值</span>{" "}<i className="validation-summary-formula">{operation.value}</i></> : <i className="validation-summary-formula">{operation ? `+${operation.residue ?? 0}` : "—"}</i>}</span>;
   const separator = <i className="validation-summary-divider" aria-hidden="true">｜</i>;
   return <section className="road-validation-process explore-validation-card tiangong-validation-process" aria-label="天工驗證過程">
     {prediction && item ? <header className="explore-validation-summary-card tiangong-summary-card">
       <ExploreValidationSummary layout="tianyan">
         <span className="tianyan-validation-summary-lines" aria-label="版路摘要">
           <span className="tianyan-validation-summary-row">
-            <span><span className="tiangong-summary-prefix">開 <i className="validation-summary-primary">{prediction.source.number}</i> </span>{summaryPosition(prediction.source.position)}</span>
-            {separator}<span>{summaryDirection(item.exploreDirection)}</span>
-            {separator}{summaryFormula(first)}
+            <span>{summaryDirection(item.exploreDirection)}</span>
+            {separator}<span>{summaryPosition(prediction.source.position)}{" "}{summaryFormula(first)}</span>
             {separator}<span>下 <i className="validation-summary-future">{validation.evidence.stage1_distance ?? "—"}</i> 期開</span>
           </span>
           <span className="tianyan-validation-summary-row">
-            <span><span className="tiangong-summary-prefix tiangong-summary-spacer" aria-hidden="true">開 <i className="validation-summary-primary">{prediction.source.number}</i> </span>{summaryPosition(prediction.stage1.position)}</span>
-            {separator}<span>{summaryDirection(item.secondStageDirection)}</span>
-            {separator}{summaryFormula(second)}
+            <span>{summaryDirection(item.firstStageDirection)}</span>
+            {separator}<span>{summaryPosition(prediction.stage1.position)}{" "}{summaryFormula(second)}</span>
             {separator}<span>下 <i className="validation-summary-future">{validation.evidence.stage2_distance ?? "—"}</i> 期開</span>
+            {separator}<span>{summaryDirection(item.secondStageDirection)}</span>
             {separator}<span>{positionLabel}</span>
           </span>
         </span>

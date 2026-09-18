@@ -22,8 +22,8 @@ const envelope = {
   items: [{
     id: 'tg-api-1', eligiblePeriodRange: 50, interval: 2,
     predictedPosition: 3, predictionNumber: '12', roadType: '加減＋合值',
-    exploreDirection: '固定', firstStageDirection: '固定', firstRoadType: '加減',
-    secondStageDirection: '固定', secondRoadType: '合值',
+    exploreDirection: '固定' as const, firstStageDirection: '固定' as const, firstRoadType: '加減',
+    secondStageDirection: '固定' as const, secondRoadType: '合值',
   }],
 } as const;
 
@@ -251,14 +251,89 @@ test('天工列表沿用探索樣式並顯示指定五欄與整列按鈕', async
   expect(screen.queryByText(/D 組檢查/)).toBeNull();
  });
 
-test('天工摘要依兩段資料顯示兩列且沒有連準標籤', () => {
-  const value = {period:'115000100', position:4, number:'28', calculated_number:'21', actual_number:'21', matched:true};
-  render(<TiangongValidationProcess loading={false} item={{...envelope.items[0], exploreDirection:'依序遞減', secondStageDirection:'依序遞增'}} predictedPosition={3} validation={{itemId:'summary', evidence:{stage1_distance:14,stage2_distance:5,stage1_operation:{type:'add_sub',residue:32},stage2_operation:{type:'sum',value:39},rows:[{group:'A',role:'prediction',source:value,stage1:{...value,position:3},stage2:{...value,position:3}}],d_exclusion:{status:'breaks_at_stage1'}}}} />);
+test.each([
+  {
+    name: '圖一',
+    sourceNumber: '05',
+    sourcePosition: 1,
+    stage1Position: 3,
+    predictedPosition: 1,
+    exploreDirection: '依序遞減' as const,
+    firstStageDirection: '依序遞減' as const,
+    secondStageDirection: '固定' as const,
+    stage1Operation: { type: 'add_sub' as const, residue: 17 },
+    stage2Operation: { type: 'add_sub' as const, residue: 8 },
+    stage1Distance: 30,
+    stage2Distance: 16,
+    firstRow: '由右至左｜第 1 顆 +17｜下 30 期開',
+    secondRow: '由右至左｜第 3 顆 +8｜下 16 期開｜固定｜第一顆',
+  },
+  {
+    name: '圖二',
+    sourceNumber: '34',
+    sourcePosition: 5,
+    stage1Position: 3,
+    predictedPosition: 2,
+    exploreDirection: '依序遞增' as const,
+    firstStageDirection: '依序遞減' as const,
+    secondStageDirection: '依序遞減' as const,
+    stage1Operation: { type: 'add_sub' as const, residue: 13 },
+    stage2Operation: { type: 'add_sub' as const, residue: 16 },
+    stage1Distance: 5,
+    stage2Distance: 9,
+    firstRow: '由左至右｜第 5 顆 +13｜下 5 期開',
+    secondRow: '由右至左｜第 3 顆 +16｜下 9 期開｜由右至左｜第二顆',
+  },
+  {
+    name: '圖三',
+    sourceNumber: '22',
+    sourcePosition: 3,
+    stage1Position: 2,
+    predictedPosition: 4,
+    exploreDirection: '依序遞減' as const,
+    firstStageDirection: '依序遞增' as const,
+    secondStageDirection: '依序遞增' as const,
+    stage1Operation: { type: 'add_sub' as const, residue: 32 },
+    stage2Operation: { type: 'sum' as const, value: 36 },
+    stage1Distance: 32,
+    stage2Distance: 7,
+    firstRow: '由右至左｜第 3 顆 +32｜下 32 期開',
+    secondRow: '由左至右｜第 2 顆 合值 36｜下 7 期開｜由左至右｜第四顆',
+  },
+])('天工摘要 $name 固定兩列並保留指定空格與三組方向', ({
+  sourceNumber,
+  sourcePosition,
+  stage1Position,
+  predictedPosition,
+  exploreDirection,
+  firstStageDirection,
+  secondStageDirection,
+  stage1Operation,
+  stage2Operation,
+  stage1Distance,
+  stage2Distance,
+  firstRow,
+  secondRow,
+}) => {
+  const value = {period:'115000100', position:sourcePosition, number:sourceNumber, calculated_number:'21', actual_number:'21', matched:true};
+  render(<TiangongValidationProcess
+    loading={false}
+    item={{...envelope.items[0], exploreDirection, firstStageDirection, secondStageDirection}}
+    predictedPosition={predictedPosition}
+    validation={{itemId:'summary', evidence:{
+      stage1_distance:stage1Distance,
+      stage2_distance:stage2Distance,
+      stage1_operation:stage1Operation,
+      stage2_operation:stage2Operation,
+      rows:[{group:'A',role:'prediction',source:value,stage1:{...value,position:stage1Position},stage2:{...value,position:predictedPosition}}],
+      d_exclusion:{status:'breaks_at_stage1'},
+    }}}
+  />);
   const summary = screen.getByLabelText('版路摘要');
   const rows = summary.querySelectorAll('.tianyan-validation-summary-row');
   expect(rows).toHaveLength(2);
-  expect(rows[0].textContent).toBe('開 28 第 4 顆｜由右至左｜+32｜下 14 期開');
-  expect(rows[1].textContent).toBe('開 28 第 3 顆｜由左至右｜合值39｜下 5 期開｜第三顆');
+  expect(rows[0].textContent).toBe(firstRow);
+  expect(rows[1].textContent).toBe(secondRow);
   expect(summary.closest('header')?.querySelector('.explore-validation-consecutive-tag')).toBeNull();
 });
 
