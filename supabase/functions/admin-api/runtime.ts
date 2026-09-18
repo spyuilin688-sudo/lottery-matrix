@@ -13,7 +13,11 @@ type SecretReader = { listSecretNames(): Promise<string[]>; readSecret(name: str
 type EdgeGlobals = { Deno: { env: { toObject(): Record<string, string> }; serve(handler: (request: Request) => Promise<Response>): unknown } };
 const edge = () => (globalThis as unknown as EdgeGlobals).Deno;
 export const ADMIN_ORIGIN = 'https://matrixlottery.idv.tw';
-const ADMIN_ORIGINS = new Set([ADMIN_ORIGIN, 'https://admin.matrixlottery.idv.tw']);
+const ADMIN_ORIGINS = new Set([
+  ADMIN_ORIGIN,
+  'https://admin.matrixlottery.idv.tw',
+  'https://lottery-matrix.pages.dev',
+]);
 const MAX_BODY_BYTES = 65536;
 const WATCHDOG_TABLE = 'matrix-watchdog-status';
 
