@@ -464,6 +464,22 @@ describe('Railway worker secret configuration', () => {
     ]);
   });
 
+  it('migrates the legacy public API override to the dedicated recovery service', async () => {
+    const config = await getWorkerConfig({
+      listSecretNames: async () => [
+        'RAILWAY_WORKER_URL',
+        'MATRIX_ADMIN_STATUS_TOKEN',
+      ],
+      readSecret: async (name) => name === 'RAILWAY_WORKER_URL'
+        ? 'https://heartfelt-generosity-production-9f2b.up.railway.app'
+        : 'server-token',
+    });
+    expect(config).toEqual({
+      baseUrl: PRODUCTION_RAILWAY_WORKER_URL,
+      statusToken: 'server-token',
+    });
+  });
+
   it.each([
     ['missing token name', ['RAILWAY_WORKER_URL'], 'https://railway.example', { baseUrl: 'https://railway.example', statusToken: '' }],
     ['missing URL name', ['MATRIX_ADMIN_STATUS_TOKEN'], 'server-token', { baseUrl: PRODUCTION_RAILWAY_WORKER_URL, statusToken: 'server-token' }],
