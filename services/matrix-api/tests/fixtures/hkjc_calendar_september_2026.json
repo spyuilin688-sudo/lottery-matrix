@@ -1,0 +1,72 @@
+{
+  "data": {
+    "item": {
+      "years": [
+        {
+          "year": "2026",
+          "months": [
+            {
+              "key": "9",
+              "month": {
+                "value": "09"
+              },
+              "dates": {
+                "date": [
+                  {
+                    "value": "05"
+                  },
+                  {
+                    "value": "08"
+                  },
+                  {
+                    "value": "10"
+                  },
+                  {
+                    "value": "12"
+                  },
+                  {
+                    "value": "15"
+                  },
+                  {
+                    "value": "17"
+                  },
+                  {
+                    "value": "19"
+                  },
+                  {
+                    "value": "22"
+                  },
+                  {
+                    "value": "26"
+                  },
+                  {
+                    "value": "29"
+                  }
+                ]
+              },
+              "snowballs": {
+                "date": [
+                  {
+                    "value": "05"
+                  },
+                  {
+                    "value": "26"
+                  }
+                ]
+              },
+              "presales": {
+                "date": []
+              },
+              "header": {
+                "value": "本月金多寶"
+              },
+              "message": {
+                "value": "<p>05-09-2026 - 六合彩50週年金多寶（第二期）</p>\n<p>26-09-2026 - 中秋金多寶</p>\n<p><span style=\"color: #000000; background-color: #f9f9f9;\">詳情請留意馬會最新公佈。</span></p>"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

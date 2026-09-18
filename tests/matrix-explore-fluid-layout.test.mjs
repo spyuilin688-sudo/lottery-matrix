@@ -1,0 +1,148 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+
+import { ruleBodies } from "./helpers/css-rules.mjs";
+
+const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
+const ballCss = readFileSync("src/number-ball.css", "utf8");
+const featureSource = readFeaturePagesSource();
+const tokens = readFileSync("src/design-tokens.css", "utf8");
+
+function ruleBlock(source, selectorPattern) {
+  const bodies = ruleBodies(source, new RegExp(`^(?:${selectorPattern})$`, "s"));
+  assert.ok(bodies.length > 0, `Expected a rule block for ${selectorPattern}`);
+  return bodies[0];
+}
+
+test("Matrix Explore control rows match the compact mobile reference density", () => {
+  assert.match(css, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*row-gap:\s*8px/s);
+  assert.match(css, /\.explore-settings\s*\{[^}]*padding:\s*6px/s);
+  assert.doesNotMatch(css, /\.hit-advanced-panel\s*\{/);
+  assert.match(css, /\.matrix-explore-main-screen \.explore-condition-row/);
+
+  const title = ruleBlock(css, "\\.matrix-explore-main-screen \\.panel \\.section-title");
+  assert.match(title, /min-height:\s*1\.25rem/);
+  assert.match(title, /gap:\s*\.375rem/);
+  assert.match(title, /font-size:\s*14px/);
+  assert.match(title, /line-height:\s*1\.125rem/);
+
+  const stack = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-panel");
+  assert.match(stack, /row-gap:\s*7px/);
+  assert.match(css, /\.explore-settings \.setting-grid\s*\{[^}]*margin-top:\s*8px/s);
+
+  const row = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-panel label");
+  assert.match(row, /display:\s*flex/);
+  assert.match(row, /width:\s*100%/);
+  assert.match(row, /align-items:\s*center/);
+  assert.match(row, /gap:\s*\.375rem/);
+
+  const left = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-panel label > \\.advanced-setting-title");
+  assert.match(left, /width:\s*auto/);
+  assert.match(left, /min-width:\s*88\.8px/);
+  assert.match(left, /flex:\s*0 0 auto/);
+  assert.match(left, /font-size:\s*\.8125rem/);
+  assert.match(css, /@media \(min-width:\s*40rem\)[\s\S]*?min-width:\s*104\.8px/);
+
+  const icon = ruleBlock(css, "\\.matrix-explore-main-screen \\.matrix-explore-setting-icon");
+  assert.match(icon, /inline-size:\s*1\.8rem/);
+  assert.match(icon, /block-size:\s*1\.8rem/);
+
+  const select = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-panel \\.native-select");
+  assert.match(select, /height:\s*24px/);
+  assert.match(select, /min-height:\s*24px/);
+
+  const three = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented\\.three");
+  assert.match(three, /display:\s*grid/);
+  assert.match(three, /gap:\s*\.375rem/);
+  assert.match(three, /grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
+
+  const two = ruleBlock(css, "\\.matrix-explore-main-screen \\.hit-options");
+  assert.match(two, /display:\s*grid/);
+  assert.match(two, /gap:\s*\.375rem/);
+
+  const button = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented button");
+  assert.match(button, /height:\s*20px/);
+  assert.match(button, /min-height:\s*20px/);
+  assert.match(button, /padding:\s*\.125rem \.25rem/);
+  assert.match(button, /border:\s*1px solid #7d6a4c/);
+
+  const hitButton = ruleBlock(css, "\\.matrix-explore-main-screen \\.hit-options button");
+  assert.match(hitButton, /height:\s*20px/);
+  assert.match(hitButton, /min-height:\s*20px/);
+  assert.match(hitButton, /box-sizing:\s*border-box/);
+  assert.match(hitButton, /padding:\s*\.125rem \.25rem/);
+  assert.match(hitButton, /flex:\s*1 1 0/);
+
+  assert.doesNotMatch(css, /zoom\s*:/);
+  assert.doesNotMatch(css, /\.matrix-explore-main-screen \.explore-settings[^}]*transform\s*:/s);
+  assert.doesNotMatch(css, /\.matrix-explore-main-screen \.hit-advanced-panel[^}]*transform\s*:/s);
+});
+
+test("Matrix Explore history table uses compact target proportions", () => {
+  const heading = ruleBlock(css, "\\.matrix-explore-main-screen \\.history-panel \\.panel-heading");
+  assert.match(heading, /display:\s*flex/);
+  assert.match(heading, /justify-content:\s*space-between/);
+  assert.match(heading, /min-height:\s*32px/);
+  assert.match(heading, /padding:\s*5px 6px/);
+
+  const row = ruleBlock(css, "\\.matrix-explore-main-screen \\.history-row");
+  assert.match(row, /grid-template-columns:\s*minmax\(0, \.65fr\) minmax\(0, \.85fr\) minmax\(0, 3\.5fr\)/);
+  assert.match(row, /padding:\s*0/);
+  assert.doesNotMatch(row, /(?:min-)?height\s*:/);
+  const head = ruleBlock(css, "\\.matrix-explore-main-screen \\.history-row\\.history-head");
+  assert.match(head, /height:\s*26px;/);
+  assert.match(head, /min-height:\s*26px/);
+  const fiveRow = ruleBlock(css, "\\.matrix-explore-main-screen \\.history-panel:is\\(\\[data-lottery=\"今彩539\"\\], \\[data-lottery=\"天天樂\"\\]\\) \\.history-row:not\\(\\.history-head\\)");
+  assert.match(fiveRow, /height:\s*32px;/);
+  assert.match(fiveRow, /min-height:\s*32px/);
+  const sixRow = ruleBlock(css, "\\.matrix-explore-main-screen \\.history-panel:is\\(\\[data-lottery=\"六合彩\"\\], \\[data-lottery=\"大樂透\"\\]\\) \\.history-row:not\\(\\.history-head\\)");
+  assert.match(sixRow, /height:\s*40px;/);
+  assert.match(sixRow, /min-height:\s*40px/);
+
+  const fiveBall = ruleBlock(ballCss, "\\.matrix-explore-main-screen \\.matrix-explore-history-panel:is\\(\\[data-lottery=\"今彩539\"\\], \\[data-lottery=\"天天樂\"\\]\\) \\.number-ball-component\\.history-lottery-ball");
+  assert.match(fiveBall, /--number-ball-size:\s*clamp\(24px, 7\.18vw, 28px\);/);
+  assert.match(fiveBall, /--number-font-size:\s*clamp\(12px, 3\.59vw, 14px\);/);
+  assert.match(css, /\.matrix-explore-main-screen \.history-main-numbers\s*\{[^}]*gap:\s*clamp\(4px, 1\.8vw, 8px\);/s);
+});
+
+test("Matrix Explore statistics and results use compact target density", () => {
+  assert.match(css, /\.matrix-explore-main-screen \.repeat-stats-panel\s*\{[^}]*margin-top:\s*4px;[^}]*padding:\s*10px 6px;/s);
+  assert.match(css, /\.matrix-explore-main-screen \.result-panel\s*\{[^}]*padding:\s*6px 6px 12px;/s);
+  assert.match(tokens, /--layout-page-inline:\s*16px;/);
+  assert.match(css, /\.matrix-explore-main-screen\s*\{[^}]*--matrix-explore-result-panel-extra-width:\s*calc\(var\(--layout-page-inline\) \+ var\(--layout-page-inline\) - 26px\);/s);
+  assert.match(css, /\.matrix-explore-main-screen \.feature-body > \.result-panel\s*\{[^}]*--matrix-explore-result-panel-width:\s*100%;[^}]*align-self:\s*center;/s);
+  assert.match(css, /\.matrix-explore-main-screen \.feature-body > :not\(\.result-panel\)\s*\{[^}]*width:\s*100%;/s);
+  assert.match(css, /\.matrix-explore-main-screen \.explore-settings,[\s\S]*?\.matrix-explore-main-screen \.result-panel\s*\{[^}]*width:\s*var\(--matrix-explore-result-panel-width, 100%\);/s);
+  assert.match(css, /--road-validation-inline-padding:\s*4px;/);
+  assert.match(featureSource, /className="road-validation-process(?:\s+[^"\s]+)*"\s+aria-label="天工驗證過程"/);
+  assert.doesNotMatch(css, /margin(?:-[a-z]+)?\s*:\s*-/);
+
+  const statsHeading = ruleBlock(css, "\\.matrix-explore-main-screen \\.repeat-stats-heading");
+  assert.match(statsHeading, /display:\s*flex/);
+  assert.match(statsHeading, /gap:\s*\.375rem/);
+  assert.match(statsHeading, /margin-bottom:\s*8px/);
+
+  const summary = ruleBlock(css, "\\.matrix-explore-main-screen \\.result-summary");
+  assert.match(summary, /grid-template-columns:\s*repeat\(6, minmax\(0, 1fr\)\)/);
+
+  const card = ruleBlock(css, "\\.matrix-explore-main-screen \\.result-summary > div");
+  assert.match(card, /min-height:\s*clamp\(36px, 10vw, 40px\)/);
+  assert.match(card, /padding:\s*\.1875rem \.0625rem/);
+  assert.match(card, /border-radius:\s*\.4375rem/);
+
+  const resultTitle = ruleBlock(css, "\\.matrix-explore-main-screen \\.result-title");
+  assert.match(resultTitle, /gap:\s*\.375rem/);
+  assert.match(resultTitle, /margin-bottom:\s*8px/);
+
+  assert.match(css, /\.matrix-explore-main-screen \.road-results-head,[\s\S]*?\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 1\.08fr\) minmax\(0, 1\.23fr\) minmax\(0, 1\.6fr\) minmax\(0, 1\.35fr\) minmax\(0, 1\.6fr\);/s);
+  const resultHeads = ruleBodies(css, /^\.matrix-explore-main-screen \.road-results-head$/).filter(body => /min-height:/.test(body));
+  assert.equal(resultHeads.length, 1);
+  const [resultHead] = resultHeads;
+  assert.match(resultHead, /min-height:\s*32px;/);
+  assert.match(resultHead, /border-bottom:\s*1px solid rgba\(117, 83, 41, \.82\)/);
+  assert.match(css, /\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*min-height:\s*0;[^}]*padding:\s*6px 0/s);
+  assert.match(css, /\.matrix-explore-main-screen \.road-results \.tag\s*\{[^}]*padding:\s*\.125rem \.25rem;[^}]*font-size:\s*\.5625rem/s);
+  assert.match(css, /\.matrix-explore-main-screen \.road-result-row > strong\s*\{[^}]*font-size:\s*\.875rem/s);
+});

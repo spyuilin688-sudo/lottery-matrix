@@ -1,0 +1,97 @@
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import type { AdminDataPageController } from './use-admin-data-page';
+
+type Option = readonly [string, string];
+const operationalSearchCards = new Set(['會員', '訂閱', '登入紀錄', '審計日誌']);
+
+export function AdminListControls({ page, name, statuses = [], sorts, showError = true, children, className = '' }: {
+  page: AdminDataPageController;
+  name: string;
+  statuses?: readonly Option[];
+  sorts: readonly Option[];
+  showError?: boolean;
+  children?: ReactNode;
+  className?: string;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const composing = useRef(false);
+  const [keyword, setKeyword] = useState(page.query.keyword);
+  const showControls = operationalSearchCards.has(name);
+  const ownsCount = showControls;
+  const primaryClass = `managementPrimaryFilters${ownsCount ? ' hasCount' : ''}${statuses.length ? ' hasStatusFilter' : ''}${children ? ' hasExtraFilter' : ''}`;
+  void sorts;
+
+  useEffect(() => { setKeyword(page.query.keyword); }, [page.query.keyword]);
+
+  return (
+    <>
+      {showControls && (
+        <div className={`managementToolbar ${className}`}>
+          <div className={primaryClass}>
+            <div className="managementSearchField">
+              <input
+                ref={input}
+                aria-label={`搜尋${name}`}
+                placeholder={`搜尋${name}`}
+                maxLength={200}
+                value={keyword}
+                onCompositionStart={() => { composing.current = true; }}
+                onCompositionEnd={(event) => {
+                  composing.current = false;
+                  page.setQuery({ keyword: event.currentTarget.value });
+                }}
+                onChange={(event) => {
+                  setKeyword(event.target.value);
+                  if (!composing.current) page.setQuery({ keyword: event.target.value });
+                }}
+              />
+              {keyword && (
+                <button
+                  className="managementClearButton"
+                  type="button"
+                  onClick={() => {
+                    setKeyword('');
+                    page.setQuery({ keyword: '' });
+                    input.current?.focus();
+                  }}
+                  aria-label={`清除${name}搜尋`}
+                >
+                  清除
+                </button>
+              )}
+            </div>
+            {statuses.length > 0 && (
+              <select
+                className="managementStatusFilter"
+                aria-label={`篩選${name}狀態`}
+                value={page.query.status}
+                onChange={(event) => page.setQuery({ status: event.target.value })}
+              >
+                <option value="all">全部狀態</option>
+                {statuses.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            )}
+            {children && <div className="managementExtraFilter">{children}</div>}
+            {ownsCount && (
+              <span
+                className="managementCount"
+                aria-live="polite"
+                aria-label={page.loading ? '資料讀取中' : page.error ? '資料載入失敗' : `共 ${page.total} 筆資料`}
+              >
+                {page.loading ? '讀取中' : page.error ? '—' : `${page.total} 筆`}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+      {showError && page.error && (
+        <p className="managementToolbarError" role="alert">
+          {page.error}{' '}
+          <button type="button" onClick={() => { void page.refresh().catch(() => {}); }}>
+            重新載入列表
+          </button>
+        </p>
+      )}
+    </>
+  );
+}

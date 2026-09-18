@@ -1,0 +1,93 @@
+import "./number-ball.css";
+
+export type NumberBallLottery = "今彩539" | "天天樂" | "六合彩" | "大樂透";
+export type NumberBallTone = "orange" | "white" | "red" | "blue" | "green";
+
+const MARK_SIX_RED = new Set([
+  "01", "02", "07", "08", "12", "13", "18", "19", "23", "24",
+  "29", "30", "34", "35", "40", "45", "46",
+]);
+
+const MARK_SIX_BLUE = new Set([
+  "03", "04", "09", "10", "14", "15", "20", "25", "26", "31",
+  "36", "37", "41", "42", "47", "48",
+]);
+
+const MARK_SIX_GREEN = new Set([
+  "05", "06", "11", "16", "17", "21", "22", "27", "28", "32",
+  "33", "38", "39", "43", "44", "49",
+]);
+
+const BALL_ASSET: Record<NumberBallLottery, Partial<Record<NumberBallTone, string>>> = {
+  "今彩539": { orange: "/assets/lottery/functions/539橘球.png" },
+  "天天樂": { white: "/assets/lottery/functions/天天樂白球.png" },
+  "六合彩": {
+    red: "/assets/lottery/functions/六合彩紅球.png",
+    blue: "/assets/lottery/functions/六合彩藍球.png",
+    green: "/assets/lottery/functions/六合彩綠球.png",
+  },
+  "大樂透": { red: "/assets/lottery/functions/大樂透紅球.png" },
+};
+
+export function normalizeBallNumber(number: string | number) {
+  return String(number).trim().padStart(2, "0");
+}
+
+export function getBallTone(
+  lottery: NumberBallLottery,
+  number: string | number,
+): NumberBallTone {
+  const value = normalizeBallNumber(number);
+
+  if (lottery === "今彩539") return "orange";
+  if (lottery === "天天樂") return "white";
+  if (lottery === "大樂透") return "red";
+  if (MARK_SIX_RED.has(value)) return "red";
+  if (MARK_SIX_BLUE.has(value)) return "blue";
+  if (MARK_SIX_GREEN.has(value)) return "green";
+
+  return "green";
+}
+
+export type NumberBallProps = {
+  lottery: NumberBallLottery;
+  number: string | number;
+  isSpecial?: boolean;
+  className?: string;
+};
+
+export function NumberBall({
+  lottery,
+  number,
+  isSpecial = false,
+  className = "",
+}: NumberBallProps) {
+  const value = normalizeBallNumber(number);
+  const tone = getBallTone(lottery, value);
+  const asset = BALL_ASSET[lottery][tone];
+  return (
+    <span
+      className={`number-ball-component number-ball ${className}`.trim()}
+      data-lottery={lottery}
+      data-tone={tone}
+      data-number={value}
+      data-special={isSpecial}
+      aria-label={`${isSpecial ? "特別號" : "號碼"} ${value}`}
+    >
+      {asset ? (
+        <img
+          className="number-ball-asset"
+          src={asset}
+          alt=""
+          draggable={false}
+          aria-hidden="true"
+        />
+      ) : null}
+      <span className="number-ball-value" aria-hidden="true">
+        {value}
+      </span>
+    </span>
+  );
+}
+
+export default NumberBall;

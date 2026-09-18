@@ -1,0 +1,345 @@
+from collections.abc import Callable
+from typing import Any
+
+from app.domain.explore_context import allowed_number_orders
+from app.domain.explore_state import SORTED_ORDER
+from app.domain.explore_engine import ExploreEngineSession, run_explore_batch
+from app.domain.models import lottery_position_count
+from app.domain.status import evaluate_chapter15
+from app.domain.tianheng_context import TianhengEngineSession
+from app.domain.tianheng_runtime import run_tianheng_batch
+from app.domain.tianyan_artifact import build_tianyan_artifact
+from app.domain.tiangong_artifact import build_tiangong_artifact
+from app.services.explore_batches import build_explore_batch, work_units
+
+
+ExploreRunner = Callable[[dict[str, Any], list[dict[str, Any]]], dict[str, Any]]
+ExploreBatchRunner = Callable[..., dict[str, Any]]
+
+
+def _work_units(lottery: str, history: list[dict[str, Any]], number_orders: tuple[str, ...] | None = None) -> list[dict[str, Any]]:
+    return work_units(lottery, len(history), lottery_position_count(lottery), number_orders=number_orders)
+
+
+def _append_explore_result(
+    artifact: dict[str, Any],
+    unit: dict[str, Any],
+    response: dict[str, Any],
+    history: list[dict[str, Any]],
+) -> None:
+    tianyan_items = response.get("tianyanItems", [])
+    if isinstance(tianyan_items, list):
+        artifact.setdefault("tianyanItems", []).extend(
+            item for item in tianyan_items if isinstance(item, dict)
+        )
+    tianyan_validations = response.get("tianyanValidationById", {})
+    if isinstance(tianyan_validations, dict):
+        target = artifact.setdefault("tianyanValidationById", {})
+        for identifier, validation in tianyan_validations.items():
+            if identifier in target and target[identifier] != validation:
+                raise ValueError("TIANYAN_RESULT_CONFLICT")
+            target[identifier] = validation
+
+    for raw in response.get("results", []):
+        search = raw.get("searchCondition", {})
+        rule_count = int(raw.get("ruleCount", search.get("ruleCount", 0)))
+        if rule_count not in {1, 2}:
+            continue
+        algorithm_type = str(raw.get("algorithmType", search.get("algorithmType", "")))
+        if algorithm_type not in {"加減", "合值", "拖牌"}:
+            continue
+        source_index = unit["lockedSourceIndex"]
+        explore_range = str(raw.get("exploreRange", "完整範圍"))
+        identifier = "|".join(map(str, [
+            explore_range, unit["numberOrder"], source_index, unit["lockedPosition"],
+            algorithm_type, rule_count, raw.get("id", ""),
+        ]))
+        item = {
+            "id": identifier, "number": str(raw.get("number", "")),
+            "lockedPosition": int(raw.get("lockedPosition", unit["lockedPosition"])),
+            "predictionDistance": int(raw.get("predictionDistance", 0)),
+            "consecutive": str(raw.get("consecutive", "")), "highestStreak": int(raw.get("highestStreak", 0)),
+            "predictionNumbers": [str(value) for value in raw.get("predictionNumbers", [])],
+            "algorithmType": algorithm_type, "numberOrder": unit["numberOrder"],
+            "exploreDateOffset": 0, "ruleCount": rule_count, "lockedSourceIndex": source_index,
+            "lockedSourcePeriod": str(raw.get("lockedSourcePeriod", history[source_index].get("period", ""))),
+            "exploreRange": explore_range,
+        }
+        for key in ("referenceOffset", "referencePosition"):
+            if isinstance(search.get(key), int) and not isinstance(search.get(key), bool):
+                item[key] = search[key]
+        artifact["items"].append(item)
+        validation = {
+            "itemId": identifier,
+            "ruleSets": raw.get("ruleSets", []) if isinstance(raw.get("ruleSets", []), list) else [],
+        }
+        if isinstance(raw.get("sourceA"), dict):
+            validation["sourceA"] = raw["sourceA"]
+        artifact["validationById"][identifier] = validation
+
+
+def build_explore_artifact_chunk(
+    lottery: str,
+    draw_period: str,
+    history: list[dict[str, Any]],
+    start: int,
+    limit: int,
+    runner: ExploreRunner | None = None,
+    batch_runner: ExploreBatchRunner = run_explore_batch,
+    session: ExploreEngineSession | None = None,
+    number_orders: tuple[str, ...] | None = None,
+) -> dict[str, Any]:
+    if runner is None:
+        if session is None and number_orders is not None and batch_runner is run_explore_batch:
+            session = ExploreEngineSession.build(lottery, history, number_orders=number_orders)
+        result = batch_runner(
+            lottery=lottery,
+            newest_first=history,
+            start=start,
+            limit=limit,
+            session=session,
+        )
+        if isinstance(result.get("artifact"), dict):
+            result["artifact"]["drawPeriod"] = draw_period
+        return result
+    return build_explore_batch(
+        lottery=lottery,
+        draw_period=draw_period,
+        history=history,
+        position_count=lottery_position_count(lottery),
+        number_orders=number_orders,
+        start=start,
+        limit=limit,
+        runner=runner,
+        append_result=lambda artifact, unit, response: _append_explore_result(artifact, unit, response, history),
+    )
+
+
+def build_explore_artifact(
+    lottery: str,
+    draw_period: str,
+    history: list[dict[str, Any]],
+    runner: ExploreRunner | None = None,
+    batch_runner: ExploreBatchRunner = run_explore_batch,
+    session: ExploreEngineSession | None = None,
+    number_orders: tuple[str, ...] | None = None,
+) -> dict[str, Any]:
+    return build_explore_artifact_chunk(
+        lottery,
+        draw_period,
+        history,
+        0,
+        len(_work_units(lottery, history, number_orders)),
+        runner,
+        batch_runner,
+        session,
+        number_orders,
+    )["artifact"]
+
+
+_EXPLORE_STATUS_FIELDS = (
+    "id", "number", "lockedPosition", "predictionDistance", "consecutive", "highestStreak",
+    "predictionNumbers", "algorithmType", "numberOrder", "exploreDateOffset",
+    "ruleCount", "lockedSourceIndex", "referenceOffset", "referencePosition",
+)
+_TIANYAN_STATUS_FIELDS = (
+    "id", "number", "lockedPosition", "predictionDistance", "consecutive", "highestStreak",
+    "predictionNumbers", "numberOrder", "explorePeriods", "exploreDateOffset", "lockedSourceIndex",
+)
+
+
+def _applies_to_full_range(item: dict[str, Any]) -> bool:
+    scope_class = item.get("scopeClass")
+    if scope_class in {"FULL_ONLY", "STANDARD_AND_FULL"}:
+        return True
+    return item.get("exploreRange", "完整範圍") == "完整範圍"
+
+
+def _status_source_periods(item: dict[str, Any]) -> int:
+    source_index = item.get("lockedSourceIndex")
+    if isinstance(source_index, int) and not isinstance(source_index, bool):
+        if source_index < 2:
+            return 2
+        if source_index < 7:
+            return 7
+        return 13
+    return int(item.get("explorePeriods", 13))
+
+
+def _compact_status_items(
+    items: list[dict[str, Any]],
+    fields: tuple[str, ...],
+    *,
+    derive_source_periods: bool = False,
+    full_range_only: bool = False,
+) -> list[dict[str, Any]]:
+    compact = [
+        {key: item[key] for key in fields if key in item}
+        for item in items
+        if item.get("exploreDateOffset") == 0 and item.get("lockedSourceIndex", 99) < 13
+        and (not full_range_only or _applies_to_full_range(item))
+    ]
+    if derive_source_periods:
+        for item in compact:
+            item["explorePeriods"] = _status_source_periods(item)
+    return compact
+
+
+def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any]) -> dict[str, Any]:
+    roads = []
+    for item in explore["items"]:
+        if (
+            item["exploreDateOffset"] != 0
+            or item["numberOrder"] != "依號碼由小到大排序"
+            or item.get("lockedSourceIndex", 99) >= 13
+            or not _applies_to_full_range(item)
+        ):
+            continue
+        results = [str(number).zfill(2) for number in item["predictionNumbers"]]
+        if item["ruleCount"] == 1:
+            result_sets = [[number] for number in results]
+            hit_type = "one-code"
+        else:
+            result_sets = [results]
+            hit_type = "two-code"
+        for result in result_sets:
+            road = {
+                "id": f'{item["id"]}:{result[0]}' if hit_type == "one-code" else item["id"],
+                "hitType": hit_type, "result": result, "algorithmType": item["algorithmType"],
+                "numberOrder": item["numberOrder"], "streak": item["highestStreak"],
+                "predictionDistance": item["predictionDistance"], "position": item["lockedPosition"],
+                "lockedNumber": item["number"], "explorePeriods": _status_source_periods(item),
+                "validationItemId": item["id"],
+            }
+            for key in ("referenceOffset", "referencePosition"):
+                if key in item:
+                    road[key] = item[key]
+            roads.append(road)
+    status = evaluate_chapter15({"lottery": explore["lottery"], "drawPeriod": explore["drawPeriod"], "roads": roads})
+    return {
+        "lottery": explore["lottery"], "drawPeriod": explore["drawPeriod"],
+        "artifactKinds": ["explore", "tianyan"], **status,
+        "artifactCounts": {
+            "explore": sum(_applies_to_full_range(item) for item in explore["items"]),
+            "tianyan": len(tianyan["items"]),
+        },
+        "statusSources": {
+            "explore": {
+                "lottery": explore["lottery"],
+                "drawPeriod": explore["drawPeriod"],
+                "items": _compact_status_items(
+                    explore["items"],
+                    _EXPLORE_STATUS_FIELDS,
+                    derive_source_periods=True,
+                    full_range_only=True,
+                ),
+            },
+            "tianyan": {
+                "lottery": tianyan["lottery"],
+                "drawPeriod": tianyan["drawPeriod"],
+                "items": _compact_status_items(
+                    tianyan["items"],
+                    _TIANYAN_STATUS_FIELDS,
+                    derive_source_periods=True,
+                ),
+            },
+        },
+    }
+
+
+def create_artifact_builders(
+    explore_runner: ExploreRunner | None = None,
+    explore_batch_runner: ExploreBatchRunner = run_explore_batch,
+) -> dict[str, Callable[[dict[str, Any]], dict[str, Any]]]:
+    engine_sessions: dict[tuple[str, tuple[str, ...]], ExploreEngineSession] = {}
+    tianheng_sessions: dict[
+        tuple[str, tuple[str, ...]], tuple[ExploreEngineSession, TianhengEngineSession]
+    ] = {}
+
+    def engine_session(lottery: str, history: list[dict[str, Any]], number_orders: tuple[str, ...] | None) -> ExploreEngineSession:
+        orders = allowed_number_orders(lottery, number_orders)
+        key = (lottery, orders)
+        cached = engine_sessions.get(key)
+        if cached is None or not cached.matches(lottery, history):
+            cached = ExploreEngineSession.build(lottery, history, number_orders=orders)
+            engine_sessions[key] = cached
+        return cached
+
+    def explore(context: dict[str, Any]) -> dict[str, Any]:
+        draw = context["draw"]
+        session = (
+            engine_session(draw["lottery"], context["history"], context.get("numberOrders"))
+            if explore_runner is None and explore_batch_runner is run_explore_batch
+            else None
+        )
+        batch = context.get("exploreBatch")
+        if isinstance(batch, dict):
+            result = build_explore_artifact_chunk(
+                draw["lottery"], draw["period"], context["history"],
+                int(batch.get("start", 0)), int(batch.get("limit", 10)),
+                explore_runner,
+                explore_batch_runner,
+                session,
+                context.get("numberOrders"),
+            )
+            return {
+                "artifact": result["artifact"],
+                "_checkpoint": {
+                    "cursorStart": result.get("cursorStart", int(batch.get("start", 0))),
+                    "cursor": result["cursor"],
+                    "total": result["total"],
+                    "complete": result["complete"],
+                },
+            }
+        return build_explore_artifact(
+            draw["lottery"],
+            draw["period"],
+            context["history"],
+            explore_runner,
+            explore_batch_runner,
+            session,
+            context.get("numberOrders"),
+        )
+
+    def tianheng(context: dict[str, Any]) -> dict[str, Any]:
+        draw = context["draw"]
+        orders = allowed_number_orders(draw["lottery"], context.get("numberOrders"))
+        explore_session = engine_session(draw["lottery"], context["history"], orders)
+        key = (draw["lottery"], orders)
+        cached = tianheng_sessions.get(key)
+        # The pair index covers the complete history. Keep it across batches,
+        # and replace it when the underlying verified history session changes.
+        if cached is None or cached[0] is not explore_session:
+            cached = (explore_session, TianhengEngineSession.from_explore_session(explore_session))
+            tianheng_sessions[key] = cached
+        session = cached[1]
+        batch = context["tianhengBatch"]
+        try:
+            result = run_tianheng_batch(
+                draw["lottery"], context["history"],
+                int(batch["start"]), int(batch["limit"]), session=session,
+            )
+        finally:
+            for indexed in session.contexts:
+                indexed.clear_work_caches()
+        result["artifact"]["drawPeriod"] = draw["period"]
+        return {"artifact": result["artifact"], "_checkpoint": {
+            "cursorStart": result["cursorStart"], "cursor": result["cursor"],
+            "total": result["total"], "complete": result["complete"],
+        }}
+
+    def tianyan(context: dict[str, Any]) -> dict[str, Any]:
+        draw = context["draw"]
+        return build_tianyan_artifact(draw["lottery"], draw["period"], context["artifacts"]["explore"])
+
+    def tiangong(context: dict[str, Any]) -> dict[str, Any]:
+        draw = context["draw"]
+        if SORTED_ORDER not in allowed_number_orders(draw["lottery"], context.get("numberOrders")):
+            return {"lottery": draw["lottery"], "drawPeriod": draw["period"], "numberOrder": SORTED_ORDER, "items": [], "validationById": {}}
+        return build_tiangong_artifact(draw["lottery"], draw["period"], context["history"])
+
+    def status(context: dict[str, Any]) -> dict[str, Any]:
+        artifacts = context["artifacts"]
+        return _status_artifact(artifacts["explore"], artifacts["tianyan"])
+
+    return {"explore": explore, "tianheng": tianheng, "tianyan": tianyan, "tiangong": tiangong, "status": status}

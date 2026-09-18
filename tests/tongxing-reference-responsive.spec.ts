@@ -1,0 +1,60 @@
+import { expect, test } from "@playwright/test";
+import { prepareReturningVisitor } from './helpers/product-runtime';
+
+test.beforeEach(async ({ page }) => prepareReturningVisitor(page));
+
+const pages = [
+  { label: "Matrix 同星", screenSelector: ".tongxing-screen" },
+  { label: "Matrix 對照", screenSelector: ".number-reference-screen" },
+] as const;
+
+for (const width of [320, 360, 390, 430]) {
+  test(`Matrix 同星與號碼對照單在 ${width}px 使用 16px 左右內容外距`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+
+    for (const pageCase of pages) {
+      await page.goto("/");
+      await page.getByRole("button", { name: pageCase.label, exact: true }).click();
+
+      const appViewport = page.getByTestId("mobile-scroll");
+      const featureBody = page.locator(`${pageCase.screenSelector} .feature-body`);
+      const titleBanner = page.locator(`${pageCase.screenSelector} .product-header__settings-card`);
+      await expect(featureBody).toBeVisible();
+      await expect(titleBanner).toBeVisible();
+
+      const appBox = await appViewport.boundingBox();
+      const bodyBox = await featureBody.boundingBox();
+      const titleBox = await titleBanner.boundingBox();
+      expect(appBox).not.toBeNull();
+      expect(bodyBox).not.toBeNull();
+      expect(titleBox).not.toBeNull();
+      expect(appBox!.width).toBeCloseTo(width, 0);
+      expect(bodyBox!.x - appBox!.x).toBeCloseTo(0, 0);
+      expect(appBox!.x + appBox!.width - bodyBox!.x - bodyBox!.width).toBeCloseTo(0, 0);
+      await expect(featureBody).toHaveCSS("padding-left", "16px");
+      await expect(featureBody).toHaveCSS("padding-right", "16px");
+      expect(titleBox!.x - appBox!.x).toBeCloseTo(16, 0);
+      expect(appBox!.x + appBox!.width - titleBox!.x - titleBox!.width).toBeCloseTo(16, 0);
+      expect(await featureBody.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+
+      if (pageCase.screenSelector === ".number-reference-screen") {
+        const settingsTrigger = page.locator(".number-reference-screen .product-header__settings-toggle");
+        await expect(settingsTrigger).toHaveAccessibleName("收合探索設定");
+        await settingsTrigger.click();
+        await expect(settingsTrigger).toHaveAccessibleName("展開探索設定");
+        await settingsTrigger.click();
+        const queryPanel = page.getByRole("dialog", { name: "探索設定" });
+        await expect(queryPanel).toBeVisible();
+        const queryBox = await queryPanel.boundingBox();
+        expect(queryBox).not.toBeNull();
+        // The floating settings share the header's 16px outer frame and 1px border.
+        const floatingFrame = (await titleBanner.boundingBox())!;
+        expect(floatingFrame.x - appBox!.x).toBeCloseTo(16, 0);
+        expect(appBox!.x + appBox!.width - floatingFrame.x - floatingFrame.width).toBeCloseTo(16, 0);
+        expect(queryBox!.x).toBeGreaterThanOrEqual(floatingFrame.x + 1);
+        expect(queryBox!.x + queryBox!.width).toBeLessThanOrEqual(floatingFrame.x + floatingFrame.width - 1);
+        expect(await queryPanel.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+      }
+    }
+  });
+}

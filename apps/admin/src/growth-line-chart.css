@@ -1,0 +1,77 @@
+.growthChart {
+  min-width: 0;
+}
+
+.growthChartSummary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  color: #a8a397;
+  font-size: 12px;
+}
+
+.growthChartSummary strong {
+  color: #ece7d8;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.growthChartSvg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 180px;
+  overflow: visible;
+}
+
+.growthChartGrid {
+  stroke: #242830;
+  stroke-width: 1;
+}
+
+.growthChartAxis {
+  stroke: #3a3e46;
+  stroke-width: 1;
+}
+
+.growthChartLine {
+  fill: none;
+  stroke: #e1c170;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.growthChartPoint {
+  fill: #e1c170;
+  stroke: #111419;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.growthChartValueLabel,
+.growthChartDateLabel {
+  fill: #938f86;
+  font-size: 11px;
+  font-family: Inter, "Noto Sans TC", system-ui, sans-serif;
+}
+
+@media (max-width: 760px) {
+  .growthChartSummary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .growthChartSvg {
+    min-height: 160px;
+  }
+
+  .growthChartValueLabel,
+  .growthChartDateLabel {
+    font-size: 10px;
+  }
+}

@@ -1,0 +1,53 @@
+name: Fantasy5 draw crawler
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fantasy5-draw-crawler
+  cancel-in-progress: false
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 105
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      TINYFISH_API_KEY: ${{ secrets.TINYFISH_API_KEY }}
+      FANTASY5_MAX_ATTEMPTS: "10"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.28"
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: services/matrix-api/uv.lock
+
+      - name: Install production dependencies
+        working-directory: services/matrix-api
+        run: uv sync --frozen --no-dev
+
+      - name: Fetch, validate, repair, and store Fantasy5 draws
+        working-directory: services/matrix-api
+        shell: bash
+        run: |
+          set -euo pipefail
+          for ((attempt=1; attempt<=FANTASY5_MAX_ATTEMPTS; attempt++)); do
+            output="$(uv run python -m app.fantasy5_crawler)"
+            echo "$output"
+            if ! grep -qE ' not-acquired$' <<< "$output"; then
+              exit 0
+            fi
+            if (( attempt < FANTASY5_MAX_ATTEMPTS )); then
+              sleep 600
+            fi
+          done
+          echo "Fantasy5 formal source is still waiting after ${FANTASY5_MAX_ATTEMPTS} attempts."

@@ -1,0 +1,26 @@
+.matrix-explore-main-screen:not(.explore-result-preview-screen) .explore-validation-card {
+  position: relative;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.matrix-explore-main-screen:not(.explore-result-preview-screen) .explore-validation-card[data-content-protected="true"] > :not(.explore-validation-protection-layer) {
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+.matrix-explore-main-screen:not(.explore-result-preview-screen) .explore-validation-protection-layer {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(2, 7, 12, .72);
+  pointer-events: none;
+}
+
+@media print {
+  .matrix-explore-main-screen:not(.explore-result-preview-screen) .explore-validation-card {
+    display: none;
+  }
+}

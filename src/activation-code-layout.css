@@ -1,0 +1,104 @@
+/* Canonical compact layout for the referral / activation-code page. */
+.activation-code-screen {
+  --activation-section-padding-block: 12px;
+  --activation-section-gap: 8px;
+}
+
+/* Keep the two main panels on the same responsive 16px page inset. */
+.activation-code-screen > .feature-body {
+  padding-inline: var(--layout-page-inline);
+  gap: 12px;
+}
+
+.activation-code-screen .referral-code-section,
+.activation-code-screen .activation-code-section {
+  padding: var(--activation-section-padding-block) var(--layout-page-inline);
+  gap: var(--activation-section-gap);
+}
+
+.activation-code-screen .referral-summary-card,
+.activation-code-screen .referral-input-card,
+.activation-code-screen .activation-card {
+  gap: 8px;
+}
+
+.activation-code-screen .referral-code-label,
+.activation-code-screen .referral-input-card > h2 {
+  display: none;
+}
+
+.activation-code-screen .referral-code-value {
+  font-size: 14px;
+}
+
+.activation-code-screen .referral-code-row {
+  gap: 8px;
+}
+
+.activation-code-screen .referral-copy-button {
+  box-sizing: border-box;
+  width: max-content;
+  height: auto;
+  min-height: 28px;
+  padding: 4px;
+  flex: 0 0 auto;
+  font-size: 12px;
+  line-height: 1.2;
+  letter-spacing: .25px;
+  scale: .9;
+  transform-origin: left center;
+  align-items: center;
+  gap: 3px;
+}
+
+.activation-code-screen .referral-input-card .code-entry-block,
+.activation-code-screen .activation-card .code-entry-block {
+  gap: 8px;
+}
+
+.activation-code-screen .code-entry-block::after {
+  display: block;
+  width: 100%;
+  margin-top: 0;
+  height: 1px;
+  background: var(--pwa-frame-divider);
+  content: "";
+}
+
+
+.activation-code-screen .referral-copy-button svg {
+  width: 12px;
+  height: 12px;
+}
+
+.activation-code-screen .referral-input-card input,
+.activation-code-screen .activation-card input {
+  height: 36px;
+  min-height: 36px;
+  padding-block: 4px;
+}
+
+.activation-code-screen .referral-input-card .primary-action,
+.activation-code-screen .activation-card .primary-action {
+  height: 34px;
+  min-height: 34px;
+  font-size: 16px;
+}
+
+.activation-code-screen .referral-rule-card {
+  border: 0;
+}
+
+.activation-code-screen .referral-rule-toggle {
+  padding-block: 4px;
+}
+
+.activation-code-screen .referral-code-section .referral-rule-toggle {
+  padding-inline: 0;
+}
+
+.activation-code-screen .activation-card-toggle {
+  min-height: 32px;
+  border-bottom: 1px solid var(--pwa-frame-divider);
+}
+
