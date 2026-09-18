@@ -130,6 +130,26 @@ describe('Matrix status Edge Function', () => {
     expect(deps.requireMember).not.toHaveBeenCalled();
   });
 
+  it('fails closed before writing when custom recompute is not configured', async () => {
+    const deps = dependencies();
+    const { recomputeMember: _missing, ...withoutRecompute } = deps;
+    const handler = createMatrixStatusEdgeHandler(withoutRecompute);
+    const response = await handler(new Request('https://example.test/functions/v1/matrix-status', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer member-token',
+      },
+      body: JSON.stringify({ action: 'custom-save', config: customConfig }),
+    }));
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: { code: 'CUSTOM_STATUS_WRITE_NOT_CONFIGURED' },
+    });
+    expect(deps.customStatusStore.save).not.toHaveBeenCalled();
+  });
+
   it('saves a custom status setting through the member route and recomputes before success', async () => {
     const deps = dependencies();
     const handler = createMatrixStatusEdgeHandler(deps);
