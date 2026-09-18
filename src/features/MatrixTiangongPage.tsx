@@ -34,7 +34,7 @@ export function TiangongValidationProcess({ validation, loading, lottery = "今�
   };
   const summaryDirection = (direction: TiangongApiRow["exploreDirection"]) => direction === "固定" ? "固定" : direction === "依序遞增" ? "由左至右" : "由右至左";
   const summaryPosition = (value: number) => value === 7 ? <span>特別號</span> : <span>第 <i className="validation-summary-position">{value}</i> 顆</span>;
-  const summaryFormula = (operation: typeof first) => <span className="tiangong-summary-formula">{operation?.type === "sum" ? <><span>合值</span><i className="validation-summary-formula">{operation.value}</i></> : <i className="validation-summary-formula">{operation ? `+${operation.residue ?? 0}` : "—"}</i>}</span>;
+  const summaryFormula = (operation: typeof first) => <span className="tiangong-summary-formula">{operation?.type === "sum" ? <><span>合值</span>{" "}<i className="validation-summary-formula">{operation.value}</i></> : <i className="validation-summary-formula">{operation ? `+${operation.residue ?? 0}` : "—"}</i>}</span>;
   const separator = <i className="validation-summary-divider" aria-hidden="true">｜</i>;
   return <section className="road-validation-process explore-validation-card tiangong-validation-process" aria-label="天工驗證過程">
     {prediction && item ? <header className="explore-validation-summary-card tiangong-summary-card">
