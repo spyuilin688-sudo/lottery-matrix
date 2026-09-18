@@ -1,8 +1,11 @@
+import { createMatrixCustomStatusRoutes } from '../../../backend/matrix-custom-status-routes.ts';
 import { createMatrixStatusRoutes } from '../../../backend/matrix-status-routes.ts';
 
 type MatrixStatusDependencies = Parameters<typeof createMatrixStatusRoutes>[0];
+type MatrixCustomStatusDependencies = Parameters<typeof createMatrixCustomStatusRoutes>[0];
 type MatrixLottery = '今彩539' | '天天樂' | '六合彩' | '大樂透';
 type MatrixStatusEdgeDependencies = MatrixStatusDependencies & {
+  customStatusStore?: MatrixCustomStatusDependencies['store'];
   authorizeInternal?(authorization?: string): boolean;
   recomputeMember?(memberId: string, lottery: MatrixLottery): Promise<unknown>;
   recomputeLottery?(lottery: MatrixLottery): Promise<unknown>;
@@ -29,6 +32,14 @@ function record(value: unknown) {
 
 export function createMatrixStatusEdgeHandler(dependencies: MatrixStatusEdgeDependencies) {
   const routes = createMatrixStatusRoutes(dependencies);
+  const customRoutes = dependencies.customStatusStore
+    ? createMatrixCustomStatusRoutes({
+        requireMember: dependencies.requireMember,
+        store: dependencies.customStatusStore,
+        recomputeStatus: dependencies.recomputeMember,
+        now: dependencies.now,
+      })
+    : null;
   return async (request: Request) => {
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders });
@@ -45,6 +56,25 @@ export function createMatrixStatusEdgeHandler(dependencies: MatrixStatusEdgeDepe
     const value = record(body);
     const action = value ? String(value.action ?? '') : '';
     const authorization = request.headers.get('authorization') ?? undefined;
+
+    if (action === 'custom-save' || action === 'custom-reset') {
+      if (!customRoutes) {
+        return json({ error: { code: 'CUSTOM_STATUS_WRITE_NOT_CONFIGURED' } }, 503);
+      }
+      const result = action === 'custom-save'
+        ? await customRoutes.save({
+            authorization,
+            body: value?.config,
+          })
+        : await customRoutes.reset({
+            authorization,
+            body: {
+              lottery: value?.lottery,
+              status: value?.status,
+            },
+          });
+      return json(result.body, result.status);
+    }
 
     if (action === 'recompute') {
       if (!dependencies.authorizeInternal?.(authorization)) {
