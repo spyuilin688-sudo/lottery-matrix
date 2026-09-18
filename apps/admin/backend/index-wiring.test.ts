@@ -208,6 +208,21 @@ const sessionContext = (params: Record<string, string> = {}) => ({
   event: { headers: { cookie: 'admin_session=test', 'user-agent': 'test-agent' }, requestContext: { http: { sourceIp: '127.0.0.1' } } },
 });
 
+describe('system settings mutation authorization', () => {
+  it.each([
+    'POST /api/system-status/:id/refresh',
+    'POST /api/system-status/:id/recover',
+  ])('requires systemSettings edit permission for %s', async (route) => {
+    const context = sessionContext({ id: 'cron-matrix-539-refresh-v2' });
+    await (routes[route][0] as (ctx: typeof context) => Promise<unknown>)(context);
+    wiring.requireModulePermission.mockClear();
+    wiring.requirePermission.mockClear();
+    await (routes[route][1] as (ctx: typeof context) => Promise<unknown>)(context);
+    expect(wiring.requireModulePermission).toHaveBeenCalledWith(wiring.admin, 'systemSettings', 'edit');
+    expect(wiring.requirePermission).toHaveBeenCalledWith(wiring.admin, 'edit');
+  });
+});
+
 async function authenticate(route: string, context: ReturnType<typeof sessionContext>) {
   const middleware = routes[route][0] as (input: typeof context) => Promise<unknown>;
   await middleware(context);
