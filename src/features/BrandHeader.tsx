@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { ChevronDownIcon, ChevronLeftIcon } from "@radix-ui/react-icons";
 
-const CORE_HEADER_TITLES = new Set(["Matrix 探索", "Matrix 天衡", "Matrix 天衍", "Matrix 天工"]);
+const CORE_HEADER_TITLES = new Set(["Matrix 探索", "Matrix 天衡", "Matrix 天衍"]);\nconst TIANGONG_HEADER_TITLE = "Matrix 天工";
 const GEOMETRIC_HEADER_TITLES = new Set(["Matrix 同星", "號碼對照單", "歷史開獎號碼"]);
 
 const PAGE_SUBTITLES: Readonly<Record<string, string>> = {
@@ -74,7 +74,7 @@ export function BrandHeader({ title, onBack, backHref, action, actionPlacement =
   showBack?: boolean;
 }) {
   const hasBack = showBack && Boolean(onBack || backHref);
-  const headerStyle = CORE_HEADER_TITLES.has(title) ? "flow" : GEOMETRIC_HEADER_TITLES.has(title) ? "geometric" : "gold-arc";
+  const headerStyle = title === TIANGONG_HEADER_TITLE ? "tiangong" : CORE_HEADER_TITLES.has(title) ? "flow" : GEOMETRIC_HEADER_TITLES.has(title) ? "geometric" : "gold-arc";
   const displayTitle = title.replace(/^Matrix\b/, "MATRIX");
   // Conservative glyph widths select one shared fit range without inline styles.
   const titleWidth = Array.from(displayTitle).reduce((width, character) =>
