@@ -32,7 +32,7 @@ function record(value: unknown) {
 
 export function createMatrixStatusEdgeHandler(dependencies: MatrixStatusEdgeDependencies) {
   const routes = createMatrixStatusRoutes(dependencies);
-  const customRoutes = dependencies.customStatusStore
+  const customRoutes = dependencies.customStatusStore && dependencies.recomputeMember
     ? createMatrixCustomStatusRoutes({
         requireMember: dependencies.requireMember,
         store: dependencies.customStatusStore,
