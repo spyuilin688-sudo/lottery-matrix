@@ -138,6 +138,59 @@ describe('Matrix status Edge Function', () => {
     expect(deps.requireMember).not.toHaveBeenCalled();
   });
 
+  it('falls back to standard compact summaries when custom status cache is missing', async () => {
+    const lotteries = ['今彩539', '天天樂', '六合彩', '大樂透'] as const;
+    const deps = dependencies();
+    deps.listConfigs.mockResolvedValue([
+      { ...customConfig, lottery: '六合彩' },
+      { ...customConfig, lottery: '大樂透' },
+    ]);
+    const readCompactStatus = vi.fn(async (requestedLottery: MatrixLottery) => ({
+      analysisVersion,
+      drawPeriod,
+      payload: {
+        lottery: requestedLottery,
+        drawPeriod,
+        summary: {
+          status: requestedLottery === '六合彩' || requestedLottery === '大樂透'
+            ? 'RESONANCE'
+            : 'ACTIVE',
+          count: 2,
+          message: 'summary-ready',
+        },
+        cards: 'homepage summary must not project cards',
+      },
+    }));
+    const readStatusIdentity = vi.fn(async () => ({ analysisVersion, drawPeriod }));
+    const readCustomStatus = vi.fn(async () => null);
+    const handler = createMatrixStatusEdgeHandler({
+      ...deps,
+      readCompactStatus,
+      readStatusIdentity,
+      readCustomStatus,
+    });
+
+    const response = await handler(new Request('https://example.test/functions/v1/matrix-status', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer member-token',
+      },
+      body: JSON.stringify({ action: 'summary-batch', lotteries }),
+    }));
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.items.every((item: { status: number }) => item.status === 200)).toBe(true);
+    expect(body.items.find((item: { lottery: MatrixLottery }) => item.lottery === '六合彩')?.body)
+      .toMatchObject({ kind: 'status-summary', summary: { status: 'RESONANCE' } });
+    expect(body.items.find((item: { lottery: MatrixLottery }) => item.lottery === '大樂透')?.body)
+      .toMatchObject({ kind: 'status-summary', summary: { status: 'RESONANCE' } });
+    expect(readCustomStatus).toHaveBeenCalledTimes(2);
+    expect(readCompactStatus).toHaveBeenCalledTimes(4);
+    expect(deps.readStatusSources).not.toHaveBeenCalled();
+  });
+
   it('fails closed before writing when custom recompute is not configured', async () => {
     const deps = dependencies();
     const { recomputeMember: _missing, ...withoutRecompute } = deps;
