@@ -67,6 +67,7 @@ const customStatusRecompute = createMatrixCustomStatusRecomputeService({
 
 const handler = createMatrixStatusEdgeHandler({
   requireMember: (authorization) => memberAuth.requireMember(authorization),
+  customStatusStore,
   readStatusIdentity: resolvedStatusIdentity,
   async readCompactStatus(lottery: LotteryId, drawPeriod?: string) {
     const source = await readCompactStatus(lottery, drawPeriod);

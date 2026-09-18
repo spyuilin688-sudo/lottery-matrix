@@ -15,7 +15,7 @@ import {
 } from './matrix-status-api';
 
 beforeEach(() => {
-  getSession.mockReset().mockResolvedValue({data:{session:{user:{id:"member"}}},error:null});
+  getSession.mockReset().mockResolvedValue({ data: { session: { user: { id: 'member' } } }, error: null });
   rpc.mockReset().mockResolvedValue({ data: {}, error: null });
   invoke.mockReset().mockResolvedValue({ data: {}, error: null });
 });
@@ -55,27 +55,37 @@ describe('Matrix status Supabase RPC', () => {
     });
   });
 
-  it('lists, saves and resets the authenticated member settings', async () => {
+  it('lists authenticated member settings through the authenticated RPC', async () => {
+    await listCustomStatusSettings();
+
+    expect(rpc.mock.calls).toEqual([
+      ['matrix_custom_status_list'],
+    ]);
+    expect(invoke).not.toHaveBeenCalled();
+  });
+
+  it('saves and resets custom settings through the Matrix Status Edge Function so recompute can run', async () => {
     const config = {
       schemaVersion: 2,
       lottery: '今彩539', status: 'ACTIVE', explorePeriods: 13,
       exploreRange: '完整範圍', oneCodeGroups: [], twoCodeGroups: [],
     } satisfies import('./matrix-status-api').CustomStatusConfig;
 
-    await listCustomStatusSettings();
     await saveCustomStatusSetting(config);
     await resetCustomStatusSetting('今彩539', 'ACTIVE');
 
-    expect(rpc.mock.calls).toEqual([
-      ['matrix_custom_status_list'],
-      ['matrix_custom_status_save', { p_config: config }],
-      ['matrix_custom_status_reset', { p_lottery: '今彩539', p_status: 'ACTIVE' }],
+    expect(invoke.mock.calls).toEqual([
+      ['matrix-status', { body: { action: 'custom-save', config } }],
+      ['matrix-status', {
+        body: { action: 'custom-reset', lottery: '今彩539', status: 'ACTIVE' },
+      }],
     ]);
+    expect(rpc).not.toHaveBeenCalled();
   });
 });
 
- it('classifies guest custom settings as login required without invoking RPC', async () => {
-  getSession.mockResolvedValue({data:{session:null},error:null});
-  await expect(listCustomStatusSettings()).rejects.toMatchObject({code:'AUTH_REQUIRED',status:401});
+it('classifies guest custom settings as login required without invoking RPC', async () => {
+  getSession.mockResolvedValue({ data: { session: null }, error: null });
+  await expect(listCustomStatusSettings()).rejects.toMatchObject({ code: 'AUTH_REQUIRED', status: 401 });
   expect(rpc).not.toHaveBeenCalled();
- });
+});

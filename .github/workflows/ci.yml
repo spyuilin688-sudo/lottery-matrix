@@ -88,7 +88,6 @@ jobs:
         run: npm ci
       - name: Related root and admin backend Vitest files
         if: needs.scope.outputs.vitest == 'true'
-        continue-on-error: true
         run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run vitest
       - name: Related Edge Function files
         if: needs.scope.outputs.edge == 'true'
@@ -96,6 +95,9 @@ jobs:
       - name: Production build for packaging tests
         if: needs.scope.outputs.node == 'true'
         run: npm run build
+      - name: Related Node test files
+        if: needs.scope.outputs.node == 'true'
+        run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run node
 
   runtime-tests:
     needs: scope
@@ -121,7 +123,6 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Related runtime browser files
         if: needs.scope.outputs.playwright == 'true'
-        continue-on-error: true
         run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run playwright
       - name: Related membership preview files
         if: needs.scope.outputs.membership == 'true'
