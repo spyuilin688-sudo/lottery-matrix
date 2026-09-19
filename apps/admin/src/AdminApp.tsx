@@ -1,3 +1,4 @@
+import { MatrixWatchdogPanel } from "./MatrixWatchdogPanel";
 import { loadAdminBootstrap, createActivationBatchSubmitter } from "./admin-recovery";
 import { useAdminMemberPage } from "./use-admin-member-page";
 import { useAdminDataPage, type AdminDataPageController } from "./use-admin-data-page";
@@ -1643,6 +1644,7 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
       {statusNotice && <div className="systemStatusNotice" role="status">{statusNotice}</div>}
       <RailwayOperations client={api} canEdit={canEdit} confirm={confirm} disabled={checking || Boolean(retryingId) || Boolean(refreshingId)} onBusyChange={value => { requestInFlight.current = value; setOperating(value); }} />
       {items.length === 0 && <div className="statusEmpty">{checking ? "正在檢查服務狀態…" : "目前沒有服務狀態"}</div>}
+      {items.some(item => item.id === "supabase-watchdog-heartbeat") && <MatrixWatchdogPanel detail={items.find(item => item.id === "supabase-watchdog-heartbeat")?.detail} />}
       <div className="statusGroups">
         {groupSystemStatusItems(items).map((group) => {
           const normalCount = group.items.filter((item) => getSystemStatusPresentation(item).tone === "good").length;

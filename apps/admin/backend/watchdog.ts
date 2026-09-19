@@ -1,8 +1,13 @@
+import { inspectChain } from './matrix-inspector';
+import type { RailwayEvidence } from './matrix-railway-evidence';
+import { evaluateChain, type ChainReport, type StageEvidence } from './matrix-chain';
 export type WatchdogLottery = '今彩539' | '天天樂' | '六合彩' | '大樂透';
 
 export type WatchdogSnapshot = {
   lottery: WatchdogLottery;
   drawDays?: string[];
+  chain?: ChainReport;
+  unavailable?: boolean;
   job: null | {
     status: 'running' | 'waiting_source' | 'success' | 'failed';
     startedAt: string | null;
@@ -260,6 +265,7 @@ export function planWatchdogActions(
   };
 
   for (const snapshot of snapshots) {
+    if (snapshot.unavailable) continue;
     const expectedDate = expectedDrawDateForDueWindow(
       snapshot.lottery,
       now,
@@ -305,6 +311,10 @@ export function planWatchdogActions(
       && isOlderThan(analysis.updatedAt ?? analysis.startedAt, now, ANALYSIS_STALE_MS)
     ) {
       add(snapshot.lottery, 'railway', 'analysis-stuck');
+    }
+    if (snapshot.chain?.stages.find(s => s.stage === 'analysis')?.state === 'FAIL') add(snapshot.lottery, 'railway', 'analysis-missing');
+    for (const stage of ['matrix-status','custom-status'] as const) {
+      if (snapshot.chain?.stages.find(s => s.stage === stage)?.state === 'FAIL') add(snapshot.lottery, 'railway', `${stage}-missing`);
     }
   }
   return [...planned.values()];
@@ -422,13 +432,15 @@ export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
     );
 
     return Promise.all(LOTTERIES.map(async (lottery) => {
+      let unavailable = false;
+      const missing = () => { unavailable = true; return []; };
       const [jobRows, drawRows] = await Promise.all([
         supabaseRequest<Record<string, unknown>[]>(supabase,
-          `system_job_status?select=status,started_at,updated_at&job_name=eq.${encode(JOB_NAME[lottery])}&limit=1`,
-        ),
+          `system_job_status?select=status,started_at,updated_at,written_period,database_period&job_name=eq.${encode(JOB_NAME[lottery])}&limit=1`,
+        ).catch(missing),
         supabaseRequest<Record<string, unknown>[]>(supabase,
           `lottery_draws?select=period,draw_date&lottery=eq.${encode(lottery)}&order=draw_date.desc.nullslast,period.desc&limit=1`,
-        ),
+        ).catch(missing),
       ]);
       const jobRow = jobRows[0];
       const drawRow = drawRows[0];
@@ -440,7 +452,12 @@ export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ p_lottery: lottery, p_draw_period: period }),
         },
-      ) : null;
+      ).catch(() => { unavailable = true; return null; }) : null;
+      let chainState: Record<string, unknown> | null = null;
+      try {
+        if (period) chainState = await supabaseRequest<Record<string, unknown>>(supabase,
+          'rpc/matrix_watchdog_chain_state', {method:'POST', body:JSON.stringify({p_lottery:lottery,p_draw_period:period})});
+      } catch { /* Existing observations remain usable; missing evidence is UNKNOWN. */ }
       const jobStatus = nullableString(jobRow?.status);
       const analysisStatus = nullableString(analysisState?.status);
       const visibleAnalysisStatus = (
@@ -448,8 +465,26 @@ export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
         || analysisStatus === 'complete'
         || analysisStatus === 'failed'
       ) ? analysisStatus : null;
+      const expected = expectedDrawDateForDueWindow(lottery, at, calendarDrawDays(calendar, lottery));
+      const currentDraw = Boolean(period && (!expected || (String(drawRow?.draw_date ?? '') >= minimumExpectedDrawDate(lottery, expected))));
+      const jobMatches = Boolean(period && (jobRow?.written_period === period || jobRow?.database_period === period));
+      const observedAt = at.toISOString();
+      const evidence = (stage: StageEvidence['stage'], state: StageEvidence['state'], code: string, source = 'supabase'): StageEvidence => ({stage,state,code,source,period,observedAt});
+      const liveAnalysis = analysisStatus === 'running' && Boolean(analysisState?.leaseExpiresAt) && Date.parse(String(analysisState?.leaseExpiresAt)) > at.getTime();
+      const verifiedAnalysis = chainState?.analysisComplete === true && chainState?.latestPeriod === period;
+      const stages: StageEvidence[] = [
+        evidence('schedule', jobMatches && Boolean(jobRow?.started_at) ? 'PASS' : 'UNKNOWN', 'SCHEDULE_EXECUTION_OBSERVED', 'system_job_status'),
+        evidence('job', jobMatches && jobStatus === 'success' ? 'PASS' : jobStatus === 'running' ? 'WAITING' : jobStatus === 'failed' ? 'FAIL' : 'UNKNOWN', 'JOB_' + (jobStatus ?? 'MISSING').toUpperCase(), 'system_job_status'),
+        evidence('crawler', currentDraw ? 'PASS' : 'WAITING', currentDraw ? 'DRAW_ACQUIRED' : 'SOURCE_PENDING', 'lottery_draws'),
+        evidence('draw', currentDraw ? 'PASS' : expected ? 'FAIL' : 'UNKNOWN', currentDraw ? 'CURRENT_DRAW_STORED' : 'DRAW_STALE', 'lottery_draws'),
+        evidence('analysis', !chainState ? 'UNKNOWN' : verifiedAnalysis ? 'PASS' : liveAnalysis ? 'WAITING' : 'FAIL', verifiedAnalysis ? 'ACTIVE_ANALYSIS_COMPLETE' : liveAnalysis ? 'ANALYSIS_LEASE_ACTIVE' : 'ANALYSIS_INCOMPLETE', 'matrix_watchdog_chain_state'),
+        evidence('matrix-status', !chainState ? 'UNKNOWN' : chainState.matrixStatusComplete === true ? 'PASS' : verifiedAnalysis ? 'FAIL' : 'WAITING', 'MATRIX_STATUS_ARTIFACT', 'matrix_watchdog_chain_state'),
+        evidence('custom-status', !chainState ? 'UNKNOWN' : chainState.customStatusComplete === true ? 'PASS' : verifiedAnalysis ? 'FAIL' : 'WAITING', Number(chainState?.customConfigMismatches)>0 ? 'CUSTOM_CONFIG_MISMATCH' : chainState?.customMembers === 0 ? 'NO_CUSTOM_CONFIGS' : 'CUSTOM_STATUS_CURRENT_CONFIG', 'matrix_watchdog_chain_state'),
+      ];
       return {
         lottery,
+        unavailable,
+        chain: evaluateChain({lottery,drawPeriod:period,checkedAt:observedAt,stages}),
         drawDays: calendarDrawDays(calendar, lottery),
         job: jobStatus ? {
           status: jobStatus as WatchdogSnapshot['job'] extends { status: infer T } ? T : never,
@@ -544,17 +579,20 @@ export function createFantasy5GithubDispatcher(
   };
 }
 
+export type RecoveryTarget = {stage:'crawler'|'analysis'|'matrix-status'|'custom-status';drawPeriod:string|null;minimumDrawDate?:string};
+
 type WatchdogDependencies = {
+  collectRailway?: (at?: Date) => Promise<RailwayEvidence[]>;
   loadSnapshot: (at?: Date) => Promise<WatchdogSnapshot[]>;
   claimLease: (key: string, owner: string) => Promise<boolean>;
   releaseLease: (key: string, owner: string) => Promise<void>;
-  recoverRailway: (lottery: WatchdogLottery, leaseOwner: string) => Promise<unknown>;
+  recoverRailway: (lottery: WatchdogLottery, leaseOwner: string, target?: RecoveryTarget) => Promise<unknown>;
   dispatchFantasy5: () => Promise<string>;
 };
 
 export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
   return {
-    async run(at: Date = new Date(), owner = crypto.randomUUID()) {
+    async run(at: Date = new Date(), owner = crypto.randomUUID(), options: {recover?: boolean} = {}) {
       let snapshots: WatchdogSnapshot[];
       try {
         snapshots = await dependencies.loadSnapshot(at);
@@ -574,7 +612,9 @@ export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
           snapshot.drawDays,
         ) !== null)
         .map((snapshot) => snapshot.lottery);
-      const actions = planWatchdogActions(snapshots, at);
+      const railway = await dependencies.collectRailway?.(at).catch(() => []) ?? [];
+      const reports = snapshots.map(s => s.chain ?? evaluateChain({lottery:s.lottery,drawPeriod:s.latestDraw?.period ?? null,checkedAt:at.toISOString(),stages:[]}));
+      const actions = options.recover === false ? [] : planWatchdogActions(snapshots, at);
       const results = await Promise.all(actions.map(async (action) => {
         const leaseKey = `${action.target}:${action.lottery}`;
         let acquired = false;
@@ -589,7 +629,12 @@ export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
               await dependencies.releaseLease(leaseKey, owner).catch(() => undefined);
             }
           } else {
-            const response = await dependencies.recoverRailway(action.lottery, owner) as { status?: unknown };
+            const snapshot = snapshots.find(s => s.lottery === action.lottery)!;
+            const crawler = action.reasons.some(r => ['job-failed','job-stuck','crawler-stale'].includes(r));
+            const stage: RecoveryTarget['stage'] = crawler ? 'crawler' : action.reasons.some(r => r.startsWith('analysis-')) ? 'analysis' : action.reasons.includes('matrix-status-missing') ? 'matrix-status' : 'custom-status';
+            const expectedDate = expectedDrawDateForDueWindow(action.lottery,at,snapshot.drawDays);
+            const target: RecoveryTarget = {stage,drawPeriod:crawler ? null : snapshot.latestDraw?.period ?? null,...(crawler && expectedDate ? {minimumDrawDate:minimumExpectedDrawDate(action.lottery,expectedDate)} : {})};
+            const response = await dependencies.recoverRailway(action.lottery, owner, target) as { status?: unknown };
             outcome = response?.status === 'already-running' ? 'already-running' : 'accepted';
           }
           return { ...action, outcome };
@@ -597,13 +642,16 @@ export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
           return { ...action, outcome: 'failed' };
         }
       }));
-      const degraded = results.some((result) =>
+      const degraded = reports.some(report => report.state !== 'PASS') || results.some((result) =>
         result.outcome === 'failed' || result.outcome === 'config-missing');
       return {
         status: degraded ? 'degraded' : 'ok',
         checkedAt: at.toISOString(),
         dueLotteries,
         actions: results,
+        reports,
+        railway,
+        diagnoses: reports.map(report => inspectChain(report,railway)),
       };
     },
   };

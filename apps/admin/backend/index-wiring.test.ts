@@ -255,6 +255,7 @@ describe('independent watchdog cron wiring', () => {
       expect(wiring.watchdogRun).toHaveBeenCalledWith(
         new Date('2026-09-04T12:39:00.000Z'),
         'cron-invocation-1',
+        { recover: true },
       );
       expect(wiring.watchdogStatusSave).toHaveBeenCalledWith({
         status: 'ok',
@@ -391,6 +392,7 @@ describe('Supabase watchdog invocation route', () => {
     expect(wiring.watchdogRun).toHaveBeenCalledWith(
       expect.any(Date),
       expect.stringMatching(/^supabase-cron:/),
+      { recover: true },
     );
   });
 });

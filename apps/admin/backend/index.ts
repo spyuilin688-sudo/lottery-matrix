@@ -1,3 +1,6 @@
+import { optimizeSnapshot } from './matrix-optimizer';
+import type { RailwayEvidence } from './matrix-railway-evidence';
+import { createRailwayEvidenceCollector } from './matrix-railway-evidence';
 import { createSecurityMonitor } from './security-monitor';
 import { listMemberLoginHistory } from './member-login-history';
 import { db, error, json, requireAuth, router, secrets } from '@appdeploy/sdk';
@@ -60,11 +63,18 @@ const permissionSettings = createPermissionSettings(supabase);
 const credentialAuth = createAdminCredentialAuth(supabase);
 const workerApi = createWorkerApi(() => getWorkerConfig(secrets));
 const watchdogLeases = createSupabaseWatchdogLeaseManager(supabase);
+const railwayEvidence = createRailwayEvidenceCollector(async () => {
+  const names = await secrets.listSecretNames();
+  if (!names.includes('MATRIX_RAILWAY_PROJECT_TOKEN')) return null;
+  const projectToken = String(await secrets.readSecret('MATRIX_RAILWAY_PROJECT_TOKEN') ?? '').trim();
+  return projectToken ? {projectToken} : null;
+});
 const independentWatchdog = createIndependentWatchdog({
+  collectRailway: railwayEvidence,
   loadSnapshot: createSupabaseWatchdogSnapshotLoader(supabase),
   claimLease: (key, owner) => watchdogLeases.claim(key, owner),
   releaseLease: (key, owner) => watchdogLeases.release(key, owner),
-  recoverRailway: (lottery, owner) => workerApi.recoverLottery(lottery, owner),
+  recoverRailway: (lottery, owner, target) => workerApi.recoverLottery(lottery, owner, target),
   dispatchFantasy5: createFantasy5GithubDispatcher(
     () => getGithubActionsToken(secrets),
   ),
@@ -442,9 +452,10 @@ const routes: Record<string, unknown> = {
   'GET /api/system-status': [sessionGuard, moduleGuard('systemSettings', 'view'), async () =>
     json(await connectionStatus.get())],
 
-  'POST /api/internal/matrix-watchdog': [watchdogCronGuard, async () => {
+  'POST /api/internal/matrix-watchdog': [watchdogCronGuard, async (ctx: Context) => {
     const result = await matrixIndependentWatchdog({
       scheduledTime: now(),
+      optimizer: bodyOf(ctx).optimizer === true,
       invocationId: `supabase-cron:${crypto.randomUUID()}`,
     });
     return result.statusCode === 200
@@ -675,7 +686,7 @@ const routes: Record<string, unknown> = {
 };
 
 export async function matrixIndependentWatchdog(
-  event: { scheduledTime?: string; invocationId?: string },
+  event: { scheduledTime?: string; invocationId?: string; optimizer?: boolean },
 ) {
   const scheduled = event?.scheduledTime ? new Date(event.scheduledTime) : new Date();
   const at = Number.isNaN(scheduled.getTime()) ? new Date() : scheduled;
@@ -683,7 +694,7 @@ export async function matrixIndependentWatchdog(
   let dueLotteries: WatchdogStatus['dueLotteries'] = [];
   let watchdogResult: Record<string, unknown>;
   try {
-    const runResult = await independentWatchdog.run(at, owner);
+    const runResult = await independentWatchdog.run(at, owner, {recover: !event.optimizer});
     dueLotteries = runResult.dueLotteries;
     watchdogResult = { ...runResult };
   } catch {
@@ -695,6 +706,13 @@ export async function matrixIndependentWatchdog(
       error: 'WATCHDOG_FAILED',
     };
   }
+  const previous = await watchdogStatus.load().catch(() => null);
+  if (event.optimizer) {
+    const database = await supabase.supabaseRequest<Record<string,unknown>>('rpc/matrix_optimizer_snapshot', {
+      method:'POST', body:'{}', signal:AbortSignal.timeout(8000),
+    }).catch(() => null);
+    watchdogResult.optimizer = optimizeSnapshot(database,(watchdogResult.railway ?? []) as RailwayEvidence[],at,previous?.optimizer);
+  } else if (previous?.optimizer) watchdogResult.optimizer = previous.optimizer;
   const completedAt = new Date().toISOString();
   const heartbeat = { ...watchdogResult, completedAt, dueLotteries };
   let result: WatchdogStatus;

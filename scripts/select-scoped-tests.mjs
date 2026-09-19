@@ -13,6 +13,7 @@ const TEST = /(?:\.test\.(?:[cm]?[jt]sx?)|\.spec\.tsx?|(?:^|\/)test_[^/]+\.py)$/
 // Navigation to / has no static module import. These are the actual screen owners
 // exercised by each focused browser spec, not a directory-wide browser fallback.
 const BROWSER_OWNERS = {
+  'tests/matrix-watchdog.spec.ts': ['apps/admin/src/MatrixWatchdogPanel.tsx', 'apps/admin/src/system-status.css', 'tests/matrix-watchdog-fixture.tsx'],
   'tests/bottom-navigation.spec.ts': ['src/BottomNavigation.tsx', 'src/features/navigation.tsx'],
   'tests/home-logo-core-responsive.spec.ts': ['src/Prototype.tsx', 'src/homepage/base.css', 'src/homepage/lottery-switcher.css'],
   'tests/home-pro-plans-layout-runtime.spec.ts': ['src/Prototype.tsx', 'src/features/MemberPages.tsx', 'src/pro-plans-layout.css', 'src/pro-plans-carousel-peek.css'],
@@ -25,6 +26,7 @@ const BROWSER_OWNERS = {
 // Configuration changes exercise the tests for the configuration itself. Package
 // changes do not manufacture an all-tests selection; build/check gates still run.
 const CONFIG_OWNERS = {
+  '.github/workflows/matrix-optimizer.yml': ['tests/matrix-optimizer-code.test.mjs'],
   '.github/workflows/ci.yml': ['tests/scoped-ci.test.mjs', 'tests/ci-workflow-coverage.test.mjs'],
   'scripts/select-scoped-tests.mjs': ['tests/scoped-ci.test.mjs', 'tests/ci-workflow-coverage.test.mjs'],
   'vitest.edge-functions.config.ts': ['tests/edge-functions-config.test.mjs'],

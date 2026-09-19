@@ -1,3 +1,7 @@
+import { inspectChain, type Diagnosis } from './matrix-inspector';
+import { sanitizeRailwayEvidence, type RailwayEvidence } from './matrix-railway-evidence';
+import { sanitizeOptimizer, type OptimizerReport } from './matrix-optimizer';
+import { sanitizeChainReports, type ChainReport } from './matrix-chain';
 type Row = Record<string, unknown>;
 
 type WatchdogStatusDatabase = {
@@ -18,6 +22,10 @@ export type WatchdogStatusAction = {
 
 export type WatchdogStatus = {
   status: 'ok' | 'degraded';
+  reports?: ChainReport[];
+  diagnoses?: Diagnosis[];
+  railway?: RailwayEvidence[];
+  optimizer?: OptimizerReport;
   checkedAt: string;
   completedAt: string;
   dueLotteries: WatchdogStatusAction['lottery'][];
@@ -29,6 +37,8 @@ const TABLE = 'matrix-watchdog-status';
 const LOTTERIES = new Set<WatchdogStatusAction['lottery']>(['今彩539', '天天樂', '六合彩', '大樂透']);
 const TARGETS = new Set<WatchdogStatusAction['target']>(['github', 'railway']);
 const REASONS = new Set([
+  'matrix-status-missing',
+  'custom-status-missing',
   'job-failed',
   'job-stuck',
   'crawler-stale',
@@ -96,6 +106,14 @@ export function sanitizeWatchdogStatus(value: unknown): WatchdogStatus {
     dueLotteries: safeDueLotteries(source.dueLotteries),
     actions: safeActions(source.actions),
   };
+  if (Array.isArray(source.reports)) {
+    result.reports = sanitizeChainReports(source.reports);
+    if (result.reports.length !== 4 || result.reports.some(r => r.state !== 'PASS')) result.status = 'degraded';
+  }
+  if (Array.isArray(source.railway)) result.railway = sanitizeRailwayEvidence(source.railway);
+  if (result.reports) result.diagnoses = result.reports.map(r => inspectChain(r,result.railway ?? []));
+  const optimizer = sanitizeOptimizer(source.optimizer);
+  if (optimizer) result.optimizer = optimizer;
   if (status === 'degraded' && typeof source.error === 'string') {
     result.error = SAFE_ERRORS.has(source.error as NonNullable<WatchdogStatus['error']>)
       ? source.error as NonNullable<WatchdogStatus['error']>

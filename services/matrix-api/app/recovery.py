@@ -17,6 +17,9 @@ class RecoveryCoordinator:
         self,
         runner: Callable[[str], None],
         *,
+        verify: Callable[..., bool] | None = None,
+        record_success: Callable[..., object] | None = None,
+        targeted_runner: Callable[..., str | None] | None = None,
         begin_lease: LeaseBeginner | None = None,
         renew_lease: LeaseRenewer | None = None,
         release_lease: LeaseReleaser | None = None,
@@ -27,6 +30,9 @@ class RecoveryCoordinator:
         clock: Callable[[], float] | None = None,
     ) -> None:
         self._runner = runner
+        self._verify = verify
+        self._record_success = record_success
+        self._targeted_runner = targeted_runner
         self._begin_lease = begin_lease
         self._renew_lease = renew_lease
         self._release_lease = release_lease
@@ -38,7 +44,7 @@ class RecoveryCoordinator:
         self._lock = Lock()
         self._running: set[str] = set()
 
-    def enqueue(self, lottery: str, lease_owner: str | None = None) -> str:
+    def enqueue(self, lottery: str, lease_owner: str | None = None, *, draw_period: str | None = None, stage: str | None = None, minimum_draw_date: str | None = None) -> str:
         with self._lock:
             if lottery in self._running:
                 return "already-running"
@@ -69,6 +75,7 @@ class RecoveryCoordinator:
                 runner_id,
                 lease_begun,
                 lease_confirmed_until,
+                draw_period, stage, minimum_draw_date,
             ),
             daemon=False,
             name=f"matrix-recovery-{lottery}",
@@ -113,11 +120,10 @@ class RecoveryCoordinator:
                 return
             confirmation_started_at = self._clock()
             try:
-                if self._renew_lease and not self._renew_lease(
-                    lottery,
-                    lease_owner,
-                    runner_id,
-                ):
+                renewed = not self._renew_lease or self._renew_lease(lottery, lease_owner, runner_id)
+                if stopped.is_set():
+                    return
+                if not renewed:
                     self._fence_lost_lease(lottery, lease_owner, runner_id)
                     return
                 confirmed_until = (
@@ -149,6 +155,9 @@ class RecoveryCoordinator:
         runner_id: str,
         lease_begun: bool,
         lease_confirmed_until: float | None,
+        draw_period: str | None = None,
+        stage: str | None = None,
+        minimum_draw_date: str | None = None,
     ) -> None:
         stopped: Event | None = None
         heartbeat: Thread | None = None
@@ -173,7 +182,24 @@ class RecoveryCoordinator:
                     name=f"matrix-recovery-heartbeat-{lottery}",
                 )
                 heartbeat.start()
-            self._runner(lottery)
+            if stage is not None:
+                if self._targeted_runner is None:
+                    raise RuntimeError("TARGETED_RECOVERY_NOT_CONFIGURED")
+                verified_period = self._targeted_runner(lottery, draw_period, stage, minimum_draw_date)
+            else:
+                self._runner(lottery)
+                verified_period = draw_period
+            # A successful completion deletes the durable lease. Drain renewal
+            # first so it cannot misinterpret our own deletion as lease loss.
+            if stopped is not None:
+                stopped.set()
+            if heartbeat is not None:
+                heartbeat.join(timeout=max(10.0, self._heartbeat_seconds + 1.0))
+                if heartbeat.is_alive():
+                    raise RuntimeError("RECOVERY_HEARTBEAT_NOT_STOPPED")
+            if lease_begun and lease_owner and self._verify and self._record_success:
+                if self._verify(lottery, verified_period):
+                    self._record_success(lottery, lease_owner, runner_id, verified_period)
         except Exception as error:
             print(f"{lottery} recovery failed: {type(error).__name__}")
         finally:
@@ -181,7 +207,7 @@ class RecoveryCoordinator:
                 stopped.set()
             if heartbeat is not None:
                 heartbeat.join(timeout=max(1.0, self._heartbeat_seconds + 1.0))
-            if lease_begun and lease_owner and self._release_lease:
+            if lease_begun and lease_owner and self._release_lease and (heartbeat is None or not heartbeat.is_alive()):
                 try:
                     self._release_lease(lottery, lease_owner, runner_id)
                 except Exception as error:

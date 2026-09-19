@@ -80,3 +80,10 @@
   .railwayOperationRow { gap: 8px; }
 }
 .statusState .statusBadge.warning { color: #e1c170; background: #352e1d; }
+
+.matrixWatchdogPanel { min-width: 0; margin: 12px 0; }
+.matrixChainGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 8px; }
+.matrixChainHeader { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; }
+.matrixChainHeader strong { color: #e1c170; }
+.matrixChainHeader > span { overflow-wrap: anywhere; }
+.matrixEvidenceList { margin: 6px 0; padding-left: 20px; color: #c4c6cc; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }

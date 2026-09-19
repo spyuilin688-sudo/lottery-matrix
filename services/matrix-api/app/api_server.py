@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+from app.targeted_recovery import run_targeted_recovery, verify_recovery
+from app.watchdog_lease import complete_recovery
 from app.security_monitor import SecurityMonitor, request_category
 
 import json
@@ -445,6 +448,9 @@ def run_lottery_recovery(lottery: str) -> None:
 
 _RECOVERY_COORDINATOR = RecoveryCoordinator(
     run_lottery_recovery,
+    targeted_runner=run_targeted_recovery,
+    verify=verify_recovery,
+    record_success=complete_recovery,
     begin_lease=begin_recovery_lease,
     renew_lease=renew_recovery_lease,
     release_lease=release_recovery_lease,
@@ -505,10 +511,24 @@ def handle_api_request(
             lease_owner = _parse_recovery_lease_owner(
                 recovery_request.get("leaseOwner")
             )
+            stage = recovery_request.get("stage")
+            period = recovery_request.get("drawPeriod")
+            minimum_date = recovery_request.get("minimumDrawDate")
+            options = {}
+            if stage is not None:
+                if stage not in {"crawler", "analysis", "matrix-status", "custom-status"}:
+                    raise ValueError("RECOVERY_STAGE_INVALID")
+                if stage != "crawler" and (not isinstance(period, str) or not period.isascii() or not period.isdigit() or len(period) > 20):
+                    raise ValueError("RECOVERY_PERIOD_REQUIRED")
+                if stage == "crawler":
+                    from datetime import date
+                    if not isinstance(minimum_date, str):
+                        raise ValueError("RECOVERY_DRAW_DATE_REQUIRED")
+                    date.fromisoformat(minimum_date)
+                options = {"stage": stage, "draw_period": period, "minimum_draw_date": minimum_date}
             try:
                 recovery_status = (recover_lottery or _RECOVERY_COORDINATOR.enqueue)(
-                    lottery,
-                    lease_owner,
+                    lottery, lease_owner, **options,
                 )
                 return 202, {"lottery": lottery, "status": recovery_status}
             except Exception:

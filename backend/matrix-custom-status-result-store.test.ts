@@ -2,8 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { createCustomStatusResultStore } from './matrix-custom-status-result-store';
 
 describe('Matrix custom status result store', () => {
-  it('accepts a successful return=minimal save response with an empty body', async () => {
-    const fetcher: typeof fetch = async () => new Response(null, { status: 201 });
+  it('rejects a stale reset when configurations have appeared', async () => {
+    const store = createCustomStatusResultStore(
+      () => ({ url: 'https://example.supabase.co', serviceRoleKey: 'test' }),
+      async () => new Response('false'),
+    );
+    await expect(store.reset('member-1', '今彩539')).rejects.toThrow('CUSTOM_STATUS_SUPERSEDED');
+  });
+  it('requires atomic publication acknowledgement', async () => {
+    const fetcher: typeof fetch = async () => new Response('true', { status: 200 });
     const store = createCustomStatusResultStore(
       () => ({
         url: 'https://example.supabase.co',
