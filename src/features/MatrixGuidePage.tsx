@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { Navigate } from "./navigation";
 import { FeatureShell } from "./shared";
-import { MATRIX_PRO_COMMON_FEATURES } from "../matrix-pro-copy";
+import { MATRIX_PRO_COMMON_FEATURES, SUBSCRIPTION_PAYMENT_NOTICE } from "../matrix-pro-copy";
 
 export const GUIDE_LOOP_GROUPS = ["leading", "canonical", "trailing"] as const;
 
@@ -135,7 +135,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       summary: "快捷可快速開啟已設定的功能；Matrix 筆記本可新增、編輯與刪除筆記。",
       blocks: [
         { title: "快捷", items: ["點擊底部「快捷」：已設定快捷功能時直接開啟；尚未設定時會先開啟快捷設定。", "在首頁設定按鈕連續點擊兩下可變更快捷功能。"] },
-        { title: "筆記", items: ["新增筆記後輸入標題與內容，再按「寫入筆記」。", "返回列表前若內容尚未寫入，將提醒是否儲存。"] },
+        { title: "筆記", items: ["新增筆記後輸入標題與內容，再按「寫入筆記」。", "返回列表前若內容尚未寫入，會提醒確認是否離開；直接離開將不保留目前修改。"] },
       ],
     },
     {
@@ -152,6 +152,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       blocks: [
         { title: "方案與期間", items: ["提供月方案、季方案與年方案。", "實際價格、期間及權限請至「訂閱方案與收費標準」查看。"] },
         { title: "權限內容", items: [...MATRIX_PRO_COMMON_FEATURES, "依訂閱方案顯示 Matrix 天衍、Matrix 天工權限。"] },
+        { title: "付款與續訂", items: [SUBSCRIPTION_PAYMENT_NOTICE, "可前往「我的」查看付款紀錄與管理訂閱。"] },
       ],
     },
     {

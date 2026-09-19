@@ -462,7 +462,7 @@ describe("production member shell", () => {
     expect(getComputedStyle(resultCount!).color).toBe("rgb(167, 216, 234)");
     expect(getComputedStyle(resultNumber!).color).toBe("rgb(242, 245, 248)");
     expect(getComputedStyle(tableHead!).paddingTop).toBe("8px");
-    expect(getComputedStyle(tableHead!).marginBottom).toBe("4px");
+    expect(getComputedStyle(tableHead!).marginBottom).toBe("0px");
     expect(getComputedStyle(tableHeadLabel!).fontSize).toBe("12px");
     expect(getComputedStyle(tableHeadLabel!).fontWeight).toBe("800");
     expect(previewCss).toMatch(/\.explore-result-preview-screen\.matrix-explore-main-screen \.road-results-head > span\s*\{[^}]*font-size:\s*12px;[^}]*font-size:\s*clamp\(11px,\s*3\.08vw,\s*12px\)/s);

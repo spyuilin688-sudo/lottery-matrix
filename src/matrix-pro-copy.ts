@@ -7,4 +7,4 @@ export const MATRIX_PRO_COMMON_FEATURES = [
   "Matrix Pro - 專屬推播通知",
 ] as const;
 
-export const MANUAL_SUBSCRIPTION_NOTICE = "目前採手動轉帳，不會自動扣款；自動續訂尚未開放。";
+export const SUBSCRIPTION_PAYMENT_NOTICE = "Matrix Pro 訂閱付款將採用綠界金流；綠界付款與自動續訂尚未開放。";
