@@ -278,7 +278,7 @@ describe('Matrix Storage presentation', () => {
     const row = item(matrixStorageFixture());
     expect(getMatrixStorageFacts(row, 'summary')).toEqual([{ label: '資料庫大小', value: '2.50 GB' }]);
     expect(getMatrixStorageFacts(row)).toEqual(expect.arrayContaining([
-      { label: '探索大小', value: '120.00 MB' }, { label: '天衡大小', value: '80.00 MB' },
+      { label: '探索大小', value: '120.00 MB' }, { label: '天衡大小', value: '80.00 MB' }, { label: '天樞大小', value: '40.00 MB' },
       { label: '成品大小', value: '1.20 GB' }, { label: '分塊大小', value: '900.00 MB' },
       { label: '啟用版本數', value: '24' }, { label: '已取代列數', value: '15' },
       { label: '逾期可刪列數', value: '10' }, { label: '最近清理', value: '2026-09-12T01:00:30Z', format: 'date' },

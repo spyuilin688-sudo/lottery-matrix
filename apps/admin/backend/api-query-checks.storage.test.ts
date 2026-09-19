@@ -13,6 +13,7 @@ describe('stored result evidence and representative validation', () => {
   it.each([
     ['explore', 'matrix_explore_results', 2605, 2],
     ['tianheng', 'matrix_tianheng_results', 731, 3],
+    ['tianshu', 'matrix_tianshu_results', 419, 3],
   ] as const)('reports the persisted %s count and validates one representative per road type', async (kind, table, storedRecords, explorePeriods) => {
     const validationIds: string[] = [];
     const countRequests: URL[] = [];

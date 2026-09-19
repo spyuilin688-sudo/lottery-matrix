@@ -1,4 +1,4 @@
-name: Matrix latest-period analysis v11
+name: Matrix latest-period analysis
 
 on:
   # Manual emergency recovery only. Railway owns the production schedule and
