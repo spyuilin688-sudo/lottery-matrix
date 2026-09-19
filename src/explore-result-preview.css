@@ -280,6 +280,19 @@
   --explore-validation-five-number-padding: clamp(1px, calc((100% - 125px) / 2), 4px);
 }
 
+/* At 320px, reserve room for seven numbers, including three locks plus a
+   separate reference highlight. Return spare width to the formula column. */
+.tianheng-validation-process .explore-validation-group[data-wide-numbers="true"] {
+  --explore-validation-wide-formula-column: clamp(89px, calc(100vw - 231px), 112px);
+  --explore-validation-wide-number-columns: repeat(6, minmax(max-content, 1fr)) max-content;
+  --explore-validation-wide-number-padding: clamp(1px, calc((100vw - 343px) / 5 + 1px), 3px);
+  --explore-validation-number-padding: clamp(0px, calc((100vw - 343px) / 10), 1px);
+  --explore-validation-special-margin: clamp(.5px, calc((100vw - 343px) / 5 + .5px), 2px);
+  --explore-validation-special-gap: clamp(.5px, calc((100vw - 343px) / 5 + .5px), 2.5px);
+  --explore-validation-formula-gap: clamp(.25px, calc((100vw - 320px) / 25 + .25px), 2px);
+  --explore-validation-formula-padding: clamp(1px, calc((100vw - 320px) / 15 + 1px), 2px);
+}
+
 .explore-validation-rule-set {
   display: flex;
   min-width: 0;
@@ -447,7 +460,7 @@
 
 .explore-validation-group:is([data-lottery="六合彩"], [data-lottery="大樂透"]) {
   --explore-validation-number-font-size: 12px;
-  grid-template-columns: max-content minmax(0, 1fr) minmax(clamp(92px, calc(27vw + 4px), 112px), 112px);
+  grid-template-columns: max-content minmax(0, 1fr) var(--explore-validation-wide-formula-column, minmax(clamp(92px, calc(27vw + 4px), 112px), 112px));
 }
 
 .explore-validation-group:is([data-lottery="今彩539"], [data-lottery="天天樂"]) {
@@ -544,7 +557,7 @@
   height: clamp(17px, 4.87vw, 19px);
   min-width: clamp(17px, 4.87vw, 19px);
   aspect-ratio: 1;
-  padding: 0 1px;
+  padding: 0 var(--explore-validation-number-padding, 1px);
   border: 1px solid transparent;
   border-radius: 3px;
   color: inherit;
@@ -575,7 +588,7 @@
   align-items: center;
   justify-self: end;
   margin-left: 2.5px;
-  gap: 2.5px;
+  gap: var(--explore-validation-special-gap, 2.5px);
 }
 
 .explore-validation-number--source,
@@ -657,7 +670,7 @@
   justify-content: center;
   height: auto;
   min-height: var(--explore-validation-row-min-height);
-  padding: 2px;
+  padding: 2px var(--explore-validation-formula-padding, 2px);
   color: #bac5d2;
   background: transparent;
   overflow-wrap: normal;
@@ -669,10 +682,10 @@
 }
 
 .explore-validation-group[data-wide-numbers="true"] .explore-validation-numbers {
-  grid-template-columns: repeat(6, minmax(0, 1fr)) max-content;
+  grid-template-columns: var(--explore-validation-wide-number-columns, repeat(6, minmax(0, 1fr)) max-content);
   grid-auto-columns: clamp(16px, 4.36vw, 17px);
   gap: 0;
-  padding-inline: 3px;
+  padding-inline: var(--explore-validation-wide-number-padding, 3px);
 }
 
 .explore-validation-group[data-wide-numbers="true"] .explore-validation-number,
@@ -744,7 +757,7 @@
   display: inline-flex;
   align-items: baseline;
   justify-content: center;
-  gap: 2px;
+  gap: var(--explore-validation-formula-gap, 2px);
   color: #e4c980;
   font-family: inherit;
   font-variant-numeric: tabular-nums;
@@ -814,11 +827,6 @@
 @media (max-width: 350px) {
   .explore-validation-groups {
     padding-inline: 0;
-  }
-
-  .explore-validation-group[data-wide-numbers="true"] .explore-validation-numbers {
-    gap: 0;
-    padding-inline: 3px;
   }
 }
 
