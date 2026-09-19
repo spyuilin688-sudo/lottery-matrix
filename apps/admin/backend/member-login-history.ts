@@ -1,10 +1,13 @@
+import { normalizeClientIp } from '../shared/admin-client-ip';
+
 type Row = Record<string, unknown>;
 type Requester = { request<T = unknown>(path: string, init?: RequestInit): Promise<T> };
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export const normalizeIpAddress = (value: unknown) => {
   if (typeof value !== 'string') return null;
   const first = value.split(',')[0]?.trim() ?? '';
-  return first && /^[0-9a-f:.]+$/i.test(first) ? first : null;
+  // A lost visitor IP cannot be recovered by selecting a later proxy address.
+  return normalizeClientIp(first);
 };
 const taiwanCities: Record<string, string> = { Taipei: '台北市', 'New Taipei': '新北市', 'New Taipei City': '新北市', Taoyuan: '桃園市', Taichung: '台中市', Tainan: '台南市', Kaohsiung: '高雄市', Keelung: '基隆市', Hsinchu: '新竹市', Chiayi: '嘉義市' };
 export function locationLabel(row: Row | undefined): string | null {

@@ -1,6 +1,7 @@
 {
   "imports": {
     "@appdeploy/sdk": "./runtime.ts",
+    "../../../apps/admin/shared/admin-client-ip": "../../../apps/admin/shared/admin-client-ip.ts",
     "../../../apps/admin/backend/admin-data": "../../../apps/admin/backend/admin-data.ts",
     "../../../apps/admin/backend/push-notifications": "../../../apps/admin/backend/push-notifications.ts",
     "../../../apps/admin/backend/admin-todos": "../../../apps/admin/backend/admin-todos.ts",

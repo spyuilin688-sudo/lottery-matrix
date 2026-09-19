@@ -1,5 +1,5 @@
 import { createSecurityMonitor } from './security-monitor';
-import { listMemberLoginHistory } from './member-login-history';
+import { listMemberLoginHistory, normalizeIpAddress } from './member-login-history';
 import { db, error, json, requireAuth, router, secrets } from '@appdeploy/sdk';
 import {
   AdminAccessError,
@@ -34,6 +34,7 @@ type Context = {
   body?: unknown;
   query?: Record<string, string>;
   event?: {
+    clientIp?: string;
     headers?: Record<string, string | undefined>;
     requestContext?: { http?: { sourceIp?: string } };
   };
@@ -84,7 +85,8 @@ const fail = (cause: unknown) => {
   return error(value.message || 'Forbidden', value.statusCode || 403);
 };
 const requestMetadata = (ctx: Context) => ({
-  ip: String(ctx.event?.requestContext?.http?.sourceIp || ctx.event?.headers?.['x-forwarded-for'] || ''),
+  ip: normalizeIpAddress(ctx.event?.clientIp
+    ?? (ctx.event?.requestContext?.http?.sourceIp || ctx.event?.headers?.['x-forwarded-for'])) ?? '',
   device: String(ctx.event?.headers?.['user-agent'] || ''),
 });
 const actorOf = (admin: { id?: string; account?: string; name?: string; role?: string }) => ({

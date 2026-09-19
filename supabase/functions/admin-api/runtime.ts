@@ -1,11 +1,13 @@
+import { verifyClientIp } from '../../../apps/admin/shared/admin-client-ip.ts';
+
 // Narrow Fetch-runtime seam for the canonical apps/admin/backend modules.
-// This adapter never treats forwarding headers as a trusted visitor identity.
+// Only signed proxy metadata is used for location; forwarding chains remain untrusted.
 export type SdkResponse = { statusCode: number; headers: Record<string, string>; body: string };
 export type RuntimeContext = {
   body?: Record<string, unknown>;
   query: Record<string, string>;
   params: Record<string, string>;
-  event: { headers: Record<string, string> };
+  event: { headers: Record<string, string>; clientIp: string };
   user?: { email: string; id: string };
 };
 type Middleware = (ctx: RuntimeContext) => unknown | Promise<unknown>;
@@ -124,9 +126,16 @@ export function router(routes: Record<string, unknown>): (request: Request) => P
         const value = request.headers.get(name);
         if (value !== null) headers[name] = value;
       }
+      let clientIp = '';
+      if (request.headers.has('x-matrix-client-ip')) {
+        try {
+          clientIp = await verifyClientIp(request, path + new URL(request.url).search,
+            await secrets.readSecret('MATRIX_ADMIN_PROXY_SECRET')) ?? '';
+        } catch { /* Missing or invalid location metadata must not prevent login. */ }
+      }
       const ctx: RuntimeContext = {
         params, query: Object.fromEntries(new URL(request.url).searchParams),
-        event: { headers }, body: await readBody(request),
+        event: { headers, clientIp }, body: await readBody(request),
       };
       for (const middleware of route.handlers) {
         const result = await middleware(ctx);

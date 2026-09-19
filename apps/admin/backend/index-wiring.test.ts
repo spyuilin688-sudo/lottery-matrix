@@ -817,6 +817,26 @@ describe('payment reversal route wiring', () => {
 
 
 describe('security login wiring', () => {
+  it.each(['203.0.113.7', ''])('persists verified location IP "%s" without falling back to proxy headers', async (clientIp) => {
+    const login = wiring.createAdminCredentialAuth.mock.results[0].value.login;
+    login.mockResolvedValueOnce({ admin: wiring.admin, token: 'test-session', loginRecordId: 'login-ip-test' });
+    wiring.shouldRecordAdminActivity.mockReturnValueOnce(true);
+    wiring.insertRows.mockClear();
+    const handler = routes['POST /api/admin-login'][0] as (ctx: unknown) => Promise<unknown>;
+    const response = await handler({
+      params: {}, body: { account: 'operator', password: 'test-password' },
+      event: {
+        clientIp,
+        headers: { 'user-agent': 'test-device', 'x-forwarded-for': '2a06:98c0:3600::103, 13.248.115.52' },
+        requestContext: { http: { sourceIp: '13.248.115.52' } },
+      },
+    });
+    expect(response).toMatchObject({ status: 200 });
+    expect(wiring.insertRows).toHaveBeenCalledWith('admin_login_records', [expect.objectContaining({
+      id: 'login-ip-test', ip: clientIp, device: 'test-device',
+    })]);
+  });
+
   it('returns 429 before password verification', async () => {
     const login = wiring.createAdminCredentialAuth.mock.results[0].value.login;
     login.mockClear();
