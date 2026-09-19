@@ -28,6 +28,7 @@ export type WatchdogStatus = {
   optimizer?: OptimizerReport;
   checkedAt: string;
   completedAt: string;
+  nextCheckAt?: string;
   dueLotteries: WatchdogStatusAction['lottery'][];
   actions: WatchdogStatusAction[];
   error?: 'STATUS_UNAVAILABLE' | 'WATCHDOG_FAILED' | 'WATCHDOG_STATUS_WRITE_FAILED';
@@ -105,6 +106,11 @@ export function sanitizeWatchdogStatus(value: unknown): WatchdogStatus {
     dueLotteries: safeDueLotteries(source.dueLotteries),
     actions: safeActions(source.actions),
   };
+  const nextCheck = typeof source.nextCheckAt === 'string' ? Date.parse(source.nextCheckAt) : NaN;
+  const checked = Date.parse(checkedAt);
+  if (Number.isFinite(nextCheck) && nextCheck > checked && nextCheck <= checked + 10 * 86400000) {
+    result.nextCheckAt = new Date(nextCheck).toISOString();
+  }
   if (Array.isArray(source.reports)) {
     result.reports = sanitizeChainReports(source.reports);
     if (result.reports.length !== 4 || result.reports.some(r => r.state !== 'PASS')) result.status = 'degraded';
@@ -151,4 +157,16 @@ export function createWatchdogStatusStore(database: WatchdogStatusDatabase) {
       }
     },
   };
+}
+
+// Old records retain their conservative 18-minute limit until a new run supplies
+// a calendar-derived checkpoint. Both the API and panel use this same verdict.
+export function watchdogFreshness(value: WatchdogStatus, now: Date): 'fresh' | 'stale' | 'invalid' {
+  const completed = Date.parse(value.completedAt);
+  const current = now.getTime();
+  if (!Number.isFinite(completed) || !Number.isFinite(current) || completed > current + 120000) return 'invalid';
+  const status = sanitizeWatchdogStatus(value);
+  const next = status.nextCheckAt ? Date.parse(status.nextCheckAt) : NaN;
+  const deadline = Math.max(completed + 18 * 60000, Number.isFinite(next) ? next + 8 * 60000 : 0);
+  return current > deadline ? 'stale' : 'fresh';
 }

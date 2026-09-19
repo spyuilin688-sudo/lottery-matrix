@@ -4,7 +4,8 @@ import { notificationCalendarStatusId, parseNotificationCalendarStatus } from '.
 import { nativeNotificationStatusId, nativeNotificationWarning, parseNativeNotificationHealth } from './native-notification-status';
 import type { SupabaseConfig } from './supabase';
 import type { RailwayLatestAnalysis, WorkerStatus } from './worker-api';
-import type { WatchdogStatus } from './watchdog-status';
+import { watchdogFreshness, type WatchdogStatus } from './watchdog-status';
+import { WATCHDOG_PHASES } from './watchdog';
 import { createApiQueryChecks, queryCheckIds } from './api-query-checks';
 import { parseSettings } from './permission-settings';
 import { operationActivity, operationSources, protectedResultKinds, resultDataEvidence } from './service-evidence';
@@ -54,19 +55,17 @@ const jobDefinitions = [
 const jobStatuses = ['running', 'waiting_source', 'success', 'failed'] as const;
 const retryableIds = new Set(['railway-health', 'railway-jobs-status']);
 const githubApiUrl = 'https://api.github.com';
-const watchdogFreshnessMs = 18 * 60 * 1000;
-const watchdogAllowedFutureSkewMs = 2 * 60 * 1000;
 const defaultRequestTimeoutMs = 10_000;
 // Match watchdog.ts JOB_STALE_MS: a running crawler uses its latest heartbeat.
 const jobStaleMs = 20 * 60 * 1000;
 const watchdogScheduleDetail = {
   physicalCronIntervalMinutes: 10,
-  freshnessThresholdMinutes: 18,
-  logicalPhases: [
-    { intervalMinutes: 6, checks: 50 },
-    { intervalMinutes: 10, checks: 60 },
-    { intervalMinutes: 30, checks: 18 },
-  ],
+  fallbackFreshnessThresholdMinutes: 18,
+  checkpointGraceMinutes: 8,
+  logicalPhases: WATCHDOG_PHASES.map(({first,last,every}) => ({
+    firstMinute: first, lastMinute: last, intervalMinutes: every,
+    checks: (last - first) / every + 1,
+  })),
 } as const;
 const nullableString = (value: unknown): string | null => typeof value === 'string' ? value : null;
 
@@ -117,6 +116,7 @@ const safeWatchdogDetail = (status: WatchdogStatus) => ({
   status: status.status,
   checkedAt: status.checkedAt,
   completedAt: status.completedAt,
+  ...(status.nextCheckAt ? { nextCheckAt: status.nextCheckAt } : {}),
   dueLotteries: [...status.dueLotteries],
   actions: status.actions.map(({ lottery, target, reasons, outcome }) => ({
     lottery, target, reasons: [...reasons], outcome,
@@ -250,12 +250,12 @@ export function createConnectionStatus(dependencies: Dependencies) {
         const heartbeat = await withDeadline(async () => dependencies.loadWatchdogStatus?.());
         if (!heartbeat) return finish(false, undefined, '尚無自動監控執行紀錄');
         detail = safeWatchdogDetail(heartbeat);
-        const ageMs = now().getTime() - Date.parse(heartbeat.completedAt);
-        if (!Number.isFinite(ageMs) || ageMs < -watchdogAllowedFutureSkewMs) {
+        const freshness = watchdogFreshness(heartbeat, now());
+        if (freshness === 'invalid') {
           return finish(false, detail, '自動監控的執行時間異常');
         }
-        if (ageMs > watchdogFreshnessMs) {
-          return finish(false, detail, '自動監控已超過 18 分鐘未完成更新');
+        if (freshness === 'stale') {
+          return finish(false, detail, '自動監控未在預期檢查時間內完成更新');
         }
         if (heartbeat.status !== 'ok') {
           return { ...finish(false, detail, '資料鏈尚未全部驗證完成'), healthState: heartbeat.reports?.some(r => r.state === 'FAIL') ? 'failed' : heartbeat.reports?.some(r => r.state === 'UNKNOWN') ? 'unknown' : heartbeat.reports?.some(r => r.state === 'WAITING') ? 'waiting' : 'failed' };

@@ -50,7 +50,7 @@ const ANALYSIS_STALE_MS = 45 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 8_000;
 const RECOVERY_LEASE_SECONDS = 20 * 60;
 const PHYSICAL_TICK_MINUTES = 10;
-const WATCHDOG_PHASES = [
+export const WATCHDOG_PHASES = [
   { first: 10, last: 90, every: 10 },
   { first: 120, last: 300, every: 30 },
   { first: 360, last: 1_380, every: 60 },
@@ -237,6 +237,28 @@ export function expectedDrawDateForDueWindow(
     if (hasDueCheckpoint) return dateText(cycleDay);
   }
   return null;
+}
+
+// Reuse the same calendar and checkpoints as recovery; this never changes Cron.
+export function nextWatchdogCheckAt(snapshots: WatchdogSnapshot[], at: Date): string | undefined {
+  let next = Number.POSITIVE_INFINITY;
+  const local = taipeiParts(at);
+  for (const snapshot of snapshots) {
+    if (snapshot.unavailable || !snapshot.drawDays) continue;
+    for (let offset = -1; offset <= 9; offset += 1) {
+      const day = addDays(local, offset);
+      if (!isRecoveryCycleDay(snapshot.lottery, day, snapshot.drawDays)) continue;
+      const [hour, minute] = callClock(snapshot.lottery, day);
+      const base = taipeiInstant(day, hour, minute);
+      const nextPrimary = nextPrimaryInstant(snapshot.lottery, day, snapshot.drawDays);
+      for (const checkpoint of WATCHDOG_CHECKPOINT_MINUTES) {
+        if (!checkpointAllowed(snapshot.lottery, day, checkpoint)) continue;
+        const due = base + checkpoint * 60_000;
+        if (due > at.getTime() && due < nextPrimary) next = Math.min(next, due);
+      }
+    }
+  }
+  return Number.isFinite(next) ? new Date(next).toISOString() : undefined;
 }
 
 function minimumExpectedDrawDate(lottery: WatchdogLottery, expectedDate: string): string {
@@ -647,6 +669,7 @@ export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
         status: degraded ? 'degraded' : 'ok',
         checkedAt: at.toISOString(),
         dueLotteries,
+        nextCheckAt: nextWatchdogCheckAt(snapshots, at),
         actions: results,
         reports,
         railway,
