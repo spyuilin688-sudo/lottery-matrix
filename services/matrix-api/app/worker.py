@@ -38,7 +38,7 @@ EXPLORE_BATCH_SIZE = 10
 MAX_CYCLES_PER_INVOCATION = 450
 MAX_FAILURES_PER_INVOCATION = 3
 RETRY_BACKOFF_SECONDS = (15.0, 45.0)
-ANALYSIS_VERSION = "matrix-python-v14"
+ANALYSIS_VERSION = "matrix-python-v15"
 
 
 def analysis_version_for_order(period: str, number_order: str = SORTED_ORDER) -> str:
@@ -388,6 +388,7 @@ def _restore_stage_results(repository: AnalysisRepository, lottery: str, period:
     if not repository.has_explore_results(lottery, period, version):
         repository.restore_completed_results(lottery, period, version, "explore")
     repository.restore_completed_results(lottery, period, version, "tianheng")
+    repository.restore_completed_results(lottery, period, version, "tianshu")
 
 
 def _resume_stored_analysis(

@@ -8,17 +8,18 @@ from app.domain.explore_state import DRAW_ORDER
 from app.domain.history_boundaries import period_sort_key
 from app.repositories.analysis_repository import (
     ANALYSIS_RUN_LEASE_SECONDS,
-    ARTIFACT_KINDS,
     AnalysisRepository,
+    required_artifact_kinds,
 )
 from app.repositories.artifact_chunks import chunk_manifest
 
 
 ArtifactBuilder = Callable[[dict[str, Any]], Any]
-PHASES = ("explore", "tianheng", "tianyan", "tiangong", "status")
-BATCHED_PHASES = frozenset({"explore", "tianheng"})
+PHASES = ("explore", "tianheng", "tianshu", "tianyan", "tiangong", "status")
+BATCHED_PHASES = frozenset({"explore", "tianheng", "tianshu"})
 PHASE_DEPENDENCIES = {
     "tianheng": (),
+    "tianshu": (),
     "tianyan": ("explore",),
     "tiangong": (),
     "status": ("explore", "tianyan"),
@@ -37,10 +38,12 @@ class AnalysisPipeline:
         *,
         number_orders: tuple[str, ...] | None = None,
     ) -> None:
-        if set(builders) != ARTIFACT_KINDS:
+        required_kinds = required_artifact_kinds(analysis_version)
+        if set(builders) != required_kinds:
             raise ValueError("ANALYSIS_BUILDERS_INCOMPLETE")
         self.repository = repository
         self.builders = builders
+        self.phases = tuple(phase for phase in PHASES if phase in required_kinds)
         self.analysis_version = analysis_version
         self.explore_batch_size = max(1, explore_batch_size)
         self.owner_id = uuid4().hex
@@ -74,9 +77,9 @@ class AnalysisPipeline:
                    "numberOrders": allowed_number_orders(lottery, self.number_orders)}
         try:
             self._require_history_snapshot(run, history)
-            phase_total = len(PHASES)
-            resume_phase_index = PHASES.index(run["phase"]) if run.get("phase") in PHASES else 0
-            for phase_index, phase in enumerate(PHASES):
+            phase_total = len(self.phases)
+            resume_phase_index = self.phases.index(run["phase"]) if run.get("phase") in self.phases else 0
+            for phase_index, phase in enumerate(self.phases):
                 if phase in BATCHED_PHASES:
                     if phase_index < resume_phase_index:
                         if self.repository.has_artifact(
@@ -112,6 +115,10 @@ class AnalysisPipeline:
                                 self._save_tianheng_results(
                                     lottery, period, self.analysis_version, payload,
                                 )
+                            elif phase == "tianshu":
+                                self._save_tianshu_results(
+                                    lottery, period, self.analysis_version, payload,
+                                )
                         elif not checkpoint.get("complete"):
                             raise RuntimeError("ANALYSIS_CHECKPOINT_MADE_NO_PROGRESS")
                         self._update_progress(
@@ -135,7 +142,7 @@ class AnalysisPipeline:
                             lottery, period, self.analysis_version, phase, manifest,
                         )
                         context["artifacts"][phase] = materialized
-                        next_phase = PHASES[phase_index + 1]
+                        next_phase = self.phases[phase_index + 1]
                         self._update_progress(
                             lottery, period, self.analysis_version,
                             next_phase,
@@ -288,6 +295,13 @@ class AnalysisPipeline:
     def _save_tianheng_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any) -> None:
         self._require_lease(lottery, draw_period)
         self.repository.save_tianheng_results(
+            lottery, draw_period, analysis_version, payload,
+            owner_id=self.owner_id, run_started_at=self._run_started_at,
+        )
+
+    def _save_tianshu_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any) -> None:
+        self._require_lease(lottery, draw_period)
+        self.repository.save_tianshu_results(
             lottery, draw_period, analysis_version, payload,
             owner_id=self.owner_id, run_started_at=self._run_started_at,
         )

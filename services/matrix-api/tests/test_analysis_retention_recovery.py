@@ -9,6 +9,7 @@ from app.repositories.analysis_repository import (
     ARTIFACT_KINDS,
     InMemoryAnalysisRepository,
     SupabaseAnalysisRepository,
+    required_artifact_kinds,
 )
 from app.repositories.artifact_chunks import chunk_manifest
 from app.services.analysis_pipeline import AnalysisPipeline
@@ -27,8 +28,8 @@ def seed_complete(repository, lottery, period, draw_date, version=None):
     }
     repository.upsert_draw(draw)
     repository.begin_run(lottery, period, version, (NOW - timedelta(days=10)).isoformat())
-    for kind in ARTIFACT_KINDS:
-        artifact = {"items": [], "validationById": {}} if kind == "tianheng" else PAYLOAD
+    for kind in required_artifact_kinds(version):
+        artifact = {"items": [], "validationById": {}} if kind in {"tianheng", "tianshu"} else PAYLOAD
         repository.save_artifact(lottery, period, version, kind, artifact)
     repository.save_artifact_chunk(lottery, period, version, "explore", 0, 0, 1, PAYLOAD)
     repository.save_artifact(lottery, period, version, "explore", chunk_manifest(1, 1, 1, 1))
@@ -65,7 +66,7 @@ def test_cleanup_keeps_latest_three_completed_periods_and_running_checkpoints():
 
     # The previous unsuffixed version is not an active pointer. Its seven
     # expired records now lose the old period-wide protection as well.
-    assert repository.cleanup_expired(NOW) == 28
+    assert repository.cleanup_expired(NOW) == 31
     assert {key[:2] for key in repository.artifacts} == {
         ("六合彩", "026093"), ("六合彩", "026094"), ("六合彩", "026095"),
         ("六合彩", "026090"), ("天天樂", "260901"),
@@ -186,7 +187,7 @@ def test_inmemory_cleanup_bounds_each_table_and_retires_historical_manifest_poin
         repository.artifact_chunks[(*prefix, "explore", i)] = {"expiresAt": NOW - timedelta(days=1)}
     for artifact in repository.artifacts.values():
         artifact["expiresAt"] = NOW - timedelta(days=1)
-    assert repository.cleanup_expired(NOW) == 12005
+    assert repository.cleanup_expired(NOW) == 12006
     assert ("天天樂", "100", "sorted") not in repository.active_versions
     assert prefix in repository.runs
     assert sum(key[:3] == prefix for key in repository.explore_results) == 2
@@ -270,7 +271,7 @@ def test_workers_rebuild_missing_artifacts_and_preserve_valid_results(analysis_o
 def complete_owned(repository, lottery, period, version):
     started = datetime.now(UTC).isoformat()
     repository.begin_run(lottery, period, version, started, owner_id="worker")
-    for kind in ARTIFACT_KINDS:
+    for kind in required_artifact_kinds(version):
         repository.save_artifact(lottery, period, version, kind, {}, owner_id="worker", run_started_at=started)
     repository.complete_run(lottery, period, version, started, owner_id="worker")
     return repository.runs[(lottery, period, version)]

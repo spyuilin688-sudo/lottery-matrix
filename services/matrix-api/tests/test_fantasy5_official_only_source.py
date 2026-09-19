@@ -130,7 +130,7 @@ class Fantasy5PredrawRepairSource:
 def _test_builders() -> dict:
     return {
         kind: (lambda context, kind=kind: {"kind": kind})
-        for kind in ("explore", "tianheng", "tianyan", "tiangong", "status")
+        for kind in ("explore", "tianheng", "tianshu", "tianyan", "tiangong", "status")
     }
 
 

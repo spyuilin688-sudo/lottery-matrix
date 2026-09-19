@@ -2253,6 +2253,9 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .product-header[data-product-header="Matrix 天衡"] {
   --product-header-background: url("/assets/lottery/headers/tianheng.webp");
 }
+.product-header[data-product-header="Matrix 天樞"] {
+  --product-header-background: url("/assets/lottery/headers/tianshu.webp");
+}
 .product-header[data-product-header="Matrix 探索"] {
   --product-header-background: url("/assets/lottery/headers/explore.webp");
 }

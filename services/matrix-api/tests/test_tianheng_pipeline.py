@@ -18,7 +18,7 @@ DRAW = {
     "lottery": "今彩539", "period": "114001",
     "numbers": ["01", "02", "03", "04", "05"],
 }
-VERSION = "114001:matrix-python-v14-sorted"
+VERSION = "114001:matrix-python-v15-sorted"
 
 
 def empty_artifact():
@@ -89,6 +89,14 @@ def builders(calls=None):
         assert context["artifacts"]["explore"]["items"][0]["id"] == "ex_test"
         return empty_artifact()
 
+    def tianshu(context):
+        start = context["tianshuBatch"]["start"]
+        calls.append(("tianshu", start))
+        return {"artifact": empty_artifact(), "_checkpoint": {
+            "cursorStart": start, "cursor": start + 1,
+            "total": 1, "complete": True,
+        }}
+
     def tiangong(context):
         calls.append(("tiangong", None))
         return empty_artifact()
@@ -99,13 +107,13 @@ def builders(calls=None):
             context["artifacts"]["explore"], context["artifacts"]["tianyan"],
         )
 
-    return {"explore": explore, "tianheng": tianheng, "tianyan": tianyan,
+    return {"explore": explore, "tianheng": tianheng, "tianshu": tianshu, "tianyan": tianyan,
             "tiangong": tiangong, "status": status}
 
 
 def test_tianheng_is_required_immediately_after_explore():
     assert "tianheng" in ARTIFACT_KINDS
-    assert PHASES == ("explore", "tianheng", "tianyan", "tiangong", "status")
+    assert PHASES == ("explore", "tianheng", "tianshu", "tianyan", "tiangong", "status")
 
 
 def test_pipeline_checkpoints_and_resumes_tianheng_without_rerunning_explore():
@@ -124,7 +132,7 @@ def test_pipeline_checkpoints_and_resumes_tianheng_without_rerunning_explore():
     resumed = AnalysisPipeline(repository, builders(calls), VERSION, explore_batch_size=1)
     result = resumed.run(DRAW, [])
     assert result["status"] == "complete"
-    assert calls == [("explore", 0), ("tianheng", 0), ("tianheng", 1),
+    assert calls == [("explore", 0), ("tianheng", 0), ("tianheng", 1), ("tianshu", 0),
                      ("tianyan", None), ("tiangong", None), ("status", None)]
     artifact = repository.read_artifact("今彩539", "114001", VERSION, "tianheng")
     assert [item["id"] for item in artifact["items"]] == ["th_0", "th_1"]
@@ -340,7 +348,7 @@ def test_completed_workers_restore_each_missing_normalized_result_set(monkeypatc
     draw = {**DRAW, "lottery": lottery}
     repository.upsert_draw(draw)
     repository.begin_run(lottery, "114001", VERSION, datetime.now(UTC).isoformat())
-    for kind in ("explore", "tianheng", "tianyan", "tiangong", "status"):
+    for kind in ("explore", "tianheng", "tianshu", "tianyan", "tiangong", "status"):
         payload = explore_artifact() if kind == "explore" else (
             two_tianheng_artifacts() if kind == "tianheng" and existing == "partial-tianheng" else
             tianheng_artifact() if kind == "tianheng" else empty_artifact()

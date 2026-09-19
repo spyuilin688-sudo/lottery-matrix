@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import combinations
 from typing import Mapping
 
 from .explore_context import (
@@ -20,6 +21,8 @@ class TianhengLockKey:
     first_number: int
     second_position: int
     second_number: int
+    third_position: int | None = None
+    third_number: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,6 +33,8 @@ class TianhengLockOccurrence:
     first_number: int
     second_position: int
     second_number: int
+    third_position: int | None = None
+    third_number: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,8 +64,11 @@ class TianhengRoadGroup:
 
 
 class TianhengContext:
-    def __init__(self, explore: ExploreContext) -> None:
+    def __init__(self, explore: ExploreContext, lock_count: int = 2) -> None:
+        if lock_count not in {2, 3}:
+            raise AlgorithmError("lockCount必須是2或3")
         self.explore = explore
+        self.lock_count = lock_count
         self.lottery = explore.lottery
         self.number_order = explore.number_order
         self.spec = explore.spec
@@ -70,18 +78,10 @@ class TianhengContext:
         mutable_index: dict[TianhengLockKey, list[TianhengLockOccurrence]] = {}
         for draw_index, draw in enumerate(explore.history):
             numbers = explore.ordered_at(draw_index)
-            for first_index in range(len(numbers) - 1):
-                for second_index in range(first_index + 1, len(numbers)):
-                    occurrence = TianhengLockOccurrence(
-                        draw_index,
-                        str(draw["period"]),
-                        first_index + 1,
-                        numbers[first_index],
-                        second_index + 1,
-                        numbers[second_index],
-                    )
-                    key = self.key_for(occurrence)
-                    mutable_index.setdefault(key, []).append(occurrence)
+            for positions in combinations(range(len(numbers)), lock_count):
+                occurrence = self._occurrence(draw_index, str(draw["period"]), numbers, positions)
+                key = self.key_for(occurrence)
+                mutable_index.setdefault(key, []).append(occurrence)
         self._occurrence_index = {
             key: tuple(value) for key, value in mutable_index.items()
         }
@@ -122,16 +122,27 @@ class TianhengContext:
         numbers = self.explore.ordered_at(draw_index)
         period = str(self.history[draw_index]["period"])
         return tuple(
-            TianhengLockOccurrence(
-                draw_index,
-                period,
-                first_index + 1,
-                numbers[first_index],
-                second_index + 1,
-                numbers[second_index],
-            )
-            for first_index in range(len(numbers) - 1)
-            for second_index in range(first_index + 1, len(numbers))
+            self._occurrence(draw_index, period, numbers, positions)
+            for positions in combinations(range(len(numbers)), self.lock_count)
+        )
+
+    def _occurrence(
+        self,
+        draw_index: int,
+        period: str,
+        numbers: tuple[int, ...],
+        positions: tuple[int, ...],
+    ) -> TianhengLockOccurrence:
+        third_index = positions[2] if self.lock_count == 3 else None
+        return TianhengLockOccurrence(
+            draw_index,
+            period,
+            positions[0] + 1,
+            numbers[positions[0]],
+            positions[1] + 1,
+            numbers[positions[1]],
+            third_index + 1 if third_index is not None else None,
+            numbers[third_index] if third_index is not None else None,
         )
 
     def key_for(self, occurrence: TianhengLockOccurrence) -> TianhengLockKey:
@@ -142,9 +153,19 @@ class TianhengContext:
             occurrence.first_number,
             occurrence.second_position,
             occurrence.second_number,
+            occurrence.third_position,
+            occurrence.third_number,
         )
 
     def _token(self, occurrence: TianhengLockOccurrence) -> int:
+        if occurrence.third_position is not None:
+            return (
+                occurrence.draw_index * self.spec.position_count**3
+                + (occurrence.first_position - 1) * self.spec.position_count**2
+                + (occurrence.second_position - 1) * self.spec.position_count
+                + occurrence.third_position
+                - 1
+            )
         return (
             occurrence.draw_index * self.spec.position_count**2
             + (occurrence.first_position - 1) * self.spec.position_count
@@ -189,10 +210,13 @@ class TianhengContext:
                 self.explore.ordered_at(draw_index),
                 start=1,
             ):
-                if offset == 0 and position in {
+                locked_positions = {
                     occurrence.first_position,
                     occurrence.second_position,
-                }:
+                }
+                if occurrence.third_position is not None:
+                    locked_positions.add(occurrence.third_position)
+                if offset == 0 and position in locked_positions:
                     continue
                 cells.append(
                     VerificationCell(
@@ -308,16 +332,18 @@ class TianhengEngineSession:
     history: tuple[Mapping[str, object], ...]
     contexts: tuple[TianhengContext, ...]
     indexed_units: tuple[tuple[TianhengContext, TianhengSourceUnit], ...]
+    lock_count: int = 2
 
     @classmethod
     def from_explore_session(
         cls,
         session: ExploreEngineSession,
+        lock_count: int = 2,
     ) -> "TianhengEngineSession":
-        contexts = tuple(TianhengContext(context) for context in session.contexts)
+        contexts = tuple(TianhengContext(context, lock_count) for context in session.contexts)
         indexed_units = tuple(
             (context, unit)
             for context in contexts
             for unit in context.source_units
         )
-        return cls(session.lottery, session.history, contexts, indexed_units)
+        return cls(session.lottery, session.history, contexts, indexed_units, lock_count)
