@@ -223,12 +223,12 @@
   --underline-y: 0px;
 }
 
-.home-screen .latest-draw-card .draw-balls[data-has-special="true"] .number-ball-component:is([data-lottery="六合彩"], [data-lottery="大樂透"]) {
+/* Keep Mark Six main balls on the shared 30–34px scale.
+   Its special-number canvas stays at the existing larger size to preserve
+   the current PNG optical size; Grand Lotto keeps the existing 6+1 size. */
+.home-screen .latest-draw-card[data-lottery="六合彩"] .draw-balls[data-has-special="true"] .special-ball-group .number-ball-component[data-special="true"],
+.home-screen .latest-draw-card[data-lottery="大樂透"] .draw-balls[data-has-special="true"] .number-ball-component {
   --number-ball-size: clamp(33.7px, 9.88vw, 38.2px);
-}
-
-.home-screen .latest-draw-card .draw-balls[data-has-special="true"]:is([data-lottery="六合彩"], [data-lottery="大樂透"]) {
-  --draw-special-ball-size: clamp(33.7px, 9.88vw, 38.2px);
 }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special="true"] .number-ball-component[data-lottery="六合彩"] {
