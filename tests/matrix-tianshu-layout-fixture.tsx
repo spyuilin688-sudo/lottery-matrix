@@ -2,7 +2,9 @@
 import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { FeaturePageRouter, type ScreenId } from '../src/FeaturePagesPatched';
+import { readAlgorithmCacheScope } from '../src/auth/algorithm-cache-scope';
 import { AppDialogProvider } from '../src/dialog/AppDialog';
+import { getSupabaseClient } from '../src/lib/supabase';
 import { MobileDeviceProvider } from '../src/mobile/Device';
 import { KeyboardProvider } from '../src/mobile/Keyboard';
 import { MobileScroll } from '../src/mobile/MobileScroll';
@@ -21,21 +23,27 @@ import '../src/matrix-tianheng.css';
 import '../src/feature-page-adjustments.css';
 import '../src/line-pwa-return-fallback.css';
 
-void refreshPermissionSettings().catch(() => {});
-
 function Fixture() {
   const [screen, setScreen] = useState<ScreenId>('tianshu');
   return <FeaturePageRouter screen={screen} onNavigate={setScreen} />;
 }
 
-createRoot(document.getElementById('root')!).render(
-  <AppDialogProvider>
-    <div className="app-mobile-canvas">
-      <MobileDeviceProvider>
-        <KeyboardProvider>
-          <MobileScroll className="app-screen"><Fixture /></MobileScroll>
-        </KeyboardProvider>
-      </MobileDeviceProvider>
-    </div>
-  </AppDialogProvider>,
-);
+async function mountFixture() {
+  await Promise.all([
+    readAlgorithmCacheScope(getSupabaseClient()),
+    refreshPermissionSettings(),
+  ]);
+  createRoot(document.getElementById('root')!).render(
+    <AppDialogProvider>
+      <div className="app-mobile-canvas">
+        <MobileDeviceProvider>
+          <KeyboardProvider>
+            <MobileScroll className="app-screen"><Fixture /></MobileScroll>
+          </KeyboardProvider>
+        </MobileDeviceProvider>
+      </div>
+    </AppDialogProvider>,
+  );
+}
+
+void mountFixture();
