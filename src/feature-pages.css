@@ -2234,23 +2234,119 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .bottom-nav-brand-screen > .feature-body { position: relative; top: auto; margin-bottom: 0; }
 /* All PWA feature titles share the Explore header; homepage branding is separate. */
 .product-header {
+  --product-header-background: url("/assets/lottery/header-gold-arc.svg");
   box-sizing: border-box;
   width: 100%;
   padding: 0 var(--layout-page-inline);
   margin-bottom: var(--layout-section-gap);
   flex: 0 0 auto;
 }
-.product-header[data-header-style="flow"] {
-  --product-header-background: url("/assets/lottery/header-06-flow.svg");
+.product-header[data-product-header="Matrix 天工"] {
+  --product-header-background: url("/assets/lottery/headers/tiangong.webp");
 }
-.product-header[data-header-style="tiangong"] {
-  --product-header-background: url("/assets/lottery/header-tiangong.svg");
+.product-header[data-product-header="我的"] {
+  --product-header-background: url("/assets/lottery/headers/profile.webp");
 }
-.product-header[data-header-style="geometric"] {
-  --product-header-background: url("/assets/lottery/header-07-geometric.svg");
+.product-header[data-product-header="Matrix 天衍"] {
+  --product-header-background: url("/assets/lottery/headers/tianyan.webp");
 }
-.product-header[data-header-style="gold-arc"] {
-  --product-header-background: url("/assets/lottery/header-gold-arc.svg");
+.product-header[data-product-header="Matrix 天衡"] {
+  --product-header-background: url("/assets/lottery/headers/tianheng.webp");
+}
+.product-header[data-product-header="Matrix 天樞"] {
+  --product-header-background: url("/assets/lottery/headers/tianshu.webp");
+}
+.product-header[data-product-header="Matrix 探索"] {
+  --product-header-background: url("/assets/lottery/headers/explore.webp");
+}
+.product-header[data-product-header="Matrix 同星"] {
+  --product-header-background: url("/assets/lottery/headers/tongxing.webp");
+}
+.product-header[data-product-header="號碼對照單"] {
+  --product-header-background: url("/assets/lottery/headers/reference.webp");
+}
+.product-header[data-product-header="歷史開獎號碼"] {
+  --product-header-background: url("/assets/lottery/headers/history.webp");
+}
+.product-header[data-product-header="Matrix 牌單"] {
+  --product-header-background: url("/assets/lottery/headers/matrix-card.webp");
+}
+.product-header[data-product-header="Matrix 指南"] {
+  --product-header-background: url("/assets/lottery/headers/guide.webp");
+}
+.product-header[data-product-header="Matrix 狀態"] {
+  --product-header-background: url("/assets/lottery/headers/status.webp");
+}
+.product-header[data-product-header="自訂觸發條件"],
+.product-header[data-product-header="Matrix 自訂觸發狀態"] {
+  --product-header-background: url("/assets/lottery/headers/status-settings.webp");
+}
+.product-header[data-product-header="Matrix 筆記本"],
+.product-header[data-product-header="記事"],
+.product-header[data-product-header="記事詳細"] {
+  --product-header-background: url("/assets/lottery/headers/notebook.webp");
+}
+.product-header[data-product-header="通知設定"] {
+  --product-header-background: url("/assets/lottery/headers/notifications.webp");
+}
+.product-header[data-product-header="連碰計算機"] {
+  --product-header-background: url("/assets/lottery/headers/combinations.webp");
+}
+.product-header[data-product-header="立柱計算機"] {
+  --product-header-background: url("/assets/lottery/headers/columns.webp");
+}
+.product-header[data-product-header="管理訂閱"] {
+  --product-header-background: url("/assets/lottery/headers/subscription.webp");
+}
+.product-header[data-product-header="付款紀錄"] {
+  --product-header-background: url("/assets/lottery/headers/payment-history.webp");
+}
+.product-header[data-product-header="訂閱方案與收費標準"] {
+  --product-header-background: url("/assets/lottery/headers/pro-plans.webp");
+}
+.product-header[data-product-header="銀行轉帳付款"] {
+  --product-header-background: url("/assets/lottery/headers/bank-transfer.webp");
+}
+.product-header[data-product-header="關於 樂彩 Matrix"] {
+  --product-header-background: url("/assets/lottery/headers/about.webp");
+}
+.product-header[data-product-header="我的推薦碼/啟動碼"] {
+  --product-header-background: url("/assets/lottery/headers/activation.webp");
+}
+.product-header[data-product-header="服務內容與使用說明"] {
+  --product-header-background: url("/assets/lottery/headers/service-info.webp");
+}
+.product-header[data-product-header="退款規範"] {
+  --product-header-background: url("/assets/lottery/headers/refund.webp");
+}
+.product-header[data-product-header="聯絡客服/問題回報/商務合作"] {
+  --product-header-background: url("/assets/lottery/headers/contact.webp");
+}
+.product-header[data-product-header="邀請好友"] {
+  --product-header-background: url("/assets/lottery/headers/invite.webp");
+}
+.product-header[data-product-header="優惠活動"] {
+  --product-header-background: url("/assets/lottery/headers/promotions.webp");
+}
+.product-header[data-product-header="版本資訊/更新紀錄"] {
+  --product-header-background: url("/assets/lottery/headers/version.webp");
+}
+.product-header[data-product-header="會員服務條例"] {
+  --product-header-background: url("/assets/lottery/headers/terms.webp");
+}
+.product-header[data-product-header="隱私權政策"] {
+  --product-header-background: url("/assets/lottery/headers/privacy.webp");
+}
+.product-header[data-product-header="聲明與免責事項"] {
+  --product-header-background: url("/assets/lottery/headers/disclaimer.webp");
+}
+/* Keep longer copy legible over the approved artwork without moving its slots. */
+.product-header[data-product-header="通知設定"],
+.product-header[data-product-header="我的推薦碼/啟動碼"],
+.product-header[data-product-header="服務內容與使用說明"],
+.product-header[data-product-header="聯絡客服/問題回報/商務合作"],
+.product-header[data-product-header="版本資訊/更新紀錄"] {
+  --product-header-background-shade: linear-gradient(90deg, transparent 30%, rgba(2, 6, 9, .72) 48%, rgba(2, 6, 9, .72) 80%, transparent 100%);
 }
 .product-header__frame {
   position: relative;
@@ -2267,7 +2363,9 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   overflow: hidden;
   border: var(--product-header-frame-border-width, 1px) solid var(--pwa-frame-primary);
   border-radius: var(--product-header-frame-radius, var(--pwa-frame-radius));
-  background: #020609 var(--product-header-background) center / cover no-repeat;
+  background:
+    var(--product-header-background-shade, linear-gradient(transparent, transparent)) center / cover no-repeat,
+    #020609 var(--product-header-background) center / cover no-repeat;
 }
 .product-header__frame[data-actions="true"] {
   --product-header-action-width: var(--product-header-settings-action-width, 60px);
