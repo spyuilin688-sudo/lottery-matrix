@@ -131,6 +131,8 @@ components:
 
 已遷移共用 FeatureShell、歷史與同星工具 shell、通知頁、探索結果預覽及我的所有子頁。移除圖片式標題與舊版品牌列渲染分支、`brand-header-unify.css` 及其他樣式檔的標題尺寸與操作位移規則；舊圖檔保留給未遷移的獨立素材用途，不再用於 PWA 標題。本文不授權修改任何查詢、會員、付款、通知或後端行為。
 
+2026-09-19 窄版可讀性修正：牌單、自訂觸發條件、連碰計算機、立柱計算機、付款紀錄、銀行轉帳付款、關於樂彩 Matrix、退款規範、會員服務條例與隱私權政策沿用 `--product-header-copy-shade` 暗化文字區。通知設定與我的推薦碼／啟動碼的英文副標透過 `--product-header-long-subtitle-tracking` 依既有文字容器寬度收縮字距，寬度足夠時恢復 `.32em`；字級、字型、文字內容、卡片高度、Logo、返回鍵與設定按鈕位置不變。樣式仍由 `src/feature-pages.css` 的既有頁面選擇器及 `.product-header__copy > span` 單獨擁有，不增加覆寫層或 inline style。
+
 ### Navigation and data display
 
 2026-09-13：Matrix 牌單的順球／落球按鈕列左右留白各 18px，按鈕間距 8px、高度 34px。共用 `FeatureShell` 以 `bodyLayout="matrix-card"` 選用牌單網格；彩種、牌單預覽、下載按鈕與狀態訊息位於內容欄，保留左右各 16px；按鈕欄在內容欄兩側各內縮 2px。`src/feature-pages.css` 是唯一排版來源，標準 `.feature-body` 留白規則明確排除牌單網格，不以負外距、位移或行內樣式補償。牌單容器保留 10px 內距、6px 內框與完整等比例圖片，移除舊縮圖尺寸、舊票券裝飾規則及 `matrix-ticket--preview` 覆寫層；下載按鈕沿用共用品牌外觀與 44px 高度。
