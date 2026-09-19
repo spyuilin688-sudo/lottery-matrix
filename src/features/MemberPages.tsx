@@ -1076,7 +1076,6 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
           ]} />
         </CollapsibleRuleCard>
         <CollapsibleRuleCard title="推薦成功獎勵" open={openRules.reward} onToggle={() => toggleRule("reward")}>
-          <p className="referral-rewards-label">Matrix 探索</p>
           <dl className="referral-rewards">
             {[
               { count: 10, feature: "七期", availability: "每週一、二、四、五開放" },
@@ -1086,7 +1085,7 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
             ].map(({ count, feature, availability }) => (
               <div key={count}>
                 <dt>推薦成功滿 <strong>{count}</strong> 人</dt>
-                <dd><span>{feature}</span><span>{availability}</span></dd>
+                <dd><span>Matrix 探索 {feature}</span><span>{availability}</span></dd>
               </div>
             ))}
           </dl>

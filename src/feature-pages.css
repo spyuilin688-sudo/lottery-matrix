@@ -2600,7 +2600,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .referral-code-section {
   --rule-chevron-closed: 90deg;
   --rule-chevron-open: -90deg;
-  --rule-content-padding: 0 0 8px;
+  --rule-content-padding: 8px 0;
   --rule-list-indent: 1em;
 }
 .referral-summary-card,
@@ -2931,7 +2931,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   rotate: var(--rule-chevron-open, 90deg);
 }
 .referral-rule-content {
-  padding: var(--rule-content-padding, 0 16px 16px);
+  padding: var(--rule-content-padding, 8px 16px 16px);
   color: #c9c2b8;
   font-size: 11px;
   line-height: 1.65;
