@@ -1,3 +1,4 @@
+import re
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
@@ -12,7 +13,8 @@ from app.repositories.artifact_chunks import (
 )
 
 
-ARTIFACT_KINDS = {"explore", "tianheng", "tianyan", "tiangong", "status"}
+ARTIFACT_KINDS = {"explore", "tianheng", "tianshu", "tianyan", "tiangong", "status"}
+LEGACY_V14_ARTIFACT_KINDS = ARTIFACT_KINDS - {"tianshu"}
 JOB_NAME_BY_LOTTERY = {
     "今彩539": "matrix-539-refresh-v2",
     "天天樂": "matrix-fantasy5-refresh-v2",
@@ -25,7 +27,18 @@ DRAW_SNAPSHOT_MAX_ATTEMPTS = 3
 ARTIFACT_CHUNK_PAGE_SIZE = 2
 EXPLORE_RESULT_UPSERT_BATCH_SIZE = 100
 TIANHENG_RESULT_UPSERT_BATCH_SIZE = 100
+TIANSHU_RESULT_UPSERT_BATCH_SIZE = 100
 ANALYSIS_RUN_LEASE_SECONDS = 300
+
+
+def required_artifact_kinds(analysis_version: str) -> frozenset[str]:
+    match = re.search(
+        r"(?:^|:)matrix-python-v(?P<version>\d+)(?:-(?:sorted|draw))?$",
+        analysis_version,
+    )
+    if match is None or int(match.group("version")) <= 14:
+        return frozenset(LEGACY_V14_ARTIFACT_KINDS)
+    return frozenset(ARTIFACT_KINDS)
 
 
 class AnalysisRepository(Protocol):
@@ -64,6 +77,14 @@ class AnalysisRepository(Protocol):
         analysis_version: str,
         expected_count: int | None = None,
     ) -> bool: ...
+    def save_tianshu_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any, *, owner_id: str, run_started_at: str) -> None: ...
+    def has_tianshu_results(
+        self,
+        lottery: str,
+        draw_period: str,
+        analysis_version: str,
+        expected_count: int | None = None,
+    ) -> bool: ...
     def read_artifact_chunks(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> list[dict[str, Any]]: ...
     def materialize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> dict[str, Any]: ...
     def summarize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> int: ...
@@ -86,6 +107,7 @@ class InMemoryAnalysisRepository:
         self.artifact_chunks: dict[tuple[str, str, str, str, int], dict[str, Any]] = {}
         self.explore_results: dict[tuple[str, str, str, str], dict[str, Any]] = {}
         self.tianheng_results: dict[tuple[str, str, str, str], dict[str, Any]] = {}
+        self.tianshu_results: dict[tuple[str, str, str, str], dict[str, Any]] = {}
         self.job_statuses: dict[str, dict[str, Any]] = {}
 
     def health_check(self) -> None:
@@ -231,7 +253,7 @@ class InMemoryAnalysisRepository:
                 and (not cutoff or str(row.get("drawDate") or "").replace("/", "-").replace(".", "-") >= cutoff)
             }
             removed_runs = set()
-            for records in (self.runs, self.artifacts, self.artifact_chunks, self.explore_results, self.tianheng_results):
+            for records in (self.runs, self.artifacts, self.artifact_chunks, self.explore_results, self.tianheng_results, self.tianshu_results):
                 for key in list(records):
                     if key[0] == lottery and key[1] in affected and (sorted_changed or not key[2].endswith("-sorted")):
                         if records is self.runs:
@@ -247,7 +269,7 @@ class InMemoryAnalysisRepository:
         return stored
 
     def upsert_draws(self, draws: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        records = (self.draws, self.runs, self.artifacts, self.artifact_chunks, self.explore_results, self.tianheng_results, self.active_versions)
+        records = (self.draws, self.runs, self.artifacts, self.artifact_chunks, self.explore_results, self.tianheng_results, self.tianshu_results, self.active_versions)
         snapshots = [(items, dict(items)) for items in records]
         ordered = sorted(draws, key=lambda draw: (draw["lottery"], draw.get("drawDate") is None,
                                                 str(draw.get("drawDate") or ""), draw["period"]))
@@ -497,6 +519,8 @@ class InMemoryAnalysisRepository:
             return
         if kind == "tianheng" and self.has_tianheng_results(lottery, draw_period, analysis_version, len(artifact.get("items", []))):
             return
+        if kind == "tianshu" and self.has_tianshu_results(lottery, draw_period, analysis_version, len(artifact.get("items", []))):
+            return
         expires_at = datetime.now(UTC) + RETENTION
         records = _result_records(kind, lottery, draw_period, analysis_version, artifact, expires_at.isoformat())
         run = self.runs.get((lottery, draw_period, analysis_version))
@@ -504,7 +528,11 @@ class InMemoryAnalysisRepository:
             raise RuntimeError("ANALYSIS_RUN_LEASE_LOST")
         if not self.has_artifact(lottery, draw_period, analysis_version, kind):
             raise RuntimeError("ANALYSIS_REQUIRED_ARTIFACT_MISSING:" + kind)
-        results = self.explore_results if kind == "explore" else self.tianheng_results
+        results = {
+            "explore": self.explore_results,
+            "tianheng": self.tianheng_results,
+            "tianshu": self.tianshu_results,
+        }[kind]
         for record in records:
             record["expiresAt"] = expires_at
             results[(lottery, draw_period, analysis_version, record["item_id"])] = record
@@ -545,6 +573,32 @@ class InMemoryAnalysisRepository:
         count = sum(
             key[:3] == (lottery, draw_period, analysis_version)
             for key in self.tianheng_results
+        )
+        return count == expected_count if expected_count is not None else count > 0
+
+    def save_tianshu_results(
+        self, lottery: str, draw_period: str, analysis_version: str, payload: Any,
+        *, owner_id: str | None = None, run_started_at: str | None = None,
+    ) -> None:
+        self._require_child_write_owner(lottery, draw_period, analysis_version, owner_id, run_started_at)
+        expires_at = datetime.now(UTC) + RETENTION
+        for record in _tianshu_result_records(
+            lottery, draw_period, analysis_version, payload, expires_at.isoformat(),
+        ):
+            record["expiresAt"] = expires_at
+            key = (lottery, draw_period, analysis_version, record["item_id"])
+            self.tianshu_results[key] = record
+
+    def has_tianshu_results(
+        self,
+        lottery: str,
+        draw_period: str,
+        analysis_version: str,
+        expected_count: int | None = None,
+    ) -> bool:
+        count = sum(
+            key[:3] == (lottery, draw_period, analysis_version)
+            for key in self.tianshu_results
         )
         return count == expected_count if expected_count is not None else count > 0
 
@@ -603,7 +657,8 @@ class InMemoryAnalysisRepository:
         if number_order == "draw" and not self._draw_order_eligible(lottery, draw_period):
             raise RuntimeError("ANALYSIS_RUN_LEASE_LOST")
         available = {artifact_key[3] for artifact_key in self.artifacts if artifact_key[:3] == key}
-        if available != ARTIFACT_KINDS:
+        required = required_artifact_kinds(analysis_version)
+        if available != required:
             raise ValueError("ANALYSIS_ARTIFACTS_INCOMPLETE")
         # Recheck expiry immediately before publishing completion and activation.
         self._require_run_owner(lottery, draw_period, analysis_version, owner_id)
@@ -719,7 +774,10 @@ class InMemoryAnalysisRepository:
                 key = (lottery, period, version)
                 if (
                     self.runs.get(key, {}).get("status") != "complete"
-                    or any((*key, kind) not in self.artifacts for kind in ARTIFACT_KINDS)
+                    or any(
+                        (*key, kind) not in self.artifacts
+                        for kind in required_artifact_kinds(str(version or ""))
+                    )
                 ):
                     return 0
 
@@ -727,6 +785,7 @@ class InMemoryAnalysisRepository:
         removed_versions = set()
         for collection, batch_size in (
             (self.explore_results, 5000), (self.tianheng_results, 5000),
+            (self.tianshu_results, 5000),
             (self.artifact_chunks, 2000), (self.artifacts, 500),
         ):
             expired = [
@@ -1131,11 +1190,17 @@ class SupabaseAnalysisRepository:
             return
         if kind == "tianheng" and self.has_tianheng_results(lottery, draw_period, analysis_version, len(artifact.get("items", []))):
             return
+        if kind == "tianshu" and self.has_tianshu_results(lottery, draw_period, analysis_version, len(artifact.get("items", []))):
+            return
         records = _result_records(
             kind, lottery, draw_period, analysis_version, artifact,
             (datetime.now(UTC) + RETENTION).isoformat(),
         )
-        batch_size = EXPLORE_RESULT_UPSERT_BATCH_SIZE if kind == "explore" else TIANHENG_RESULT_UPSERT_BATCH_SIZE
+        batch_size = {
+            "explore": EXPLORE_RESULT_UPSERT_BATCH_SIZE,
+            "tianheng": TIANHENG_RESULT_UPSERT_BATCH_SIZE,
+            "tianshu": TIANSHU_RESULT_UPSERT_BATCH_SIZE,
+        }[kind]
         for start in range(0, len(records), batch_size):
             response = self.client.rpc("matrix_analysis_restore_results", {
                 "p_lottery": lottery,
@@ -1185,6 +1250,40 @@ class SupabaseAnalysisRepository:
     ) -> bool:
         response = (
             self.client.table("matrix_tianheng_results")
+            .select("item_id", count="exact")
+            .eq("lottery", lottery)
+            .eq("draw_period", draw_period)
+            .eq("analysis_version", analysis_version)
+            .range(0, 0)
+            .execute()
+        )
+        if expected_count is not None:
+            return response.count == expected_count
+        return bool(response.data)
+
+    def save_tianshu_results(
+        self, lottery: str, draw_period: str, analysis_version: str, payload: Any,
+        *, owner_id: str, run_started_at: str,
+    ) -> None:
+        expires_at = (datetime.now(UTC) + RETENTION).isoformat()
+        records = _tianshu_result_records(
+            lottery, draw_period, analysis_version, payload, expires_at,
+        )
+        for start in range(0, len(records), TIANSHU_RESULT_UPSERT_BATCH_SIZE):
+            self._write_owned(
+                lottery, draw_period, analysis_version, owner_id, run_started_at,
+                "matrix_tianshu_results", records[start:start + TIANSHU_RESULT_UPSERT_BATCH_SIZE],
+            )
+
+    def has_tianshu_results(
+        self,
+        lottery: str,
+        draw_period: str,
+        analysis_version: str,
+        expected_count: int | None = None,
+    ) -> bool:
+        response = (
+            self.client.table("matrix_tianshu_results")
             .select("item_id", count="exact")
             .eq("lottery", lottery)
             .eq("draw_period", draw_period)
@@ -1396,7 +1495,7 @@ def create_supabase_repository(
 def _completed_result_snapshot(
     repository: AnalysisRepository, lottery: str, draw_period: str, analysis_version: str, kind: str,
 ) -> tuple[str, Any]:
-    if kind not in {"explore", "tianheng"}:
+    if kind not in {"explore", "tianheng", "tianshu"}:
         raise ValueError("UNKNOWN_RESULT_KIND")
     run = repository.get_progress(lottery, draw_period, analysis_version)
     if run is None or run["status"] != "complete":
@@ -1411,8 +1510,69 @@ def _completed_result_snapshot(
 def _result_records(
     kind: str, lottery: str, draw_period: str, analysis_version: str, payload: Any, expires_at: str,
 ) -> list[dict[str, Any]]:
-    normalize = _explore_result_records if kind == "explore" else _tianheng_result_records
+    normalize = {
+        "explore": _explore_result_records,
+        "tianheng": _tianheng_result_records,
+        "tianshu": _tianshu_result_records,
+    }.get(kind)
+    if normalize is None:
+        raise ValueError("UNKNOWN_RESULT_KIND")
     return normalize(lottery, draw_period, analysis_version, payload, expires_at)
+
+
+def _tianshu_result_records(
+    lottery: str,
+    draw_period: str,
+    analysis_version: str,
+    payload: Any,
+    expires_at: str,
+) -> list[dict[str, Any]]:
+    records = []
+    for item in payload.get("items", []):
+        item_id = str(item["id"])
+        first_position = int(item["firstLockedPosition"])
+        second_position = int(item["secondLockedPosition"])
+        third_position = int(item["thirdLockedPosition"])
+        third_number = str(item["thirdNumber"])
+        validation = payload["validationById"].get(item_id, {})
+        source_a = validation.get("sourceA", {}) if isinstance(validation, dict) else {}
+        if not (
+            first_position < second_position < third_position
+            and len(third_number) == 2
+            and third_number.isdigit()
+            and isinstance(source_a, dict)
+            and len(source_a.get("lockedPositions", [])) == 3
+            and len(source_a.get("lockedNumbers", [])) == 3
+        ):
+            raise ValueError("TIANSHU_LOCK_CONTRACT_INVALID")
+        records.append({
+            "lottery": lottery,
+            "draw_period": draw_period,
+            "analysis_version": analysis_version,
+            "item_id": item_id,
+            "first_number": str(item["firstNumber"]),
+            "first_locked_position": first_position,
+            "second_number": str(item["secondNumber"]),
+            "second_locked_position": second_position,
+            "third_number": third_number,
+            "third_locked_position": third_position,
+            "prediction_distance": int(item["predictionDistance"]),
+            "consecutive": str(item["consecutive"]),
+            "highest_streak": int(item["highestStreak"]),
+            "prediction_numbers": list(item["predictionNumbers"]),
+            "algorithm_type": str(item["algorithmType"]),
+            "number_order": str(item["numberOrder"]),
+            "rule_count": int(item["ruleCount"]),
+            "explore_range": str(item["exploreRange"]),
+            "locked_source_index": int(item["lockedSourceIndex"]),
+            "locked_source_period": str(item["lockedSourcePeriod"]),
+            "reference_offset": item.get("referenceOffset"),
+            "reference_position": item.get("referencePosition"),
+            "item": {key: value for key, value in item.items() if key != "exploreRange"},
+            "validation": validation,
+            "expires_at": expires_at,
+        })
+    return records
 
 
 def _tianheng_result_records(

@@ -77,6 +77,7 @@ afterEach(() => {
 test.each([
   ['Matrix 探索', '二期', '進階探索設定'],
   ['Matrix 天衡', '三期', '進階天衡設定'],
+  ['Matrix 天樞', '三期', '進階天樞設定'],
 ] as const)('%s 在會員 session 初始化後重新選取最高可用期數與範圍', async (title, initialPeriod, advancedLabel) => {
   await act(async () => {
     render(<MatrixExplorePage title={title} onNavigate={vi.fn()} />);

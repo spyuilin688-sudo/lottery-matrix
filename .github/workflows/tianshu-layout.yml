@@ -1,0 +1,49 @@
+name: Matrix Tianshu layout
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/tianshu-layout.yml'
+      - 'playwright.matrix-tianshu.config.ts'
+      - 'src/ExploreValidationSummary.tsx'
+      - 'src/feature-pages.css'
+      - 'src/features/BrandHeader.tsx'
+      - 'src/features/MatrixExplorePage.tsx'
+      - 'src/features/MatrixValidation.tsx'
+      - 'src/features/navigation.tsx'
+      - 'src/features/router.tsx'
+      - 'src/features/shared.tsx'
+      - 'src/matrix-algorithm-api.ts'
+      - 'src/matrix-explore-result-refinements.css'
+      - 'src/matrix-explore-spacing.css'
+      - 'src/matrix-tianheng.css'
+      - 'tests/helpers/product-runtime.ts'
+      - 'tests/matrix-tianshu-layout-fixture.html'
+      - 'tests/matrix-tianshu-layout-fixture.tsx'
+      - 'tests/matrix-tianshu-layout.spec.ts'
+
+permissions:
+  contents: read
+
+jobs:
+  tianshu-layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: PLAYWRIGHT_BROWSERS_PATH=.sites-runtime/playwright npx playwright install --with-deps chromium
+      - name: Verify Matrix Tianshu layout
+        run: PLAYWRIGHT_BROWSERS_PATH=.sites-runtime/playwright npx playwright test tests/matrix-tianshu-layout.spec.ts --config=playwright.matrix-tianshu.config.ts --workers=1 --reporter=line
+      - name: Keep Matrix Tianshu screenshots and traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: matrix-tianshu-layout
+          path: test-results/
+          retention-days: 7

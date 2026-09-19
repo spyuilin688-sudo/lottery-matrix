@@ -345,3 +345,10 @@ After result notification dispatch, the trusted producer requests immediate back
 - Native selects and segmented/hit options reuse canonical styles; no decorative pseudo-element frame layers or per-page gold literals.
 - Ball geometry/appearance, result semantics, homepage artwork/motion and functional state transitions are not changed by this contract.
 - Focused evidence: `tests/pwa-frame-system.test.mjs` and `tests/pwa-frame-system.spec.ts`. No full-project test command is permitted.
+
+## Matrix 天樞 — 2026-09-19
+
+- Matrix 核心切換順序為探索、天衡、天樞、天衍、天工，維持既有 176px × 26px 足跡、按鈕語意、鍵盤焦點與完整本地化 accessible name。天樞標題為 `Matrix 天樞`，設定、期數、條件、日期、範圍、進階設定及開始按鈕使用天樞名稱。
+- 天樞完整重用天衡的設定選項、預設值、會員權限、載入／錯誤／空結果、篩選、分頁、結果展開與失效回應防護。唯一差異是每筆結果及驗證固定包含三組來源鎖定號碼與位置；天衡的兩組鎖定契約不變。
+- 天樞獨立呼叫需登入的 `matrix_tianshu_list` 與 `matrix_tianshu_validation`。清單保留天衡請求選項；每筆資料另要求 `thirdNumber` 與 `thirdLockedPosition`。驗證的 `lockedNumbers` 與 `lockedPositions` 在本期來源及歷史列都必須正好三項，格式錯誤視為 API 錯誤。
+- 天樞與天衡共用現有 CSS、06 背景、卡片幾何與雙列摘要適配器；不新增快速設定、功能分類、樣式覆寫或素材。

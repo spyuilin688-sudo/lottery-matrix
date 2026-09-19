@@ -46,6 +46,7 @@ def _builders(status: str = "ACTIVE") -> dict:
     return {
         "explore": lambda _: {"items": [], "validationById": {}},
         "tianheng": lambda _: {"items": [], "validationById": {}},
+        "tianshu": lambda _: {"items": [], "validationById": {}},
         "tianyan": lambda _: {"items": []},
         "tiangong": lambda _: {"items": []},
         "status": lambda _: {"summary": {"status": status}},
@@ -60,6 +61,13 @@ def _complete_analysis(repository: InMemoryAnalysisRepository, status: str = "AC
         PERIOD,
         VERSION,
         "tianheng",
+        {"items": [], "validationById": {}},
+    )
+    repository.save_artifact(
+        LOTTERY,
+        PERIOD,
+        VERSION,
+        "tianshu",
         {"items": [], "validationById": {}},
     )
     repository.save_artifact(LOTTERY, PERIOD, VERSION, "tianyan", {"items": []})

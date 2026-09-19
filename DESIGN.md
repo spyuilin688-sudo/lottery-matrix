@@ -313,3 +313,9 @@ component behavior, copy, API or worker changes are included.
 
 Verification: `tests/pwa-frame-system.test.mjs` and
 `tests/pwa-frame-system.spec.ts` (real production router, isolated test responses).
+
+## Matrix 天樞 — 2026-09-19
+
+Matrix 天樞加入核心頁面切換列，順序為探索、天衡、天樞、天衍、天工。切換列仍由 `.matrix-page-switcher` 單獨擁有 176px × 26px 外框、五個等寬文字按鈕、同一字級與選取狀態；標題列仍為 68px。天樞沿用天衡的 `MatrixExplorePage`、設定卡、按鈕、選項、間距、結果列、驗證卡、06 流動背景及所有既有樣式，沒有新增頁面專用 CSS 或素材。
+
+天樞與天衡唯一的資料呈現差異是第三組來源鎖定號碼與位置。結果列在既有鎖定欄追加第三行；驗證摘要第一列維持三個直接 `span` 子節點，第三個節點在天衡兩組來源文字後追加「、同期 第三號碼 第N顆」。兩列繼續使用 `ExploreValidationSummary` 的既有自動字級適配，首列保留連準標籤預算。天衡仍只顯示兩組鎖定資料。

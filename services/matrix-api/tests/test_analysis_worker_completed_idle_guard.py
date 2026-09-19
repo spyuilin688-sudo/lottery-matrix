@@ -36,6 +36,7 @@ def _completed_repository() -> InMemoryAnalysisRepository:
     for kind, payload in {
         "explore": {"items": [{"id": "fixture-explore"}]},
         "tianheng": {"items": [{"id": "fixture-tianheng"}]},
+        "tianshu": {"items": [{"id": "fixture-tianshu"}]},
         "tianyan": {"items": []},
         "tiangong": {"items": []},
         "status": {"summary": {"status": "ACTIVE"}},
@@ -52,6 +53,9 @@ def _completed_repository() -> InMemoryAnalysisRepository:
         "expiresAt": expires_at,
     }
     repository.tianheng_results[(LOTTERY, PERIOD, VERSION, "fixture-tianheng")] = {
+        "expiresAt": expires_at,
+    }
+    repository.tianshu_results[(LOTTERY, PERIOD, VERSION, "fixture-tianshu")] = {
         "expiresAt": expires_at,
     }
     return repository
@@ -88,6 +92,7 @@ def test_completed_fantasy5_period_exits_before_card_restore_or_http(
     monkeypatch.setattr(analysis_worker, "publish_current_card", reject)
     monkeypatch.setattr(analysis_worker, "_restore_completed_explore_results", reject)
     monkeypatch.setattr(analysis_worker, "_restore_completed_tianheng_results", reject)
+    monkeypatch.setattr(analysis_worker, "_restore_completed_tianshu_results", reject)
 
     result = run_analysis_only_worker(
         LOTTERY,

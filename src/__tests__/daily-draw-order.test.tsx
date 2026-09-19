@@ -11,7 +11,7 @@ import type { LotteryId } from '../Prototype';
 const api = vi.hoisted(() => ({
   fetchLotteryHistory: vi.fn(), fetchLotteryHistoryYears: vi.fn(),
   fetchTongXing: vi.fn(), fetchNumberReference: vi.fn(), fetchMatrixCardManifest: vi.fn(),
-  fetchExploreList: vi.fn(), fetchTianhengList: vi.fn(), fetchTianyanList: vi.fn(),
+  fetchExploreList: vi.fn(), fetchTianhengList: vi.fn(), fetchTianshuList: vi.fn(), fetchTianyanList: vi.fn(),
 }));
 vi.mock('../lottery-api', async importOriginal => ({
   ...await importOriginal<typeof import('../lottery-api')>(),
@@ -25,6 +25,7 @@ vi.mock('../matrix-algorithm-api', async importOriginal => ({
   ...await importOriginal<typeof import('../matrix-algorithm-api')>(),
   fetchExploreList: api.fetchExploreList,
   fetchTianhengList: api.fetchTianhengList,
+  fetchTianshuList: api.fetchTianshuList,
   fetchTianyanList: api.fetchTianyanList,
 }));
 vi.mock('../permission-settings', () => ({
@@ -60,7 +61,7 @@ beforeEach(() => {
       draw: { url: `/cards/${lottery}/11998/draw.png` },
     },
   }));
-  for (const [kind, fetcher] of [['explore', api.fetchExploreList], ['tianheng', api.fetchTianhengList], ['tianyan', api.fetchTianyanList]] as const) {
+  for (const [kind, fetcher] of [['explore', api.fetchExploreList], ['tianheng', api.fetchTianhengList], ['tianshu', api.fetchTianshuList], ['tianyan', api.fetchTianyanList]] as const) {
     fetcher.mockImplementation(async input => ({
       kind, lottery: input.lottery, drawPeriod: '11998', analysisVersion: 'test-v1',
       status: 'complete', items: [], duplicateStats: [], total: 0,
@@ -72,7 +73,7 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); sessionStorage.clear(); local
 async function openPage(page: ScreenId) {
   render(<AppDialogProvider><FeaturePageRouter screen={page} onNavigate={vi.fn()} /></AppDialogProvider>);
   await flush();
-  if (['explore', 'tianheng', 'tianyan'].includes(page)) {
+  if (['explore', 'tianheng', 'tianshu', 'tianyan'].includes(page)) {
     fireEvent.click(screen.getByRole('button', { name: /^進階.*設定$/ }));
   }
 }
@@ -83,7 +84,7 @@ function chooseLottery(lottery: LotteryId) {
   else fireEvent.click(screen.getByRole('tab', { name: lottery }));
 }
 
-test.each(['tongxing', 'reference', 'history', 'explore', 'tianheng', 'tianyan'] as const)(
+test.each(['tongxing', 'reference', 'history', 'explore', 'tianheng', 'tianshu', 'tianyan'] as const)(
   '%s disables actual order for daily and resets the selected order while other lotteries stay selectable',
   async page => {
     await openPage(page);
@@ -118,7 +119,7 @@ test.each(['tongxing', 'reference', 'history'] as const)('%s recovers a cached d
   if (page === 'reference') expect(screen.getByRole('heading', { name: `天天樂（${sortedOrder}）` })).toBeVisible();
 });
 
-test.each(['tongxing', 'reference', 'explore', 'tianheng', 'tianyan'] as const)('%s submits only sorted order after changing to daily', async page => {
+test.each(['tongxing', 'reference', 'explore', 'tianheng', 'tianshu', 'tianyan'] as const)('%s submits only sorted order after changing to daily', async page => {
   await openPage(page);
   fireEvent.change(screen.getByRole('combobox', { name: '號碼順序' }), { target: { value: actualOrder } });
   chooseLottery('天天樂');
@@ -126,10 +127,10 @@ test.each(['tongxing', 'reference', 'explore', 'tianheng', 'tianyan'] as const)(
     fireEvent.change(screen.getByRole('textbox', { name: '號碼 1' }), { target: { value: '01' } });
     fireEvent.change(screen.getByRole('textbox', { name: '號碼 2' }), { target: { value: '08' } });
   }
-  const button = page === 'tianheng' ? '開始天衡' : page === 'tianyan' ? '開始天衍' : '開始探索';
+  const button = page === 'tianheng' ? '開始天衡' : page === 'tianshu' ? '開始天樞' : page === 'tianyan' ? '開始天衍' : '開始探索';
   fireEvent.click(screen.getByRole('button', { name: button }));
   await flush();
-  const fetcher = { tongxing: api.fetchTongXing, reference: api.fetchNumberReference, explore: api.fetchExploreList, tianheng: api.fetchTianhengList, tianyan: api.fetchTianyanList }[page];
+  const fetcher = { tongxing: api.fetchTongXing, reference: api.fetchNumberReference, explore: api.fetchExploreList, tianheng: api.fetchTianhengList, tianshu: api.fetchTianshuList, tianyan: api.fetchTianyanList }[page];
   expect(fetcher).toHaveBeenCalledWith(expect.objectContaining({ lottery: '天天樂', numberOrder: sortedOrder }));
 });
 

@@ -3,7 +3,7 @@ import { DoubleArrowLeftIcon, DoubleArrowRightIcon } from "@radix-ui/react-icons
 import { type LotteryId } from "../Prototype";
 import { ExploreValidationSummary } from "../ExploreValidationSummary";
 import { TianyanExpandedValidationGroups, TianyanPatchedSummary } from "../TianyanExpandedValidation";
-import { type ExploreValidation, type TianhengApiRow, type TianhengValidation, type TianyanValidation } from "../matrix-algorithm-api";
+import { type ExploreValidation, type TianhengApiRow, type TianhengValidation, type TianyanValidation, type TianshuApiRow, type TianshuValidation } from "../matrix-algorithm-api";
 import { ROAD_VALIDATION_SAMPLE_HISTORY } from "./shared";
 
 export function RoadValidationProcess({
@@ -457,13 +457,16 @@ export function TianhengValidationProcess({
   lottery,
   validation,
   loading,
+  algorithmName = "天衡",
 }: {
-  item: TianhengApiRow;
+  item: TianhengApiRow | TianshuApiRow;
   lottery: LotteryId;
-  validation?: TianhengValidation;
+  validation?: TianhengValidation | TianshuValidation;
   loading: boolean;
+  algorithmName?: "天衡" | "天樞";
 }) {
   const contentProtected = useExploreValidationProtection();
+  const algorithmId = algorithmName === "天樞" ? "tianshu" : "tianheng";
   if (loading) return <p className="empty-result">驗證資料載入中</p>;
   if (!validation || validation.ruleSets.length === 0) return <p className="empty-result">無驗證資料</p>;
 
@@ -534,7 +537,7 @@ export function TianhengValidationProcess({
         {rows.map((row) => (
           <div
             className="explore-validation-draw-row explore-validation-number-row"
-            data-testid={row.sourceGroup ? `tianheng-source-row-${row.sourceGroup}` : undefined}
+            data-testid={row.sourceGroup ? `${algorithmId}-source-row-${row.sourceGroup}` : undefined}
             key={`${row.key}-numbers`}
           >
             <span className="explore-validation-numbers explore-validation-numeric-text">
@@ -571,7 +574,7 @@ export function TianhengValidationProcess({
   return (
     <section
       className="road-validation-process explore-validation-card tianheng-validation-process"
-      aria-label="天衡驗證過程"
+      aria-label={`${algorithmName}驗證過程`}
       data-content-protected={contentProtected ? "true" : "false"}
       onCopy={(event) => event.preventDefault()}
       onCut={(event) => event.preventDefault()}
@@ -607,12 +610,15 @@ export function TianhengValidationProcess({
             <header className="explore-validation-summary-card">
               <ExploreValidationSummary layout="tianyan">
                 <span className="tianyan-validation-summary-lines tianheng-summary-lines" aria-label="版路摘要">
-                  <span className="tianyan-validation-summary-row" data-testid="tianheng-summary-row">
+                  <span className="tianyan-validation-summary-row" data-testid={`${algorithmId}-summary-row`}>
                     <span>開</span>
                     <span className="validation-summary-primary">{item.firstNumber}{" "}</span>
-                    <span>第 <i className="validation-summary-position">{item.firstLockedPosition}</i> 顆、同期{" "}<i className="validation-summary-primary">{item.secondNumber}</i> 第 <i className="validation-summary-position">{item.secondLockedPosition}</i> 顆</span>
+                    <span>
+                      第 <i className="validation-summary-position">{item.firstLockedPosition}</i> 顆、同期{" "}<i className="validation-summary-primary">{item.secondNumber}</i> 第 <i className="validation-summary-position">{item.secondLockedPosition}</i> 顆
+                      {'thirdNumber' in item ? <>、同期{" "}<i className="validation-summary-primary">{item.thirdNumber}</i> 第 <i className="validation-summary-position">{item.thirdLockedPosition}</i> 顆</> : null}
+                    </span>
                   </span>
-                  <span className="tianyan-validation-summary-row" data-testid="tianheng-summary-row">
+                  <span className="tianyan-validation-summary-row" data-testid={`${algorithmId}-summary-row`}>
                     {summaryDirection()}
                     {divider}
                     <span>第 <i className="validation-summary-position">{summaryPosition}</i> 顆</span>

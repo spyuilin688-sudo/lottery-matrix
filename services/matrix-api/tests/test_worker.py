@@ -203,7 +203,7 @@ def _builders(calls: list[str], history_lengths: list[int] | None = None, failin
                 raise RuntimeError("builder failed")
             return {"kind": kind}
         return selected
-    return {kind: build(kind) for kind in ("explore", "tianheng", "tianyan", "tiangong", "status")}
+    return {kind: build(kind) for kind in ("explore", "tianheng", "tianshu", "tianyan", "tiangong", "status")}
 
 
 def test_worker_backfills_and_analyzes_complete_history() -> None:
@@ -215,11 +215,11 @@ def test_worker_backfills_and_analyzes_complete_history() -> None:
     result = run_due_worker("今彩539", repository, source, _builders(calls, history_lengths))
 
     assert result["status"] == "complete"
-    assert result["analysisVersion"] == "000000220:matrix-python-v14-sorted"
+    assert result["analysisVersion"] == "000000220:matrix-python-v15-sorted"
     assert repository.events[0] == "cleanup"
     assert source.events == ["history-all", "latest"]
-    assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"]
-    assert history_lengths == [120, 120, 120, 120, 120]
+    assert calls == ["explore", "tianheng", "tianshu", "tianyan", "tiangong", "status"]
+    assert history_lengths == [120, 120, 120, 120, 120, 120]
     assert len(repository.list_draws("今彩539", None)) == 120
 
 
@@ -233,7 +233,7 @@ def test_worker_checks_one_month_but_keeps_full_history_for_algorithms() -> None
     )
 
     assert result["status"] == "complete"
-    assert history_lengths == [120, 120, 120, 120, 120]
+    assert history_lengths == [120, 120, 120, 120, 120, 120]
 
 
 def test_production_worker_repairs_actual_history_between_sorted_and_actual_algorithms(monkeypatch) -> None:
@@ -247,7 +247,7 @@ def test_production_worker_repairs_actual_history_between_sorted_and_actual_algo
     assert result["status"] == "complete"
     assert source.events == ["history-all", "latest", "algorithm-history"]
     # Adding older sorted history invalidates and rebuilds the first stage.
-    assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"] * 3
+    assert calls == ["explore", "tianheng", "tianshu", "tianyan", "tiangong", "status"] * 3
     assert all(
         len(draw["drawOrderNumbers"]) == 5
         for draw in repository.list_draws("今彩539", None)
@@ -263,9 +263,9 @@ def test_production_worker_publishes_sorted_but_stops_actual_if_order_history_is
     with pytest.raises(ValueError, match="DRAW_ORDER_HISTORY_INCOMPLETE"):
         run_due_worker("今彩539", repository, source)
 
-    assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"] * 2
-    assert repository.get_progress("今彩539", "000000220", "000000220:matrix-python-v14-sorted")["status"] == "complete"
-    assert repository.get_progress("今彩539", "000000220", "000000220:matrix-python-v14-draw") is None
+    assert calls == ["explore", "tianheng", "tianshu", "tianyan", "tiangong", "status"] * 2
+    assert repository.get_progress("今彩539", "000000220", "000000220:matrix-python-v15-sorted")["status"] == "complete"
+    assert repository.get_progress("今彩539", "000000220", "000000220:matrix-python-v15-draw") is None
 
 
 def test_completed_scheduled_run_does_not_read_all_history_again() -> None:
@@ -314,8 +314,8 @@ def test_worker_has_no_fixed_minimum_history_count() -> None:
     assert result["status"] == "complete"
     assert repository.events[0] == "cleanup"
     assert source.events == ["history-all", "latest"]
-    assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"]
-    assert history_lengths == [79, 79, 79, 79, 79]
+    assert calls == ["explore", "tianheng", "tianshu", "tianyan", "tiangong", "status"]
+    assert history_lengths == [79, 79, 79, 79, 79, 79]
     assert repository.get_progress("今彩539", "000000220")["status"] == "complete"
 
 
@@ -398,6 +398,7 @@ def test_worker_finishes_all_checkpoint_batches_in_one_invocation() -> None:
     builders = {
         "explore": explore,
         "tianheng": lambda _: {"items": [], "validationById": {}},
+        "tianshu": lambda _: {"items": [], "validationById": {}},
         "tianyan": lambda context: {"source": context["artifacts"]["explore"]["items"]},
         "tiangong": lambda _: {"items": []},
         "status": lambda context: {"source": context["artifacts"]["tianyan"]["source"]},
@@ -425,6 +426,7 @@ def test_worker_retries_failed_analysis_from_its_checkpoint(monkeypatch) -> None
     builders = {
         "explore": lambda _: {"items": []},
         "tianheng": lambda _: {"items": [], "validationById": {}},
+        "tianshu": lambda _: {"items": [], "validationById": {}},
         "tianyan": tianyan,
         "tiangong": lambda _: {"items": []},
         "status": lambda _: {"items": []},
@@ -457,6 +459,7 @@ def test_worker_backs_off_before_retrying_transient_service_failure(monkeypatch)
     builders = {
         "explore": lambda _: {"items": []},
         "tianheng": lambda _: {"items": [], "validationById": {}},
+        "tianshu": lambda _: {"items": [], "validationById": {}},
         "tianyan": tianyan,
         "tiangong": lambda _: {"items": []},
         "status": lambda _: {"items": []},
@@ -547,7 +550,7 @@ def test_scheduled_worker_resumes_when_current_draw_is_stored_without_analysis()
     )
 
     assert result["status"] == "complete"
-    assert result["analysisVersion"] == "000000221:matrix-python-v14-sorted"
+    assert result["analysisVersion"] == "000000221:matrix-python-v15-sorted"
     assert source.events == []
 
 

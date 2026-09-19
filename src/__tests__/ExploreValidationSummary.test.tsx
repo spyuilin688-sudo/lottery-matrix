@@ -146,4 +146,47 @@ describe('two-row summary fitting', () => {
     expect(290 * size / 13).toBeLessThanOrEqual(246);
     expect(320 * size / 13).toBeLessThanOrEqual(300);
   });
+
+  it('fits a three-lock Tianshu first row inside the consecutive-tag budget', () => {
+    const style = document.createElement('style');
+    style.dataset.summaryTest = 'true';
+    style.textContent = '.explore-validation-summary { font-size: var(--explore-summary-fit-font-size, 13px); padding: 0; }';
+    document.head.append(style);
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(250);
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      const scale = Number.parseFloat(this.closest('.explore-validation-summary')?.getAttribute('style')?.match(/([\d.]+)px/)?.[1] ?? '13') / 13;
+      if (this.dataset.fit === 'first') return { left: 10, right: 10, width: 0 } as DOMRect;
+      if (this.dataset.fit === 'second') return { left: 10 + 20 * scale, right: 10 + 230 * scale, width: 210 * scale } as DOMRect;
+      if (this.className === 'explore-validation-consecutive-tag') return { left: 210, right: 250, width: 40 } as DOMRect;
+      return { left: 10, right: 260, width: 250 } as DOMRect;
+    });
+    vi.spyOn(document, 'createRange').mockImplementation(() => {
+      let selected: HTMLElement;
+      return {
+        selectNodeContents: (node: HTMLElement) => { selected = node; },
+        getBoundingClientRect: () => {
+          const scale = Number.parseFloat(selected.closest('.explore-validation-summary')?.getAttribute('style')?.match(/([\d.]+)px/)?.[1] ?? '13') / 13;
+          const width = selected.dataset.fit === 'first' ? 300 : 230;
+          return { left: 10, right: 10 + width * scale, width: width * scale } as DOMRect;
+        },
+      } as unknown as Range;
+    });
+    const { container } = render(<header>
+      <ExploreValidationSummary layout="tianyan">
+        <span className="tianyan-validation-summary-row" data-fit="first">
+          <span>開</span>
+          <span>05</span>
+          <span>第 1 顆、同期 18 第 3 顆、同期 31 第 5 顆</span>
+        </span>
+        <span className="tianyan-validation-summary-row" data-fit="second">上 1 期｜第 2 顆｜+03｜下 2 期開</span>
+      </ExploreValidationSummary>
+      <strong className="explore-validation-consecutive-tag">準5進6</strong>
+    </header>);
+    const summary = container.querySelector<HTMLElement>('.explore-validation-summary')!;
+    const firstRow = container.querySelector<HTMLElement>('[data-fit="first"]')!;
+    const size = Number.parseFloat(summary.style.getPropertyValue('--explore-summary-fit-font-size')) || 13;
+    expect(firstRow.children).toHaveLength(3);
+    expect(300 * size / 13).toBeLessThanOrEqual(196);
+    expect(230 * size / 13).toBeLessThanOrEqual(250);
+  });
 });
