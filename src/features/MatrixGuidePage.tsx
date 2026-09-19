@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { Navigate } from "./navigation";
 import { FeatureShell } from "./shared";
+import { MATRIX_PRO_COMMON_FEATURES } from "../matrix-pro-copy";
 
 export const GUIDE_LOOP_GROUPS = ["leading", "canonical", "trailing"] as const;
 
@@ -16,7 +17,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       title: "新手入門",
       summary: "樂彩 Matrix 提供公開的開獎資料查詢、整理、比對、驗證及探索功能，支援今彩539、天天樂、六合彩及大樂透。",
       blocks: [
-        { title: "開始使用", items: ["使用 LINE 登入後進入首頁。", "切換彩種，查看最新開獎資訊、下次開獎時間與 Matrix 狀態。", "依需求使用 Matrix Core (Matrix 探索、Matrix 天衡、Matrix 天衍、Matrix 天工)、Matrix 同星、號碼對照單、連碰立柱計算機、Matrix 牌單及 Matrix 指南。"] },
+        { title: "開始使用", items: ["使用 LINE 或 Google 登入後進入首頁。", "切換彩種，查看最新開獎資訊、下次開獎時間與 Matrix 狀態。", "依需求使用 Matrix Core (Matrix 探索、Matrix 天衡、Matrix 天樞、Matrix 天衍、Matrix 天工)、Matrix 同星、號碼對照單、連碰立柱計算機、Matrix 牌單及 Matrix 指南。"] },
         { title: "基本導覽", items: ["底部導覽固定為首頁、快捷、計算機、我的。", "首頁：查看四彩種最新資訊與主要功能入口。", "Matrix 狀態：查看四彩種目前觸發的狀態與相關資訊。", "快捷：點擊底部「快捷」開啟目前設定的功能；在首頁設定按鈕連續點擊兩下可變更快捷設定。", "通知設定：前往「我的」的「系統相關」，設定各類型的推播通知。", ...(subscriptionPurchaseVisible ? ["我的：查看 Matrix Pro 訂閱、推薦、系統及法律資訊。"] : [])] },
         ...(subscriptionPurchaseVisible ? [{ title: "Matrix Pro", items: ["Matrix Pro 提供更多探索功能及會員權限。", "功能開放內容依目前會員狀態顯示。"] }] : []),
         { title: "結果說明", items: ["探索結果依歷史資料與所選條件產生，僅供參考，不代表中獎、獲利或任何結果之保證。"] },
@@ -28,7 +29,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       blocks: [
         { title: "四彩種切換", items: ["固定顯示今彩539、天天樂、六合彩及大樂透。", "切換後，最新開獎資訊卡顯示該彩種的期數、日期與開獎號碼。", "天天樂僅提供順球；其餘彩種可依資料狀態查看順球或落球。"] },
         { title: "Matrix 狀態", items: ["四個彩種固定顯示。", "狀態卡依資料呈現啟動、聚合、共振、臨界或沉寂；同一彩種同時符合多種觸發狀態時，只顯示最高等級狀態。", "沉寂表示本期尚無符合條件的狀態。", "點擊狀態卡可進入該彩種的 Matrix 狀態頁。"] },
-        { title: "功能入口", items: ["Matrix Core 為 Matrix 探索、Matrix 天衡、Matrix 天衍及 Matrix 天工的核心入口。"] },
+        { title: "功能入口", items: ["Matrix Core 為 Matrix 探索、Matrix 天衡、Matrix 天樞、Matrix 天衍及 Matrix 天工的核心入口。"] },
       ],
     },
     {
@@ -60,6 +61,16 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       ],
     },
     {
+      title: "Matrix 天樞",
+      summary: "以同一期三個球位及其號碼共同作為條件，比對歷史紀錄，整理符合條件的版路結果。",
+      blocks: [
+        { title: "天樞設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "天樞期數：三期、十三期。", "版路類型：加減版路、合值版路、拖牌版路。", "天樞條件：準5+ (鎖定1碼)、準6+ (鎖定2碼)。"] },
+        { title: "比對方式", items: ["每組以同一期的三個不同球位與對應號碼作為條件，查找歷史中相同球位及號碼同時出現的紀錄。", "加減版路與合值版路依所選範圍比對參考球位；拖牌版路使用第一個條件球位的號碼進行驗證。", "來源條件固定包含三個球位；「鎖定 1 碼、鎖定 2 碼」是結果規則的設定，不會改變來源條件的球位數。"] },
+        { title: "進階天樞設定", items: ["號碼順序：今彩539、六合彩、大樂透可選依號碼由小到大排序或依實際開獎順序排序；天天樂固定依號碼由小到大排序。", "天樞日期：可選本日 (最新)、昨日 (上1期)、前日 (上2期)。", "標準範圍包含上 1 ~ 7 期、當期及當期之後至結果期前一期的參考球位；完整範圍向上擴大至 14 期，皆不包含結果期。", "十三期與完整範圍依目前帳號權限開放。"] },
+        { title: "查看結果", items: ["按下「開始天樞」後，查看重複號碼統計與天樞結果。", "結果顯示三個條件球位、對應號碼、結果期、連準次數、結果及版路類型。", "「結果期」以該組來源期為基準，顯示相隔多少期；「連準次數」表示連續通過驗證的歷史條件組數。", "可使用同碼、結果號碼與連準篩選，或點選重複號碼統計中的號碼篩選版路；展開版路可查看驗證過程與版路結果。"] },
+      ],
+    },
+    {
       title: "Matrix 天衍",
       summary: "固定使用十三期與完整範圍，以複合版路進行探索，命中條件固定為準5+ (鎖定 2 碼)。",
       blocks: [
@@ -74,7 +85,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       blocks: [
         { title: "天工設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "天工期數固定為五十期。", "流程固定為二段式，命中條件固定為準 2 進 3。", "天工正式運算使用依號碼由小到大排序的資料。"] },
         { title: "定位版路", items: ["定位版路不使用鎖定條件；來源以 C、B、A 三組等距排列建立版路。", "第一段要求 C、B、A 三組使用相同完整規則成立；第二段使用 C、B 驗證相同完整規則，再由 A 產生下一期結果。", "探索、第一段與第二段各自使用一條球位路徑，球位不可循環越界。"] },
-        { title: "準 3 進 4排除", items: ["系統會沿相同間距向更舊的 D 組回推。", "若 D 組以相同完整規則在第一段與第二段都成立，代表版路可延伸為準 3 進 4，該候選直接排除。", "若歷史資料不足以完成 D 組排除檢查，正式結果不輸出該候選。"] },
+        { title: "準 3 進 4 排除", items: ["系統會沿相同間距向更舊的 D 組回推。", "若 D 組以相同完整規則在第一段與第二段都成立，代表版路可延伸為準 3 進 4，該候選直接排除。", "若歷史資料不足以完成 D 組排除檢查，正式結果不輸出該候選。"] },
         { title: "球位與版路", items: ["探索球位、第一段球位與第二段球位可複選由左至右、固定或由右至左。", "第一段與第二段的版路類型皆可複選加減版路或合值版路。"] },
         { title: "查看結果", items: ["按下「開始天工」後，查看重複號碼統計與天工結果。", "結果顯示間距、位移走向、結果位置、結果及版路類型。", "可使用同碼與結果號碼篩選，並展開版路查看驗證過程與版路結果。"] },
       ],
@@ -134,7 +145,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       summary: "可設定選號提醒、開獎結果、Matrix 狀態、Matrix 牌單、Matrix Pro 與系統通知；實際可用項目依登入狀態與目前權限顯示。",
       blocks: [
         { title: "推播與通知", items: ["通知設定需登入後同步，裝置或瀏覽器也必須允許推播權限。", "各可用通知可個別開啟或關閉，設定會同步至目前帳號。"] },
-        { title: "通知項目", items: ["選號提醒可依彩種設定提醒時間。", "開獎結果與 Matrix 牌單可依彩種設定。", "Matrix 狀態可依彩種及啟動、聚合、共振、臨界分別設定。", "Matrix Pro 可設定到期前提醒；系統通知可設定維護與更新。", "Matrix 摘星保留在通知頁，是否可用以目前介面狀態為準。"] },
+        { title: "通知項目", items: ["選號提醒可依彩種設定提醒時間。", "開獎結果與 Matrix 牌單可依彩種設定。", "Matrix 狀態可依彩種及啟動、聚合、共振、臨界分別設定。", "Matrix Pro 可設定到期前提醒；系統通知可設定維護與更新。", "Matrix 摘星通知目前尚未開放。"] },
       ],
     },
     {
@@ -142,14 +153,14 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       summary: "Matrix Pro 為樂彩 Matrix 的付費訂閱方案。",
       blocks: [
         { title: "方案與期間", items: ["提供月方案、季方案與年方案。", "實際價格、期間及權限請至「訂閱方案與收費標準」查看。"] },
-        { title: "權限內容", items: ["Matrix 狀態進階資訊。", "Matrix 狀態自訂觸發條件。", "Matrix 探索期數十三期。", "Matrix 探索完整範圍。", "Matrix Pro 專屬推播通知。", "依訂閱方案顯示 Matrix 天衍、Matrix 天工權限。"] },
+        { title: "權限內容", items: [...MATRIX_PRO_COMMON_FEATURES, "依訂閱方案顯示 Matrix 天衍、Matrix 天工權限。"] },
       ],
     },
     {
       title: "帳號與安全",
-      summary: "使用 LINE 官方授權登入，會員資料、記事、通知、設定與 Matrix Pro 權益會同步。",
+      summary: "使用 LINE 或 Google 授權登入，會員資料、筆記、通知、設定與 Matrix Pro 權益會依目前登入的帳號同步。",
       blocks: [
-        { title: "登入規則", items: ["一個帳號僅允許一個有效 Session。", "新裝置登入時，舊裝置會自動登出。", "系統將定期驗證登入狀態。", "會員資料與權益依 LINE 帳號同步。"] },
+        { title: "登入規則", items: ["一個帳號僅允許一個有效 Session。", "新裝置登入時，舊裝置會自動登出。", "系統將定期驗證登入狀態。", "會員資料與權益依目前登入的帳號同步。"] },
         { title: "安全機制", items: ["使用裝置驗證與資料加密保護。", "若帳號在其他裝置登入，目前裝置會自動登出。"] },
       ],
     },
@@ -157,7 +168,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       title: "常見問題",
       summary: "依目前功能整理操作時常見的查詢方式。",
       blocks: [
-        { title: "條件變更後結果沒有更新", items: ["Matrix 探索、Matrix 天衡、Matrix 天衍與 Matrix 天工修改條件後，需按各自的開始按鈕重新查詢。", "號碼對照單修改條件後，也需再次按「開始探索」。"] },
+        { title: "條件變更後結果沒有更新", items: ["Matrix 探索、Matrix 天衡、Matrix 天樞、Matrix 天衍與 Matrix 天工修改條件後，需按各自的開始按鈕重新查詢。", "號碼對照單修改條件後，也需再次按「開始探索」。"] },
         { title: "查看更多開獎紀錄", items: ["首頁點選查看更多紀錄，可查閱歷史開獎號碼。", "號碼對照單可選擇1000期、3000期或5000期。"] },
         { title: "設定常用功能", items: ["在首頁設定按鈕連續點擊兩下後，選擇要指定的快捷功能。"] },
         ...(subscriptionPurchaseVisible ? [{ title: "查看 Matrix Pro 權限", items: ["前往「我的」中的「訂閱方案與收費標準」。"] }] : []),

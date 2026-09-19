@@ -381,7 +381,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     : pushNotice === "status-failed" ? "手機通知暫時無法確認，請重新檢查"
     : pushNotice === "enabled" ? "手機通知已開啟"
       : pushNotice === "unsupported" ? "此手機不支援通知"
-        : pushNotice === "unauthenticated" ? "請先使用 LINE 登入"
+        : pushNotice === "unauthenticated" ? "請先使用 LINE 或 Google 登入"
         : pushNotice === "service-worker-registration" ? "推播程式註冊失敗"
           : pushNotice === "browser-subscription" ? "手機瀏覽器建立訂閱失敗"
             : pushNotice === "supabase-save" ? "Supabase 儲存失敗"
@@ -478,7 +478,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
       ? `手機通知${pushStatus.enabled ? "關閉" : "開啟"}中`
       : pushNotice === "checking" ? "正在檢查手機通知"
       : !pushStatus.supported ? "此手機不支援通知"
-        : pushAuthenticated !== true ? "請先使用 LINE 登入"
+        : pushAuthenticated !== true ? "請先使用 LINE 或 Google 登入"
         : pushStatus.permission === "denied" ? "通知權限已拒絕"
           : pushStatus.enabled ? "關閉手機通知" : "開啟手機通知";
     return <article className="notification-row" data-notification-key={key} key={key}>

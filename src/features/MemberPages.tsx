@@ -16,6 +16,7 @@ import { usePwaLifecycle } from "../pwa-lifecycle";
 import { useSubscriptionPurchaseVisible } from "../subscription-purchase-visibility";
 import { Navigate, ScreenId } from "./navigation";
 import { FeatureShell, SectionTitle } from "./shared";
+import { MATRIX_PRO_COMMON_FEATURES, MANUAL_SUBSCRIPTION_NOTICE } from "../matrix-pro-copy";
 import { usePaymentHistory } from "./use-payment-history";
 
 
@@ -626,9 +627,9 @@ export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
   const appDialog = useAppDialog();
   const { profile: renewalProfile, error: renewalProfileError } = useSubscriptionProfile();
   const plans = [
-    { code: "month", name: "月費方案", price: "$2,880", days: 30, icons: [], features: ["Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
-    { code: "quarter", name: "季費方案", price: "$5,580", days: 90, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }], features: ["Matrix 天衍 - 使用權限", "Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
-    { code: "year", name: "年費方案", price: "$17,800", days: 365, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }, { src: "/assets/matrix-explore/tiangong.jpg", alt: "天工" }], features: ["Matrix 天衍 - 使用權限", "Matrix 天工 - 使用權限", "Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
+    { code: "month", name: "月費方案", price: "$2,880", days: 30, icons: [], features: [...MATRIX_PRO_COMMON_FEATURES] },
+    { code: "quarter", name: "季費方案", price: "$5,580", days: 90, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }], features: ["Matrix 天衍 - 使用權限", ...MATRIX_PRO_COMMON_FEATURES] },
+    { code: "year", name: "年費方案", price: "$17,800", days: 365, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }, { src: "/assets/matrix-explore/tiangong.jpg", alt: "天工" }], features: ["Matrix 天衍 - 使用權限", "Matrix 天工 - 使用權限", ...MATRIX_PRO_COMMON_FEATURES] },
   ] as const;
   const carouselPlans = [plans[2], ...plans, plans[0]] as const;
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -714,7 +715,7 @@ export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
             </label>
             <strong data-active={false}>目前狀態：關閉</strong>
           </div>
-          <p className="auto-renew-note">手動轉帳不會自動扣款；金流 API 上線後再提供自動續訂。</p>
+          <p className="auto-renew-note">{MANUAL_SUBSCRIPTION_NOTICE}</p>
         </section>
         <button type="button" className="confirm-payment primary-action branded-explore-action" onClick={handlePayment}><span>確定付款</span></button>
         <p className="payment-note">點擊 確定付款 將跳轉付款頁面</p>
@@ -1161,6 +1162,7 @@ export function ServiceInfoPage({ onNavigate }: { onNavigate: Navigate }) {
             <ul className="legal-info-subfunctions">
               <li>Matrix 探索</li>
               <li>Matrix 天衡</li>
+              <li>Matrix 天樞</li>
               <li>Matrix 天衍</li>
               <li>Matrix 天工</li>
             </ul>
@@ -1174,6 +1176,7 @@ export function ServiceInfoPage({ onNavigate }: { onNavigate: Navigate }) {
       <LegalInfoSection title="五、使用方式">
         <p>使用者透過 LINE 或 Google 登入後，可查看會員資訊、訂閱資訊及目前帳號可使用的功能。</p>
         <p>Matrix 天衡以同一期的兩個球位與對應號碼共同作為條件，比對歷史紀錄。可設定天衡期數、版路類型、天衡條件及進階選項，按下「開始天衡」後查看天衡結果、重複號碼統計及版路驗證過程。</p>
+        <p>Matrix 天樞以同一期的三個球位與對應號碼共同作為條件，比對歷史紀錄。可設定天樞期數、版路類型、天樞條件及進階選項，按下「開始天樞」後查看天樞結果、重複號碼統計及版路驗證過程。</p>
         <p>不同會員狀態可使用的功能及權限，依目前帳號顯示為準。</p>
       </LegalInfoSection>
       <LegalInfoSection title="六、探索結果說明">
@@ -1181,7 +1184,7 @@ export function ServiceInfoPage({ onNavigate }: { onNavigate: Navigate }) {
       </LegalInfoSection>
       {subscriptionPurchaseVisible && <LegalInfoSection title="七、Matrix Pro 說明">
         <p>Matrix Pro 為樂彩 Matrix 的付費訂閱方案，提供月方案、季方案及年方案。</p>
-        <p>使用者可自行選擇是否開啟自動續訂。</p>
+        <p>{MANUAL_SUBSCRIPTION_NOTICE}</p>
         <p>實際方案價格、訂閱期間、功能權限及目前可使用內容，依「訂閱方案與收費標準」及帳號顯示為準。</p>
       </LegalInfoSection>}
     </LegalInfoDocument>
@@ -1191,8 +1194,8 @@ export function ServiceInfoPage({ onNavigate }: { onNavigate: Navigate }) {
 export function RefundPolicyPage({ onNavigate }: { onNavigate: Navigate }) {
   return (
     <LegalInfoDocument title="退款規範" onNavigate={onNavigate}>
-      <LegalInfoSection title="一、適用範圍"><p>本退款規範適用於樂彩 Matrix 提供的 Matrix Pro 付費方案。</p><p>Matrix Pro 提供單次訂閱及自動續訂方式，實際付款方式，依使用者訂閱時的選擇為準。</p></LegalInfoSection>
-      <LegalInfoSection title="二、自動續訂"><p>使用者可自行選擇是否開啟自動續訂。</p><p>開啟自動續訂後，系統將於目前訂閱方案到期時，依原訂閱方案及續訂當時顯示的價格自動扣款，並延長相對應的 Matrix Pro 訂閱期間。</p><p>使用者可於下一次扣款前，先行關閉自動續訂。關閉自動續訂後，已付款的訂閱期間仍可使用至到期日，期滿後不再自動扣款或續訂。</p><p>關閉自動續訂僅停止下一期扣款，不等同取消目前訂閱或申請退款。</p><p>自動續訂扣款成功後，視為一筆新的 Matrix Pro 訂閱交易；如需申請退款，依本退款規範辦理。</p></LegalInfoSection>
+      <LegalInfoSection title="一、適用範圍"><p>本退款規範適用於樂彩 Matrix 提供的 Matrix Pro 付費方案。</p><p>{MANUAL_SUBSCRIPTION_NOTICE}</p></LegalInfoSection>
+      <LegalInfoSection title="二、自動續訂"><p>自動續訂開放後，使用者可自行選擇是否開啟，並適用以下說明。</p><p>開啟自動續訂後，系統將於目前訂閱方案到期時，依原訂閱方案及續訂當時顯示的價格自動扣款，並延長相對應的 Matrix Pro 訂閱期間。</p><p>使用者可於下一次扣款前，先行關閉自動續訂。關閉自動續訂後，已付款的訂閱期間仍可使用至到期日，期滿後不再自動扣款或續訂。</p><p>關閉自動續訂僅停止下一期扣款，不等同取消目前訂閱或申請退款。</p><p>自動續訂扣款成功後，視為一筆新的 Matrix Pro 訂閱交易；如需申請退款，依本退款規範辦理。</p></LegalInfoSection>
       <LegalInfoSection title="三、七日解除權與數位服務"><p>Matrix Pro 為付款後，提供使用權限的數位服務。</p><p>若付款流程已事先告知，並取得使用者同意立即提供數位內容或線上服務，且服務已開始提供，依法得排除七日解除權，不適用七日無條件解除。</p></LegalInfoSection>
       <LegalInfoSection title="四、可申請退款情形"><DetailList items={["重複付款。", "付款成功但 Matrix Pro 權限未開通。", "因 樂彩 Matrix 系統異常，致已購買的主要服務無法使用。", "其他依法應辦理退款的情形。"]} /></LegalInfoSection>
       <LegalInfoSection title="五、不予退款情形"><DetailList items={["使用者已事先同意立即提供數位服務，且 Matrix Pro 權限已開通並開始使用，依法得排除七日解除權的情形。", "非屬本規範或法律規定應退款的情形。", "關閉自動續訂僅停止下一期扣款，不溯及已完成的當期訂閱交易。"]} /></LegalInfoSection>
@@ -1225,7 +1228,7 @@ export function MemberTermsPage({ onNavigate }: { onNavigate: Navigate }) {
   const sections: Array<[string, React.ReactNode]> = [
     ["一、服務範圍", <p>樂彩 Matrix 提供 {subscriptionPurchaseVisible ? "Matrix 分析" : "Matrix 查詢"}、歷史資料查詢、號碼紀錄、計算工具、牌單及通知等功能。</p>],
     ["二、會員登入", <p>使用者透過 LINE 或 Google 登入後使用會員功能。</p>],
-    ["三、Matrix Pro 訂閱", <><p>Matrix Pro 提供月方案、季方案及年方案。</p><p>使用者可自行選擇是否開啟自動續訂。</p><p>開啟自動續訂後，系統將於目前方案到期時，依原訂閱方案自動續訂並扣款。</p><p>使用者可於方案到期前，先行關閉自動續訂；關閉之後，已付款的 Matrix Pro 仍可使用至到期日，期滿後不再自動續訂。</p></>],
+    ["三、Matrix Pro 訂閱", <><p>Matrix Pro 提供月方案、季方案及年方案。</p><p>{MANUAL_SUBSCRIPTION_NOTICE}</p><p>自動續訂開放後，使用者可自行選擇是否開啟，並適用以下說明。</p><p>開啟自動續訂後，系統將於目前方案到期時，依原訂閱方案自動續訂並扣款。</p><p>使用者可於方案到期前，先行關閉自動續訂；關閉之後，已付款的 Matrix Pro 仍可使用至到期日，期滿後不再自動續訂。</p></>],
     ["四、訂閱方案", <><ul className="legal-info-plans">{[
       "月方案：30 天，NT$2,880",
       "季方案：90 天，NT$5,580",
