@@ -30,6 +30,8 @@
     "../../../apps/admin/backend/matrix-optimizer": "../../../apps/admin/backend/matrix-optimizer.ts",
     "../../../apps/admin/backend/matrix-railway-evidence": "../../../apps/admin/backend/matrix-railway-evidence.ts",
     "../../../apps/admin/backend/matrix-chain": "../../../apps/admin/backend/matrix-chain.ts",
-    "../../../apps/admin/backend/matrix-inspector": "../../../apps/admin/backend/matrix-inspector.ts"
+    "../../../apps/admin/backend/matrix-inspector": "../../../apps/admin/backend/matrix-inspector.ts",
+    "../../../apps/admin/shared/admin-growth-series": "../../../apps/admin/shared/admin-growth-series.ts",
+    "../../../apps/admin/backend/member-provider-identity": "../../../apps/admin/backend/member-provider-identity.ts"
   }
 }
