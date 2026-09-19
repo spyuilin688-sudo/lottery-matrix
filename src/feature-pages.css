@@ -2235,6 +2235,8 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 /* All PWA feature titles share the Explore header; homepage branding is separate. */
 .product-header {
   --product-header-background: url("/assets/lottery/header-gold-arc.svg");
+  --product-header-copy-shade: linear-gradient(90deg, transparent 30%, rgba(2, 6, 9, .8) 44%, rgba(2, 6, 9, .8) 82%, transparent 100%);
+  --product-header-filter-shade: radial-gradient(ellipse 88px 32px at right bottom, rgba(2, 6, 9, .86) 65%, transparent 100%), var(--product-header-copy-shade);
   box-sizing: border-box;
   width: 100%;
   padding: 0 var(--layout-page-inline);
@@ -2249,33 +2251,41 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .product-header[data-product-header="Matrix 天衍"] {
   --product-header-background: url("/assets/lottery/headers/tianyan.webp");
+  --product-header-background-shade: var(--product-header-copy-shade);
 }
 .product-header[data-product-header="Matrix 天衡"] {
   --product-header-background: url("/assets/lottery/headers/tianheng.webp");
+  --product-header-background-shade: var(--product-header-copy-shade);
 }
 .product-header[data-product-header="Matrix 天樞"] {
   --product-header-background: url("/assets/lottery/headers/tianshu.webp");
+  --product-header-background-shade: var(--product-header-copy-shade);
 }
 .product-header[data-product-header="Matrix 探索"] {
   --product-header-background: url("/assets/lottery/headers/explore.webp");
 }
 .product-header[data-product-header="Matrix 同星"] {
   --product-header-background: url("/assets/lottery/headers/tongxing.webp");
+  --product-header-background-shade: var(--product-header-filter-shade);
 }
 .product-header[data-product-header="號碼對照單"] {
   --product-header-background: url("/assets/lottery/headers/reference.webp");
+  --product-header-background-shade: var(--product-header-filter-shade);
 }
 .product-header[data-product-header="歷史開獎號碼"] {
   --product-header-background: url("/assets/lottery/headers/history.webp");
+  --product-header-background-shade: var(--product-header-filter-shade);
 }
 .product-header[data-product-header="Matrix 牌單"] {
   --product-header-background: url("/assets/lottery/headers/matrix-card.webp");
 }
 .product-header[data-product-header="Matrix 指南"] {
   --product-header-background: url("/assets/lottery/headers/guide.webp");
+  --product-header-background-shade: var(--product-header-copy-shade);
 }
 .product-header[data-product-header="Matrix 狀態"] {
   --product-header-background: url("/assets/lottery/headers/status.webp");
+  --product-header-background-shade: var(--product-header-copy-shade);
 }
 .product-header[data-product-header="自訂觸發條件"],
 .product-header[data-product-header="Matrix 自訂觸發狀態"] {
@@ -2339,6 +2349,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .product-header[data-product-header="聲明與免責事項"] {
   --product-header-background: url("/assets/lottery/headers/disclaimer.webp");
+  --product-header-background-shade: var(--product-header-copy-shade);
 }
 /* Keep longer copy legible over the approved artwork without moving its slots. */
 .product-header[data-product-header="通知設定"],
