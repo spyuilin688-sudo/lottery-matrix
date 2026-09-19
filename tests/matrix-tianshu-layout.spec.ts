@@ -58,22 +58,6 @@ const validation = {
   }],
 };
 
-const tianhengValidation = {
-  ...validation,
-  itemId: tianhengItem.id,
-  sourceA: {
-    ...validation.sourceA,
-    lockedPositions: [1, 3], lockedNumbers: [5, 18],
-  },
-  ruleSets: validation.ruleSets.map(ruleSet => ({
-    ...ruleSet,
-    historicalValidation: ruleSet.historicalValidation.map(row => ({
-      ...row,
-      lockedPositions: [1, 3], lockedNumbers: [5, 18],
-    })),
-  })),
-};
-
 function layoutData(lottery: string) {
   const wide = lottery === '六合彩' || lottery === '大樂透';
   const sourceNumbers = wide ? ['05', '10', '18', '24', '31', '40', '49'] : ['05', '10', '18', '24', '31'];
@@ -178,7 +162,9 @@ for (const width of [320, 390]) {
         const source = page.getByTestId(`${algorithm.id}-source-row-B`);
         await expect(source.locator('.explore-validation-number')).toHaveText(expected.sourceNumbers);
         await expect(source.locator('.explore-validation-number--hit')).toHaveCount(algorithm.locks);
-        const metrics = await region.locator('.explore-validation-number-row').evaluateAll(rows => rows.map(row => {
+        const metrics = await region.locator('.explore-validation-number-row').evaluateAll(rows => rows
+          .filter(row => row.querySelector('.explore-validation-number'))
+          .map(row => {
           const card = row.closest<HTMLElement>('.explore-validation-numbers-card')!;
           const numbers = row.querySelector<HTMLElement>('.explore-validation-numbers')!;
           const cardBounds = card.getBoundingClientRect();
@@ -202,6 +188,13 @@ for (const width of [320, 390]) {
         }));
         console.log(`number containment ${algorithm.id} ${lottery} ${width}: ${JSON.stringify(metrics)}`);
         await region.screenshot({ path: testInfo.outputPath(`${algorithm.id}-${lottery}-${width}.png`), animations: 'disabled' });
+        expect(metrics).toHaveLength(3);
+        if (lottery === '今彩539') {
+          // Recorded before the spacing repair: changing gaps must not resize cards.
+          expect(metrics.map(row => [row.cardWidth, row.cardHeight, row.rowHeight])).toEqual(width === 320
+            ? [[97.234375, 83, 27], [97.234375, 83, 27], [97.234375, 56, 27]]
+            : [[167.234375, 86, 28], [167.234375, 86, 28], [167.234375, 58, 28]]);
+        }
         for (const row of metrics) {
           expect(row.fontSizes).toEqual(Array(expected.wide ? 7 : 5).fill(expected.wide ? '12px' : '13px'));
           for (const [index, number] of row.bounds.entries()) {

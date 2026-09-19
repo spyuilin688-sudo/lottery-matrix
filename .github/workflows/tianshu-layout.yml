@@ -7,6 +7,7 @@ on:
       - '.github/workflows/tianshu-layout.yml'
       - 'playwright.matrix-tianshu.config.ts'
       - 'src/ExploreValidationSummary.tsx'
+      - 'src/explore-result-preview.css'
       - 'src/feature-pages.css'
       - 'src/features/BrandHeader.tsx'
       - 'src/features/MatrixExplorePage.tsx'

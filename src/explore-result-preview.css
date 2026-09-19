@@ -273,6 +273,13 @@
   overflow: visible;
 }
 
+/* Tianheng and Tianshu share the same fixed cards. Spend only the available
+   five-number row space on gaps; reserve 1px for each end highlight. */
+.tianheng-validation-process {
+  --explore-validation-five-number-gap: clamp(2px, calc((100% - 5 * clamp(17px, 4.87vw, 19px)) / 4), calc(clamp(4px, 1.5vw, 6px) + 1px));
+  --explore-validation-five-number-padding: clamp(1px, calc((100% - 125px) / 2), 4px);
+}
+
 .explore-validation-rule-set {
   display: flex;
   min-width: 0;
@@ -834,8 +841,8 @@
 .matrix-explore-main-screen:not(.matrix-tianyan-screen)
   .explore-validation-group:is([data-lottery="今彩539"], [data-lottery="天天樂"])[data-wide-numbers="false"]
   .explore-validation-numbers {
-  gap: calc(clamp(4px, 1.5vw, 6px) + 1px);
-  padding-inline: 4px;
+  gap: var(--explore-validation-five-number-gap, calc(clamp(4px, 1.5vw, 6px) + 1px));
+  padding-inline: var(--explore-validation-five-number-padding, 4px);
 }
 
 .matrix-status-screen .explore-validation-result-number,
@@ -843,4 +850,3 @@
   font-size: calc(.8em - 2px);
   margin-inline: 2px;
 }
-
