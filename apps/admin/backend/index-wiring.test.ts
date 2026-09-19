@@ -58,7 +58,7 @@ const wiring = vi.hoisted(() => {
     ingestToken: 'server-only-ingest-token',
   }));
   const createNotificationEvents = vi.fn(() => ({ sendSystemNotice }));
-  const watchdogRun = vi.fn(async () => ({ status: 'ok', checkedAt: '2026-09-04T01:33:00.000Z', actions: [] }));
+  const watchdogRun = vi.fn(async () => ({ status: 'ok', checkedAt: '2026-09-04T01:33:00.000Z', dueLotteries: [] as string[], actions: [] }));
   const createIndependentWatchdog = vi.fn(() => ({ run: watchdogRun }));
   const expectedDrawDateForDueWindow = vi.fn((lottery: string) =>
     lottery === '今彩539' ? '2026-09-04' : null);
@@ -114,7 +114,7 @@ const sdk = vi.hoisted(() => {
 });
 
 vi.mock('@appdeploy/sdk', () => sdk);
-vi.mock('./worker-api', () => ({ createWorkerApi: wiring.createWorkerApi, getWorkerConfig: wiring.getWorkerConfig }));
+vi.mock('./worker-api', () => ({ createWorkerApi: wiring.createWorkerApi, getWorkerConfig: wiring.getWorkerConfig, PRODUCTION_RAILWAY_API_BASE: 'https://public-api.example' }));
 vi.mock('./supabase', () => ({
   createSupabaseTransport: wiring.createSupabaseTransport,
   getSupabaseConfig: vi.fn(async () => ({ url: 'https://supabase.example', serviceRoleKey: 'service-role-key' })),
@@ -243,6 +243,7 @@ describe('independent watchdog cron wiring', () => {
       wiring.watchdogRun.mockResolvedValueOnce({
         status: 'ok',
         checkedAt: '2026-09-04T12:39:00.000Z',
+        dueLotteries: ['今彩539'],
         actions: [],
       });
       wiring.watchdogStatusSave.mockClear();
@@ -280,7 +281,7 @@ describe('independent watchdog cron wiring', () => {
       status: 'degraded',
       checkedAt: '2026-09-04T01:39:00.000Z',
       completedAt: expect.any(String),
-      dueLotteries: ['今彩539'],
+      dueLotteries: [],
       actions: [],
       error: 'WATCHDOG_FAILED',
     });
@@ -290,6 +291,7 @@ describe('independent watchdog cron wiring', () => {
     wiring.watchdogRun.mockResolvedValueOnce({
       status: 'degraded',
       checkedAt: '2026-09-04T01:45:00.000Z',
+      dueLotteries: [],
       actions: [],
       error: 'STATUS_UNAVAILABLE',
     });
@@ -304,7 +306,7 @@ describe('independent watchdog cron wiring', () => {
       status: 'degraded',
       checkedAt: '2026-09-04T01:45:00.000Z',
       completedAt: expect.any(String),
-      dueLotteries: ['今彩539'],
+      dueLotteries: [],
       actions: [],
       error: 'STATUS_UNAVAILABLE',
     });
@@ -318,6 +320,7 @@ describe('independent watchdog cron wiring', () => {
       wiring.watchdogRun.mockResolvedValueOnce({
         status: 'ok',
         checkedAt: '2026-09-04T12:45:00.000Z',
+        dueLotteries: ['今彩539'],
         actions: [],
       });
       wiring.watchdogStatusSave.mockClear();
@@ -378,7 +381,7 @@ describe('Supabase watchdog invocation route', () => {
   it('authorizes through the service-role transport and runs with a Supabase owner id', async () => {
     wiring.supabaseRequest.mockResolvedValueOnce(true);
     wiring.watchdogRun.mockResolvedValueOnce({
-      status: 'ok', checkedAt: '2026-09-10T16:33:00.000Z', actions: [],
+      status: 'ok', checkedAt: '2026-09-10T16:33:00.000Z', dueLotteries: [], actions: [],
     });
     await expect(execute('cron-secret')).resolves.toMatchObject({ status: 200 });
     expect(wiring.supabaseRequest).toHaveBeenCalledWith(
@@ -408,6 +411,16 @@ describe('admin Railway route wiring', () => {
     expect(wiring.getWorkerConfig).toHaveBeenCalledWith(sdk.secrets);
     const dependencies = wiring.createConnectionStatus.mock.calls[0][0];
     await expect(dependencies.getWorkerStatus()).resolves.toEqual({ ok: false, health: null, jobs: null, reason: 'RAILWAY_UNAVAILABLE' });
+  });
+
+  it('checks public query routes on the API host while keeping protected jobs on the recovery host', async () => {
+    const dependencies = wiring.createConnectionStatus.mock.calls[0][0];
+    await expect(dependencies.loadWorkerUrl()).resolves.toBe('https://public-api.example');
+    const loadJobConfig = wiring.createWorkerApi.mock.calls[0][0];
+    await expect(loadJobConfig()).resolves.toMatchObject({
+      baseUrl: 'https://railway.example',
+      statusToken: 'server-token',
+    });
   });
 
   it('injects the server-only GitHub token loader into system status', async () => {

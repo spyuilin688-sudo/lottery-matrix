@@ -22,6 +22,7 @@ const app = vi.hoisted(() => {
           todayVisitors: 0, monthVisitors: 0, totalVisitors: 0, totalUsers: 1,
           monthlyPro: 0, quarterlyPro: 0, yearlyPro: 0, expiring: 0,
           todayRevenue: 0, monthRevenue: 0, quarterRevenue: 0, yearRevenue: 0, cumulativeRevenue: 0,
+          userGrowth: [], revenueGrowth: [],
         } };
         if (url.startsWith('/api/data/subscriptions?')) return { data: { total: 1, currentPage: 1, totalPages: 1, items: [{
           id: 'member-1', authUserId: 'auth-1', lineDisplayName: '測試會員', status: 'active',

@@ -18,6 +18,8 @@ const dashboard = {
   quarterRevenue: 0,
   yearRevenue: 0,
   cumulativeRevenue: 0,
+  userGrowth: [],
+  revenueGrowth: [],
 };
 
 vi.mock('@appdeploy/client', () => ({
