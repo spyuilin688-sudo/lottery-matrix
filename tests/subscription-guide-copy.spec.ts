@@ -7,7 +7,7 @@ for (const width of [320, 390, 768]) {
     await page.setViewportSize({ width, height: 844 });
     await page.route('https://*.supabase.co/**', route => {
       if (new URL(route.request().url()).pathname === '/rest/v1/rpc/matrix_permission_settings') {
-        return route.fulfill({ json: { subscriptionPurchaseVisible: true, registeredMemberFreeAccess: false, revision: 1 } });
+        return route.fulfill({ json: { subscriptionPurchaseVisible: true, registeredMemberFreeAccess: false, revision: 1, updatedAt: '2026-09-19T00:00:00Z' } });
       }
       return route.fulfill({ status: 503, json: { error: 'copy_test_unavailable' } });
     });
