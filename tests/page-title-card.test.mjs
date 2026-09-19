@@ -40,9 +40,9 @@ test("Matrix settings heading owns the fixed four-page control", () => {
   assert.match(styles, /\.matrix-settings-heading\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*space-between;/s);
 });
 
-test("status and profile flows use supplied artwork while status settings stays in the page header [header migration]", () => {
+test("status and profile flows use supplied artwork without retired status settings [header migration]", () => {
   assert.match(featurePages, /showBack=\{!logoOnlyHeader \|\| \(active === "我的" && backTarget === "profile"\) \|\| title === "Matrix 筆記本"\}/);
-  assert.match(featurePages, /className="header-settings-button"[^>]*aria-label="自訂觸發條件，連續點擊兩下開啟"/s);
+  assert.doesNotMatch(featurePages, /自訂觸發條件|MatrixCustomStatusPage/);
   assert.doesNotMatch(featurePages, /matrix-status-settings-entry/);
   assert.doesNotMatch(featurePages, /headerArtwork|status-title-trigger/);
 });

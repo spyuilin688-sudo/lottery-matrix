@@ -86,7 +86,6 @@ test('runtime fixtures resolve canonical CSS imports once and follow the main en
   const owner = (file, specifier) => specifier.startsWith('.') ? normalize(join(dirname(file), specifier)) : specifier;
   const mainOrder = cssImports(read('src/main.tsx')).map(specifier => owner('src/main.tsx', specifier));
   const fixtures = [
-    'tests/custom-status-layout-fixture.tsx',
     'tests/notebook-responsive-fixture.tsx',
     'tests/validation-format-fixture.tsx',
   ];

@@ -28,7 +28,7 @@ import {
   DisclaimerPage,
 } from "./MemberPages";
 import { PaymentHistoryPage } from "./PaymentHistoryPage";
-import { MatrixCustomStatusPage, MatrixStatusPage } from "./MatrixStatusPages";
+import { MatrixStatusPage } from "./MatrixStatusPages";
 import { LinePageGuard } from "../auth/LinePageGuard";
 import { useSubscriptionPurchaseVisible } from "../subscription-purchase-visibility";
 
@@ -78,6 +78,5 @@ export function FeaturePageRouter({
   if (screen === "member-terms") return <MemberTermsPage onNavigate={onNavigate} />;
   if (screen === "privacy-policy") return <PrivacyPolicyPage onNavigate={onNavigate} />;
   if (screen === "disclaimer") return <DisclaimerPage onNavigate={onNavigate} />;
-  if (screen === "status-settings") return <LinePageGuard key={screen} title="自訂觸發條件" onNavigate={onNavigate}><MatrixCustomStatusPage onNavigate={onNavigate} /></LinePageGuard>;
   return <MatrixStatusPage onNavigate={onNavigate} initialLottery={statusLottery} />;
 }

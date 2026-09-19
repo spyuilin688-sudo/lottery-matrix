@@ -5,12 +5,9 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import { render } from '../../test/render-with-dialog';
 
 const auth = vi.hoisted(() => ({ getSession: vi.fn(), onAuthStateChange: vi.fn() }));
-const settings = vi.hoisted(() => ({ listCustomStatusSettings: vi.fn() }));
 vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ auth }) }));
-vi.mock('../matrix-status-api', async (original) => ({ ...await original<typeof import('../matrix-status-api')>(), ...settings }));
 
 import { FeaturePageRouter } from '../features/router';
-import { MatrixStatusPage } from '../features/MatrixStatusPages';
 
 const lineSession = { access_token: 'test-session', user: { id: 'line-user', app_metadata: { provider: 'custom:line' }, identities: [] } };
 const authListeners = new Set<(event: string, session: unknown) => void>();
@@ -27,16 +24,14 @@ beforeEach(() => {
     authListeners.add(callback);
     return { data: { subscription: { unsubscribe: () => authListeners.delete(callback) } } };
   });
-  settings.listCustomStatusSettings.mockResolvedValue({ items: [], entitlements: { canCustomizeStatus: true } });
 });
 
-test.each([['notebook', 'Matrix 筆記本'], ['status-settings', '自訂觸發條件']] as const)('guest cannot mount %s and receives a LINE login dialog', async (route, title) => {
+test.each([['notebook', 'Matrix 筆記本']] as const)('guest cannot mount %s and receives a LINE login dialog', async (route, title) => {
   const navigate = vi.fn();
   const { container } = render(<FeaturePageRouter screen={route} onNavigate={navigate} />);
-  expect(container.querySelector('.matrix-notebook-screen, .matrix-custom-status-screen')).toBeNull();
+  expect(container.querySelector('.matrix-notebook-screen')).toBeNull();
   expect(await screen.findByRole('dialog', { name: '請先登入' })).toHaveTextContent(`請先登入後再使用 ${title}`);
   expect(navigate).not.toHaveBeenCalled();
-  expect(settings.listCustomStatusSettings).not.toHaveBeenCalled();
   expect(window.localStorage.getItem('matrix-notebook-entries')).toBeNull();
 });
 
@@ -45,13 +40,6 @@ test('a LINE member can enter the notebook without a Pro condition', async () =>
   render(<FeaturePageRouter screen="notebook" onNavigate={vi.fn()} />);
   expect(await screen.findByRole('button', { name: '新增筆記' })).toBeVisible();
   expect(screen.queryByRole('dialog')).toBeNull();
-});
-
-test('a LINE member can enter custom conditions and load their settings', async () => {
-  auth.getSession.mockResolvedValue({ data: { session: lineSession }, error: null });
-  const { container } = render(<FeaturePageRouter screen="status-settings" onNavigate={vi.fn()} />);
-  await waitFor(() => expect(container.querySelector('.matrix-custom-status-screen')).not.toBeNull());
-  await waitFor(() => expect(settings.listCustomStatusSettings).toHaveBeenCalled());
 });
 
 test('a Google member can enter the notebook without a Pro condition', async () => {
@@ -103,25 +91,4 @@ test('a session read failure keeps the page closed and explains the failure', as
   render(<FeaturePageRouter screen="notebook" onNavigate={vi.fn()} />);
   expect(await screen.findByRole('dialog', { name: '登入狀態確認失敗' })).toBeVisible();
   expect(screen.queryByRole('button', { name: '新增筆記' })).toBeNull();
-});
-
-test('the first tap on the custom-condition icon prompts a guest without navigating', async () => {
-  const navigate = vi.fn();
-  render(<div className="mobile-page"><MatrixStatusPage onNavigate={navigate} /></div>);
-  fireEvent.click(await screen.findByRole('button', { name: '自訂觸發條件，連續點擊兩下開啟' }));
-  expect(await screen.findByRole('dialog', { name: '請先登入' })).toHaveTextContent('請先登入後再使用 自訂觸發條件');
-  expect(navigate).not.toHaveBeenCalled();
-});
-
-test('a logged-in double tap still opens custom conditions while the session read is pending', async () => {
-  let finish!: (value: unknown) => void;
-  auth.getSession.mockReturnValue(new Promise((resolve) => { finish = resolve; }));
-  const navigate = vi.fn();
-  render(<div className="mobile-page"><MatrixStatusPage onNavigate={navigate} /></div>);
-  const entry = await screen.findByRole('button', { name: '自訂觸發條件，連續點擊兩下開啟' });
-  fireEvent.click(entry, { detail: 1 });
-  fireEvent.click(entry, { detail: 1 });
-  await act(async () => finish({ data: { session: lineSession }, error: null }));
-  await waitFor(() => expect(navigate).toHaveBeenCalledWith('status-settings'));
-  expect(navigate).toHaveBeenCalledTimes(1);
 });

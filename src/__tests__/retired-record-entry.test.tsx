@@ -9,7 +9,6 @@ import type { ScreenId } from '../features/navigation';
 vi.mock('../permission-settings', () => ({ usePermissionSettings: () => null }));
 vi.mock('../features/MatrixStatusPages', () => ({
   MatrixStatusPage: () => <p>Matrix 狀態</p>,
-  MatrixCustomStatusPage: () => null,
 }));
 afterEach(cleanup);
 
@@ -23,4 +22,11 @@ test('a stale record route cannot reopen the retired betting-record form', () =>
 test('the notebook module no longer exports the retired record implementation', () => {
   expect(notebook).not.toHaveProperty('NotesPage');
   expect(notebook.MatrixNotebookPage).toBeTypeOf('function');
+});
+
+test('a stale custom status route falls back to ordinary Matrix status', () => {
+  render(<FeaturePageRouter screen={'status-settings' as ScreenId} onNavigate={vi.fn()} />);
+  expect(screen.queryByText('自訂觸發條件')).not.toBeInTheDocument();
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(screen.getByText('Matrix 狀態')).toBeInTheDocument();
 });

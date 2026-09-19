@@ -1,22 +1,6 @@
 begin;
 
-select plan(9);
-
-select is(
-  has_function_privilege('anon', 'public.matrix_custom_status_reset(text,text)', 'EXECUTE'),
-  false,
-  'anon cannot reset Matrix custom status settings'
-);
-select is(
-  has_function_privilege('authenticated', 'public.matrix_custom_status_reset(text,text)', 'EXECUTE'),
-  true,
-  'authenticated can reset Matrix custom status settings'
-);
-select is(
-  has_function_privilege('service_role', 'public.matrix_custom_status_reset(text,text)', 'EXECUTE'),
-  true,
-  'service_role can reset Matrix custom status settings'
-);
+select plan(6);
 
 select is(
   has_function_privilege('anon', 'public.member_notification_settings_get()', 'EXECUTE'),

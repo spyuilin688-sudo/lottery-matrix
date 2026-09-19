@@ -27,7 +27,8 @@ describe('api status inventory', () => {
       expect.objectContaining({ id: 'railway-jobs-recover', endpoint: '/jobs/recover', checkMode: 'service' }),
       expect.objectContaining({ id: 'railway-number-reference', endpoint: '/api/matrix/number-reference' }),
     ]));
-    expect(apiStatusInventory).toHaveLength(68);
+    expect(apiStatusInventory).toHaveLength(65);
+    expect(apiStatusInventory.some(item => item.endpoint.includes('matrix_custom_status'))).toBe(false);
     expect(new Set(apiStatusInventory.map((item) => item.id)).size).toBe(apiStatusInventory.length);
     expect(apiStatusInventory.every((item) => item.name && item.group && item.endpoint)).toBe(true);
   });
@@ -83,8 +84,6 @@ describe('api status inventory', () => {
 
   it('never live-probes write endpoints', () => {
     const writeEndpoints = new Set([
-      '/rest/v1/rpc/matrix_custom_status_save',
-      '/rest/v1/rpc/matrix_custom_status_reset',
       '/rest/v1/rpc/admin_matrix_permission_settings_update',
       '/rest/v1/rpc/member_notification_settings_save',
       '/rest/v1/rpc/member_transfer_request_submit',

@@ -98,7 +98,7 @@ test("guide categories scroll horizontally and status settings stays in the page
   assert.equal(finalDeclaration(featureCss, ".matrix-guide-screen .guide-category-strip", "scroll-snap-type"), "x proximity");
   assert.doesNotMatch(canonicalFeatureCss, /status-title-trigger/);
   const featureSource = readFileSync(new URL("../src/features/MatrixStatusPages.tsx", import.meta.url), "utf8");
-  assert.match(featureSource, /className="header-settings-button"[^>]*aria-label="自訂觸發條件，連續點擊兩下開啟"/s);
+  assert.doesNotMatch(featureSource, /自訂觸發條件|MatrixCustomStatusPage/);
   assert.doesNotMatch(featureSource, /matrix-status-settings-entry/);
 });
 

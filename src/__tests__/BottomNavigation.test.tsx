@@ -114,7 +114,7 @@ describe("BottomNavigation", () => {
     expect(onQuickConfigure).toHaveBeenCalledTimes(1);
   });
 
-  it.each([500, 799])("快捷設定與自訂觸發條件一樣雙擊開啟，兩次點擊相隔 %ims", (intervalMs) => {
+  it.each([500, 799])("快捷設定保留雙擊開啟，兩次點擊相隔 %ims", (intervalMs) => {
     vi.useFakeTimers();
     const onQuickConfigure = vi.fn();
     const onQuickOpen = vi.fn();

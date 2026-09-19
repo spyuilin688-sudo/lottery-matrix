@@ -1,6 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { createDefaultCustomStatusConfig, type MatrixLottery } from './matrix-custom-status';
-import { matrixCustomStatusConfigKey } from './matrix-custom-status-result';
+import type { MatrixLottery } from '../shared/matrix-status-presets';
 import type { MemberContext } from './matrix-entitlements';
 import { createMatrixStatusRoutes } from './matrix-status-routes';
 
@@ -42,20 +41,6 @@ function compactFor(lottery: MatrixLottery, cardId = 'two-code:08,09:ACTIVE-2') 
 
 const compact = compactFor('今彩539');
 
-const raw = {
-  analysisVersion: 'v1',
-  drawPeriod,
-  explore: {
-    lottery: '今彩539' as const, drawPeriod, items: [{
-      id: 'raw-road', number: '05', lockedPosition: 1, predictionDistance: 1,
-      consecutive: '準7進8' as const, highestStreak: 7, predictionNumbers: ['08'],
-      algorithmType: '加減' as const, numberOrder: '依號碼由小到大排序' as const,
-      explorePeriods: 13 as const, exploreDateOffset: 0, ruleCount: 1, lockedSourceIndex: 7,
-    }],
-  },
-  tianyan: { lottery: '今彩539' as const, drawPeriod, items: [] },
-};
-
 function member(plan: MemberContext['plan'], memberId = 'member'): MemberContext {
   return {
     authUserId: `user-${memberId}`, memberId, plan,
@@ -63,14 +48,13 @@ function member(plan: MemberContext['plan'], memberId = 'member'): MemberContext
   };
 }
 
-it('uses compact precomputed status when the member has no custom status config', async () => {
+it('uses ordinary compact precomputed status for a member', async () => {
   let compactCalls = 0;
   let rawCalls = 0;
   const routes = createMatrixStatusRoutes({
     requireMember: async () => member('monthly'),
     readCompactStatus: async () => { compactCalls += 1; return compact; },
     readStatusSources: async () => { rawCalls += 1; throw new Error('raw source should not be read'); },
-    listConfigs: async () => [],
     now: () => new Date('2026-08-24T00:00:00Z'),
   });
 
@@ -88,109 +72,18 @@ it('uses compact precomputed status when the member has no custom status config'
   expect(rawCalls).toBe(0);
 });
 
-it('reads a member-specific precomputed result instead of raw sources for custom status', async () => {
-  const config = createDefaultCustomStatusConfig('今彩539', 'ACTIVE');
-  const readCustomStatus = vi.fn(async () => ({
-    ...compact,
-    configKey: matrixCustomStatusConfigKey([config], '今彩539'),
-    standardPayload: compact.payload,
-    compositePayload: compact.payload,
-  }));
-  const readStatusSources = vi.fn(async () => raw);
-  const readCompactStatus = vi.fn(async () => compact);
+it.each(lotteries)('uses ordinary precomputed status for %s', async (lottery) => {
+  const readCompactStatus = vi.fn(async () => compactFor(lottery));
+  const readStatusSources = vi.fn(async () => { throw new Error('raw sources must not be read'); });
   const routes = createMatrixStatusRoutes({
-    requireMember: async () => member('monthly'),
-    readCompactStatus,
-    readCustomStatus,
-    readStatusSources,
-    listConfigs: async () => [config],
-    now: () => new Date('2026-08-24T00:00:00Z'),
+    requireMember: async () => member('monthly'), readCompactStatus, readStatusSources,
   });
-
-  const response = await routes.get({ authorization: 'Bearer token', body: { lottery: '今彩539' } });
-
-  expect(response).toMatchObject({ status: 200, body: { lottery: '今彩539', drawPeriod } });
-  expect(readCustomStatus).toHaveBeenCalledTimes(1);
+  const response = await routes.get({ authorization: 'Bearer token', body: { lottery } });
+  expect(response).toMatchObject({ status: 200, body: { lottery, drawPeriod,
+    artifactKinds: ['explore', 'tianyan'], artifactCounts: { explore: 2, tianyan: 0 },
+  } });
+  expect(response.body).not.toHaveProperty('customSettings');
+  expect(response.body).not.toHaveProperty('customTriggers');
+  expect(readCompactStatus).toHaveBeenCalledWith(lottery, undefined);
   expect(readStatusSources).not.toHaveBeenCalled();
-  expect(readCompactStatus).not.toHaveBeenCalled();
-});
-
-it('never recomputes unchanged custom status during repeated homepage GETs', async () => {
-  const config = createDefaultCustomStatusConfig('今彩539', 'ACTIVE');
-  const readCustomStatus = vi.fn(async () => ({
-    ...compact,
-    configKey: matrixCustomStatusConfigKey([config], '今彩539'),
-    standardPayload: compact.payload,
-    compositePayload: compact.payload,
-  }));
-  const readStatusSources = vi.fn(async () => { throw new Error('raw recompute is forbidden on GET'); });
-  const routes = createMatrixStatusRoutes({
-    requireMember: async () => member('monthly'),
-    readCompactStatus: async () => compact,
-    readCustomStatus,
-    readStatusSources,
-    listConfigs: async () => [config],
-    now: () => new Date('2026-08-24T00:00:00Z'),
-  });
-
-  await expect(routes.get({ authorization: 'Bearer token', body: { lottery: '今彩539' } })).resolves.toMatchObject({ status: 200 });
-  await expect(routes.get({ authorization: 'Bearer token', body: { lottery: '今彩539' } })).resolves.toMatchObject({ status: 200 });
-
-  expect(readCustomStatus).toHaveBeenCalledTimes(2);
-  expect(readStatusSources).not.toHaveBeenCalled();
-});
-
-it.each(lotteries)('uses the precomputed member result for %s custom status', async (lottery) => {
-  const config = createDefaultCustomStatusConfig(lottery, 'ACTIVE');
-  const cached = compactFor(lottery, `custom:${lottery}`);
-  const readCustomStatus = vi.fn(async () => ({
-    ...cached,
-    configKey: matrixCustomStatusConfigKey([config], lottery),
-    standardPayload: cached.payload,
-    compositePayload: cached.payload,
-  }));
-  const readStatusSources = vi.fn(async () => { throw new Error('raw source should not be read'); });
-  const routes = createMatrixStatusRoutes({
-    requireMember: async () => member('monthly'),
-    readCompactStatus: async () => compactFor(lottery),
-    readCustomStatus,
-    readStatusSources,
-    listConfigs: async () => [config],
-    now: () => new Date('2026-08-24T00:00:00Z'),
-  });
-
-  await expect(routes.get({ authorization: 'Bearer token', body: { lottery } })).resolves.toMatchObject({
-    status: 200,
-    body: { lottery, drawPeriod },
-  });
-  expect(readCustomStatus).toHaveBeenCalledTimes(1);
-  expect(readStatusSources).not.toHaveBeenCalled();
-});
-
-it('keeps precomputed custom results isolated by member id', async () => {
-  const config = createDefaultCustomStatusConfig('今彩539', 'ACTIVE');
-  const readCustomStatus = vi.fn(async (memberId: string) => {
-    const cached = compactFor('今彩539', `custom:${memberId}`);
-    return {
-      ...cached,
-      configKey: matrixCustomStatusConfigKey([config], '今彩539'),
-      standardPayload: cached.payload,
-      compositePayload: cached.payload,
-    };
-  });
-  const makeRoutes = (memberId: string) => createMatrixStatusRoutes({
-    requireMember: async () => member('monthly', memberId),
-    readCompactStatus: async () => compact,
-    readCustomStatus,
-    readStatusSources: async () => { throw new Error('raw source should not be read'); },
-    listConfigs: async () => [config],
-    now: () => new Date('2026-08-24T00:00:00Z'),
-  });
-
-  const first = await makeRoutes('member-a').get({ authorization: 'Bearer a', body: { lottery: '今彩539' } });
-  const second = await makeRoutes('member-b').get({ authorization: 'Bearer b', body: { lottery: '今彩539' } });
-
-  expect((first.body.cards as Array<{ id: string }>)[0]?.id).toBe('custom:member-a');
-  expect((second.body.cards as Array<{ id: string }>)[0]?.id).toBe('custom:member-b');
-  expect(readCustomStatus.mock.calls.map((call) => call[0])).toEqual(['member-a', 'member-b']);
 });

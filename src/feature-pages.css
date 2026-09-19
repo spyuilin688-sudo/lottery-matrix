@@ -1466,7 +1466,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .lottery-logo-tabs img { display: block; width: 72px; max-width: 100%; height: 38px; object-fit: contain; }
 .lottery-logo-tabs span { font-size: 11px; white-space: nowrap; }
-:is(.matrix-status-screen, .matrix-custom-status-screen) .matrix-status-lottery-switcher {
+.matrix-status-screen .matrix-status-lottery-switcher {
   width: 100%;
   margin: 0 0 8px;
 }
@@ -1722,148 +1722,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   .matrix-status-screen .road-type-toggle svg { transition: none; }
 }
 
-/* Matrix custom status settings. Tab geometry is owned by homepage/lottery-switcher.css. */
-.matrix-custom-status-screen .custom-status-explore {
-  display: grid; min-width: 0; grid-template-columns: minmax(0,1fr) 8px minmax(0,1fr) 8px minmax(0,1fr);
-  align-items: center; margin: 0 0 8px; padding: 0;
-  color: var(--lottery-text-secondary); font-size: clamp(10px, 2.8vw, 11px); font-weight: 400; line-height: 1.5; text-align: center;
-}
-.matrix-custom-status-screen .custom-status-explore > span { min-width: 0; white-space: nowrap; }
-.matrix-custom-status-screen .custom-status-explore strong { color: inherit; font: inherit; }
-.matrix-custom-status-screen .custom-status-explore-divider { color: inherit; }
-.matrix-custom-status-screen .custom-status-section-heading {
-  display: flex; min-height: 24px; margin-bottom: 6px; align-items: center; justify-content: space-between; gap: 8px;
-}
-.matrix-custom-status-screen .custom-status-section-title {
-  margin: 0;
-  color: var(--lottery-gold-300);
-  font-size: 14px; font-weight: 600;
-  line-height: 1.5;
-}
-.matrix-custom-status-screen .custom-status-editor { min-width: 0; }
-.matrix-custom-status-screen .custom-status-hit-section { min-width: 0; margin-bottom: 14px; }
-.matrix-custom-status-screen .custom-status-hit-section + .custom-status-hit-section {
-  padding-top: 0;
-}
-.matrix-custom-status-screen .custom-status-groups { display: grid; min-width: 0; gap: 4px; }
-.matrix-custom-status-screen .custom-status-group {
-  position: relative; min-width: 0; border: 1px solid var(--pwa-frame-secondary); border-radius: var(--pwa-frame-radius); background: var(--lottery-neutral-900);
-}
-.matrix-custom-status-screen .custom-status-group:has(details[open]) { border-color: var(--pwa-frame-secondary); }
-.matrix-custom-status-screen .custom-status-group-toggle {
-  display: grid; min-width: 0; min-height: 32px; box-sizing: border-box; padding: 4px 36px 4px 8px;
-  grid-template-columns: minmax(0,1fr) 14px; gap: 6px; align-items: center;
-  border-radius: 7px; list-style: none; cursor: pointer;
-}
-.matrix-custom-status-screen .custom-status-group-toggle::-webkit-details-marker { display: none; }
-.matrix-custom-status-screen .custom-status-group-toggle::marker { content: ""; }
-.matrix-custom-status-screen .custom-status-group-toggle:hover { background: rgba(196,145,69,.05); }
-.matrix-custom-status-screen .custom-status-group-toggle:active { background: rgba(196,145,69,.09); }
-.matrix-custom-status-screen .custom-status-group-toggle:focus-visible { outline: 2px solid var(--lottery-gold-300); outline-offset: 2px; }
-.matrix-custom-status-screen .custom-status-group-preview {
-  display: flex; min-width: 0; flex-wrap: wrap; gap: 2px 8px; color: var(--lottery-text-secondary);
-  font-size: 11px; font-weight: 400; line-height: 16px; font-variant-numeric: tabular-nums;
-}
-.matrix-custom-status-screen .custom-status-group-preview > span { white-space: nowrap; }
-.matrix-custom-status-screen .custom-status-group-toggle > svg {
-  grid-column: 2; width: 14px; height: 14px;
-  color: var(--lottery-gold-500); transition: transform .18s ease;
-}
-.matrix-custom-status-screen details[open] > .custom-status-group-toggle > svg { transform: rotate(180deg); }
-.matrix-custom-status-screen .custom-status-group-body {
-  margin: 0 8px; padding: 8px 0 6px; border-top: 1px solid var(--pwa-frame-divider);
-}
-@media (prefers-reduced-motion: reduce) {
-  .matrix-custom-status-screen .custom-status-group-toggle > svg { transition: none; }
-}
-.matrix-custom-status-screen .custom-status-condition-row {
-  display: grid; min-width: 0; margin: 0; padding: 0; border: 0; gap: 6px;
-}
-.matrix-custom-status-screen .custom-status-condition-row legend {
-  padding: 0 0 4px; color: var(--lottery-text-secondary); font-size: 11px;
-}
-.matrix-custom-status-screen .custom-status-field {
-  display: grid; min-width: 0; grid-template-columns: 4em minmax(0,1fr); gap: 10px; align-items: center; font-size: 12px;
-}
-.matrix-custom-status-screen .custom-status-field--roads { grid-template-columns: minmax(0,1fr); gap: 5px; margin-bottom: 2px; }
-.matrix-custom-status-screen .custom-status-field-label {
-  color: var(--lottery-text-secondary); font-size: 12px; font-weight: 400; line-height: 1.5;
-}
-.matrix-custom-status-screen .custom-status-condition-row select,
-.matrix-custom-status-screen .custom-status-condition-row input[type="number"] {
-  box-sizing: border-box; width: 100%; min-width: 0; height: 24px; padding: 0 6px;
-  border: 1px solid var(--pwa-frame-tertiary); border-radius: var(--pwa-frame-radius);
-  color: var(--lottery-text-secondary); background: var(--pwa-control-surface); color-scheme: dark;
-  font: inherit; font-size: 13px; font-weight: 500; line-height: 1.4; font-variant-numeric: tabular-nums;
-}
-.matrix-custom-status-screen .custom-status-condition-row input::placeholder { color: #aaa7a2; opacity: 1; }
-.matrix-custom-status-screen .custom-status-range {
-  display: grid; min-width: 0; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); gap: 4px; align-items: end;
-}
-.matrix-custom-status-screen .custom-status-range label { position: relative; display: grid; min-width: 0; }
-.matrix-custom-status-screen .custom-status-range-divider { align-self: center; color: var(--lottery-text-secondary); font-size: 11px; }
-/* The two endpoints already show the range. Keep their labels and live summary available to assistive technology. */
-.matrix-custom-status-screen .custom-status-range label > span,
-.matrix-custom-status-screen .custom-status-range-summary {
-  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
-}
-.matrix-custom-status-screen .custom-status-road-sets { display: grid; min-width: 0; gap: 3px; }
-.matrix-custom-status-screen .custom-status-road-options {
-  display: grid; min-width: 0; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 4px;
-}
-.matrix-custom-status-screen .custom-status-road-options label {
-  display: flex; min-width: 0; min-height: 24px; padding: 0 4px;
-  align-items: center; justify-content: center; border-radius: 6px; font-size: 13px; cursor: pointer;
-}
-.matrix-custom-status-screen .custom-status-road-options input {
-  position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0;
-}
-.matrix-custom-status-screen .custom-status-road-options label[data-selected="true"] { font-weight: 600; }
-.matrix-custom-status-screen .custom-status-road-options label:has(input:disabled) { opacity: .55; cursor: default; }
-.matrix-custom-status-screen .custom-status-road-options label:has(input:enabled):hover { border-color: var(--pwa-frame-secondary); }
-.matrix-custom-status-screen .custom-status-road-options label:has(input:enabled):active { filter: brightness(.9); }
-.matrix-custom-status-screen .custom-status-road-options label:has(input:focus-visible) { outline: 2px solid var(--lottery-gold-300); outline-offset: 2px; }
-.matrix-custom-status-screen .custom-status-road-options input:disabled { opacity: 0; }
-.matrix-custom-status-screen .custom-status-road-or { color: #aaa7a2; text-align: center; font-size: 11px; }
-.matrix-custom-status-screen .custom-status-or,
-.matrix-custom-status-screen .custom-status-and {
-  display: flex; margin: 0; align-items: center; gap: 10px; color: var(--lottery-gold-500); font-size: 11px; line-height: 1.5;
-}
-.matrix-custom-status-screen .custom-status-or::before,
-.matrix-custom-status-screen .custom-status-or::after,
-.matrix-custom-status-screen .custom-status-and::before,
-.matrix-custom-status-screen .custom-status-and::after { content: ""; height: 1px; flex: 1; background: rgba(196,145,69,.25); }
-.matrix-custom-status-screen .custom-status-and { margin: 6px 0; }
-.matrix-custom-status-screen .custom-status-remove,
-.matrix-custom-status-screen .custom-status-remove-row {
-  display: inline-flex; min-height: 24px; align-items: center; justify-content: center; gap: 4px;
-  padding: 2px 4px; border: 1px solid transparent; border-radius: 5px; color: var(--lottery-text-secondary); background: transparent; font-size: 11px;
-}
-.matrix-custom-status-screen .custom-status-remove {
-  position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; padding: 3px;
-}
-.matrix-custom-status-screen .custom-status-remove-row { justify-self: end; }
-.matrix-custom-status-screen .custom-status-add-button {
-  display: inline-flex; box-sizing: border-box; width: fit-content; max-width: 100%; min-height: 24px; padding: 2px 6px; align-items: center; justify-content: center; justify-self: start; gap: 4px;
-  appearance: none; border: 1px solid var(--pwa-frame-tertiary); border-radius: var(--pwa-frame-radius);
-  background: var(--pwa-control-surface); color: var(--lottery-text-secondary); font-size: 12px; font-weight: 500; line-height: 1.4;
-}
-.matrix-custom-status-screen .custom-status-add-row { margin-top: 6px; border-color: transparent; background: transparent; }
-.matrix-custom-status-screen .custom-status-actions { position: sticky; bottom: calc(var(--layout-bottom-nav-clearance) + 8px); z-index: 1; display: grid; padding: 4px 0; grid-template-columns: repeat(2, max-content); justify-content: end; gap: 6px; background: var(--lottery-neutral-950); }
-.matrix-custom-status-screen .custom-status-actions button { display: inline-flex; box-sizing: border-box; align-items: center; justify-content: center; gap: 4px; min-height: 28px; padding: 2px 8px; border: 1px solid var(--pwa-frame-tertiary); border-radius: var(--pwa-frame-radius); color: var(--lottery-text-secondary); background: var(--pwa-control-surface); font-size: 12px; font-weight: 600; line-height: 1.4; }
-.matrix-custom-status-screen .custom-status-actions button:last-child { color: #17130b; background: linear-gradient(135deg,#e6b94d,#f4d77f); }
-.matrix-custom-status-screen .custom-status-message { color: #f0c86c; text-align: center; font-size: 11px; }
-.matrix-custom-status-screen .custom-status-editor button:not(:disabled),
-.matrix-custom-status-screen .custom-status-editor select:not(:disabled),
-.matrix-custom-status-screen .custom-status-editor input[type="checkbox"]:not(:disabled) { cursor: pointer; }
-.matrix-custom-status-screen .custom-status-editor button:not(:disabled):hover { filter: brightness(1.15); }
-.matrix-custom-status-screen .custom-status-editor button:not(:disabled):active { filter: brightness(.9); }
-.matrix-custom-status-screen .custom-status-editor :is(button,select,input,[tabindex]):focus-visible {
-  outline: 2px solid var(--lottery-gold-300); outline-offset: 2px;
-}
-.matrix-custom-status-screen .custom-status-editor :is(button,input,select):disabled { opacity: .55; cursor: default; }
-.matrix-custom-status-screen .custom-status-editor [aria-invalid="true"] { border-color: #efb064; outline: 1px solid #efb064; }
 .matrix-guide-screen .guide-intro { min-height: 82px; }
 .matrix-guide-screen .guide-intro img { width: 62px; height: 62px; }
 .road-results-head > span {
@@ -2291,11 +2149,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   --product-header-background: url("/assets/lottery/headers/status.webp");
   --product-header-background-shade: var(--product-header-copy-shade);
 }
-.product-header[data-product-header="自訂觸發條件"],
-.product-header[data-product-header="Matrix 自訂觸發狀態"] {
-  --product-header-background: url("/assets/lottery/headers/status-settings.webp");
-  --product-header-background-shade: var(--product-header-copy-shade);
-}
 .product-header[data-product-header="Matrix 筆記本"],
 .product-header[data-product-header="記事"],
 .product-header[data-product-header="記事詳細"] {
@@ -2549,15 +2402,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
-}
-.product-header__actions[data-placement="top-right"] {
-  top: 0;
-  right: 0;
-  bottom: auto;
-}
-.product-header__actions[data-placement="top-right"] > .header-settings-button {
-  padding: 4px 4px 0 0;
-  place-items: start end;
 }
 
 .feature-body {

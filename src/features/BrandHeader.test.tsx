@@ -13,8 +13,6 @@ test("all title variants render the official logo, complete title, subtitle and 
     ["號碼對照單", true, "NUMBER REFERENCE", "geometric"],
     ["Matrix 牌單", true, "DRAW SHEETS", "gold-arc"],
     ["Matrix 指南", true, "GUIDE", "gold-arc"], ["Matrix 狀態", true, "STATUS", "gold-arc"],
-    ["Matrix 自訂觸發狀態", true, "CUSTOM TRIGGERS", "gold-arc"],
-    ["自訂觸發條件", true, "CUSTOM TRIGGERS", "gold-arc"],
     ["連碰計算機", true, "COMBINATIONS", "gold-arc"], ["立柱計算機", true, "COLUMNS", "gold-arc"],
     ["通知設定", false, "NOTIFICATION SETTINGS", "gold-arc"], ["我的", false, "MY ACCOUNT", "gold-arc"],
     ["記事", false, "NOTES", "gold-arc"], ["記事詳細", true, "NOTE DETAILS", "gold-arc"],

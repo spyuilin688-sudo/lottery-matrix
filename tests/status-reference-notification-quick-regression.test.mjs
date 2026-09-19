@@ -14,8 +14,8 @@ const notifications = readFileSync(new URL("../src/NotificationsPagePatched.tsx"
 const main = readFileSync(new URL("../src/main.tsx", import.meta.url), "utf8");
 const lotterySwitcher = readFileSync(new URL("../src/homepage/lottery-switcher.css", import.meta.url), "utf8");
 
-test("Matrix 狀態兩頁的彩種切換器只由頁面內距控制左右外距", () => {
-  assert.match(feature, /:is\(\.matrix-status-screen, \.matrix-custom-status-screen\) \.matrix-status-lottery-switcher\s*\{[^}]*width:\s*100%;[^}]*margin:\s*0 0 8px;/s);
+test("Matrix 狀態頁的彩種切換器只由頁面內距控制左右外距", () => {
+  assert.match(feature, /\.matrix-status-screen \.matrix-status-lottery-switcher\s*\{[^}]*width:\s*100%;[^}]*margin:\s*0 0 8px;/s);
 });
 
 test("彩種按鈕使用共用 1px 圓角框並以亮度表示選取", () => {
@@ -24,18 +24,10 @@ test("彩種按鈕使用共用 1px 圓角框並以亮度表示選取", () => {
   assert.doesNotMatch(lotterySwitcher, /\.lottery-card::(?:before|after)\s*\{|clip-path:\s*polygon\(/s);
 });
 
-test("自訂觸發四狀態維持流動寬度並縮減高度與使用圓角", () => {
-  assert.match(lotterySwitcher, /\.matrix-custom-status-screen \.custom-status-tabs\s*\{[^}]*width:\s*100%;[^}]*height:\s*calc\([^;]+-\s*6px\);[^}]*padding-block:\s*0;[^}]*padding-inline:\s*4px;[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\);[^}]*gap:\s*6px;/s);
-  assert.match(lotterySwitcher, /\.custom-status-tabs > button\s*\{[^}]*height:\s*100%;[^}]*border-radius:\s*8px;/s);
-  assert.match(lotterySwitcher, /\.custom-status-tabs > button::after\s*\{[^}]*border-radius:\s*5px;/s);
-  assert.doesNotMatch(feature, /\.custom-status-tabs\s*\{[^}]*padding-inline:\s*4px;/s);
-  assert.doesNotMatch(feature, /\.custom-status-tabs button\s*\{[^}]*border-radius:\s*8px;/s);
-});
-
-test("Matrix 狀態設定入口只由頁首承載", () => {
+test("Matrix 狀態移除自訂設定入口", () => {
   assert.doesNotMatch(feature, /status-title-trigger/);
   assert.doesNotMatch(adjustments, /status-title-trigger/);
-  assert.match(pages, /className="header-settings-button"[^>]*aria-label="自訂觸發條件，連續點擊兩下開啟"/s);
+  assert.doesNotMatch(pages, /自訂觸發條件|MatrixCustomStatusPage/);
   assert.doesNotMatch(pages, /matrix-status-settings-entry/);
 });
 

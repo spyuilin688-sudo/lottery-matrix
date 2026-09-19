@@ -38,7 +38,6 @@ beforeEach(() => {
     summary: { status: statusByLottery[lottery], count: 0, message: '本期尚無符合條件的狀態。' },
     counts: { ACTIVE: 0, FOCUS: 0, RESONANCE: 0, CRITICAL: 0 },
     cards: [],
-    customTriggers: [],
     detailLocked: false,
   }));
 });

@@ -40,7 +40,7 @@ test("首頁狀態圖示維持位置，探索切換圖示移至設定標題同�
   assert.match(base, /\.home-screen \.matrix-status-lottery-logo\s*\{[^}]*left:\s*calc\(83\.5% - 24px\);/s);
   assert.match(feature, /\.matrix-settings-heading\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*space-between;/s);
   assert.doesNotMatch(feature, /status-title-trigger/);
-  assert.match(pages, /className="header-settings-button"[^>]*aria-label="自訂觸發條件，連續點擊兩下開啟"/s);
+  assert.doesNotMatch(pages, /自訂觸發條件|MatrixCustomStatusPage/);
   assert.doesNotMatch(pages, /matrix-status-settings-entry/);
   assert.doesNotMatch(exploreSpacing, /\.matrix-explore-main-screen \.matrix-title-banner-actions\s*\{/);
 });
@@ -49,7 +49,7 @@ test("查看更多紀錄間距為 2px", () => {
   assert.match(base, /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*gap:\s*2px;/s);
 });
 
-test("首頁、Matrix 狀態與自訂頁的彩種選取框只由共用切換器樣式管理", () => {
+test("首頁與 Matrix 狀態的彩種選取框只由共用切換器樣式管理", () => {
   assert.match(switcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid var\(--home-frame-muted\);[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*background-color:\s*rgba\(0, 0, 0, \.4\);/s);
   assert.match(switcher, /\.lottery-card\[data-selected="true"\]\s*\{[^}]*background-color:\s*transparent;/s);
   assert.doesNotMatch(`${switcher}\n${visual}`, /\.lottery-card::(?:before|after)\s*\{|--home-octagon-frame/);

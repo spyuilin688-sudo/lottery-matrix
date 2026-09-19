@@ -72,7 +72,6 @@
 
 付款紀錄先確認登入狀態，確認前不查詢會員付款資料。未登入顯示「請先登入，即可查看付款紀錄。」及「前往登入」，返回既有「我的」頁使用 LINE 登入流程。只有已登入且查詢成功為空陣列才顯示「目前沒有付款紀錄。」；登入狀態確認失敗與付款資料讀取失敗分開提示並可重新載入。沿用共用逾時機制，不把未知狀態當成訪客。登出、切換帳號或重試時立即撤銷舊請求的畫面更新資格；同帳號 token 更新不重查或閃動。資料只保留於本次頁面 state，實際授權仍由既有 RPC 與資料庫負責；訂閱購買顯示開關維持原控制範圍。
 
-2026-09-08 自訂觸發條件採共用22條預設模板；初入顯示「使用預設條件」，修改後顯示「已自訂」。一碼與兩碼各自呈現條件群組；同卡條件為AND、不同卡為OR，AND只使用同一組預測號碼。連準起終點與同碼最少最多皆包含邊界；最多空白為不限。版路使用原生複選與any/all關係；三條既有替代版路規則保留各組合獨立計數，在一張卡中以「或」呈現版路組合。舊設定最低數量保留為最少，最多不限。範圍無效時標記並聚焦欄位；讀取失敗不展示假預設，儲存失敗保留輸入；各彩種／狀態草稿與延遲回應互不覆蓋。重置僅清除目前彩種／狀態設定。依據為本對話使用者完整規格；模板來源services/matrix-api/app/domain/status-rules.json，資料契約shared/matrix-status-config.ts。
 
 Product forms set `noValidate` and own validation instead of invoking browser validation bubbles. Every field keeps a visible label association; invalid fields use `aria-invalid` and `aria-describedby` that points to existing help or error text. Submission focuses or scrolls to the first invalid field, preserves entered values, disables duplicate submission with a perceivable busy state, and keeps control geometry stable. A request failure remains inline and recoverable; editing clears only the stale error that no longer applies.
 
@@ -122,9 +121,8 @@ The dialog preserves the existing navy, gold, danger-red and success-green visua
 
 2026-09-12：首頁 Matrix Core 保持獨立探索入口，顯示「進入更深層的演算法」說明；四大功能依序開啟既有 `tongxing`、`reference`、`matrix-card`、`guide` 路由。移除功能列中的計算機，底部導覽及快捷設定的計算機保留。插畫不包含卡名；原生按鈕提供文字名稱、鍵盤焦點及按壓回饋。靜止金屬素材取代循環光圈，減少動態干擾。
 
-2026-09-14：底部導覽依使用者指定順序提供「首頁、快捷、計算機、我的」。計算機沿用既有 `calculator` 路由，選中態由 `QuickNavigationContext.currentScreen` 推導，保留工具頁標題與返回行為；快捷開啟時優先顯示快捷選中態。原通知入口移至「我的 → 系統相關 → 通知設定」，仍使用既有通知頁及資料流程，該頁將「我的」標示為目前導覽群組。首頁快捷設定與狀態頁自訂觸發條件入口均保留；兩者繼續使用既有 800ms 內雙擊及鍵盤／輔助操作的原生 click 行為，不改動權限、設定內容或儲存邏輯。導覽滿寬四等分；首頁快捷設定移至 Logo 右上角，自訂觸發條件移至狀態頁頁首 action slot，兩者維持 44px 觸控區。
+2026-09-14：底部導覽依使用者指定順序提供「首頁、快捷、計算機、我的」。計算機沿用既有 `calculator` 路由，選中態由 `QuickNavigationContext.currentScreen` 推導，保留工具頁標題與返回行為；快捷開啟時優先顯示快捷選中態。原通知入口移至「我的 → 系統相關 → 通知設定」，仍使用既有通知頁及資料流程，該頁將「我的」標示為目前導覽群組。首頁快捷設定入口保留，繼續使用既有 800ms 內雙擊及鍵盤／輔助操作的原生 click 行為，不改動權限、設定內容或儲存邏輯。導覽滿寬四等分；首頁快捷設定移至 Logo 右上角，維持 44px 觸控區。
 
-2026-09-08：依使用者截圖要求，自訂觸發條件頁的探索摘要改為四狀態下方單列「探索期數：十三期 | 探索範圍：完整範圍」，分隔符水平置中，整列標籤、值與分隔符統一正文白色；原預設／自訂狀態保留於一碼條件標題右側。後續依使用者要求一併整理字型、位置與結構，群組以原生 details/summary 預設收合，各組可獨立展開；收合仍提供條件摘要。新增群組直接展開，收合不清除草稿；儲存遇到欄位錯誤先展開所在群組再聚焦。切換彩種或狀態恢復該頁群組初始收合，草稿仍依原有方式保留。刪除按鍵獨立，版路整列、其餘欄位對齊；底部重置與儲存列位於導覽列上方，留出8px間隔；現有選項、群組關係、儲存與重置規則不變。
 
 2026-09-08：Matrix 狀態在資料回傳前顯示「資料載入中」及分類的「載入中」，讀取失敗時數量顯示「—」，成功完成後才顯示組數並開放展開。天工僅在探索成功後顯示結果組數。探索、天衍與天工收到 `AUTH_REQUIRED` 或 `FORBIDDEN` 時使用共用 `AppDialog` 提醒，關閉後保留頁面錯誤文字並可重試；天衍與天工方案不符文案為「目前 Matrix Pro 方案不符合天衍／天工的使用條件」。沿用共用視窗尺寸與觸控高度，不更動會員資格及試用規則。
 
@@ -136,7 +134,7 @@ The dialog preserves the existing navy, gold, danger-red and success-green visua
 
 2026-09-05：營運概覽新增本日瀏覽人數、本月瀏覽人數、總瀏覽人數，沿用既有 Cards 與手機排列。匿名識別雜湊保留 90 天，清除後再次造訪重新累加總瀏覽人數；彙總人數保留。日期沿用 Asia/Taipei。
 
-使用者於 2026-09-05 確認：快捷設定與自訂觸發條件一樣，皆為雙擊開啟。兩個設定入口沿用共用的 `useDoubleClickAction`；對應行為驗證位於 `BottomNavigation.test.tsx` 與 `MatrixStatusPage.test.tsx`。快捷設定的雙擊測試屬於正式規格驗證。
+快捷設定維持雙擊開啟，沿用 `useDoubleClickAction`；對應行為驗證位於 `BottomNavigation.test.tsx`。快捷設定的雙擊測試屬於正式規格驗證。
 
 Bottom navigation, feature back actions and existing routes remain the navigation owners. Async actions prevent duplicates, expose busy state, preserve user-entered data on recoverable failure and ignore stale completions after unmount where their existing request owner supports cancellation or revision tracking. No direct action may use an empty handler, empty link, dummy request or success copy without a completed operation.
 
@@ -246,7 +244,6 @@ After result notification dispatch, the trusted producer requests immediate back
 ## 2026-09-08：查詢與設定回應
 
 - Matrix 探索、天衍、同星及號碼對照單只接受最近一次已送出查詢的回應；較舊的成功、錯誤及捲動回呼都不得覆蓋新查詢。單純編輯未送出的條件維持原有行為。
-- 依 2026-09-08 使用者最新修正，自訂觸發條件在狀態頁入口先查驗登入與伺服器 `canCustomizeStatus`，通過才換頁；檢查期間顯示設定讀取中並防止重複請求。未登入、方案不符或讀取失敗使用共用 `AppDialog`，關閉後留在原狀態頁並可重試。移除自訂頁內登入／方案提示卡；若進頁後再次驗證或儲存／重置時失去權限，隱藏自訂頁並返回狀態頁顯示同一提醒。保留正式 RPC 驗證及既有方案條件。
 - 通知設定儲存失敗在頁內持續顯示提示及「重試儲存」，保留最新編輯；只有伺服器確認最新設定後才清除提示。重試期間防止重複提交，離頁後不更新畫面。
 
 
@@ -314,7 +311,7 @@ After result notification dispatch, the trusted producer requests immediate back
 
 - Core condition options display ASCII parentheses with exactly one U+0020 space before the opening parenthesis, e.g. `準5+ (鎖定2碼)`. Button accessible names match visible text. Existing internal condition values and request/default selection behavior remain intact.
 
-- Result terminology is independent of subscription purchase visibility: four algorithms and related status/validation views use 結果期, 結果, 結果位置 and 版路結果. Number-filter accessible names use 篩選結果號碼; request keys, persisted values, result numbers and entitlements remain unchanged. The custom trigger page title is 自訂觸發條件; the profile system menu opens the existing notifications route through 通知設定.
+- Result terminology is independent of subscription purchase visibility: four algorithms and related status/validation views use 結果期, 結果, 結果位置 and 版路結果. Number-filter accessible names use 篩選結果號碼; request keys, persisted values, result numbers and entitlements remain unchanged. The profile system menu opens the existing notifications route through 通知設定.
 
 
 ## Admin service evidence — 2026-09-13
@@ -353,3 +350,5 @@ After result notification dispatch, the trusted producer requests immediate back
 - 天樞獨立呼叫需登入的 `matrix_tianshu_list` 與 `matrix_tianshu_validation`。清單保留天衡請求選項；每筆資料另要求 `thirdNumber` 與 `thirdLockedPosition`。驗證的 `lockedNumbers` 與 `lockedPositions` 在本期來源及歷史列都必須正好三項，格式錯誤視為 API 錯誤。
 - 天樞與天衡共用現有 CSS、06 背景、卡片幾何與雙列摘要適配器；不新增快速設定、功能分類、樣式覆寫或素材。
 - 窄螢幕方案 A 調整共用五碼列的間距及左右留白，維持原字級與卡片尺寸；使用者追加確認七碼列可縮窄公式欄並加寬號碼欄，保留整張卡片與字級。瀏覽器驗證須檢查每個號碼文字、鎖定框、參照框及特別號「＋」完整位於欄內且不互相重疊，期數與公式也必須完整顯示。天衡與天樞都要涵蓋拖牌與較長的合值公式，以及 320px、過渡寬度與 390px，不以外框尺寸相同取代可讀性驗證。
+
+2026-09-20：依使用者確認移除自訂觸發狀態的設定入口、頁面、讀寫 API、專用計算與資料。Watchdog、Inspector、Recovery 不再要求自訂狀態；一般 Matrix Status 與四彩開獎分析保留。

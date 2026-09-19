@@ -24,9 +24,6 @@ const supabaseRpcDefinitions = [
   ['matrix_tianyan_validation', 'Matrix 天衍驗證', 'Matrix 演算法', '取得 Matrix 天衍分析驗證資料。'],
   ['matrix_tiangong_list', 'Matrix 天工清單', 'Matrix 演算法', '取得 Matrix 天工分析清單。'],
   ['matrix_tiangong_validation', 'Matrix 天工驗證', 'Matrix 演算法', '取得 Matrix 天工分析驗證資料。'],
-  ['matrix_custom_status_list', '自訂觸發條件清單', 'Matrix 狀態', '取得會員自訂觸發條件。'],
-  ['matrix_custom_status_save', '儲存自訂觸發條件', 'Matrix 狀態', '儲存會員自訂觸發條件。'],
-  ['matrix_custom_status_reset', '重設自訂觸發條件', 'Matrix 狀態', '重設會員自訂觸發條件。'],
   ['matrix_permission_settings', 'Matrix 權限設定', '權限設定', '取得目前 Matrix 權限開關設定。'],
   ['admin_matrix_permission_settings_update', '管理員更新 Matrix 權限設定', '權限設定', '由管理者後臺更新一項 Matrix 權限開關。'],
   ['member_bootstrap', '建立會員資料', '會員', '建立或補齊會員資料。'],
@@ -61,7 +58,7 @@ const supabaseRpcDefinitions = [
 
 // One classification for both the backend checks and UI evidence descriptions.
 const publicReadRpcs = new Set<string>(['matrix_explore_list', 'matrix_explore_validation', 'matrix_tianheng_list', 'matrix_tianheng_validation', 'matrix_permission_settings']);
-const memberReadRpcs = new Set<string>(['matrix_tianshu_list', 'matrix_tianshu_validation', 'matrix_tianyan_list', 'matrix_tianyan_validation', 'matrix_tiangong_list', 'matrix_tiangong_validation', 'matrix_custom_status_list', 'member_referral_summary', 'member_profile', 'member_notification_settings_get', 'member_pending_transfer_request', 'member_payment_history_get', 'member_push_subscription_status']);
+const memberReadRpcs = new Set<string>(['matrix_tianshu_list', 'matrix_tianshu_validation', 'matrix_tianyan_list', 'matrix_tianyan_validation', 'matrix_tiangong_list', 'matrix_tiangong_validation', 'member_referral_summary', 'member_profile', 'member_notification_settings_get', 'member_pending_transfer_request', 'member_payment_history_get', 'member_push_subscription_status']);
 
 const supabaseRpcInventory: ApiStatusDefinition[] = supabaseRpcDefinitions.map(
   ([rpc, name, group, description]) => ({

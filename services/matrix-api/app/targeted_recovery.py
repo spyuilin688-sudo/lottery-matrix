@@ -1,7 +1,6 @@
 """Period-bound recovery using the existing crawler and leased analysis pipeline."""
 from app.settings import load_settings
 from app.repositories.analysis_repository import create_supabase_repository
-from app.services.custom_status_recompute import recompute_custom_matrix_status_once
 from app.worker import _draw_from_history, _run_analysis, analysis_version_for_order
 from app.domain.explore_state import SORTED_ORDER, DRAW_ORDER
 
@@ -18,12 +17,12 @@ def verify_recovery(lottery: str, period: str | None) -> bool:
         'p_lottery': lottery, 'p_draw_period': period,
     }).execute().data
     return isinstance(state, dict) and state.get('latestPeriod') == period and all(
-        state.get(key) is True for key in ('analysisComplete','matrixStatusComplete','customStatusComplete')
+        state.get(key) is True for key in ('analysisComplete','matrixStatusComplete')
     )
 
 
 def run_targeted_recovery(lottery: str, period: str | None, stage: str, minimum_draw_date: str | None, *, lease_owner: str | None = None, runner_id: str | None = None) -> str:
-    if stage not in {'crawler','analysis','matrix-status','custom-status'}:
+    if stage not in {'crawler','analysis','matrix-status'}:
         raise ValueError('RECOVERY_STAGE_INVALID')
     if stage == 'crawler' and not minimum_draw_date:
         raise ValueError('RECOVERY_DRAW_DATE_REQUIRED')
@@ -61,6 +60,4 @@ def run_targeted_recovery(lottery: str, period: str | None, stage: str, minimum_
         }).execute().data
         if restored is not True:
             raise RuntimeError('RECOVERY_POINTERS_NOT_VERIFIED')
-    settings = load_settings()
-    recompute_custom_matrix_status_once(settings.supabase_url, settings.supabase_secret_key, lottery, period)
     return period

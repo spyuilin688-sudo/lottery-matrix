@@ -42,8 +42,8 @@ test("Matrix Guide contains the requested chapters and exact notification set", 
   );
   assert.match(featureSource, /標準範圍：上1～7、當期、下 N 至結果期前一期；不包含結果期。/);
   assert.match(featureSource, /完整範圍：上1～14、當期、下 N 至結果期前一期；不包含結果期。/);
-  assert.match(featureSource, /title: "自訂觸發條件"/);
-  assert.match(featureSource, /title: "四狀態條件設定"/);
+  assert.doesNotMatch(featureSource, /title: "自訂觸發條件"/);
+  assert.doesNotMatch(featureSource, /title: "四狀態條件設定"/);
   assert.doesNotMatch(featureSource, /投注通知/);
 });
 

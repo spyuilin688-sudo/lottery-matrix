@@ -1,8 +1,3 @@
-import type { CustomStatusConfig } from './matrix-custom-status.ts';
-import {
-  matrixCustomStatusConfigKey,
-  type MatrixCustomStatusResult,
-} from './matrix-custom-status-result.ts';
 import { anonymousMatrixMember, resolveMatrixEntitlements, type MatrixEntitlements, type MemberContext } from './matrix-entitlements.ts';
 import { MatrixAccessError } from './matrix-member-auth.ts';
 import {
@@ -12,10 +7,6 @@ import {
 } from './matrix-status-service.ts';
 
 type LotteryId = '今彩539' | '天天樂' | '六合彩' | '大樂透';
-type StatusIdentity = {
-  analysisVersion: string;
-  drawPeriod: string;
-};
 type StatusSources = {
   analysisVersion: string;
   drawPeriod: string;
@@ -36,20 +27,13 @@ type RouteResult = { status: number; body: Record<string, unknown> };
 type Dependencies = {
   requireMember(authorization?: string): Promise<MemberContext>;
   readStatusSources(lottery: LotteryId, drawPeriod?: string): Promise<StatusSources | null>;
-  readStatusIdentity?(lottery: LotteryId, drawPeriod?: string): Promise<StatusIdentity | null>;
   readCompactStatus?(lottery: LotteryId, drawPeriod?: string): Promise<CompactStatus | null>;
-  readCustomStatus?(
-    memberId: string,
-    lottery: LotteryId,
-    drawPeriod?: string,
-  ): Promise<MatrixCustomStatusResult | null>;
   readStatusValidation?(
     lottery: LotteryId,
     drawPeriod: string,
     analysisVersion: string,
     itemId: string,
   ): Promise<StatusValidationSource | null>;
-  listConfigs(memberId: string): Promise<CustomStatusConfig[]>;
   now?: () => Date;
 };
 
@@ -118,7 +102,6 @@ function projectCompactStatus(
   lottery: LotteryId,
   drawPeriod: string,
   entitlements: MatrixEntitlements,
-  preserveCustom = false,
 ) {
   if (payloadValue.lottery !== lottery || payloadValue.drawPeriod !== drawPeriod) {
     throw new Error('ANALYSIS_NOT_READY');
@@ -134,28 +117,13 @@ function projectCompactStatus(
       roads: projected.roads,
     };
   });
+  const { customTriggers: _retiredTriggers, customSettings: _retiredSettings, ...payload } = payloadValue;
   return {
-    ...payloadValue,
+    ...payload,
     lottery,
     drawPeriod,
     cards,
-    ...(preserveCustom ? {} : { customTriggers: [], customSettings: [] }),
   };
-}
-
-function projectCachedCustomStatus(
-  cached: MatrixCustomStatusResult,
-  configs: CustomStatusConfig[],
-  lottery: LotteryId,
-  entitlements: MatrixEntitlements,
-) {
-  if (cached.configKey !== matrixCustomStatusConfigKey(configs, lottery)) {
-    throw new Error('ANALYSIS_NOT_READY');
-  }
-  const payload = entitlements.canUseCompositeCustomRoad
-    ? cached.compositePayload
-    : cached.standardPayload;
-  return projectCompactStatus(payload, lottery, cached.drawPeriod, entitlements, true);
 }
 
 function projectStatusSummary(
@@ -173,34 +141,6 @@ function projectStatusSummary(
   return summary as Record<string, unknown>;
 }
 
-function currentCustomResult(
-  cached: MatrixCustomStatusResult | null,
-  identity: StatusIdentity | null,
-) {
-  if (!cached?.analysisVersion || !cached.drawPeriod) return null;
-  if (identity && (
-    !identity.analysisVersion
-    || !identity.drawPeriod
-    || cached.drawPeriod !== identity.drawPeriod
-    || cached.analysisVersion !== identity.analysisVersion
-  )) return null;
-  return cached;
-}
-
-function requireCurrentCustomResult(
-  cached: MatrixCustomStatusResult | null,
-  identity: StatusIdentity | null,
-) {
-  if (!cached?.analysisVersion || !cached.drawPeriod) throw new Error('ANALYSIS_NOT_READY');
-  if (identity && (
-    !identity.analysisVersion
-    || !identity.drawPeriod
-    || cached.drawPeriod !== identity.drawPeriod
-    || cached.analysisVersion !== identity.analysisVersion
-  )) throw new Error('ANALYSIS_NOT_READY');
-  return cached;
-}
-
 export function createMatrixStatusRoutes(dependencies: Dependencies) {
   const now = dependencies.now ?? (() => new Date());
   const memberFor = (authorization?: string) => authorization
@@ -214,49 +154,7 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
         const lottery = String(body.lottery ?? '') as LotteryId;
         if (!lotteries.includes(lottery)) throw new Error('INVALID_REQUEST');
         const requestedPeriod = body.drawPeriod ? String(body.drawPeriod) : undefined;
-        const configs = member.memberId ? await dependencies.listConfigs(member.memberId) : [];
-        const lotteryConfigs = configs.filter((config) => config.lottery === lottery);
         const entitlements = resolveMatrixEntitlements(member, now());
-        const customActive = Boolean(
-          member.memberId
-          && lotteryConfigs.length > 0
-          && entitlements.canCustomizeStatus,
-        );
-
-        if (customActive && dependencies.readCustomStatus) {
-          const identity = dependencies.readStatusIdentity
-            ? await dependencies.readStatusIdentity(lottery, requestedPeriod)
-            : null;
-          if (!dependencies.readStatusIdentity || identity) {
-            const cached = currentCustomResult(
-              await dependencies.readCustomStatus(
-                member.memberId,
-                lottery,
-                identity?.drawPeriod ?? requestedPeriod,
-              ),
-              identity,
-            );
-            if (
-              cached
-              && cached.configKey === matrixCustomStatusConfigKey(configs, lottery)
-            ) {
-              const payload = entitlements.canUseCompositeCustomRoad
-                ? cached.compositePayload
-                : cached.standardPayload;
-              return {
-                status: 200,
-                body: {
-                  kind: 'status-summary',
-                  lottery,
-                  drawPeriod: cached.drawPeriod,
-                  analysisVersion: `${cached.analysisVersion}:status`,
-                  sourceAnalysisVersion: cached.analysisVersion,
-                  summary: projectStatusSummary(payload, lottery, cached.drawPeriod),
-                },
-              };
-            }
-          }
-        }
 
         if (dependencies.readCompactStatus) {
           const compact = await dependencies.readCompactStatus(lottery, requestedPeriod);
@@ -290,8 +188,6 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
         }
         const artifact = buildMatrixStatusArtifact(
           sources.explore,
-          sources.tianyan,
-          customActive ? [] : configs,
           entitlements,
         );
         return {
@@ -317,50 +213,9 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
         const lottery = String(body.lottery ?? '') as LotteryId;
         if (!lotteries.includes(lottery)) throw new Error('INVALID_REQUEST');
         const requestedPeriod = body.drawPeriod ? String(body.drawPeriod) : undefined;
-        const configs = member.memberId ? await dependencies.listConfigs(member.memberId) : [];
-        const lotteryConfigs = configs.filter((config) => config.lottery === lottery);
         const entitlements = resolveMatrixEntitlements(member, now());
-        const customActive = Boolean(
-          member.memberId
-          && lotteryConfigs.length > 0
-          && entitlements.canCustomizeStatus,
-        );
 
-        if (customActive && dependencies.readCustomStatus) {
-          const identity = dependencies.readStatusIdentity
-            ? await dependencies.readStatusIdentity(lottery, requestedPeriod)
-            : null;
-          if (dependencies.readStatusIdentity && !identity) throw new Error('ANALYSIS_NOT_READY');
-          const cached = requireCurrentCustomResult(
-            await dependencies.readCustomStatus(
-              member.memberId,
-              lottery,
-              identity?.drawPeriod ?? requestedPeriod,
-            ),
-            identity,
-          );
-          const artifact = projectCachedCustomStatus(
-            cached,
-            configs,
-            lottery,
-            entitlements,
-          );
-          return {
-            status: 200,
-            body: {
-              kind: 'status',
-              lottery,
-              drawPeriod: cached.drawPeriod,
-              analysisVersion: `${cached.analysisVersion}:status`,
-              sourceAnalysisVersion: cached.analysisVersion,
-              ...artifact,
-              detailLocked: !entitlements.canViewFullStatus,
-              cards: artifact.cards,
-            },
-          };
-        }
-
-        if (!customActive && dependencies.readCompactStatus) {
+        if (dependencies.readCompactStatus) {
           const compact = await dependencies.readCompactStatus(lottery, requestedPeriod);
           if (!compact?.analysisVersion || !compact.drawPeriod || !compact.payload) {
             throw new Error('ANALYSIS_NOT_READY');
@@ -398,8 +253,6 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
         }
         const artifact = buildMatrixStatusArtifact(
           sources.explore,
-          sources.tianyan,
-          configs,
           entitlements,
         );
         const detailLocked = !entitlements.canViewFullStatus;
@@ -431,38 +284,10 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
         if (!lotteries.includes(lottery) || !drawPeriod || !analysisVersion || !itemId) {
           throw new Error('INVALID_REQUEST');
         }
-        const configs = member.memberId ? await dependencies.listConfigs(member.memberId) : [];
-        const lotteryConfigs = configs.filter((config) => config.lottery === lottery);
         const entitlements = resolveMatrixEntitlements(member, now());
-        const customActive = Boolean(
-          member.memberId
-          && lotteryConfigs.length > 0
-          && entitlements.canCustomizeStatus,
-        );
         let visible = false;
 
-        if (customActive && dependencies.readCustomStatus) {
-          const identity = dependencies.readStatusIdentity
-            ? await dependencies.readStatusIdentity(lottery, drawPeriod)
-            : null;
-          if (dependencies.readStatusIdentity && !identity) throw new Error('ANALYSIS_NOT_READY');
-          const cached = requireCurrentCustomResult(
-            await dependencies.readCustomStatus(member.memberId, lottery, drawPeriod),
-            identity,
-          );
-          if (cached.analysisVersion !== analysisVersion) {
-            throw new Error('ANALYSIS_VERSION_MISMATCH');
-          }
-          const artifact = projectCachedCustomStatus(
-            cached,
-            configs,
-            lottery,
-            entitlements,
-          );
-          visible = artifact.cards.some((card) => card.roads.some((road) => (
-            road.locked === false && road.validationItemId === itemId
-          )));
-        } else if (!customActive && dependencies.readCompactStatus) {
+        if (dependencies.readCompactStatus) {
           const compact = await dependencies.readCompactStatus(lottery, drawPeriod);
           if (!compact?.analysisVersion || !compact.drawPeriod || !compact.payload
             || compact.drawPeriod !== drawPeriod) {
@@ -495,8 +320,6 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
           }
           const artifact = buildMatrixStatusArtifact(
             sources.explore,
-            sources.tianyan,
-            configs,
             entitlements,
           );
           visible = artifact.cards.some((card) => card.roads.some((road) => (

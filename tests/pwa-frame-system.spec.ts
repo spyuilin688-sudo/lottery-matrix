@@ -15,13 +15,12 @@ test.beforeEach(async ({ page }) => {
     if (path.includes('/history/')) return route.fulfill({ json: { items: [draw], revision: 'frame-fixture' } });
     if (path.includes('/latest/')) return route.fulfill({ json: { item: draw } });
     if (path.includes('/cards/')) return route.fulfill({ json: { lottery: '今彩539', period: null, cards: {} } });
-    if (path.endsWith('/matrix_custom_status_list')) return route.fulfill({ json: { items: [], entitlements: { canCustomizeStatus: true, canUseCompositeCustomRoad: true } } });
     if (path.includes('/rest/v1/rpc/')) return route.fulfill({ json: {} });
     return route.fulfill({ status: 503, json: { error: 'isolated_visual_fixture' } });
   });
 });
 
-const pages = ['explore', 'tianheng', 'tianyan', 'tiangong', 'tongxing', 'reference', 'history', 'calculator', 'matrix-card', 'notifications', 'profile', 'guide', 'activation-code', 'subscription-management', 'about-matrix', 'service-info', 'version-info', 'privacy-policy', 'member-terms', 'disclaimer', 'status-settings', 'notebook'] as const;
+const pages = ['explore', 'tianheng', 'tianyan', 'tiangong', 'tongxing', 'reference', 'history', 'calculator', 'matrix-card', 'notifications', 'profile', 'guide', 'activation-code', 'subscription-management', 'about-matrix', 'service-info', 'version-info', 'privacy-policy', 'member-terms', 'disclaimer', 'notebook'] as const;
 const cases = [...pages.map(screen => ({ screen, width: 390 })), ...(['explore', 'reference', 'notifications'] as const).flatMap(screen => [320, 430].map(width => ({ screen, width })))];
 
 for (const { screen, width } of cases) {
