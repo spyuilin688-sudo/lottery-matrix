@@ -168,9 +168,21 @@ function validationNumberRowGeometry(page: Page, testId: string) {
   return page.getByTestId(testId).evaluate(row => {
     const card = row.closest<HTMLElement>('.explore-validation-numbers-card')!;
     const numbers = row.querySelector<HTMLElement>('.explore-validation-numbers')!;
+    const numberNodes = [...numbers.querySelectorAll<HTMLElement>(':scope > .explore-validation-number')];
+    const thirdLockNumber = numberNodes.at(-1)!;
+    const firstHighlightedNumber = numberNodes.find(number => number.classList.contains('explore-validation-number--hit'))!;
     const rowBounds = row.getBoundingClientRect();
     const cardBounds = card.getBoundingClientRect();
     const numbersBounds = numbers.getBoundingClientRect();
+    const numberBox = (number: HTMLElement) => {
+      const style = getComputedStyle(number);
+      return {
+        width: number.getBoundingClientRect().width,
+        fontSize: style.fontSize,
+        paddingInline: [style.paddingLeft, style.paddingRight],
+        borderInline: [style.borderLeftWidth, style.borderRightWidth],
+      };
+    };
     return {
       cardWidth: cardBounds.width,
       rowWidth: rowBounds.width,
@@ -179,6 +191,14 @@ function validationNumberRowGeometry(page: Page, testId: string) {
       numbersOverflowX: numbers.scrollWidth - numbers.clientWidth,
       leftInset: numbersBounds.left - cardBounds.left,
       rightInset: cardBounds.right - numbersBounds.right,
+      hitCount: numberNodes.filter(number => number.classList.contains('explore-validation-number--hit')).length,
+      numberWidths: numberNodes.map(number => number.getBoundingClientRect().width),
+      thirdLockNumber: {
+        value: thirdLockNumber.textContent,
+        highlighted: thirdLockNumber.classList.contains('explore-validation-number--hit'),
+        ...numberBox(thirdLockNumber),
+      },
+      firstHighlightedNumberBox: numberBox(firstHighlightedNumber),
     };
   });
 }
@@ -267,6 +287,7 @@ for (const width of [320, 390, 1100]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
     await page.screenshot({ path: testInfo.outputPath(`tianshu-${width}.png`), fullPage: true, animations: 'disabled' });
+    await page.setViewportSize({ width, height: 1200 });
     await tianshuValidation.scrollIntoViewIfNeeded();
     await tianshuValidation.screenshot({
       path: testInfo.outputPath(`tianshu-validation-${width}.png`), animations: 'disabled',
@@ -283,7 +304,25 @@ for (const width of [320, 390, 1100]) {
       const tianhengValidationRegion = page.getByRole('region', { name: '天衡驗證過程' });
       await expect(tianhengValidationRegion).toBeVisible();
       const tianhengNumberGeometry = await validationNumberRowGeometry(page, 'tianheng-source-row-B');
-      expect(tianhengNumberGeometry).toEqual(tianshuNumberGeometry);
+      const containerGeometry = (geometry: typeof tianshuNumberGeometry) => ({
+        cardWidth: geometry.cardWidth,
+        rowWidth: geometry.rowWidth,
+        numbersWidth: geometry.numbersWidth,
+        leftInset: geometry.leftInset,
+        rightInset: geometry.rightInset,
+      });
+      const tianshuContainerGeometry = containerGeometry(tianshuNumberGeometry);
+      const tianhengContainerGeometry = containerGeometry(tianhengNumberGeometry);
+      expect(tianhengContainerGeometry).toEqual(tianshuContainerGeometry);
+      expect(tianshuNumberGeometry.numberWidths.slice(0, -1))
+        .toEqual(tianhengNumberGeometry.numberWidths.slice(0, -1));
+      expect(tianshuNumberGeometry.hitCount).toBe(3);
+      expect(tianhengNumberGeometry.hitCount).toBe(2);
+      const { value: tianshuThirdValue, highlighted: tianshuThirdHighlighted, ...tianshuThirdNumberBox } = tianshuNumberGeometry.thirdLockNumber;
+      const { value: tianhengThirdValue, highlighted: tianhengThirdHighlighted } = tianhengNumberGeometry.thirdLockNumber;
+      expect([tianshuThirdValue, tianshuThirdHighlighted]).toEqual(['31', true]);
+      expect([tianhengThirdValue, tianhengThirdHighlighted]).toEqual(['31', false]);
+      expect(tianshuThirdNumberBox).toEqual(tianhengNumberGeometry.firstHighlightedNumberBox);
       console.log(`320px validation number geometry: ${JSON.stringify({ tianshu: tianshuNumberGeometry, tianheng: tianhengNumberGeometry })}`);
       await tianhengValidationRegion.scrollIntoViewIfNeeded();
       await tianhengValidationRegion.screenshot({
