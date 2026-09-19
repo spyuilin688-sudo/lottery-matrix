@@ -1,5 +1,30 @@
 from threading import Event
+import json
+import httpx
 from app.recovery import RecoveryCoordinator
+
+
+def test_http_failure_records_status_and_target_without_credentials(capsys):
+    done = Event()
+    succeeded = []
+    def targeted(*_, **__):
+        request = httpx.Request('POST', 'https://example.test/private?token=hidden',
+                                headers={'Authorization': 'Bearer hidden'})
+        httpx.Response(403, request=request, text='private response hidden').raise_for_status()
+    coordinator = RecoveryCoordinator(lambda _: None, begin_lease=lambda *_: True,
+        targeted_runner=targeted, verify=lambda *_: True,
+        record_success=lambda *_: succeeded.append(True), release_lease=lambda *_: done.set())
+    assert coordinator.enqueue('今彩539', 'owner', draw_period='115000228', stage='analysis') == 'accepted'
+    assert done.wait(2)
+    output = capsys.readouterr().out
+    record = json.loads(output)
+    assert record['errorType'] == 'HTTPStatusError'
+    assert record['httpStatus'] == 403
+    assert record['lottery'] == '今彩539'
+    assert record['period'] == '115000228'
+    assert record['stage'] == 'analysis'
+    assert 'hidden' not in output and 'example.test' not in output
+    assert succeeded == []
 
 
 def test_accepted_request_is_not_verified_success():

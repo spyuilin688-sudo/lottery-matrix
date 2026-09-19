@@ -41,6 +41,17 @@
 
 本次所有測試均明確指定相關檔案，未執行全專案測試。正式資料庫尚未執行退役遷移。
 
+### Railway Token 接通後的修正（2026-09-20 03:08 台灣時間）
+
+正式 main 仍為 `2a4c4dcd94e47cc36ceb08df4b8d22ca09bef0e9`，本 PR 尚未合併。
+
+- Token 已儲存於 Supabase `MATRIX_RAILWAY_PROJECT_TOKEN`。03:00 的 Railway Optimizer 自動執行回應 HTTP 200，5 個服務均有 CPU／RAM 各 60 筆；同時段再次呼叫仍只有一筆 observation，沒有遺留 lease，也沒有覆寫 Watchdog heartbeat。
+- Railway 將 JSON 日誌拆為 `attributes`，部分 `message` 為空字串。原 collector 只要求 `timestamp message`，導致期別／耗時樣本為空。本次查詢加入 `attributes { key value }`，解析僅取已使用的六個欄位，保留原 JSON message 相容性與資料驗證。
+- 02:33 的 Recovery 請求已接受，隨後日誌為 `HTTPStatusError`；Job 記為 `RECOVERY_NOT_VERIFIED`，成功計數為 0。正式 targeted Recovery 的自訂階段仍呼叫 `matrix-status` 的 `recompute`，本 PR 原有退役變更移除此路徑。舊日誌沒有 HTTP 狀態碼，不能斷言是 403、500 或其他回應。
+- Recovery 失敗日誌補 HTTP 狀態碼與原請求的彩種、期別、階段；不記錄 URL、認證標頭或回應內容。沒有放寬成功驗證、租約或重試條件。
+
+本次追加驗證：TypeScript 6 個指定檔案 49 passed；Python 5 個指定檔案 28 passed；DB／admin-api 匯入圖 7 passed，合計 84。新增回歸測試先在原實作失敗，再於修正後通過。這些是本機驗證；修正後的正式日誌解析與 Recovery 驗收，須於本 PR 部署後執行。
+
 ### 基準既有 UI 測試失敗
 
 ```text
