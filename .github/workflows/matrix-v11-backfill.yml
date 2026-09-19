@@ -1,11 +1,7 @@
-name: Matrix v11 previous-period backfill
+name: Matrix previous-period backfill
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/matrix-v11-backfill.yml
 
 permissions:
   contents: read
@@ -54,7 +50,7 @@ jobs:
       - name: Install production dependencies
         run: uv sync --frozen --no-dev
 
-      - name: Recalculate previous two draw periods with v11
+      - name: Recalculate previous two draw periods
         shell: bash
         run: |
           uv run python - <<'PY'
@@ -66,7 +62,7 @@ jobs:
           from app.scraping.sources import LatestDrawSource
           from app.services.draw_refresh import DrawRefreshService
           from app.settings import load_settings
-          from app.worker import ANALYSIS_VERSION, _run_analysis
+          from app.worker import _run_analysis, analysis_version_for_order
 
           lottery = os.environ["LOTTERY"]
           settings = load_settings()
@@ -85,7 +81,7 @@ jobs:
           for offset in (1, 2):
               target_history = history[offset:]
               draw = {"lottery": lottery, **target_history[0]}
-              expected_version = f'{draw["period"]}:{ANALYSIS_VERSION}'
+              expected_version = analysis_version_for_order(str(draw["period"]))
               result = _run_analysis(repository, draw, target_history, None)
               if result.get("status") != "complete":
                   raise RuntimeError(

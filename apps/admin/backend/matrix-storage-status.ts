@@ -1,6 +1,6 @@
 // Pure RPC contract shared by the admin transport and presentation.
 export const matrixStorageStatusId = 'matrix-storage';
-const tableKeys = ['explore', 'tianheng', 'artifacts', 'chunks'] as const;
+const tableKeys = ['explore', 'tianheng', 'tianshu', 'artifacts', 'chunks'] as const;
 const metricKeys = ['size_bytes', 'expired_total', 'expired_retained', 'expired_deletable', 'superseded_rows'] as const;
 type TableMetrics = Record<typeof metricKeys[number], number>;
 export type MatrixStorageHealth = {

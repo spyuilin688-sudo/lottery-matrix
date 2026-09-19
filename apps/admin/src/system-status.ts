@@ -291,6 +291,7 @@ export function getMatrixStorageFacts(item: SystemStatusItem, section: 'summary'
   return [
     { label: '探索大小', value: size(storage?.tables.explore.size_bytes) },
     { label: '天衡大小', value: size(storage?.tables.tianheng.size_bytes) },
+    { label: '天樞大小', value: size(storage?.tables.tianshu.size_bytes) },
     { label: '成品大小', value: size(storage?.tables.artifacts.size_bytes) },
     { label: '分塊大小', value: size(storage?.tables.chunks.size_bytes) },
     { label: '啟用版本數', value: count(storage?.active_versions) },

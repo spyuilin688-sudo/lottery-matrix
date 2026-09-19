@@ -5,12 +5,12 @@ const response = (value: unknown) => new Response(JSON.stringify(value));
 const countResponse = (count = 1) => new Response(null, { headers: { 'Content-Range': `0-0/${count}` } });
 function fixture(input: RequestInfo | URL, init?: RequestInit) {
   const url = new URL(String(input));
-  if (url.pathname === '/rest/v1/matrix_explore_results' || url.pathname === '/rest/v1/matrix_tianheng_results') return countResponse();
+  if (url.pathname === '/rest/v1/matrix_explore_results' || url.pathname === '/rest/v1/matrix_tianheng_results' || url.pathname === '/rest/v1/matrix_tianshu_results') return countResponse();
   if (url.pathname.includes('/rpc/')) {
     const body = JSON.parse(String(init?.body)).p_request;
     return response(url.pathname.endsWith('_validation')
       ? { ...body, status: 'complete', validation: { ruleSets: [] } }
-      : { kind: url.pathname.includes('_tianheng_') ? 'tianheng' : 'explore', lottery: body.lottery, status: 'complete', drawPeriod: '123', analysisVersion: '123:v12', total: 1, items: [{ id: 'sample' }] });
+      : { kind: url.pathname.includes('_tianshu_') ? 'tianshu' : url.pathname.includes('_tianheng_') ? 'tianheng' : 'explore', lottery: body.lottery, status: 'complete', drawPeriod: '123', analysisVersion: '123:v12', total: 1, items: [{ id: 'sample' }] });
   }
   const body = init?.body ? JSON.parse(String(init.body)) : null;
   const lottery = body?.lottery ?? decodeURIComponent(url.pathname.split('/').pop()!);
@@ -25,10 +25,10 @@ function fixture(input: RequestInfo | URL, init?: RequestInit) {
 const make = (fetcher: typeof fetch, timeoutMs = 1000) => createApiQueryChecks({ fetcher, loadWorkerUrl: async () => 'https://worker.test', loadSupabaseConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'server-secret' }), timeoutMs });
 
 describe('automatic per API queries', () => {
-  it('checks Tianheng using its three-period public settings and a version-pinned validation sample', async () => {
+  it.each(['tianheng', 'tianshu'] as const)('checks %s using three periods and a version-pinned validation sample', async (kind) => {
     const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input));
-      if (url.pathname === '/rest/v1/matrix_tianheng_results') return countResponse();
+      if (url.pathname === `/rest/v1/matrix_${kind}_results`) return countResponse();
       const request = JSON.parse(String(init?.body)).p_request;
       expect(request.explorePeriods).toBe(3);
       expect(request.exploreRange).toBe('標準範圍');
@@ -36,13 +36,13 @@ describe('automatic per API queries', () => {
         expect(request).toMatchObject({ itemId: 'balance', drawPeriod: '123', analysisVersion: '123:v15-sorted' });
         return response({ ...request, status: 'complete', validation: { ruleSets: [] } });
       }
-      return response({ kind: 'tianheng', lottery: request.lottery, status: 'complete', drawPeriod: '123', analysisVersion: '123:v15-sorted', total: 1, items: [{ id: 'balance' }] });
+      return response({ kind, lottery: request.lottery, status: 'complete', drawPeriod: '123', analysisVersion: '123:v15-sorted', total: 1, items: [{ id: 'balance' }] });
     });
     const probe = make(fetcher);
-    const results = await Promise.all(['list', 'validation'].map(part => probe(`supabase-rpc-matrix_tianheng_${part}`)));
+    const results = await Promise.all(['list', 'validation'].map(part => probe(`supabase-rpc-matrix_${kind}_${part}`)));
     expect(results.every(result => result.ok && !result.skipped)).toBe(true);
     expect(fetcher).toHaveBeenCalledTimes(12);
-    expect(fetcher.mock.calls.every(([url]) => String(url).includes('/matrix_tianheng_'))).toBe(true);
+    expect(fetcher.mock.calls.every(([url]) => String(url).includes(`/matrix_${kind}_`))).toBe(true);
   });
 
   it('calls volatile Supabase RPCs with POST JSON bodies', async () => {
@@ -78,7 +78,7 @@ describe('automatic per API queries', () => {
     const probe = make(fetcher);
     const results = await Promise.all([...queryCheckIds].map(probe));
     expect(results.every((r) => r.ok && r.samples.length === 4 && !r.skipped)).toBe(true);
-    expect(fetcher).toHaveBeenCalledTimes(44);
+    expect(fetcher).toHaveBeenCalledTimes(56);
     const urls = fetcher.mock.calls.map(([url]) => new URL(String(url)));
     expect(urls.filter((url) => url.pathname.endsWith('matrix_explore_list'))).toHaveLength(4);
     for (const [url, init] of fetcher.mock.calls) {
@@ -91,7 +91,7 @@ describe('automatic per API queries', () => {
           expect(parsed.search).toBe('');
           expect(typeof JSON.parse(String(init?.body)).p_request).toBe('object');
         } else {
-          expect(['/rest/v1/matrix_explore_results', '/rest/v1/matrix_tianheng_results']).toContain(parsed.pathname);
+          expect(['/rest/v1/matrix_explore_results', '/rest/v1/matrix_tianheng_results', '/rest/v1/matrix_tianshu_results']).toContain(parsed.pathname);
           expect(init?.method).toBe('HEAD');
           expect(new Headers(init?.headers).get('Prefer')).toBe('count=exact');
           expect(parsed.search).not.toBe('');
