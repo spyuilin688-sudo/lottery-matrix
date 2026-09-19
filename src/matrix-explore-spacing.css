@@ -1070,7 +1070,7 @@
   font-size: clamp(10px, 2.8vw, 12px);
   border-bottom: 1px solid var(--pwa-frame-divider);
   min-height: 32px;
-  margin-bottom: 4px;
+  margin-bottom: 0px;
   align-items: end;
   padding-bottom: 5px;
 }

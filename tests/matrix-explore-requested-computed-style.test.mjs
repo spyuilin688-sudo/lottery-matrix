@@ -271,7 +271,7 @@ test("六個結果標題與版路結果之間使用共用表頭分隔線", () =>
   const { style } = exploreFixture();
   const head = style(".road-results-head");
   assertDeclarations(exploreCss, ".matrix-explore-main-screen .road-results-head", { "border-bottom": "1px solid var(--pwa-frame-divider)" });
-  assert.equal(head.marginBottom, "4px");
+  assert.equal(head.marginBottom, "0px");
 });
 
 test("展開驗證內容使用 4px 左右內距，左側期數為預設字型 12px 字重 800", () => {
