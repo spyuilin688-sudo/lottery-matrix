@@ -12,7 +12,6 @@ from app.repositories.analysis_repository import create_supabase_repository
 from app.scraping.resilient_source import wrap_source_with_tinyfish
 from app.scraping.sources import LatestDrawSource
 from app.settings import load_settings
-from app.services.custom_status_recompute import recompute_custom_matrix_status
 from app.services.marksix_calendar import sync_marksix_calendar
 from app.services.tinyfish_status import create_tinyfish_telemetry
 from app.worker import create_notification_emitter, run_scheduled_worker
@@ -159,13 +158,6 @@ def main() -> int:
                     repository,
                     source,
                     notification_emitter=notification_emitter,
-                )
-            if _worker_outcome(result) == "analysis-completed":
-                recompute_custom_matrix_status(
-                    client,
-                    settings.supabase_url,
-                    settings.supabase_secret_key,
-                    lottery,
                 )
             return result
 

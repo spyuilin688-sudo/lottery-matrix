@@ -17,10 +17,21 @@ export type RailwayEvidence = {
 };
 type Config = {projectToken:string};
 const OUTCOMES = new Set(['already-acquired','already-analyzed','no-new-draw','analysis-completed','repair-completed','notification-only','failed','complete','not-due','not-acquired']);
-export function runtimeSamples(logs: Array<{timestamp?:string;message?:string}>): RuntimeSample[] {
+const SAMPLE_FIELDS = new Set(['lottery','period','outcome','durationMs','executionVersion','finishedAt']);
+type RuntimeLog = {timestamp?:string;message?:string;attributes?:Array<{key:string;value:string}>};
+export function runtimeSamples(logs: RuntimeLog[]): RuntimeSample[] {
  return logs.flatMap(log => {
   try {
-   const r=JSON.parse(String(log.message ?? '').slice(0,16000));
+   let r:Record<string,any>={};
+   try {
+    const message=JSON.parse(String(log.message ?? '').slice(0,16000));
+    if(message && typeof message==='object' && !Array.isArray(message)) r=message;
+   } catch { /* Railway can extract JSON fields and leave message empty. */ }
+   for(const attribute of (Array.isArray(log.attributes)?log.attributes:[]).slice(0,100)) {
+    if(!attribute || !SAMPLE_FIELDS.has(attribute.key) || typeof attribute.value!=='string' || attribute.value.length>16000) continue;
+    try { r[attribute.key]=JSON.parse(attribute.value); }
+    catch { r[attribute.key]=attribute.value; }
+   }
    if (!['今彩539','天天樂','六合彩','大樂透'].includes(r.lottery) || !OUTCOMES.has(r.outcome) || !Number.isFinite(r.durationMs) || r.durationMs<0) return [];
    const period=r.period==null?null:String(r.period); const finishedAt=String(r.finishedAt ?? log.timestamp ?? '');
    if ((period!==null && !/^\d{1,20}$/.test(period)) || !Number.isFinite(Date.parse(finishedAt))) return [];
@@ -50,7 +61,7 @@ export function createRailwayEvidenceCollector(loadConfig:()=>Promise<Config|nul
    const deployment=node.latestDeployment;
    const observed:RailwayEvidence={...record,code:'OBSERVED',cronSchedule:typeof node.cronSchedule==='string'?node.cronSchedule.slice(0,80):null,deployment:deployment?{id:String(deployment.id).slice(0,80),status:String(deployment.status).slice(0,40),createdAt:String(deployment.createdAt).slice(0,40)}:null};
    const [logs,metrics]=await Promise.allSettled([
-    deployment ? query('query($id:String!){deploymentLogs(deploymentId:$id,limit:100){timestamp message}}',{id:deployment.id}) : Promise.reject(new Error('NO_DEPLOYMENT')),
+    deployment ? query('query($id:String!){deploymentLogs(deploymentId:$id,limit:100){timestamp message attributes{key value}}}',{id:deployment.id}) : Promise.reject(new Error('NO_DEPLOYMENT')),
     query('query($serviceId:String,$environmentId:String,$start:DateTime!,$end:DateTime){metrics(serviceId:$serviceId,environmentId:$environmentId,startDate:$start,endDate:$end,measurements:[CPU_USAGE,MEMORY_USAGE_GB],sampleRateSeconds:60){measurement values{ts value}}}',{serviceId:record.serviceId,environmentId:MATRIX_RAILWAY_ENVIRONMENT,start:new Date(at.getTime()-3600000).toISOString(),end:at.toISOString()}),
    ]);
    if (logs.status==='fulfilled' && Array.isArray(logs.value.deploymentLogs)) {

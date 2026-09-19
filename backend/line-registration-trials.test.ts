@@ -15,8 +15,8 @@ describe('LINE registration algorithm trials', () => {
   ])('expires each algorithm at elapsed %i milliseconds', (elapsed, tianyan, tiangong) => {
     expect(resolveMatrixEntitlements(member, new Date(Date.parse(start) + elapsed))).toMatchObject({
       canUseTianyan: tianyan, canUseTiangong: tiangong,
-      canUseThirteen: false, canUseFullRange: false, canCustomizeStatus: false,
-      canViewFullStatus: false, canUseCompositeCustomRoad: false,
+      canUseThirteen: false, canUseFullRange: false,
+      canViewFullStatus: false,
     });
   });
 

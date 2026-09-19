@@ -35,7 +35,7 @@ function routes(context: MemberContext, now = new Date('2026-08-21T00:00:00Z')) 
       explore: artifact,
       tianyan: { lottery: '今彩539', drawPeriod: artifact.drawPeriod, items: [], validationById: {} },
     }),
-    listConfigs: async () => [],
+
     readStatusValidation: async (_lottery, _drawPeriod, _analysisVersion, itemId) => ({
       itemId,
       validation: { itemId, ruleSets: [] },
@@ -66,7 +66,7 @@ describe('Matrix status route', () => {
         explore: artifact,
         tianyan: { lottery: '今彩539', drawPeriod: artifact.drawPeriod, items: [], validationById: {} },
       }),
-      listConfigs: async () => [],
+
       now: () => new Date('2026-08-21T00:00:00Z'),
     });
     const response = await api.get({ authorization: undefined, body: { lottery: '今彩539' } });
@@ -187,12 +187,12 @@ describe('Matrix status route', () => {
   });
 
   it('returns analysis-not-ready instead of sample data', async () => {
-    const api = createMatrixStatusRoutes({ requireMember: async () => member('monthly'), readStatusSources: async () => null, listConfigs: async () => [] });
+    const api = createMatrixStatusRoutes({ requireMember: async () => member('monthly'), readStatusSources: async () => null });
     await expect(api.get({ authorization: 'Bearer token', body: { lottery: '今彩539' } })).resolves.toMatchObject({ status: 404, body: { error: { code: 'ANALYSIS_NOT_READY' } } });
   });
 
   it('does not expose a partial source when Tianyan is missing or mismatched', async () => {
-    const base = { requireMember: async () => member('monthly'), listConfigs: async () => [] };
+    const base = { requireMember: async () => member('monthly') };
     const missing = createMatrixStatusRoutes({ ...base, readStatusSources: async () => ({
       analysisVersion: 'v1', drawPeriod: artifact.drawPeriod, explore: artifact, tianyan: null,
     }) });

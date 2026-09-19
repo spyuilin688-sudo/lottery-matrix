@@ -4,6 +4,8 @@ from collections.abc import Callable
 from threading import Event, Lock, Thread
 from time import monotonic
 from uuid import uuid4
+import json
+from httpx import HTTPStatusError
 
 
 LeaseBeginner = Callable[[str, str, str], bool]
@@ -205,7 +207,13 @@ class RecoveryCoordinator:
                 if self._verify(lottery, verified_period):
                     self._record_success(lottery, lease_owner, runner_id, verified_period)
         except Exception as error:
-            print(f"{lottery} recovery failed: {type(error).__name__}")
+            # Record only bounded diagnostic fields, never request URLs, headers or bodies.
+            print(json.dumps({
+                "event": "recovery-failed", "lottery": lottery,
+                "period": draw_period, "stage": stage,
+                "errorType": type(error).__name__,
+                **({"httpStatus": error.response.status_code} if isinstance(error, HTTPStatusError) else {}),
+            }, ensure_ascii=False), flush=True)
         finally:
             if stopped is not None:
                 stopped.set()

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { render } from '../../test/render-with-dialog';
 import { MobileDeviceProvider } from '../mobile/Device';
@@ -16,7 +16,6 @@ vi.mock('../onboarding/FirstVisitGuide', () => ({ FirstVisitGuide: () => null })
 vi.mock('../FeaturePagesPatched', () => ({
   FeaturePageRouter: ({ screen: route, onNavigate, onQuickOpen }: { screen: ScreenId; onNavigate: Navigate; onQuickOpen: () => void }) => <section>
     <h1>{route}</h1>
-    <button onClick={() => onNavigate('status-settings')}>自訂觸發條件入口</button>
     <button onClick={() => onNavigate('profile')}>前往我的</button>
     <button onClick={onQuickOpen}>開啟快捷</button>
   </section>,
@@ -38,19 +37,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
   auth.onAuthStateChange.mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } });
-});
-
-test('guest clicks custom conditions and stays on the originating page after dismissing the prompt', async () => {
-  mount();
-  openProfile();
-  fireEvent.click(screen.getByRole('button', { name: '自訂觸發條件入口' }));
-  expect(screen.getByRole('heading', { name: 'profile' })).toBeVisible();
-  const dialog = await screen.findByRole('dialog', { name: '請先登入' });
-  expect(dialog).toHaveTextContent('請先登入後再使用 自訂觸發條件');
-  expect(screen.queryByRole('heading', { name: 'status-settings' })).toBeNull();
-  fireEvent.click(within(dialog).getByRole('button'));
-  expect(screen.getByRole('heading', { name: 'profile' })).toBeVisible();
-  expect(screen.queryByTestId('lottery-screen')).toBeNull();
 });
 
 test('guest opens a saved notebook shortcut and stays on the current page', async () => {

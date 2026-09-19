@@ -29,6 +29,8 @@ const envelope = {
 
 beforeEach(() => {
   document.body.innerHTML = '';
+  // LotteryTabs persists the current lottery across page mounts.
+  window.sessionStorage.clear();
   matrixApi.fetchTiangongList.mockReset().mockResolvedValue(envelope);
   matrixApi.fetchTiangongValidation.mockReset().mockResolvedValue({
     ...envelope, itemId: 'tg-api-1',

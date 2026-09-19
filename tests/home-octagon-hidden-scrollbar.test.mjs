@@ -10,7 +10,7 @@ const feature = readFileSync(new URL("../src/feature-pages.css", import.meta.url
 
 test("首頁卡片各自使用單層圓角框", () => {
   assert.match(base, /\.home-screen \.latest-draw-card\s*\{[^}]*border:\s*0;[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*box-shadow:\s*inset 0 0 0 1px var\(--home-frame-bright\);/s);
-  assert.match(switcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid var\(--home-frame-muted\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
+  assert.match(switcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid color-mix\(in srgb, var\(--home-frame-gold\) 22%, transparent\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
   assert.match(base, /\.home-screen \.matrix-core-banner\s*\{[^}]*border:\s*1px solid var\(--home-frame-bright\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
   assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*border:\s*1px solid var\(--home-frame-muted\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
   assert.doesNotMatch(`${base}\n${switcher}`, /(?:latest-draw-card|lottery-card|matrix-core-banner|home-shortcut)[^{}]*\{[^}]*clip-path:\s*polygon\(/s);

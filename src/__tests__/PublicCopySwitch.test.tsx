@@ -111,14 +111,14 @@ test('referral rewards retain all four thresholds and explain reversals once', a
   expect(document.getElementById('referral-rule-推薦成功獎勵')).toBeNull();
 });
 
-test('first visit dialog changes live and keeps the login action and once-only behavior', async () => {
+test('first visit dialog changes live and keeps free usage and once-only behavior', async () => {
   const navigate = vi.fn();
   render(<AppDialogProvider><FirstVisitGuide enabled onNavigate={navigate} /></AppDialogProvider>);
   expect(await screen.findByRole('heading', { name: '免費註冊會員' })).toBeInTheDocument();
   toggle(false);
   expect(screen.getByRole('heading', { name: '使用教學' })).toBeInTheDocument();
   expect(screen.getByText('Matrix 探索二期基本查詢可直接使用；天衡、較高期數、完整範圍、天衍與天工請先使用 LINE 或 Google 登入。新註冊 LINE 會員另有天衍 2 天、天工 1 天試用。')).toBeInTheDocument();
-  expect(screen.getByText(/新註冊 LINE 會員另有天衍 2 天/)).toBeInTheDocument();
+  expect(screen.getByText(/新註冊 LINE 會員另有天衍 2 天、天工 1 天試用/)).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '開始使用' })).toBeInTheDocument();
   toggle(true);
   expect(screen.getByRole('heading', { name: '免費註冊會員' })).toBeInTheDocument();

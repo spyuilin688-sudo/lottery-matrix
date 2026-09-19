@@ -48,7 +48,7 @@ test("號碼對照單第二列與浮動設定共用 26px 控制高度", () => {
   );
   assert.match(
     featureCss,
-    /\.reference-search input\s*\{[^}]*min-width:\s*0;[^}]*border:\s*1px solid #6e4a1e;[^}]*background:\s*#030a10;[^}]*color:\s*#efe8dc;[^}]*text-align:\s*center;/s,
+    /\.reference-search input\s*\{[^}]*min-width:\s*0;[^}]*border:\s*1px solid var\(--pwa-frame-tertiary\);[^}]*background:\s*var\(--pwa-control-surface\);[^}]*color:\s*var\(--lottery-text-secondary\);[^}]*text-align:\s*center;/s,
   );
 });
 
@@ -63,7 +63,7 @@ test("首頁快捷設定位於 Logo 卡右上角並維持 44px 觸控區", () =>
   );
   assert.match(
     navigationCss,
-    /\.header-settings-button svg\s*\{[^}]*width:\s*22px;[^}]*height:\s*22px;/s,
+    /\.header-settings-button svg\s*\{[^}]*width:\s*18px;[^}]*height:\s*18px;/s,
   );
   assert.doesNotMatch(navigationCss, /\.bottom-navigation-quick-settings\s*\{/);
 });

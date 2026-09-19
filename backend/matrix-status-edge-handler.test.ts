@@ -32,29 +32,7 @@ const explore = {
 
 const tianyan = { lottery, drawPeriod, items: [], validationById: {} };
 
-const customConfig = {
-  lottery,
-  status: 'ACTIVE' as const,
-  explorePeriods: 13 as const,
-  exploreRange: '完整範圍' as const,
-  oneCodeGroups: [{
-    id: 'one',
-    rows: [{
-      consecutive: '準4進5',
-      roadType: '加減' as const,
-      numberOrder: '依號碼由小到大排序' as const,
-      sameCodeQuantity: 2,
-    }],
-  }],
-  twoCodeGroups: [],
-};
-
 function dependencies(member?: MemberContext) {
-  const customStatusStore = {
-    list: vi.fn(async () => []),
-    save: vi.fn(async (_memberId: string, value: unknown) => value),
-    reset: vi.fn(async () => undefined),
-  };
   return {
     requireMember: vi.fn(async () => member ?? {
       authUserId: 'user-1',
@@ -72,13 +50,6 @@ function dependencies(member?: MemberContext) {
     readStatusValidation: vi.fn(async (_lottery, _period, _version, itemId) => ({
       itemId,
       validation: { itemId, ruleSets: [] },
-    })),
-    listConfigs: vi.fn(async () => []),
-    customStatusStore,
-    recomputeMember: vi.fn(async (memberId: string, requestedLottery: MatrixLottery) => ({
-      memberId,
-      lottery: requestedLottery,
-      updated: true,
     })),
     now: () => new Date('2026-08-29T00:00:00Z'),
   };
@@ -138,13 +109,9 @@ describe('Matrix status Edge Function', () => {
     expect(deps.requireMember).not.toHaveBeenCalled();
   });
 
-  it('falls back to standard compact summaries when custom status cache is missing', async () => {
+  it('reads standard compact summaries for authenticated members', async () => {
     const lotteries = ['今彩539', '天天樂', '六合彩', '大樂透'] as const;
     const deps = dependencies();
-    deps.listConfigs.mockResolvedValue([
-      { ...customConfig, lottery: '六合彩' },
-      { ...customConfig, lottery: '大樂透' },
-    ]);
     const readCompactStatus = vi.fn(async (requestedLottery: MatrixLottery) => ({
       analysisVersion,
       drawPeriod,
@@ -161,13 +128,9 @@ describe('Matrix status Edge Function', () => {
         cards: 'homepage summary must not project cards',
       },
     }));
-    const readStatusIdentity = vi.fn(async () => ({ analysisVersion, drawPeriod }));
-    const readCustomStatus = vi.fn(async () => null);
     const handler = createMatrixStatusEdgeHandler({
       ...deps,
       readCompactStatus,
-      readStatusIdentity,
-      readCustomStatus,
     });
 
     const response = await handler(new Request('https://example.test/functions/v1/matrix-status', {
@@ -186,106 +149,8 @@ describe('Matrix status Edge Function', () => {
       .toMatchObject({ kind: 'status-summary', summary: { status: 'RESONANCE' } });
     expect(body.items.find((item: { lottery: MatrixLottery }) => item.lottery === '大樂透')?.body)
       .toMatchObject({ kind: 'status-summary', summary: { status: 'RESONANCE' } });
-    expect(readCustomStatus).toHaveBeenCalledTimes(2);
     expect(readCompactStatus).toHaveBeenCalledTimes(4);
     expect(deps.readStatusSources).not.toHaveBeenCalled();
-  });
-
-  it('fails closed before writing when custom recompute is not configured', async () => {
-    const deps = dependencies();
-    const { recomputeMember: _missing, ...withoutRecompute } = deps;
-    const handler = createMatrixStatusEdgeHandler(withoutRecompute);
-    const response = await handler(new Request('https://example.test/functions/v1/matrix-status', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer member-token',
-      },
-      body: JSON.stringify({ action: 'custom-save', config: customConfig }),
-    }));
-
-    expect(response.status).toBe(503);
-    await expect(response.json()).resolves.toEqual({
-      error: { code: 'CUSTOM_STATUS_WRITE_NOT_CONFIGURED' },
-    });
-    expect(deps.customStatusStore.save).not.toHaveBeenCalled();
-  });
-
-  it('saves a custom status setting through the member route and recomputes before success', async () => {
-    const deps = dependencies();
-    const handler = createMatrixStatusEdgeHandler(deps);
-    const response = await handler(new Request('https://example.test/functions/v1/matrix-status', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer member-token',
-      },
-      body: JSON.stringify({ action: 'custom-save', config: customConfig }),
-    }));
-
-    expect(response.status).toBe(200);
-    expect(deps.customStatusStore.save).toHaveBeenCalledWith(
-      'member-1',
-      expect.objectContaining({ lottery, status: 'ACTIVE', schemaVersion: 2 }),
-    );
-    expect(deps.recomputeMember).toHaveBeenCalledWith('member-1', lottery);
-    expect(deps.customStatusStore.save.mock.invocationCallOrder[0])
-      .toBeLessThan(deps.recomputeMember.mock.invocationCallOrder[0]);
-  });
-
-  it('resets a custom status setting through the member route and recomputes before success', async () => {
-    const deps = dependencies();
-    const handler = createMatrixStatusEdgeHandler(deps);
-    const response = await handler(new Request('https://example.test/functions/v1/matrix-status', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer member-token',
-      },
-      body: JSON.stringify({ action: 'custom-reset', lottery, status: 'ACTIVE' }),
-    }));
-
-    expect(response.status).toBe(200);
-    expect(deps.customStatusStore.reset).toHaveBeenCalledWith('member-1', lottery, 'ACTIVE');
-    expect(deps.recomputeMember).toHaveBeenCalledWith('member-1', lottery);
-    expect(deps.customStatusStore.reset.mock.invocationCallOrder[0])
-      .toBeLessThan(deps.recomputeMember.mock.invocationCallOrder[0]);
-  });
-
-  it('uses the authenticated member custom status configuration', async () => {
-    const deps = dependencies();
-    deps.listConfigs.mockResolvedValue([{
-      lottery,
-      status: 'FOCUS',
-      explorePeriods: 13,
-      exploreRange: '完整範圍',
-      oneCodeGroups: [{
-        id: 'focus-group',
-        rows: [{
-          consecutive: '準5進6',
-          roadType: '加減',
-          numberOrder: '依號碼由小到大排序',
-          sameCodeQuantity: 3,
-        }],
-      }],
-      twoCodeGroups: [],
-    }]);
-    const handler = createMatrixStatusEdgeHandler(deps);
-    const response = await handler(new Request('https://example.test/functions/v1/matrix-status', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer member-token',
-      },
-      body: JSON.stringify({ lottery }),
-    }));
-
-    expect(response.status).toBe(200);
-    const body = await response.json();
-    expect(deps.requireMember).toHaveBeenCalledWith('Bearer member-token');
-    expect(body.detailLocked).toBe(false);
-    expect(body.customTriggers).toContainEqual({ status: 'FOCUS', groupId: 'focus-group' });
-    expect(body.cards).toContainEqual(expect.objectContaining({ id: 'custom:FOCUS:focus-group:06' }));
   });
 
   it('rejects unsupported methods without reading analysis data', async () => {

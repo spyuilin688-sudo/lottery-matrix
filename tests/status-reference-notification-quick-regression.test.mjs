@@ -14,28 +14,22 @@ const notifications = readFileSync(new URL("../src/NotificationsPagePatched.tsx"
 const main = readFileSync(new URL("../src/main.tsx", import.meta.url), "utf8");
 const lotterySwitcher = readFileSync(new URL("../src/homepage/lottery-switcher.css", import.meta.url), "utf8");
 
-test("Matrix 狀態兩頁的彩種切換器只由頁面內距控制左右外距", () => {
-  assert.match(feature, /:is\(\.matrix-status-screen, \.matrix-custom-status-screen\) \.matrix-status-lottery-switcher\s*\{[^}]*width:\s*100%;[^}]*margin:\s*0 0 8px;/s);
+test("Matrix 狀態頁的彩種切換器只由頁面內距控制左右外距", () => {
+  assert.match(feature, /\.matrix-status-screen \.matrix-status-lottery-switcher\s*\{[^}]*width:\s*100%;[^}]*margin:\s*0 0 8px;/s);
 });
 
 test("彩種按鈕使用共用 1px 圓角框並以亮度表示選取", () => {
-  assert.match(lotterySwitcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid var\(--home-frame-muted\);[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*background-color:\s*rgba\(0, 0, 0, \.4\);[^}]*background-blend-mode:\s*multiply;/s);
-  assert.match(lotterySwitcher, /\.lottery-card\[data-selected="true"\]\s*\{[^}]*background-color:\s*transparent;/s);
+  assert.match(lotterySwitcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid color-mix\(in srgb, var\(--home-frame-gold\) 22%, transparent\);[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*background:\s*var\(--lottery-neutral-950\);/s);
+  assert.match(lotterySwitcher, /\.lottery-card\[data-selected="true"\]\s*\{[^}]*border-color:\s*color-mix\(in srgb, var\(--home-frame-bright\) 55%, transparent\);[^}]*background:\s*color-mix\(in srgb, var\(--home-frame-gold\) 6%, var\(--lottery-neutral-950\)\);/s);
+  assert.match(lotterySwitcher, /\.lottery-selector-logo\s*\{[^}]*opacity:\s*\.6;/s);
+  assert.match(lotterySwitcher, /\.lottery-card\[data-selected="true"\] \.lottery-selector-logo\s*\{[^}]*opacity:\s*1;/s);
   assert.doesNotMatch(lotterySwitcher, /\.lottery-card::(?:before|after)\s*\{|clip-path:\s*polygon\(/s);
 });
 
-test("自訂觸發四狀態維持流動寬度並縮減高度與使用圓角", () => {
-  assert.match(lotterySwitcher, /\.matrix-custom-status-screen \.custom-status-tabs\s*\{[^}]*width:\s*100%;[^}]*height:\s*calc\([^;]+-\s*6px\);[^}]*padding-block:\s*0;[^}]*padding-inline:\s*4px;[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\);[^}]*gap:\s*6px;/s);
-  assert.match(lotterySwitcher, /\.custom-status-tabs > button\s*\{[^}]*height:\s*100%;[^}]*border-radius:\s*8px;/s);
-  assert.match(lotterySwitcher, /\.custom-status-tabs > button::after\s*\{[^}]*border-radius:\s*5px;/s);
-  assert.doesNotMatch(feature, /\.custom-status-tabs\s*\{[^}]*padding-inline:\s*4px;/s);
-  assert.doesNotMatch(feature, /\.custom-status-tabs button\s*\{[^}]*border-radius:\s*8px;/s);
-});
-
-test("Matrix 狀態設定入口只由頁首承載", () => {
+test("Matrix 狀態移除自訂設定入口", () => {
   assert.doesNotMatch(feature, /status-title-trigger/);
   assert.doesNotMatch(adjustments, /status-title-trigger/);
-  assert.match(pages, /className="header-settings-button"[^>]*aria-label="自訂觸發條件，連續點擊兩下開啟"/s);
+  assert.doesNotMatch(pages, /自訂觸發條件|MatrixCustomStatusPage/);
   assert.doesNotMatch(pages, /matrix-status-settings-entry/);
 });
 
@@ -56,7 +50,7 @@ test("號碼對照單單碼與整列選取彼此獨立，特別號也保留選�
 });
 
 test("號碼對照單期數與開獎號碼分隔線使用清楚一致的色值", () => {
-  assert.match(referenceVisual, /\.reference-row > \.reference-issue \+ span\s*\{[^}]*border-left:\s*1px solid rgba\(161, 112, 40, \.78\);/s);
+  assert.match(feature, /\.reference-row > \.reference-issue \+ span\s*\{[^}]*border-left:\s*1px solid var\(--pwa-frame-divider\);/s);
 });
 
 test("開獎結果與 Matrix 牌單共用同一按鈕渲染器與 6px 外框內距", () => {

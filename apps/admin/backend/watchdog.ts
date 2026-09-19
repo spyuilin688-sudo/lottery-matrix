@@ -313,7 +313,7 @@ export function planWatchdogActions(
       add(snapshot.lottery, 'railway', 'analysis-stuck');
     }
     if (snapshot.chain?.stages.find(s => s.stage === 'analysis')?.state === 'FAIL') add(snapshot.lottery, 'railway', 'analysis-missing');
-    for (const stage of ['matrix-status','custom-status'] as const) {
+    for (const stage of ['matrix-status'] as const) {
       if (snapshot.chain?.stages.find(s => s.stage === stage)?.state === 'FAIL') add(snapshot.lottery, 'railway', `${stage}-missing`);
     }
   }
@@ -479,7 +479,6 @@ export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
         evidence('draw', currentDraw ? 'PASS' : expected ? 'FAIL' : 'UNKNOWN', currentDraw ? 'CURRENT_DRAW_STORED' : 'DRAW_STALE', 'lottery_draws'),
         evidence('analysis', !chainState ? 'UNKNOWN' : verifiedAnalysis ? 'PASS' : liveAnalysis ? 'WAITING' : 'FAIL', verifiedAnalysis ? 'ACTIVE_ANALYSIS_COMPLETE' : liveAnalysis ? 'ANALYSIS_LEASE_ACTIVE' : 'ANALYSIS_INCOMPLETE', 'matrix_watchdog_chain_state'),
         evidence('matrix-status', !chainState ? 'UNKNOWN' : chainState.matrixStatusComplete === true ? 'PASS' : verifiedAnalysis ? 'FAIL' : 'WAITING', 'MATRIX_STATUS_ARTIFACT', 'matrix_watchdog_chain_state'),
-        evidence('custom-status', !chainState ? 'UNKNOWN' : chainState.customStatusComplete === true ? 'PASS' : verifiedAnalysis ? 'FAIL' : 'WAITING', Number(chainState?.customConfigMismatches)>0 ? 'CUSTOM_CONFIG_MISMATCH' : chainState?.customMembers === 0 ? 'NO_CUSTOM_CONFIGS' : 'CUSTOM_STATUS_CURRENT_CONFIG', 'matrix_watchdog_chain_state'),
       ];
       return {
         lottery,
@@ -579,7 +578,7 @@ export function createFantasy5GithubDispatcher(
   };
 }
 
-export type RecoveryTarget = {stage:'crawler'|'analysis'|'matrix-status'|'custom-status';drawPeriod:string|null;minimumDrawDate?:string};
+export type RecoveryTarget = {stage:'crawler'|'analysis'|'matrix-status';drawPeriod:string|null;minimumDrawDate?:string};
 
 type WatchdogDependencies = {
   collectRailway?: (at?: Date) => Promise<RailwayEvidence[]>;
@@ -631,7 +630,7 @@ export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
           } else {
             const snapshot = snapshots.find(s => s.lottery === action.lottery)!;
             const crawler = action.reasons.some(r => ['job-failed','job-stuck','crawler-stale'].includes(r));
-            const stage: RecoveryTarget['stage'] = crawler ? 'crawler' : action.reasons.some(r => r.startsWith('analysis-')) ? 'analysis' : action.reasons.includes('matrix-status-missing') ? 'matrix-status' : 'custom-status';
+            const stage: RecoveryTarget['stage'] = crawler ? 'crawler' : action.reasons.some(r => r.startsWith('analysis-')) ? 'analysis' : 'matrix-status';
             const expectedDate = expectedDrawDateForDueWindow(action.lottery,at,snapshot.drawDays);
             const target: RecoveryTarget = {stage,drawPeriod:crawler ? null : snapshot.latestDraw?.period ?? null,...(crawler && expectedDate ? {minimumDrawDate:minimumExpectedDrawDate(action.lottery,expectedDate)} : {})};
             const response = await dependencies.recoverRailway(action.lottery, owner, target) as { status?: unknown };

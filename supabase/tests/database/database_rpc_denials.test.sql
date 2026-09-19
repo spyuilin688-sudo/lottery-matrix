@@ -8,9 +8,6 @@ do $audit$
 declare v_call text;
 begin
   foreach v_call in array array[
-    'public.matrix_custom_status_list()',
-    'public.matrix_custom_status_reset(NULL::text,NULL::text)',
-    'public.matrix_custom_status_save(NULL::jsonb)',
     'public.matrix_tiangong_list(NULL::jsonb)',
     'public.matrix_tiangong_validation(NULL::jsonb)',
     'public.matrix_tianyan_list(NULL::jsonb)',

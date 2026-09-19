@@ -27,7 +27,7 @@ export function useLinePageEntry() {
   return (next: ScreenId, enter: () => void) => {
     pending.current?.abort();
     pending.current = null;
-    const title = next === 'notebook' ? 'Matrix 筆記本' : next === 'status-settings' ? '自訂觸發條件' : null;
+    const title = next === 'notebook' ? 'Matrix 筆記本' : null;
     if (!title) { enter(); return; }
 
     const controller = new AbortController();

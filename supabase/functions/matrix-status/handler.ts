@@ -1,15 +1,7 @@
-import { createMatrixCustomStatusRoutes } from '../../../backend/matrix-custom-status-routes.ts';
 import { createMatrixStatusRoutes } from '../../../backend/matrix-status-routes.ts';
 
 type MatrixStatusDependencies = Parameters<typeof createMatrixStatusRoutes>[0];
-type MatrixCustomStatusDependencies = Parameters<typeof createMatrixCustomStatusRoutes>[0];
 type MatrixLottery = '今彩539' | '天天樂' | '六合彩' | '大樂透';
-type MatrixStatusEdgeDependencies = MatrixStatusDependencies & {
-  customStatusStore?: MatrixCustomStatusDependencies['store'];
-  authorizeInternal?(authorization?: string): boolean;
-  recomputeMember?(memberId: string, lottery: MatrixLottery, expectedPeriod?: string): Promise<unknown>;
-  recomputeLottery?(lottery: MatrixLottery, expectedPeriod?: string): Promise<unknown>;
-};
 
 const lotteries: MatrixLottery[] = ['今彩539', '天天樂', '六合彩', '大樂透'];
 const corsHeaders = {
@@ -30,16 +22,8 @@ function record(value: unknown) {
   return value as Record<string, unknown>;
 }
 
-export function createMatrixStatusEdgeHandler(dependencies: MatrixStatusEdgeDependencies) {
+export function createMatrixStatusEdgeHandler(dependencies: MatrixStatusDependencies) {
   const routes = createMatrixStatusRoutes(dependencies);
-  const customRoutes = dependencies.customStatusStore && dependencies.recomputeMember
-    ? createMatrixCustomStatusRoutes({
-        requireMember: dependencies.requireMember,
-        store: dependencies.customStatusStore,
-        recomputeStatus: dependencies.recomputeMember,
-        now: dependencies.now,
-      })
-    : null;
   return async (request: Request) => {
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders });
@@ -57,48 +41,8 @@ export function createMatrixStatusEdgeHandler(dependencies: MatrixStatusEdgeDepe
     const action = value ? String(value.action ?? '') : '';
     const authorization = request.headers.get('authorization') ?? undefined;
 
-    if (action === 'custom-save' || action === 'custom-reset') {
-      if (!customRoutes) {
-        return json({ error: { code: 'CUSTOM_STATUS_WRITE_NOT_CONFIGURED' } }, 503);
-      }
-      const result = action === 'custom-save'
-        ? await customRoutes.save({
-            authorization,
-            body: value?.config,
-          })
-        : await customRoutes.reset({
-            authorization,
-            body: {
-              lottery: value?.lottery,
-              status: value?.status,
-            },
-          });
-      return json(result.body, result.status);
-    }
-
-    if (action === 'recompute') {
-      if (!dependencies.authorizeInternal?.(authorization)) {
-        return json({ error: { code: 'FORBIDDEN' } }, 403);
-      }
-      const lottery = String(value?.lottery ?? '') as MatrixLottery;
-      const memberId = String(value?.memberId ?? '').trim();
-      const expectedPeriod = value?.expectedPeriod;
-      if (expectedPeriod !== undefined && (typeof expectedPeriod !== 'string' || !/^\d{1,20}$/.test(expectedPeriod))) return json({error:{code:'INVALID_REQUEST'}},400);
-      const target = typeof expectedPeriod === 'string' ? [expectedPeriod] as const : [] as const;
-      if (!lotteries.includes(lottery)) {
-        return json({ error: { code: 'INVALID_REQUEST' } }, 400);
-      }
-      try {
-        const result = memberId
-          ? await dependencies.recomputeMember?.(memberId, lottery, ...target)
-          : await dependencies.recomputeLottery?.(lottery, ...target);
-        if (!result) return json({ error: { code: 'RECOMPUTE_NOT_CONFIGURED' } }, 503);
-        return json({ result }, 200);
-      } catch (cause) {
-        const code = cause instanceof Error ? cause.message : 'RECOMPUTE_FAILED';
-        const status = code.endsWith('SUPERSEDED') ? 409 : code === 'ANALYSIS_NOT_READY' || code.startsWith('SUPABASE_') ? 503 : 500;
-        return json({ error: { code } }, status);
-      }
+    if (['custom-save', 'custom-reset', 'recompute'].includes(action)) {
+      return json({ error: { code: 'CUSTOM_STATUS_RETIRED' } }, 410);
     }
 
     if (action === 'batch' || action === 'summary-batch') {

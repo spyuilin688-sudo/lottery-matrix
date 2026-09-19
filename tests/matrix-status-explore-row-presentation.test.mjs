@@ -25,7 +25,7 @@ test('Matrix 狀態每個同碼結果使用獨立結果框與各自表頭', () =
   assert.match(triggerTableRule, /border:\s*0;/);
   assert.match(groupRule, /overflow:\s*hidden;/);
   assert.match(groupRule, /border:\s*1px solid var\(--border\);/);
-  assert.match(groupRule, /border-radius:\s*8px;/);
+  assert.match(groupRule, /border-radius:\s*var\(--pwa-frame-radius\);/);
   assert.equal(groupSeparatorRule, '');
   assert.ok(!statusComponent.includes('matrix-status-group-divider'));
   assert.ok(!statusCss.includes('matrix-status-group-divider'));
@@ -63,7 +63,7 @@ test('Matrix 狀態版路列比照探索結果區使用連續列與分隔線', (
   assert.match(roadArticleRule, /border:\s*0;/);
   assert.match(roadArticleRule, /border-radius:\s*0;/);
   assert.match(roadArticleRule, /overflow:\s*visible;/);
-  assert.match(separatorRule, /border-top:\s*1px solid rgba\(57,\s*55,\s*49,\s*\.58\);/);
+  assert.match(separatorRule, /border-top:\s*1px solid var\(--pwa-frame-divider\);/);
 });
 
 test('Matrix 狀態版路欄寬與探索結果區一致', () => {

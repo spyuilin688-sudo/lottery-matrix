@@ -25,8 +25,12 @@ test("底部導覽移除 PD01 裝飾，四個真實按鈕與選中態只有一�
   const selectedItemRules = navigationCss.match(/\.bottom-navigation-item\[data-selected="true"\]\s*\{/g) ?? [];
   assert.equal(selectedItemRules.length, 1);
   assert.doesNotMatch(navigationSource, /pd01-frame\.svg|pd01-active\.svg|bottom-navigation-artwork/);
-  assert.match(navigationCss, /\.bottom-navigation\s*\{[^}]*border-top:\s*1px solid var\(--home-frame-muted\);/s);
-  assert.match(navigationCss, /\.bottom-navigation-item\[data-selected="true"\]\s*\{[^}]*border-color:\s*var\(--home-frame-gold\);[^}]*background:\s*rgba\(214, 182, 111, \.10\);/s);
+  assert.match(navigationCss, /\.bottom-navigation\s*\{[^}]*border-top:\s*1px solid color-mix\(in srgb, var\(--home-frame-gold\) 14%, transparent\);/s);
+  assert.match(navigationCss, /\.bottom-navigation-item\[data-selected="true"\]\s*\{[^}]*color:\s*var\(--bottom-nav-gold\);[^}]*opacity:\s*1;/s);
+  // DESIGN.md: 2026-09-15 selection uses a 12×2px indicator, without a card frame.
+  assert.match(navigationCss, /\.bottom-navigation-item::after\s*\{[^}]*width:\s*12px;[^}]*height:\s*2px;[^}]*opacity:\s*0;/s);
+  assert.match(navigationCss, /\.bottom-navigation-item\[data-selected="true"\]::after\s*\{[^}]*opacity:\s*1;/s);
+  assert.match(navigationCss, /\.bottom-navigation-item\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;/s);
   assert.match(navigationSource, /className="bottom-navigation-label">\{label\}/);
   assert.doesNotMatch(navigationSource, /NAVIGATION_ARTWORK|matrixWW[1-4]\.png/);
 });

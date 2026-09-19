@@ -1,3 +1,4 @@
+import { ruleBodies } from "./helpers/css-rules.mjs";
 import { readLocalCss } from "./helpers/read-local-css.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -6,9 +7,24 @@ import { JSDOM } from "jsdom";
 
 const featureCss = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const exploreCss = readLocalCss(new URL("../src/matrix-explore-spacing.css", import.meta.url));
-// JSDOM does not resolve custom properties in border colors; resolve the existing gold token for this fixture.
-const resolvedExploreCss = exploreCss.replaceAll("var(--lottery-gold-500, #c49145)", "#c49145");
-const css = `html { font-size: 16px; }\n${featureCss}\n${resolvedExploreCss}`;
+const previewCss = readFileSync(new URL("../src/explore-result-preview.css", import.meta.url), "utf8");
+const tokens = readFileSync(new URL("../src/design-tokens.css", import.meta.url), "utf8");
+const exploreSource = readFileSync(new URL("../src/features/MatrixExplorePage.tsx", import.meta.url), "utf8");
+const css = `html { font-size: 16px; }\n${featureCss}\n${exploreCss}`;
+
+// JSDOM cannot resolve CSS variable border shorthands or color-mix. Assert the
+// canonical declarations instead; pwa-frame-system.spec.ts covers real rendering.
+function assertDeclarations(source, selector, expected) {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const rules = ruleBodies(source, new RegExp(`^${escaped}$`));
+  assert.ok(rules.length, `Missing canonical selector: ${selector}`);
+  for (const [property, value] of Object.entries(expected)) {
+    const declarations = rules.flatMap(body => body.split(";")
+      .map(entry => [entry.slice(0, entry.indexOf(":")).trim(), entry.slice(entry.indexOf(":") + 1).trim()])
+      .filter(([name]) => name === property).map(([, entry]) => entry));
+    assert.deepEqual(declarations, [value], `${selector}: one ${property} owner`);
+  }
+}
 
 function exploreFixture(tianyan = false) {
   const dom = new JSDOM(`
@@ -18,21 +34,16 @@ function exploreFixture(tianyan = false) {
         <section class="panel explore-settings">
           <h2 class="section-title"><span></span>探索設定</h2>
           <div class="setting-grid">
-            <label><span><img class="setting-label-icon matrix-explore-setting-icon">彩球類型</span><div class="select-box native-select"><select><option>今彩539</option></select></div></label>
             <label><span><img class="setting-label-icon matrix-explore-setting-icon">探索期數</span><div class="segmented three"><button data-selected="true">二期</button><button data-selected="false">七期</button><button data-selected="false">十三期</button></div></label>
             <label><span><img class="setting-label-icon matrix-explore-setting-icon">版路類型</span><div class="segmented three"><button data-selected="true">加減版路</button><button data-selected="false">合值版路</button><button data-selected="false">拖牌版路</button></div></label>
+            <div class="explore-condition-row" role="group" aria-label="探索條件"><span class="explore-condition-label">探索條件</span><div class="hit-options"><button data-selected="true">準4+</button><button data-selected="false">準5+</button></div></div>
           </div>
-        </section>
-        <section class="panel hit-advanced-panel">
-          <h2 class="section-title"><span></span>命中條件</h2>
-          <div class="hit-options"><button data-selected="true">準4+</button><button data-selected="false">準5+</button></div>
+          <div class="explore-hit-settings">
           <button class="advanced-row"><span>進階探索設定</span></button>
           <div class="advanced-panel"><label></label><label></label><label></label></div>
+          </div>
         </section>
         <button class="primary-action">開始探索</button>
-        <section class="panel history-panel">
-          <div class="history-panel-title"><h2 class="section-title"><span></span>近10期開獎號碼</h2></div>
-        </section>
         <section class="panel repeat-stats-panel">
           <header class="repeat-stats-heading">
             <h2 class="section-title"><span></span>重複號碼統計</h2>
@@ -79,7 +90,7 @@ function exploreFixture(tianyan = false) {
     document.querySelector(".matrix-explore-consecutive-filter-options").remove();
   }
   const style = (selector) => dom.window.getComputedStyle(document.querySelector(selector));
-  return { style };
+  return { style, document };
 }
 
 for (const tianyan of [false, true]) {
@@ -114,68 +125,67 @@ test("探索設定左側標籤依內容延伸避免壓到右側選項", () => {
   assert.equal(label.flexBasis, "auto");
 });
 
-test("開始探索、近10期與重複號碼統計的相鄰間距皆為 12px", () => {
-  const { style } = exploreFixture();
+test("探索保留 8px 內容節奏與統計卡額外 4px 外距，移除近10期表格", () => {
+  const { style, document } = exploreFixture();
   assert.equal(style(".feature-body").rowGap, "8px");
-  assert.equal(style(".history-panel").marginTop, "4px");
   assert.equal(style(".repeat-stats-panel").marginTop, "4px");
+  assert.equal(document.querySelector(".history-panel"), null);
+  assert.doesNotMatch(exploreSource, /<HistoryList/);
 });
 
-test("探索區標題為 14px，近10期標題為 12px", () => {
+test("探索與結果區標題保持 14px", () => {
   const { style } = exploreFixture();
   assert.equal(style(".explore-settings > .section-title").fontSize, "14px");
-  assert.equal(style(".hit-advanced-panel > .section-title").fontSize, "14px");
   assert.equal(style(".advanced-row").fontSize, "14px");
   assert.equal(style(".repeat-stats-heading .section-title").fontSize, "14px");
   assert.equal(style(".result-title .section-title").fontSize, "14px");
-  assert.equal(style(".history-panel-title .section-title").fontSize, "12px");
 });
 
-test("指定卡片使用 #755329 外框、6px 上內距及核准的水平內距", () => {
-  const { style } = exploreFixture();
-  for (const selector of [".explore-settings", ".hit-advanced-panel", ".repeat-stats-panel", ".result-panel", ".history-panel"]) {
-    assert.equal(style(selector).borderTopColor, "rgb(117, 83, 41)");
+test("設定與結果卡使用共用內容框、6px 上內距及核准的水平內距", () => {
+  const { style, document } = exploreFixture();
+  assertDeclarations(featureCss, ".panel", { border: "1px solid var(--pwa-frame-secondary)", "border-radius": "var(--pwa-frame-radius)" });
+  for (const selector of [".explore-settings", ".repeat-stats-panel", ".result-panel"]) {
+    assert.ok(document.querySelector(selector).classList.contains("panel"));
+    assert.equal(style(selector).paddingTop, "6px");
   }
-  assert.equal(style(".explore-settings").paddingTop, "6px");
-  assert.equal(style(".hit-advanced-panel").paddingTop, "6px");
-  assert.equal(style(".hit-advanced-panel").paddingBottom, "4px");
-  assert.equal(style(".repeat-stats-panel").paddingTop, "6px");
+  assert.equal(document.querySelector(".hit-advanced-panel"), null);
+  assert.doesNotMatch(exploreSource, /className="[^"]*hit-advanced-panel/);
   assert.equal(style(".repeat-stats-panel").paddingBottom, "10px");
-  assert.equal(style(".result-panel").paddingTop, "6px");
-  assert.equal(style(".repeat-stats-panel").paddingLeft, "6px");
-  assert.equal(style(".repeat-stats-panel").paddingRight, "6px");
-  assert.equal(style(".result-panel").paddingLeft, "6px");
-  assert.equal(style(".result-panel").paddingRight, "6px");
+  for (const selector of [".repeat-stats-panel", ".result-panel"]) {
+    assert.equal(style(selector).paddingLeft, "6px");
+    assert.equal(style(selector).paddingRight, "6px");
+  }
 });
 
-test("命中條件徽章保留 6px 下內距並與進階探索設定相距 4px", () => {
+test("整合條件列使用 20px 選項，進階設定保留 8px 上距", () => {
   const { style } = exploreFixture();
   const selected = style('.hit-options button[data-selected="true"]');
   const unselected = style('.hit-options button[data-selected="false"]');
 
-  assert.equal(selected.height, "28px");
-  assert.equal(selected.minHeight, "28px");
+  assert.equal(selected.height, "20px");
+  assert.equal(selected.minHeight, "20px");
   assert.equal(selected.padding, "0.125rem 0.25rem");
   assert.equal(selected.boxSizing, "border-box");
   assert.equal(unselected.height, selected.height);
   assert.equal(unselected.minHeight, selected.minHeight);
   assert.equal(unselected.padding, selected.padding);
   assert.equal(unselected.boxSizing, selected.boxSizing);
-  assert.equal(style(".hit-options").paddingBottom, "6px");
-  assert.equal(style(".hit-options").marginBottom, "4px");
+  assert.equal(style(".hit-options").paddingBottom, "0px");
+  assert.equal(style(".hit-options").marginBottom, "0px");
+  assert.equal(style(".advanced-row").marginTop, "8px");
 });
 
-test("設定控制項以已選金色與未選白灰深色邊框區分", () => {
-  const { style } = exploreFixture();
-  const selected = style('.segmented button[data-selected="true"]');
-  const unselected = style('.segmented button[data-selected="false"]');
-
-  assert.equal(selected.color, "rgb(242, 207, 103)");
-  assert.equal(selected.borderColor, "rgb(200, 150, 34)");
-  assert.equal(selected.backgroundImage, "linear-gradient(145deg, rgba(124, 85, 12, 0.25), rgba(31, 25, 13, 0.74))");
-  assert.equal(unselected.color, "rgb(209, 213, 219)");
-  assert.equal(unselected.borderColor, "rgb(74, 64, 48)");
-  assert.equal(unselected.backgroundImage, "none");
+test("設定控制項使用共用選取金色與未選控制框", () => {
+  for (const selector of [".segmented button", ".hit-options button"]) {
+    assertDeclarations(featureCss, selector, {
+      border: "1px solid var(--pwa-frame-tertiary)",
+      background: "var(--pwa-control-surface)", color: "var(--lottery-text-secondary)",
+    });
+    assertDeclarations(featureCss, `${selector}[data-selected="true"]`, {
+      "border-color": "var(--pwa-frame-secondary)", background: "var(--pwa-control-selected)",
+      color: "var(--pwa-frame-secondary)", "box-shadow": "none",
+    });
+  }
 });
 
 test("功能圖示與進階探索標題使用更新後的層級", () => {
@@ -209,36 +219,34 @@ test("重複統計卡片與控制項使用指定比例", () => {
   assert.equal(style(".result-summary b").fontWeight, "800");
 });
 
-test("重複號碼統計與探索結果區使用六層金色與分隔線層級", () => {
+test("重複統計與結果區使用共用框線層級及 28% 標準金分隔線", () => {
   const { style } = exploreFixture();
-  const selectedSummary = style('.result-summary > button[data-selected="true"]');
-  const normalSummary = style('.result-summary > button[data-selected="false"]');
-  const selectedFilter = style('.explore-consecutive-filter-option[aria-pressed="true"]');
-  const normalFilter = style('.explore-consecutive-filter-option[aria-pressed="false"]');
-
-  assert.equal(style(".repeat-stats-panel").borderTopColor, "rgb(117, 83, 41)");
-  assert.equal(style(".result-panel").borderTopColor, "rgb(117, 83, 41)");
-  assert.equal(style(".repeat-stats-panel").boxShadow, "none");
-  assert.equal(style(".result-panel").boxShadow, "none");
-  assert.equal(style(".repeat-stats-heading .section-title").color, "rgba(244, 206, 103, 0.84)");
-  assert.equal(style(".result-title .section-title").color, "rgba(244, 206, 103, 0.84)");
-  assert.equal(style(".road-results-head").color, "rgba(244, 206, 103, 0.84)");
+  assertDeclarations(tokens, ":root", {
+    "--pwa-frame-secondary": "var(--home-frame-gold)",
+    "--pwa-frame-tertiary": "var(--home-frame-muted)",
+    "--pwa-frame-radius": "var(--home-frame-radius)",
+  });
+  assertDeclarations(featureCss, ".panel", { border: "1px solid var(--pwa-frame-secondary)", "box-shadow": "none" });
+  assertDeclarations(exploreCss, ".matrix-explore-main-screen", {
+    "--pwa-frame-divider": "color-mix(in srgb, var(--home-frame-gold) 28%, transparent)",
+  });
+  for (const selector of [".repeat-stats-heading .section-title", ".result-title .section-title", ".road-results-head"]) {
+    assert.equal(style(selector).color, "rgba(244, 206, 103, 0.84)");
+  }
   assert.equal(style('.result-summary > button[data-selected="false"] b').color, "rgb(242, 245, 248)");
   assert.equal(style(".road-result-row > strong").color, "rgb(244, 206, 103)");
-  assert.equal(selectedSummary.borderTopColor, "rgb(196, 145, 69)");
-  assert.equal(selectedFilter.borderTopColor, "rgb(196, 145, 69)");
-  assert.equal(normalSummary.borderTopColor, "rgba(117, 83, 41, 0.62)");
-  assert.equal(normalFilter.borderTopColor, "rgba(117, 83, 41, 0.62)");
-  assert.equal(style(".road-results .tag").borderTopColor, "rgba(117, 83, 41, 0.62)");
-  assert.equal(style(".matrix-explore-consecutive-filter-options").borderTopColor, "rgba(117, 83, 41, 0.68)");
-  assert.equal(style(".matrix-explore-consecutive-filter-options").borderBottomColor, "rgba(117, 83, 41, 0.68)");
-  assert.equal(style(".road-results-head").borderBottomColor, "rgba(117, 83, 41, 0.82)");
-  assert.equal(style(".road-results article + article").borderTopColor, "rgba(57, 55, 49, 0.58)");
-  assert.equal(style(".matrix-explore-consecutive-filter-options").borderTopWidth, "1px");
-  assert.equal(style(".matrix-explore-consecutive-filter-options").borderBottomWidth, "1px");
-  assert.equal(style(".road-results-head").borderBottomWidth, "1px");
+  for (const selector of [".result-summary > button", ".explore-consecutive-filter-option", ".road-results .tag"]) {
+    assertDeclarations(exploreCss, `.matrix-explore-main-screen ${selector}`, { border: "1px solid var(--pwa-frame-tertiary)" });
+  }
+  for (const selector of ['.result-summary > button[data-selected="true"]', '.explore-consecutive-filter-option[aria-pressed="true"]']) {
+    assertDeclarations(exploreCss, `.matrix-explore-main-screen ${selector}`, { "border-color": "var(--pwa-frame-secondary)" });
+  }
+  assertDeclarations(exploreCss, ".matrix-explore-main-screen .matrix-explore-consecutive-filter-options", {
+    "border-top": "1px solid var(--pwa-frame-divider)", "border-bottom": "1px solid var(--pwa-frame-divider)",
+  });
+  assertDeclarations(exploreCss, ".matrix-explore-main-screen .road-results-head", { "border-bottom": "1px solid var(--pwa-frame-divider)" });
+  assertDeclarations(exploreCss, ".matrix-explore-main-screen .road-results article + article", { "border-top": "1px solid var(--pwa-frame-divider)" });
   assert.equal(style(".road-result-row").borderBottomWidth, "0px");
-  assert.equal(style(".road-results article + article").borderTopWidth, "1px");
   assert.equal(style(".road-results article").borderTopWidth, "0px");
 });
 
@@ -259,11 +267,10 @@ test("結果標語與右上角組數維持單列清楚層級", () => {
   assert.equal(number.color, "rgb(167, 216, 234)");
 });
 
-test("六個結果標題與版路結果之間使用 82% 表頭分隔線", () => {
+test("六個結果標題與版路結果之間使用共用表頭分隔線", () => {
   const { style } = exploreFixture();
   const head = style(".road-results-head");
-  assert.equal(head.borderBottomWidth, "1px");
-  assert.equal(head.borderBottomColor, "rgba(117, 83, 41, 0.82)");
+  assertDeclarations(exploreCss, ".matrix-explore-main-screen .road-results-head", { "border-bottom": "1px solid var(--pwa-frame-divider)" });
   assert.equal(head.marginBottom, "4px");
 });
 
@@ -292,7 +299,7 @@ test("版路按鈕與概要卡使用指定右距、內距、標籤位置及數�
   assert.equal(label.top, "0px");
   assert.equal(label.right, "4px");
   assert.equal(label.transform, "translateY(-50%)");
-  assert.equal(label.borderTopWidth, "1px");
+  assertDeclarations(featureCss, ".matrix-explore-main-screen .validation-summary-card em", { border: "1px solid var(--pwa-frame-tertiary)" });
   assert.equal(style(".validation-summary-primary").color, "rgb(239, 83, 80)");
   assert.equal(style(".validation-summary-position").color, "rgb(53, 191, 240)");
   assert.equal(style(".validation-summary-lookback").color, "rgb(167, 139, 250)");
@@ -304,16 +311,26 @@ test("版路按鈕與概要卡使用指定右距、內距、標籤位置及數�
 });
 
 
-for (const tianyan of [false, true]) {
-  test(`${tianyan ? "天衍" : "探索"}同碼與號碼小卡選取色比照連準次數`, () => {
-    const { style } = exploreFixture(tianyan);
-    const reference = exploreFixture().style('.explore-consecutive-filter-option[aria-pressed="true"]');
-    for (const selector of ['.repeat-stats-heading button[data-selected="true"]', '.result-summary > button[data-selected="true"]']) {
-      const selected = style(selector);
-      for (const property of ["borderTopColor", "color", "backgroundColor", "boxShadow"]) {
-        assert.equal(selected[property], reference[property], `${selector}: ${property}`);
-      }
-    }
-    assert.equal(style('.result-summary > button[data-selected="true"] b').color, reference.color);
+test("探索與天衍同碼及號碼小卡的選取框色與文字比照連準次數", () => {
+  for (const selector of ['.repeat-stats-heading button[data-selected="true"]', '.result-summary > button[data-selected="true"]', '.explore-consecutive-filter-option[aria-pressed="true"]']) {
+    assertDeclarations(exploreCss, `.matrix-explore-main-screen ${selector}`, {
+      "border-color": "var(--pwa-frame-secondary)", color: "var(--pwa-frame-secondary)",
+    });
+  }
+  assertDeclarations(exploreCss, '.matrix-explore-main-screen:not(.matrix-tiangong-screen) .result-summary > button[data-selected="true"] b', { color: "inherit" });
+  assertDeclarations(previewCss, '.explore-consecutive-filter-option[aria-pressed="true"]', { background: "var(--pwa-control-selected)", "box-shadow": "none" });
+  assertDeclarations(exploreCss, '.matrix-explore-main-screen .result-summary > button[data-selected="true"]', { background: "var(--pwa-control-selected)" });
+});
+
+test("同碼保留共用控制表面，號碼小卡與連準選項使用選取表面", () => {
+  // a7122ce replaced #412's grouped color/background override with the PWA
+  // frame owners: same-code keeps its resting surface and selected frame/text.
+  assertDeclarations(exploreCss, ".matrix-explore-main-screen .repeat-stats-heading button", {
+    background: "var(--pwa-control-surface)",
   });
-}
+  const selected = ruleBodies(exploreCss, /^\.matrix-explore-main-screen \.repeat-stats-heading button\[data-selected="true"\]$/);
+  assert.equal(selected.length, 1);
+  assert.doesNotMatch(selected[0], /(?:background(?:-color)?|box-shadow)\s*:/);
+  assertDeclarations(previewCss, '.explore-consecutive-filter-option[aria-pressed="true"]', { background: "var(--pwa-control-selected)" });
+  assertDeclarations(exploreCss, '.matrix-explore-main-screen .result-summary > button[data-selected="true"]', { background: "var(--pwa-control-selected)" });
+});

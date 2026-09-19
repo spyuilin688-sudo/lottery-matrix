@@ -32,8 +32,6 @@ export type MatrixEntitlements = {
   canUseTianyan: boolean;
   canUseTiangong: boolean;
   canViewFullStatus: boolean;
-  canCustomizeStatus: boolean;
-  canUseCompositeCustomRoad: boolean;
 };
 
 function taipeiWeekday(now: Date) {
@@ -61,7 +59,6 @@ export function resolveMatrixEntitlements(
     member.plan === 'yearly'
     || member.plan === 'lifetime'
   );
-  const customizable = paid && member.plan !== 'trial';
   // Runtime auth always sets this explicitly from the Supabase identity provider.
   // Undefined is kept eligible only for older injected route/test fixtures.
   const loginPerksEligible = member.loginPerksEligible !== false;
@@ -80,7 +77,5 @@ export function resolveMatrixEntitlements(
     canUseTianyan: quarterlyOrAbove || (hasRegistrationTrial && trialElapsed < 48 * 60 * 60 * 1000),
     canUseTiangong: yearlyOrLifetime || (hasRegistrationTrial && trialElapsed < 24 * 60 * 60 * 1000),
     canViewFullStatus: paid,
-    canCustomizeStatus: customizable,
-    canUseCompositeCustomRoad: quarterlyOrAbove,
   };
 }

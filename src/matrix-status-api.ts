@@ -2,20 +2,17 @@ import type { LotteryId } from './Prototype';
 import { getSupabaseClient } from './lib/supabase';
 import { MatrixApiError } from './matrix-api-client';
 import type { ExploreValidationResponse } from './matrix-algorithm-api';
-import type { CustomStatusConfig } from '../shared/matrix-status-config';
-export type { CustomConditionRow, CustomConditionGroup, CustomStatusConfig } from '../shared/matrix-status-config';
 
 export type MatrixStatusCode = 'ACTIVE' | 'FOCUS' | 'RESONANCE' | 'CRITICAL' | 'DORMANT';
-export type CustomMatrixStatusCode = Exclude<MatrixStatusCode, 'DORMANT'>;
-export type CustomRoadType = '加減' | '合值' | '拖牌' | '複合';
-export type CustomNumberOrder = '依號碼由小到大排序' | '依實際開獎順序排序';
+export type MatrixTriggerStatusCode = Exclude<MatrixStatusCode, 'DORMANT'>;
+export type MatrixStatusNumberOrder = '依號碼由小到大排序' | '依實際開獎順序排序';
 
 export type MatrixStatusRoadDetail = {
   id: string;
   result: string[];
   locked: false;
   algorithmType: '加減' | '合值' | '拖牌' | '複合';
-  numberOrder?: CustomNumberOrder;
+  numberOrder?: MatrixStatusNumberOrder;
   streak: number;
   predictionDistance: number;
   position: number;
@@ -38,7 +35,7 @@ export type MatrixStatusRoad = MatrixStatusRoadDetail | MatrixStatusLockedRoad;
 export type MatrixStatusCard = {
   id: string;
   ruleId: string;
-  status: CustomMatrixStatusCode;
+  status: MatrixTriggerStatusCode;
   hitType: 'one-code' | 'two-code';
   result: string[];
   sameCodeRoadCount: number | null;
@@ -53,9 +50,8 @@ export type MatrixStatusResponse = {
   analysisVersion: string;
   sourceAnalysisVersion?: string;
   summary: { status: MatrixStatusCode; count: number; message: string };
-  counts: Record<CustomMatrixStatusCode, number>;
+  counts: Record<MatrixTriggerStatusCode, number>;
   cards: MatrixStatusCard[];
-  customTriggers: Array<{ status: CustomMatrixStatusCode; groupId: string }>;
   detailLocked: boolean;
 };
 
@@ -112,18 +108,6 @@ function statusRpcError(error: { message?: string } | null): never {
   throw new MatrixApiError('API_ERROR', 500);
 }
 
-async function statusRpc<T>(name: string, args?: Record<string, unknown>) {
-  const client = getSupabaseClient();
-  // Custom settings RPCs are authenticated-only; a guest is a login state,
-  // not an opaque PostgREST permission error.
-  const session = await client.auth.getSession();
-  if (session.error) statusRpcError(session.error);
-  if (!session.data.session) throw new MatrixApiError('AUTH_REQUIRED', 401);
-  const { data, error } = args ? await client.rpc(name, args) : await client.rpc(name);
-  if (error) statusRpcError(error);
-  return data as T;
-}
-
 export function fetchMatrixStatus(lottery: LotteryId, signal?: AbortSignal) {
   return fetchMatrixStatusFromFunction(lottery, signal);
 }
@@ -170,27 +154,5 @@ export function fetchMatrixStatusValidation(
     action: 'validation',
     ...meta,
     itemId,
-  });
-}
-
-export function listCustomStatusSettings() {
-  return statusRpc<{
-    items: Array<{ config: CustomStatusConfig; evaluation: Record<string, unknown> }>;
-    entitlements?: { canCustomizeStatus: boolean; canUseCompositeCustomRoad: boolean };
-  }>('matrix_custom_status_list');
-}
-
-export function saveCustomStatusSetting(config: CustomStatusConfig) {
-  return statusFunction<{ item: CustomStatusConfig }>({
-    action: 'custom-save',
-    config,
-  });
-}
-
-export function resetCustomStatusSetting(lottery: LotteryId, status: CustomMatrixStatusCode) {
-  return statusFunction<{ reset: true }>({
-    action: 'custom-reset',
-    lottery,
-    status,
   });
 }

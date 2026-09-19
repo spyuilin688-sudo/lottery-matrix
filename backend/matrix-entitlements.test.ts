@@ -43,13 +43,10 @@ describe('Matrix entitlements', () => {
     expect(resolveMatrixEntitlements({ ...base, plan: 'monthly', active }, atTaipeiNoon('2026-08-19'))).toMatchObject({
       canUseThirteen: true,
       canUseFullRange: true,
-      canCustomizeStatus: true,
-      canUseCompositeCustomRoad: false,
     });
     expect(resolveMatrixEntitlements({ ...base, plan: 'quarterly', active }, atTaipeiNoon('2026-08-19'))).toMatchObject({
       canUseTianyan: true,
       canUseTiangong: false,
-      canUseCompositeCustomRoad: true,
     });
     expect(resolveMatrixEntitlements({ ...base, plan: 'yearly', active }, atTaipeiNoon('2026-08-19'))).toMatchObject({
       canUseTianyan: true,
@@ -57,10 +54,9 @@ describe('Matrix entitlements', () => {
     });
   });
 
-  it('lets an active trial view full status without custom settings', () => {
+  it('lets an active trial view full status', () => {
     expect(resolveMatrixEntitlements({ ...base, plan: 'trial', active: true }, atTaipeiNoon('2026-08-19'))).toMatchObject({
       canViewFullStatus: true,
-      canCustomizeStatus: false,
       canUseTianyan: false,
       canUseTiangong: false,
     });
@@ -71,7 +67,6 @@ describe('Matrix entitlements', () => {
       canUseThirteen: false,
       canUseFullRange: false,
       canViewFullStatus: false,
-      canCustomizeStatus: false,
       canUseTianyan: false,
       canUseTiangong: false,
     });

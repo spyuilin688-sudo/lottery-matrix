@@ -19,7 +19,8 @@ test('PWA border tiers alias the approved homepage palette without changing it',
   for (const [name, value] of [['bright', '#f0d58c'], ['gold', '#d6b66f'], ['muted', '#8a713f'], ['radius', '8px']]) {
     assert.ok(tokens.includes(`--home-frame-${name}: ${value};`));
   }
-  assert.match(tokens, /--pwa-frame-divider:\s*color-mix\(in srgb, var\(--home-frame-gold\) 18%, transparent\)/);
+  // main 8ec6ebbe raises the shared divider to 38%; Explore retains its scoped 28% variant.
+  assert.match(tokens, /--pwa-frame-divider:\s*color-mix\(in srgb, var\(--home-frame-gold\) 38%, transparent\)/);
 });
 
 test('page title and merged settings header have one bright border, not two frames', () => {
@@ -108,7 +109,9 @@ test('requested PWA frame refinements remain canonical and scoped', () => {
   assert.doesNotMatch(css, /matrix-tiangong-screen[^\{]*\.lottery-tabs/);
   assert.match(css, /--lottery-tab-selected-underline:\s*var\(--pwa-frame-secondary\)/);
   assert.match(spacing, /\.matrix-explore-main-screen \.advanced-row \{[\s\S]*?border-top:\s*1px solid var\(--pwa-frame-secondary\)/);
-  assert.match(spacing, /\.matrix-tiangong-screen \.tiangong-general-settings \.tiangong-advanced-divider \{[\s\S]*?border-bottom:\s*1px solid var\(--pwa-frame-secondary\)/);
+  // main 12a4f59d moves the separator to the stage boundary and removes the extra general divider.
+  assert.doesNotMatch(spacing, /\.tiangong-general-settings \.tiangong-advanced-divider\s*\{/);
+  assert.match(block(spacing, '.matrix-tiangong-screen .tiangong-stage-settings .tiangong-stage-block + .tiangong-stage-block'), /border-top:\s*1px solid var\(--pwa-frame-secondary\)/);
   assert.match(validation, /\.explore-validation-card \{[\s\S]*?border-top-color:\s*var\(--pwa-frame-secondary\)[\s\S]*?border-bottom-color:\s*var\(--pwa-frame-secondary\)/);
   assert.match(homeSwitcher, /var\(--home-frame-bright\) 55%, transparent/);
   assert.doesNotMatch(memberPages, /歡迎使用 樂彩 Matrix。<\/p>/);

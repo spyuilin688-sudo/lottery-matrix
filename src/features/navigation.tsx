@@ -34,8 +34,7 @@ export type ScreenId =
   | "promotions"
   | "version-info"
   | "disclaimer"
-  | "status"
-  | "status-settings";
+  | "status";
 
 export type Navigate = (screen: ScreenId) => void;
 

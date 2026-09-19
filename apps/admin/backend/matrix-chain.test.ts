@@ -20,3 +20,9 @@ describe('chain evidence', () => {
   const s = stages(); s[0].observedAt='2099-01-01T00:00:00Z'; expect(report(s).state).toBe('UNKNOWN');
  });
 });
+
+it('passes the current chain without retired custom evidence, including old stored heartbeats', () => {
+ const current = ['schedule','job','crawler','draw','analysis','matrix-status'].map(stage => ({stage,state:'PASS',source:'supabase',observedAt:at,period:'12004',code:'VERIFIED'})) as StageEvidence[];
+ expect(report(current).state).toBe('PASS');
+ expect(report([...current,{stage:'custom-status',state:'FAIL',source:'legacy',observedAt:at,period:'12004',code:'CUSTOM_MISSING'} as unknown as StageEvidence]).state).toBe('PASS');
+});

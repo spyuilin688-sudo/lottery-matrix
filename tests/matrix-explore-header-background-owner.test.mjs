@@ -14,13 +14,15 @@ rules.walkDecls("--product-header-background", declaration => {
   }
 });
 
-test("every known PWA title resolves to one of the 32 themed, available WebP backgrounds", () => {
+test("every current PWA title resolves to one of the 31 retained WebP backgrounds", () => {
   const header = readFileSync("src/features/BrandHeader.tsx", "utf8");
   const subtitles = header.split("const PAGE_SUBTITLES:")[1].split("\n};")[0];
   const titles = [...subtitles.matchAll(/^  "([^"]+)":/gm)].map(match => match[1]);
   for (const title of titles) assert.ok(backgrounds.has(title), `Missing background: ${title}`);
   const assets = new Set(backgrounds.values());
-  assert.equal(assets.size, 32);
+  assert.equal(assets.size, 31);
+  assert.equal(backgrounds.has("自訂觸發條件"), false);
+  assert.equal(assets.has('url("/assets/lottery/headers/status-settings.webp")'), false);
   for (const value of assets) {
     assert.match(value, /^url\("\/assets\/lottery\/headers\/[a-z-]+\.webp"\)$/);
     const bytes = readFileSync(`public${value.slice(5, -2)}`);

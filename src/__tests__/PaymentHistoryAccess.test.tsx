@@ -100,7 +100,7 @@ describe('payment history access and recovery', () => {
     fireEvent.click(screen.getByRole('button', { name: '重新載入付款紀錄' }));
     expect(await screen.findByText('季費方案')).toBeInTheDocument();
     expect(screen.getByText('NT$5,580')).toBeInTheDocument();
-    expect(screen.getByText('已確認')).toBeInTheDocument();
+    expect(screen.getByText('✓ 已確認')).toHaveAttribute('data-status', 'confirmed');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 

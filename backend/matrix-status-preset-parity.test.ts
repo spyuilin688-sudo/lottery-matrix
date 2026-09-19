@@ -1,11 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { createDefaultCustomStatusConfig, type CustomStatus } from '../shared/matrix-status-config';
-import { evaluateCustomStatusRoads } from './matrix-custom-status';
 import { evaluateChapter15, type StatusRoad } from './matrix-status';
 
-const statuses: CustomStatus[] = ['ACTIVE', 'FOCUS', 'RESONANCE', 'CRITICAL'];
 function roads(hitType: StatusRoad['hitType'], streak: number, types: StatusRoad['algorithmType'][], result = hitType === 'one-code' ? ['08'] : ['08', '22']): StatusRoad[] {
   return types.map((algorithmType, index) => ({
     id: `${hitType}-${result.join(',')}-${streak}-${algorithmType}-${index}`, hitType, result,
@@ -42,21 +39,10 @@ const duplicated = roads('one-code', 5, ['加減', '合值']);
 cases.push([...duplicated, ...duplicated, ...roads('one-code', 5, ['加減', '合值'], ['09'])]);
 
 describe('canonical twenty-two status presets', () => {
-  it('evaluates every default through the custom group engine with identical results and witnesses', () => {
-    const seen = new Set<string>();
-    for (const source of cases) {
-      const preset = evaluateChapter15({ lottery: '今彩539', drawPeriod: '114123', roads: source });
-      const key = (ruleId: string, result: string[]) => `${ruleId}:${result.join(',')}`;
-      const expected = preset.cards.map((card) => {
-        seen.add(card.ruleId);
-        return { key: key(card.ruleId, card.result), roads: card.roads.map((road) => road.id) };
-      }).sort((a, b) => a.key.localeCompare(b.key));
-      const actual = statuses.flatMap((status) => evaluateCustomStatusRoads(
-        createDefaultCustomStatusConfig('今彩539', status), source,
-      ).matchedGroups.map((group) => ({ key: key(group.groupId, group.result), roads: group.roads.map((road) => road.id) })))
-        .sort((a, b) => a.key.localeCompare(b.key));
-      expect(actual).toEqual(expected);
-    }
+  it('covers all twenty-two preset triggers across boundary fixtures', () => {
+    const seen = new Set(cases.flatMap((roads) => evaluateChapter15({
+      lottery: '今彩539', drawPeriod: '114123', roads,
+    }).cards.map((card) => card.ruleId)));
     expect(seen.size).toBe(22);
   });
   it('keeps Python worker and Edge TS results identical across the same boundary fixtures', () => {

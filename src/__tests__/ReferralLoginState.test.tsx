@@ -77,7 +77,7 @@ describe('referral page login state', () => {
   });
 
   it.each(['MEMBER_SESSION_EXPIRED', 'AUTH_REQUIRED', 'LINE_IDENTITY_REQUIRED'])(
-    'asks for LINE login when member data rejects the session with %s', async (message) => {
+    'asks for LINE or Google login when member data rejects the session with %s', async (message) => {
       auth.getSession.mockResolvedValue({ data: { session }, error: null });
       referral.fetchSummary.mockRejectedValue(new Error(message));
       showPage();

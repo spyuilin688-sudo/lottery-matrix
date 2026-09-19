@@ -15,13 +15,12 @@ test.beforeEach(async ({ page }) => {
     if (path.includes('/history/')) return route.fulfill({ json: { items: [draw], revision: 'frame-fixture' } });
     if (path.includes('/latest/')) return route.fulfill({ json: { item: draw } });
     if (path.includes('/cards/')) return route.fulfill({ json: { lottery: '今彩539', period: null, cards: {} } });
-    if (path.endsWith('/matrix_custom_status_list')) return route.fulfill({ json: { items: [], entitlements: { canCustomizeStatus: true, canUseCompositeCustomRoad: true } } });
     if (path.includes('/rest/v1/rpc/')) return route.fulfill({ json: {} });
     return route.fulfill({ status: 503, json: { error: 'isolated_visual_fixture' } });
   });
 });
 
-const pages = ['explore', 'tianheng', 'tianyan', 'tiangong', 'tongxing', 'reference', 'history', 'calculator', 'matrix-card', 'notifications', 'profile', 'guide', 'activation-code', 'subscription-management', 'about-matrix', 'service-info', 'version-info', 'privacy-policy', 'member-terms', 'disclaimer', 'status-settings', 'notebook'] as const;
+const pages = ['explore', 'tianheng', 'tianyan', 'tiangong', 'tongxing', 'reference', 'history', 'calculator', 'matrix-card', 'notifications', 'profile', 'guide', 'activation-code', 'subscription-management', 'about-matrix', 'service-info', 'version-info', 'privacy-policy', 'member-terms', 'disclaimer', 'notebook'] as const;
 const cases = [...pages.map(screen => ({ screen, width: 390 })), ...(['explore', 'reference', 'notifications'] as const).flatMap(screen => [320, 430].map(width => ({ screen, width })))];
 
 for (const { screen, width } of cases) {
@@ -43,7 +42,9 @@ for (const { screen, width } of cases) {
       const border = await panel.evaluate(element => getComputedStyle(element).borderTopWidth);
       if (border === '0px') continue; // Intentional layout wrappers do not receive a second outline.
       await expect(panel).toHaveCSS('border-top-width', '1px');
-      await expect(panel).toHaveCSS('border-top-color', colors.secondary);
+      // PR #688 gives notebook list entries a quieter tertiary frame.
+      const notebookEntry = screen === 'notebook' && await panel.evaluate(element => element.classList.contains('notebook-entry'));
+      await expect(panel).toHaveCSS('border-top-color', notebookEntry ? colors.tertiary : colors.secondary);
       await expect(panel).toHaveCSS('border-radius', '8px');
       await expect(panel).toHaveCSS('box-shadow', 'none');
     }
@@ -93,8 +94,11 @@ test('real advanced native select has a frame and selected options change withou
   await expect(seven).toHaveCSS('border-top-color', colors.secondary);
   await expect(seven).toHaveCSS('color', colors.secondary);
   await expect(seven).toHaveCSS('box-shadow', 'none');
-  await expect(page.locator('.primary-action')).toHaveCSS('border-top-color', colors.primary);
-  await expect(page.locator('.primary-action')).toHaveCSS('box-shadow', 'none');
+  // DESIGN.md retains the approved metallic CTA as an explicit frame-system variant.
+  const action = page.locator('.primary-action.branded-explore-action');
+  await expect(action).toHaveCSS('border-top-color', 'rgb(201, 154, 46)');
+  await expect(action).toHaveCSS('border-top-width', '1px');
+  await expect(action).toHaveCSS('border-radius', '9px');
 });
 
 for (const width of [320, 390, 430]) {

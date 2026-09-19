@@ -1,3 +1,4 @@
+import { ruleBodies } from "./helpers/css-rules.mjs";
 import { readLocalCss } from "./helpers/read-local-css.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -186,17 +187,21 @@ test("五顆玩法使用 32px 列高，數字為 12–14px 且底線符合指定
 
 test("近10期表格外框與欄列分隔線明確呈現", () => {
   const { style } = historyFixture("今彩539", 5, false);
-  const panel = style(".history-panel");
   const heading = style(".panel-heading");
-  const period = style('[data-testid="period"]');
-  const row = style(".history-row");
-
-  assert.equal(panel.borderTopWidth, "1px");
-  assert.equal(panel.borderTopColor, "rgb(117, 83, 41)");
-  assert.equal(heading.borderBottomWidth, "1px");
+  // JSDOM cannot resolve the production var()/color-mix borders. Verify their
+  // canonical owners; pwa-frame-system.spec.ts covers the real browser cascade.
+  const panel = ruleBodies(featureCss, /^\.panel$/).filter(body => /border:/.test(body));
+  assert.equal(panel.length, 1);
+  assert.match(panel[0], /border:\s*1px solid var\(--pwa-frame-secondary\)/);
+  for (const [selector, property] of [
+    [/^\.matrix-explore-main-screen \.history-panel \.panel-heading$/, 'border-bottom'],
+    [/^\.matrix-explore-main-screen \.history-row > :nth-child\(1\)$/, 'border-right'],
+    [/^\.matrix-explore-main-screen \.history-row$/, 'border-bottom'],
+  ]) {
+    const rules = ruleBodies(css, selector);
+    assert.equal(rules.filter(body => body.includes(`${property}: 1px solid var(--pwa-frame-divider)`)).length, 1);
+  }
   assert.equal(heading.paddingTop, "5px");
   assert.equal(heading.paddingBottom, "5px");
   assert.equal(style(".history-panel-actions").gap, "6px");
-  assert.equal(period.borderRightWidth, "1px");
-  assert.equal(row.borderBottomWidth, "1px");
 });
