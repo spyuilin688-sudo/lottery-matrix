@@ -4,7 +4,7 @@ import { notificationCalendarStatusId, parseNotificationCalendarStatus } from '.
 import { nativeNotificationStatusId, nativeNotificationWarning, parseNativeNotificationHealth } from './native-notification-status';
 import type { SupabaseConfig } from './supabase';
 import type { RailwayLatestAnalysis, WorkerStatus } from './worker-api';
-import type { WatchdogStatus } from './watchdog-status';
+import { watchdogObservation, type WatchdogStatus } from './watchdog-status';
 import { createApiQueryChecks, queryCheckIds } from './api-query-checks';
 import { parseSettings } from './permission-settings';
 import { operationActivity, operationSources, protectedResultKinds, resultDataEvidence } from './service-evidence';
@@ -54,8 +54,6 @@ const jobDefinitions = [
 const jobStatuses = ['running', 'waiting_source', 'success', 'failed'] as const;
 const retryableIds = new Set(['railway-health', 'railway-jobs-status']);
 const githubApiUrl = 'https://api.github.com';
-const watchdogFreshnessMs = 18 * 60 * 1000;
-const watchdogAllowedFutureSkewMs = 2 * 60 * 1000;
 const defaultRequestTimeoutMs = 10_000;
 // Match watchdog.ts JOB_STALE_MS: a running crawler uses its latest heartbeat.
 const jobStaleMs = 20 * 60 * 1000;
@@ -117,6 +115,7 @@ const safeWatchdogDetail = (status: WatchdogStatus) => ({
   status: status.status,
   checkedAt: status.checkedAt,
   completedAt: status.completedAt,
+  ...(status.schedule ? { schedule: { checkedAt: status.schedule.checkedAt, due: status.schedule.due, pendingSince: status.schedule.pendingSince } } : {}),
   dueLotteries: [...status.dueLotteries],
   actions: status.actions.map(({ lottery, target, reasons, outcome }) => ({
     lottery, target, reasons: [...reasons], outcome,
@@ -250,16 +249,17 @@ export function createConnectionStatus(dependencies: Dependencies) {
         const heartbeat = await withDeadline(async () => dependencies.loadWatchdogStatus?.());
         if (!heartbeat) return finish(false, undefined, '尚無自動監控執行紀錄');
         detail = safeWatchdogDetail(heartbeat);
-        const ageMs = now().getTime() - Date.parse(heartbeat.completedAt);
-        if (!Number.isFinite(ageMs) || ageMs < -watchdogAllowedFutureSkewMs) {
+        const observation = watchdogObservation(heartbeat, now());
+        if (observation === 'invalid') {
           return finish(false, detail, '自動監控的執行時間異常');
         }
-        if (ageMs > watchdogFreshnessMs) {
+        if (observation === 'stale') {
           return finish(false, detail, '自動監控已超過 18 分鐘未完成更新');
         }
         if (heartbeat.status !== 'ok') {
           return { ...finish(false, detail, '資料鏈尚未全部驗證完成'), healthState: heartbeat.reports?.some(r => r.state === 'FAIL') ? 'failed' : heartbeat.reports?.some(r => r.state === 'UNKNOWN') ? 'unknown' : heartbeat.reports?.some(r => r.state === 'WAITING') ? 'waiting' : 'failed' };
         }
+        if (observation === 'idle' || observation === 'pending') return { ...finish(true, detail), healthState: 'waiting' };
       } else if (definition.id === nativeNotificationStatusId) {
         const health = parseNativeNotificationHealth(await shared.readRpc('admin_native_notification_health'), now());
         if (!health) throw new Error('NATIVE_NOTIFICATION_HEALTH_INVALID');

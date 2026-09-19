@@ -127,10 +127,11 @@ describe('admin interface styles', () => {
   });
 
   it('shows complete row diagnostics and explicit watchdog cadence', () => {
-    for (const label of ['statusDescription', 'API 位址', '回應代碼', '檢查時間', '回應時間', '監控完成時間', '執行頻率', '檢查設定']) {
+    for (const label of ['statusDescription', 'API 位址', '回應代碼', '檢查時間', '回應時間', '監控完成時間', '排程檢查頻率', '檢查設定']) {
       expect(appSource).toContain(label);
     }
     expect(appSource).toContain('每 10 分鐘');
+    expect(appSource).toContain('依指定時點執行監控');
     expect(appSource).toContain('6 分鐘／50 次、10 分鐘／60 次、30 分鐘／18 次');
     expect(appSource).toContain('detail?.completedAt');
   });
