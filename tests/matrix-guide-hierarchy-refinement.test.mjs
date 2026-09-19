@@ -1,21 +1,17 @@
-import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { ruleBodies } from "./helpers/css-rules.mjs";
 
-const source = readFeaturePagesSource();
+const guideSource = readFileSync(new URL("../src/features/MatrixGuidePage.tsx", import.meta.url), "utf8");
 const adjustments = readFileSync(new URL("../src/feature-page-adjustments.css", import.meta.url), "utf8");
 const featurePages = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
-const guideStart = source.indexOf("export function MatrixGuidePage");
-const guideEnd = source.indexOf("export function MatrixNotebookPage", guideStart);
-const guideSource = source.slice(guideStart, guideEnd);
 
 test("Matrix 指南說明自訂觸發條件按鈕的位置與開啟方式", () => {
   assert.match(
     guideSource,
-    /title: "自訂觸發條件", items: \[[^\]]*在 Matrix 狀態頁面，連續點擊右下角設定按鈕兩下，即可開啟「Matrix 自訂觸發狀態」。/s,
+    /title: "自訂觸發條件", items: \[[^\]]*在 Matrix 狀態頁面，連續點擊右上角設定按鈕兩下，即可開啟「自訂觸發條件」。/s,
   );
 });
 

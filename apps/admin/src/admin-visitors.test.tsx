@@ -6,7 +6,9 @@ vi.mock('@appdeploy/client', () => ({
   auth: { signIn: vi.fn(), signOut: vi.fn() },
   api: { get: vi.fn(async (path: string) => ({ data: path === '/api/bootstrap'
     ? { admin: { id: 'admin', role: '超級管理員', name: '管理員' } }
-    : { todayVisitors: 2, monthVisitors: 7, totalVisitors: 12, totalUsers: 4, monthlyPro: 1, quarterlyPro: 1, yearlyPro: 1, expiring: 0 } })) },
+    : { todayVisitors: 2, monthVisitors: 7, totalVisitors: 12, totalUsers: 4, monthlyPro: 1, quarterlyPro: 1, yearlyPro: 1, expiring: 0,
+      todayRevenue: 0, monthRevenue: 0, quarterRevenue: 0, yearRevenue: 0, cumulativeRevenue: 0,
+      userGrowth: [], revenueGrowth: [] } })) },
 }));
 import AdminApp from './AdminApp';
 

@@ -5,7 +5,12 @@ import { beforeEach, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({ get: vi.fn(async (url: string) => {
   if (url === '/api/bootstrap') return { data: { admin: { id: 'admin', name: '管理員', role: '超級管理員', permissions: { view: true, edit: true } } } };
-  if (url === '/api/dashboard') return { data: {} };
+  if (url === '/api/dashboard') return { data: {
+    todayVisitors: 0, monthVisitors: 0, totalVisitors: 0, totalUsers: 0,
+    monthlyPro: 0, quarterlyPro: 0, yearlyPro: 0, expiring: 0,
+    todayRevenue: 0, monthRevenue: 0, quarterRevenue: 0, yearRevenue: 0, cumulativeRevenue: 0,
+    userGrowth: [], revenueGrowth: [],
+  } };
   if (url === '/api/system-status') return { data: { checkedAt: '2026-09-07T00:00:00Z', items: [
     { id: 'rpc', name: '兌換啟動碼', group: '啟動碼', location: 'Supabase', description: '兌換會員啟動碼。', endpoint: '/rest/v1/rpc/redeem_activation_code', checkMode: 'openapi', checkEvidence: 'registered', ok: true, checkedAt: '2026-09-07T00:00:00Z', responseMs: 12 },
     { id: 'function', name: 'Pilio 開獎通知', group: '通知', location: 'Supabase', description: '讀取開獎結果並建立通知。', endpoint: '/functions/v1/notification-pilio', checkMode: 'live', checkEvidence: 'options', ok: false, checkedAt: '2026-09-07T00:00:00Z', responseMs: 18, error: '此 API 回應異常（HTTP 502）。', detail: { status: 502 } },
@@ -40,7 +45,7 @@ it('renders native notification counts as partial evidence and never sends a not
     const row = container.querySelector('[data-status-id="native-notification-dispatch"]')!;
     expect(row.querySelector('.statusBadge.limited')?.textContent).toBe('待命（無啟用裝置）');
     expect(row.querySelector('.statusScope')?.textContent).toContain('尚未驗證');
-    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('1 項 · 1 項僅部分檢查 · 0 項異常');
+    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('正常 0／1 · 1 項僅部分檢查 · 0 項異常');
     await act(async () => row.querySelector('summary')?.click());
     expect(row.querySelector('details')?.textContent).toContain('啟用裝置數0');
     expect(row.querySelector('details')?.textContent).toContain('24 小時內派送失敗0');
@@ -131,7 +136,7 @@ it('counts only actual failures as abnormal while running, waiting and unknown j
     expect([...container.querySelectorAll('.statusBadge')].map(badge => [badge.textContent, badge.classList.contains('bad')])).toEqual([
       ['執行中', false], ['等待開獎來源更新', false], ['狀態待確認', false], ['異常', true],
     ]);
-    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('4 項 · 3 項僅部分檢查 · 1 項異常');
+    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('正常 0／4 · 3 項僅部分檢查 · 1 項異常');
     expect(container.querySelectorAll('.statusRow [role=alert]')).toHaveLength(1);
   } finally {
     await act(async () => root.unmount()); container.remove();

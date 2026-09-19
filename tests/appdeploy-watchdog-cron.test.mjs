@@ -14,6 +14,10 @@ const watchdog = readFileSync(
   new URL('../apps/admin/backend/watchdog.ts', import.meta.url),
   'utf8',
 );
+const fantasy5Workflow = readFileSync(
+  new URL('../.github/workflows/fantasy5-crawler.yml', import.meta.url),
+  'utf8',
+);
 const watchdogLeaseMigration = readFileSync(
   new URL('../supabase/migrations/20260904103000_add_matrix_watchdog_leases.sql', import.meta.url),
   'utf8',
@@ -29,10 +33,12 @@ test('AppDeploy owns one independent ten-minute Matrix watchdog', () => {
   assert.match(backend, /export async function matrixIndependentWatchdog/);
 });
 
-test('Fantasy5 recovery keeps GitHub crawling separate from Railway analysis', () => {
-  assert.match(watchdog, /snapshot\.lottery === '天天樂' \? 'github' : 'railway'/);
-  assert.match(watchdog, /fantasy5-crawler\.yml/);
-  assert.match(watchdog, /\/dispatches/);
+test('Fantasy5 watchdog recovery belongs to Railway while GitHub remains a manual backup', () => {
+  // f00b8b8 routes stale Fantasy5 recovery to Railway; 79d4326 retired the Actions cron.
+  assert.match(watchdog, /const crawlerTarget: WatchdogAction\['target'\] = 'railway';/);
+  assert.match(watchdog, /add\(snapshot\.lottery, crawlerTarget, 'crawler-stale'\)/);
+  assert.match(fantasy5Workflow, /workflow_dispatch:/);
+  assert.doesNotMatch(fantasy5Workflow, /^\s+schedule:/m);
   assert.doesNotMatch(watchdog, /California|SC888|LatestDrawSource/);
 });
 

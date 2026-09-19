@@ -6,6 +6,7 @@ import test from "node:test";
 const source = readFeaturePagesSource();
 const previewSource = readFileSync("src/ExploreResultPreviewPage.tsx", "utf8");
 const css = readFileSync("src/explore-result-preview.css", "utf8");
+const spacingCss = readFileSync("src/matrix-explore-spacing.css", "utf8");
 const component = source.match(/function ExploreValidationProcess\([\s\S]*?\n}\n\nexport function TianyanValidationProcess/);
 
 test("Matrix Explore renders API validation with the merged three-column preview layout", () => {
@@ -30,9 +31,10 @@ test("Matrix Explore renders API validation with the merged three-column preview
 });
 
 test("Matrix Explore keeps the requested validation spacing and typography scoped", () => {
-  assert.match(css, /--explore-validation-summary-border-color:\s*#e6b76a/);
+  // DESIGN 2026-09-15: the algorithm page owns the summary color; other pages keep the fallback.
+  assert.match(spacingCss, /--explore-validation-summary-border-color:\s*var\(--pwa-frame-secondary\)/);
   assert.match(css, /\.explore-validation-summary\s*\{[^}]*padding:\s*5px 2px 5px 4px/s);
-  assert.match(css, /\.explore-validation-summary-separator\s*\{[^}]*color:\s*var\(--explore-validation-summary-border-color\)/s);
+  assert.match(css, /\.explore-validation-summary-separator,\s*\.matrix-explore-main-screen \.validation-summary-divider\s*\{[^}]*color:\s*var\(--explore-validation-summary-border-color, #e6b76a\)/s);
   assert.match(css, /\.explore-validation-number\s*\{[^}]*font-size:\s*var\(--explore-validation-number-font-size, 13px\)/s);
   assert.match(css, /\.explore-validation-number\s*\{[^}]*padding:\s*0 1px;[^}]*letter-spacing:\s*normal/s);
   assert.match(css, /\.explore-validation-number--source,\s*\.explore-validation-number--step,\s*\.explore-validation-number--hit\s*\{[^}]*height:\s*auto;[^}]*aspect-ratio:\s*auto;[^}]*width:\s*max-content;[^}]*min-width:\s*0;[^}]*padding-block:\s*0\.3px;[^}]*padding-inline:\s*0\.7px;[^}]*border-width:\s*0\.7px;[^}]*justify-self:\s*center/s);

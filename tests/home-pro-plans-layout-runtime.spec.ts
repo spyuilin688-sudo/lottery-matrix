@@ -53,6 +53,10 @@ for (const width of MOBILE_WIDTHS) {
     const checkout = screen.locator(".pro-plans-checkout");
     await expect(currentCard).toBeVisible();
     await expect(checkout).toBeVisible();
+    // DESIGN retains the branded payment CTA; plan cards keep the shared flat frame.
+    const payment = screen.locator('.confirm-payment.branded-explore-action');
+    await expect(payment).toHaveCSS('border-top-color', 'rgb(201, 154, 46)');
+    await expect(payment).toHaveCSS('box-shadow', 'rgba(238, 183, 52, 0.14) 0px 0px 18px 0px inset, rgba(203, 148, 35, 0.16) 0px 0px 18px 0px');
 
     await expect.poll(async () => screen.evaluate((root) => {
       const body = root.querySelector<HTMLElement>(":scope > .feature-body")!;
@@ -102,7 +106,7 @@ for (const width of MOBILE_WIDTHS) {
       checkoutLeft: 16,
       checkoutRight: 16,
       planOuterShadow: false,
-      paymentOuterShadow: false,
+      paymentOuterShadow: true,
       previousCardPeek: 12,
       nextCardPeek: 12,
       overflow: 0,

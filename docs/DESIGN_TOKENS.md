@@ -58,7 +58,7 @@ The approved homepage palette is the sole color source. Runtime ownership remain
 | `--pwa-frame-primary` | `var(--home-frame-bright)` | 1px title/main-card frame |
 | `--pwa-frame-secondary` | `var(--home-frame-gold)` | 1px content/result/table frame |
 | `--pwa-frame-tertiary` | `var(--home-frame-muted)` | 1px resting control frame |
-| `--pwa-frame-divider` | `color-mix(in srgb, var(--home-frame-gold) 18%, transparent)` | Quiet internal table/section lines |
+| `--pwa-frame-divider` | `color-mix(in srgb, var(--home-frame-gold) 38%, transparent)` | Quiet internal table/section lines |
 | `--pwa-frame-radius` | `var(--home-frame-radius)` | Shared 8px frame radius |
 | `--pwa-control-surface` | `var(--lottery-neutral-950)` | Resting control surface |
 | `--pwa-control-selected` | `color-mix(in srgb, var(--home-frame-gold) 6%, var(--lottery-neutral-950))` | Selected control/CTA surface |

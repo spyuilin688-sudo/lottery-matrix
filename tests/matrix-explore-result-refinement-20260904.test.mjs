@@ -22,7 +22,7 @@ test("切換版路會同步切換對應的預設連準", () => {
 
 test("同碼模式在不同預測號碼群組交界建立明確分隔線", () => {
   assert.match(featurePages, /data-number-group-start=\{sameCode && index > 0 && paginatedResults\[index - 1\]\?\.prediction !== item\.prediction \? "true" : undefined\}/);
-  assert.match(spacingCss, /article\[data-number-group-start="true"\][\s\S]*?border-top:\s*0\.7px solid rgba\(230, 183, 106, \.72\)/);
+  assert.match(spacingCss, /article\[data-number-group-start="true"\][\s\S]*?border-top:\s*1px solid color-mix\(in srgb, var\(--pwa-frame-secondary\) 72%, transparent\)/);
 });
 
 test("點擊重複號碼小卡後使用與同碼相同的群組排序", () => {
@@ -36,7 +36,7 @@ test("探索結果表頭文字到底部分隔線保留 5px", () => {
 });
 
 test("探索展開內容上下分隔線到摘要與本期預測皆為 12px", () => {
-  assert.match(previewCss, /matrix-explore-main-screen:not\(\.matrix-tianyan-screen\) \.explore-validation-card[\s\S]*?padding-block:\s*12px;/);
+  assert.match(previewCss, /matrix-explore-main-screen \.explore-validation-card[\s\S]*?padding-block:\s*12px;/);
 });
 
 test("探索右欄公式的第、球位、顆使用 1px 間距", () => {

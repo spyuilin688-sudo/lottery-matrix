@@ -1,27 +1,28 @@
-import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const prototypeSource = await readFile(new URL("../src/Prototype.tsx", import.meta.url), "utf8");
-const featurePagesSource = readFeaturePagesSource();
-const headerCss = await readFile(new URL("../src/brand-header-unify.css", import.meta.url), "utf8");
+const headerSource = await readFile(new URL("../src/features/BrandHeader.tsx", import.meta.url), "utf8");
+const headerCss = await readFile(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 
 test("首頁號碼對照單導向號碼對照單頁面", () => {
-  assert.match(prototypeSource, /\{ label: "號碼對照單", image: HOME_ASSETS\.reference \}/);
-  assert.match(prototypeSource, /"號碼對照單": "reference"/);
+  assert.match(prototypeSource, /\{ label: "Matrix 對照", screen: "reference", image: HOME_ASSETS\.reference \}/);
+  assert.match(prototypeSource, /HOME_SHORTCUTS\.map\(\(item\) => \([\s\S]*?onClick=\{\(\) => onNavigate\?\.\(item\.screen\)\}/);
 });
 
 test("返回鍵由父容器自然排列且維持指定尺寸", () => {
   assert.match(
-    featurePagesSource,
-    /<div className="back-button-slot">[\s\S]*?<button type="button" className="icon-button back-button" onClick=\{onBack\} aria-label="返回">/,
+    headerSource,
+    /<button type="button" className="product-header__back" onClick=\{onBack\} aria-label="返回">/,
   );
-  assert.match(headerCss, /\.feature-brand-row\s*\{[^}]*position:\s*relative;[^}]*display:\s*grid;[^}]*width:\s*100%;[^}]*grid-template-columns:\s*100%;/s);
-  assert.match(headerCss, /\.back-button-slot\s*\{[^}]*grid-area:\s*1 \/ 1;[^}]*width:\s*44px;[^}]*height:\s*44px;[^}]*justify-self:\s*start;/s);
-  assert.match(headerCss, /\.feature-brand-lockup\s*\{[^}]*grid-area:\s*1 \/ 1;[^}]*justify-self:\s*center;/s);
-  const backButtonRule = headerCss.match(/\.feature-brand-header \.back-button\s*\{([^}]*)\}/s)?.[1] ?? "";
-  assert.doesNotMatch(backButtonRule, /position: absolute|top:|left:|transform:|margin/);
+  assert.match(headerSource, /const hasBack = showBack && Boolean\(onBack \|\| backHref\);/);
+  assert.match(headerSource, /<a className="product-header__back" href=\{backHref\} aria-label="返回">/);
+  assert.match(headerCss, /\.product-header__frame\s*\{[^}]*display:\s*grid;[^}]*width:\s*100%;[^}]*grid-template-columns:\s*44px 56px minmax\(0, 1fr\) var\(--product-header-action-width, auto\);/s);
+  const backButtonRule = headerCss.match(/\.product-header__back\s*\{([^}]*)\}/s)?.[1] ?? "";
+  assert.match(backButtonRule, /grid-area:\s*back;/);
+  assert.doesNotMatch(backButtonRule, /position:\s*absolute|top:|left:|transform:|margin/);
   assert.match(backButtonRule, /width: 44px;[^}]*height: 44px;/s);
-  assert.match(headerCss, /\.feature-brand-header \.back-button svg\s*\{[^}]*width: 40px;[^}]*height: 40px;/s);
+  assert.match(headerCss, /\.product-header__back svg\s*\{[^}]*width:\s*22px;[^}]*height:\s*22px;/s);
+  assert.match(headerCss, /\.product-header__back:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--lottery-gold-300\);/s);
 });

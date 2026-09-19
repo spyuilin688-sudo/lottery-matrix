@@ -19,7 +19,8 @@ test('PWA border tiers alias the approved homepage palette without changing it',
   for (const [name, value] of [['bright', '#f0d58c'], ['gold', '#d6b66f'], ['muted', '#8a713f'], ['radius', '8px']]) {
     assert.ok(tokens.includes(`--home-frame-${name}: ${value};`));
   }
-  assert.match(tokens, /--pwa-frame-divider:\s*color-mix\(in srgb, var\(--home-frame-gold\) 18%, transparent\)/);
+  // 8ec6ebbe raised the shared separator opacity; palette aliases stay intact.
+  assert.match(tokens, /--pwa-frame-divider:\s*color-mix\(in srgb, var\(--home-frame-gold\) 38%, transparent\)/);
 });
 
 test('page title and merged settings header have one bright border, not two frames', () => {
@@ -108,7 +109,12 @@ test('requested PWA frame refinements remain canonical and scoped', () => {
   assert.doesNotMatch(css, /matrix-tiangong-screen[^\{]*\.lottery-tabs/);
   assert.match(css, /--lottery-tab-selected-underline:\s*var\(--pwa-frame-secondary\)/);
   assert.match(spacing, /\.matrix-explore-main-screen \.advanced-row \{[\s\S]*?border-top:\s*1px solid var\(--pwa-frame-secondary\)/);
-  assert.match(spacing, /\.matrix-tiangong-screen \.tiangong-general-settings \.tiangong-advanced-divider \{[\s\S]*?border-bottom:\s*1px solid var\(--pwa-frame-secondary\)/);
+  // 12a4f59 keeps the separator between stages, removing the old ball-row line.
+  const stageDivider = block(spacing, '.matrix-tiangong-screen .tiangong-stage-settings .tiangong-stage-block + .tiangong-stage-block');
+  assert.match(stageDivider, /margin-top:\s*8px;/);
+  assert.match(stageDivider, /padding-top:\s*8px;/);
+  assert.match(stageDivider, /border-top:\s*1px solid var\(--pwa-frame-secondary\)/);
+  assert.doesNotMatch(spacing, /\.tiangong-advanced-divider\s*\{/);
   assert.match(validation, /\.explore-validation-card \{[\s\S]*?border-top-color:\s*var\(--pwa-frame-secondary\)[\s\S]*?border-bottom-color:\s*var\(--pwa-frame-secondary\)/);
   assert.match(homeSwitcher, /var\(--home-frame-bright\) 55%, transparent/);
   assert.doesNotMatch(memberPages, /歡迎使用 樂彩 Matrix。<\/p>/);

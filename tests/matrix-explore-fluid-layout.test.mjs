@@ -6,6 +6,7 @@ import test from "node:test";
 import { ruleBodies } from "./helpers/css-rules.mjs";
 
 const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
+const featureCss = readFileSync("src/feature-pages.css", "utf8");
 const ballCss = readFileSync("src/number-ball.css", "utf8");
 const featureSource = readFeaturePagesSource();
 const tokens = readFileSync("src/design-tokens.css", "utf8");
@@ -66,7 +67,9 @@ test("Matrix Explore control rows match the compact mobile reference density", (
   assert.match(button, /height:\s*20px/);
   assert.match(button, /min-height:\s*20px/);
   assert.match(button, /padding:\s*\.125rem \.25rem/);
-  assert.match(button, /border:\s*1px solid #7d6a4c/);
+  // DESIGN: a7122ce moved control appearance to the shared feature owner.
+  assert.doesNotMatch(button, /border(?:-radius)?:/);
+  assert.match(ruleBlock(featureCss, "\\.segmented button"), /border:\s*1px solid var\(--pwa-frame-tertiary\)/);
 
   const hitButton = ruleBlock(css, "\\.matrix-explore-main-screen \\.hit-options button");
   assert.match(hitButton, /height:\s*20px/);
@@ -130,7 +133,7 @@ test("Matrix Explore statistics and results use compact target density", () => {
   const card = ruleBlock(css, "\\.matrix-explore-main-screen \\.result-summary > div");
   assert.match(card, /min-height:\s*clamp\(36px, 10vw, 40px\)/);
   assert.match(card, /padding:\s*\.1875rem \.0625rem/);
-  assert.match(card, /border-radius:\s*\.4375rem/);
+  assert.match(card, /border-radius:\s*var\(--pwa-frame-radius\)/);
 
   const resultTitle = ruleBlock(css, "\\.matrix-explore-main-screen \\.result-title");
   assert.match(resultTitle, /gap:\s*\.375rem/);
@@ -141,7 +144,7 @@ test("Matrix Explore statistics and results use compact target density", () => {
   assert.equal(resultHeads.length, 1);
   const [resultHead] = resultHeads;
   assert.match(resultHead, /min-height:\s*32px;/);
-  assert.match(resultHead, /border-bottom:\s*1px solid rgba\(117, 83, 41, \.82\)/);
+  assert.match(resultHead, /border-bottom:\s*1px solid var\(--pwa-frame-divider\)/);
   assert.match(css, /\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*min-height:\s*0;[^}]*padding:\s*6px 0/s);
   assert.match(css, /\.matrix-explore-main-screen \.road-results \.tag\s*\{[^}]*padding:\s*\.125rem \.25rem;[^}]*font-size:\s*\.5625rem/s);
   assert.match(css, /\.matrix-explore-main-screen \.road-result-row > strong\s*\{[^}]*font-size:\s*\.875rem/s);

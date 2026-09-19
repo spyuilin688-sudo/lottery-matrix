@@ -5,6 +5,8 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 
 const source = readFeaturePagesSource();
+const explorePage = readFileSync("src/features/MatrixExplorePage.tsx", "utf8");
+const tianyanRenderer = readFileSync("src/TianyanExpandedValidation.tsx", "utf8");
 const api = readFileSync('src/matrix-algorithm-api.ts', 'utf8');
 const spacing = readFileSync('src/matrix-explore-spacing.css', 'utf8');
 const migration = readdirSync('supabase/migrations')
@@ -13,12 +15,16 @@ const migration = readdirSync('supabase/migrations')
   .join('\n');
 
 test('Tianyan result UI matches the approved differences', () => {
-  assert.match(source, /\{isExplore \? \([\s\S]*?<HistoryList/);
+  // 811db78 removed the recent-draw panel from the shared Explore/Tianyan page.
+  assert.doesNotMatch(explorePage, /HistoryList|historyExpanded/);
   assert.match(source, /\? \["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"\]/);
   assert.match(source, /algorithmType: item\.roadTypeLabel/);
   assert.match(source, /numberOrder: item\.numberOrder/);
   assert.match(source, /aria-label="天衍驗證過程"/);
-  assert.match(source, /const matchedRules = \[row\.rule1, row\.rule2\]\.filter\(\(rule\) => rule\.hit\);/);
+  // db97613 moved historical rendering to the canonical expanded component.
+  assert.match(source, /<TianyanExpandedValidationGroups\s+lottery=\{lottery\}\s+numberOrder=\{numberOrder\}\s+validation=\{validation\}/);
+  assert.match(tianyanRenderer, /const matchedRules = \[group\.rule1, group\.rule2\]\s*\.map\(\(rule, index\) => \(\{ rule, index \}\)\)\s*\.filter\(\(\{ rule \}\) => rule\.hit\);/);
+  assert.match(tianyanRenderer, /if \(!matchedRules\.length\) return null;/);
 });
 
 test('Tianyan road types are exactly the six approved labels', () => {

@@ -10,6 +10,7 @@ const prototypeCss = readFileSync("src/prototype.css", "utf8");
 const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
 const headerBackgroundCss = readFileSync("src/matrix-explore-header-background.css", "utf8");
 const headerArtwork = readFileSync("public/assets/lottery/header-explore-luxury-flow.svg", "utf8");
+const featureCss = readFileSync("src/feature-pages.css", "utf8");
 const tiangongCss = readFileSync("src/matrix-tiangong-results.css", "utf8");
 
 function assertRule(selectorPattern, declarations) {
@@ -55,18 +56,17 @@ test("Matrix Explore title artwork keeps the dense black-gold reference layers w
 test("Matrix Explore panels use scoped responsive-width auto-height flow", () => {
   for (const selector of [
     /^\.matrix-explore-main-screen \.explore-settings$/,
-    /^\.matrix-explore-main-screen \.hit-advanced-panel$/,
     /^\.matrix-explore-main-screen \.repeat-stats-panel$/,
     /^\.matrix-explore-main-screen \.result-panel$/,
   ]) {
     assertRule(selector, [/width:\s*var\(--matrix-explore-result-panel-width, 100%\);/, /height:\s*auto;/]);
   }
-  assertRule(/^\.matrix-explore-main-screen \.history-panel$/, [/width:\s*100%;/, /height:\s*auto;/]);
+  assert.doesNotMatch(css, /\.matrix-explore-main-screen \.hit-advanced-panel\s*\{/);
   assert.doesNotMatch(css, /width:\s*366px;/);
 });
 
 test("Matrix Explore controls keep the current scoped responsive dimensions", () => {
-  assertRule(/^\.matrix-explore-main-screen \.explore-settings \.setting-grid \.select-box$/, [
+  assertRule(/^\.matrix-explore-main-screen \.advanced-panel \.native-select$/, [
     /height:\s*24px;/,
     /min-height:\s*24px;/,
   ]);
@@ -86,16 +86,17 @@ test("Tiangong fixed period keeps the compact full-width control geometry", () =
   const staticPeriodSelector = /^\.matrix-explore-main-screen\.matrix-tiangong-screen \.tiangong-period-options > \.segmented-static$/;
   const compactBodies = ruleBodies(css, staticPeriodSelector);
   assert.ok(compactBodies.some((body) => [
-    /height:\s*24px;/,
-    /min-height:\s*24px;/,
+    /height:\s*20px;/,
+    /min-height:\s*20px;/,
     /font-size:\s*\.75rem;/,
     /padding:\s*\.125rem \.25rem;/,
   ].every((declaration) => declaration.test(body))));
   assert.ok(ruleBodies(tiangongCss, staticPeriodSelector).some((body) => /width:\s*100%;/.test(body)));
-  const selectedPeriodSelector = /^\.matrix-explore-main-screen\.matrix-tiangong-screen \.tiangong-period-options > \.segmented-static\[data-selected="true"\]$/;
-  assert.ok(ruleBodies(css, selectedPeriodSelector).some((body) => [
-    /border-color:\s*#c89622;/,
-    /background:\s*linear-gradient\(/,
-    /color:\s*#f2cf67;/,
-  ].every((declaration) => declaration.test(body))), 'The static selected owner must outrank the compact base colors');
+  // Shared segmented controls own appearance after a7122ce; the scoped rule owns size.
+  const selectedPeriodSelector = /^\.segmented \.segmented-static\[data-selected="true"\]$/;
+  assert.ok(ruleBodies(featureCss, selectedPeriodSelector).some((body) => [
+    /border-color:\s*var\(--pwa-frame-secondary\);/,
+    /background:\s*var\(--pwa-control-selected\);/,
+    /color:\s*var\(--pwa-frame-secondary\);/,
+  ].every((declaration) => declaration.test(body))));
 });

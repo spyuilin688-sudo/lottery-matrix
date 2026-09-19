@@ -19,15 +19,20 @@ test('core lottery tabs reuse the existing state setters outside the settings ca
   assert.match(source, /onClick=\{\(\) => setAdvanced\(!advanced\)\}/);
 });
 
-test('one outer gap keeps normal and floating settings 8px below the frame', () => {
+test('one shared 14px gap follows the normal or floating title/settings card', () => {
   const css = read('src/feature-pages.css');
   const header = css.match(/\.product-header\s*\{[^}]*\}/s)[0];
   assert.match(header, /padding:\s*0 var\(--layout-page-inline\);/);
-  assert.match(header, /margin-bottom:\s*8px;/);
+  assert.match(header, /margin-bottom:\s*var\(--layout-section-gap\);/);
+  // 7905e45 / 2eb6348 moved the approved gap to the feature screen root.
+  assert.match(read('src/prototype.css'), /\.feature-screen:not\(\.home-screen\)\s*\{[^}]*--layout-section-gap:\s*14px;/s);
   assert.doesNotMatch(read('src/feature-page-adjustments.css'), /padding-block-start:\s*4px;/);
   assert.doesNotMatch(read('src/explore-result-preview.css'), /padding:\s*8px var\(--layout-page-inline\)/);
-  for (const path of ['src/FeaturePagesCore.tsx','src/features/LegacyHistoryPage.tsx','src/features/LegacyTongXingPage.tsx','src/features/NumberReferencePage.tsx']) {
-    assert.match(read(path), /header\?\.getBoundingClientRect\(\)\.bottom \?\? 0\) \+ 8/);
+  assert.match(css, /\.product-header\[data-settings-floating="true"\]\s*\{\s*height:\s*68px;/);
+  assert.match(css, /\.product-header__settings-card\[data-floating="true"\]\s*\{[^}]*position:\s*absolute;[^}]*top:\s*0;[^}]*inset-inline:\s*var\(--layout-page-inline\);/s);
+  for (const path of ['src/FeaturePagesCore.tsx', 'src/features/NumberReferencePage.tsx']) {
+    assert.match(read(path), /headerSettings=\{\{ id:/);
+    assert.doesNotMatch(read(path), /getBoundingClientRect|<MobilePagePortal/);
   }
 });
 

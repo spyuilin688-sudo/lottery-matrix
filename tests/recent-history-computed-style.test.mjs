@@ -5,6 +5,7 @@ import test from "node:test";
 import { JSDOM } from "jsdom";
 
 const featureCss = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
+const historyCss = readLocalCss(new URL("../src/matrix-explore-spacing.css", import.meta.url));
 const responsiveIssueRules = [
   featureCss.match(/\.matrix-explore-main-screen\s*\{[^}]*\}/s)?.[0],
   featureCss.match(/\.history-row:not\(\.history-head\) > span:first-child\s*\{[^}]*\}/s)?.[0],
@@ -13,7 +14,7 @@ const css = [
   responsiveIssueRules,
   readFileSync(new URL("../src/number-ball.css", import.meta.url), "utf8"),
   readFileSync(new URL("../src/tongxing-compact.css", import.meta.url), "utf8"),
-  readLocalCss(new URL("../src/matrix-explore-spacing.css", import.meta.url)),
+  historyCss,
 ].join("\n");
 
 function historyFixture(lottery, mainCount, hasSpecial, screenClass = "matrix-explore-main-screen") {
@@ -34,7 +35,7 @@ function historyFixture(lottery, mainCount, hasSpecial, screenClass = "matrix-ex
     <style>${css}</style>
     <main class="${screenClass}">
       <div class="matrix-explore-main-screen matrix-explore-history-scope">
-      <section class="history-panel matrix-explore-history-panel" data-lottery="${lottery}">
+      <section class="panel history-panel matrix-explore-history-panel" data-lottery="${lottery}">
         <header class="panel-heading">
           <div class="history-panel-title"><h2 class="section-title"><span></span>近10期開獎號碼</h2></div>
           <div class="history-panel-actions"><button class="history-panel-collapse-button"><svg data-open="true"></svg></button><button>查看更多紀錄</button></div>
@@ -184,19 +185,16 @@ test("五顆玩法使用 32px 列高，數字為 12–14px 且底線符合指定
   assert.equal(ball.getPropertyValue("--underline-y").trim(), ".2px");
 });
 
-test("近10期表格外框與欄列分隔線明確呈現", () => {
+test("共用歷史表格沿用細金框 token，並保留標題與操作間距", () => {
   const { style } = historyFixture("今彩539", 5, false);
-  const panel = style(".history-panel");
   const heading = style(".panel-heading");
-  const period = style('[data-testid="period"]');
-  const row = style(".history-row");
 
-  assert.equal(panel.borderTopWidth, "1px");
-  assert.equal(panel.borderTopColor, "rgb(117, 83, 41)");
-  assert.equal(heading.borderBottomWidth, "1px");
+  // a7122ce moved paint to shared tokens. JSDOM does not resolve var() in border shorthands.
+  assert.match(featureCss, /\.panel\s*\{[^}]*border:\s*1px solid var\(--pwa-frame-secondary\);/s);
+  assert.match(historyCss, /\.matrix-explore-main-screen \.history-panel \.panel-heading\s*\{[^}]*border-bottom:\s*1px solid var\(--pwa-frame-divider\);/s);
+  assert.match(historyCss, /\.matrix-explore-main-screen \.history-row > :nth-child\(2\)\s*\{[^}]*border-right:\s*1px solid var\(--pwa-frame-divider\);/s);
+  assert.match(historyCss, /\.matrix-explore-main-screen \.history-row\s*\{[^}]*border-bottom:\s*1px solid var\(--pwa-frame-divider\);/s);
   assert.equal(heading.paddingTop, "5px");
   assert.equal(heading.paddingBottom, "5px");
   assert.equal(style(".history-panel-actions").gap, "6px");
-  assert.equal(period.borderRightWidth, "1px");
-  assert.equal(row.borderBottomWidth, "1px");
 });

@@ -41,15 +41,18 @@ test("referral and activation content appears once in the required order", () =>
 });
 
 test("referral and activation layout keeps the approved responsive measurements", () => {
-  assert.match(css, /\.activation-code-screen \.feature-body\s*\{[^}]*padding-inline:\s*16px;[^}]*gap:\s*12px;/s);
-  assert.match(css, /\.referral-code-section,\s*\.activation-code-section\s*\{[^}]*padding:\s*16px;[^}]*gap:\s*12px;/s);
+  // The compact owner introduced in 4c0afed supersedes the shared base sizes.
+  assert.match(compactCss, /\.activation-code-screen > \.feature-body\s*\{[^}]*padding-inline:\s*var\(--layout-page-inline\);[^}]*gap:\s*12px;/s);
+  assert.match(compactCss, /--activation-section-padding-block:\s*12px;/);
+  assert.match(compactCss, /--activation-section-gap:\s*8px;/);
+  assert.match(compactCss, /\.activation-code-screen \.referral-code-section,\s*\.activation-code-screen \.activation-code-section\s*\{[^}]*padding:\s*var\(--activation-section-padding-block\) var\(--layout-page-inline\);[^}]*gap:\s*var\(--activation-section-gap\);/s);
   assert.doesNotMatch(page, />邀請好友</);
   assert.match(page, /className="referral-code-row"[\s\S]*className="gold-button referral-copy-button"/);
   assert.match(compactCss, /\.activation-code-screen \.referral-code-row\s*\{[^}]*gap:\s*8px;/s);
   assert.match(compactCss, /\.activation-code-screen \.referral-copy-button\s*\{[^}]*width:\s*max-content;[^}]*height:\s*auto;[^}]*padding:\s*4px;/s);
-  assert.match(css, /\.referral-input-card \.code-entry-block,\s*\.activation-card \.code-entry-block\s*\{[^}]*gap:\s*10px;/s);
-  assert.match(css, /\.referral-input-card input,\s*\.activation-card input\s*\{[^}]*height:\s*44px;[^}]*min-height:\s*44px;/s);
-  assert.match(css, /\.activation-code-screen \.referral-input-card \.primary-action,\s*\.activation-code-screen \.activation-card \.primary-action\s*\{[^}]*height:\s*40px;[^}]*min-height:\s*40px;/s);
+  assert.match(compactCss, /\.activation-code-screen \.referral-input-card \.code-entry-block,\s*\.activation-code-screen \.activation-card \.code-entry-block\s*\{[^}]*gap:\s*8px;/s);
+  assert.match(compactCss, /\.activation-code-screen \.referral-input-card input,\s*\.activation-code-screen \.activation-card input\s*\{[^}]*height:\s*36px;[^}]*min-height:\s*36px;/s);
+  assert.match(compactCss, /\.activation-code-screen \.referral-input-card \.primary-action,\s*\.activation-code-screen \.activation-card \.primary-action\s*\{[^}]*height:\s*34px;[^}]*min-height:\s*34px;[^}]*font-size:\s*16px;/s);
   assert.match(css, /\.referral-rule-toggle\s*\{[^}]*min-height:\s*0;[^}]*padding:\s*4px 16px;[^}]*font-weight:\s*600;/s);
   assert.match(page, /referral-success-count">推薦成功 <strong className="referral-success-value">/);
   assert.match(page, /referral-summary-heading">\s*<h2>我的推薦碼<\/h2>\s*<p className="referral-success-count">/s);

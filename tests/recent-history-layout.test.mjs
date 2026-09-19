@@ -36,7 +36,7 @@ test("Matrix Explore 近10期三欄採期數窄日期中等號碼最大寬度", 
 
 test("Matrix Explore 近10期三欄標題字級一致且直向分隔線清楚", () => {
   assert.match(exploreCss, /\.matrix-explore-main-screen \.history-row\.history-head > span\s*\{[^}]*font-size:\s*inherit;[^}]*font-weight:\s*inherit;/s);
-  assert.match(exploreCss, /\.matrix-explore-main-screen \.history-row > :nth-child\(1\),[\s\S]*?\.matrix-explore-main-screen \.history-row > :nth-child\(2\)\s*\{[^}]*border-right:\s*1px solid rgba\(126, 91, 39, \.9\);/s);
+  assert.match(exploreCss, /\.matrix-explore-main-screen \.history-row > :nth-child\(1\),[\s\S]*?\.matrix-explore-main-screen \.history-row > :nth-child\(2\)\s*\{[^}]*border-right:\s*1px solid var\(--pwa-frame-divider\);/s);
 });
 
 test("Matrix Explore 近10期六加一使用連續內容寬度群組且移除 320px 補償規則", () => {
@@ -101,5 +101,5 @@ test("Matrix Explore 近10期正式樣式來源不使用禁止的補償方式", 
 
 test("近10期資料列依彩種日期標記跨週分隔線", () => {
   assert.match(source, /data-week-boundary=\{isNearHistoryWeekBoundary\(lottery, previousDate, date\)\}/);
-  assert.match(css, /\.history-panel \.history-row\[data-week-boundary="true"\]\s*\{[^}]*border-top:\s*2px solid rgba\(166, 124, 54, \.68\)/s);
+  assert.match(css, /\.history-panel \.history-row\[data-week-boundary="true"\]\s*\{[^}]*border-top:\s*1px solid var\(--pwa-frame-divider\)/s);
 });

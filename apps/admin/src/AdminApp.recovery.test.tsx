@@ -2,6 +2,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import AdminApp from './AdminApp';
+const dashboard = {
+  todayVisitors: 0, monthVisitors: 0, totalVisitors: 0, totalUsers: 0,
+  monthlyPro: 0, quarterlyPro: 0, yearlyPro: 0, expiring: 0,
+  todayRevenue: 0, monthRevenue: 0, quarterRevenue: 0, yearRevenue: 0, cumulativeRevenue: 0,
+  userGrowth: [], revenueGrowth: [],
+};
 const client = vi.hoisted(()=>({get:vi.fn(),post:vi.fn(),put:vi.fn(),delete:vi.fn()}));
 vi.mock('@appdeploy/client',()=>({api:client,auth:{signIn:vi.fn(),signOut:vi.fn()}}));
 afterEach(()=>{cleanup();vi.clearAllMocks();});
@@ -9,7 +15,7 @@ describe('AdminApp weak-network bootstrap',()=>{
   it('shows member name without exposing LINE/Google ID in user management', async () => {
     client.get.mockImplementation(async (path: string) => {
       if (path === '/api/bootstrap') return { data: { admin: { id: 'admin-1', name: 'Owner', role: '超級管理員' } } };
-      if (path === '/api/dashboard') return { data: {} };
+      if (path === '/api/dashboard') return { data: dashboard };
       if (path.startsWith('/api/data/users?')) return { data: { items: [{
         id: 'member-1',
         memberDisplayName: '蔡源輝',
@@ -34,7 +40,7 @@ describe('AdminApp weak-network bootstrap',()=>{
   it.each(['missing-metadata', 'repeated-page'])('rejects %s plan pages instead of treating a partial options list as complete', async (kind) => {
     client.get.mockImplementation(async (path: string) => {
       if (path === '/api/bootstrap') return { data: { admin: { id: 'admin-1', name: 'Owner', role: '超級管理員' } } };
-      if (path === '/api/dashboard') return { data: {} };
+      if (path === '/api/dashboard') return { data: dashboard };
       if (path.startsWith('/api/data/plans?')) return kind === 'missing-metadata'
         ? { data: { items: [{ id: 'partial-plan' }] } }
         : { data: { items: [{ id: 'first-plan' }], total: 2, currentPage: 1, totalPages: 2 } };
@@ -61,10 +67,10 @@ describe('AdminApp weak-network bootstrap',()=>{
     render(<AdminApp />);
     fireEvent.click(await screen.findByRole('button', { name: /收入報表/ }));
     await waitFor(() => expect(dashboards).toBe(2));
-    await act(async () => { if (outcome === 'success') finishOld({ data: { monthRevenue: 999 } }); else rejectOld(new Error('old dashboard failed')); });
+    await act(async () => { if (outcome === 'success') finishOld({ data: { ...dashboard, monthRevenue: 999 } }); else rejectOld(new Error('old dashboard failed')); });
     expect(screen.getByText('資料處理中…')).toBeTruthy();
     expect(screen.queryByText('old dashboard failed')).toBeNull();
-    await act(async () => finishNew({ data: { todayRevenue: 12, monthRevenue: 34, quarterRevenue: 56, yearRevenue: 78, cumulativeRevenue: 90 } }));
+    await act(async () => finishNew({ data: { ...dashboard, todayRevenue: 12, monthRevenue: 34, quarterRevenue: 56, yearRevenue: 78, cumulativeRevenue: 90 } }));
     expect(screen.queryByText('資料處理中…')).toBeNull();
     expect(screen.getByText('$34')).toBeTruthy();
     expect(screen.queryByText('$999')).toBeNull();
@@ -76,6 +82,7 @@ describe('AdminApp weak-network bootstrap',()=>{
         if(!online) throw Object.assign(new Error('Service unavailable'),{status:503});
         return {data:{admin:{id:'admin-1',name:'Owner',role:'超級管理員'}}};
       }
+      if(path==='/api/dashboard') return {data:dashboard};
       return {data:[]};
     });
     render(<AdminApp/>);

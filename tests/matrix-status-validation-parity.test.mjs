@@ -20,6 +20,12 @@ test('status shares every Explore-specific validation declaration', () => {
       const selectors = match[1].replace(/\/\*[\s\S]*?\*\//g, '').trim();
       if (!selectors.includes('.matrix-explore-main-screen') || !selectors.includes('validation')) continue;
       if (/(?:background|border-top-color):\s*#000/i.test(match[2])) continue;
+      // DESIGN 2026-09-15 explicitly scopes algorithm summary-divider colors;
+      // status retains the shared separator fallback and its existing page background.
+      if (/^\.explore-validation-summary-separator,\s*\.matrix-explore-main-screen \.validation-summary-divider$/.test(selectors)) {
+        assert.match(match[2], /color:\s*var\(--explore-validation-summary-border-color, #e6b76a\);/);
+        continue;
+      }
       const explore = selectors.slice(selectors.indexOf('.matrix-explore-main-screen'));
       const expected = explore.replace(/\.matrix-explore-main-screen(?::not\(\.[\w-]+\))*/g, '.matrix-status-screen');
       for (const selector of expected.split(/,\s*\n(?=\.)/)) {

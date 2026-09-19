@@ -14,9 +14,9 @@ test("探索結果欄位按響應式比例分配，連準次數與版路類型�
   assert.match(css, /\.road-results-head\s*\{[^}]*font-size:\s*clamp\(10px, 2\.8vw, 12px\)/s);
 });
 
-test("探索結果分隔線使用指定透明度且不在首列疊線", () => {
-  assert.match(css, /\.road-results-head\s*\{[^}]*border-bottom:\s*1px solid rgba\(117, 83, 41, \.82\)/s);
-  assert.match(css, /\.road-results article \+ article\s*\{[^}]*border-top:\s*1px solid rgba\(57, 55, 49, \.58\)/s);
+test("探索結果分隔線使用共用 token 且不在首列疊線", () => {
+  assert.match(css, /\.road-results-head\s*\{[^}]*border-bottom:\s*1px solid var\(--pwa-frame-divider\)/s);
+  assert.match(css, /\.road-results article \+ article\s*\{[^}]*border-top:\s*1px solid var\(--pwa-frame-divider\)/s);
   assert.match(css, /\.road-result-row\s*\{[^}]*border-bottom:\s*0;/s);
 });
 
@@ -31,8 +31,8 @@ test("篩選按鈕維持24px視覺高度並提供至少44px點擊範圍", () => 
   assert.match(featureCss, /\.consecutive-filter-button::before,[\s\S]*?\.repeat-stats-heading button::before\s*\{[^}]*width:\s*max\(100%, 44px\);[^}]*height:\s*44px;/s);
 });
 
-test("推薦與 Matrix Pro 恢復共用自動高度及膠囊圓角", () => {
-  assert.match(css, /\.segmented button em\s*\{[^}]*height:\s*auto;[^}]*min-height:\s*0;[^}]*border-radius:\s*9999px/s);
+test("推薦與 Matrix Pro 維持自動高度及共用框線圓角", () => {
+  assert.match(css, /\.segmented button em\s*\{[^}]*height:\s*auto;[^}]*min-height:\s*0;[^}]*border-radius:\s*var\(--pwa-frame-radius\)/s);
 });
 
 test("探索正式樣式不以重複規則覆寫表頭字級與近10期列高", () => {

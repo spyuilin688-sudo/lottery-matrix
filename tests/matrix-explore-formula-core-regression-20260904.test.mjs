@@ -36,7 +36,7 @@ test("Matrix Explore keeps the approved post-#259 UI refinements while restoring
 
   assert.match(previewCss, /\.explore-validation-number--source,\s*\.explore-validation-number--step,\s*\.explore-validation-number--hit\s*\{[^}]*padding-block:\s*0\.3px;[^}]*padding-inline:\s*0\.7px;[^}]*border-width:\s*0\.7px/s);
   assert.match(previewCss, /\.explore-validation-group\[data-wide-numbers="true"\] \.explore-validation-special-number > \.explore-validation-number\s*\{[^}]*flex-basis:\s*auto/s);
-  assert.match(previewCss, /matrix-explore-main-screen:not\(\.matrix-tianyan-screen\) \.explore-validation-card\s*\{[^}]*padding-block:\s*12px/s);
+  assert.match(previewCss, /matrix-explore-main-screen \.explore-validation-card\s*\{[^}]*padding-block:\s*12px/s);
   assert.match(previewCss, /matrix-explore-main-screen:not\(\.matrix-tianyan-screen\) \.explore-validation-formula-position\s*\{[^}]*gap:\s*1px/s);
   assert.match(previewCss, /matrix-explore-main-screen:not\(\.matrix-tianyan-screen\) \.explore-validation-result-number\s*\{[^}]*font-size:\s*calc\(\.8em - 2px\);[^}]*margin-inline:\s*2px/s);
 });

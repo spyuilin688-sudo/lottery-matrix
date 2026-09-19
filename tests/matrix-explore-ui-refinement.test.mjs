@@ -36,8 +36,10 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
   const select = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-panel \\.native-select");
   assert.match(select, /height:\s*24px/);
   assert.match(select, /min-height:\s*24px/);
-  assert.match(select, /border:\s*1px solid #7d6a4c/);
-  assert.match(select, /border-radius:\s*\.625rem/);
+  assert.doesNotMatch(select, /border(?:-radius)?:/);
+  const sharedSelect = ruleBlock(featureCss, "\\.native-select");
+  assert.match(sharedSelect, /border:\s*1px solid var\(--pwa-frame-tertiary\)/);
+  assert.match(sharedSelect, /border-radius:\s*var\(--pwa-frame-radius\)/);
 
   const button = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented button");
   assert.match(button, /height:\s*20px/);
@@ -48,13 +50,15 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
   assert.match(button, /padding:\s*\.125rem \.25rem/);
   assert.match(button, /font-size:\s*\.75rem/);
   assert.match(button, /line-height:\s*1/);
-  assert.match(button, /color:\s*#ded6c9/);
-  assert.match(button, /background:\s*rgba\(3, 11, 17, \.35\)/);
+  assert.doesNotMatch(button, /(?:border|background|color)\s*:/);
+  const sharedButton = ruleBlock(featureCss, "\\.segmented button");
+  assert.match(sharedButton, /color:\s*var\(--lottery-text-secondary\)/);
+  assert.match(sharedButton, /background:\s*var\(--pwa-control-surface\)/);
 
-  const selectedButton = ruleBlock(css, '\\.matrix-explore-main-screen \\.segmented button\\[data-selected="true"\\]');
-  assert.match(selectedButton, /border-color:\s*#c49a46/);
-  assert.match(selectedButton, /background:\s*rgba\(212, 165, 47, \.12\)/);
-  assert.match(selectedButton, /color:\s*#f1c75a/);
+  const selectedButton = ruleBlock(featureCss, '\\.segmented button\\[data-selected="true"\\]');
+  assert.match(selectedButton, /border-color:\s*var\(--pwa-frame-secondary\)/);
+  assert.match(selectedButton, /background:\s*var\(--pwa-control-selected\)/);
+  assert.match(selectedButton, /color:\s*var\(--pwa-frame-secondary\)/);
   assert.match(css, /\.matrix-explore-main-screen \.hit-options\s*\{[^}]*height:\s*20px;[^}]*margin:\s*0;[^}]*padding:\s*0;/s);
 
   const badge = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented button em");
@@ -107,8 +111,8 @@ test("Matrix settings switcher uses one compact text frame without artwork scali
   assert.match(switcher, /width:\s*176px/);
   assert.match(switcher, /height:\s*26px/);
   assert.match(switcher, /gap:\s*0/);
-  assert.match(switcher, /border:\s*1px solid rgba\(117, 83, 41, \.48\)/);
-  assert.match(switcher, /border-radius:\s*8px/);
+  assert.match(switcher, /border:\s*1px solid var\(--pwa-frame-tertiary\)/);
+  assert.match(switcher, /border-radius:\s*var\(--pwa-frame-radius\)/);
   const switcherButton = ruleBlock(featureCss, "\\.matrix-page-switcher button");
   assert.match(switcherButton, /border:\s*0/);
   assert.match(switcherButton, /border-radius:\s*0/);

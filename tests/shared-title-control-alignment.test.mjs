@@ -1,11 +1,10 @@
-import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { ruleBodies } from "./helpers/css-rules.mjs";
 
-const featurePages = readFeaturePagesSource();
+const referencePage = readFileSync(new URL("../src/features/NumberReferencePage.tsx", import.meta.url), "utf8");
 const corePages = readFileSync(new URL("../src/FeaturePagesCore.tsx", import.meta.url), "utf8");
 const featureCss = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const responsiveCss = readFileSync(new URL("../src/responsive-feature-pages.css", import.meta.url), "utf8");
@@ -14,38 +13,50 @@ const adjustmentsCss = readFileSync(new URL("../src/feature-page-adjustments.css
 
 test("Matrix 四頁切換器位於設定標題同列並完整呈現外框", () => {
   assert.match(featureCss, /\.matrix-settings-heading\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*space-between;/s);
-  assert.match(exploreCss, /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher button\s*\{[^}]*border:\s*1px solid #755329;[^}]*border-radius:\s*clamp\(4px, 1\.2vw, 5px\);/s);
-  assert.match(exploreCss, /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher button::before,[\s\S]*?button::after\s*\{[^}]*display:\s*none;/s);
-  assert.doesNotMatch(exploreCss, /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher button::before\s*\{[^}]*background:\s*linear-gradient\([^}]*#f0c44d/s);
-  assert.doesNotMatch(exploreCss, /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher img\s*\{\s*clip-path:\s*inherit;/s);
+  const switcher = ruleBodies(featureCss, /^\.matrix-page-switcher$/);
+  assert.equal(switcher.length, 1);
+  assert.match(switcher[0], /width:\s*176px;/);
+  assert.match(switcher[0], /height:\s*26px;/);
+  assert.match(switcher[0], /border:\s*1px solid var\(--pwa-frame-tertiary\);/);
+  assert.match(switcher[0], /border-radius:\s*var\(--pwa-frame-radius\);/);
+  assert.match(switcher[0], /overflow:\s*hidden;/);
+  assert.doesNotMatch(exploreCss, /\.matrix-page-switcher/);
+  assert.doesNotMatch(featureCss, /\.matrix-page-switcher[^{}]*::(?:before|after)/);
 });
 
 test("同星、對照單與歷史的設定按鈕使用同一個位置規格 [header migration]", () => {
   const css = readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
   const actions = ruleBodies(css, /^\.product-header__actions$/);
   assert.equal(actions.length, 1);
-  assert.match(actions[0], /grid-area:\s*actions;/);
+  assert.match(actions[0], /position:\s*absolute;[^}]*right:\s*4px;[^}]*bottom:\s*0px;/s);
+  assert.match(actions[0], /width:\s*var\(--product-header-action-width\);/);
   assert.match(actions[0], /min-width:\s*0;/);
-  assert.doesNotMatch(actions[0], /translate|position:\s*absolute/);
-  assert.match(featurePages, /className="reference-title-actions title-card-compact-actions"/);
-  assert.match(corePages, /className="history-title-actions title-card-compact-actions"/);
-  assert.match(corePages, /className="tongxing-title-actions title-card-compact-actions"/);
+  assert.doesNotMatch(actions[0], /translate/);
+  assert.match(referencePage, /<HeaderSettingsButton[^>]*controls="reference-header-settings"/);
+  assert.match(corePages, /<HeaderSettingsButton[^>]*controls="history-header-settings"/);
+  assert.match(corePages, /<HeaderSettingsButton[^>]*controls="tongxing-header-settings"/);
+  assert.match(css, /--product-header-settings-action-width:\s*70px;/);
   assert.doesNotMatch(responsiveCss, /tool-title-actions/);
 });
 
-test("重設與刷新在設定按鈕上方保留 4px，且外框高度固定 20px [header migration]", () => {
-  assert.match(featurePages, /className="title-card-compact-action reference-refresh-trigger tool-title-reset-trigger"/);
-  assert.match(corePages, /className="history-reset-trigger title-card-compact-action tool-title-reset-trigger"/);
+test("重設與刷新位於設定第一列並共用 26px 高度與 10px 圖示 [header migration]", () => {
+  const historyRow = corePages.slice(corePages.indexOf('className="history-filter-primary-row tool-settings-primary-row"'), corePages.indexOf('className="history-filter-secondary-row"'));
+  const referenceRow = referencePage.slice(referencePage.indexOf('className="query-selects three-cols tool-settings-primary-row"'), referencePage.indexOf('<section className="reference-search"'));
+  assert.match(referenceRow, /className="tool-settings-reset reference-refresh-trigger" onClick=\{resetReference\}/);
+  assert.match(historyRow, /className="tool-settings-reset history-reset-trigger" onClick=\{resetHistory\}/);
+  assert.doesNotMatch(corePages + referencePage, /tool-title-reset-trigger/);
 
-  const bodies = ruleBodies(responsiveCss, /^\.title-card-compact-actions$/);
+  const bodies = ruleBodies(responsiveCss, /^\.tool-settings-reset$/);
   assert.equal(bodies.length, 1);
-  assert.match(bodies[0], /grid-auto-rows:\s*20px;/);
-  assert.match(bodies[0], /gap:\s*4px;/);
+  assert.match(bodies[0], /height:\s*26px;/);
+  assert.match(bodies[0], /font-size:\s*10px;/);
+  assert.match(featureCss, /\.history-filter-primary-row\s*\{[^}]*grid-template-columns:\s*minmax\(0, \.85fr\) minmax\(0, 1\.85fr\) 52px;/);
+  assert.match(featureCss, /\.reference-query-panel \.query-selects\.three-cols\s*\{[^}]*grid-template-columns:\s*minmax\(0, \.95fr\) minmax\(0, \.8fr\) minmax\(0, 1\.75fr\) 42px;/);
 
-  const refreshIcon = ruleBodies(responsiveCss, /^\.reference-refresh-icon$/);
+  const refreshIcon = ruleBodies(responsiveCss, /^\.tool-settings-reset > svg$/);
   assert.equal(refreshIcon.length, 1);
-  assert.match(refreshIcon[0], /width:\s*8px;/);
-  assert.match(refreshIcon[0], /height:\s*8px;/);
+  assert.match(refreshIcon[0], /width:\s*10px;/);
+  assert.match(refreshIcon[0], /height:\s*10px;/);
 });
 
 test("指南章節捲動列上下以 3px 間距保留分隔線", () => {
@@ -55,4 +66,3 @@ test("指南章節捲動列上下以 3px 間距保留分隔線", () => {
   assert.match(bodies[0], /border-top:\s*1px solid/);
   assert.match(bodies[0], /border-bottom:\s*1px solid/);
 });
-

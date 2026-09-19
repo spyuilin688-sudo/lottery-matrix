@@ -1,4 +1,3 @@
-import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -9,7 +8,7 @@ const css = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "
 const ballCss = readFileSync(new URL("../src/number-ball.css", import.meta.url), "utf8");
 const matrixCss = readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8");
 const responsiveCss = readFileSync(new URL("../src/responsive-feature-pages.css", import.meta.url), "utf8");
-const source = readFeaturePagesSource();
+const source = readFileSync(new URL("../src/FeaturePagesCore.tsx", import.meta.url), "utf8");
 const prototypeSource = readFileSync(new URL("../src/Prototype.tsx", import.meta.url), "utf8");
 const prototypeCss = readFileSync(new URL("../src/prototype.css", import.meta.url), "utf8");
 
@@ -62,13 +61,13 @@ test("篩選條件由標題卡內容寬度與內容驅動的精簡控制器承�
 });
 
 test("彩種下拉為歷史設定卡第一項並保留標題列篩選按鈕", () => {
-  const panelStart = source.indexOf('className="history-filter-panel"');
-  const primaryStart = source.indexOf('<div className="history-filter-primary-row">', panelStart);
+  const panelStart = source.indexOf('className="history-filter-panel tool-settings-panel"');
+  const primaryStart = source.indexOf('<div className="history-filter-primary-row tool-settings-primary-row">', panelStart);
   const lotterySelect = source.indexOf('aria-label="彩種"', primaryStart);
   const orderSelect = source.indexOf('aria-label="號碼順序"', primaryStart);
   const secondaryStart = source.indexOf('<div className="history-filter-secondary-row">', primaryStart);
   const titleActions = source.indexOf('const historyTitleActions');
-  const filterTrigger = source.indexOf('className="history-filter-trigger title-card-compact-action"', titleActions);
+  const filterTrigger = source.indexOf('<HeaderSettingsButton expanded={filterExpanded} controls="history-header-settings" label="篩選設定"', titleActions);
   const shellAction = source.indexOf('headerAction={historyTitleActions}', titleActions);
 
   assert.ok(panelStart >= 0);
@@ -80,13 +79,20 @@ test("彩種下拉為歷史設定卡第一項並保留標題列篩選按鈕", ()
   assert.doesNotMatch(css, /history-title-lottery|history-title-chevron/);
 });
 
-test("歷史設定卡維持 26px 控制、第二列深色直角選項與共享 16px 水平外距", () => {
-  assert.match(source, /className="history-filter-panel"/);
-  assert.match(source, /className="history-filter-primary-row"/);
+test("歷史設定卡維持 26px 原生控制、共用細金框與 16px 水平外距", () => {
+  assert.match(source, /className="history-filter-panel tool-settings-panel"/);
+  assert.match(source, /className="history-filter-primary-row tool-settings-primary-row"/);
   assert.match(source, /className="history-filter-secondary-row"/);
   assert.ok(ruleBodies(css, /^\.history-filter-panel \.select-box$/).some((body) => /height:\s*26px;/.test(body)));
-  assert.match(css, /\.history-filter-secondary-row \.select-box\s*\{[^}]*border:\s*1px solid #b98723;[^}]*border-radius:\s*0;[^}]*background:\s*#07131d;/s);
-  assert.match(css, /\.history-filter-secondary-row \.select-box::before,\s*\.history-filter-secondary-row \.select-box::after\s*\{[^}]*display:\s*none;/s);
+  const select = ruleBodies(css, /^\.select-box$/);
+  assert.equal(select.length, 1);
+  assert.match(select[0], /border:\s*1px solid var\(--pwa-frame-tertiary\);/);
+  assert.match(select[0], /border-radius:\s*var\(--pwa-frame-radius\);/);
+  const secondary = ruleBodies(css, /^\.history-filter-secondary-row \.select-box$/);
+  assert.equal(secondary.length, 1);
+  assert.match(secondary[0], /background:\s*var\(--pwa-control-surface\);/);
+  assert.doesNotMatch(secondary[0], /border(?:-radius)?:/);
+  assert.doesNotMatch(css, /\.select-box::(?:before|after)/);
   assert.match(css, /\.history-filter-panel select\s*\{[^}]*font-size:\s*clamp\(/s);
   const bodyRules = ruleBodies(responsiveCss, /^\.draw-history-screen \.feature-body$/);
   assert.equal(bodyRules.length, 1);

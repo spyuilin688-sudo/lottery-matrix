@@ -236,9 +236,9 @@ Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封
 
 ### Core lottery tabs and integrated settings — 2026-09-12
 
-四個核心頁面與牌單共用同一個 `LotteryTabs` 樣式，置於標題卡下方 8px，四彩種等寬、36px 高、14px 文字，選中項目使用金字與文字等寬的 2px 金色底線，列下方間距 8px；支援左右方向鍵與 Home／End。彩種切換沿用原有 state setter／changeLottery，不另增 API 或變更查詢規則。移除設定卡內彩種 select。探索、天衡與天衍的命中按鈕、進階設定歸入各自設定卡，不顯示獨立命中條件卡；天工沿用既有兩段設定。設定區一般 segmented 選項與條件按鈕皆為 20px，文字字級不變。背景皆為低亮度靜態 SVG，不加入動畫。
+四個核心頁面與牌單共用同一個 `LotteryTabs` 樣式，置於標題卡下方 14px，四彩種等寬、36px 高、14px 文字，選中項目使用金字與文字等寬的 2px 金色底線，列下方間距 8px；支援左右方向鍵與 Home／End。彩種切換沿用原有 state setter／changeLottery，不另增 API 或變更查詢規則。移除設定卡內彩種 select。探索、天衡與天衍的命中按鈕、進階設定歸入各自設定卡，不顯示獨立命中條件卡；天工沿用既有兩段設定。設定區一般 segmented 選項與條件按鈕皆為 20px，文字字級不變。背景皆為低亮度靜態 SVG，不加入動畫。
 
-所有 PWA 標題與下方內容的 8px 由 `.product-header` 的 margin-bottom 唯一擁有，header 不再含底部 padding。歷史、對照單與同星的設定整合於標題卡內，浮動展開仍沿用同一卡框。移除通知與探索結果預覽額外的頂部 padding。
+所有 PWA 標題與下方內容的 14px 由 `.product-header` 的 margin-bottom 唯一擁有，header 不再含底部 padding。歷史、對照單與同星的設定整合於標題卡內，浮動展開仍沿用同一卡框。移除通知與探索結果預覽額外的頂部 padding。
 
 彩種 Tabs 與牌單維持共用樣式；四頁切換為 26px 高、12px 字級、淡金選中底。期數／版路保留 20px 與原字級，三欄採等寬 grid、欄距 6px，標籤垂直置中。依最新條件按鈕調整，探索、天衡、天衍條件列與上方 segmented 選項共用正式按鈕樣式：20px 高、10px 圓角、12px 字級、相同框線與淡金選中底。兩個選項等寬、間距 6px；天衍單選項佔滿右側欄位。移除相連分段外框與分隔線，保留完整文字、700／500 主次字重及欄位對齊。
 
@@ -323,4 +323,6 @@ Verification: `tests/pwa-frame-system.test.mjs` and
 
 筆記本的資料擁有者判斷與既有會員入口一致，LINE 與 Google 的有效會員工作階段皆可使用。資料仍以穩定 user ID 隔離；登出、切換帳號及延遲登入回應的失效處理不變。
 
-本次測試契約依既有正式提交對齊：`f3ae276` 的落球切換 22px 高、`9ad9f4` 的彩種選中亮金 55% 框線、`246e6ab` 的 Core 4.8 秒循環與 2.8 秒節點脈衝（保留 reduced-motion 停用）。這些是既有畫面規格，並非本次新增視覺效果。管理後臺的新增／編輯生命週期、TinyFish 分组、工作流程標籤與按鈕名稱記於 `apps/admin/DESIGN.md`。
+本次測試契約依既有正式提交對齊：`f3ae276` 的落球切換 22px 高、`9ad9f4` 的彩種選中亮金 55% 框線、`246e6ab` 的 Core 4.8 秒循環與 2.8 秒節點脈衝（保留 reduced-motion 停用）。這些是既有畫面規格，並非本次新增視覺效果。管理後臺的新增／編輯生命週期、TinyFish 分組、工作流程標籤與按鈕名稱記於 `apps/admin/DESIGN.md`。
+
+既有後續版面依據補記：`8ec6ebbe` 將共用 PWA 分隔線提升為標準金 38%，探索頁的 28% 區域變體保持獨立。`12a4f59` 移除天工一般設定內重複的 7px／10px 間距及球位下方舊 6px 分隔，階段之間改由既有規則提供上下 8px 留白與 `--pwa-frame-secondary` 細框。`6aa6725` 將會員登入／登出定位交給 `.profile-auth-actions`，保留 `10.68898cqw`。這些數值均沿用已合併的畫面，不由本次測試修復另行調整。

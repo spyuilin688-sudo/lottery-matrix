@@ -19,5 +19,11 @@ test("我的頁面會員卡裁除素材頂端留白後仍保持內容座標對�
   assert.match(css, /--membership-profile-height:\s*21\.68906cqw;/);
   assert.match(css, /\.profile-avatar\s*\{[^}]*top:\s*3\.64698cqw;/s);
   assert.match(css, /\.profile-copy\s*\{[^}]*top:\s*5\.81898cqw;/s);
-  assert.match(css, /\.profile-logout\s*\{[^}]*top:\s*10\.68898cqw;/s);
+  // 6aa6725 moved the existing artwork coordinate to the shared auth container.
+  assert.match(component, /className="profile-auth-actions"/);
+  assert.match(css, /\.profile-auth-actions\s*\{[^}]*position:\s*absolute;[^}]*top:\s*10\.68898cqw;[^}]*transform:\s*translateY\(-50%\);/s);
+  const logout = css.match(/\.profile-logout\s*\{([^}]*)\}/s)?.[1] ?? '';
+  assert.match(logout, /position:\s*static;/);
+  assert.match(logout, /min-height:\s*44px;/);
+  assert.doesNotMatch(logout, /\b(?:top|left|right|transform):/);
 });
