@@ -10,54 +10,16 @@ const workflow = readFileSync(
   'utf8',
 );
 
-test('Matrix workflow keeps manual recovery and the existing main push path filters', () => {
-  assert.match(workflow, /^on:\n  workflow_dispatch:\n/m);
-  assert.match(
-    workflow,
-    /^  push:\n    branches: \[main\]\n    paths:\n      - \.github\/workflows\/matrix-analysis\.yml\n/m,
-  );
-  assert.match(workflow, /^    timeout-minutes: 120$/m);
-  assert.match(workflow, /^      max-parallel: 1$/m);
-  assert.match(workflow, /^      - services\/matrix-api\/\*\*$/m);
-  assert.doesNotMatch(workflow, /^  schedule:/m);
-});
-
-test('Matrix event gate accepts declared triggers and rejects stale cron events', () => {
-  const gate = workflow.match(/      - name: Gate lottery for event\n([\s\S]*?)(?=\n      - name:)/)?.[1];
-  const indentedScript = gate?.match(/        run: \|\n([\s\S]*)$/)?.[1];
-  assert.ok(indentedScript);
-  const script = indentedScript.split('\n')
-    .map((line) => line.startsWith('          ') ? line.slice(10) : line).join('\n');
-
-  const directory = mkdtempSync(join(tmpdir(), 'matrix-event-gate-'));
-  const output = join(directory, 'output');
-  try {
-    for (const [eventName, eventSchedule, expected] of [
-      ['push', '', 'true'],
-      ['workflow_dispatch', '', 'true'],
-      ['schedule', '*/15 * * * *', 'false'],
-      ['schedule', '50 12 * * 1-6', 'false'],
-      ['schedule', '50 13 * * *', 'false'],
-      ['pull_request', '', 'false'],
-    ]) {
-      writeFileSync(output, '');
-      const result = spawnSync('bash', ['-c', script], {
-        env: {
-          ...process.env,
-          EVENT_NAME: eventName,
-          EVENT_SCHEDULE: eventSchedule,
-          LOTTERY_ID: eventSchedule === '50 13 * * *' ? 'marksix' : 'daily539',
-          GITHUB_OUTPUT: output,
-        },
-        encoding: 'utf8',
-      });
-      assert.equal(result.status, 0, result.stderr);
-      assert.equal(readFileSync(output, 'utf8').trim(), `should_run=${expected}`, `${eventName}: ${eventSchedule}`);
-    }
-  } finally {
-    rmSync(directory, { recursive: true, force: true });
+test('Matrix recovery and historical backfill remain manual-only', () => {
+  const backfill = readFileSync(new URL('../.github/workflows/matrix-v11-backfill.yml', import.meta.url), 'utf8');
+  for (const source of [workflow, backfill]) {
+    const triggers = source.match(/^on:\n([\s\S]*?)(?=^permissions:)/m)?.[1];
+    assert.ok(triggers);
+    const eventNames = [...triggers.matchAll(/^  ([a-z_]+):/gm)].map(match => match[1]);
+    assert.deepEqual(eventNames, ['workflow_dispatch']);
+    assert.match(source, /^    timeout-minutes: 120$/m);
+    assert.match(source, /^      max-parallel: 1$/m);
   }
-  assert.doesNotMatch(gate, /EVENT_SCHEDULE|LOTTERY_ID/);
 });
 
 test('Matrix workflow runs only Railway-owned lotteries in scheduled worker mode', () => {

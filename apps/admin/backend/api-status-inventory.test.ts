@@ -12,6 +12,8 @@ describe('api status inventory', () => {
       expect.objectContaining({ id: 'supabase-rpc-matrix_explore_list', endpoint: '/rest/v1/rpc/matrix_explore_list' }),
       expect.objectContaining({ id: 'supabase-rpc-matrix_tianheng_list', rpcAccess: 'public-read' }),
       expect.objectContaining({ id: 'supabase-rpc-matrix_tianheng_validation', rpcAccess: 'public-read' }),
+      expect.objectContaining({ id: 'supabase-rpc-matrix_tianshu_list', rpcAccess: 'member-read' }),
+      expect.objectContaining({ id: 'supabase-rpc-matrix_tianshu_validation', rpcAccess: 'member-read' }),
       expect.objectContaining({ id: 'supabase-rpc-matrix_permission_settings', endpoint: '/rest/v1/rpc/matrix_permission_settings' }),
       expect.objectContaining({ id: 'supabase-rpc-admin_matrix_permission_settings_update', endpoint: '/rest/v1/rpc/admin_matrix_permission_settings_update' }),
       expect.objectContaining({ id: 'supabase-rpc-redeem_activation_code', endpoint: '/rest/v1/rpc/redeem_activation_code' }),
@@ -25,7 +27,7 @@ describe('api status inventory', () => {
       expect.objectContaining({ id: 'railway-jobs-recover', endpoint: '/jobs/recover', checkMode: 'service' }),
       expect.objectContaining({ id: 'railway-number-reference', endpoint: '/api/matrix/number-reference' }),
     ]));
-    expect(apiStatusInventory).toHaveLength(66);
+    expect(apiStatusInventory).toHaveLength(68);
     expect(new Set(apiStatusInventory.map((item) => item.id)).size).toBe(apiStatusInventory.length);
     expect(apiStatusInventory.every((item) => item.name && item.group && item.endpoint)).toBe(true);
   });

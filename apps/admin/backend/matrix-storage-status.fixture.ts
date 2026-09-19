@@ -4,6 +4,7 @@ export const matrixStorageFixture = () => ({
   tables: {
     explore: { size_bytes: 120_000_000, expired_total: 12, expired_retained: 2, expired_deletable: 10, superseded_rows: 15 },
     tianheng: { size_bytes: 80_000_000, expired_total: 0, expired_retained: 0, expired_deletable: 0, superseded_rows: 0 },
+    tianshu: { size_bytes: 40_000_000, expired_total: 0, expired_retained: 0, expired_deletable: 0, superseded_rows: 0 },
     artifacts: { size_bytes: 1_200_000_000, expired_total: 0, expired_retained: 0, expired_deletable: 0, superseded_rows: 0 },
     chunks: { size_bytes: 900_000_000, expired_total: 0, expired_retained: 0, expired_deletable: 0, superseded_rows: 0 },
   },
