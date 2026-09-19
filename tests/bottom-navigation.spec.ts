@@ -11,7 +11,7 @@ test.beforeEach(async ({ page }) => {
 test("底部導覽全寬固定於內容畫布底部，保留四個可操作入口", async ({ page }) => {
   const mobilePage = page.locator(".mobile-page");
   const navigation = page.getByTestId("bottom-navigation");
-  const labels = ["首頁", "快捷", "通知", "我的"];
+  const labels = ["首頁", "快捷", "計算機", "我的"];
 
   const mobilePageBox = await mobilePage.boundingBox();
   const navigationBox = await navigation.boundingBox();
@@ -19,7 +19,7 @@ test("底部導覽全寬固定於內容畫布底部，保留四個可操作入�
 
   expect(await navigation.evaluate((element) => getComputedStyle(element).position)).toBe("fixed");
   expect(navigationBox.width).toBeCloseTo(mobilePageBox.width, 0);
-  expect(navigationBox.height).toBeCloseTo(72, 0);
+  expect(navigationBox.height).toBeCloseTo(70, 0);
   expect(navigationBox.x).toBeCloseTo(mobilePageBox.x, 0);
   expect(navigationBox.y + navigationBox.height).toBeCloseTo(mobilePageBox.y + mobilePageBox.height, 0);
 
@@ -35,25 +35,22 @@ test("底部導覽全寬固定於內容畫布底部，保留四個可操作入�
   }
 });
 
-test("選取狀態會跟隨首頁、通知與我的頁面", async ({ page }) => {
+test("選取狀態會跟隨首頁、計算機與我的頁面", async ({ page }) => {
   const navigation = page.getByTestId("bottom-navigation");
   const home = navigation.getByRole("button", { name: "首頁" });
 
   await expect(home).toHaveAttribute("aria-current", "page");
   await expect(navigation).toHaveAttribute("data-active", "首頁");
-  await expect(navigation.locator(".bottom-navigation-artwork")).toHaveAttribute(
-    "src",
-    "/assets/lottery/functions/matrixWW1.png",
-  );
+  await expect(navigation.locator("svg.bottom-navigation-icon")).toHaveCount(4);
 
-  await navigation.getByRole("button", { name: "通知" }).click();
+  await navigation.getByRole("button", { name: "計算機" }).click();
   const notificationNavigation = page.getByTestId("bottom-navigation");
-  await expect(notificationNavigation.getByRole("button", { name: "通知" })).toHaveAttribute("aria-current", "page");
+  await expect(notificationNavigation.getByRole("button", { name: "計算機" })).toHaveAttribute("aria-current", "page");
   expect(await notificationNavigation.evaluate((element) => getComputedStyle(element).position)).toBe("fixed");
 
   const notificationPageBox = await page.locator(".mobile-page").boundingBox();
   const notificationNavigationBox = await notificationNavigation.boundingBox();
-  if (!notificationPageBox || !notificationNavigationBox) throw new Error("通知頁底部導覽沒有可量測的範圍");
+  if (!notificationPageBox || !notificationNavigationBox) throw new Error("計算機頁底部導覽沒有可量測的範圍");
   expect(notificationNavigationBox.width).toBeCloseTo(notificationPageBox.width, 0);
   expect(notificationNavigationBox.x).toBeCloseTo(notificationPageBox.x, 0);
   expect(notificationNavigationBox.y + notificationNavigationBox.height).toBeCloseTo(notificationPageBox.y + notificationPageBox.height, 0);

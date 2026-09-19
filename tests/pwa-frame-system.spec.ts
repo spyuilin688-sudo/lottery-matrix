@@ -92,8 +92,11 @@ test('real advanced native select has a frame and selected options change withou
   await expect(seven).toHaveCSS('border-top-color', colors.secondary);
   await expect(seven).toHaveCSS('color', colors.secondary);
   await expect(seven).toHaveCSS('box-shadow', 'none');
-  await expect(page.locator('.primary-action')).toHaveCSS('border-top-color', colors.primary);
-  await expect(page.locator('.primary-action')).toHaveCSS('box-shadow', 'none');
+  // DESIGN.md retains the approved metallic CTA as an explicit frame-system variant.
+  const action = page.locator('.primary-action.branded-explore-action');
+  await expect(action).toHaveCSS('border-top-color', 'rgb(201, 154, 46)');
+  await expect(action).toHaveCSS('border-top-width', '1px');
+  await expect(action).toHaveCSS('border-radius', '9px');
 });
 
 for (const width of [320, 390, 430]) {

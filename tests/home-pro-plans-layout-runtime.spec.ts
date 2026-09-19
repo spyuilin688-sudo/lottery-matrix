@@ -102,7 +102,8 @@ for (const width of MOBILE_WIDTHS) {
       checkoutLeft: 16,
       checkoutRight: 16,
       planOuterShadow: false,
-      paymentOuterShadow: false,
+      // The approved branded payment CTA retains its metallic glow (DESIGN.md).
+      paymentOuterShadow: true,
       previousCardPeek: 12,
       nextCardPeek: 12,
       overflow: 0,
