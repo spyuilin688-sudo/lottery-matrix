@@ -13,6 +13,7 @@ from app.repositories.analysis_repository import (
 )
 from app.services.analysis_pipeline import ArtifactBuilder
 from app.services.draw_refresh import recent_history_window, require_complete_history
+from app.services.runtime_log import log_worker_run
 from app.services.notification_events import (
     NotificationDeliveryError,
     NotificationEventEmitter,
@@ -380,21 +381,20 @@ def main(argv: list[str] | None = None) -> int:
     if lottery != FANTASY5:
         parser.error("set --lottery or MATRIX_LOTTERY to 天天樂")
 
-    settings = load_settings()
-    repository = create_supabase_repository(
-        settings.supabase_url,
-        settings.supabase_secret_key,
-    )
-    with notification_emitter_context(settings) as notification_emitter:
-        if notification_emitter is None:
-            result = run_analysis_only_worker(lottery, repository)
-        else:
-            result = run_analysis_only_worker(
-                lottery,
-                repository,
-                notification_emitter=notification_emitter,
+    def run_once() -> dict[str, Any]:
+        settings = load_settings()
+        repository = create_supabase_repository(
+            settings.supabase_url,
+            settings.supabase_secret_key,
+        )
+        with notification_emitter_context(settings) as notification_emitter:
+            if notification_emitter is None:
+                return run_analysis_only_worker(lottery, repository)
+            return run_analysis_only_worker(
+                lottery, repository, notification_emitter=notification_emitter,
             )
-    print(f'{result["lottery"]} {result["drawPeriod"] or "-"} {result["status"]}')
+
+    log_worker_run(lottery, run_once)
     return 0
 
 

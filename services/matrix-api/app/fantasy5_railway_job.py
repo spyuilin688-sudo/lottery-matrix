@@ -5,6 +5,8 @@ from time import sleep
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from app.services.runtime_log import log_worker_run
+
 
 LOS_ANGELES = ZoneInfo("America/Los_Angeles")
 PDT_OFFSET = timedelta(hours=-7)
@@ -45,7 +47,7 @@ def run_retry_loop(
 
 def main() -> int:
     if not is_active_slot(datetime.now(UTC)):
-        print("Fantasy5 Railway cron seasonal slot skipped")
+        log_worker_run("天天樂", lambda: {"status": "not-due", "drawPeriod": None})
         return 0
 
     from app.fantasy5_crawler import run_fantasy5_crawler_once
@@ -53,9 +55,7 @@ def main() -> int:
     max_attempts = int(environ.get("FANTASY5_MAX_ATTEMPTS", DEFAULT_MAX_ATTEMPTS))
 
     def logged_run_once() -> dict[str, Any]:
-        result = run_fantasy5_crawler_once()
-        print(f'{result["lottery"]} {result["drawPeriod"] or "-"} {result["status"]}')
-        return result
+        return log_worker_run("天天樂", run_fantasy5_crawler_once)
 
     result = run_retry_loop(logged_run_once, max_attempts=max_attempts)
     if result.get("status") == "not-acquired":
