@@ -75,7 +75,7 @@ const supabaseRpcInventory: ApiStatusDefinition[] = supabaseRpcDefinitions.map(
 
 export const apiStatusInventory: readonly ApiStatusDefinition[] = [
   { id: 'admin-api', name: '管理者後臺 API', group: '系統', location: 'Supabase', endpoint: '/admin/api/_healthcheck', checkMode: 'live', description: '確認正式管理者後臺 API 可正常回應。' },
-  { id: 'supabase-watchdog-heartbeat', name: '自動監控執行狀態', group: '自動監控', location: 'Supabase', endpoint: '/functions/v1/admin-api/api/internal/matrix-watchdog', checkMode: 'service', description: '每 10 分鐘由 Supabase 執行自動監控；這裡顯示最近一次執行結果。' },
+  { id: 'supabase-watchdog-heartbeat', name: '自動監控執行狀態', group: '自動監控', location: 'Supabase', endpoint: '/functions/v1/admin-api/api/internal/matrix-watchdog', checkMode: 'service', description: 'Supabase 每 10 分鐘檢查排程，依指定時點執行監控；這裡顯示最近一次執行結果。' },
   { id: 'supabase-database', name: '資料庫連線', group: '系統', location: 'Supabase', endpoint: '/rest/v1/plans?select=id&limit=1', checkMode: 'live', description: '讀取一筆訂閱方案，確認資料庫能回傳資料。' },
   { id: 'matrix-storage', name: 'Matrix Storage', group: '系統', location: 'Supabase', endpoint: '/rest/v1/rpc/matrix_analysis_storage_health', checkMode: 'service', description: '查看分析資料的實際儲存大小、版本與清理紀錄。' },
   { id: 'notification-calendar', name: '六合彩開獎日曆', group: '通知', location: 'Supabase', endpoint: '/rest/v1/rpc/notification_draw_calendar_status', checkMode: 'service', description: '依香港賽馬會官方日期決定選號提醒；日期待確認時暫停提醒。' },

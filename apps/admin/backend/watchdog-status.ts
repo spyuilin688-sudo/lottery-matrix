@@ -26,12 +26,28 @@ export type WatchdogStatus = {
   diagnoses?: Diagnosis[];
   railway?: RailwayEvidence[];
   optimizer?: OptimizerReport;
+  schedule?: { checkedAt: string; due: boolean; pendingSince: string | null };
   checkedAt: string;
   completedAt: string;
   dueLotteries: WatchdogStatusAction['lottery'][];
   actions: WatchdogStatusAction[];
   error?: 'STATUS_UNAVAILABLE' | 'WATCHDOG_FAILED' | 'WATCHDOG_STATUS_WRITE_FAILED';
 };
+
+// Share the same freshness decision between the API and the retained-report UI.
+export function watchdogObservation(status: WatchdogStatus, now: Date): 'fresh' | 'idle' | 'pending' | 'stale' | 'invalid' {
+  const age = (value: string) => now.getTime() - Date.parse(value);
+  const valid = (value: string) => Number.isFinite(age(value)) && age(value) >= -120_000;
+  if (!valid(status.completedAt)) return 'invalid';
+  const schedule = status.schedule;
+  if (schedule) {
+    if (!valid(schedule.checkedAt) || (schedule.pendingSince !== null && !valid(schedule.pendingSince))) return 'invalid';
+    if (age(schedule.checkedAt) > 18 * 60_000) return 'stale';
+    if (schedule.pendingSince !== null) return age(schedule.pendingSince) > 18 * 60_000 ? 'stale' : 'pending';
+    if (!schedule.due) return 'idle';
+  }
+  return age(status.completedAt) > 18 * 60_000 ? 'stale' : 'fresh';
+}
 
 const TABLE = 'matrix-watchdog-status';
 const LOTTERIES = new Set<WatchdogStatusAction['lottery']>(['今彩539', '天天樂', '六合彩', '大樂透']);
@@ -105,6 +121,11 @@ export function sanitizeWatchdogStatus(value: unknown): WatchdogStatus {
     dueLotteries: safeDueLotteries(source.dueLotteries),
     actions: safeActions(source.actions),
   };
+  if (isRow(source.schedule) && typeof source.schedule.due === 'boolean'
+    && typeof source.schedule.checkedAt === 'string' && Number.isFinite(Date.parse(source.schedule.checkedAt))
+    && (source.schedule.pendingSince === null || (typeof source.schedule.pendingSince === 'string' && Number.isFinite(Date.parse(source.schedule.pendingSince))))) {
+    result.schedule = { checkedAt: source.schedule.checkedAt, due: source.schedule.due, pendingSince: source.schedule.pendingSince as string | null };
+  }
   if (Array.isArray(source.reports)) {
     result.reports = sanitizeChainReports(source.reports);
     if (result.reports.length !== 4 || result.reports.some(r => r.state !== 'PASS')) result.status = 'degraded';
@@ -135,6 +156,7 @@ export function createWatchdogStatusStore(database: WatchdogStatusDatabase) {
     async save(value: unknown): Promise<WatchdogStatus> {
       const status = sanitizeWatchdogStatus(value);
       delete status.optimizer;
+      delete status.schedule; // Cron evidence is owned by the database, never by a report writer.
       try {
         const { items } = await database.list<WatchdogStatus>(TABLE, { limit: 1 });
         const id = items[0]?.id;

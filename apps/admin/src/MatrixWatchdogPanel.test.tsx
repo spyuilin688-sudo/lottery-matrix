@@ -21,3 +21,16 @@ it('shows independent source freshness and the approved cadence',()=>{
  expect(screen.getByText('Railway 最近檢查')).toBeTruthy();
  expect(screen.getByText('資料庫最近檢查').nextElementSibling?.textContent).toBe('尚無紀錄');
 });
+
+const passedReport = {lottery:'今彩539',drawPeriod:'115000228',checkedAt:'2026-09-19T21:34:49Z',stages:['schedule','job','crawler','draw','analysis','matrix-status'].map(stage=>({stage,state:'PASS',period:'115000228',observedAt:'2026-09-19T21:34:49Z',source:'test',code:'PASS'}))};
+it('does not describe a passed chain as an unlocated fault',()=>{
+ render(<MatrixWatchdogPanel detail={{status:'ok',checkedAt:'2026-09-19T21:34:49Z',completedAt:'2026-09-19T21:34:50Z',reports:[passedReport]}} now={new Date('2026-09-19T21:35:00Z')}/>);
+ expect(screen.queryByText(/尚未定位故障層/)).toBeNull();
+ expect(screen.getByText(/資料鏈未發現異常/)).toBeTruthy();
+});
+it('labels retained evidence as historical during a verified idle schedule',()=>{
+ render(<MatrixWatchdogPanel detail={{status:'ok',checkedAt:'2026-09-19T21:34:49Z',completedAt:'2026-09-19T21:34:50Z',reports:[passedReport],schedule:{checkedAt:'2026-09-19T21:53:00Z',due:false,pendingSince:null}}} now={new Date('2026-09-19T21:56:00Z')}/>);
+ expect(screen.queryByText(/觀察已過期/)).toBeNull();
+ expect(screen.getByText(/未到指定檢查時點/)).toBeTruthy();
+ expect(screen.getByText('上次已驗證')).toBeTruthy();
+});
