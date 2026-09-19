@@ -107,14 +107,3 @@ describe('watchdog canonical draw-day calendar', () => {
     expect(result.dueLotteries).toEqual(['今彩539']);
   });
 });
-
-it.each([
- ['2026-09-19T12:43:00Z','2026-09-19T12:53:00.000Z'],
- ['2026-09-19T14:03:00Z','2026-09-19T14:33:00.000Z'],
- ['2026-09-19T17:33:00Z','2026-09-19T18:33:00.000Z'],
- ['2026-09-20T12:03:00Z','2026-09-21T12:43:00.000Z'],
-])('reports next real checkpoint after %s',async(at,next)=>{
- const current=snapshot('今彩539','115000228','2026-09-19',['2026-09-19','2026-09-21']);
- const result=await watchdogFor(current).run(new Date(at),'schedule-test',{recover:false});
- expect(result).toHaveProperty('nextCheckAt',next);
-});

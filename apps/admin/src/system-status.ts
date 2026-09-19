@@ -75,6 +75,11 @@ export function getSystemStatusPresentation(item: SystemStatusItem) {
     scope: '工作正在執行，最近的執行紀錄仍持續更新，尚未完成。',
   };
   if (item.ok && item.healthState === 'waiting') {
+    if (item.id === 'supabase-watchdog-heartbeat') {
+      const schedule = isRecord(item.detail) && isRecord(item.detail.schedule) ? item.detail.schedule : null;
+      return schedule?.pendingSince ? { label: '等待監控完成', tone: 'limited' as const, scope: '已到指定檢查時點，正在等待新的監控結果；下方保留上次紀錄。' }
+        : { label: '排程待命', tone: 'limited' as const, scope: '排程持續檢查，目前未到指定檢查時點；下方保留上次紀錄。' };
+    }
     if (item.id === 'railway-cards') {
       const samples = isRecord(item.detail) && Array.isArray(item.detail.samples) ? item.detail.samples : [];
       if (samples.some(sample => isRecord(sample) && sample.waitingFor === 'generation')) return {
@@ -157,6 +162,10 @@ export function getServiceEvidenceFacts(item: SystemStatusItem): SystemStatusFac
   }
   if (!isRecord(item.detail)) return [];
   const facts: SystemStatusFact[] = [];
+  if (item.id === 'supabase-watchdog-heartbeat' && isRecord(item.detail.schedule)) {
+    facts.push({ label: '最近排程檢查', value: item.detail.schedule.checkedAt, format: 'date' });
+    if (item.detail.schedule.pendingSince) facts.push({ label: '等待監控開始時間', value: item.detail.schedule.pendingSince, format: 'date' });
+  }
   if (isRecord(item.detail.activity)) {
     const activity = item.detail.activity;
     if (typeof activity.source === 'string') facts.push({ label: '紀錄來源', value: activity.source });

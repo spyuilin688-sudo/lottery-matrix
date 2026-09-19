@@ -145,17 +145,3 @@ describe('watchdog status store', () => {
     await expect(createWatchdogStatusStore(updateFailure).save(heartbeat)).rejects.toThrow('WATCHDOG_STATUS_WRITE_FAILED');
   });
 });
-
-import {sanitizeWatchdogStatus,watchdogFreshness} from './watchdog-status';
-it.each(['invalid','2026-09-01T00:00:00Z','2099-01-01T00:00:00Z'])('rejects invalid next checkpoint %s',nextCheckAt=>{
- const value={...heartbeat,nextCheckAt};
- expect(sanitizeWatchdogStatus(value).nextCheckAt).toBeUndefined();
- expect(watchdogFreshness(value as any,new Date('2026-09-04T02:00:00Z'))).toBe('stale');
-});
-it('preserves next checkpoint through storage and expiry at the grace boundary',async()=>{
- const nextCheckAt='2026-09-04T02:33:00.000Z';
- const saved=await createWatchdogStatusStore(createDatabase()).save({...heartbeat,nextCheckAt});
- expect(saved.nextCheckAt).toBe(nextCheckAt);
- expect(watchdogFreshness(saved,new Date('2026-09-04T02:41:00Z'))).toBe('fresh');
- expect(watchdogFreshness(saved,new Date('2026-09-04T02:41:00.001Z'))).toBe('stale');
-});

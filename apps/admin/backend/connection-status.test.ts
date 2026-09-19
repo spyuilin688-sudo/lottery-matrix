@@ -421,8 +421,7 @@ describe('connection status', () => {
         dueLotteries: ['天天樂'],
         actions: heartbeat.actions,
         physicalCronIntervalMinutes: 10,
-        fallbackFreshnessThresholdMinutes: 18,
-        checkpointGraceMinutes: 8,
+        freshnessThresholdMinutes: 18,
         logicalPhases: [
           { firstMinute: 10, lastMinute: 90, intervalMinutes: 10, checks: 9 },
           { firstMinute: 120, lastMinute: 300, intervalMinutes: 30, checks: 7 },
@@ -439,7 +438,7 @@ describe('connection status', () => {
     ['stale', {
       status: 'ok', checkedAt: '2026-09-04T11:40:59.000Z', completedAt: '2026-09-04T11:41:59.000Z',
       dueLotteries: [], actions: [],
-    } satisfies WatchdogStatus, '自動監控未在預期檢查時間內完成更新'],
+    } satisfies WatchdogStatus, '自動監控已超過 18 分鐘未完成更新'],
   ])('marks a %s watchdog heartbeat unavailable with a safe error', async (_case, heartbeat, error) => {
     const status = createConnectionStatus({
       supabase: { selectRows: vi.fn(async () => []) },
@@ -565,13 +564,4 @@ describe('connection status', () => {
       analysisDrawPeriod: '115000210',
     });
   });
-});
-it('keeps the heartbeat healthy until its calendar-derived checkpoint expires',async()=>{
- const status=createConnectionStatus({
-  supabase:{selectRows:vi.fn(async()=>[])},loadConfig:async()=>({url:'https://db.test',serviceRoleKey:'test'}),
-  fetcher:vi.fn(async()=>response({paths:{}})),getWorkerStatus:async()=>healthyWorkerStatus,
-  loadWatchdogStatus:async()=>({status:'ok',checkedAt:'2026-09-19T17:33:00Z',completedAt:'2026-09-19T17:34:00Z',nextCheckAt:'2026-09-19T18:33:00Z',dueLotteries:[],actions:[]}),
-  now:()=>new Date('2026-09-19T18:20:00Z'),
- });
- expect((await status.get()).items.find(i=>i.id==='supabase-watchdog-heartbeat')).toMatchObject({ok:true,detail:{nextCheckAt:'2026-09-19T18:33:00Z'}});
 });

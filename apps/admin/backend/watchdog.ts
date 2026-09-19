@@ -239,28 +239,6 @@ export function expectedDrawDateForDueWindow(
   return null;
 }
 
-// Reuse the same calendar and checkpoints as recovery; this never changes Cron.
-export function nextWatchdogCheckAt(snapshots: WatchdogSnapshot[], at: Date): string | undefined {
-  let next = Number.POSITIVE_INFINITY;
-  const local = taipeiParts(at);
-  for (const snapshot of snapshots) {
-    if (snapshot.unavailable || !snapshot.drawDays) continue;
-    for (let offset = -1; offset <= 9; offset += 1) {
-      const day = addDays(local, offset);
-      if (!isRecoveryCycleDay(snapshot.lottery, day, snapshot.drawDays)) continue;
-      const [hour, minute] = callClock(snapshot.lottery, day);
-      const base = taipeiInstant(day, hour, minute);
-      const nextPrimary = nextPrimaryInstant(snapshot.lottery, day, snapshot.drawDays);
-      for (const checkpoint of WATCHDOG_CHECKPOINT_MINUTES) {
-        if (!checkpointAllowed(snapshot.lottery, day, checkpoint)) continue;
-        const due = base + checkpoint * 60_000;
-        if (due > at.getTime() && due < nextPrimary) next = Math.min(next, due);
-      }
-    }
-  }
-  return Number.isFinite(next) ? new Date(next).toISOString() : undefined;
-}
-
 function minimumExpectedDrawDate(lottery: WatchdogLottery, expectedDate: string): string {
   if (lottery !== '六合彩') return expectedDate;
   const [year, month, day] = expectedDate.split('-').map(Number);
@@ -669,7 +647,6 @@ export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
         status: degraded ? 'degraded' : 'ok',
         checkedAt: at.toISOString(),
         dueLotteries,
-        nextCheckAt: nextWatchdogCheckAt(snapshots, at),
         actions: results,
         reports,
         railway,

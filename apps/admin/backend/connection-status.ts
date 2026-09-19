@@ -1,11 +1,11 @@
+import { WATCHDOG_PHASES } from './watchdog';
 import { apiStatusInventory, type ApiCheckEvidence, type ApiStatusDefinition } from './api-status-inventory';
 import { matrixStorageStatusId, parseMatrixStorageHealth } from './matrix-storage-status';
 import { notificationCalendarStatusId, parseNotificationCalendarStatus } from './notification-calendar-status';
 import { nativeNotificationStatusId, nativeNotificationWarning, parseNativeNotificationHealth } from './native-notification-status';
 import type { SupabaseConfig } from './supabase';
 import type { RailwayLatestAnalysis, WorkerStatus } from './worker-api';
-import { watchdogFreshness, type WatchdogStatus } from './watchdog-status';
-import { WATCHDOG_PHASES } from './watchdog';
+import { watchdogObservation, type WatchdogStatus } from './watchdog-status';
 import { createApiQueryChecks, queryCheckIds } from './api-query-checks';
 import { parseSettings } from './permission-settings';
 import { operationActivity, operationSources, protectedResultKinds, resultDataEvidence } from './service-evidence';
@@ -60,11 +60,10 @@ const defaultRequestTimeoutMs = 10_000;
 const jobStaleMs = 20 * 60 * 1000;
 const watchdogScheduleDetail = {
   physicalCronIntervalMinutes: 10,
-  fallbackFreshnessThresholdMinutes: 18,
-  checkpointGraceMinutes: 8,
-  logicalPhases: WATCHDOG_PHASES.map(({first,last,every}) => ({
+  freshnessThresholdMinutes: 18,
+  logicalPhases: WATCHDOG_PHASES.map(({ first, last, every }) => ({
     firstMinute: first, lastMinute: last, intervalMinutes: every,
-    checks: (last - first) / every + 1,
+    checks: Math.floor((last - first) / every) + 1,
   })),
 } as const;
 const nullableString = (value: unknown): string | null => typeof value === 'string' ? value : null;
@@ -116,7 +115,7 @@ const safeWatchdogDetail = (status: WatchdogStatus) => ({
   status: status.status,
   checkedAt: status.checkedAt,
   completedAt: status.completedAt,
-  ...(status.nextCheckAt ? { nextCheckAt: status.nextCheckAt } : {}),
+  ...(status.schedule ? { schedule: { checkedAt: status.schedule.checkedAt, due: status.schedule.due, pendingSince: status.schedule.pendingSince } } : {}),
   dueLotteries: [...status.dueLotteries],
   actions: status.actions.map(({ lottery, target, reasons, outcome }) => ({
     lottery, target, reasons: [...reasons], outcome,
@@ -250,16 +249,17 @@ export function createConnectionStatus(dependencies: Dependencies) {
         const heartbeat = await withDeadline(async () => dependencies.loadWatchdogStatus?.());
         if (!heartbeat) return finish(false, undefined, '尚無自動監控執行紀錄');
         detail = safeWatchdogDetail(heartbeat);
-        const freshness = watchdogFreshness(heartbeat, now());
-        if (freshness === 'invalid') {
+        const observation = watchdogObservation(heartbeat, now());
+        if (observation === 'invalid') {
           return finish(false, detail, '自動監控的執行時間異常');
         }
-        if (freshness === 'stale') {
-          return finish(false, detail, '自動監控未在預期檢查時間內完成更新');
+        if (observation === 'stale') {
+          return finish(false, detail, '自動監控已超過 18 分鐘未完成更新');
         }
         if (heartbeat.status !== 'ok') {
           return { ...finish(false, detail, '資料鏈尚未全部驗證完成'), healthState: heartbeat.reports?.some(r => r.state === 'FAIL') ? 'failed' : heartbeat.reports?.some(r => r.state === 'UNKNOWN') ? 'unknown' : heartbeat.reports?.some(r => r.state === 'WAITING') ? 'waiting' : 'failed' };
         }
+        if (observation === 'idle' || observation === 'pending') return { ...finish(true, detail), healthState: 'waiting' };
       } else if (definition.id === nativeNotificationStatusId) {
         const health = parseNativeNotificationHealth(await shared.readRpc('admin_native_notification_health'), now());
         if (!health) throw new Error('NATIVE_NOTIFICATION_HEALTH_INVALID');
