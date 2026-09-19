@@ -52,7 +52,7 @@ beforeEach(() => {
 describe('referral page login state', () => {
   it('tells signed-out visitors to log in without requesting member data', async () => {
     showPage();
-    expect(await screen.findByText('請先以 LINE 登入')).toBeVisible();
+    expect(await screen.findByText('請先使用 LINE 或 Google 登入')).toBeVisible();
     expect(screen.queryByText('推薦碼資訊暫時無法讀取，請稍後再試')).not.toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: '推薦碼' })).toBeDisabled();
     expect(referral.fetchSummary).not.toHaveBeenCalled();
@@ -60,11 +60,11 @@ describe('referral page login state', () => {
 
   it('loads referral data after login while the page remains open', async () => {
     showPage();
-    await screen.findByText('請先以 LINE 登入');
+    await screen.findByText('請先使用 LINE 或 Google 登入');
     auth.getSession.mockResolvedValue({ data: { session }, error: null });
     act(() => auth.receive?.('SIGNED_IN', session));
     expect(await screen.findByText(summary.referralCode)).toBeVisible();
-    expect(screen.queryByText('請先以 LINE 登入')).not.toBeInTheDocument();
+    expect(screen.queryByText('請先使用 LINE 或 Google 登入')).not.toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: '推薦碼' })).toBeEnabled();
   });
 
@@ -73,7 +73,7 @@ describe('referral page login state', () => {
     referral.fetchSummary.mockRejectedValue(new Error('NETWORK_ERROR'));
     showPage();
     expect(await screen.findByText('推薦碼資訊暫時無法讀取，請稍後再試')).toBeVisible();
-    expect(screen.queryByText('請先以 LINE 登入')).not.toBeInTheDocument();
+    expect(screen.queryByText('請先使用 LINE 或 Google 登入')).not.toBeInTheDocument();
   });
 
   it.each(['MEMBER_SESSION_EXPIRED', 'AUTH_REQUIRED', 'LINE_IDENTITY_REQUIRED'])(
@@ -81,7 +81,7 @@ describe('referral page login state', () => {
       auth.getSession.mockResolvedValue({ data: { session }, error: null });
       referral.fetchSummary.mockRejectedValue(new Error(message));
       showPage();
-      expect(await screen.findByText('請先以 LINE 登入')).toBeVisible();
+      expect(await screen.findByText('請先使用 LINE 或 Google 登入')).toBeVisible();
       expect(screen.queryByText('推薦碼資訊暫時無法讀取，請稍後再試')).not.toBeInTheDocument();
     },
   );
@@ -94,7 +94,7 @@ describe('referral page login state', () => {
     await waitFor(() => expect(resolveSummary).toBeTypeOf('function'));
     auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
     act(() => auth.receive?.('SIGNED_OUT', null));
-    expect(await screen.findByText('請先以 LINE 登入')).toBeVisible();
+    expect(await screen.findByText('請先使用 LINE 或 Google 登入')).toBeVisible();
     await act(async () => { resolveSummary(summary); });
     expect(screen.queryByText(summary.referralCode)).not.toBeInTheDocument();
   });
