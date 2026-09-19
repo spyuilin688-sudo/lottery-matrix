@@ -1268,11 +1268,11 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .support-contact-card { display: grid; padding: 18px 14px; gap: 12px; }
 .support-contact-card a { display: block; min-height: 48px; padding: 13px 12px; border: 1px solid var(--pwa-frame-tertiary); border-radius: var(--pwa-frame-radius); background: var(--pwa-control-surface); color: #efc95e; font-size: 14px; line-height: 1.5; text-align: center; text-decoration: none; overflow-wrap: anywhere; }
 .plan-carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; }
-.plan-card { position: relative; min-height: 300px; padding: 18px; scroll-snap-align: center; border: 1px solid var(--pwa-frame-secondary); border-radius: var(--pwa-frame-radius); background: linear-gradient(150deg, rgba(12, 19, 24, .98), rgba(3, 8, 12, .99)); color: #d7d0c5; text-align: left; }
+.plan-card { position: relative; scroll-snap-align: center; border: 1px solid var(--pwa-frame-secondary); border-radius: var(--pwa-frame-radius); background: linear-gradient(150deg, rgba(12, 19, 24, .98), rgba(3, 8, 12, .99)); color: #d7d0c5; text-align: left; }
 .plan-card[data-current="true"] { border-color: var(--pwa-frame-secondary); box-shadow: none; }
-.plan-card-heading { display: flex; min-height: 34px; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.plan-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .plan-name { display: block; padding-top: 2px; color: #ece7df; font-size: 18px; font-weight: 650; white-space: nowrap; }
-.plan-tool-icons { position: absolute; top: 18px; right: 18px; display: flex; justify-content: flex-end; gap: 7px; }
+.plan-tool-icons { position: absolute; display: flex; justify-content: flex-end; gap: 7px; }
 .plan-tool-icons--stacked { flex-direction: column; }
 .plan-tool-icon { display: block; width: 56px; height: 56px; overflow: hidden; border: 0; border-radius: 11px; box-shadow: none; }
 .plan-tool-icon img { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -1280,10 +1280,10 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .plan-card--with-tools > strong,
 .plan-card--with-tools > h2,
 .plan-card--with-tools > ul { width: calc(100% - 72px); }
-.plan-card > strong { display: block; margin: 10px 0 20px; color: #f1c352; font-size: 29px; }
+.plan-card > strong { display: block; color: #f1c352; }
 .plan-card > strong small { color: #aaa49a; font-size: 13px; font-weight: 500; }
-.plan-card h2 { margin: 0 0 12px; color: #ece7df; font-size: 15px; }
-.plan-card ul { display: grid; margin: 0; padding-left: 20px; gap: 9px; color: #c8c1b7; font-size: 13px; line-height: 1.45; }
+.plan-card h2 { color: #ece7df; }
+.plan-card ul { display: grid; margin: 0; color: #c8c1b7; }
 .renewal-card { padding: 14px; }
 .renewal-card h2 { margin: 0 0 8px; color: #e5c36e; font-size: 17px; }
 .renewal-card dl { margin: 0; }

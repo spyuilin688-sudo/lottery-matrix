@@ -75,7 +75,7 @@ describe('notification settings load failure recovery', () => {
     const page = render(<NotificationsPagePatched onNavigate={vi.fn()} />);
 
     await waitFor(() => expect(screen.getByRole('button', { name: '全部開啟' })).toBeDisabled());
-    expect(screen.getAllByText('請先使用 LINE 登入').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('請先使用 LINE 或 Google 登入').length).toBeGreaterThan(0);
     expect(screen.queryByText('通知設定載入失敗')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '重新載入通知設定' })).not.toBeInTheDocument();
     expect(memberApi.fetchNotificationSettings).not.toHaveBeenCalled();

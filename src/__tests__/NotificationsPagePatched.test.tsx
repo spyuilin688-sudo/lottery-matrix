@@ -203,8 +203,8 @@ describe("NotificationsPagePatched", () => {
     render(<NotificationsPagePatched onNavigate={vi.fn()} />);
     const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
 
-    expect(await screen.findByText("請先使用 LINE 登入")).toBeVisible();
-    expect(within(systemRow).getByRole("button", { name: "請先使用 LINE 登入" })).toBeDisabled();
+    expect(await screen.findByText("請先使用 LINE 或 Google 登入")).toBeVisible();
+    expect(within(systemRow).getByRole("button", { name: "請先使用 LINE 或 Google 登入" })).toBeDisabled();
     expect(pushSubscription.getPushStatus).not.toHaveBeenCalled();
     expect(pushSubscription.enablePushNotifications).not.toHaveBeenCalled();
   });

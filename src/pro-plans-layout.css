@@ -1,4 +1,4 @@
-/* Canonical layout owner for Matrix Pro 會員方案與收費標準. */
+/* Canonical layout owner for 訂閱方案與收費標準. */
 .pro-plans-screen {
   --pro-plans-plan-inline: 25px;
   --pro-plans-checkout-inline: 16px;
@@ -44,7 +44,7 @@
 
 .pro-plans-screen .plan-card h2 {
   font-size: 13px;
-  margin-bottom: 5px;
+  margin: 0 0 5px;
 }
 
 .pro-plans-screen .plan-card ul {
