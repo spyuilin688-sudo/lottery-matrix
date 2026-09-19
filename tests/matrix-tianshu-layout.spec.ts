@@ -58,11 +58,15 @@ const validation = {
   }],
 };
 
-function layoutData(lottery: string) {
+function layoutData(lottery: string, roadType = '拖牌') {
   const wide = lottery === '六合彩' || lottery === '大樂透';
+  const sum = roadType === '合值';
   const sourceNumbers = wide ? ['05', '10', '18', '24', '31', '40', '49'] : ['05', '10', '18', '24', '31'];
   const drawNumbers = wide ? ['24', '05', '31', '10', '18', '40', '49'] : ['24', '05', '31', '10', '18'];
-  const triple = { ...item, thirdNumber: wide ? '49' : '31', thirdLockedPosition: wide ? 7 : 5 };
+  const roadFields = { algorithmType: roadType, referencePosition: sum ? 6 : 1, predictionNumbers: sum ? ['39', '49'] : ['19'] };
+  const pair = { ...tianhengItem, ...roadFields };
+  const triple = { ...item, ...roadFields, thirdNumber: wide ? '49' : '31', thirdLockedPosition: wide ? 7 : 5 };
+  const rules = sum ? [89, 79].map(value => ({ value, display: `合值${value}`, algorithmType: roadType })) : validation.ruleSets[0].rules;
   const sourcePeriod = lottery === '六合彩' ? '2026100' : '114001';
   const historyPeriod = lottery === '六合彩' ? '2026090' : '113990';
   const lockedPositions = wide ? [1, 3, 7] : [1, 3, 5];
@@ -70,16 +74,17 @@ function layoutData(lottery: string) {
   const numberFields = {
     sourceNumbers, sourceSortedNumbers: sourceNumbers, sourceDrawOrderNumbers: drawNumbers,
     referenceNumbers: sourceNumbers, referenceSortedNumbers: sourceNumbers, referenceDrawOrderNumbers: drawNumbers,
-    lockedPositions, lockedNumbers,
+    lockedPositions, lockedNumbers, baseNumber: sum ? 40 : 5,
   };
   const tripleValidation = {
     ...validation,
     sourceA: { ...validation.sourceA, ...numberFields, sourcePeriod, referencePeriod: sourcePeriod },
     ruleSets: validation.ruleSets.map(ruleSet => ({
-      ...ruleSet,
+      ...ruleSet, rules, predictionNumbers: sum ? [39, 49] : ruleSet.predictionNumbers,
       historicalValidation: ruleSet.historicalValidation.map(row => ({
         ...row, ...numberFields, sourcePeriod: historyPeriod, referencePeriod: historyPeriod,
-        predictionNumbers: wide ? ['01', '09', '19', '23', '30', '38', '48'] : row.predictionNumbers,
+        predictionNumbers: sum ? ['01', '09', '19', '23', '30', '39', '49'] : wide ? ['01', '09', '19', '23', '30', '38', '48'] : row.predictionNumbers,
+        candidateRules: rules.map(rule => rule.value), matchedRules: rules, hitNumbers: sum ? [39, 49] : row.hitNumbers,
       })),
     })),
   };
@@ -93,11 +98,11 @@ function layoutData(lottery: string) {
       })),
     })),
   };
-  return { triple, tripleValidation, pairValidation, sourceNumbers, wide };
+  return { triple, pair, tripleValidation, pairValidation, sourceNumbers, wide };
 }
 
-async function isolateRuntime(page: Page, lottery = '今彩539') {
-  const data = layoutData(lottery);
+async function isolateRuntime(page: Page, lottery = '今彩539', roadType = '拖牌') {
+  const data = layoutData(lottery, roadType);
   // Registered first as a final safety net. No external HTTP(S) request may leave this browser.
   await page.route(/^https?:\/\//, async route => {
     const host = new URL(route.request().url()).hostname;
@@ -130,7 +135,7 @@ async function isolateRuntime(page: Page, lottery = '今彩539') {
       },
       matrix_tianheng_list: {
         lottery, draw_period: '114001', analysis_version: '114001:layout-v1',
-        items: [tianhengItem], duplicate_stats: [{ number: '19', count: 1 }], total: 1,
+        items: [data.pair], duplicate_stats: [{ number: '19', count: 1 }], total: 1,
       },
       matrix_tianheng_validation: {
         lottery, draw_period: '114001', analysis_version: '114001:layout-v1',
@@ -143,14 +148,15 @@ async function isolateRuntime(page: Page, lottery = '今彩539') {
   });
 }
 
-for (const width of [320, 390]) {
+for (const width of [320, 350, 390]) {
   for (const lottery of ['今彩539', '六合彩', '大樂透']) {
-    test(`locked validation numbers remain readable for ${lottery} at ${width}px`, async ({ page }, testInfo) => {
-      await isolateRuntime(page, lottery);
+    for (const roadType of lottery === '今彩539' ? ['拖牌'] : ['拖牌', '合值']) {
+    test(`locked validation numbers remain readable for ${lottery} ${roadType} at ${width}px`, async ({ page }, testInfo) => {
+      await isolateRuntime(page, lottery, roadType);
       await page.setViewportSize({ width, height: 1200 });
       await page.goto('/tests/matrix-tianshu-layout-fixture.html');
       await expect(page.getByRole('heading', { name: 'MATRIX 天樞', exact: true })).toBeVisible();
-      const expected = layoutData(lottery);
+      const expected = layoutData(lottery, roadType);
       for (const algorithm of [{ id: 'tianshu', name: '天樞', itemId: item.id, locks: 3 }, { id: 'tianheng', name: '天衡', itemId: tianhengItem.id, locks: 2 }]) {
         if (algorithm.id === 'tianheng') await page.getByRole('button', { name: 'Matrix 天衡', exact: true }).click();
         await page.getByRole('tab', { name: lottery, exact: true }).click();
@@ -162,6 +168,7 @@ for (const width of [320, 390]) {
         const source = page.getByTestId(`${algorithm.id}-source-row-B`);
         await expect(source.locator('.explore-validation-number')).toHaveText(expected.sourceNumbers);
         await expect(source.locator('.explore-validation-number--hit')).toHaveCount(algorithm.locks);
+        if (roadType === '合值') await expect(source.locator('.explore-validation-number--source')).toHaveText('40');
         const metrics = await region.locator('.explore-validation-number-row').evaluateAll(rows => rows
           .filter(row => row.querySelector('.explore-validation-number'))
           .map(row => {
@@ -186,10 +193,29 @@ for (const width of [320, 390]) {
             left, right,
           };
         }));
-        console.log(`number containment ${algorithm.id} ${lottery} ${width}: ${JSON.stringify(metrics)}`);
-        await region.screenshot({ path: testInfo.outputPath(`${algorithm.id}-${lottery}-${width}.png`), animations: 'disabled' });
+        const sideColumns = await region.locator('.explore-validation-issue, .explore-validation-formula-row').evaluateAll(rows => rows
+          .filter(row => row.textContent?.trim())
+          .map(row => {
+            const card = row.parentElement!;
+            const box = card.getBoundingClientRect();
+            const style = getComputedStyle(card);
+            const range = document.createRange();
+            range.selectNodeContents(row);
+            const text = range.getBoundingClientRect();
+            return { text: row.textContent, column: card.className, width: box.width, fontSize: getComputedStyle(row).fontSize,
+              left: box.left + parseFloat(style.borderLeftWidth), right: box.right - parseFloat(style.borderRightWidth),
+              textLeft: text.left, textRight: text.right };
+          }));
+        const groups = await region.locator('.explore-validation-group').evaluateAll(nodes => nodes.map(node => {
+          const box = node.getBoundingClientRect();
+          return [box.width, box.height];
+        }));
+        expect(groups).toEqual([[width - 48, width < 390 ? 83 : 86], [width - 48, width < 390 ? 56 : 58]]);
+        console.log(`number containment ${algorithm.id} ${lottery} ${roadType} ${width}: ${JSON.stringify(metrics)}`);
+        console.log(`side columns ${algorithm.id} ${lottery} ${roadType} ${width}: ${JSON.stringify(sideColumns)}`);
+        await region.screenshot({ path: testInfo.outputPath(`${algorithm.id}-${lottery}-${roadType}-${width}.png`), animations: 'disabled' });
         expect(metrics).toHaveLength(3);
-        if (lottery === '今彩539') {
+        if (lottery === '今彩539' && width !== 350) {
           // Recorded before the spacing repair: changing gaps must not resize cards.
           expect(metrics.map(row => [row.cardWidth, row.cardHeight, row.rowHeight])).toEqual(width === 320
             ? [[97.234375, 83, 27], [97.234375, 83, 27], [97.234375, 56, 27]]
@@ -203,8 +229,13 @@ for (const width of [320, 390]) {
             if (index > 0) expect.soft(number.left, `${algorithm.name} ${lottery} ${number.text} does not overlap`).toBeGreaterThanOrEqual(row.bounds[index - 1].right - 0.01);
           }
         }
+        for (const row of sideColumns) {
+          expect.soft(row.textLeft, `${algorithm.name} ${lottery} ${row.text} left edge`).toBeGreaterThanOrEqual(row.left - 0.01);
+          expect.soft(row.textRight, `${algorithm.name} ${lottery} ${row.text} right edge`).toBeLessThanOrEqual(row.right + 0.01);
+        }
       }
     });
+    }
   }
 }
 
