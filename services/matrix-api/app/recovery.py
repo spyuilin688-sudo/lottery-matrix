@@ -185,7 +185,11 @@ class RecoveryCoordinator:
             if stage is not None:
                 if self._targeted_runner is None:
                     raise RuntimeError("TARGETED_RECOVERY_NOT_CONFIGURED")
-                verified_period = self._targeted_runner(lottery, draw_period, stage, minimum_draw_date)
+                verified_period = self._targeted_runner(
+                    lottery, draw_period, stage, minimum_draw_date,
+                    lease_owner=lease_owner if lease_begun else None,
+                    runner_id=runner_id if lease_begun else None,
+                )
             else:
                 self._runner(lottery)
                 verified_period = draw_period

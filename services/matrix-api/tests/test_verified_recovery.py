@@ -58,3 +58,17 @@ def test_heartbeat_is_drained_before_success_deletes_lease():
     assert done.wait(2)
     assert events == ['verified']
     assert lost == []
+
+
+def test_targeted_recovery_receives_the_claimed_lease_identity():
+    done = Event()
+    calls = []
+    def targeted(*args, **kwargs):
+        calls.append((args, kwargs))
+        return '12004'
+    coordinator = RecoveryCoordinator(lambda _: None, begin_lease=lambda *_: True,
+        targeted_runner=targeted, runner_id_factory=lambda: 'runner',
+        release_lease=lambda *_: done.set())
+    coordinator.enqueue('天天樂', 'owner', draw_period='12004', stage='analysis')
+    assert done.wait(2)
+    assert calls == [(('天天樂', '12004', 'analysis', None), {'lease_owner': 'owner', 'runner_id': 'runner'})]

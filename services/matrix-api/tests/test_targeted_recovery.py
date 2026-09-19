@@ -29,3 +29,38 @@ def test_api_carries_period_and_stage_under_existing_admin_guard(monkeypatch):
     status, _ = handle_recovery_request('POST','/jobs/recover',body,InMemoryAnalysisRepository(),request_monitor_token='wrong',recover_lottery=callback)
     assert status == 403
     assert len(calls) == 1
+
+
+@pytest.mark.parametrize('published', [True, False])
+def test_analysis_restores_current_worker_pointers_before_custom_status(monkeypatch, published):
+    from types import SimpleNamespace
+    from app.worker import analysis_version_for_order
+    from app.domain.explore_state import SORTED_ORDER
+    events = []
+    class RecoveryRepo:
+        def list_draws(self, lottery, limit):
+            return [{'period': '12004', 'drawDate': '2026-09-19'}]
+        def rpc(self, name, params):
+            events.append((name, params))
+            return SimpleNamespace(execute=lambda: SimpleNamespace(data=published))
+    repo = RecoveryRepo()
+    repo.client = repo
+    monkeypatch.setattr('app.targeted_recovery.make_repository', lambda: repo)
+    monkeypatch.setattr('app.targeted_recovery._draw_from_history', lambda *_: {})
+    monkeypatch.setattr('app.targeted_recovery._run_analysis', lambda *_, **__: {'status':'complete'})
+    monkeypatch.setattr('app.targeted_recovery.load_settings', lambda: SimpleNamespace(supabase_url='url',supabase_secret_key='key'))
+    monkeypatch.setattr('app.targeted_recovery.recompute_custom_matrix_status_once', lambda *_: events.append('custom'))
+    def run():
+        return run_targeted_recovery('天天樂','12004','analysis',None,lease_owner='owner',runner_id='runner')
+    if published:
+        assert run() == '12004'
+        assert events[-1] == 'custom'
+    else:
+        with pytest.raises(RuntimeError, match='RECOVERY_POINTERS_NOT_VERIFIED'):
+            run()
+        assert 'custom' not in events
+    assert events[0] == ('matrix_restore_analysis_pointers', {
+        'p_lottery':'天天樂','p_draw_period':'12004',
+        'p_versions':{'sorted':analysis_version_for_order('12004',SORTED_ORDER)},
+        'p_owner_id':'owner','p_runner_id':'runner',
+    })

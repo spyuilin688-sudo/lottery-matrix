@@ -92,3 +92,60 @@ test('chain, guarded publication, and atomic recovery use real SQL', async t => 
  assert.equal(await scalar(db,'select matrix_custom_status_clear_if_unconfigured($1,$2)',[member,'天天樂']),true);
  assert.equal(Number(await scalar(db,'select count(*) from matrix_custom_status_results')),0);
 });
+
+test('missing active pointers require the exact complete versions and current recovery lease', async t => {
+ const db=await fixture(); t.after(()=>db.close());
+ const version='12004:matrix-python-v15-sorted';
+ const restore=(versions={sorted:version},owner='owner',runner='runner')=>scalar(db,
+  "select matrix_restore_analysis_pointers('天天樂','12004',$1,$2,$3)",[versions,owner,runner]);
+ await db.exec("delete from private.matrix_analysis_active_versions");
+ assert.equal(await restore(),false);
+ await db.exec("select claim_matrix_watchdog_lease('railway:天天樂','owner',1200); select begin_matrix_watchdog_recovery('railway:天天樂','owner','runner',1200)");
+ assert.equal(await restore({sorted:version},'other'),false);
+ assert.equal(await restore({sorted:version},'owner','other'),false);
+ assert.equal(await restore({sorted:'12004:matrix-python-v14-sorted'}),false);
+ await db.exec("delete from matrix_analysis_artifacts where kind='status'");
+ assert.equal(await restore(),false);
+ await db.exec("insert into matrix_analysis_artifacts values('天天樂','12004','12004:matrix-python-v15-sorted','status')");
+ assert.equal(await restore(),true);
+ assert.equal(await scalar(db,'select analysis_version from private.matrix_analysis_active_versions'),version);
+ assert.equal((await scalar(db,"select matrix_watchdog_chain_state('天天樂','12004')")).analysisComplete,true);
+ assert.equal(Number(await scalar(db,'select recovery_count from system_job_status')),0);
+ await db.exec("update private.matrix_analysis_active_versions set analysis_version='12004:matrix-python-v16-sorted'");
+ assert.equal(await restore(),false);
+ assert.equal(await scalar(db,'select analysis_version from private.matrix_analysis_active_versions'),'12004:matrix-python-v16-sorted');
+ await db.exec("delete from private.matrix_analysis_active_versions; update matrix_watchdog_leases set expires_at=now()-interval '1 second'");
+ assert.equal(await restore(),false);
+ await db.exec("update matrix_watchdog_leases set expires_at=now()+interval '10 minutes'; insert into lottery_draws values('天天樂','12005','2026-09-20')");
+ assert.equal(await restore(),false);
+ assert.equal(Number(await scalar(db,'select count(*) from private.matrix_analysis_active_versions')),0);
+ for(const role of ['anon','authenticated']) assert.equal(await scalar(db,"select has_function_privilege($1,'public.matrix_restore_analysis_pointers(text,text,jsonb,text,text)','EXECUTE')",[role]),false);
+});
+
+test('paired pointer recovery never publishes half a pair or replaces another version', async t => {
+ const db=await fixture(); t.after(()=>db.close());
+ await db.exec(`insert into lottery_draws values('今彩539','115000211','2026-09-19');
+ insert into matrix_analysis_runs(lottery,draw_period,analysis_version,status,phase)
+ select '今彩539','115000211','115000211:matrix-python-v15-'||o,'complete','complete' from unnest(array['sorted','draw']) o;
+ insert into matrix_analysis_artifacts select '今彩539','115000211','115000211:matrix-python-v15-'||o,kind
+ from matrix_analysis_artifacts,unnest(array['sorted','draw']) o where lottery='天天樂';
+ select claim_matrix_watchdog_lease('railway:今彩539','owner',1200);
+ select begin_matrix_watchdog_recovery('railway:今彩539','owner','runner',1200);`);
+ const versions={sorted:'115000211:matrix-python-v15-sorted',draw:'115000211:matrix-python-v15-draw'};
+ const restore=(v=versions)=>scalar(db,"select matrix_restore_analysis_pointers('今彩539','115000211',$1,'owner','runner')",[v]);
+ assert.equal(await restore({sorted:versions.sorted}),false);
+ assert.equal(await restore({...versions,draw:'115000211:matrix-python-v16-draw'}),false);
+ await db.exec("insert into private.matrix_analysis_active_versions values('今彩539','115000211','draw','115000211:matrix-python-v16-draw',now())");
+ assert.equal(await restore(),false);
+ assert.equal(Number(await scalar(db,"select count(*) from private.matrix_analysis_active_versions where lottery='今彩539' and number_order='sorted'")),0);
+ await db.exec("delete from private.matrix_analysis_active_versions where lottery='今彩539'; delete from matrix_analysis_artifacts where lottery='今彩539' and analysis_version like '%-draw' and kind='status'");
+ assert.equal(await restore(),false);
+ assert.equal(Number(await scalar(db,"select count(*) from private.matrix_analysis_active_versions where lottery='今彩539'")),0);
+ await db.exec("insert into matrix_analysis_artifacts values('今彩539','115000211','115000211:matrix-python-v15-draw','status')");
+ assert.equal(await restore(),true);
+ const before=(await db.query("select * from private.matrix_analysis_active_versions where lottery='今彩539' order by number_order")).rows;
+ assert.equal(before.length,2);
+ assert.equal(await restore(),true);
+ assert.deepEqual((await db.query("select * from private.matrix_analysis_active_versions where lottery='今彩539' order by number_order")).rows,before);
+ assert.equal((await scalar(db,"select matrix_watchdog_chain_state('今彩539','115000211')")).analysisComplete,true);
+});

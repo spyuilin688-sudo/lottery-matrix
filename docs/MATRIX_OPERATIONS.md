@@ -25,10 +25,13 @@ log table. Recovery attempts use `matrix-recovery:<lottery>` rows in the existin
   resume through the existing analysis lease. Custom publication compares the
   existing JSON config_key and rejects changed config, period or active version.
   Empty-config cleanup uses the same config lock and refuses deletion if a new
-  configuration appeared. One unresolved case is a missing active-version pointer
-  when all run artifacts already exist: the complete run is skipped and verification
-  fails safely. No recovery success is counted; retries may recur. Restoring that
-  pointer requires an explicit version-selection policy and is not automated here.
+  configuration appeared. Analysis/Matrix Status recovery can also restore missing
+  active-version pointers for the exact versions chosen by the existing worker.
+  This uses the current recovery owner/runner lease and requires the latest period,
+  all required complete artifacts and matching sorted/draw version bases. It inserts
+  absent slots only; an existing different version is never replaced. Every required
+  slot is checked before any insertion. Pointer restoration alone does not count as
+  recovery success: Custom Status and the final chain verification still follow.
 - **Optimizer:** reads SQL/index/table/RPC counters and Railway runtime/resource
   samples, retaining bounded latest observations in the same singleton. Index
   observation age resets when known PostgreSQL stats reset changes; unknown resets
@@ -85,6 +88,13 @@ including 320px overflow, keyboard disclosure, desktop, empty and stale states.
 The latest PR commit must still pass the complete scoped release gate. The full admin standalone
 typecheck has pre-existing SDK/CSS/test typing failures; changed pure modules and the
 new panel pass a scoped strict typecheck. No full test suite was run.
+
+Continuation checks confirmed that production does not yet expose the new chain,
+completion or optimizer RPCs, and no Supabase development branch is configured.
+The pointer-restoration SQL is therefore included in the still-unapplied migration
+20260920004000. Its targeted Python and SQL regressions cover stale ownership,
+expired leases, superseded periods, missing artifacts, mixed versions and atomic
+sorted/draw restoration. No live schema or deployment was changed by these checks.
 
 API references used for the read-only adapter:
 - https://docs.railway.com/integrations/api
