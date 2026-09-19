@@ -1325,15 +1325,12 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .status-detail p strong { color: var(--tone); font-size: 14px; }
 .matrix-notebook-screen > .feature-body { padding-inline: var(--layout-page-inline); }
 
-.notebook-heading { --notebook-icon-size: 42px; display: grid; min-width: 0; grid-template-columns: var(--notebook-icon-size) minmax(0, 1fr); align-items: center; margin-bottom: 12px; gap: var(--layout-section-gap); }
-.notebook-heading > img { width: var(--notebook-icon-size); height: var(--notebook-icon-size); border-radius: 11px; object-fit: contain; }
-.notebook-entry-count { min-width: 0; color: #948d83; font-size: 11px; }
-.notebook-list-count { grid-column: 1 / -1; }
-.notebook-heading button { display: flex; height: 34px; padding: 0 10px; align-items: center; gap: 4px; border: 1px solid var(--pwa-frame-tertiary); border-radius: var(--pwa-frame-radius); color: var(--lottery-text-secondary); background: var(--pwa-control-surface); font-size: 11px; }
+.notebook-heading { display: flex; flex-wrap: wrap; min-width: 0; align-items: center; margin-bottom: 8px; gap: var(--layout-section-gap); }
+.notebook-entry-count { flex: 1 0 auto; min-width: 0; color: var(--lottery-text-secondary); font-size: 11px; }
 .notebook-heading button svg { width: 14px; height: 14px; }
-.notebook-note-actions { display: grid; min-width: 0; gap: var(--layout-section-gap); }
-.notebook-note-actions > button { box-sizing: border-box; width: 100%; min-width: 0; height: auto; min-height: 26px; padding: 4px; justify-content: center; font-size: 11px; line-height: 16px; }
-.notebook-note-actions > .notebook-delete-action { color: #d88a8a; border-color: #773434; background: rgba(54, 10, 10, .16); }
+.notebook-note-actions { display: flex; flex-wrap: wrap; min-width: 0; margin-inline-start: auto; gap: var(--layout-section-gap); }
+.notebook-note-actions > button { display: flex; box-sizing: border-box; min-width: 0; min-height: 34px; padding: 6px 10px; align-items: center; justify-content: center; gap: 4px; border: 1px solid var(--pwa-frame-tertiary); border-radius: var(--pwa-frame-radius); color: var(--pwa-frame-secondary); background: var(--pwa-control-surface); font-size: 11px; line-height: 1.45; }
+.notebook-note-actions > .notebook-delete-action { min-width: 6em; color: #d88a8a; border-color: #773434; background: rgba(54, 10, 10, .16); }
 .notebook-delete-action[aria-pressed="true"],
 .notebook-entry[data-deleting="true"] { border-color: #d88a8a; }
 .notebook-delete-hint { margin: 0 0 8px; color: #d88a8a; font-size: 11px; }
@@ -1346,11 +1343,11 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .notebook-empty { display: grid; min-height: 250px; place-items: center; align-content: center; gap: 10px;  color: #8d867c; }
 .notebook-empty img { width: 70px; height: 70px; border-radius: 14px; opacity: .58; }
 .notebook-empty strong { font-size: 13px; font-weight: 500; }
-.notebook-entry { display: grid; min-width: 0; padding: 0; grid-template-columns: minmax(0, 1fr); overflow: hidden;  }
+.notebook-entry { --pwa-frame-secondary: var(--pwa-frame-tertiary); display: grid; min-width: 0; padding: 0; grid-template-columns: minmax(0, 1fr); overflow: hidden; }
 .notebook-entry-open { display: flex; min-width: 0; padding: 5px 4px 5px 14px; align-items: center; justify-content: space-between; gap: 8px; border: 0; color: inherit; background: transparent; text-align: left; }
 .notebook-entry-open > span { display: grid; min-width: 0; gap: 6px; }
 .notebook-entry-open strong { overflow: hidden; color: #e9e2d7; font-size: 14px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.notebook-entry-open small { color: #918a80; font-size: 10px; }
+.notebook-entry-open small { color: var(--lottery-text-secondary); font-size: 10px; }
 .notebook-entry-open > svg { width: 16px; flex-shrink: 0; color: #b9a46d; }
 .matrix-notebook-editor { min-width: 0; padding: 8px 12px 12px;  }
 .matrix-notebook-editor > header { display: flex; margin-bottom: 8px; align-items: center; justify-content: space-between; }
