@@ -173,7 +173,7 @@ Matrix 探索、天衡、天衍、天工與狀態頁的驗證過程，依鎖定�
 
 ### Home Mark Six ball spacing — 2026-09-19
 
-首頁六合彩開獎資訊卡六顆正碼的水平間距由 3px 改為使用者選定的 6px。`src/homepage/base.css` 的六合彩卡片變體擁有 `--draw-main-ball-gap`，原有 `.main-balls` 間距規則取用此值；大樂透保留 3px。彩球尺寸仍由 `src/number-ball.css` 擁有，特別號分隔線間距、其他彩種與歷史介面維持原樣。
+首頁六合彩開獎資訊卡六顆正碼的水平間距由 3px 改為使用者選定的 6px。`src/homepage/base.css` 的六合彩卡片變體擁有 `--draw-main-ball-gap`，原有 `.main-balls` 間距規則取用此值；大樂透保留 3px。彩球尺寸仍由 `src/number-ball.css` 擁有；2026-09-20 依使用者要求，六顆正碼改與特別號共用 `clamp(33.7px, 9.88vw, 38.2px)`，直接調整原有尺寸規則的適用範圍。數字維持 13.5px、正碼間距維持 6px，特別號分隔線間距、其他彩種與歷史介面維持原樣。
 
 ### Home five-ball numbers — 2026-09-10
 

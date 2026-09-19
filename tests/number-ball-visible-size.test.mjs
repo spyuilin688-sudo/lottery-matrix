@@ -38,15 +38,17 @@ function homeSixPlusOneFixture(lottery) {
   };
 }
 
-test("首頁六合彩只縮正碼並保留目前特別號視覺尺度", () => {
+test("首頁六合彩正碼與特別號同尺寸，數字大小不變", () => {
   const markSix = homeSixPlusOneFixture("六合彩");
-  assert.equal(markSix.main.getPropertyValue("--number-ball-size").trim(), "clamp(30px, 8.8vw, 34px)");
-  assert.equal(markSix.special.getPropertyValue("--number-ball-size").trim(), "clamp(33.7px, 9.88vw, 38.2px)");
-  assert.equal(markSix.card.getPropertyValue("--draw-special-ball-size").trim(), "clamp(30px, 8.8vw, 34px)");
+  assert.equal(markSix.main.getPropertyValue("--number-ball-size").trim().replace(/,\s*/g, ", "), "clamp(33.7px, 9.88vw, 38.2px)");
+  assert.equal(markSix.special.getPropertyValue("--number-ball-size").trim().replace(/,\s*/g, ", "), "clamp(33.7px, 9.88vw, 38.2px)");
+  assert.equal(markSix.main.getPropertyValue("--number-font-size").trim(), "13.5px");
+  assert.equal(markSix.special.getPropertyValue("--number-font-size").trim(), "13.5px");
+  assert.equal(markSix.card.getPropertyValue("--draw-special-ball-size").trim().replace(/,\s*/g, ", "), "clamp(30px, 8.8vw, 34px)");
 
   const grandLotto = homeSixPlusOneFixture("大樂透");
-  assert.equal(grandLotto.main.getPropertyValue("--number-ball-size").trim(), "clamp(33.7px, 9.88vw, 38.2px)");
-  assert.equal(grandLotto.special.getPropertyValue("--number-ball-size").trim(), "clamp(33.7px, 9.88vw, 38.2px)");
+  assert.equal(grandLotto.main.getPropertyValue("--number-ball-size").trim().replace(/,\s*/g, ", "), "clamp(33.7px, 9.88vw, 38.2px)");
+  assert.equal(grandLotto.special.getPropertyValue("--number-ball-size").trim().replace(/,\s*/g, ", "), "clamp(33.7px, 9.88vw, 38.2px)");
 
   assert.doesNotMatch(
     css,
