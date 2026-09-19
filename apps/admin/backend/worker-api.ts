@@ -97,7 +97,7 @@ const analysisPhases = [
 ] as const;
 const DEFAULT_STATUS_TIMEOUT_MS = 5_000;
 const DEFAULT_MANUAL_REFRESH_TIMEOUT_MS = 90_000;
-const LEGACY_PRODUCTION_RAILWAY_WORKER_URL =
+export const PRODUCTION_RAILWAY_API_BASE =
   'https://heartfelt-generosity-production-9f2b.up.railway.app';
 export const PRODUCTION_RAILWAY_WORKER_URL =
   'https://matrix-recovery-production.up.railway.app';
@@ -332,7 +332,7 @@ export async function getWorkerConfig(
     const configuredBaseUrl = String(baseUrlValue ?? '').trim().replace(/\/+$/, '');
     const baseUrl = (
       !configuredBaseUrl
-      || configuredBaseUrl === LEGACY_PRODUCTION_RAILWAY_WORKER_URL
+      || configuredBaseUrl === PRODUCTION_RAILWAY_API_BASE
     )
       ? PRODUCTION_RAILWAY_WORKER_URL
       : configuredBaseUrl;

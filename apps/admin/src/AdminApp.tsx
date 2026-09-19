@@ -662,6 +662,11 @@ function AdminApp() {
       },
     );
   };
+  const openCreateAdmin = () => {
+    setAdminForm(defaultAdmin());
+    setEditingAdmin(null);
+    setShowForm(true);
+  };
   const editAdmin = (r: Row) => {
     const p = (r.permissions || {}) as Record<string, boolean>;
     setAdminForm({
@@ -936,6 +941,7 @@ function AdminApp() {
               setForm={setAdminForm}
               editing={Boolean(editingAdmin)}
               onRole={roleChange}
+              onCreate={openCreateAdmin}
               onSave={saveAdmin}
               onEdit={editAdmin}
               onDelete={deleteAdmin}
@@ -1273,6 +1279,7 @@ function AdminManager({
   setForm,
   editing,
   onRole,
+  onCreate,
   onSave,
   onEdit,
   onDelete,
@@ -1288,6 +1295,7 @@ function AdminManager({
   setForm: (v: AdminForm) => void;
   editing: boolean;
   onRole: (v: string) => void;
+  onCreate: () => void;
   onSave: () => void;
   onEdit: (r: Row) => void;
   onDelete: (id: string) => void;
@@ -1302,7 +1310,7 @@ function AdminManager({
       <div className="toolbar">
         <div>{total} 個管理員帳號</div>
         {isSuper && (
-          <button className="primary" onClick={() => setShowForm(!showForm)}>
+          <button className="primary" onClick={onCreate}>
             <Plus size={16} />
             新增管理員
           </button>

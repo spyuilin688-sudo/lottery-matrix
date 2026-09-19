@@ -5,6 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const app = vi.hoisted(() => {
   const dashboard = {
+    todayVisitors: 0,
+    monthVisitors: 0,
+    totalVisitors: 0,
     totalUsers: 0,
     monthlyPro: 0,
     quarterlyPro: 0,
@@ -15,6 +18,8 @@ const app = vi.hoisted(() => {
     quarterRevenue: 0,
     yearRevenue: 0,
     cumulativeRevenue: 0,
+    userGrowth: [],
+    revenueGrowth: [],
   };
   const get = vi.fn(async (url: string) => {
     if (url === '/api/bootstrap') return {

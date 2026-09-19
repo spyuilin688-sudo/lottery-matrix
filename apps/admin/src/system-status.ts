@@ -1,13 +1,13 @@
 import { matrixStorageStatusId, parseMatrixStorageHealth } from '../backend/matrix-storage-status';
 import { nativeNotificationStatusId, parseNativeNotificationHealth } from '../backend/native-notification-status';
-import { apiStatusInventory, type ApiStatusDefinition, type ApiCheckEvidence } from '../backend/api-status-inventory';
+import { apiStatusInventory, type ApiStatusDefinition, type ApiCheckEvidence, type ApiLocation } from '../backend/api-status-inventory';
 
 export type SystemStatusItem = {
   id: string;
   name: string;
   description: string;
   group: string;
-  location: 'Supabase' | 'GitHub' | 'Railway';
+  location: ApiLocation;
   endpoint: string;
   checkMode: 'live' | 'openapi' | 'registry' | 'service';
   checkEvidence?: ApiCheckEvidence;
@@ -48,6 +48,7 @@ const statusLocationOrder: SystemStatusItem['location'][] = [
   'Supabase',
   'GitHub',
   'Railway',
+  'TinyFish',
 ];
 
 // Older servers omit checkEvidence; keep their partial probes visibly limited too.

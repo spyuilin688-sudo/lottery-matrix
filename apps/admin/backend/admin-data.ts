@@ -37,7 +37,7 @@ export type SubscriptionAction = {
 type Row = Record<string, unknown>;
 type TableDefinition = {
   path: string;
-  map(row: Row): Row & { id: string };
+  map(row: Row, currentDate?: Date): Row & { id: string };
 };
 
 export class AdminDataError extends Error {
@@ -167,7 +167,7 @@ const definitions: Record<string, TableDefinition> = {
   },
   activationCodes: {
     path: '/rest/v1/activation_codes?select=id,batch_id,code,duration_type,created_at,expires_at,redeemed_at,status,redeemed_member:members!activation_codes_redeemed_by_member_id_fkey(id,auth_user_id,line_user_id,line_display_name)&order=created_at.desc,id.asc',
-    map: (row) => ({
+    map: (row, currentDate = new Date()) => ({
       id: String(row.id),
       batchId: row.batch_id,
       code: row.code,
@@ -180,7 +180,8 @@ const definitions: Record<string, TableDefinition> = {
       lineDisplayName: (row.redeemed_member as Row | null)?.line_display_name ?? null,
       redeemedByLineDisplayName: (row.redeemed_member as Row | null)?.line_display_name ?? null,
       redeemedAt: row.redeemed_at,
-      status: row.status,
+      status: row.status === 'unused' && new Date(String(row.expires_at)).getTime() <= currentDate.getTime()
+        ? 'expired' : row.status,
     }),
   },
   plans: {
@@ -296,7 +297,7 @@ async function enrichProviderIdentities(items: Array<Row & { id: string }>, api:
 export async function listAdminTable(table: string, api: Requester, currentDate = new Date()) {
   const definition = getAdminTableDefinition(table);
   const rows = await listAllRows(api, definition.path);
-  const items = rows.map(definition.map);
+  const items = rows.map(row => definition.map(row, currentDate));
   if (table === 'loginRecords') {
     return { items: await enrichLoginRecords(items, api) };
   }
@@ -409,6 +410,7 @@ function applyAdminPageFilters(
   query: AdminPageQuery,
   filterStatus = true,
   extraKeywordClauses: string[] = [],
+  currentDate = new Date(),
 ) {
   const config = pageDefinitions[table];
   if (!config) throw new AdminDataError('Invalid table');
@@ -437,7 +439,15 @@ function applyAdminPageFilters(
   if (filterStatus && status !== 'all') {
     if (!config.statuses?.includes(status)) throw new AdminDataError('查詢條件不正確');
     const storedStatus = table === 'admins' ? ({ active: '啟用', disabled: '停用' }[status] ?? status) : status;
-    url.searchParams.set('status', `eq.${storedStatus}`);
+    if (table === 'activationCodes' && status === 'expired') {
+      // Keep expiry independent of the keyword OR group and filter before paging.
+      url.searchParams.append('and', `(or(status.eq.expired,and(status.eq.unused,expires_at.lte.${currentDate.toISOString()})))`);
+    } else {
+      url.searchParams.set('status', `eq.${storedStatus}`);
+      if (table === 'activationCodes' && status === 'unused') {
+        url.searchParams.append('expires_at', `gt.${currentDate.toISOString()}`);
+      }
+    }
   }
   if (!keyword) return;
   const pattern = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -479,17 +489,17 @@ async function readAdminPage(url: URL, page: number, pageSize: number, api: Page
   return { ...result, currentPage, totalPages: Math.max(1, Math.ceil(result.total / pageSize)) };
 }
 
-export async function listAdminTablePage(table: string, query: AdminPageQuery, api: PageRequester) {
+export async function listAdminTablePage(table: string, query: AdminPageQuery, api: PageRequester, currentDate = new Date()) {
   const definition = getAdminTableDefinition(table);
-  if (table === 'users' || table === 'subscriptions') return listAdminMemberPage(table, query, api);
+  if (table === 'users' || table === 'subscriptions') return listAdminMemberPage(table, query, api, currentDate);
   if (table === 'loginRecords') return listAdminLoginRecordPage(query, api);
   const page = parsePage(query, pageDefinitions[table].pageSize);
   const url = new URL(definition.path, 'https://supabase.invalid');
   const keyword = String(query.keyword ?? '').trim();
   const googleNameClauses = await googleMemberNameClauses(table, keyword, api);
-  applyAdminPageFilters(url, table, query, true, googleNameClauses);
+  applyAdminPageFilters(url, table, query, true, googleNameClauses, currentDate);
   const result = await readAdminPage(url, page, pageDefinitions[table].pageSize, api);
-  const items = result.items.map(definition.map);
+  const items = result.items.map(row => definition.map(row, currentDate));
   if (['subscriptionRecords', 'transferRequests', 'activationCodes'].includes(table)) {
     return { ...result, items: await enrichProviderIdentities(items, api) };
   }
@@ -504,7 +514,7 @@ export async function listAdminLoginRecordPage(query: AdminPageQuery, api: PageR
   const url = new URL(definition.path, 'https://supabase.invalid');
   applyAdminPageFilters(url, 'loginRecords', query);
   const result = await readAdminPage(url, page, adminLoginRecordPageSize, api);
-  const items = await enrichLoginRecords(result.items.map(definition.map), api);
+  const items = await enrichLoginRecords(result.items.map(row => definition.map(row)), api);
   return { ...result, items };
 }
 
@@ -542,7 +552,7 @@ export async function listAdminMemberPage(
   const googleNameClauses = await googleMemberNameClauses(table, keyword, api);
   applyAdminPageFilters(url, table, query, false, googleNameClauses);
   const result = await readAdminPage(url, page, 30, api);
-  const items = await enrichMembers(result.items.map(definition.map), api, currentDate, true);
+  const items = await enrichMembers(result.items.map(row => definition.map(row, currentDate)), api, currentDate, true);
   return { ...result, items };
 }
 

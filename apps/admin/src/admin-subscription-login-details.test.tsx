@@ -8,6 +8,7 @@ const dashboard = {
   todayVisitors: 0, monthVisitors: 0, totalVisitors: 0, totalUsers: 1,
   monthlyPro: 0, quarterlyPro: 1, yearlyPro: 0, expiring: 0,
   todayRevenue: 0, monthRevenue: 0, quarterRevenue: 0, yearRevenue: 0, cumulativeRevenue: 0,
+  userGrowth: [], revenueGrowth: [],
 };
 
 vi.mock('@appdeploy/client', () => ({

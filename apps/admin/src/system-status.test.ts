@@ -97,7 +97,7 @@ describe('system status client', () => {
   });
 
   it('groups status rows in the fixed deployment-location order', () => {
-    const item = (id: string, location: 'Supabase' | 'GitHub' | 'Railway') => ({
+    const item = (id: string, location: 'Supabase' | 'GitHub' | 'Railway' | 'TinyFish') => ({
       id,
       name: id,
       description: '狀態',
@@ -113,11 +113,13 @@ describe('system status client', () => {
     expect(groupSystemStatusItems([
       item('railway', 'Railway'),
       item('github', 'GitHub'),
+      item('tinyfish', 'TinyFish'),
       item('supabase', 'Supabase'),
     ])).toEqual([
       { location: 'Supabase', items: [expect.objectContaining({ id: 'supabase' })] },
       { location: 'GitHub', items: [expect.objectContaining({ id: 'github' })] },
       { location: 'Railway', items: [expect.objectContaining({ id: 'railway' })] },
+      { location: 'TinyFish', items: [expect.objectContaining({ id: 'tinyfish' })] },
     ]);
   });
 
