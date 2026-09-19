@@ -139,12 +139,11 @@ function OwnedNotebookPage({ owner, onNavigate }: { owner: NotebookOwner; onNavi
       {failedAction ? <div className="panel" role="alert"><p>筆記本尚未儲存，請重試。請勿關閉頁面，以免遺失目前修改。</p><button type="button" className="title-card-compact-action" aria-label="重試儲存筆記本" disabled={confirmBusy} onClick={retrySave}>重試儲存</button></div> : null}
       {view === "list" ? <>
         <section className="notebook-heading" aria-label="筆記本工具列">
-          <img src="/assets/quick/matrix-notebook.png" alt="" />
+          <span className="notebook-entry-count">{notes.length} 筆筆記</span>
           <div className="notebook-note-actions">
-            <button type="button" className="notebook-delete-action" aria-pressed={deletingNotes} disabled={notes.length === 0} onClick={() => deletingNotes ? cancelNoteDeletion() : setDeletingNotes(true)}>{deletingNotes ? "取消刪除" : "刪除"}</button>
             <button type="button" onClick={() => startNote()}><PlusIcon aria-hidden="true" />新增筆記</button>
+            <button type="button" className="notebook-delete-action" aria-pressed={deletingNotes} disabled={notes.length === 0} onClick={() => deletingNotes ? cancelNoteDeletion() : setDeletingNotes(true)}>{deletingNotes ? "取消刪除" : "刪除"}</button>
           </div>
-          <span className="notebook-list-count notebook-entry-count">{notes.length} 筆筆記</span>
         </section>
         {deletingNotes ? <p className="notebook-delete-hint" role="status">請選擇要刪除的筆記</p> : null}
         <section className="notebook-entry-list" aria-label="筆記列表">
