@@ -73,10 +73,42 @@ test('referral and activation disclosures follow the switch without hiding rewar
   expect(view.container.textContent).not.toContain('若該筆訂閱後續');
   expect(view.container.textContent).not.toContain('啟動碼以增加 Matrix Pro 訂閱天數');
   expect(screen.getByText('每個 LINE 或 Google 帳號，僅能輸入一次推薦碼。')).toBeInTheDocument();
-  expect(screen.getByText(/推薦成功滿 50 人/)).toBeInTheDocument();
+  expect([...view.container.querySelectorAll('.referral-rewards dt')].map(row => row.textContent)).toContain('推薦成功滿 50 人');
   expect(screen.getByText('每組啟動碼只能成功使用一次。')).toBeInTheDocument();
   toggle(true);
   expect(view.container.textContent).toBe(original);
+});
+
+test('referral rewards retain all four thresholds and explain reversals once', async () => {
+  const view = render(<AppDialogProvider><ActivationCodePage onNavigate={vi.fn()} /></AppDialogProvider>);
+  await act(async () => {});
+  for (const name of ['推薦成功認定', '推薦成功獎勵', '推薦獎勵補充規則']) {
+    const toggle = screen.getByRole('button', { name });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  }
+  const rewards = document.getElementById('referral-rule-推薦成功獎勵')!;
+  expect([...rewards.querySelectorAll('dl > div')].map(row => [
+    row.querySelector('dt')?.textContent,
+    [...row.querySelectorAll('dd > span')].map(part => part.textContent),
+  ])).toEqual([
+    ['推薦成功滿 10 人', ['Matrix 探索 七期', '每週一、二、四、五開放']],
+    ['推薦成功滿 15 人', ['Matrix 探索 七期', '永久開放']],
+    ['推薦成功滿 30 人', ['Matrix 探索 完整範圍', '每週二、五開放']],
+    ['推薦成功滿 50 人', ['Matrix 探索 完整範圍', '永久開放']],
+  ]);
+  expect(rewards).toHaveTextContent('永久開放仍須維持對應的推薦成功人數門檻。');
+  const recognition = document.getElementById('referral-rule-推薦成功認定')!;
+  expect(recognition).toHaveTextContent('每個 LINE 或 Google 帳號，僅能輸入一次推薦碼。');
+  expect(recognition).toHaveTextContent('完成訂閱 Matrix Pro 月方案、季方案或年方案任一方案');
+  expect(view.container.textContent?.match(/退款、刷退或交易取消/g)).toHaveLength(1);
+  const supplement = document.getElementById('referral-rule-推薦獎勵補充規則')!;
+  for (const text of ['推薦成功將失效', '推薦成功人數同步扣除', '資格與獎勵依最新推薦成功人數重新計算', '低於對應門檻', '對應獎勵同步取消', '推薦獎勵不需本人訂閱 Matrix Pro。']) {
+    expect(supplement).toHaveTextContent(text);
+  }
+  fireEvent.click(screen.getByRole('button', { name: '推薦成功獎勵' }));
+  expect(document.getElementById('referral-rule-推薦成功獎勵')).toBeNull();
 });
 
 test('first visit dialog changes live and keeps free usage and once-only behavior', async () => {

@@ -49,7 +49,7 @@ test("referral and activation layout keeps the approved responsive measurements"
   assert.match(compactCss, /\.activation-code-screen \.referral-copy-button\s*\{[^}]*width:\s*max-content;[^}]*height:\s*auto;[^}]*padding:\s*4px;/s);
   assert.match(css, /\.referral-input-card \.code-entry-block,\s*\.activation-card \.code-entry-block\s*\{[^}]*gap:\s*10px;/s);
   assert.match(css, /\.referral-input-card input,\s*\.activation-card input\s*\{[^}]*height:\s*44px;[^}]*min-height:\s*44px;/s);
-  assert.match(css, /\.activation-code-screen \.referral-input-card \.primary-action,\s*\.activation-code-screen \.activation-card \.primary-action\s*\{[^}]*height:\s*40px;[^}]*min-height:\s*40px;/s);
+  assert.match(compactCss, /\.activation-code-screen \.referral-input-card \.primary-action,\s*\.activation-code-screen \.activation-card \.primary-action\s*\{[^}]*height:\s*34px;[^}]*min-height:\s*34px;/s);
   assert.match(css, /\.referral-rule-toggle\s*\{[^}]*min-height:\s*0;[^}]*padding:\s*4px 16px;[^}]*font-weight:\s*600;/s);
   assert.match(page, /referral-success-count">推薦成功 <strong className="referral-success-value">/);
   assert.match(page, /referral-summary-heading">\s*<h2>我的推薦碼<\/h2>\s*<p className="referral-success-count">/s);
