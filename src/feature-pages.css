@@ -2246,6 +2246,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .product-header[data-product-header="Matrix 天工"] {
   --product-header-background: url("/assets/lottery/headers/tiangong.webp");
+  --product-header-background-shade: var(--product-header-copy-shade);
 }
 .product-header[data-product-header="我的"] {
   --product-header-background: url("/assets/lottery/headers/profile.webp");
@@ -2264,6 +2265,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .product-header[data-product-header="Matrix 探索"] {
   --product-header-background: url("/assets/lottery/headers/explore.webp");
+  --product-header-background-shade: var(--product-header-copy-shade);
 }
 .product-header[data-product-header="Matrix 同星"] {
   --product-header-background: url("/assets/lottery/headers/tongxing.webp");
