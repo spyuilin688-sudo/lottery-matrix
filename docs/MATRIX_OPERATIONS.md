@@ -79,8 +79,10 @@ Services use verified IDs, avoiding the identically named service in another pro
 Local verification covers explicit TS/React, Python recovery, real SQL execution
 in PGlite, scoped CI selection and admin production build. The browser fixture at
 `tests/matrix-watchdog.html` is test-only, with `tests/matrix-watchdog.spec.ts` selected
-by existing CI. Local Chromium installation failed with network 502/timeouts, so
-browser results must come from CI before readiness/merge. The full admin standalone
+by existing CI. Local Chromium installation failed with network 502/timeouts;
+GitHub CI subsequently passed both focused browser tests on commit f277561b,
+including 320px overflow, keyboard disclosure, desktop, empty and stale states.
+The latest PR commit must still pass the complete scoped release gate. The full admin standalone
 typecheck has pre-existing SDK/CSS/test typing failures; changed pure modules and the
 new panel pass a scoped strict typecheck. No full test suite was run.
 

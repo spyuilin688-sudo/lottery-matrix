@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import {render,screen} from '@testing-library/react';
-import {expect,it} from 'vitest';
+import {cleanup,render,screen} from '@testing-library/react';
+import {afterEach,expect,it} from 'vitest';
 import {MatrixWatchdogPanel} from './MatrixWatchdogPanel';
+afterEach(cleanup);
 it('distinguishes missing evidence and accepted recovery from success',()=>{
  render(<MatrixWatchdogPanel detail={{checkedAt:'2026-09-19T00:00:00Z',completedAt:'2026-09-19T00:00:00Z',reports:[{lottery:'天天樂',drawPeriod:'12004',checkedAt:'2026-09-19T00:00:00Z',stages:[]}],actions:[{lottery:'天天樂',target:'railway',reasons:['analysis-missing'],outcome:'accepted'}]}} now={new Date('2026-09-19T00:01:00Z')} />);
  expect(screen.getAllByText('證據不足').length).toBeGreaterThan(0);
