@@ -21,12 +21,10 @@ test("首頁使用 16px 正式內距、100% 功能圖片與對齊的 Matrix Core
   assert.match(base, /\.home-screen \.home-bottom-group\s*\{[^}]*--home-core-width:\s*calc\(min\(100vw, 390px\) - 32px\);/s);
 });
 
-test("首頁彩種以單層圓角框與背景明暗表示選取", () => {
-  const card = block(switcher, '.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card');
-  const selected = block(switcher, '.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]');
-  assert.match(card, /border:\s*1px solid var\(--home-frame-muted\);/);
-  assert.match(card, /border-radius:\s*var\(--home-frame-radius\);/);
-  assert.match(card, /background-color:\s*rgba\(0, 0, 0, \.4\);/);
-  assert.match(selected, /background-color:\s*transparent;/);
-  assert.doesNotMatch(switcher, /\.lottery-card\[data-selected="true"\]::before\s*\{/);
+test("首頁彩種以單層圓角框與 Logo 透明度表示選取", () => {
+  assert.match(switcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid color-mix\(in srgb, var\(--home-frame-gold\) 22%, transparent\);[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*background:\s*var\(--lottery-neutral-950\);/s);
+  assert.match(switcher, /\.lottery-card\[data-selected="true"\]\s*\{[^}]*border-color:\s*color-mix\(in srgb, var\(--home-frame-bright\) 55%, transparent\);[^}]*background:\s*color-mix\(in srgb, var\(--home-frame-gold\) 6%, var\(--lottery-neutral-950\)\);/s);
+  assert.match(switcher, /\.lottery-selector-logo\s*\{[^}]*opacity:\s*\.6;/s);
+  assert.match(switcher, /\.lottery-card\[data-selected="true"\] \.lottery-selector-logo\s*\{[^}]*opacity:\s*1;/s);
+  assert.doesNotMatch(switcher, /\.lottery-card(?:\[data-selected="true"\])?::(?:before|after)\s*\{/);
 });

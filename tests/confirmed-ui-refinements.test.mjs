@@ -32,9 +32,9 @@ test("自訂觸發條件沿用首頁彩種切換並使用 8px 下間距", () => 
   assert.match(switcher, /\.matrix-custom-status-screen \.custom-status-tabs > button\s*\{[^}]*padding:\s*0;/s);
 });
 
-test("自訂觸發條件卡及操作按鍵使用確認後的小字與金色新增按鍵", () => {
+test("自訂觸發條件卡及操作按鍵保留小字並使用共用控制框", () => {
   assert.match(feature, /\.matrix-custom-status-screen \.custom-status-section-title\s*\{[^}]*font-size:\s*14px;/s);
-  assert.match(feature, /\.matrix-custom-status-screen \.custom-status-add-button\s*\{[^}]*border:\s*1px solid rgba\(196,145,69,\.55\);[^}]*background:\s*#030a0f;[^}]*color:\s*var\(--lottery-gold-500\);[^}]*font-size:\s*12px;/s);
+  assert.match(feature, /\.matrix-custom-status-screen \.custom-status-add-button\s*\{[^}]*border:\s*1px solid var\(--pwa-frame-tertiary\);[^}]*background:\s*var\(--pwa-control-surface\);[^}]*color:\s*var\(--lottery-text-secondary\);[^}]*font-size:\s*12px;/s);
   assert.match(feature, /\.matrix-custom-status-screen \.custom-status-actions button\s*\{[^}]*font-size:\s*12px;/s);
 });
 
@@ -46,7 +46,9 @@ test("Matrix 指南移除標題下方重複卡片", () => {
 test("Matrix 探索、天衍、天工共用設定標題同列的文字切換器", () => {
   assert.doesNotMatch(source, /headerAction=\{<MatrixPageSwitcher/);
   assert.match(feature, /\.matrix-settings-heading\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*space-between;/s);
-  assert.match(feature, /\.matrix-page-switcher\s*\{[^}]*width:\s*176px;[^}]*height:\s*26px;[^}]*gap:\s*0;[^}]*border-radius:\s*8px;/s);
+  assert.match(feature, /\.matrix-page-switcher\s*\{[^}]*width:\s*176px;[^}]*height:\s*26px;[^}]*gap:\s*0;[^}]*border-radius:\s*var\(--pwa-frame-radius\);/s);
+  assert.match(tokens, /--pwa-frame-radius:\s*var\(--home-frame-radius\);/);
+  assert.match(tokens, /--home-frame-radius:\s*8px;/);
   assert.match(feature, /\.matrix-page-switcher button\[aria-current="page"\]\s*\{[^}]*font-weight:\s*700;/s);
 });
 

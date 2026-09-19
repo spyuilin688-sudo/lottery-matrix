@@ -97,7 +97,7 @@ describe('system status client', () => {
   });
 
   it('groups status rows in the fixed deployment-location order', () => {
-    const item = (id: string, location: 'Supabase' | 'GitHub' | 'Railway') => ({
+    const item = (id: string, location: 'Supabase' | 'GitHub' | 'Railway' | 'TinyFish') => ({
       id,
       name: id,
       description: '狀態',
@@ -113,11 +113,13 @@ describe('system status client', () => {
     expect(groupSystemStatusItems([
       item('railway', 'Railway'),
       item('github', 'GitHub'),
+      item('tinyfish', 'TinyFish'),
       item('supabase', 'Supabase'),
     ])).toEqual([
       { location: 'Supabase', items: [expect.objectContaining({ id: 'supabase' })] },
       { location: 'GitHub', items: [expect.objectContaining({ id: 'github' })] },
       { location: 'Railway', items: [expect.objectContaining({ id: 'railway' })] },
+      { location: 'TinyFish', items: [expect.objectContaining({ id: 'tinyfish' })] },
     ]);
   });
 
@@ -171,7 +173,7 @@ describe('system status client', () => {
     expect(getGithubStatusFacts(github)).toEqual([
       { label: '排程名稱', value: 'Fantasy5 crawler' },
       { label: '排程檔案', value: '.github/workflows/fantasy5-crawler.yml' },
-      { label: '排程開關', value: '已啟用' },
+      { label: '工作流程狀態', value: '已啟用' },
       { label: '最近執行狀態', value: '已結束' },
       { label: '最近執行結果', value: '失敗' },
       { label: '最近執行建立時間', value: '2026-09-04T11:40:00Z', format: 'date' },
@@ -203,7 +205,7 @@ describe('system status client', () => {
     expect(getGithubStatusFacts(github)).toEqual([
       { label: '排程名稱', value: 'Fantasy5 crawler' },
       { label: '排程檔案', value: '.github/workflows/fantasy5-crawler.yml' },
-      { label: '排程開關', value: '已啟用' },
+      { label: '工作流程狀態', value: '已啟用' },
       { label: '最近執行', value: '尚無執行紀錄' },
     ]);
   });

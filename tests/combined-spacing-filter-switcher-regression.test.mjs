@@ -14,14 +14,15 @@ test("history search uses the last edited date-or-range control as the active mo
   assert.match(source, /range: dateIsPrimary \? "所有期數" : range/);
 });
 
-test("homepage owns the approved 9–12px, 8px, and responsive navigation rhythm from one parent", async () => {
+test("homepage owns matching responsive Core gaps and navigation clearance from one parent", async () => {
   const css = await read("src/homepage/base.css");
   const homeLayout = css.match(/\.home-screen \.home-layout \{([\s\S]*?)\n\}/)?.[1] ?? "";
   const lotteryScreen = css.match(/\.home-screen \.lottery-screen \{([\s\S]*?)\n\}/)?.[1] ?? "";
   const bottomGroup = css.match(/\.home-screen \.home-bottom-group \{([\s\S]*?)\n\}/)?.[1] ?? "";
 
   assert.match(homeLayout, /--home-gap-status-core:\s*clamp\(9px,\s*1\.35dvh,\s*12px\)/);
-  assert.match(homeLayout, /--home-gap-core-features:\s*8px/);
+  // f3ae276: Core-to-feature spacing now shares the status-to-Core value.
+  assert.match(homeLayout, /--home-gap-core-features:\s*var\(--home-gap-status-core\)/);
   assert.match(homeLayout, /--home-gap-features-nav:\s*clamp\(8px,\s*1\.15dvh,\s*12px\)/);
   assert.match(homeLayout, /padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ var\(--home-gap-features-nav\)\)/);
   assert.doesNotMatch(lotteryScreen, /--home-gap-(?:status-core|core-features)/);

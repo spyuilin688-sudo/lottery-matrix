@@ -16,7 +16,7 @@ beforeAll(() => {
   style.textContent = [
     'src/feature-pages.css',
     'src/matrix-explore-spacing.css',
-  ].map((path) => readFileSync(`${process.cwd()}/${path}`, 'utf8').replace(/^@import[^;]+;\s*/, '')).join('\n');
+  ].map((path) => readFileSync(`${process.cwd()}/${path}`, 'utf8').replace(/@import[^;]+;\s*/g, '')).join('\n');
   document.head.append(style);
 });
 
@@ -58,18 +58,19 @@ test.each([
   });
 });
 
-test('四個 Matrix 文字分段共用單一金褐色外框', () => {
+test('四個 Matrix 文字分段共用單一共用金色外框', () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 探索" />);
 
   const nav = screen.getByRole('navigation', { name: 'Matrix Core 功能切換' });
   const buttons = within(nav).getAllByRole('button');
   const styles = getComputedStyle(nav);
-  expect(styles.borderTopWidth).toBe('1px');
-  expect(styles.borderRightWidth).toBe('1px');
-  expect(styles.borderBottomWidth).toBe('1px');
-  expect(styles.borderLeftWidth).toBe('1px');
-  expect(styles.borderTopColor).toBe('rgba(117, 83, 41, 0.48)');
-  expect(styles.borderRadius).toBe('8px');
+  // JSDOM cannot resolve token-based border shorthands; browser coverage is in
+  // pwa-frame-system.spec.ts. Verify the canonical rule applies to this element.
+  const frame = [...style.sheet!.cssRules].find((rule): rule is CSSStyleRule =>
+    rule instanceof CSSStyleRule && rule.selectorText === '.matrix-page-switcher');
+  expect(nav.matches(frame!.selectorText)).toBe(true);
+  expect(frame?.style.border).toBe('1px solid var(--pwa-frame-tertiary)');
+  expect(frame?.style.borderRadius).toBe('var(--pwa-frame-radius)');
   expect(styles.height).toBe('26px');
   expect(styles.width).toBe('176px');
   expect(buttons.map(button => button.textContent)).toEqual(['探索', '天衡', '天衍', '天工']);
@@ -85,7 +86,7 @@ test('當前 Matrix 頁面以粗體與淡金底標示並保留完整名稱', () 
   // background here, while standalone jsdom resolves the same DOM and CSS correctly.
   const currentRule = [...style.sheet!.cssRules].find((rule): rule is CSSStyleRule =>
     rule instanceof CSSStyleRule && rule.selectorText === '.matrix-page-switcher button[aria-current="page"]');
-  expect(currentRule?.style.backgroundColor).toBe('rgba(244, 206, 103, 0.1)');
+  expect(currentRule?.style.backgroundColor).toBe('var(--pwa-control-selected)');
   expect(buttons.filter(button => button.matches(currentRule!.selectorText))).toEqual([buttons[0]]);
   buttons.forEach((button, index) => {
     expect(button).toHaveAttribute('title', ['Matrix 探索', 'Matrix 天衡', 'Matrix 天衍', 'Matrix 天工'][index]);

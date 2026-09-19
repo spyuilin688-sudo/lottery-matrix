@@ -81,15 +81,17 @@ describe('member Supabase RPC', () => {
     expect(supabase.auth.signOut).not.toHaveBeenCalled();
   });
 
-  it.each([false, true])('does not expose a previous member successful read after account change (recovery=%s)', async recovery => {
+  it.each([false, true])('retries the profile for the current member instead of exposing the previous member read (recovery=%s)', async recovery => {
     const old = deferred<unknown>();
+    supabase.rpc.mockResolvedValue({ data: { planName: 'current-member-plan' }, error: null });
     if (recovery) supabase.rpc.mockResolvedValueOnce({ data: null, error: { code: 'PGRST301' } });
     supabase.rpc.mockReturnValueOnce(old.promise);
     const pending = fetchMemberProfile();
     if (recovery) await vi.waitFor(() => expect(supabase.rpc).toHaveBeenCalledTimes(2));
     switchMember('member-b');
     old.resolve({ data: { planName: 'previous-member-private-plan' }, error: null });
-    await expect(pending).rejects.toThrow('MEMBER_SESSION_CHANGED');
+    await expect(pending).resolves.toEqual({ planName: 'current-member-plan' });
+    expect(supabase.rpc).toHaveBeenCalledTimes(recovery ? 3 : 2);
   });
 
   it('reports whether a current authenticated member session exists', async () => {

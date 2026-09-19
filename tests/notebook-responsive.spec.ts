@@ -54,7 +54,8 @@ for (const width of [320, 360, 390, 430]) {
       titleGap: element.getBoundingClientRect().top - document.querySelector('.feature-brand-header')!.getBoundingClientRect().bottom,
       returnGap: element.querySelector('input')!.getBoundingClientRect().top - element.querySelector('header')!.getBoundingClientRect().bottom,
     }));
-    expect(gaps).toEqual({ titleGap: 8, returnGap: 8 });
+    // The shared title/content gap changed to 14px in 2eb63484; notebook-internal spacing stays 8px.
+    expect(gaps).toEqual({ titleGap: 14, returnGap: 8 });
     const title = page.getByRole('textbox', { name: '筆記標題' });
     const content = page.getByRole('textbox', { name: '筆記內容' });
     for (const edge of ['top', 'left', 'bottom']) await expect(title).toHaveCSS(`padding-${edge}`, '5px');

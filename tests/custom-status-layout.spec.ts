@@ -1,13 +1,15 @@
 import { expect, test, type Page } from '@playwright/test';
 
 async function mockStatus(page: Page) {
-  await page.route('https://**/functions/v1/matrix-status', route => route.fulfill({
-    status: 200, contentType: 'application/json', body: JSON.stringify({
+  await page.route('https://**/functions/v1/matrix-status', async route => {
+    const request = route.request().postDataJSON();
+    const body = request.action === 'custom-save' ? { item: request.config } : {
       kind: 'status', lottery: '今彩539', drawPeriod: '115217', analysisVersion: 'fixture:status',
       summary: {status: 'DORMANT', count: 0, message: '本期尚無符合條件的狀態。'},
       counts: {ACTIVE: 0, FOCUS: 0, RESONANCE: 0, CRITICAL: 0}, cards: [], customTriggers: [], detailLocked: true,
-    }),
-  }));
+    };
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+  });
 }
 
 for (const width of [320, 360, 390, 430]) {
@@ -16,9 +18,7 @@ for (const width of [320, 360, 390, 430]) {
     await page.route('https://**/rest/v1/rpc/**', async route => {
       const url = route.request().url();
       const body = url.endsWith('/matrix_custom_status_list')
-        ? { items: [], entitlements: { canCustomizeStatus: true, canUseCompositeCustomRoad: true } }
-        : url.endsWith('/matrix_custom_status_save')
-          ? { item: route.request().postDataJSON().p_config } : {};
+        ? { items: [], entitlements: { canCustomizeStatus: true, canUseCompositeCustomRoad: true } } : {};
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
     });
     await mockStatus(page);
@@ -120,7 +120,9 @@ for (const width of [320, 360, 390, 430]) {
     await toggle.click();
     await toggle.click();
     await expect(order).toHaveValue('依實際開獎順序排序');
+    const savedRequest = page.waitForRequest(request => request.url().endsWith('/functions/v1/matrix-status') && request.postDataJSON()?.action === 'custom-save');
     await page.getByRole('button', { name: '儲存設定', exact: true }).click();
+    expect((await savedRequest).postDataJSON().config).toMatchObject({ lottery: '今彩539', status: 'RESONANCE' });
     await expect(page.getByText('設定已儲存並套用至首頁', { exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     const addedNumber = await page.getByRole('region', { name: '一碼條件', exact: true }).getByRole('article').count() + 1;

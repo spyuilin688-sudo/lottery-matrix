@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { hasLineSession } from '../auth/LinePageGuard';
+import { hasMemberSession } from '../auth/LinePageGuard';
 import { withDeadline } from '../lib/api-resilience';
 import { getSupabaseClient } from '../lib/supabase';
 
@@ -8,7 +8,7 @@ export type NotebookOwner = { userId: string; revision: number; active: boolean 
 type OwnerState = { status: 'checking' | 'signed-out' | 'error'; owner: null }
   | { status: 'ready'; owner: NotebookOwner };
 
-/** Tokens establish a LINE session; only its stable user id owns local notebook data. */
+/** Tokens establish a member session; only its stable user id owns local notebook data. */
 export function useNotebookOwner() {
   const [state, setState] = useState<OwnerState>({ status: 'checking', owner: null });
   const [attempt, setAttempt] = useState(0);
@@ -19,7 +19,7 @@ export function useNotebookOwner() {
     const controller = new AbortController();
     let authEventObserved = false;
     let resolved = false;
-    const ownerId = (session: Session | null) => hasLineSession(session)
+    const ownerId = (session: Session | null) => hasMemberSession(session)
       && typeof session?.user.id === 'string' && session.user.id.trim()
       ? session.user.id : null;
     const accept = (session: Session | null) => {

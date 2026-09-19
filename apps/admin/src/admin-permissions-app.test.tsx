@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
+import { fireEvent, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const app = vi.hoisted(() => {
@@ -13,6 +14,7 @@ const app = vi.hoisted(() => {
       permissions: { view: true, add: true, edit: true, delete: true },
     } as Record<string, unknown>,
     failPaymentRead: false,
+    memberStatus: 'active',
     nextSubscriptionRead: null as Promise<{ data: { items: Array<{ id: string; status: string }> } }> | null,
     permissionSettings: {
       subscriptionPurchaseVisible: true,
@@ -31,6 +33,9 @@ const app = vi.hoisted(() => {
     lastLoginAt: null,
   };
   const dashboard = {
+    todayVisitors: 0,
+    monthVisitors: 0,
+    totalVisitors: 0,
     totalUsers: 0,
     monthlyPro: 0,
     quarterlyPro: 0,
@@ -41,6 +46,8 @@ const app = vi.hoisted(() => {
     quarterRevenue: 0,
     yearRevenue: 0,
     cumulativeRevenue: 0,
+    userGrowth: [],
+    revenueGrowth: [],
   };
   const get = vi.fn(async (url: string) => {
     const path = url.split("?")[0];
@@ -60,7 +67,7 @@ const app = vi.hoisted(() => {
     } };
     if (url === '/api/permission-settings') return { data: state.permissionSettings };
     if (path === '/api/data/admins') return { data: { items: [otherAdmin], total: 37, currentPage: 1, totalPages: 2 } };
-    if (url.startsWith('/api/data/users?')) return { data: { items: [{ id: 'member-1', status: 'active' }], total: 1, currentPage: 1, totalPages: 1 } };
+    if (url.startsWith('/api/data/users?')) return { data: { items: [{ id: 'member-1', status: state.memberStatus }], total: 1, currentPage: 1, totalPages: 1 } };
     if (url.startsWith('/api/data/subscriptions?')) {
       if (state.nextSubscriptionRead) {
         const pending = state.nextSubscriptionRead;
@@ -122,6 +129,7 @@ describe('administrator operation permission editing', () => {
       permissions: { view: true, add: true, edit: true, delete: true },
     };
     app.state.failPaymentRead = false;
+    app.state.memberStatus = 'active';
     app.state.nextSubscriptionRead = null;
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -240,9 +248,9 @@ describe('administrator operation permission editing', () => {
       .find((cell) => cell.textContent === 'other@example.com');
     expect(accountCell).toBeDefined();
     const row = accountCell?.closest('tr');
-    const editButton = row?.querySelector('button');
-    expect(editButton).not.toBeNull();
-    await act(async () => editButton?.click());
+    const editButton = within(row!).getByRole('button', { name: '編輯管理員 other@example.com' });
+    expect(within(row!).getByRole('button', { name: '刪除管理員 other@example.com' })).toBeDefined();
+    await act(async () => editButton.click());
 
     const checkbox = (label: string) => container.querySelector<HTMLInputElement>(
       `input[type="checkbox"][aria-label="${label}"]`,
@@ -274,6 +282,60 @@ describe('administrator operation permission editing', () => {
     expect(app.api.put).toHaveBeenCalledWith('/api/admins/admin-2', expect.objectContaining({
       permissions: { view: false, add: true, edit: false, delete: true },
     }));
+  });
+
+  it('starts a clean create after cancelling an administrator edit and posts the new account', async () => {
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '管理員權限')?.click());
+    await settle();
+
+    const accountCell = [...container.querySelectorAll('td')]
+      .find((cell) => cell.textContent === 'other@example.com');
+    const editButton = accountCell?.closest('tr')?.querySelector('button');
+    expect(editButton).toBeDefined();
+    await act(async () => editButton?.click());
+    expect(within(container).getByRole('heading', { name: '修改管理員' })).toBeDefined();
+    await act(async () => within(container).getByRole('button', { name: '取消', exact: true }).click());
+    await act(async () => within(container).getByRole('button', { name: '新增管理員', exact: true }).click());
+
+    expect(within(container).getByRole('heading', { name: '新增管理員' })).toBeDefined();
+    expect((within(container).getByLabelText('管理員帳號') as HTMLInputElement).value).toBe('');
+    expect((within(container).getByLabelText('管理員名稱') as HTMLInputElement).value).toBe('');
+    expect((within(container).getByLabelText('角色') as HTMLSelectElement).value).toBe('查看人員');
+    for (const [label, value] of [
+      ['管理員帳號', 'new@example.com'],
+      ['管理員名稱', '新管理員'],
+      ['初始密碼', 'new-admin-password'],
+    ]) {
+      await act(async () => fireEvent.change(within(container).getByLabelText(label), { target: { value } }));
+    }
+    await act(async () => within(container).getByRole('button', { name: '儲存', exact: true }).click());
+    const confirmation = within(container).getByRole('alertdialog');
+    await act(async () => within(confirmation).getByRole('button', { name: '確認新增', exact: true }).click());
+    await settle();
+
+    expect(app.api.post).toHaveBeenCalledWith('/api/admins', expect.objectContaining({
+      account: 'new@example.com', name: '新管理員', password: 'new-admin-password', role: '查看人員',
+    }));
+    expect(app.api.put).not.toHaveBeenCalled();
+  });
+
+  it('shows an inactive member as disabled and confirms activation with the active status', async () => {
+    app.state.memberStatus = 'inactive';
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '用戶管理')?.click());
+    await settle();
+
+    const status = container.querySelector<HTMLElement>('.memberStatusCell');
+    expect(status?.textContent).toContain('停用');
+    await act(async () => within(status!).getByRole('button', { name: '啟動', exact: true }).click());
+    const confirmation = within(container).getByRole('alertdialog');
+    await act(async () => within(confirmation).getByRole('button', { name: '確認啟動', exact: true }).click());
+    await settle();
+
+    expect(app.api.put).toHaveBeenCalledWith('/api/members/member-1/status', { status: 'active' });
   });
 
   it('shows the independent permission switch menu and lets a super administrator operate it', async () => {

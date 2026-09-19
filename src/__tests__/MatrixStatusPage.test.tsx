@@ -34,7 +34,7 @@ vi.mock('../auth/line-auth', () => ({
 }));
 vi.mock('../lib/supabase', () => ({
   getSupabaseClient: () => ({ auth: {
-    getSession: async () => ({ data: { session: { access_token: 'test', user: { app_metadata: { provider: 'custom:line' } } } }, error: null }),
+    getSession: async () => ({ data: { session: { access_token: 'test', user: { id: 'member-status', app_metadata: { provider: 'custom:line' } } } }, error: null }),
     onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
   } }),
 }));

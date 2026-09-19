@@ -125,7 +125,7 @@ components:
 
 首頁以外的 PWA 頁面統一由 `src/features/BrandHeader.tsx` 與 `src/feature-pages.css` 的 `.product-header*` 擁有標題卡，沿用探索頁的黑金樣式。首頁 Logo、首頁排列與獨立管理後台不屬於此次遷移。
 
-一般標題卡與工具頁收合狀態的外框高度為 68px、寬度為頁面寬度扣除左右各 16px，與下方內容間距 8px；單層 1px 金框、10px 圓角、深黑底；探索、天衡、天衍、天工保留參考圖 06 暗金曲線；同星、號碼對照單、歷史開獎紀錄保留 07 幾何線條。2026-09-13 依使用者提供的標題卡參考，其餘 PWA 功能頁（含牌單、指南、計算機、狀態、我的、通知及子頁）採黑金弧光：深色細紋、Logo 區域暖金反光與底部弧形金線，由靜態 `header-gold-arc.svg` 呈現，不將文字或 Logo 烘焙進背景。`BrandHeader` 單獨決定 flow／geometric／gold-arc，三個互斥的屬性選擇器各提供一個背景來源，`.product-header__frame` 統一繪製；首頁品牌區沿用原樣。Logo 使用完整 `matrixYY.png`，56 × 48px、等比例呈現；2026-09-14 依使用者要求降低亮度，由既有 `.product-header__mark` 將亮度設為 85% 並移除額外光暈。返回箭頭 22px、觸控範圍 44 × 44px；通知、我的主頁與原本沒有返回鍵的頁面不新增返回鍵，但保留共用 44px 返回鍵欄位與 10px 欄距，原有返回目的地及快捷返回回呼維持不變。
+一般標題卡與工具頁收合狀態的外框高度為 68px、寬度為頁面寬度扣除左右各 16px，與下方內容間距依 `7905e45`／`2eb6348` 更新為 14px；單層 1px 金框、10px 圓角、深黑底；探索、天衡、天衍、天工保留參考圖 06 暗金曲線；同星、號碼對照單、歷史開獎紀錄保留 07 幾何線條。2026-09-13 依使用者提供的標題卡參考，其餘 PWA 功能頁（含牌單、指南、計算機、狀態、我的、通知及子頁）採黑金弧光：深色細紋、Logo 區域暖金反光與底部弧形金線，由靜態 `header-gold-arc.svg` 呈現，不將文字或 Logo 烘焙進背景。`BrandHeader` 單獨決定 flow／geometric／gold-arc，三個互斥的屬性選擇器各提供一個背景來源，`.product-header__frame` 統一繪製；首頁品牌區沿用原樣。Logo 使用完整 `matrixYY.png`，56 × 48px、等比例呈現；2026-09-14 依使用者要求降低亮度，由既有 `.product-header__mark` 將亮度設為 85% 並移除額外光暈。返回箭頭 22px、觸控範圍 44 × 44px；通知、我的主頁與原本沒有返回鍵的頁面不新增返回鍵，但保留共用 44px 返回鍵欄位與 10px 欄距，原有返回目的地及快捷返回回呼維持不變。
 
 主標題暖金色 `#f0c85f`、700、20px 上限，副標以 9px 灰金色為上限，極窄文字欄依 cqi 等比例縮小，靠左對齊、兩行間距 4px。主副標各自固定單行，不以換行、刪字或省略號改變頁名。主標依文字長度使用共用 short／regular／medium／long 字級範圍，搭配標題內容容器的 cqi 自動縮小；不得以額外 inline style、補償位移或覆寫控制字級。同星、號碼對照單、歷史紀錄使用共用 `HeaderSettingsButton`，位於標題內右距 4px、下距 0px，文字與右側下拉箭頭間距 2px；主標題的 grid 區域跨過操作欄，固定 35px 文字組保留主標基線，副標為操作入口預留寬度，這三頁的英文副標字距採 .2em，保留既有字級並拉開與設定入口的留白；其他頁面副標維持 .32em，由既有共用規則與設定卡變數擁有；70px 操作欄只保留 12px 暗金文字與右側收合箭頭，移除左側漏斗；按鈕高 24px，各狀態均為透明底，無獨立亮框或光暈，hover／active 以文字顏色回饋，鍵盤焦點框保留。三頁由 `BrandHeader` 的 settings 插槽整合標題與設定，外層單一黑金卡框，內部以低亮度金色細線分隔。首次展開置於正常頁面流；收合後再展開時，整張卡以 sticky 標題為定位來源浮於結果上方，標題佔位仍為 68px，不再讀取 viewport 座標或搬移設定 DOM。草稿與結果捲動保留，Escape 收合並將焦點送回入口。其他頁面的 60px 操作欄與 20px 按鈕不變。歷史重設移至設定第一列最右側，與彩種、排序同列；對照單刷新與彩種、歷史範圍、排序同列。重設／刷新共用 `.tool-settings-reset`，26px 高、10px 字與圖示；第一列分別預留 52px／42px，縮減既有下拉欄位寬度。三頁第一列以 `.tool-settings-primary-row` 共用 4px 小切角、1px 暗金描邊與深黑底，不加光暈，hover／focus 提亮描邊；由 `src/responsive-feature-pages.css` 唯一擁有。第二列及查詢處理維持不變。不為沒有操作按鈕的頁面預留下方空白列，文字起點不受按鈕數量影響。主標行盒固定 22px，使用 18px 零寬基線支架對齊縮字後的文字；副標起點、Logo 位置與文字左緣固定。
 
@@ -139,13 +139,13 @@ components:
 
 2026-09-14：依使用者確認的細金框示意圖，共用底部導覽改為滿寬單一 1px 金線上緣，四個等寬入口依序為首頁、快捷、計算機、我的。主體維持 70px，下方接瀏覽器安全區；內距左右各至少 8px、上下各 6px、項目間距 4px。圖示 24px、文字 12px、圖文距離 4px；選中項使用 1px 細金框、8px 圓角、淡金底、亮金文字與 `aria-current`。移除元件中的 PD01 階梯框與拱框引用，保留素材檔不修改。`src/prototype.css` 是唯一樣式來源，沿用 180ms 色彩轉換與 reduced motion。
 
-首頁快捷設定移到 Logo 卡右上角；Matrix 狀態頁的自訂觸發條件移到既有頁首 action slot，避免占用底部四個入口。兩者共用 22px 金色齒輪、44px 觸控區，保留 800ms 內雙擊、鍵盤、權限及設定流程。首頁框線由 `--home-frame-gold: #d6b66f`、`--home-frame-muted: #8a713f`、`--home-frame-radius: 8px` 統一；未選中導覽圖示與文字均為 `#c3beb6`，選中文字沿用 `#ffe2a0`。
+首頁快捷設定移到 Logo 卡右上角；Matrix 狀態頁的自訂觸發條件移到既有頁首 action slot，避免占用底部四個入口。首頁齒輪沿用 `d8cad62` 的 18px，狀態頁齒輪維持 22px；兩者保留 44px 觸控區，保留 800ms 內雙擊、鍵盤、權限及設定流程。首頁框線由 `--home-frame-gold: #d6b66f`、`--home-frame-muted: #8a713f`、`--home-frame-radius: 8px` 統一；未選中導覽圖示與文字均為 `#c3beb6`，選中文字沿用 `#ffe2a0`。
 
 2026-09-12：Matrix 探索、天衡、天衍、天工在「探索設定」標題同列右側共用文字分段切換，依探索、天衡、天衍、天工排列。`MatrixPageSwitcher` 保留完整 accessible name、`aria-current` 與既有導覽回呼；當前頁以金字、淡金底及粗體標示。單一 1px 金褐色外框、8px 圓角、26px 高、176px 可收縮寬度，由 `src/feature-pages.css` 擁有全部切換樣式；移除 `src/matrix-explore-spacing.css` 舊圖片入口的覆寫。探索頁期數與版路欄位恢復使用共用 `SettingLabelIcon`，圖片為 `/assets/matrix-explore/period.png` 與 `/assets/matrix-explore/road.png`，維持 1.8rem 佔位。
 
 首頁由品牌、彩種切換、最新開獎、下次開獎、Matrix 狀態、Matrix Core、功能入口與底部導覽組成，詳見 `docs/COMPONENT_MAP.md`。Matrix Core 與四大功能入口保持分離。表格、歷史卡與彩球不因文件化而改變密度、順序或響應式幾何。
 
-2026-09-14 首頁 Logo、彩種切換、Matrix Core 與四大功能外框統一為 1px 細金線、8px 圓角，直接修改既有樣式來源，不新增疊框、遮罩或覆寫層。Logo、Core 與功能列對齊 16px 左右邊界；Core 維持 654:181 比例、功能列上方 8px 間距。四張卡單列等寬、間距 6px，高度由 90px 降到 76px，圖片在剩餘空間以 contain 等比例顯示，名稱字級不變。功能列本身保持 0 內距、0 外框。`src/homepage/base.css` 擁有 Core 與功能卡，`logo-spacing.css` 擁有 Logo，`lottery-switcher.css` 單獨擁有彩種切換；移除舊九宮格金框及彩種切角多色描邊。彩種選中項以圖片亮度區分（詳見下方三層金框規格），維持原有 radio 操作與 sprite。所有圖片檔不變；啟動／聚合／共振卡的霓虹邊框已嵌入原圖，本輪保留原圖，不加金色覆蓋層。四大功能仍依序為 Matrix 同星、Matrix 對照、Matrix 牌單、Matrix 指南；Core 說明與箭頭為真實 UI。
+2026-09-14 首頁 Logo、彩種切換、Matrix Core 與四大功能外框統一為 1px 細金線、8px 圓角，直接修改既有樣式來源，不新增疊框、遮罩或覆寫層。Logo、Core 與功能列對齊 16px 左右邊界；Core 維持 654:181 比例；依 `f3ae276`，功能列上方與狀態卡至 Core 共用 9–12px 的 `--home-gap-status-core`。四張卡單列等寬、間距 6px，高度由 90px 降到 76px，圖片在剩餘空間以 contain 等比例顯示，名稱字級不變。功能列本身保持 0 內距、0 外框。`src/homepage/base.css` 擁有 Core 與功能卡，`logo-spacing.css` 擁有 Logo，`lottery-switcher.css` 單獨擁有彩種切換；移除舊九宮格金框及彩種切角多色描邊。彩種選中項以圖片亮度區分（詳見下方三層金框規格），維持原有 radio 操作與 sprite。所有圖片檔不變；啟動／聚合／共振卡的霓虹邊框已嵌入原圖，本輪保留原圖，不加金色覆蓋層。四大功能仍依序為 Matrix 同星、Matrix 對照、Matrix 牌單、Matrix 指南；Core 說明與箭頭為真實 UI。
 
 
 2026-09-15 首頁三層金框與彩種亮度：開獎資訊卡（含底部兩格時間）與 Matrix Core 使用 1px 明亮金框 `--home-frame-bright: #f0d58c`；四個 Matrix 狀態維持 1px 標準金框 `--home-frame-gold: #d6b66f`；四大功能使用 1px 低亮度金框 `--home-frame-muted: #8a713f`；彩種改依下述選取狀態使用標準金色透明框。框色由 `src/design-tokens.css` 唯一提供，`base.css` 與 `lottery-switcher.css` 的原有元件規則直接取用。Logo 與主次金框保留；彩種 Selector 及底部導覽依下述更新規格。
@@ -230,7 +230,7 @@ Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封
 
 ## Matrix 筆記本 — 2026-09-08
 
-筆記本只提供列表與筆記編輯，沿用頁面左右 16px、標題卡下方 8px。`src/feature-pages.css` 是筆記本版面的樣式來源；圖示使用同一個 42px 尺寸，工具列由圖示與操作欄兩欄組成，間距 8px；操作欄採可收縮寬度，刪除位於新增筆記上方，兩者字級 11px、正常字級下高度 26px。筆記摘要上下內距 5px，點選後進入獨立編輯頁。寫入筆記沿用 `primary-action branded-explore-action`，字級 14px、正常字級下高度 36px，允許放大文字時增加高度。不要再增加重複標題或卡片尾端的筆記刪除入口。
+筆記本只提供列表與筆記編輯，沿用頁面左右 16px；標題卡下方依共用標題的後續修正為 14px。`src/feature-pages.css` 是筆記本版面的樣式來源；圖示使用同一個 42px 尺寸，工具列由圖示與操作欄兩欄組成，間距 8px；操作欄採可收縮寬度，刪除位於新增筆記上方，兩者字級 11px、正常字級下高度 26px。筆記摘要上下內距 5px，點選後進入獨立編輯頁。寫入筆記沿用 `primary-action branded-explore-action`，字級 14px、正常字級下高度 36px，允許放大文字時增加高度。不要再增加重複標題或卡片尾端的筆記刪除入口。
 
 
 
@@ -291,7 +291,7 @@ The approved homepage palette is the sole color source. Runtime ownership remain
 | `--pwa-frame-primary` | `var(--home-frame-bright)` | 1px title/main-card frame |
 | `--pwa-frame-secondary` | `var(--home-frame-gold)` | 1px content/result/table frame |
 | `--pwa-frame-tertiary` | `var(--home-frame-muted)` | 1px resting control frame |
-| `--pwa-frame-divider` | `color-mix(in srgb, var(--home-frame-gold) 18%, transparent)` | Quiet internal table/section lines |
+| `--pwa-frame-divider` | `color-mix(in srgb, var(--home-frame-gold) 38%, transparent)` | Quiet internal table/section lines |
 | `--pwa-frame-radius` | `var(--home-frame-radius)` | Shared 8px frame radius |
 | `--pwa-control-surface` | `var(--lottery-neutral-950)` | Resting control surface |
 | `--pwa-control-selected` | `color-mix(in srgb, var(--home-frame-gold) 6%, var(--lottery-neutral-950))` | Selected control/CTA surface |
@@ -313,3 +313,14 @@ component behavior, copy, API or worker changes are included.
 
 Verification: `tests/pwa-frame-system.test.mjs` and
 `tests/pwa-frame-system.spec.ts` (real production router, isolated test responses).
+
+
+## API 與管理功能修正 — 2026-09-19
+
+首頁狀態沿用一次批次讀取、可見首頁每小時備援刷新及 15 秒期限。登入身分變更立即清除舊會員狀態並取消舊讀取；離開首頁期間的帳號切換也不得在返回時短暫顯示舊會員資料。同一登入工作階段的 token 更新不增加刷新。探索驗證綁定結果所屬的已送出期數與範圍，未送出的草稿不改變既有結果解釋；兩者皆不改版面。
+
+筆記本工具列圖示至操作欄、操作按鈕之間固定 8px，由既有 `.notebook-heading` 與 `.notebook-note-actions` 擁有，避免共用標題的 14px 變數改動內部間距。標題至內容維持已正式提交的 14px；編輯器內部返回列間距仍為 8px。
+
+筆記本的資料擁有者判斷與既有會員入口一致，LINE 與 Google 的有效會員工作階段皆可使用。資料仍以穩定 user ID 隔離；登出、切換帳號及延遲登入回應的失效處理不變。
+
+本次測試契約依既有正式提交對齊：`f3ae276` 的落球切換 22px 高、`9ad9f4` 的彩種選中亮金 55% 框線、`246e6ab` 的 Core 4.8 秒循環與 2.8 秒節點脈衝（保留 reduced-motion 停用）。這些是既有畫面規格，並非本次新增視覺效果。管理後臺的新增／編輯生命週期、TinyFish 分组、工作流程標籤與按鈕名稱記於 `apps/admin/DESIGN.md`。

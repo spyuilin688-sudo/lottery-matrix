@@ -80,7 +80,7 @@ export function RailwayOperations({ client, canEdit, confirm, disabled = false, 
           <button type='button' className='compactButton' disabled={disabled || Boolean(pending) || !canEdit} aria-describedby='railway-refresh-help' aria-busy={pending === 'refresh'} onClick={() => run('refresh')}>手動更新</button>
         </div>
         <div className='railwayOperationRow'>
-          <div><b>復原資料與分析</b><p id='railway-recover-help'>資料缺漏或分析中斷時使用；依目前狀態補抓資料或續做分析。天天樂僅復原分析。</p></div>
+          <div><b>復原資料與分析</b><p id='railway-recover-help'>資料缺漏或分析中斷時使用；依目前狀態補抓資料或續做分析，包含天天樂。</p></div>
           <button type='button' className='compactButton' disabled={disabled || Boolean(pending) || !canEdit} aria-describedby='railway-recover-help' aria-busy={pending === 'recover'} onClick={() => run('recover')}>復原</button>
         </div>
       </div>

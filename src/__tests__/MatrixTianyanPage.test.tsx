@@ -43,6 +43,7 @@ const validation = {
 
 beforeEach(() => {
   document.body.innerHTML = '';
+  window.sessionStorage.removeItem('matrix-core-lottery');
   matrixApi.fetchTianyanList.mockReset().mockResolvedValue(envelope);
   matrixApi.fetchTianyanValidation.mockReset().mockResolvedValue({ ...envelope, itemId: 'tianyan-api-1', validation });
   globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ records: [] }) }) as typeof fetch;

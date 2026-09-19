@@ -49,12 +49,12 @@ function GuideHarness({ initialScreen = 'home' }: { initialScreen?: ScreenId }) 
 }
 
 describe('首次進站引導', () => {
-  it('首次首頁說明免費 LINE 註冊及探索入口，按免費註冊後進入既有會員頁', async () => {
+  it('首次首頁說明 LINE 與 Google 登入及探索入口，按免費註冊後進入既有會員頁', async () => {
     mountHomepage();
 
     const guide = await screen.findByRole('dialog', { name: '免費註冊會員' });
     expect(guide).toHaveTextContent('「我的」');
-    expect(guide).toHaveTextContent('「LINE 登入」');
+    expect(guide).toHaveTextContent('LINE 或 Google 登入');
     expect(guide).toHaveTextContent('天衍 2 天');
     expect(guide).toHaveTextContent('天工 1 天');
     expect(guide).toHaveTextContent('Matrix Core');
@@ -65,6 +65,7 @@ describe('首次進站引導', () => {
     expect(await screen.findByRole('heading', { name: '會員相關' })).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(screen.getByRole('button', { name: 'LINE 登入' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Google 登入' })).toBeInTheDocument();
   });
 
   it('知道了僅關閉視窗，首頁 Matrix Core 仍可進入探索', async () => {

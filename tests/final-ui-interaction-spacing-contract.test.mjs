@@ -12,10 +12,11 @@ const guideSource = readFeaturePagesSource();
 const prototypeSource = readFileSync(new URL("../src/Prototype.tsx", import.meta.url), "utf8");
 const notificationsSource = readFileSync(new URL("../src/NotificationsPagePatched.tsx", import.meta.url), "utf8");
 
-test("首頁狀態區、Matrix Core 與五大功能使用指定節奏", () => {
+test("首頁狀態區、Matrix Core 與四大功能使用共用響應節奏", () => {
   assert.doesNotMatch(homeCss, /\.home-screen \.home-layout\s*\{[^}]*row-gap:/s);
   assert.match(homeCss, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*var\(--home-gap-status-core\);/s);
-  assert.match(homeCss, /\.home-screen \.home-layout\s*\{[^}]*--home-gap-status-core:\s*clamp\(9px,\s*1\.35dvh,\s*12px\);[^}]*--home-gap-core-features:\s*8px;[^}]*--home-gap-features-nav:\s*clamp\(8px,\s*1\.15dvh,\s*12px\);/s);
+  // f3ae276 makes both Core gaps share the existing responsive 9–12px value.
+  assert.match(homeCss, /\.home-screen \.home-layout\s*\{[^}]*--home-gap-status-core:\s*clamp\(9px,\s*1\.35dvh,\s*12px\);[^}]*--home-gap-core-features:\s*var\(--home-gap-status-core\);[^}]*--home-gap-features-nav:\s*clamp\(8px,\s*1\.15dvh,\s*12px\);/s);
   assert.match(homeCss, /\.home-bottom-group\s*\{[^}]*gap:\s*var\(--home-gap-core-features\);/s);
   assert.doesNotMatch(homeCss, /\.home-bottom-group\s*\{[^}]*(?:--home-gap-core-features\s*:|padding-bottom:\s*8px)/s);
 });
@@ -38,10 +39,16 @@ test("號碼對照單固定與浮動設定共用 26px 控制高度", () => {
 test("訂閱方案與管理訂閱使用指定外距、卡片尺寸與付款節奏", () => {
   assert.match(proPlansLayoutCss, /\.pro-plans-screen\s*\{[^}]*--pro-plans-plan-inline:\s*25px;[^}]*--pro-plans-checkout-inline:\s*16px;/s);
   assert.match(proPlansLayoutCss, /\.pro-plans-screen \.plan-carousel\s*\{[^}]*gap:\s*13px;/s);
-  assert.match(proPlansLayoutCss, /\.pro-plans-screen \.plan-card\s*\{[^}]*min-height:\s*190px;[^}]*height:\s*auto;[^}]*padding:\s*12px;[^}]*border-color:\s*#755329;/s);
-  assert.match(proPlansLayoutCss, /\.pro-plans-screen \.plan-card\[data-current="true"\]\s*\{[^}]*border-color:\s*#d6a42b;/s);
+  assert.match(proPlansLayoutCss, /\.pro-plans-screen \.plan-card\s*\{[^}]*min-height:\s*190px;[^}]*height:\s*auto;[^}]*padding:\s*12px;/s);
+  // Shared frame ownership (DESIGN 2026-09-15) leaves this file layout-only.
+  assert.match(featureCss, /(?:^|\n)\.plan-card\s*\{[^}]*border:\s*1px solid var\(--pwa-frame-secondary\);/s);
+  assert.match(featureCss, /\.plan-card\[data-current="true"\]\s*\{[^}]*border-color:\s*var\(--pwa-frame-secondary\);/s);
+  assert.doesNotMatch(proPlansLayoutCss, /\.plan-card[^{}]*\{[^}]*border(?:-color)?:/s);
   assert.match(proPlansLayoutCss, /\.pro-plans-screen \.pro-plans-checkout\s*\{[^}]*margin-inline:\s*var\(--pro-plans-checkout-inline\);[^}]*row-gap:\s*0;/s);
-  assert.match(proPlansLayoutCss, /\.pro-plans-screen \.renewal-card\s*\{[^}]*margin:\s*0 0 8px;[^}]*padding:\s*8px;[^}]*border-color:\s*#755329;/s);
+  assert.match(proPlansLayoutCss, /\.pro-plans-screen \.renewal-card\s*\{[^}]*margin:\s*0 0 8px;[^}]*padding:\s*8px;/s);
+  assert.match(guideSource, /className="panel renewal-card"/);
+  assert.match(featureCss, /(?:^|\n)\.panel\s*\{[^}]*border:\s*1px solid var\(--pwa-frame-secondary\);/s);
+  assert.doesNotMatch(proPlansLayoutCss, /\.renewal-card\s*\{[^}]*border(?:-color)?:/s);
   assert.match(proPlansLayoutCss, /\.pro-plans-screen \.renewal-card dl > div\s*\{[^}]*min-height:\s*29px;/s);
   assert.match(proPlansLayoutCss, /\.pro-plans-screen \.confirm-payment\.branded-explore-action\s*\{[^}]*margin:\s*0 0 6px;/s);
   assert.match(proPlansLayoutCss, /\.pro-plans-screen \.payment-note\s*\{[^}]*font-size:\s*11px;/s);

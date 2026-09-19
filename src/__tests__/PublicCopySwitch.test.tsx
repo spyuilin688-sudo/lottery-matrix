@@ -56,7 +56,7 @@ test('privacy hides only the specified list items and restores them', () => {
   const original = view.container.textContent;
   toggle(false);
   const lists = view.container.querySelectorAll('.legal-info-section ul');
-  expect([...lists[0].children].map(n => n.textContent)).toEqual(['登入 LINE 所提供的帳號識別資料','啟動碼使用紀錄','推薦碼使用紀錄','推薦成功人數','通知設定']);
+  expect([...lists[0].children].map(n => n.textContent)).toEqual(['登入服務所提供的帳號識別資料','啟動碼使用紀錄','推薦碼使用紀錄','推薦成功人數','通知設定']);
   expect([...lists[1].children].map(n => n.textContent)).toEqual(['會員登入與帳號識別','提供使用者已選擇的功能','系統通知與服務通知']);
   toggle(true);
   expect(view.container.textContent).toBe(original);
@@ -72,36 +72,35 @@ test('referral and activation disclosures follow the switch without hiding rewar
   expect(view.container.textContent).not.toContain('完成訂閱 Matrix Pro');
   expect(view.container.textContent).not.toContain('若該筆訂閱後續');
   expect(view.container.textContent).not.toContain('啟動碼以增加 Matrix Pro 訂閱天數');
-  expect(screen.getByText('每個 LINE 帳號，僅能輸入一次推薦碼。')).toBeInTheDocument();
+  expect(screen.getByText('每個 LINE 或 Google 帳號，僅能輸入一次推薦碼。')).toBeInTheDocument();
   expect(screen.getByText(/推薦成功滿 50 人/)).toBeInTheDocument();
   expect(screen.getByText('每組啟動碼只能成功使用一次。')).toBeInTheDocument();
   toggle(true);
   expect(view.container.textContent).toBe(original);
 });
 
-test('first visit dialog changes live and keeps the login action and once-only behavior', async () => {
+test('first visit dialog changes live and keeps free-mode access on the current page with once-only behavior', async () => {
   const navigate = vi.fn();
   render(<AppDialogProvider><FirstVisitGuide enabled onNavigate={navigate} /></AppDialogProvider>);
   expect(await screen.findByRole('heading', { name: '免費註冊會員' })).toBeInTheDocument();
   toggle(false);
   expect(screen.getByRole('heading', { name: '使用教學' })).toBeInTheDocument();
-  expect(screen.getByText('點擊右下方「我的」，再點擊「LINE 登入」即可使用查詢；首頁下方的 Matrix Core 進入探索。')).toBeInTheDocument();
-  expect(screen.queryByText(/天衍 2 天/)).not.toBeInTheDocument();
-  expect(screen.getByRole('button', { name: '立即登入' })).toBeInTheDocument();
+  expect(screen.getByText('Matrix 探索二期基本查詢可直接使用；天衡、較高期數、完整範圍、天衍與天工請先使用 LINE 或 Google 登入。新註冊 LINE 會員另有天衍 2 天、天工 1 天試用。')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '開始使用' })).toBeInTheDocument();
   toggle(true);
   expect(screen.getByRole('heading', { name: '免費註冊會員' })).toBeInTheDocument();
   expect(screen.getByText(/天衍 2 天、天工 1 天/)).toBeInTheDocument();
   toggle(false);
-  fireEvent.click(screen.getByRole('button', { name: '立即登入' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始使用' }));
   await act(async () => {});
-  expect(navigate).toHaveBeenCalledExactlyOnceWith('profile');
+  expect(navigate).not.toHaveBeenCalled();
   toggle(true);
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 });
 
 test.each([
   ['04Matrix 探索', ['結果顯示位置、號碼、結果期、連準次數、結果及版路類型。']],
-  ['07Matrix 天工', ['第一段驗證3個球位；第二段驗證前2個球位，第3個球位產生結果。', '按下「開始天工」後顯示間距期數、結果位置、結果及版路類型。']],
+  ['07Matrix 天工', ['第一段要求 C、B、A 三組使用相同完整規則成立；第二段使用 C、B 驗證相同完整規則，再由 A 產生下一期結果。', '按下「開始天工」後，查看重複號碼統計與天工結果。', '結果顯示間距、位移走向、結果位置、結果及版路類型。']],
   ['08Matrix 狀態', ['每條版路顯示位置、號碼、結果期、連準次數、結果及版路類型。']],
   ['18關於 樂彩 Matrix', ['提供 Matrix 查詢、歷史資料查詢、號碼紀錄、計算工具、牌單及通知等功能。']],
 ] as const)('guide %s keeps approved result copy while preserving the other visibility-controlled text', (name, expected) => {

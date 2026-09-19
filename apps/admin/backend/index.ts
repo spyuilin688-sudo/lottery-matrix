@@ -20,7 +20,7 @@ import { createNotificationEvents, getNotificationEventConfig } from './notifica
 import { createPermissionSettings, isPermissionSettingKey } from './permission-settings';
 import { createPushNotifications, requireMemberUuid } from './push-notifications';
 import { createSupabaseTransport, getSupabaseConfig } from './supabase';
-import { createWorkerApi, getWorkerConfig, type CrawlerLottery } from './worker-api';
+import { createWorkerApi, getWorkerConfig, PRODUCTION_RAILWAY_API_BASE, type CrawlerLottery } from './worker-api';
 import {
   createFantasy5GithubDispatcher,
   createIndependentWatchdog,
@@ -74,7 +74,7 @@ const connectionStatus = createConnectionStatus({
   supabase,
   loadConfig: () => getSupabaseConfig(secrets),
   getWorkerStatus: () => workerApi.getStatus(),
-  loadWorkerUrl: async () => (await getWorkerConfig(secrets))?.baseUrl,
+  loadWorkerUrl: async () => PRODUCTION_RAILWAY_API_BASE,
   loadWatchdogStatus: () => watchdogStatus.load(),
   loadGithubToken: () => getGithubActionsToken(secrets),
 });

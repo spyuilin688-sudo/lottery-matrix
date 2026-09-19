@@ -1,13 +1,13 @@
 import { matrixStorageStatusId, parseMatrixStorageHealth } from '../backend/matrix-storage-status';
 import { nativeNotificationStatusId, parseNativeNotificationHealth } from '../backend/native-notification-status';
-import { apiStatusInventory, type ApiStatusDefinition, type ApiCheckEvidence } from '../backend/api-status-inventory';
+import { apiStatusInventory, type ApiStatusDefinition, type ApiCheckEvidence, type ApiLocation } from '../backend/api-status-inventory';
 
 export type SystemStatusItem = {
   id: string;
   name: string;
   description: string;
   group: string;
-  location: 'Supabase' | 'GitHub' | 'Railway';
+  location: ApiLocation;
   endpoint: string;
   checkMode: 'live' | 'openapi' | 'registry' | 'service';
   checkEvidence?: ApiCheckEvidence;
@@ -48,6 +48,7 @@ const statusLocationOrder: SystemStatusItem['location'][] = [
   'Supabase',
   'GitHub',
   'Railway',
+  'TinyFish',
 ];
 
 // Older servers omit checkEvidence; keep their partial probes visibly limited too.
@@ -201,7 +202,7 @@ export function getGithubStatusFacts(item: SystemStatusItem): SystemStatusFact[]
   const facts: SystemStatusFact[] = [
     { label: '排程名稱', value: workflow.name },
     { label: '排程檔案', value: workflow.path },
-    { label: '排程開關', value: formatSystemStatusValue(workflow.state) },
+    { label: '工作流程狀態', value: formatSystemStatusValue(workflow.state) },
   ];
   if (item.detail.latestRun === null) {
     return [...facts, { label: '最近執行', value: '尚無執行紀錄' }];

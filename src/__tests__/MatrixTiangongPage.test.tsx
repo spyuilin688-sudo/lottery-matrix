@@ -29,6 +29,7 @@ const envelope = {
 
 beforeEach(() => {
   document.body.innerHTML = '';
+  window.sessionStorage.removeItem('matrix-core-lottery');
   matrixApi.fetchTiangongList.mockReset().mockResolvedValue(envelope);
   matrixApi.fetchTiangongValidation.mockReset().mockResolvedValue({
     ...envelope, itemId: 'tg-api-1',

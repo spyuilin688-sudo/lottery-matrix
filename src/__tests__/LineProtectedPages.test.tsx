@@ -30,7 +30,7 @@ beforeEach(() => {
   settings.listCustomStatusSettings.mockResolvedValue({ items: [], entitlements: { canCustomizeStatus: true } });
 });
 
-test.each([['notebook', 'Matrix 筆記本'], ['status-settings', '自訂觸發條件']] as const)('guest cannot mount %s and receives a LINE login dialog', async (route, title) => {
+test.each([['notebook', 'Matrix 筆記本'], ['status-settings', '自訂觸發條件']] as const)('guest cannot mount %s and receives a login dialog', async (route, title) => {
   const navigate = vi.fn();
   const { container } = render(<FeaturePageRouter screen={route} onNavigate={navigate} />);
   expect(container.querySelector('.matrix-notebook-screen, .matrix-custom-status-screen')).toBeNull();
@@ -40,8 +40,9 @@ test.each([['notebook', 'Matrix 筆記本'], ['status-settings', '自訂觸發�
   expect(window.localStorage.getItem('matrix-notebook-entries')).toBeNull();
 });
 
-test('a LINE member can enter the notebook without a Pro condition', async () => {
-  auth.getSession.mockResolvedValue({ data: { session: lineSession }, error: null });
+test.each(['custom:line', 'google'])('an authenticated %s member can enter the notebook without a Pro condition', async (provider) => {
+  const session = { ...lineSession, user: { ...lineSession.user, id: `${provider}-member`, app_metadata: { provider } } };
+  auth.getSession.mockResolvedValue({ data: { session }, error: null });
   render(<FeaturePageRouter screen="notebook" onNavigate={vi.fn()} />);
   expect(await screen.findByRole('button', { name: '新增筆記' })).toBeVisible();
   expect(screen.queryByRole('dialog')).toBeNull();
@@ -54,8 +55,8 @@ test('a LINE member can enter custom conditions and load their settings', async 
   await waitFor(() => expect(settings.listCustomStatusSettings).toHaveBeenCalled());
 });
 
-test('a non-LINE session does not satisfy the LINE entry requirement', async () => {
-  auth.getSession.mockResolvedValue({ data: { session: { ...lineSession, user: { ...lineSession.user, app_metadata: { provider: 'email' } } } }, error: null });
+test('a token without an authenticated member ID does not satisfy the entry requirement', async () => {
+  auth.getSession.mockResolvedValue({ data: { session: { ...lineSession, user: { app_metadata: { provider: 'custom:line' }, identities: [] } } }, error: null });
   render(<FeaturePageRouter screen="notebook" onNavigate={vi.fn()} />);
   expect(await screen.findByRole('dialog', { name: '請先登入' })).toBeVisible();
   expect(screen.queryByRole('button', { name: '新增筆記' })).toBeNull();

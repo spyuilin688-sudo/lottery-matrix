@@ -3,7 +3,7 @@
 ## 可切換的訂閱購買與註冊會員免費使用 — 2026-09-10
 
 - 獨立權限管理網站提供「顯示訂閱購買」與「註冊會員免費使用」兩個獨立開關。
-- 購買關閉時，「我的」隱藏整張目前訂閱狀態（含金框與占位）、付款紀錄及退款規範；空的會員相關群組一併收起。「管理訂閱」隱藏購買入口；router 不掛載方案／轉帳／付款紀錄／退款規範頁。設定未知或讀取失敗時保持隱藏；開啟同一開關即可恢復。
+- 購買關閉時，「我的」依後續正式提交 `67b179c` 保留目前訂閱狀態卡，隱藏付款紀錄及退款規範；空的會員相關群組一併收起。「管理訂閱」隱藏購買入口；router 不掛載方案／轉帳／付款紀錄／退款規範頁。設定未知或讀取失敗時保持隱藏；開啟同一開關即可恢復。
 - 同一「顯示訂閱購買」開關同步控制指定文案與篇章：關閉時使用查詢文案、隱藏指定段落；開啟時恢復原文與篇章。範圍詳見 `docs/PERMISSION_SWITCHES.md`，不與免費權限開關連動。已開啟的首次提示同步更新；指南隱藏第 14 類時保留其他類別原編號，若正停留在第 14 類則回到第 01 類。
 - 購買開關關閉時，首頁四大功能下方、底部導覽上方顯示兩段原文：「本站僅提供公開歷史數據查詢，不提供任何投注建議。」「本服務僅供學術參考研究使用，不保証數據之即時性與準確性。」開啟即隱藏。第一段以 390px 一行為基準，窄畫面允許必要換行；第二段依使用者要求維持單行，字級上限 .6875rem 並隨聲明容器實際內容寬度縮小（3.4cqi）。不截斷、不省略，不改寫「保証」；樣式由 src/homepage/free-statement.css 擁有。
 - PWA 啟動、回到前景及前景每 30 秒重讀設定；演算法快取使用前重新確認設定版本，變更時清除既有結果。
@@ -16,7 +16,7 @@
 ## PWA page headers — 2026-09-12
 
 - `src/features/BrandHeader.tsx` is the sole title renderer for PWA feature pages. `src/feature-pages.css` owns its layout. Homepage branding and the independent admin application are excluded.
-- Each default or collapsed frame is 68px high with the same 16px page gutters and 8px following gap. Titles remain complete and single-line; the shared CSS fit ranges reduce long titles without changing frame geometry.
+- Each default or collapsed frame is 68px high with the same 16px page gutters and the 14px following gap approved in commits `7905e45` / `2eb6348`. Titles remain complete and single-line; the shared CSS fit ranges reduce long titles without changing frame geometry.
 - Preserve existing back destinations, shortcut return callbacks, action callbacks, and sticky tool headers. Notification and profile roots have no back control; profile details and notebook retain their existing back control. No placeholder back target is introduced.
 - All frames retain the same back column even when no back control is rendered. One row with separate back, logo, copy and action columns keeps logo and copy origins unchanged when actions are absent. The copy group is vertically centered. The 60px right action column stacks 20px buttons with a 4px gap and reduced padding, retaining the existing text and icon sizes; it never creates a row beneath the title. A 22px heading box with an 18px baseline strut keeps smaller titles on the shared baseline.
 - Header actions remain inside the fixed frame and scroll with the sticky header, so filters can be opened without scrolling back to the top. History, number reference and tongxing share a single bordered header/settings card. The 24px borderless settings control uses muted gold 12px text, a right-side state chevron, aria-expanded and aria-controls. The leading funnel is removed and all states keep a transparent background; hover/active use text color and keyboard focus retains its outline. Its action column is 70px; other header actions retain their default geometry. Initial settings are in normal flow; reopening overlays results from the same sticky header with a 68px placeholder. Settings remain mounted so draft values persist; Escape closes and restores trigger focus. No viewport measurement or portal is used for these settings.
@@ -95,7 +95,7 @@ Every reachable product overflow surface keeps its existing overflow and touch b
 | Apply PWA update | Existing Service Worker controller changes after a fingerprinted build | Shared confirmation dialog offers `立即更新` or `稍後` | Confirm reloads the current route; cancel stays on the current route | Reload runs the newest application assets | First Service Worker activation does not show an update; registration failures do not interrupt the current session | Dialog follows the shared focus and dismissal contract | Current request (2026-09-02) |
 | Reset admin revenue totals | Super administrator selects `重設收入` in `收入報表` | Danger confirmation explains that five totals reset while payment records remain; action is disabled while pending | Stay on `收入報表` and reload the five totals | Totals reflect only confirmed payments at or after the stored reset timestamp | Inline error remains visible and the action becomes retryable; non-super roles are rejected by the server | Existing admin confirmation dialog owns the decision; focus restoration remains unchanged | Current request (2026-09-02) |
 | Expand Matrix status category | Tap the compact `•狀態` category row | Immediate local toggle; chevron and `aria-expanded` stay synchronized | Stay on Matrix status | Every trigger in that category remains visible as its own card | Empty categories show `尚無成立觸發`; closing does not alter server data | Focus remains on the category button | Approved Matrix status design (2026-09-04) |
-| Refresh homepage Matrix status | Enter homepage, stored draw data changes, foreground/online event, or 60-second visible-home interval | Four cards settle independently; initial or invalidated reads show `讀取中` without changing card geometry | Stay on homepage | Current stored status replaces the corresponding card; superseded responses are ignored | Failure or 8-second deadline shows `讀取失敗`, never a fallback `沉寂`; later refresh can recover | Refresh does not move focus | Project audit fixes (2026-09-06) |
+| Refresh homepage Matrix status | Enter homepage, logical login-session change, stored draw revision, foreground/online event, or 1-hour visible-home interval | One batch read; initial or invalidated reads show `讀取中` without changing card geometry | Stay on homepage | Clear prior-session cards even when login changes on another page; abort and ignore superseded responses; same-session token refresh keeps cadence | Failure or 15-second deadline shows `讀取失敗`, never a fallback `沉寂`; later refresh can recover | Refresh does not move focus | Existing batch/hourly implementation and API audit fix (2026-09-19) |
 | Expand Matrix status road | Tap an entitled Explore-style road row | Row expands immediately; validation is fetched once per analysis version and item; duplicate requests are blocked | Stay on the trigger card | Existing Explore validation presentation appears below that row | Inline recoverable validation error; locked rows are not actionable and expose only prediction plus `🔒 Matrix Pro` | Focus remains on the road button | Approved Matrix status design (2026-09-04) |
 | Create or edit admin todo | Submit a trimmed 1–100 character todo form | Submit controls are disabled while pending; draft is retained on failure | Stay on `代辦事項` | List refreshes and timestamp remains the creation time | Inline error; edit remains restricted to the owner | Focus remains within the todo form/action group | Approved admin todo design (2026-09-04) |
 | Delete admin todo | Select delete on an owned todo, or any todo as super administrator, then confirm | Existing admin confirmation dialog owns the pending decision; duplicate mutation is blocked | Stay on `代辦事項` | Deleted item is removed after server confirmation | Inline error and retry; server rejects unauthorized deletion | Dialog restores focus to the initiating control when retained | Approved admin todo design (2026-09-04) |
@@ -120,7 +120,7 @@ The dialog preserves the existing navy, gold, danger-red and success-green visua
 
 ## Navigation, async and recovery
 
-2026-09-12：首頁 Matrix Core 保持獨立探索入口，顯示「進入更深層的演算法」說明；四大功能依序開啟既有 `tongxing`、`reference`、`matrix-card`、`guide` 路由。移除功能列中的計算機，底部導覽及快捷設定的計算機保留。插畫不包含卡名；原生按鈕提供文字名稱、鍵盤焦點及按壓回饋。靜止金屬素材取代循環光圈，減少動態干擾。
+2026-09-12：首頁 Matrix Core 保持獨立探索入口，顯示「進入更深層的演算法」說明；四大功能依序開啟既有 `tongxing`、`reference`、`matrix-card`、`guide` 路由。移除功能列中的計算機，底部導覽及快捷設定的計算機保留。插畫不包含卡名；原生按鈕提供文字名稱、鍵盤焦點及按壓回饋。金屬素材保持靜態；後續正式提交 `246e6ab` 恢復 Core 的 4.8 秒循環與 2.8 秒節點脈衝，`prefers-reduced-motion` 停用兩者。
 
 2026-09-14：底部導覽依使用者指定順序提供「首頁、快捷、計算機、我的」。計算機沿用既有 `calculator` 路由，選中態由 `QuickNavigationContext.currentScreen` 推導，保留工具頁標題與返回行為；快捷開啟時優先顯示快捷選中態。原通知入口移至「我的 → 系統相關 → 通知設定」，仍使用既有通知頁及資料流程，該頁將「我的」標示為目前導覽群組。首頁快捷設定與狀態頁自訂觸發條件入口均保留；兩者繼續使用既有 800ms 內雙擊及鍵盤／輔助操作的原生 click 行為，不改動權限、設定內容或儲存邏輯。導覽滿寬四等分；首頁快捷設定移至 Logo 右上角，自訂觸發條件移至狀態頁頁首 action slot，兩者維持 44px 觸控區。
 
@@ -245,7 +245,7 @@ After result notification dispatch, the trusted producer requests immediate back
 
 ## 2026-09-08：查詢與設定回應
 
-- Matrix 探索、天衍、同星及號碼對照單只接受最近一次已送出查詢的回應；較舊的成功、錯誤及捲動回呼都不得覆蓋新查詢。單純編輯未送出的條件維持原有行為。
+- Matrix 探索、天衍、同星及號碼對照單只接受最近一次已送出查詢的回應；較舊的成功、錯誤及捲動回呼都不得覆蓋新查詢。單純編輯未送出的條件維持原有結果；展開探索驗證使用結果所屬的已送出期數及範圍，不將尚未提交的草稿套到舊結果。
 - 依 2026-09-08 使用者最新修正，自訂觸發條件在狀態頁入口先查驗登入與伺服器 `canCustomizeStatus`，通過才換頁；檢查期間顯示設定讀取中並防止重複請求。未登入、方案不符或讀取失敗使用共用 `AppDialog`，關閉後留在原狀態頁並可重試。移除自訂頁內登入／方案提示卡；若進頁後再次驗證或儲存／重置時失去權限，隱藏自訂頁並返回狀態頁顯示同一提醒。保留正式 RPC 驗證及既有方案條件。
 - 通知設定儲存失敗在頁內持續顯示提示及「重試儲存」，保留最新編輯；只有伺服器確認最新設定後才清除提示。重試期間防止重複提交，離頁後不更新畫面。
 

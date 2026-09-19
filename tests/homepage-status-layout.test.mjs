@@ -19,8 +19,9 @@ test("狀態區隱藏共同外框並保留 16px 外距、1.5px 內距與 4px 水
   );
   assert.match(
     css,
-    /\.home-screen \.matrix-status-artwork\s*\{[^}]*width:\s*100%;[^}]*height:\s*auto;/s,
+    /\.home-screen \.matrix-status-artwork\s*\{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain;/s,
   );
+  assert.match(css, /\.home-screen \.matrix-status-card\s*\{[^}]*aspect-ratio:\s*1\.9;/s);
 });
 test("彩種圖示再向左 6px，並維持流動尺寸", () => {
   assert.match(

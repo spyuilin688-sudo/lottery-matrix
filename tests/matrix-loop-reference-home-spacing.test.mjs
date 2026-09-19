@@ -13,7 +13,7 @@ test("Matrix 切換器固定顯示四頁並標示目前頁面，移除循環複�
   assert.match(switcher, /MATRIX_PAGE_ITEMS\.map/);
   assert.match(switcher, /aria-current=\{item\.screen === current \? "page" : undefined\}/);
   assert.doesNotMatch(switcher, /MATRIX_LOOP_ITEMS|data-loop-clone|onScroll|scrollTo/);
-  assert.match(feature, /\.matrix-page-switcher\s*\{[^}]*display:\s*flex;[^}]*width:\s*176px;[^}]*height:\s*26px;[^}]*gap:\s*0;[^}]*border:\s*1px solid rgba\(117, 83, 41, \.48\);/s);
+  assert.match(feature, /\.matrix-page-switcher\s*\{[^}]*display:\s*flex;[^}]*width:\s*176px;[^}]*height:\s*26px;[^}]*gap:\s*0;[^}]*border:\s*1px solid var\(--pwa-frame-tertiary\);/s);
 });
 
 test("號碼對照單整列與單格標記彼此獨立且分隔線清楚", () => {
@@ -22,7 +22,8 @@ test("號碼對照單整列與單格標記彼此獨立且分隔線清楚", () =>
   assert.match(rowHandler, /setMarkedCells/);
   assert.doesNotMatch(cellHandler, /setMarkedRows/);
   assert.match(reference, /data-row-marked="true"[^}]*button\[data-cell-marked="true"\]\s*\{[^}]*background:\s*rgba\(224, 124, 24, \.68\)/s);
-  assert.match(reference, /border-left:\s*1px solid rgba\(161, 112, 40, \.78\)/);
+  assert.match(feature, /\.reference-row > \.reference-issue \+ span\s*\{[^}]*border-left:\s*1px solid var\(--pwa-frame-divider\);/s);
+  assert.doesNotMatch(reference, /\.reference-row > \.reference-issue \+ span\s*\{/);
 });
 
 test("首頁使用 16px 功能內距與響應式導覽淨空及更新後區段間距", () => {

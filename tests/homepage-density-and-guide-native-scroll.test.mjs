@@ -15,10 +15,10 @@ test("首頁 Logo 等比例填滿正式框", () => {
   assert.match(homeCss, /\.home-screen \.home-logo-image\s*\{[^}]*width:\s*100%;/s);
 });
 
-test("順球與落球上移 2px且總高度縮減 3px", () => {
+test("順球與落球保留上移位置並依後續調整使用 22px 高度", () => {
   assert.match(
     homeCss,
-    /\.home-screen \.latest-draw-card \.draw-order\s*\{[^}]*height:\s*25px;[^}]*margin-block-start:\s*1px;/s,
+    /\.home-screen \.latest-draw-card \.draw-order\s*\{[^}]*height:\s*22px;[^}]*margin-block-start:\s*1px;/s,
   );
 });
 

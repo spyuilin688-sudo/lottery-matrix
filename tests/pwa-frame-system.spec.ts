@@ -93,8 +93,13 @@ test('real advanced native select has a frame and selected options change withou
   await expect(seven).toHaveCSS('border-top-color', colors.secondary);
   await expect(seven).toHaveCSS('color', colors.secondary);
   await expect(seven).toHaveCSS('box-shadow', 'none');
-  await expect(page.locator('.primary-action')).toHaveCSS('border-top-color', colors.primary);
-  await expect(page.locator('.primary-action')).toHaveCSS('box-shadow', 'none');
+  // DESIGN.md retains this deliberate branded CTA variant; native controls above
+  // still use the shared frame tokens without glow.
+  const action = page.locator('.primary-action.branded-explore-action');
+  await expect(action).toHaveCSS('border-top-color', 'rgb(201, 154, 46)');
+  await expect(action).toHaveCSS('border-top-width', '1px');
+  await expect(action).toHaveCSS('border-radius', '9px');
+  await expect(action).toHaveCSS('box-shadow', 'rgba(238, 183, 52, 0.14) 0px 0px 18px 0px inset, rgba(203, 148, 35, 0.16) 0px 0px 18px 0px');
 });
 
 for (const width of [320, 390, 430]) {

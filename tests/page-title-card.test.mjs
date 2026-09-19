@@ -72,17 +72,22 @@ test("number reference title card owns refresh and explore settings [header migr
   assert.match(referencePage, /探索設定/);
 });
 
-test("home and Matrix status retain the shared Matrixbba switcher artwork", () => {
+test("home and Matrix status share the independent-logo lottery switcher", () => {
+  const prototype = readFileSync(new URL("../src/Prototype.tsx", import.meta.url), "utf8");
+  assert.match(prototype, /<LotterySwitcher selected=\{selected\} onChange=\{setSelected\} className="lottery-switcher--home-style home-switcher-box"/);
   assert.match(featurePages, /className="lottery-switcher--home-style matrix-status-lottery-switcher" \/>/);
   assert.doesNotMatch(featurePages, /matrix-status-lottery-switcher" independentLogos/);
   const switcherBodies = ruleBodies(homepageStyles, /^\.lottery-switcher--home-style$/);
   assert.ok(switcherBodies.some((body) => /width:\s*calc\(100% - 32px\);/.test(body) && /margin-inline:\s*0;/.test(body)));
-  assert.match(homepageStyles, /background-image:\s*url\("\/assets\/lottery\/status\/Matrixbba\.png"\);/);
-  assert.doesNotMatch(homepageStyles, /lottery-card-logo|--lottery-logo-scale|lottery-switcher--independent-logos/);
+  assert.match(prototype, /<svg className="lottery-selector-logo" viewBox=\{lottery\.logoViewBox\}/);
+  assert.match(prototype, /<image href=\{lottery\.logo\}/);
+  assert.doesNotMatch(homepageStyles, /Matrixbba\.png|lottery-switcher--independent-logos/);
   const homeFlowBodies = ruleBodies(homepageStyles, /^\.home-screen \.lottery-switcher$/);
   assert.ok(homeFlowBodies.some((body) => /margin-block-start:\s*var\(--home-gap-logo-switcher\);/.test(body)));
-  assert.match(homepageStyles, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid var\(--home-frame-muted\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
-  assert.match(homepageStyles, /\.lottery-card\[data-selected="true"\]\s*\{[^}]*background-color:\s*transparent;/s);
+  assert.match(homepageStyles, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid color-mix\(in srgb, var\(--home-frame-gold\) 22%, transparent\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
+  assert.match(homepageStyles, /\.lottery-card\[data-selected="true"\]\s*\{[^}]*border-color:\s*color-mix\(in srgb, var\(--home-frame-bright\) 55%, transparent\);[^}]*background:\s*color-mix\(in srgb, var\(--home-frame-gold\) 6%, var\(--lottery-neutral-950\)\);/s);
+  assert.match(homepageStyles, /\.lottery-selector-logo\s*\{[^}]*opacity:\s*\.6;/s);
+  assert.match(homepageStyles, /\.lottery-card\[data-selected="true"\] \.lottery-selector-logo\s*\{[^}]*opacity:\s*1;/s);
   assert.doesNotMatch(homepageStyles, /\.lottery-card\[data-selected="true"\]::before\s*\{/);
 });
 
