@@ -7,7 +7,8 @@ import { BrandHeader } from "./BrandHeader";
 test("all title variants render the official logo, complete title, subtitle and requested back state", () => {
   for (const [title, back, subtitle, background] of [
     ["Matrix 探索", true, "EXPLORE", "flow"], ["Matrix 天衡", true, "TIANHENG", "flow"],
-    ["Matrix 天衍", true, "TIANYAN", "flow"], ["Matrix 天工", true, "TIANGONG", "flow"],
+    ["Matrix 天樞", true, "TIANSHU", "flow"], ["Matrix 天衍", true, "TIANYAN", "flow"],
+    ["Matrix 天工", true, "TIANGONG", "tiangong"],
     ["歷史開獎號碼", true, "DRAW HISTORY", "geometric"], ["Matrix 同星", true, "TONGXING", "geometric"],
     ["號碼對照單", true, "NUMBER REFERENCE", "geometric"],
     ["Matrix 牌單", true, "DRAW SHEETS", "gold-arc"],

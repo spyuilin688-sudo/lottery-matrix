@@ -2243,6 +2243,9 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .product-header[data-header-style="flow"] {
   --product-header-background: url("/assets/lottery/header-06-flow.svg");
 }
+.product-header[data-header-style="tiangong"] {
+  --product-header-background: url("/assets/lottery/header-tiangong.svg");
+}
 .product-header[data-header-style="geometric"] {
   --product-header-background: url("/assets/lottery/header-07-geometric.svg");
 }
