@@ -11,6 +11,15 @@ const item = {
   exploreDateOffset: 0, ruleCount: 2, referenceOffset: 0, referencePosition: 1,
 };
 
+const tianhengItem = {
+  id: 'th-layout-1', firstNumber: '05', firstLockedPosition: 1,
+  secondNumber: '18', secondLockedPosition: 3,
+  predictionDistance: 5, consecutive: '準5進6', highestStreak: 5,
+  predictionNumbers: ['19'], algorithmType: '拖牌',
+  numberOrder: '依號碼由小到大排序', explorePeriods: 3,
+  exploreDateOffset: 0, ruleCount: 2, referenceOffset: 0, referencePosition: 1,
+};
+
 const validation = {
   itemId: item.id,
   sourceA: {
@@ -49,6 +58,22 @@ const validation = {
   }],
 };
 
+const tianhengValidation = {
+  ...validation,
+  itemId: tianhengItem.id,
+  sourceA: {
+    ...validation.sourceA,
+    lockedPositions: [1, 3], lockedNumbers: [5, 18],
+  },
+  ruleSets: validation.ruleSets.map(ruleSet => ({
+    ...ruleSet,
+    historicalValidation: ruleSet.historicalValidation.map(row => ({
+      ...row,
+      lockedPositions: [1, 3], lockedNumbers: [5, 18],
+    })),
+  })),
+};
+
 async function isolateRuntime(page: Page) {
   // Registered first as a final safety net. No external HTTP(S) request may leave this browser.
   await page.route(/^https?:\/\//, async route => {
@@ -79,6 +104,14 @@ async function isolateRuntime(page: Page) {
       matrix_tianshu_validation: {
         lottery: '今彩539', draw_period: '114001', analysis_version: '114001:layout-v1',
         item_id: item.id, validation,
+      },
+      matrix_tianheng_list: {
+        lottery: '今彩539', draw_period: '114001', analysis_version: '114001:layout-v1',
+        items: [tianhengItem], duplicate_stats: [{ number: '19', count: 1 }], total: 1,
+      },
+      matrix_tianheng_validation: {
+        lottery: '今彩539', draw_period: '114001', analysis_version: '114001:layout-v1',
+        item_id: tianhengItem.id, validation: tianhengValidation,
       },
       member_online_start: {}, member_online_end: {},
     };
@@ -127,6 +160,25 @@ function switcherGeometry(page: Page) {
         - Number.parseFloat(style.borderLeftWidth)
         - Number.parseFloat(style.borderRightWidth),
       buttons,
+    };
+  });
+}
+
+function validationNumberRowGeometry(page: Page, testId: string) {
+  return page.getByTestId(testId).evaluate(row => {
+    const card = row.closest<HTMLElement>('.explore-validation-numbers-card')!;
+    const numbers = row.querySelector<HTMLElement>('.explore-validation-numbers')!;
+    const rowBounds = row.getBoundingClientRect();
+    const cardBounds = card.getBoundingClientRect();
+    const numbersBounds = numbers.getBoundingClientRect();
+    return {
+      cardWidth: cardBounds.width,
+      rowWidth: rowBounds.width,
+      numbersWidth: numbersBounds.width,
+      cardOverflowX: card.scrollWidth - card.clientWidth,
+      numbersOverflowX: numbers.scrollWidth - numbers.clientWidth,
+      leftInset: numbersBounds.left - cardBounds.left,
+      rightInset: cardBounds.right - numbersBounds.right,
     };
   });
 }
@@ -182,7 +234,8 @@ for (const width of [320, 390, 1100]) {
 
     await result.focus();
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('region', { name: '天樞驗證過程' })).toBeVisible();
+    const tianshuValidation = page.getByRole('region', { name: '天樞驗證過程' });
+    await expect(tianshuValidation).toBeVisible();
     const rows = page.getByTestId('tianshu-summary-row');
     await expect(rows).toHaveCount(2);
     await expect(rows.first().locator(':scope > span')).toHaveCount(3);
@@ -214,6 +267,29 @@ for (const width of [320, 390, 1100]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
     await page.screenshot({ path: testInfo.outputPath(`tianshu-${width}.png`), fullPage: true, animations: 'disabled' });
+    await tianshuValidation.scrollIntoViewIfNeeded();
+    await tianshuValidation.screenshot({
+      path: testInfo.outputPath(`tianshu-validation-${width}.png`), animations: 'disabled',
+    });
+
+    if (width === 320) {
+      const tianshuNumberGeometry = await validationNumberRowGeometry(page, 'tianshu-source-row-B');
+      await page.getByRole('button', { name: 'Matrix 天衡' }).click();
+      await expect(page.getByRole('heading', { name: 'MATRIX 天衡', exact: true })).toBeVisible();
+      await page.getByRole('button', { name: '開始天衡', exact: true }).click();
+      const tianhengResult = page.getByRole('button', { name: `展開版路 ${tianhengItem.id}` });
+      await expect(tianhengResult).toBeVisible();
+      await tianhengResult.click();
+      const tianhengValidationRegion = page.getByRole('region', { name: '天衡驗證過程' });
+      await expect(tianhengValidationRegion).toBeVisible();
+      const tianhengNumberGeometry = await validationNumberRowGeometry(page, 'tianheng-source-row-B');
+      expect(tianhengNumberGeometry).toEqual(tianshuNumberGeometry);
+      console.log(`320px validation number geometry: ${JSON.stringify({ tianshu: tianshuNumberGeometry, tianheng: tianhengNumberGeometry })}`);
+      await tianhengValidationRegion.scrollIntoViewIfNeeded();
+      await tianhengValidationRegion.screenshot({
+        path: testInfo.outputPath('tianheng-validation-320.png'), animations: 'disabled',
+      });
+    }
     console.log(`Matrix 天樞 ${width}px: header 68px; switcher 176x26; Tianheng geometry matched; three-lock result and two-row fitter passed`);
   });
 }
