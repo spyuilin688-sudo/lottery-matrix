@@ -93,4 +93,3 @@ def test_tianshu_same_period_range_excludes_all_three_locked_positions():
 
     assert same_period_positions == {4, 5}
     assert context.drag_cell(unit.occurrence).position == unit.occurrence.first_position
-

@@ -194,3 +194,15 @@ def test_artifact_completeness_versions_are_parsed_exactly():
     assert required_artifact_kinds("114001:matrix-python-v14-draw") == frozenset(LEGACY_V14_ARTIFACT_KINDS)
     assert required_artifact_kinds("114001:matrix-python-v15-sorted") == frozenset(ARTIFACT_KINDS)
     assert required_artifact_kinds("114001:matrix-python-v140-sorted") == frozenset(ARTIFACT_KINDS)
+
+
+def test_v14_run_completes_with_five_legacy_artifacts():
+    repository = InMemoryAnalysisRepository()
+    version = "114001:matrix-python-v14-sorted"
+    repository.begin_run("今彩539", "114001", version, datetime.now(UTC).isoformat())
+    for kind in LEGACY_V14_ARTIFACT_KINDS:
+        repository.save_artifact("今彩539", "114001", version, kind, empty_artifact())
+
+    repository.complete_run("今彩539", "114001", version, datetime.now(UTC).isoformat())
+
+    assert repository.get_progress("今彩539", "114001", version)["status"] == "complete"

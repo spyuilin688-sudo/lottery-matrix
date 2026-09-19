@@ -51,4 +51,3 @@ def test_tianheng_and_tianshu_keep_independent_cached_indexes(monkeypatch):
     assert sessions["tianheng"][0] is not sessions["tianshu"][0]
     assert sessions["tianheng"][0].lock_count == 2
     assert sessions["tianshu"][0].lock_count == 3
-

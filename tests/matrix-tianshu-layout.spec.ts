@@ -102,6 +102,35 @@ function geometry(page: Page) {
   });
 }
 
+function switcherGeometry(page: Page) {
+  return page.getByRole('navigation', { name: 'Matrix Core 功能切換' }).evaluate(node => {
+    const switcher = node.getBoundingClientRect();
+    const style = getComputedStyle(node);
+    const buttons = [...node.querySelectorAll<HTMLButtonElement>('button')].map(button => {
+      const bounds = button.getBoundingClientRect();
+      const buttonStyle = getComputedStyle(button);
+      return {
+        left: bounds.left - switcher.left,
+        width: bounds.width,
+        contentWidth: bounds.width
+          - Number.parseFloat(buttonStyle.paddingLeft)
+          - Number.parseFloat(buttonStyle.paddingRight)
+          - Number.parseFloat(buttonStyle.borderLeftWidth)
+          - Number.parseFloat(buttonStyle.borderRightWidth),
+        borderRightWidth: buttonStyle.borderRightWidth,
+      };
+    });
+    return {
+      width: switcher.width,
+      height: switcher.height,
+      innerWidth: switcher.width
+        - Number.parseFloat(style.borderLeftWidth)
+        - Number.parseFloat(style.borderRightWidth),
+      buttons,
+    };
+  });
+}
+
 for (const width of [320, 390, 1100]) {
   test(`Matrix 天樞 reuses Tianheng geometry and fits three locks at ${width}px`, async ({ page }, testInfo) => {
     await isolateRuntime(page);
@@ -118,13 +147,20 @@ for (const width of [320, 390, 1100]) {
     const switchButtons = switcher.getByRole('button');
     await expect(switchButtons).toHaveCount(5);
     await expect(switchButtons).toHaveText(['探索', '天衡', '天樞', '天衍', '天工']);
-    const switchWidths = await switchButtons.evaluateAll(buttons => buttons.map(button => button.getBoundingClientRect().width));
-    expect(Math.max(...switchWidths) - Math.min(...switchWidths)).toBeLessThanOrEqual(1 / 64);
+    const tianshuSwitcherGeometry = await switcherGeometry(page);
+    const contentWidths = tianshuSwitcherGeometry.buttons.map(button => button.contentWidth);
+    expect(Math.max(...contentWidths) - Math.min(...contentWidths)).toBeLessThanOrEqual(1 / 64);
+    expect(tianshuSwitcherGeometry.buttons.map(button => button.borderRightWidth)).toEqual([
+      '1px', '1px', '1px', '1px', '0px',
+    ]);
+    expect(tianshuSwitcherGeometry.buttons.reduce((total, button) => total + button.width, 0))
+      .toBeCloseTo(tianshuSwitcherGeometry.innerWidth, 5);
 
     const tianshuGeometry = await geometry(page);
     await switcher.getByRole('button', { name: 'Matrix 天衡' }).click();
     await expect(page.getByRole('heading', { name: 'MATRIX 天衡', exact: true })).toBeVisible();
     expect(await geometry(page)).toEqual(tianshuGeometry);
+    expect(await switcherGeometry(page)).toEqual(tianshuSwitcherGeometry);
 
     const tianshuButton = page.getByRole('button', { name: 'Matrix 天樞' });
     await tianshuButton.focus();

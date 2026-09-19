@@ -6,9 +6,9 @@ import pytest
 
 from app.domain.explore_state import DRAW_ORDER, SORTED_ORDER
 from app.repositories.analysis_repository import (
-    ARTIFACT_KINDS,
     InMemoryAnalysisRepository,
     SupabaseAnalysisRepository,
+    required_artifact_kinds,
 )
 from app.services.analysis_pipeline import AnalysisPipeline
 from app.worker import ANALYSIS_VERSION, analysis_version_for_order, run_scheduled_worker
@@ -87,7 +87,7 @@ def _complete_run(
     completed_at: str,
 ) -> None:
     repository.begin_run(LOTTERY, PERIOD, version, started_at)
-    for kind in ARTIFACT_KINDS:
+    for kind in required_artifact_kinds(version):
         repository.save_artifact(LOTTERY, PERIOD, version, kind, {"kind": kind})
     repository.complete_run(LOTTERY, PERIOD, version, completed_at)
 
@@ -235,6 +235,7 @@ def test_pipeline_returns_current_version_progress_when_legacy_run_is_newer() ->
             {
                 "explore": explore,
                 "tianheng": lambda _: {"items": [], "validationById": {}},
+                "tianshu": lambda _: {"items": [], "validationById": {}},
                 "tianyan": lambda _: {},
             "tiangong": lambda _: {"items": []},
             "status": lambda _: {},
