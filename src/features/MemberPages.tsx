@@ -1069,9 +1069,37 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
           {referralLoginRequired && <p className="activation-result" role="status">請先使用 LINE 或 Google 登入</p>}
           {!referralLoading && !referralLoginRequired && referralSummary === null && <p className="activation-result error" role="alert">推薦碼資訊暫時無法讀取，請稍後再試</p>}
         </div>
-        <CollapsibleRuleCard title="推薦成功認定" open={openRules.recognition} onToggle={() => toggleRule("recognition")}><DetailList items={["每個 LINE 或 Google 帳號，僅能輸入一次推薦碼。", ...(subscriptionPurchaseVisible ? ["輸入推薦碼的帳號，完成訂閱 Matrix Pro 月方案、季方案或年方案任一方案後，該筆推薦即計為「推薦成功」。", "若該筆訂閱後續發生退款、刷退或交易取消，該筆推薦成功將失效，推薦成功人數同步扣除，相關獎勵資格，將依最新推薦成功人數重新計算。"] : [])]} /></CollapsibleRuleCard>
-        <CollapsibleRuleCard title="推薦成功獎勵" open={openRules.reward} onToggle={() => toggleRule("reward")}><DetailList items={["推薦成功滿 10 人：Matrix 探索期數 (七期) 開放日：每週二、五開放變為每週一、二、四、五。", "推薦成功滿 15 人：Matrix 探索期數 (七期)：永久開放。", "推薦成功滿 30 人：Matrix 探索範圍 (完整範圍)：由不開放變為每週二、五開放。", "推薦成功滿 50 人：Matrix 探索範圍 (完整範圍)：永久開放。"]} /></CollapsibleRuleCard>
-        {subscriptionPurchaseVisible && <CollapsibleRuleCard title="推薦獎勵補充規則" open={openRules.supplement} onToggle={() => toggleRule("supplement")}><DetailList items={["推薦獎勵不需本人訂閱 Matrix Pro。", "當達成對應的推薦成功人數門檻後，即可使用已解鎖的 Matrix 探索權限。", "若因退款、刷退或交易取消等情況，導致推薦成功人數低於原獎勵門檻：已取得的對應獎勵將同步取消。並依最新的推薦成功人數，重新計算資格與獎勵。", "樂彩 Matrix 保留活動內容、參加資格、獎勵內容、活動規則、資格認定、發放方式、終止、修改、解釋及最終決定之權利。"]} /></CollapsibleRuleCard>}
+        <CollapsibleRuleCard title="推薦成功認定" open={openRules.recognition} onToggle={() => toggleRule("recognition")}>
+          <DetailList items={[
+            "每個 LINE 或 Google 帳號，僅能輸入一次推薦碼。",
+            ...(subscriptionPurchaseVisible ? ["輸入推薦碼的帳號，完成訂閱 Matrix Pro 月方案、季方案或年方案任一方案後，該筆推薦即計為「推薦成功」。"] : []),
+          ]} />
+        </CollapsibleRuleCard>
+        <CollapsibleRuleCard title="推薦成功獎勵" open={openRules.reward} onToggle={() => toggleRule("reward")}>
+          <p className="referral-rewards-label">Matrix 探索</p>
+          <dl className="referral-rewards">
+            {[
+              { count: 10, feature: "七期", availability: "每週一、二、四、五開放" },
+              { count: 15, feature: "七期", availability: "永久開放" },
+              { count: 30, feature: "完整範圍", availability: "每週二、五開放" },
+              { count: 50, feature: "完整範圍", availability: "永久開放" },
+            ].map(({ count, feature, availability }) => (
+              <div key={count}>
+                <dt>推薦成功滿 <strong>{count}</strong> 人</dt>
+                <dd><span>{feature}</span><span>{availability}</span></dd>
+              </div>
+            ))}
+          </dl>
+          <p className="referral-rewards-note">永久開放仍須維持對應的推薦成功人數門檻。</p>
+        </CollapsibleRuleCard>
+        {subscriptionPurchaseVisible && <CollapsibleRuleCard title="推薦獎勵補充規則" open={openRules.supplement} onToggle={() => toggleRule("supplement")}>
+          <DetailList items={[
+            "推薦獎勵不需本人訂閱 Matrix Pro。",
+            "當達成對應的推薦成功人數門檻後，即可使用已解鎖的 Matrix 探索權限。",
+            "若該筆訂閱發生退款、刷退或交易取消，該筆推薦成功將失效，推薦成功人數同步扣除。資格與獎勵依最新推薦成功人數重新計算；低於對應門檻時，已取得的對應獎勵同步取消。",
+            "樂彩 Matrix 保留活動內容、參加資格、獎勵內容、活動規則、資格認定、發放方式、終止、修改、解釋及最終決定之權利。",
+          ]} />
+        </CollapsibleRuleCard>}
       </section>
       <section className="panel activation-code-section" aria-label="啟動碼">
         <div className="activation-card">

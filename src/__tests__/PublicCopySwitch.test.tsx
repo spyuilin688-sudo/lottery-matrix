@@ -73,10 +73,42 @@ test('referral and activation disclosures follow the switch without hiding rewar
   expect(view.container.textContent).not.toContain('若該筆訂閱後續');
   expect(view.container.textContent).not.toContain('啟動碼以增加 Matrix Pro 訂閱天數');
   expect(screen.getByText('每個 LINE 或 Google 帳號，僅能輸入一次推薦碼。')).toBeInTheDocument();
-  expect(screen.getByText(/推薦成功滿 50 人/)).toBeInTheDocument();
+  expect([...view.container.querySelectorAll('.referral-rewards dt')].map(row => row.textContent)).toContain('推薦成功滿 50 人');
   expect(screen.getByText('每組啟動碼只能成功使用一次。')).toBeInTheDocument();
   toggle(true);
   expect(view.container.textContent).toBe(original);
+});
+
+test('referral rewards retain all four thresholds and explain reversals once', async () => {
+  const view = render(<AppDialogProvider><ActivationCodePage onNavigate={vi.fn()} /></AppDialogProvider>);
+  await act(async () => {});
+  for (const name of ['推薦成功認定', '推薦成功獎勵', '推薦獎勵補充規則']) {
+    const toggle = screen.getByRole('button', { name });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  }
+  const rewards = document.getElementById('referral-rule-推薦成功獎勵')!;
+  expect([...rewards.querySelectorAll('dl > div')].map(row => [
+    row.querySelector('dt')?.textContent,
+    [...row.querySelectorAll('dd > span')].map(part => part.textContent),
+  ])).toEqual([
+    ['推薦成功滿 10 人', ['七期', '每週一、二、四、五開放']],
+    ['推薦成功滿 15 人', ['七期', '永久開放']],
+    ['推薦成功滿 30 人', ['完整範圍', '每週二、五開放']],
+    ['推薦成功滿 50 人', ['完整範圍', '永久開放']],
+  ]);
+  expect(rewards).toHaveTextContent('永久開放仍須維持對應的推薦成功人數門檻。');
+  const recognition = document.getElementById('referral-rule-推薦成功認定')!;
+  expect(recognition).toHaveTextContent('每個 LINE 或 Google 帳號，僅能輸入一次推薦碼。');
+  expect(recognition).toHaveTextContent('完成訂閱 Matrix Pro 月方案、季方案或年方案任一方案');
+  expect(view.container.textContent?.match(/退款、刷退或交易取消/g)).toHaveLength(1);
+  const supplement = document.getElementById('referral-rule-推薦獎勵補充規則')!;
+  for (const text of ['推薦成功將失效', '推薦成功人數同步扣除', '資格與獎勵依最新推薦成功人數重新計算', '低於對應門檻', '對應獎勵同步取消', '推薦獎勵不需本人訂閱 Matrix Pro。']) {
+    expect(supplement).toHaveTextContent(text);
+  }
+  fireEvent.click(screen.getByRole('button', { name: '推薦成功獎勵' }));
+  expect(document.getElementById('referral-rule-推薦成功獎勵')).toBeNull();
 });
 
 test('first visit dialog changes live and keeps the login action and once-only behavior', async () => {
@@ -85,16 +117,16 @@ test('first visit dialog changes live and keeps the login action and once-only b
   expect(await screen.findByRole('heading', { name: '免費註冊會員' })).toBeInTheDocument();
   toggle(false);
   expect(screen.getByRole('heading', { name: '使用教學' })).toBeInTheDocument();
-  expect(screen.getByText('點擊右下方「我的」，再點擊「LINE 登入」即可使用查詢；首頁下方的 Matrix Core 進入探索。')).toBeInTheDocument();
-  expect(screen.queryByText(/天衍 2 天/)).not.toBeInTheDocument();
-  expect(screen.getByRole('button', { name: '立即登入' })).toBeInTheDocument();
+  expect(screen.getByText('Matrix 探索二期基本查詢可直接使用；天衡、較高期數、完整範圍、天衍與天工請先使用 LINE 或 Google 登入。新註冊 LINE 會員另有天衍 2 天、天工 1 天試用。')).toBeInTheDocument();
+  expect(screen.getByText(/新註冊 LINE 會員另有天衍 2 天/)).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '開始使用' })).toBeInTheDocument();
   toggle(true);
   expect(screen.getByRole('heading', { name: '免費註冊會員' })).toBeInTheDocument();
   expect(screen.getByText(/天衍 2 天、天工 1 天/)).toBeInTheDocument();
   toggle(false);
-  fireEvent.click(screen.getByRole('button', { name: '立即登入' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始使用' }));
   await act(async () => {});
-  expect(navigate).toHaveBeenCalledExactlyOnceWith('profile');
+  expect(navigate).not.toHaveBeenCalled();
   toggle(true);
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 });

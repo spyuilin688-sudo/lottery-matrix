@@ -102,3 +102,48 @@
   border-bottom: 1px solid var(--pwa-frame-divider);
 }
 
+
+/* Reward details share the existing disclosure's width and text size. */
+.referral-rewards-label {
+  margin: 0 0 8px;
+  color: var(--lottery-text-primary);
+  font-weight: 600;
+}
+
+.referral-rewards {
+  display: grid;
+  margin: 0;
+  gap: 8px;
+}
+
+.referral-rewards > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.referral-rewards > div + div {
+  padding-top: 8px;
+  border-top: 1px solid var(--pwa-frame-divider);
+}
+
+.referral-rewards dt strong {
+  color: var(--pwa-frame-primary);
+  font-size: 13px;
+}
+
+.referral-rewards dd {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  gap: 2px 8px;
+}
+
+.referral-rewards dd > span:first-child {
+  color: var(--lottery-text-primary);
+  font-weight: 600;
+}
+
+.referral-rewards-note {
+  margin: 8px 0 0;
+}
