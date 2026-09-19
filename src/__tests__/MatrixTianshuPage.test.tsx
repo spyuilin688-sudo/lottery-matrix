@@ -167,7 +167,7 @@ it('renders three source locks and expands validation through the independent Ti
 
   const rows = screen.getAllByTestId('tianshu-summary-row');
   expect(rows).toHaveLength(2);
-  expect(rows[0]).toHaveTextContent('開05 第 1 顆、同期 18 第 3 顆、同期 31 第 5 顆');
+  expect(rows[0]).toHaveTextContent('開05 第 1 顆、同期 18 第 3 顆、跟 31 第 5 顆');
   expect(rows[1]).toHaveTextContent('同期｜第 1 顆｜+14.24｜下 5 期開');
   expect(screen.getByText('版路結果').parentElement).toHaveTextContent('19');
 
