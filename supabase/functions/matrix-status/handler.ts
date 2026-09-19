@@ -7,8 +7,8 @@ type MatrixLottery = '今彩539' | '天天樂' | '六合彩' | '大樂透';
 type MatrixStatusEdgeDependencies = MatrixStatusDependencies & {
   customStatusStore?: MatrixCustomStatusDependencies['store'];
   authorizeInternal?(authorization?: string): boolean;
-  recomputeMember?(memberId: string, lottery: MatrixLottery): Promise<unknown>;
-  recomputeLottery?(lottery: MatrixLottery): Promise<unknown>;
+  recomputeMember?(memberId: string, lottery: MatrixLottery, expectedPeriod?: string): Promise<unknown>;
+  recomputeLottery?(lottery: MatrixLottery, expectedPeriod?: string): Promise<unknown>;
 };
 
 const lotteries: MatrixLottery[] = ['今彩539', '天天樂', '六合彩', '大樂透'];
@@ -82,18 +82,21 @@ export function createMatrixStatusEdgeHandler(dependencies: MatrixStatusEdgeDepe
       }
       const lottery = String(value?.lottery ?? '') as MatrixLottery;
       const memberId = String(value?.memberId ?? '').trim();
+      const expectedPeriod = value?.expectedPeriod;
+      if (expectedPeriod !== undefined && (typeof expectedPeriod !== 'string' || !/^\d{1,20}$/.test(expectedPeriod))) return json({error:{code:'INVALID_REQUEST'}},400);
+      const target = typeof expectedPeriod === 'string' ? [expectedPeriod] as const : [] as const;
       if (!lotteries.includes(lottery)) {
         return json({ error: { code: 'INVALID_REQUEST' } }, 400);
       }
       try {
         const result = memberId
-          ? await dependencies.recomputeMember?.(memberId, lottery)
-          : await dependencies.recomputeLottery?.(lottery);
+          ? await dependencies.recomputeMember?.(memberId, lottery, ...target)
+          : await dependencies.recomputeLottery?.(lottery, ...target);
         if (!result) return json({ error: { code: 'RECOMPUTE_NOT_CONFIGURED' } }, 503);
         return json({ result }, 200);
       } catch (cause) {
         const code = cause instanceof Error ? cause.message : 'RECOMPUTE_FAILED';
-        const status = code === 'ANALYSIS_NOT_READY' || code.startsWith('SUPABASE_') ? 503 : 500;
+        const status = code.endsWith('SUPERSEDED') ? 409 : code === 'ANALYSIS_NOT_READY' || code.startsWith('SUPABASE_') ? 503 : 500;
         return json({ error: { code } }, status);
       }
     }

@@ -255,6 +255,7 @@ describe('independent watchdog cron wiring', () => {
       expect(wiring.watchdogRun).toHaveBeenCalledWith(
         new Date('2026-09-04T12:39:00.000Z'),
         'cron-invocation-1',
+        { recover: true },
       );
       expect(wiring.watchdogStatusSave).toHaveBeenCalledWith({
         status: 'ok',
@@ -391,6 +392,7 @@ describe('Supabase watchdog invocation route', () => {
     expect(wiring.watchdogRun).toHaveBeenCalledWith(
       expect.any(Date),
       expect.stringMatching(/^supabase-cron:/),
+      { recover: true },
     );
   });
 });
@@ -923,4 +925,17 @@ describe('security policy administration wiring', () => {
     expect(await handler({...context,body:{mode:'enforce',threshold:0,windowSeconds:60,expectedRevision:1}})).toMatchObject({status:400});
     expect(wiring.supabaseRequest).not.toHaveBeenCalled();
   });
+});
+
+it('optimizer invocation cannot trigger recovery or replace the watchdog heartbeat',async()=>{
+ wiring.watchdogRun.mockClear();wiring.watchdogStatusSave.mockClear();
+ wiring.supabaseRequest.mockResolvedValueOnce({acquired:false} as never);
+ await expect(matrixIndependentWatchdog({optimizer:true,optimizerScope:'railway'})).resolves.toEqual({statusCode:200});
+ expect(wiring.watchdogRun).not.toHaveBeenCalled();expect(wiring.watchdogStatusSave).not.toHaveBeenCalled();
+});
+it('history reads require a session and system settings permission',async()=>{
+ const history=routes['GET /api/system-status/optimizer-history'];
+ expect(history).toHaveLength(3);
+ const response=await (history[2] as Function)({params:{},query:{scope:'anything'}});
+ expect(response).toEqual({error:'OPTIMIZER_QUERY_INVALID',status:400});
 });

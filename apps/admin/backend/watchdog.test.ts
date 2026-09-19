@@ -343,14 +343,14 @@ describe('independent Matrix watchdog execution', () => {
       new Date('2026-09-06T01:43:00.000Z'),
       'invocation-fantasy5',
     )).resolves.toMatchObject({
-      status: 'ok',
+      status: 'degraded',
       actions: [{
         lottery: '天天樂',
         target: 'railway',
         outcome: 'accepted',
       }],
     });
-    expect(recoverRailway).toHaveBeenCalledWith('天天樂', 'invocation-fantasy5');
+    expect(recoverRailway).toHaveBeenCalledWith('天天樂', 'invocation-fantasy5', {stage:'crawler',drawPeriod:null,minimumDrawDate:'2026-09-06'});
     expect(dispatchFantasy5).not.toHaveBeenCalled();
     expect(releaseLease).not.toHaveBeenCalled();
   });
@@ -380,14 +380,14 @@ describe('independent Matrix watchdog execution', () => {
       new Date('2026-09-04T01:43:00.000Z'),
       'invocation-1',
     )).resolves.toMatchObject({
-      status: 'ok',
+      status: 'degraded',
       actions: [{
         lottery: '天天樂',
         target: 'railway',
         outcome: 'accepted',
       }],
     });
-    expect(recoverRailway).toHaveBeenCalledWith('天天樂', 'invocation-1');
+    expect(recoverRailway).toHaveBeenCalledWith('天天樂', 'invocation-1', {stage:'analysis',drawPeriod:'11989'});
     expect(dispatchFantasy5).not.toHaveBeenCalled();
   });
   it('does not execute an action while another host owns its lease', async () => {
@@ -405,7 +405,7 @@ describe('independent Matrix watchdog execution', () => {
       new Date('2026-09-04T01:43:00.000Z'),
       'invocation-2',
     )).resolves.toMatchObject({
-      status: 'ok',
+      status: 'degraded',
       actions: [{ outcome: 'lease-held' }],
     });
     expect(recoverRailway).not.toHaveBeenCalled();
@@ -469,4 +469,11 @@ describe('independent Matrix watchdog execution', () => {
     }
   });
 
+});
+
+it('optimizer observation mode never claims leases or starts recovery', async () => {
+ const claimLease=vi.fn();const recoverRailway=vi.fn();
+ const watchdog=createIndependentWatchdog({loadSnapshot:async()=>[{lottery:'天天樂',job:null,latestDraw:null,latestAnalysis:null}],claimLease,releaseLease:vi.fn(),recoverRailway,dispatchFantasy5:vi.fn()});
+ const result=await watchdog.run(new Date('2026-09-06T01:43:00Z'),'observer',{recover:false});
+ expect(result.actions).toEqual([]);expect(claimLease).not.toHaveBeenCalled();expect(recoverRailway).not.toHaveBeenCalled();
 });

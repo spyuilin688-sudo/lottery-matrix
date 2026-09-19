@@ -122,6 +122,8 @@ const safeWatchdogDetail = (status: WatchdogStatus) => ({
     lottery, target, reasons: [...reasons], outcome,
   })),
   ...(status.error ? { error: status.error } : {}),
+  ...(status.reports ? { reports: status.reports, diagnoses: status.diagnoses, railway: status.railway } : {}),
+  ...(status.optimizer ? { optimizer: status.optimizer } : {}),
   ...watchdogScheduleDetail,
 });
 const safeGithubDetail = (workflow: Row, run: Row | undefined) => ({
@@ -256,7 +258,7 @@ export function createConnectionStatus(dependencies: Dependencies) {
           return finish(false, detail, '自動監控已超過 18 分鐘未完成更新');
         }
         if (heartbeat.status !== 'ok') {
-          return finish(false, detail, '最近一次自動監控回報異常');
+          return { ...finish(false, detail, '資料鏈尚未全部驗證完成'), healthState: heartbeat.reports?.some(r => r.state === 'FAIL') ? 'failed' : heartbeat.reports?.some(r => r.state === 'UNKNOWN') ? 'unknown' : heartbeat.reports?.some(r => r.state === 'WAITING') ? 'waiting' : 'failed' };
         }
       } else if (definition.id === nativeNotificationStatusId) {
         const health = parseNativeNotificationHealth(await shared.readRpc('admin_native_notification_health'), now());

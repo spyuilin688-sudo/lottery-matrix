@@ -25,6 +25,11 @@
     "../../../apps/admin/backend/notification-calendar-status": "../../../apps/admin/backend/notification-calendar-status.ts",
     "../../../apps/admin/backend/service-evidence": "../../../apps/admin/backend/service-evidence.ts",
     "../../../apps/admin/backend/native-notification-status": "../../../apps/admin/backend/native-notification-status.ts",
-    "../../../apps/admin/shared/admin-business-time": "../../../apps/admin/shared/admin-business-time.ts"
+    "../../../apps/admin/shared/admin-business-time": "../../../apps/admin/shared/admin-business-time.ts",
+    "../../../apps/admin/backend/matrix-optimizer-runner": "../../../apps/admin/backend/matrix-optimizer-runner.ts",
+    "../../../apps/admin/backend/matrix-optimizer": "../../../apps/admin/backend/matrix-optimizer.ts",
+    "../../../apps/admin/backend/matrix-railway-evidence": "../../../apps/admin/backend/matrix-railway-evidence.ts",
+    "../../../apps/admin/backend/matrix-chain": "../../../apps/admin/backend/matrix-chain.ts",
+    "../../../apps/admin/backend/matrix-inspector": "../../../apps/admin/backend/matrix-inspector.ts"
   }
 }

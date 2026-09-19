@@ -75,3 +75,10 @@ it('allows service-role recompute for one member only', async () => {
   expect(deps.recomputeMember).toHaveBeenCalledWith('member-a', '大樂透');
   expect(deps.recomputeLottery).not.toHaveBeenCalled();
 });
+
+it('passes the target period only to an authorized internal recomputation',async()=>{
+ const deps=dependencies();const handler=createMatrixStatusEdgeHandler(deps.value);
+ const request=new Request('https://example.test/functions/v1/matrix-status',{method:'POST',headers:{Authorization:'Bearer service-secret','Content-Type':'application/json'},body:JSON.stringify({action:'recompute',lottery:'天天樂',expectedPeriod:'12004'})});
+ expect((await handler(request)).status).toBe(200);
+ expect(deps.recomputeLottery).toHaveBeenCalledWith('天天樂','12004');
+});

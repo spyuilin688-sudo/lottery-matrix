@@ -102,10 +102,10 @@ const handler = createMatrixStatusEdgeHandler({
   authorizeInternal: (authorization) => (
     authorization === `Bearer ${loadConfig().serviceRoleKey}`
   ),
-  recomputeMember: (memberId, lottery) => (
-    customStatusRecompute.recomputeMember(memberId, lottery)
+  recomputeMember: (memberId, lottery, expectedPeriod) => (
+    customStatusRecompute.recomputeMember(memberId, lottery, expectedPeriod)
   ),
-  recomputeLottery: (lottery) => customStatusRecompute.recomputeLottery(lottery),
+  recomputeLottery: (lottery, expectedPeriod) => customStatusRecompute.recomputeLottery(lottery, expectedPeriod),
 });
 
 Deno.serve(handler);

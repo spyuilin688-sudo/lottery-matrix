@@ -89,15 +89,14 @@ export function createCustomStatusResultStore(
       lottery: MatrixLottery,
       result: MatrixCustomStatusResult,
     ): Promise<void> {
-      const path = await endpoint();
-      path.searchParams.set('on_conflict', 'member_id,lottery');
-      await request(path, {
+      const config = await loadConfig();
+      const path = new URL('/rest/v1/rpc/matrix_custom_status_publish', config.url);
+      const published = await request(path, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Prefer: 'resolution=merge-duplicates,return=minimal',
         },
-        body: JSON.stringify({
+        body: JSON.stringify({ p_result: {
           member_id: memberId,
           lottery,
           analysis_version: result.analysisVersion,
@@ -106,19 +105,21 @@ export function createCustomStatusResultStore(
           standard_payload: result.standardPayload,
           composite_payload: result.compositePayload,
           updated_at: now().toISOString(),
-        }),
+        }}),
       }, 'SUPABASE_CUSTOM_STATUS_RESULT_SAVE_FAILED');
+      if (published !== true) throw new Error('CUSTOM_STATUS_SUPERSEDED');
     },
 
     async reset(memberId: string, lottery: MatrixLottery): Promise<void> {
-      const path = await endpoint();
-      path.searchParams.set('member_id', `eq.${memberId}`);
-      path.searchParams.set('lottery', `eq.${lottery}`);
-      await request(
+      const config = await loadConfig();
+      const path = new URL('/rest/v1/rpc/matrix_custom_status_clear_if_unconfigured', config.url);
+      const cleared = await request(
         path,
-        { method: 'DELETE' },
+        { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_member: memberId, p_lottery: lottery }) },
         'SUPABASE_CUSTOM_STATUS_RESULT_RESET_FAILED',
       );
+      if (cleared !== true) throw new Error('CUSTOM_STATUS_SUPERSEDED');
     },
   };
 }
