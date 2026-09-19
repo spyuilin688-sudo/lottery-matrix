@@ -42,6 +42,5 @@
   .explore-validation-card
   .explore-validation-group:is([data-lottery="六合彩"], [data-lottery="大樂透"])
   .explore-validation-special-number {
-  margin-left: 2px;
+  margin-left: var(--explore-validation-special-margin, 2px);
 }
-

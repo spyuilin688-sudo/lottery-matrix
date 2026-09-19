@@ -19,7 +19,7 @@ vi.mock('../subscription-purchase-visibility', async () => {
 vi.mock('../member-api', () => ({ bootstrapMember: async () => ({}), fetchMemberProfile: async () => null }));
 vi.mock('../matrix-algorithm-api', () => {
   const result = { items: [], total: 0, duplicateStats: [], kind: 'explore', lottery: '今彩539', status: 'complete', drawPeriod: '114123', analysisVersion: 'v1' };
-  return { fetchExploreList: async () => result, fetchTianhengList: async () => ({ ...result, kind: 'tianheng' }), fetchTianyanList: async () => ({ ...result, kind: 'tianyan' }), fetchTiangongList: async () => ({ ...result, kind: 'tiangong' }) };
+  return { fetchExploreList: async () => result, fetchTianhengList: async () => ({ ...result, kind: 'tianheng' }), fetchTianshuList: async () => ({ ...result, kind: 'tianshu' }), fetchTianyanList: async () => ({ ...result, kind: 'tianyan' }), fetchTiangongList: async () => ({ ...result, kind: 'tiangong' }) };
 });
 const toggle = (visible: boolean) => act(() => { settings.visible = visible; settings.listeners.forEach(listener => listener()); });
 beforeEach(() => {
@@ -28,10 +28,10 @@ beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ records: [] }) }));
 });
 
-test.each(['Matrix 探索', 'Matrix 天衡', 'Matrix 天衍', 'Matrix 天工'] as const)('%s result headings stay consistent in both visibility modes without changing columns', async title => {
+test.each(['Matrix 探索', 'Matrix 天衡', 'Matrix 天樞', 'Matrix 天衍', 'Matrix 天工'] as const)('%s result headings stay consistent in both visibility modes without changing columns', async title => {
   const Page = title === 'Matrix 天工' ? <MatrixTiangongPage onNavigate={vi.fn()} /> : <MatrixExplorePage title={title} onNavigate={vi.fn()} />;
   const view = render(<AppDialogProvider>{Page}</AppDialogProvider>);
-  fireEvent.click(screen.getByRole('button', { name: title === 'Matrix 探索' ? '開始探索' : title === 'Matrix 天衡' ? '開始天衡' : title === 'Matrix 天衍' ? '開始天衍' : '開始天工' }));
+  fireEvent.click(screen.getByRole('button', { name: title === 'Matrix 探索' ? '開始探索' : title === 'Matrix 天衡' ? '開始天衡' : title === 'Matrix 天樞' ? '開始天樞' : title === 'Matrix 天衍' ? '開始天衍' : '開始天工' }));
   await act(async () => {});
   const head = view.container.querySelector('.road-results-head')!;
   const original = head.textContent;

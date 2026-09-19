@@ -33,12 +33,13 @@ beforeEach(() => {
 test.each([
   ['explore', '探索設定'],
   ['tianheng', '天衡設定'],
+  ['tianshu', '天樞設定'],
   ['tianyan', '天衍設定'],
   ['tiangong', '天工設定'],
-] as const)('%s 在第一張設定標題同列固定顯示四頁，僅點擊切換', (current, settingsHeading) => {
+] as const)('%s 在第一張設定標題同列固定顯示五頁，僅點擊切換', (current, settingsHeading) => {
   const onNavigate = vi.fn();
   if (current === 'tiangong') render(<MatrixTiangongPage onNavigate={onNavigate} />);
-  else render(<MatrixExplorePage onNavigate={onNavigate} title={current === 'tianyan' ? 'Matrix 天衍' : current === 'tianheng' ? 'Matrix 天衡' : 'Matrix 探索'} />);
+  else render(<MatrixExplorePage onNavigate={onNavigate} title={current === 'tianyan' ? 'Matrix 天衍' : current === 'tianshu' ? 'Matrix 天樞' : current === 'tianheng' ? 'Matrix 天衡' : 'Matrix 探索'} />);
 
   const heading = screen.getByRole('heading', { name: settingsHeading });
   const nav = screen.getByRole('navigation', { name: 'Matrix Core 功能切換' });
@@ -47,32 +48,30 @@ test.each([
   expect(document.querySelector('.feature-brand-header .matrix-page-switcher')).toBeNull();
   const buttons = within(nav).getAllByRole('button');
   expect(buttons.map(button => button.getAttribute('aria-label'))).toEqual([
-    'Matrix 探索', 'Matrix 天衡', 'Matrix 天衍', 'Matrix 天工',
+    'Matrix 探索', 'Matrix 天衡', 'Matrix 天樞', 'Matrix 天衍', 'Matrix 天工',
   ]);
-  expect(nav.querySelectorAll('button')).toHaveLength(4);
+  expect(nav.querySelectorAll('button')).toHaveLength(5);
   fireEvent.scroll(nav, { target: { scrollTop: 100 } });
   expect(onNavigate).not.toHaveBeenCalled();
   buttons.forEach((button, index) => {
     fireEvent.click(button);
-    expect(onNavigate).toHaveBeenNthCalledWith(index + 1, ['explore', 'tianheng', 'tianyan', 'tiangong'][index]);
+    expect(onNavigate).toHaveBeenNthCalledWith(index + 1, ['explore', 'tianheng', 'tianshu', 'tianyan', 'tiangong'][index]);
   });
 });
 
-test('四個 Matrix 文字分段共用單一金褐色外框', () => {
+test('五個 Matrix 文字分段共用單一金褐色外框', () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 探索" />);
 
   const nav = screen.getByRole('navigation', { name: 'Matrix Core 功能切換' });
   const buttons = within(nav).getAllByRole('button');
   const styles = getComputedStyle(nav);
-  expect(styles.borderTopWidth).toBe('1px');
-  expect(styles.borderRightWidth).toBe('1px');
-  expect(styles.borderBottomWidth).toBe('1px');
-  expect(styles.borderLeftWidth).toBe('1px');
-  expect(styles.borderTopColor).toBe('rgba(117, 83, 41, 0.48)');
-  expect(styles.borderRadius).toBe('8px');
+  const switcherRule = [...style.sheet!.cssRules].find((rule): rule is CSSStyleRule =>
+    rule instanceof CSSStyleRule && rule.selectorText === '.matrix-page-switcher');
+  expect(switcherRule?.style.border).toBe('1px solid var(--pwa-frame-tertiary)');
+  expect(switcherRule?.style.borderRadius).toBe('var(--pwa-frame-radius)');
   expect(styles.height).toBe('26px');
   expect(styles.width).toBe('176px');
-  expect(buttons.map(button => button.textContent)).toEqual(['探索', '天衡', '天衍', '天工']);
+  expect(buttons.map(button => button.textContent)).toEqual(['探索', '天衡', '天樞', '天衍', '天工']);
   expect(nav.querySelector('img')).toBeNull();
 });
 
@@ -85,10 +84,10 @@ test('當前 Matrix 頁面以粗體與淡金底標示並保留完整名稱', () 
   // background here, while standalone jsdom resolves the same DOM and CSS correctly.
   const currentRule = [...style.sheet!.cssRules].find((rule): rule is CSSStyleRule =>
     rule instanceof CSSStyleRule && rule.selectorText === '.matrix-page-switcher button[aria-current="page"]');
-  expect(currentRule?.style.backgroundColor).toBe('rgba(244, 206, 103, 0.1)');
+  expect(currentRule?.style.backgroundColor).toBe('var(--pwa-control-selected)');
   expect(buttons.filter(button => button.matches(currentRule!.selectorText))).toEqual([buttons[0]]);
   buttons.forEach((button, index) => {
-    expect(button).toHaveAttribute('title', ['Matrix 探索', 'Matrix 天衡', 'Matrix 天衍', 'Matrix 天工'][index]);
+    expect(button).toHaveAttribute('title', ['Matrix 探索', 'Matrix 天衡', 'Matrix 天樞', 'Matrix 天衍', 'Matrix 天工'][index]);
     const styles = getComputedStyle(button);
     if (index === 0) expect(styles.fontWeight).toBe('700');
     else expect(styles.fontWeight).not.toBe('700');

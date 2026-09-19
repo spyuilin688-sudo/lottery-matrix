@@ -458,10 +458,20 @@ describe("production member shell", () => {
       expect(getComputedStyle(row!).minHeight).toBe("var(--explore-validation-row-min-height)");
       const rowStyle = getComputedStyle(row!);
       const isFormula = selector === ".explore-validation-formula-row";
-      expect(rowStyle.paddingTop).toBe(isFormula ? "2px" : "3px");
-      expect(rowStyle.paddingRight).toBe(isFormula ? "2px" : "4px");
-      expect(rowStyle.paddingBottom).toBe(isFormula ? "2px" : "3px");
-      expect(rowStyle.paddingLeft).toBe(isFormula ? "2px" : "4px");
+      if (isFormula) {
+        // jsdom cannot resolve a custom property inside padding shorthand.
+        // The browser layout tests verify the scoped Tianheng/Tianshu geometry.
+        const formulaRule = Array.from(productionStyle.sheet!.cssRules).find(
+          (rule) => rule instanceof CSSStyleRule && rule.selectorText === selector,
+        ) as CSSStyleRule;
+        expect(formulaRule.style.getPropertyValue("padding"))
+          .toBe("2px var(--explore-validation-formula-padding, 2px)");
+      } else {
+        expect(rowStyle.paddingTop).toBe("3px");
+        expect(rowStyle.paddingRight).toBe("4px");
+        expect(rowStyle.paddingBottom).toBe("3px");
+        expect(rowStyle.paddingLeft).toBe("4px");
+      }
     }
 
     const numberRow = document.querySelector(".explore-validation-draw-row");
@@ -520,7 +530,7 @@ describe("production member shell", () => {
     expect(css).toMatch(/\.explore-validation-numbers-card\s*\{[^}]*margin-right:\s*4px/s);
     expect(css).toMatch(/\.explore-validation-draw-row\s*\{[^}]*padding:\s*1\.5px 0/s);
     expect(css).toMatch(/\.explore-validation-numbers\s*\{[^}]*padding:\s*1px 3px/s);
-    expect(css).toMatch(/\.explore-validation-group\[data-wide-numbers="true"\] \.explore-validation-numbers\s*\{[^}]*padding-inline:\s*3px/s);
+    expect(css).toMatch(/\.explore-validation-group\[data-wide-numbers="true"\] \.explore-validation-numbers\s*\{[^}]*padding-inline:\s*var\(--explore-validation-wide-number-padding,\s*3px\)/s);
     expect(css).toMatch(/--explore-validation-summary-font-size:\s*13px/);
     expect(css).toMatch(/\.explore-validation-prediction\s*\{[^}]*margin-bottom:\s*0/s);
   });
@@ -542,15 +552,15 @@ describe("production member shell", () => {
     expect(css).toMatch(/\.explore-validation-prediction strong\s*\{[^}]*font-size:\s*16px/s);
     expect(css).toMatch(/\.explore-validation-prediction b\s*\{[^}]*font-size:\s*18px[^}]*font-weight:\s*800/s);
     expect(css).toMatch(/\.explore-validation-special-separator\s*\{[^}]*color:\s*#d4a63b/s);
-    expect(css).toMatch(/\.explore-validation-special-number\s*\{[^}]*gap:\s*2\.5px/s);
+    expect(css).toMatch(/\.explore-validation-special-number\s*\{[^}]*gap:\s*var\(--explore-validation-special-gap,\s*2\.5px\)/s);
   });
 
-  it("keeps the five-number validation row compact without changing the wide 6+1 layout", () => {
+  it("keeps the five-number validation row compact and preserves the default wide 6+1 padding", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
     expect(css).toMatch(/\.explore-validation-issues\s*\{[^}]*border-radius:\s*3px/s);
     expect(css).toMatch(/\.explore-validation-group\[data-wide-numbers="false"\] \.explore-validation-numbers\s*\{[^}]*justify-content:\s*center[^}]*gap:\s*clamp\(4px,\s*1\.5vw,\s*6px\)[^}]*padding-inline:\s*6px/s);
-    expect(css).toMatch(/\.explore-validation-group\[data-wide-numbers="true"\] \.explore-validation-numbers\s*\{[^}]*gap:\s*0[^}]*padding-inline:\s*3px/s);
+    expect(css).toMatch(/\.explore-validation-group\[data-wide-numbers="true"\] \.explore-validation-numbers\s*\{[^}]*gap:\s*0[^}]*padding-inline:\s*var\(--explore-validation-wide-number-padding,\s*3px\)/s);
   });
 
   it("frames the current prediction with decorative double-arrow icons", () => {

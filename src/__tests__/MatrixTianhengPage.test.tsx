@@ -149,23 +149,24 @@ it('routes Tianheng into the canonical Explore layout with its shared text heade
 it.each([
   ['explore'],
   ['tianheng'],
+  ['tianshu'],
   ['tianyan'],
   ['tiangong'],
-] as const)('switcher %s always shows all four pages in established order', (current) => {
+] as const)('switcher %s always shows all five pages in established order', (current) => {
   const onNavigate = vi.fn();
   render(<MatrixPageSwitcher current={current} onNavigate={onNavigate} />);
   const buttons = screen.getAllByRole('button');
   expect(buttons.map(button => button.getAttribute('aria-label'))).toEqual([
-    'Matrix 探索', 'Matrix 天衡', 'Matrix 天衍', 'Matrix 天工',
+    'Matrix 探索', 'Matrix 天衡', 'Matrix 天樞', 'Matrix 天衍', 'Matrix 天工',
   ]);
   const tianhengButton = screen.getByRole('button', { name: 'Matrix 天衡' });
   expect(tianhengButton).toHaveTextContent('天衡');
-  expect(buttons.map(button => button.textContent)).toEqual(['探索', '天衡', '天衍', '天工']);
+  expect(buttons.map(button => button.textContent)).toEqual(['探索', '天衡', '天樞', '天衍', '天工']);
   expect(buttons.map(button => button.getAttribute('aria-current')))
-    .toEqual(['explore', 'tianheng', 'tianyan', 'tiangong'].map(page => page === current ? 'page' : null));
+    .toEqual(['explore', 'tianheng', 'tianshu', 'tianyan', 'tiangong'].map(page => page === current ? 'page' : null));
   buttons.forEach((button, index) => {
     fireEvent.click(button);
-    expect(onNavigate).toHaveBeenNthCalledWith(index + 1, ['explore', 'tianheng', 'tianyan', 'tiangong'][index]);
+    expect(onNavigate).toHaveBeenNthCalledWith(index + 1, ['explore', 'tianheng', 'tianshu', 'tianyan', 'tiangong'][index]);
   });
 });
 

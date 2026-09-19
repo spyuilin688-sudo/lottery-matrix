@@ -9,12 +9,16 @@ from app.repositories.analysis_repository import InMemoryAnalysisRepository, Sup
 from app.repositories.artifact_chunks import encode_chunk_payload
 from app.services.analysis_pipeline import AnalysisPipeline
 from app.worker import _restore_stage_results
-from app.analysis_worker import _restore_completed_explore_results, _restore_completed_tianheng_results
+from app.analysis_worker import (
+    _restore_completed_explore_results,
+    _restore_completed_tianheng_results,
+    _restore_completed_tianshu_results,
+)
 
 
 LOTTERY = "今彩539"
 PERIOD = "115000220"
-VERSION = f"{PERIOD}:matrix-python-v14-sorted"
+VERSION = f"{PERIOD}:matrix-python-v15-sorted"
 KEY = (LOTTERY, PERIOD, VERSION)
 DRAW = {"lottery": LOTTERY, "period": PERIOD, "drawDate": "2026-09-12", "numbers": ["01", "02", "03", "04", "05"]}
 PREVIOUS = {**DRAW, "period": "115000219", "drawDate": "2026-09-11"}
@@ -25,12 +29,19 @@ def result_payload(marker="06"):
         "id": "road-1", "number": marker, "lockedPosition": 1,
         "firstNumber": marker, "firstLockedPosition": 1,
         "secondNumber": "02", "secondLockedPosition": 2,
+        "thirdNumber": "03", "thirdLockedPosition": 3,
         "predictionDistance": 1, "consecutive": "連2", "highestStreak": 2,
         "predictionNumbers": [marker], "algorithmType": "加減",
         "numberOrder": "依號碼由小到大排序", "ruleCount": 1,
         "exploreRange": "標準範圍", "lockedSourceIndex": 0,
         "lockedSourcePeriod": PERIOD,
-    }], "validationById": {"road-1": {"marker": marker}}}
+    }], "validationById": {"road-1": {
+        "marker": marker,
+        "sourceA": {
+            "lockedPositions": [1, 2, 3],
+            "lockedNumbers": [marker, "02", "03"],
+        },
+    }}}
 
 
 def write(repository, target, marker="06", **fence):
@@ -52,7 +63,7 @@ def test_history_replacement_between_lease_check_and_chunk_write_cannot_mix_gene
             "_checkpoint": {"cursorStart": start, "cursor": start + 1, "total": 2, "complete": start == 1},
         }
 
-    builders = {kind: lambda context: {"items": []} for kind in ("explore", "tianheng", "tianyan", "tiangong", "status")}
+    builders = {kind: lambda context: {"items": []} for kind in ("explore", "tianheng", "tianshu", "tianyan", "tiangong", "status")}
     builders["explore"] = explore
 
     class HistoryReplacingRepository(InMemoryAnalysisRepository):
@@ -77,7 +88,7 @@ def test_history_replacement_between_lease_check_and_chunk_write_cannot_mix_gene
     assert [item["number"] for item in repository.read_artifact(*KEY, "explore")["items"]] == ["06", "06"]
 
 
-@pytest.mark.parametrize("target", ["artifact", "chunk", "explore", "tianheng"])
+@pytest.mark.parametrize("target", ["artifact", "chunk", "explore", "tianheng", "tianshu"])
 @pytest.mark.parametrize("rejection", ["owner", "generation", "expired", "complete", "missing_owner"])
 def test_child_writes_reject_stale_or_unowned_work_without_changing_replacement(target, rejection):
     repository = InMemoryAnalysisRepository()
@@ -105,7 +116,7 @@ def test_child_writes_reject_stale_or_unowned_work_without_changing_replacement(
         assert next(iter(getattr(repository, f"{target}_results").values()))["item"]["number"] == "06"
 
 
-@pytest.mark.parametrize("target,table", [("artifact", "matrix_analysis_artifacts"), ("chunk", "matrix_analysis_artifact_chunks"), ("explore", "matrix_explore_results"), ("tianheng", "matrix_tianheng_results")])
+@pytest.mark.parametrize("target,table", [("artifact", "matrix_analysis_artifacts"), ("chunk", "matrix_analysis_artifact_chunks"), ("explore", "matrix_explore_results"), ("tianheng", "matrix_tianheng_results"), ("tianshu", "matrix_tianshu_results")])
 def test_supabase_child_writes_send_identity_to_atomic_rpc_and_surface_lease_loss(target, table):
     requests = []
 
@@ -130,13 +141,13 @@ def test_supabase_child_writes_send_identity_to_atomic_rpc_and_surface_lease_los
 
 def seed_completed(repository, marker):
     repository.begin_run(*KEY, datetime.now(UTC).isoformat())
-    for kind in ("explore", "tianheng", "tianyan", "tiangong", "status"):
+    for kind in ("explore", "tianheng", "tianshu", "tianyan", "tiangong", "status"):
         repository.save_artifact(*KEY, kind, result_payload(marker))
     repository.complete_run(*KEY, datetime.now(UTC).isoformat())
 
 
 @pytest.mark.parametrize("entrypoint", ["scheduled", "analysis-only"])
-@pytest.mark.parametrize("kind", ["explore", "tianheng"])
+@pytest.mark.parametrize("kind", ["explore", "tianheng", "tianshu"])
 def test_completed_result_restore_rejects_artifact_from_replaced_generation(entrypoint, kind):
     class ReplacingCompletedRepository(InMemoryAnalysisRepository):
         replace_on_read = True
@@ -155,6 +166,7 @@ def test_completed_result_restore_rejects_artifact_from_replaced_generation(entr
     restore = _restore_stage_results if entrypoint == "scheduled" else {
         "explore": _restore_completed_explore_results,
         "tianheng": _restore_completed_tianheng_results,
+        "tianshu": _restore_completed_tianshu_results,
     }[kind]
     with pytest.raises(RuntimeError, match="ANALYSIS_RUN_LEASE_LOST"):
         restore(repository, *KEY)
@@ -174,7 +186,7 @@ def test_completed_restore_rejects_unknown_kind_and_missing_artifact():
         repository.restore_completed_results(*KEY, "explore")
 
 
-@pytest.mark.parametrize("kind", ["explore", "tianheng"])
+@pytest.mark.parametrize("kind", ["explore", "tianheng", "tianshu"])
 @pytest.mark.parametrize("accepted", [False, True])
 def test_supabase_restore_captures_generation_before_materializing_saved_chunks(kind, accepted):
     requests = []
@@ -261,7 +273,7 @@ def test_owned_completion_rejection_preserves_run_and_active_version(rejection, 
     replacement_key = (LOTTERY, PERIOD, f"{PERIOD}:future-sorted")
     started = datetime.now(UTC).isoformat()
     repository.begin_run(*replacement_key, started, owner_id="worker")
-    for kind in ("explore", "tianheng", "tianyan", "tiangong", "status"):
+    for kind in ("explore", "tianheng", "tianshu", "tianyan", "tiangong", "status"):
         repository.save_artifact(*replacement_key, kind, {}, owner_id="worker", run_started_at=started)
     owner = "worker"
     if rejection == "stale_owner":
@@ -294,15 +306,15 @@ def test_owned_completion_rejection_preserves_run_and_active_version(rejection, 
     assert repository.active_versions == {(LOTTERY, PERIOD, "sorted"): VERSION}
 
 
-@pytest.mark.parametrize("missing_kind", ["explore", "tianheng", "tianyan", "tiangong", "status"])
+@pytest.mark.parametrize("missing_kind", ["explore", "tianheng", "tianshu", "tianyan", "tiangong", "status"])
 def test_owned_completion_missing_artifacts_preserves_running_owner_and_previous_activation(missing_kind):
     repository = InMemoryAnalysisRepository()
     repository.upsert_draw(DRAW)
     seed_completed(repository, "05")
-    key = (LOTTERY, PERIOD, "future-sorted")
+    key = (LOTTERY, PERIOD, f"{PERIOD}:matrix-python-v16-sorted")
     started = datetime.now(UTC).isoformat()
     repository.begin_run(*key, started, owner_id="worker")
-    for kind in ("explore", "tianheng", "tianyan", "tiangong", "status"):
+    for kind in ("explore", "tianheng", "tianshu", "tianyan", "tiangong", "status"):
         if kind != missing_kind:
             repository.save_artifact(*key, kind, {}, owner_id="worker", run_started_at=started)
     before = dict(repository.runs[key])

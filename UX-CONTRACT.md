@@ -299,7 +299,7 @@ After result notification dispatch, the trusted producer requests immediate back
 
 ## Core settings and header backgrounds — 2026-09-12
 
-- Explore, Tianheng and Tianyan retain the approved 06 flow background. Tiangong uses the dedicated `header-tiangong.svg` mechanical-tech background: dark base, low-brightness gear/mechanical structure on the right, and thin lower gold circuit lines, with the title area kept visually quiet. Tongxing, number reference and draw history retain 07 geometric. Per the 2026-09-13 reference, every other non-home PWA header uses the shared static gold-arc artwork: dark grain, warm reflection behind the logo and a lower gold arc. BrandHeader owns this mutually exclusive choice; the existing frame owns background rendering. Existing fixed dimensions, logo, titles, back behavior and right-side sticky controls remain.
+- Explore, Tianheng, Tianshu and Tianyan retain the approved 06 flow background. Tiangong uses the dedicated `header-tiangong.svg` mechanical-tech background: dark base, low-brightness gear/mechanical structure on the right, and thin lower gold circuit lines, with the title area kept visually quiet. Tongxing, number reference and draw history retain 07 geometric. Per the 2026-09-13 reference, every other non-home PWA header uses the shared static gold-arc artwork: dark grain, warm reflection behind the logo and a lower gold arc. BrandHeader owns this mutually exclusive choice; the existing frame owns background rendering. Existing fixed dimensions, logo, titles, back behavior and right-side sticky controls remain.
 - Lottery tabs sit 8px below the frame and retain the existing lottery-change behavior. Core pages reuse the exact draw-sheet LotteryTabs component and styling (36px, 14px type, 2px text-width gold active underline), with keyboard selection and without the redundant lottery select.
 - Explore, Tianheng and Tianyan render their existing hit and advanced controls inside the settings card. The condition row uses each page name (探索條件, 天衡條件, 天衍條件) for both visible text and accessible name, keeps the supplied functions/探索條件.png icon and aligns with the preceding settings rows; Tiangong retains its existing stage settings. No algorithm, entitlement, default or result behavior changes.
 - One 8px header bottom margin separates the frame and the next visible content. History, number reference and tongxing settings share the title border with one internal divider; their floating state is anchored to the same sticky header.
@@ -345,3 +345,11 @@ After result notification dispatch, the trusted producer requests immediate back
 - Native selects and segmented/hit options reuse canonical styles; no decorative pseudo-element frame layers or per-page gold literals.
 - Ball geometry/appearance, result semantics, homepage artwork/motion and functional state transitions are not changed by this contract.
 - Focused evidence: `tests/pwa-frame-system.test.mjs` and `tests/pwa-frame-system.spec.ts`. No full-project test command is permitted.
+
+## Matrix 天樞 — 2026-09-19
+
+- Matrix 核心切換順序為探索、天衡、天樞、天衍、天工，維持既有 176px × 26px 足跡、按鈕語意、鍵盤焦點與完整本地化 accessible name。天樞標題為 `Matrix 天樞`，設定、期數、條件、日期、範圍、進階設定及開始按鈕使用天樞名稱。
+- 天樞完整重用天衡的設定選項、預設值、會員權限、載入／錯誤／空結果、篩選、分頁、結果展開與失效回應防護。唯一差異是每筆結果及驗證固定包含三組來源鎖定號碼與位置；天衡的兩組鎖定契約不變。
+- 天樞獨立呼叫需登入的 `matrix_tianshu_list` 與 `matrix_tianshu_validation`。清單保留天衡請求選項；每筆資料另要求 `thirdNumber` 與 `thirdLockedPosition`。驗證的 `lockedNumbers` 與 `lockedPositions` 在本期來源及歷史列都必須正好三項，格式錯誤視為 API 錯誤。
+- 天樞與天衡共用現有 CSS、06 背景、卡片幾何與雙列摘要適配器；不新增快速設定、功能分類、樣式覆寫或素材。
+- 窄螢幕方案 A 調整共用五碼列的間距及左右留白，維持原字級與卡片尺寸；使用者追加確認七碼列可縮窄公式欄並加寬號碼欄，保留整張卡片與字級。瀏覽器驗證須檢查每個號碼文字、鎖定框、參照框及特別號「＋」完整位於欄內且不互相重疊，期數與公式也必須完整顯示。天衡與天樞都要涵蓋拖牌與較長的合值公式，以及 320px、過渡寬度與 390px，不以外框尺寸相同取代可讀性驗證。

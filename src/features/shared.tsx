@@ -46,12 +46,13 @@ export function finalizeLookupInputValues(values: string[], index: number) {
 export const MATRIX_PAGE_ITEMS = [
   { screen: "explore", shortLabel: "探索", label: "Matrix 探索", image: "/assets/lottery/functions/Matrix探索-icon.png" },
   { screen: "tianheng", shortLabel: "天衡", label: "Matrix 天衡", image: "/assets/lottery/functions/天衡.png" },
+  { screen: "tianshu", shortLabel: "天樞", label: "Matrix 天樞" },
   { screen: "tianyan", shortLabel: "天衍", label: "Matrix 天衍", image: "/assets/lottery/functions/Matrix天衍-icon.png" },
   { screen: "tiangong", shortLabel: "天工", label: "Matrix 天工", image: "/assets/lottery/functions/Matrix天工-icon.png" },
 ] as const;
 
 export function MatrixPageSwitcher({ current, onNavigate }: {
-  current: "explore" | "tianheng" | "tianyan" | "tiangong";
+  current: "explore" | "tianheng" | "tianshu" | "tianyan" | "tiangong";
   onNavigate: Navigate;
 }) {
   return (

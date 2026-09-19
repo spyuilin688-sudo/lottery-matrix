@@ -141,6 +141,24 @@ export type TianhengListResponse = {
   total: number;
 };
 
+export type TianshuApiRow = TianhengApiRow & {
+  thirdNumber: string;
+  thirdLockedPosition: number;
+};
+
+export type TianshuListRequest = TianhengListRequest;
+
+export type TianshuListResponse = {
+  kind: 'tianshu';
+  lottery: NumberBallLottery;
+  drawPeriod: string;
+  analysisVersion: string;
+  status: 'complete';
+  items: TianshuApiRow[];
+  duplicateStats: Array<{ number: string; count: number }>;
+  total: number;
+};
+
 export type TianhengValidationRow = {
   group: string;
   sourcePeriod: string;
@@ -194,6 +212,34 @@ export type TianhengValidationResponse = {
   status: 'complete';
   itemId: string;
   validation: TianhengValidation;
+};
+
+export type TianshuValidationRow = Omit<TianhengValidationRow, 'lockedPositions' | 'lockedNumbers'> & {
+  lockedPositions: [number, number, number];
+  lockedNumbers: [number, number, number];
+};
+
+export type TianshuValidation = {
+  itemId: string;
+  sourceA?: Omit<NonNullable<TianhengValidation['sourceA']>, 'lockedPositions' | 'lockedNumbers'> & {
+    lockedPositions: [number, number, number];
+    lockedNumbers: [number, number, number];
+  };
+  ruleSets: Array<{
+    rules: Array<{ value: number; display: string; algorithmType: string }>;
+    predictionNumbers: number[];
+    historicalValidation: TianshuValidationRow[];
+  }>;
+};
+
+export type TianshuValidationResponse = {
+  kind: 'tianshu';
+  lottery: NumberBallLottery;
+  drawPeriod: string;
+  analysisVersion: string;
+  status: 'complete';
+  itemId: string;
+  validation: TianshuValidation;
 };
 
 export type TianyanRoadTypeLabel =
@@ -352,8 +398,11 @@ function matrixRpcError(error: { code?: string; message?: string } | null): neve
   throw new MatrixApiError('API_ERROR', 500);
 }
 
-function normalizeTianhengLockedNumbers(value: unknown): [number, number] {
-  if (!Array.isArray(value) || value.length !== 2) {
+function normalizeLockedTuple(value: unknown, expectedLength: 2): [number, number];
+function normalizeLockedTuple(value: unknown, expectedLength: 3): [number, number, number];
+function normalizeLockedTuple(value: unknown, expectedLength: 2 | 3): [number, number] | [number, number, number];
+function normalizeLockedTuple(value: unknown, expectedLength: 2 | 3): [number, number] | [number, number, number] {
+  if (!Array.isArray(value) || value.length !== expectedLength) {
     throw new MatrixApiError('API_ERROR', 500);
   }
   const normalized = value.map((item) => (
@@ -366,19 +415,28 @@ function normalizeTianhengLockedNumbers(value: unknown): [number, number] {
   if (!normalized.every(Number.isFinite)) {
     throw new MatrixApiError('API_ERROR', 500);
   }
-  return [normalized[0], normalized[1]];
+  return expectedLength === 2
+    ? [normalized[0], normalized[1]]
+    : [normalized[0], normalized[1], normalized[2]];
 }
 
-function normalizeTianhengValidation(value: unknown): unknown {
+function normalizeLockedValidation(value: unknown, lockCount: 2 | 3): unknown {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return value;
   const validation = value as Record<string, unknown>;
   const rawSource = validation.sourceA;
   const sourceA = rawSource !== null && typeof rawSource === 'object' && !Array.isArray(rawSource)
     ? {
         ...rawSource,
-        lockedNumbers: normalizeTianhengLockedNumbers(
+        lockedNumbers: normalizeLockedTuple(
           (rawSource as Record<string, unknown>).lockedNumbers,
+          lockCount,
         ),
+        ...(lockCount === 3 ? {
+          lockedPositions: normalizeLockedTuple(
+            (rawSource as Record<string, unknown>).lockedPositions,
+            3,
+          ),
+        } : {}),
       }
     : rawSource;
   const ruleSets = Array.isArray(validation.ruleSets)
@@ -394,9 +452,16 @@ function normalizeTianhengValidation(value: unknown): unknown {
               }
               return {
                 ...rawRow,
-                lockedNumbers: normalizeTianhengLockedNumbers(
+                lockedNumbers: normalizeLockedTuple(
                   (rawRow as Record<string, unknown>).lockedNumbers,
+                  lockCount,
                 ),
+                ...(lockCount === 3 ? {
+                  lockedPositions: normalizeLockedTuple(
+                    (rawRow as Record<string, unknown>).lockedPositions,
+                    3,
+                  ),
+                } : {}),
               };
             })
           : ruleSet.historicalValidation;
@@ -404,6 +469,23 @@ function normalizeTianhengValidation(value: unknown): unknown {
       })
     : validation.ruleSets;
   return { ...validation, sourceA, ruleSets };
+}
+
+function normalizeTianshuItems(value: unknown): unknown {
+  if (!Array.isArray(value)) throw new MatrixApiError('API_ERROR', 500);
+  return value.map((rawItem) => {
+    if (rawItem === null || typeof rawItem !== 'object' || Array.isArray(rawItem)) {
+      throw new MatrixApiError('API_ERROR', 500);
+    }
+    const item = rawItem as Record<string, unknown>;
+    if (typeof item.thirdNumber !== 'string' || !/^\d{2}$/.test(item.thirdNumber)
+      || !Number.isSafeInteger(item.thirdLockedPosition)
+      || !Number.isSafeInteger(item.secondLockedPosition)
+      || (item.thirdLockedPosition as number) <= (item.secondLockedPosition as number)) {
+      throw new MatrixApiError('API_ERROR', 500);
+    }
+    return rawItem;
+  });
 }
 
 function normalizeMatrixRpcResponse(name: string, data: unknown): unknown {
@@ -447,7 +529,29 @@ function normalizeMatrixRpcResponse(name: string, data: unknown): unknown {
       drawPeriod: raw.drawPeriod ?? raw.draw_period,
       analysisVersion: raw.analysisVersion ?? raw.analysis_version,
       itemId: raw.itemId ?? raw.item_id,
-      validation: normalizeTianhengValidation(raw.validation),
+      validation: normalizeLockedValidation(raw.validation, 2),
+    };
+  }
+  if (name === 'matrix_tianshu_list') {
+    return {
+      ...raw,
+      kind: 'tianshu',
+      status: 'complete',
+      drawPeriod: raw.drawPeriod ?? raw.draw_period,
+      analysisVersion: raw.analysisVersion ?? raw.analysis_version,
+      duplicateStats: raw.duplicateStats ?? raw.duplicate_stats ?? [],
+      items: normalizeTianshuItems(raw.items),
+    };
+  }
+  if (name === 'matrix_tianshu_validation') {
+    return {
+      ...raw,
+      kind: 'tianshu',
+      status: 'complete',
+      drawPeriod: raw.drawPeriod ?? raw.draw_period,
+      analysisVersion: raw.analysisVersion ?? raw.analysis_version,
+      itemId: raw.itemId ?? raw.item_id,
+      validation: normalizeLockedValidation(raw.validation, 3),
     };
   }
   return data;
@@ -524,6 +628,21 @@ export function fetchTianhengValidation(
 ) {
   return cachedMatrixResultRpc<TianhengValidationResponse>(
     'matrix_tianheng_validation',
+    { ...meta, itemId, ...access },
+  );
+}
+
+export function fetchTianshuList(request: TianshuListRequest) {
+  return cachedMatrixResultRpc<TianshuListResponse>('matrix_tianshu_list', request);
+}
+
+export function fetchTianshuValidation(
+  meta: { lottery: NumberBallLottery; drawPeriod: string; analysisVersion: string },
+  itemId: string,
+  access: Pick<TianshuListRequest, 'explorePeriods' | 'exploreRange'>,
+) {
+  return cachedMatrixResultRpc<TianshuValidationResponse>(
+    'matrix_tianshu_validation',
     { ...meta, itemId, ...access },
   );
 }

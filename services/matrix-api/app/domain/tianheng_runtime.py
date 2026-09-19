@@ -168,16 +168,15 @@ def _rule_payload(road: RoadType, value: int) -> dict[str, object]:
 
 
 def _lock_payload(occurrence: TianhengLockOccurrence) -> dict[str, object]:
-    return {
-        "lockedPositions": [
-            occurrence.first_position,
-            occurrence.second_position,
-        ],
-        "lockedNumbers": [
-            str(occurrence.first_number).zfill(2),
-            str(occurrence.second_number).zfill(2),
-        ],
-    }
+    positions = [occurrence.first_position, occurrence.second_position]
+    numbers = [
+        str(occurrence.first_number).zfill(2),
+        str(occurrence.second_number).zfill(2),
+    ]
+    if occurrence.third_position is not None and occurrence.third_number is not None:
+        positions.append(occurrence.third_position)
+        numbers.append(str(occurrence.third_number).zfill(2))
+    return {"lockedPositions": positions, "lockedNumbers": numbers}
 
 
 def _historical_validation(
@@ -269,29 +268,33 @@ def _result_identifier(
     scope_class: ScopeClass,
 ) -> str:
     occurrence = unit.occurrence
-    identity = "|".join(
-        map(
-            str,
-            (
-                scope_class.value,
-                context.number_order,
-                occurrence.period,
-                unit.locked_source_index,
-                occurrence.first_position,
-                occurrence.first_number,
-                occurrence.second_position,
-                occurrence.second_number,
-                cell.relative_offset,
-                cell.position,
-                unit.prediction_distance,
-                road.value,
-                rule_count,
-                decision.highest_streak,
-                ".".join(map(str, decision.rules)),
-                ".".join(map(str, predictions)),
-            ),
-        )
+    identity_parts: tuple[object, ...] = (
+        scope_class.value,
+        context.number_order,
+        occurrence.period,
+        unit.locked_source_index,
+        occurrence.first_position,
+        occurrence.first_number,
+        occurrence.second_position,
+        occurrence.second_number,
     )
+    if occurrence.third_position is not None:
+        identity_parts += (
+            "tianshu",
+            occurrence.third_position,
+            occurrence.third_number,
+        )
+    identity_parts += (
+        cell.relative_offset,
+        cell.position,
+        unit.prediction_distance,
+        road.value,
+        rule_count,
+        decision.highest_streak,
+        ".".join(map(str, decision.rules)),
+        ".".join(map(str, predictions)),
+    )
+    identity = "|".join(map(str, identity_parts))
     return "mx_" + sha256(identity.encode()).hexdigest()[:28]
 
 
@@ -362,6 +365,12 @@ def _append_result(
         "referenceOffset": cell.relative_offset,
         "referencePosition": cell.position,
     }
+    if occurrence.third_position is not None and occurrence.third_number is not None:
+        item.update({
+            "kind": "tianshu",
+            "thirdNumber": str(occurrence.third_number).zfill(2),
+            "thirdLockedPosition": occurrence.third_position,
+        })
 
     validation = {
         "itemId": identifier,
@@ -503,7 +512,7 @@ def _session_metrics(
     }
 
 
-def run_tianheng_batch(
+def _run_locked_batch(
     lottery: str,
     newest_first: Iterable[Mapping[str, object]],
     start: int,
@@ -515,14 +524,21 @@ def run_tianheng_batch(
         RoadType.DRAG,
     ),
     session: TianhengEngineSession | None = None,
+    lock_count: int = 2,
+    kind: str = "tianheng",
 ) -> dict[str, Any]:
     history = tuple(newest_first)
     if session is None:
         session = TianhengEngineSession.from_explore_session(
             ExploreEngineSession.build(lottery, history),
+            lock_count=lock_count,
         )
-    elif session.lottery != lottery or session.history != history:
-        raise AlgorithmError("TIANHENG_ENGINE_SESSION_MISMATCH")
+    elif (
+        session.lottery != lottery
+        or session.history != history
+        or session.lock_count != lock_count
+    ):
+        raise AlgorithmError(f"{kind.upper()}_ENGINE_SESSION_MISMATCH")
 
     indexed_units = session.indexed_units
     cursor_start = min(max(0, int(start)), len(indexed_units))
@@ -541,6 +557,8 @@ def run_tianheng_batch(
         "items": [],
         "validationById": {},
     }
+    if kind == "tianshu":
+        artifact["kind"] = "tianshu"
 
     for context, unit in indexed_units[cursor_start:cursor]:
         context.metrics.source_units_processed += 1
@@ -552,6 +570,7 @@ def run_tianheng_batch(
             int(item["predictionDistance"]),
             int(item["firstLockedPosition"]),
             int(item["secondLockedPosition"]),
+            int(item.get("thirdLockedPosition", 0)),
             str(item["algorithmType"]),
             str(item["scopeClass"]),
             int(item.get("referenceOffset", 0)),
@@ -567,3 +586,53 @@ def run_tianheng_batch(
         "complete": cursor >= len(indexed_units),
         "metrics": _session_metrics(session.contexts, len(indexed_units)),
     }
+
+
+def run_tianheng_batch(
+    lottery: str,
+    newest_first: Iterable[Mapping[str, object]],
+    start: int,
+    limit: int,
+    *,
+    road_types: Iterable[RoadType] = (
+        RoadType.ADD,
+        RoadType.SUM,
+        RoadType.DRAG,
+    ),
+    session: TianhengEngineSession | None = None,
+) -> dict[str, Any]:
+    return _run_locked_batch(
+        lottery,
+        newest_first,
+        start,
+        limit,
+        road_types=road_types,
+        session=session,
+        lock_count=2,
+        kind="tianheng",
+    )
+
+
+def run_tianshu_batch(
+    lottery: str,
+    newest_first: Iterable[Mapping[str, object]],
+    start: int,
+    limit: int,
+    *,
+    road_types: Iterable[RoadType] = (
+        RoadType.ADD,
+        RoadType.SUM,
+        RoadType.DRAG,
+    ),
+    session: TianhengEngineSession | None = None,
+) -> dict[str, Any]:
+    return _run_locked_batch(
+        lottery,
+        newest_first,
+        start,
+        limit,
+        road_types=road_types,
+        session=session,
+        lock_count=3,
+        kind="tianshu",
+    )

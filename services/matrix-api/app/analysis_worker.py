@@ -95,6 +95,15 @@ def _restore_completed_tianheng_results(
     repository.restore_completed_results(lottery, period, analysis_version, "tianheng")
 
 
+def _restore_completed_tianshu_results(
+    repository: AnalysisRepository,
+    lottery: str,
+    period: str,
+    analysis_version: str,
+) -> None:
+    repository.restore_completed_results(lottery, period, analysis_version, "tianshu")
+
+
 def _notification_enabled(notification_emitter: NotificationEventEmitter | None) -> bool:
     return notification_emitter is not None and notification_emitter.enabled
 
@@ -202,8 +211,13 @@ def _completed_period_idle_ready(
 
     explore_artifact = repository.read_artifact(lottery, period, analysis_version, "explore")
     tianheng_artifact = repository.read_artifact(lottery, period, analysis_version, "tianheng")
+    tianshu_artifact = repository.read_artifact(lottery, period, analysis_version, "tianshu")
     status_artifact = repository.read_artifact(lottery, period, analysis_version, "status")
-    if not isinstance(explore_artifact, Mapping) or not isinstance(tianheng_artifact, Mapping):
+    if (
+        not isinstance(explore_artifact, Mapping)
+        or not isinstance(tianheng_artifact, Mapping)
+        or not isinstance(tianshu_artifact, Mapping)
+    ):
         return False
     if not isinstance(status_artifact, Mapping):
         return False
@@ -219,6 +233,14 @@ def _completed_period_idle_ready(
         period,
         analysis_version,
         len(tianheng_items),
+    ):
+        return False
+    tianshu_items = tianshu_artifact.get("items")
+    if isinstance(tianshu_items, list) and not repository.has_tianshu_results(
+        lottery,
+        period,
+        analysis_version,
+        len(tianshu_items),
     ):
         return False
     if not is_card_published(lottery, period, repository, order="sorted"):
@@ -309,6 +331,9 @@ def run_analysis_only_worker(
             analysis_version,
         )
         _restore_completed_tianheng_results(
+            repository, lottery, period, analysis_version,
+        )
+        _restore_completed_tianshu_results(
             repository, lottery, period, analysis_version,
         )
         _emit_ready_notifications(

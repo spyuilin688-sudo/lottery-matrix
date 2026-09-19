@@ -7,7 +7,7 @@ from app.domain.explore_engine import ExploreEngineSession, run_explore_batch
 from app.domain.models import lottery_position_count
 from app.domain.status import evaluate_chapter15
 from app.domain.tianheng_context import TianhengEngineSession
-from app.domain.tianheng_runtime import run_tianheng_batch
+from app.domain.tianheng_runtime import run_tianheng_batch, run_tianshu_batch
 from app.domain.tianyan_artifact import build_tianyan_artifact
 from app.domain.tiangong_artifact import build_tiangong_artifact
 from app.services.explore_batches import build_explore_batch, work_units
@@ -252,8 +252,8 @@ def create_artifact_builders(
     explore_batch_runner: ExploreBatchRunner = run_explore_batch,
 ) -> dict[str, Callable[[dict[str, Any]], dict[str, Any]]]:
     engine_sessions: dict[tuple[str, tuple[str, ...]], ExploreEngineSession] = {}
-    tianheng_sessions: dict[
-        tuple[str, tuple[str, ...]], tuple[ExploreEngineSession, TianhengEngineSession]
+    locked_sessions: dict[
+        tuple[str, str, tuple[str, ...]], tuple[ExploreEngineSession, TianhengEngineSession]
     ] = {}
 
     def engine_session(lottery: str, history: list[dict[str, Any]], number_orders: tuple[str, ...] | None) -> ExploreEngineSession:
@@ -301,21 +301,33 @@ def create_artifact_builders(
             context.get("numberOrders"),
         )
 
-    def tianheng(context: dict[str, Any]) -> dict[str, Any]:
+    def locked(
+        context: dict[str, Any],
+        *,
+        kind: str,
+        lock_count: int,
+        runner: ExploreBatchRunner,
+    ) -> dict[str, Any]:
         draw = context["draw"]
         orders = allowed_number_orders(draw["lottery"], context.get("numberOrders"))
         explore_session = engine_session(draw["lottery"], context["history"], orders)
-        key = (draw["lottery"], orders)
-        cached = tianheng_sessions.get(key)
-        # The pair index covers the complete history. Keep it across batches,
-        # and replace it when the underlying verified history session changes.
+        key = (kind, draw["lottery"], orders)
+        cached = locked_sessions.get(key)
+        # Each lock-count index covers the complete history. Keep it across
+        # batches and replace it when the verified history session changes.
         if cached is None or cached[0] is not explore_session:
-            cached = (explore_session, TianhengEngineSession.from_explore_session(explore_session))
-            tianheng_sessions[key] = cached
+            cached = (
+                explore_session,
+                TianhengEngineSession.from_explore_session(
+                    explore_session,
+                    lock_count=lock_count,
+                ),
+            )
+            locked_sessions[key] = cached
         session = cached[1]
-        batch = context["tianhengBatch"]
+        batch = context[f"{kind}Batch"]
         try:
-            result = run_tianheng_batch(
+            result = runner(
                 draw["lottery"], context["history"],
                 int(batch["start"]), int(batch["limit"]), session=session,
             )
@@ -327,6 +339,22 @@ def create_artifact_builders(
             "cursorStart": result["cursorStart"], "cursor": result["cursor"],
             "total": result["total"], "complete": result["complete"],
         }}
+
+    def tianheng(context: dict[str, Any]) -> dict[str, Any]:
+        return locked(
+            context,
+            kind="tianheng",
+            lock_count=2,
+            runner=run_tianheng_batch,
+        )
+
+    def tianshu(context: dict[str, Any]) -> dict[str, Any]:
+        return locked(
+            context,
+            kind="tianshu",
+            lock_count=3,
+            runner=run_tianshu_batch,
+        )
 
     def tianyan(context: dict[str, Any]) -> dict[str, Any]:
         draw = context["draw"]
@@ -342,4 +370,11 @@ def create_artifact_builders(
         artifacts = context["artifacts"]
         return _status_artifact(artifacts["explore"], artifacts["tianyan"])
 
-    return {"explore": explore, "tianheng": tianheng, "tianyan": tianyan, "tiangong": tiangong, "status": status}
+    return {
+        "explore": explore,
+        "tianheng": tianheng,
+        "tianshu": tianshu,
+        "tianyan": tianyan,
+        "tiangong": tiangong,
+        "status": status,
+    }
