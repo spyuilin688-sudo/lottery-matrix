@@ -19,8 +19,10 @@ test("Matrix 狀態頁的彩種切換器只由頁面內距控制左右外距", (
 });
 
 test("彩種按鈕使用共用 1px 圓角框並以亮度表示選取", () => {
-  assert.match(lotterySwitcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid var\(--home-frame-muted\);[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*background-color:\s*rgba\(0, 0, 0, \.4\);[^}]*background-blend-mode:\s*multiply;/s);
-  assert.match(lotterySwitcher, /\.lottery-card\[data-selected="true"\]\s*\{[^}]*background-color:\s*transparent;/s);
+  assert.match(lotterySwitcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid color-mix\(in srgb, var\(--home-frame-gold\) 22%, transparent\);[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*background:\s*var\(--lottery-neutral-950\);/s);
+  assert.match(lotterySwitcher, /\.lottery-card\[data-selected="true"\]\s*\{[^}]*border-color:\s*color-mix\(in srgb, var\(--home-frame-bright\) 55%, transparent\);[^}]*background:\s*color-mix\(in srgb, var\(--home-frame-gold\) 6%, var\(--lottery-neutral-950\)\);/s);
+  assert.match(lotterySwitcher, /\.lottery-selector-logo\s*\{[^}]*opacity:\s*\.6;/s);
+  assert.match(lotterySwitcher, /\.lottery-card\[data-selected="true"\] \.lottery-selector-logo\s*\{[^}]*opacity:\s*1;/s);
   assert.doesNotMatch(lotterySwitcher, /\.lottery-card::(?:before|after)\s*\{|clip-path:\s*polygon\(/s);
 });
 
@@ -48,7 +50,7 @@ test("號碼對照單單碼與整列選取彼此獨立，特別號也保留選�
 });
 
 test("號碼對照單期數與開獎號碼分隔線使用清楚一致的色值", () => {
-  assert.match(referenceVisual, /\.reference-row > \.reference-issue \+ span\s*\{[^}]*border-left:\s*1px solid rgba\(161, 112, 40, \.78\);/s);
+  assert.match(feature, /\.reference-row > \.reference-issue \+ span\s*\{[^}]*border-left:\s*1px solid var\(--pwa-frame-divider\);/s);
 });
 
 test("開獎結果與 Matrix 牌單共用同一按鈕渲染器與 6px 外框內距", () => {

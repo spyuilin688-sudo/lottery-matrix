@@ -47,11 +47,19 @@ test('三個工具設定由 sticky 頁首提供定位且保留左右 16px', () =
   }
 });
 
-test('設定第一列使用共用小切角，第二列保留直角與原生選單', () => {
-  assert.ok(ruleBodies(feature, /^\.history-filter-secondary-row \.select-box::after$/).some((body) => /display:\s*none;/.test(body)));
-  assert.ok(ruleBodies(responsive, /^\.tool-settings-primary-row \.select-box$/).some((body) => /border-radius:\s*0;/.test(body)));
-  assert.ok(ruleBodies(responsive, /^\.tool-settings-primary-row \.select-box::after$/).some((body) => /display:\s*block;/.test(body)));
-  assert.ok(ruleBodies(responsive, /^\.tongxing-query \.same-star-period-select$/).some((body) => /--select-tech-cut:\s*4px;/.test(body)));
+test('設定兩列共用真實圓角框且保留原生選單與字級', () => {
+  const sharedSelect = ruleBodies(feature, /^\.select-box$/);
+  assert.equal(sharedSelect.length, 1);
+  assert.match(sharedSelect[0], /border:\s*1px solid var\(--pwa-frame-tertiary\);/);
+  assert.match(sharedSelect[0], /border-radius:\s*var\(--pwa-frame-radius\);/);
+  assert.match(sharedSelect[0], /background:\s*var\(--pwa-control-surface\);/);
+  const primarySelect = ruleBodies(responsive, /^\.tool-settings-primary-row \.select-box$/);
+  assert.equal(primarySelect.length, 1);
+  assert.match(primarySelect[0], /width:\s*100%;/);
+  assert.doesNotMatch(primarySelect[0], /border(?:-radius)?:/);
+  for (const css of [feature, responsive, tongxing]) {
+    assert.doesNotMatch(css, /\.select-box::(?:before|after)|--select-tech-cut/);
+  }
   assert.match(feature, /\.history-filter-panel select\s*\{[^}]*font-size:\s*clamp\(/s);
   assert.match(responsive, /\.reference-query-panel \.reference-select select\s*\{[^}]*font-size:\s*clamp\(/s);
   const tongxingSelect = ruleBodies(tongxing, /^\.tongxing-query \.same-star-period-select select$/);
@@ -82,7 +90,7 @@ test('通知與底部品牌頁移除固定 Logo 特例和小螢幕強拉', () =>
 });
 
 test('同星結果群組使用目前卡框、間距與雙列背景辨識', () => {
-  assert.match(tongxing, /\.tongxing-screen \.tongxing-result-group\s*\{[^}]*border:\s*1px solid rgba\(187, 134, 47, \.78\);[^}]*background:\s*#030b13;/s);
+  assert.match(tongxing, /\.tongxing-screen \.tongxing-result-group\s*\{[^}]*border:\s*1px solid var\(--pwa-frame-secondary\);[^}]*background:\s*#030b13;/s);
   assert.match(tongxing, /\.tongxing-screen \.tongxing-result-group \+ \.tongxing-result-group\s*\{\s*margin-top:\s*6px;/s);
   assert.match(tongxing, /data-row-type="locked"[^}]*rgba\(126, 83, 15, \.32\)/s);
   assert.match(tongxing, /data-row-type="predicted"[^}]*rgba\(10, 61, 88, \.38\)/s);

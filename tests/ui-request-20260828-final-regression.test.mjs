@@ -17,7 +17,7 @@ const logoSpacing = read("src/homepage/logo-spacing.css");
 const pages = readFeaturePagesSource();
 
 test("號碼對照單只使用一條 1px 的期數與開獎號碼分隔線", () => {
-  assert.match(reference, /\.reference-row > \.reference-issue \+ span\s*\{[^}]*border-left:\s*1px solid rgba\(161, 112, 40, \.78\);/s);
+  assert.match(feature, /\.reference-row > \.reference-issue \+ span\s*\{[^}]*border-left:\s*1px solid var\(--pwa-frame-divider\);/s);
   assert.doesNotMatch(reference, /\.reference-row > span \+ span,[\s\S]*?border-left:\s*2px/s);
 });
 
@@ -50,8 +50,10 @@ test("查看更多紀錄間距為 2px", () => {
 });
 
 test("首頁與 Matrix 狀態的彩種選取框只由共用切換器樣式管理", () => {
-  assert.match(switcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid var\(--home-frame-muted\);[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*background-color:\s*rgba\(0, 0, 0, \.4\);/s);
-  assert.match(switcher, /\.lottery-card\[data-selected="true"\]\s*\{[^}]*background-color:\s*transparent;/s);
+  assert.match(switcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid color-mix\(in srgb, var\(--home-frame-gold\) 22%, transparent\);[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*background:\s*var\(--lottery-neutral-950\);/s);
+  assert.match(switcher, /\.lottery-card\[data-selected="true"\]\s*\{[^}]*border-color:\s*color-mix\(in srgb, var\(--home-frame-bright\) 55%, transparent\);[^}]*background:\s*color-mix\(in srgb, var\(--home-frame-gold\) 6%, var\(--lottery-neutral-950\)\);/s);
+  assert.match(switcher, /\.lottery-selector-logo\s*\{[^}]*opacity:\s*\.6;/s);
+  assert.match(switcher, /\.lottery-card\[data-selected="true"\] \.lottery-selector-logo\s*\{[^}]*opacity:\s*1;/s);
   assert.doesNotMatch(`${switcher}\n${visual}`, /\.lottery-card::(?:before|after)\s*\{|--home-octagon-frame/);
   assert.match(pages, /className="lottery-switcher--home-style matrix-status-lottery-switcher"/);
 });
@@ -60,5 +62,12 @@ test("首頁 Matrix Core 由單一正式圖稿與亮金圓角框呈現", () => {
   assert.match(prototypeView, /className="matrix-core-banner home-core-box"/);
   assert.match(prototypeView, /className="matrix-core-description"/);
   assert.match(base, /\.home-screen \.matrix-core-banner\s*\{[^}]*border:\s*1px solid var\(--home-frame-bright\);[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*background:\s*url\("\/assets\/lottery\/home-premium\/core-artwork\.webp"\)/s);
-  assert.doesNotMatch(`${prototypeView}\n${visual}`, /matrix-core-(?:symbol-energy|energy-path|energy-loop|node)|matrix-core-energy-circulation|matrix-core-node-pulse/);
+  // Main commit 246e6ab restored decorative circulation and nodes after the static artwork migration.
+  assert.match(prototypeView, /className="matrix-core-energy-loop" aria-hidden="true"/);
+  assert.match(prototypeView, /className="matrix-core-node-frame" aria-hidden="true"/);
+  assert.equal((prototypeView.match(/className="matrix-core-node"/g) ?? []).length, 8);
+  assert.match(visual, /animation:\s*matrix-core-energy-circulation 4\.8s linear infinite;/);
+  const reducedMotion = visual.slice(visual.indexOf("@media (prefers-reduced-motion: reduce)"));
+  assert.match(reducedMotion, /\.matrix-core-energy-loop,[\s\S]*?\.matrix-core-node,[\s\S]*?\.matrix-core-energy-path\s*\{[^}]*animation:\s*none;/);
+  assert.match(reducedMotion, /\.matrix-core-energy-loop,[\s\S]*?\.matrix-core-energy-path\s*\{[^}]*opacity:\s*0;/);
 });

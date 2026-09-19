@@ -1,51 +1,56 @@
-import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { ruleBodies } from "./helpers/css-rules.mjs";
 
-const featurePages = readFeaturePagesSource();
 const corePages = readFileSync(new URL("../src/FeaturePagesCore.tsx", import.meta.url), "utf8");
 const featureCss = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const responsiveCss = readFileSync(new URL("../src/responsive-feature-pages.css", import.meta.url), "utf8");
 const exploreCss = readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8");
 const adjustmentsCss = readFileSync(new URL("../src/feature-page-adjustments.css", import.meta.url), "utf8");
 
-test("Matrix 四頁切換器位於設定標題同列並完整呈現外框", () => {
+test("Matrix 五頁切換器位於設定標題同列且外框只有一個來源", () => {
   assert.match(featureCss, /\.matrix-settings-heading\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*space-between;/s);
-  assert.match(exploreCss, /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher button\s*\{[^}]*border:\s*1px solid #755329;[^}]*border-radius:\s*clamp\(4px, 1\.2vw, 5px\);/s);
-  assert.match(exploreCss, /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher button::before,[\s\S]*?button::after\s*\{[^}]*display:\s*none;/s);
-  assert.doesNotMatch(exploreCss, /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher button::before\s*\{[^}]*background:\s*linear-gradient\([^}]*#f0c44d/s);
-  assert.doesNotMatch(exploreCss, /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher img\s*\{\s*clip-path:\s*inherit;/s);
+  const switcher = ruleBodies(featureCss, /^\.matrix-page-switcher$/);
+  assert.equal(switcher.length, 1);
+  assert.match(switcher[0], /width:\s*176px;[^}]*height:\s*26px;/s);
+  assert.match(switcher[0], /border:\s*1px solid var\(--pwa-frame-tertiary\);/);
+  assert.match(switcher[0], /border-radius:\s*var\(--pwa-frame-radius\);/);
+  assert.doesNotMatch(exploreCss, /matrix-page-switcher/);
 });
 
-test("同星、對照單與歷史的設定按鈕使用同一個位置規格 [header migration]", () => {
-  const css = readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
-  const actions = ruleBodies(css, /^\.product-header__actions$/);
+test("同星、對照單與歷史的設定按鈕共用標題右下定位", () => {
+  const actions = ruleBodies(featureCss, /^\.product-header__actions$/);
   assert.equal(actions.length, 1);
-  assert.match(actions[0], /grid-area:\s*actions;/);
+  assert.match(actions[0], /position:\s*absolute;[^}]*right:\s*4px;[^}]*bottom:\s*0px;/s);
   assert.match(actions[0], /min-width:\s*0;/);
-  assert.doesNotMatch(actions[0], /translate|position:\s*absolute/);
-  assert.match(featurePages, /className="reference-title-actions title-card-compact-actions"/);
-  assert.match(corePages, /className="history-title-actions title-card-compact-actions"/);
-  assert.match(corePages, /className="tongxing-title-actions title-card-compact-actions"/);
+  assert.match(actions[0], /width:\s*var\(--product-header-action-width\);/);
+  assert.doesNotMatch(actions[0], /translate/);
+  const reference = readFileSync(new URL('../src/features/NumberReferencePage.tsx', import.meta.url), 'utf8');
+  for (const [source, ids] of [[reference, ['reference']], [corePages, ['history', 'tongxing']]]) {
+    for (const id of ids) {
+      assert.ok(source.includes(`controls="${id}-header-settings"`));
+      assert.ok(source.includes(`headerSettings={{ id: "${id}-header-settings"`));
+    }
+  }
   assert.doesNotMatch(responsiveCss, /tool-title-actions/);
 });
 
-test("重設與刷新在設定按鈕上方保留 4px，且外框高度固定 20px [header migration]", () => {
-  assert.match(featurePages, /className="title-card-compact-action reference-refresh-trigger tool-title-reset-trigger"/);
-  assert.match(corePages, /className="history-reset-trigger title-card-compact-action tool-title-reset-trigger"/);
-
-  const bodies = ruleBodies(responsiveCss, /^\.title-card-compact-actions$/);
-  assert.equal(bodies.length, 1);
-  assert.match(bodies[0], /grid-auto-rows:\s*20px;/);
-  assert.match(bodies[0], /gap:\s*4px;/);
-
-  const refreshIcon = ruleBodies(responsiveCss, /^\.reference-refresh-icon$/);
-  assert.equal(refreshIcon.length, 1);
-  assert.match(refreshIcon[0], /width:\s*8px;/);
-  assert.match(refreshIcon[0], /height:\s*8px;/);
+test("重設與刷新位於設定第一列並共用 26px 控制與 10px 圖示", () => {
+  const reference = readFileSync(new URL('../src/features/NumberReferencePage.tsx', import.meta.url), 'utf8');
+  assert.match(reference, /className="tool-settings-reset reference-refresh-trigger"/);
+  assert.match(corePages, /className="tool-settings-reset history-reset-trigger"/);
+  const reset = ruleBodies(responsiveCss, /^\.tool-settings-reset$/);
+  assert.equal(reset.length, 1);
+  assert.match(reset[0], /height:\s*26px;/);
+  assert.match(reset[0], /font-size:\s*10px;/);
+  const icon = ruleBodies(responsiveCss, /^\.tool-settings-reset > svg$/);
+  assert.equal(icon.length, 1);
+  assert.match(icon[0], /width:\s*10px;/);
+  assert.match(icon[0], /height:\s*10px;/);
+  assert.match(reference, /className="query-selects three-cols tool-settings-primary-row">[\s\S]*?className="tool-settings-reset reference-refresh-trigger"/);
+  assert.match(corePages, /className="history-filter-primary-row tool-settings-primary-row">[\s\S]*?className="tool-settings-reset history-reset-trigger"/);
 });
 
 test("指南章節捲動列上下以 3px 間距保留分隔線", () => {

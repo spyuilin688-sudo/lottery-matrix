@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const css = fs.readFileSync('src/feature-pages.css', 'utf8');
+const css = fs.readFileSync('src/matrix-explore-spacing.css', 'utf8');
 
 test('Matrix Explore main screen uses readable reference proportions without transform hacks', () => {
   assert.match(css, /\.matrix-explore-main-screen\s*\{[^}]*--mx-history-row-height:\s*58px/s);

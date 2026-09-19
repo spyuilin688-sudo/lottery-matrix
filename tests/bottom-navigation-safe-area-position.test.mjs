@@ -29,7 +29,7 @@ test("Android viewport 不再額外上縮 device safe area", () => {
 });
 
 test("內容底部以導覽與瀏覽器安全區為基準並保留 8px 可見間距", () => {
-  assert.match(tokenCss, /--bottom-navigation-height:\s*72px;/);
+  assert.match(tokenCss, /--bottom-navigation-height:\s*70px;/);
   assert.match(tokenCss, /--layout-bottom-nav-clearance:\s*calc\(var\(--bottom-navigation-height\) \+ env\(safe-area-inset-bottom,\s*0px\)\);/);
   assert.doesNotMatch(tokenCss, /--layout-bottom-nav-clearance:[^;]*var\(--mobile-safe-area-height/);
   assert.doesNotMatch(tokenCss, /--layout-bottom-nav-clearance:[^;]*\+\s*12px/);

@@ -28,9 +28,16 @@ test('notification consolidation keeps the accepted geometry, typography and sel
   const time = rule(file, '.notifications-screen-v2 .notification-time-select');
   assert.equal(time.height, '21px');
   assert.equal(time['min-height'], '21px');
-  assert.equal(time['border-radius'], '12px');
-  assert.equal(rule(file, '.notifications-screen-v2 .notification-time-select::before').background, '#344A66');
-  assert.equal(rule(file, '.notifications-screen-v2 .notification-time-select::after').background, '#101C2C');
+  // DESIGN frame hierarchy: real shared select frame replaces ornamental layers.
+  const sharedSelect = rule('src/feature-pages.css', '.select-box, .native-select');
+  assert.equal(sharedSelect['border-radius'], 'var(--pwa-frame-radius)');
+  assert.equal(sharedSelect.border, '1px solid var(--pwa-frame-tertiary)');
+  assert.equal(sharedSelect.background, 'var(--pwa-control-surface)');
+  assert.equal(time['border-radius'], undefined, 'time select inherits its shared frame');
+  assert.doesNotMatch(read(file), /\.notification-time-select[^{}]*::(?:before|after)/);
+  const selected = rule(file, '.notifications-screen-v2 .notification-time-select:has(select option:checked:not([value=""]))');
+  assert.equal(selected.background, 'var(--pwa-control-selected)');
+  assert.equal(selected['border-color'], 'var(--pwa-frame-secondary)');
   assert.equal(rule(file, '.notifications-screen-v2 .notification-time-select select').color, '#D8C38D');
   assert.equal(rule(file, '.notifications-screen-v2 .notification-time-select select:has(option:checked[value=""])').color, 'var(--lottery-neutral-400)');
 });

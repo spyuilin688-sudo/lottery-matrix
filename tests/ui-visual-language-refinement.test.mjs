@@ -56,12 +56,12 @@ test("homepage logo fills its frame and four features keep their current respons
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut", "justify-items"), "center");
 });
 
-test("draw order moves up 2px, shrinks to 25px and keeps a compact near-flat inner seam", () => {
+test("draw order moves up 2px, uses the approved 22px height and keeps a compact near-flat inner seam", () => {
   const order = ruleBodies(homeCss, ".home-screen .latest-draw-card .draw-order").join("\n");
   const button = ruleBodies(homeCss, ".home-screen .latest-draw-card .draw-order button").join("\n");
   assert.match(order, /gap:\s*2\.5px;/);
   assert.match(order, /align-self:\s*start;/);
-  assert.match(order, /height:\s*25px;/);
+  assert.match(order, /height:\s*22px;/);
   assert.match(order, /margin-block-start:\s*1px;/);
   assert.match(order, /border:\s*0;/);
   assert.match(order, /background:\s*transparent;/);
@@ -89,7 +89,7 @@ test("bottom navigation keeps four primary columns while quick settings lives in
   assert.equal(ruleBodies(navCss, ".bottom-navigation-quick-settings").length, 0);
   assert.equal(finalDeclaration(navCss, ".header-settings-button", "width"), "44px");
   assert.equal(finalDeclaration(navCss, ".header-settings-button", "height"), "44px");
-  assert.equal(finalDeclaration(navCss, ".header-settings-button svg", "width"), "22px");
+  assert.equal(finalDeclaration(navCss, ".header-settings-button svg", "width"), "18px");
 });
 
 test("guide categories scroll horizontally and status settings stays in the page header", () => {

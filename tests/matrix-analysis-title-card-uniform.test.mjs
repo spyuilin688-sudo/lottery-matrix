@@ -12,7 +12,7 @@ test("探索、天衍、天工共用固定尺寸的 Logo 標題卡 [header migra
   const headerCss = readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
   const card = ruleBodies(headerCss, /^\.product-header__frame$/);
   assert.equal(card.length, 1);
-  assert.match(card[0], /height:\s*68px;/);
+  assert.match(card[0], /height:\s*var\(--product-header-frame-height, 68px\);/);
   assert.match(card[0], /width:\s*100%;/);
   assert.match(source, /<BrandHeader/);
   assert.doesNotMatch(css, /matrix-title-banner/);

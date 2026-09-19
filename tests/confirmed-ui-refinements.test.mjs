@@ -29,7 +29,7 @@ test("Matrix 指南移除標題下方重複卡片", () => {
 test("Matrix 探索、天衍、天工共用設定標題同列的文字切換器", () => {
   assert.doesNotMatch(source, /headerAction=\{<MatrixPageSwitcher/);
   assert.match(feature, /\.matrix-settings-heading\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*space-between;/s);
-  assert.match(feature, /\.matrix-page-switcher\s*\{[^}]*width:\s*176px;[^}]*height:\s*26px;[^}]*gap:\s*0;[^}]*border-radius:\s*8px;/s);
+  assert.match(feature, /\.matrix-page-switcher\s*\{[^}]*width:\s*176px;[^}]*height:\s*26px;[^}]*gap:\s*0;[^}]*border-radius:\s*var\(--pwa-frame-radius\);/s);
   assert.match(feature, /\.matrix-page-switcher button\[aria-current="page"\]\s*\{[^}]*font-weight:\s*700;/s);
 });
 
@@ -76,10 +76,11 @@ test("通知內容採較緊密比例，右側動作固定欄對齊", () => {
 });
 
 test("歷史篩選入口沿用共用標題操作區", () => {
-  const history = readFileSync("src/features/LegacyHistoryPage.tsx", "utf8");
+  const history = readFileSync("src/FeaturePagesCore.tsx", "utf8");
   const shell = readFileSync("src/features/shared.tsx", "utf8");
   assert.match(history, /headerAction=\{historyTitleActions\}/);
-  assert.match(history, /className="history-filter-trigger title-card-compact-action"/);
+  assert.match(history, /<HeaderSettingsButton expanded=\{filterExpanded\} controls="history-header-settings" label="篩選設定" onClick=\{toggleHistoryFilters\}/);
+  assert.match(history, /headerSettings=\{\{ id: "history-header-settings"/);
   assert.match(shell, /<BrandHeader[\s\S]*?action=\{headerAction\}/);
   assert.doesNotMatch(responsive, /\.draw-history-screen \.matrix-title-banner-actions/);
 });

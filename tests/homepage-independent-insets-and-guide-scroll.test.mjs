@@ -35,6 +35,6 @@ test("Matrix 指南不在原生慣性滑動期間改寫 scrollLeft", () => {
 
 test("Matrix 指南卡片縮小、數字加粗且分隔線保留", () => {
   assert.match(guideCss, /\.matrix-guide-screen \.guide-category-strip\s*\{[^}]*border-top:\s*1px solid[^}]*border-bottom:\s*1px solid[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;/s);
-  assert.match(guideCss, /\.guide-category-card\s*\{[^}]*min-height:\s*30\.888px;[^}]*padding:\s*5\.616px 11\.232px;[^}]*gap:\s*5\.616px;[^}]*border-radius:\s*12px;[^}]*font-size:\s*16\.848px;/s);
+  assert.match(guideCss, /\.guide-category-card\s*\{[^}]*min-height:\s*30\.888px;[^}]*padding:\s*5\.616px 11\.232px;[^}]*gap:\s*5\.616px;[^}]*border-radius:\s*var\(--pwa-frame-radius\);[^}]*font-size:\s*16\.848px;/s);
   assert.match(guideCss, /\.guide-category-card > span\s*\{[^}]*color:\s*#c49145;[^}]*font-size:\s*11\.88px;[^}]*font-weight:\s*800;/s);
 });

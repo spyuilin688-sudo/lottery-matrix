@@ -17,16 +17,19 @@ test("Matrix Core uses its fitted responsive token and container background with
   assert.doesNotMatch(component, /<img\b/);
 });
 
-test("selected lottery restores artwork brightness inside the single rounded frame", () => {
+test("selected lottery restores full logo opacity inside the single rounded frame", () => {
   const cardRule = css.match(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{([\s\S]*?)\}/)?.[1];
   const selectedRule = css.match(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]\s*\{([\s\S]*?)\}/)?.[1];
 
   assert.ok(cardRule && selectedRule);
-  assert.match(cardRule, /border:\s*1px solid var\(--home-frame-muted\);/);
+  assert.match(cardRule, /border:\s*1px solid color-mix\(in srgb, var\(--home-frame-gold\) 22%, transparent\);/);
   assert.match(cardRule, /border-radius:\s*var\(--home-frame-radius\);/);
-  assert.match(cardRule, /background-color:\s*rgba\(0, 0, 0, \.4\);/);
-  assert.match(cardRule, /background-blend-mode:\s*multiply;/);
-  assert.match(selectedRule, /background-color:\s*transparent;/);
+  assert.match(cardRule, /background:\s*var\(--lottery-neutral-950\);/);
+  assert.doesNotMatch(cardRule, /background-image:|background-blend-mode:/);
+  assert.match(selectedRule, /border-color:\s*color-mix\(in srgb, var\(--home-frame-bright\) 55%, transparent\);[^}]*background:\s*color-mix\(in srgb, var\(--home-frame-gold\) 6%, var\(--lottery-neutral-950\)\);/);
+  // DESIGN.md compact Selector; later selected-frame refinement is covered by pwa-frame-system.
+  assert.match(css, /\.lottery-selector-logo\s*\{[^}]*opacity:\s*\.6;/s);
+  assert.match(css, /\.lottery-card\[data-selected="true"\] \.lottery-selector-logo\s*\{[^}]*opacity:\s*1;/s);
   assert.doesNotMatch(css, /\.lottery-card\[data-selected="true"\]::before\s*\{/);
 });
 

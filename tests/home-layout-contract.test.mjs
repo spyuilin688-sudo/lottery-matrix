@@ -35,7 +35,7 @@ test('homepage surfaces keep their independent responsive inline insets', () => 
   assertBlock(css, '.home-screen .latest-draw-card', /width:\s*calc\(100% - 32px\);/);
   assertBlock(css, '.home-screen .lottery-screen', /--home-gap-switcher-draw:\s*clamp\(7px,\s*calc\(0\.9dvh\s*\+\s*1px\),\s*9px\);/);
   assertLastBlock(css, '.lottery-switcher--home-style', /padding:\s*0;/);
-  assertLastBlock(css, '.lottery-switcher--home-style .lottery-switcher-hit-grid', /gap:\s*6px;/);
+  assertLastBlock(css, '.lottery-switcher--home-style .lottery-switcher-hit-grid', /gap:\s*8px;/);
   assertBlock(css, '.home-screen .matrix-status-section', /width:\s*calc\(100% - 32px\);/);
 });
 

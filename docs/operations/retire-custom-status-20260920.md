@@ -89,3 +89,21 @@ CI 後續 Node 契約步驟另有大批既有失敗。依本次差異選出的�
 ✖ draw order moves up 2px, shrinks to 25px and keeps a compact near-flat inner seam
 ✖ bottom navigation keeps four primary columns while quick settings lives in headers
 ```
+
+### CI 基準契約修復與 main 同步（2026-09-20）
+
+使用者核准修復阻擋退役合併的剩餘 105 項 Node 基準失敗。原 PR `60ae1b69` 的 CI 已通過 1,090 項 Vitest、464 項 Python、104 項瀏覽器測試；Node 仍為 310 passed / 105 failed，release gate 正確阻擋。以下記錄取代前述基準失敗作為尚未處理事項的描述。
+
+本次只更新 60 個過時的 Node 測試契約，不依測試反向修改產品行為。依據包括：
+
+- `a7122ce7` / `9ad9f417`：PWA 共用框線、控制項與作用域，探索頁移除近十期；JSDOM 不支援的 CSS 變數改查正式宣告，真實瀏覽器檢查仍保留。
+- `8ec6ebbe`：共用分隔線透明度由 18% 提升至 38%；演算法頁另保留 28% 作用域。
+- `15c08a1c`：每彩種共用每小時刷新、立即首次讀取與最後訂閱者離開時清理。
+- `246e6ab9`：恢復 Core 環流、八節點與符號動畫，保留 reduced-motion 檢查。
+- `12a4f59d`：刪除天工個別欄位補償，段落分隔採 8px 與共用框線。
+- `8fe6ee60`：指南改為現行規則說明；`7905e458` / `2eb63484`：功能標題間距 14px。
+- DESIGN 與較新元件測試：五頁切換器、獨立彩種 Logo、共用標題、會員登入區與 v15 發佈契約。
+
+同步 main `c3cf4c3c`（PR #688）的筆記本工具列與列表框線，保留其新版排版；共用瀏覽器框線檢查明確承認筆記本列表的 tertiary 外框，其他頁維持原檢查。未停用 CI、未跳過失敗測試、未修改排程或正式資料。
+
+最新本機驗證：60 個明確 Node 檔案 287 passed / 0 failed / 0 skipped；刷新與請求所有權 2 個 Vitest 檔案 9 passed；筆記本元件 33 passed。PR 整合 CI 與正式部署驗證待新提交執行，不能以本機測試取代。

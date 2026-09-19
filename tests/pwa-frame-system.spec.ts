@@ -42,7 +42,9 @@ for (const { screen, width } of cases) {
       const border = await panel.evaluate(element => getComputedStyle(element).borderTopWidth);
       if (border === '0px') continue; // Intentional layout wrappers do not receive a second outline.
       await expect(panel).toHaveCSS('border-top-width', '1px');
-      await expect(panel).toHaveCSS('border-top-color', colors.secondary);
+      // PR #688 gives notebook list entries a quieter tertiary frame.
+      const notebookEntry = screen === 'notebook' && await panel.evaluate(element => element.classList.contains('notebook-entry'));
+      await expect(panel).toHaveCSS('border-top-color', notebookEntry ? colors.tertiary : colors.secondary);
       await expect(panel).toHaveCSS('border-radius', '8px');
       await expect(panel).toHaveCSS('box-shadow', 'none');
     }
