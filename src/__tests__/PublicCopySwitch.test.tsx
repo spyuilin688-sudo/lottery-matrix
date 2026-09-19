@@ -93,10 +93,10 @@ test('referral rewards retain all four thresholds and explain reversals once', a
     row.querySelector('dt')?.textContent,
     [...row.querySelectorAll('dd > span')].map(part => part.textContent),
   ])).toEqual([
-    ['推薦成功滿 10 人', ['七期', '每週一、二、四、五開放']],
-    ['推薦成功滿 15 人', ['七期', '永久開放']],
-    ['推薦成功滿 30 人', ['完整範圍', '每週二、五開放']],
-    ['推薦成功滿 50 人', ['完整範圍', '永久開放']],
+    ['推薦成功滿 10 人', ['Matrix 探索 七期', '每週一、二、四、五開放']],
+    ['推薦成功滿 15 人', ['Matrix 探索 七期', '永久開放']],
+    ['推薦成功滿 30 人', ['Matrix 探索 完整範圍', '每週二、五開放']],
+    ['推薦成功滿 50 人', ['Matrix 探索 完整範圍', '永久開放']],
   ]);
   expect(rewards).toHaveTextContent('永久開放仍須維持對應的推薦成功人數門檻。');
   const recognition = document.getElementById('referral-rule-推薦成功認定')!;
