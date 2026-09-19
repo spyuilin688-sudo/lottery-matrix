@@ -222,8 +222,8 @@ test('三種方案與指南的共同權限一致，輪播複本不重複列出�
   requested.forEach(text => expect(guide.container.querySelector('.guide-preview')?.textContent).toContain(text));
 });
 
-test.each([ServiceInfoPage, MemberTermsPage, RefundPolicyPage])('%s 說明目前手動轉帳且自動續訂尚未開放', Page => {
+test.each([ServiceInfoPage, MemberTermsPage, RefundPolicyPage])('%s 說明綠界付款與自動續訂尚未開放', Page => {
   const view = render(<Page onNavigate={vi.fn()} />);
-  expect(view.container.textContent).toContain('目前採手動轉帳，不會自動扣款；自動續訂尚未開放。');
+  expect(view.container.textContent).toContain('Matrix Pro 訂閱付款將採用綠界金流；綠界付款與自動續訂尚未開放。');
   expect(view.container.textContent).not.toContain('使用者可自行選擇是否開啟自動續訂。');
 });
