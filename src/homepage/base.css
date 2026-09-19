@@ -292,8 +292,12 @@
   gap: 9px;
 }
 
+.home-screen .latest-draw-card[data-lottery="六合彩"] {
+  --draw-main-ball-gap: 6px;
+}
+
 .home-screen .latest-draw-card .draw-balls[data-has-special="true"] .main-balls {
-  gap: 3px;
+  gap: var(--draw-main-ball-gap, 3px);
   flex: 0 1 auto;
 }
 
