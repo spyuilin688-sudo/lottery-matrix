@@ -2235,6 +2235,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 /* All PWA feature titles share the Explore header; homepage branding is separate. */
 .product-header {
   --product-header-background: url("/assets/lottery/header-gold-arc.svg");
+  --product-header-long-subtitle-tracking: clamp(.1em, calc((100cqi - 13em) / 22), .32em);
   --product-header-copy-shade: linear-gradient(90deg, transparent 30%, rgba(2, 6, 9, .8) 44%, rgba(2, 6, 9, .8) 82%, transparent 100%);
   --product-header-filter-shade: radial-gradient(ellipse 88px 32px at right bottom, rgba(2, 6, 9, .86) 65%, transparent 100%), var(--product-header-copy-shade);
   box-sizing: border-box;
@@ -2278,6 +2279,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .product-header[data-product-header="Matrix 牌單"] {
   --product-header-background: url("/assets/lottery/headers/matrix-card.webp");
+  --product-header-background-shade: var(--product-header-copy-shade);
 }
 .product-header[data-product-header="Matrix 指南"] {
   --product-header-background: url("/assets/lottery/headers/guide.webp");
@@ -2290,6 +2292,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .product-header[data-product-header="自訂觸發條件"],
 .product-header[data-product-header="Matrix 自訂觸發狀態"] {
   --product-header-background: url("/assets/lottery/headers/status-settings.webp");
+  --product-header-background-shade: var(--product-header-copy-shade);
 }
 .product-header[data-product-header="Matrix 筆記本"],
 .product-header[data-product-header="記事"],
@@ -2298,36 +2301,44 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .product-header[data-product-header="通知設定"] {
   --product-header-background: url("/assets/lottery/headers/notifications.webp");
+  --product-header-subtitle-tracking: var(--product-header-long-subtitle-tracking);
 }
 .product-header[data-product-header="連碰計算機"] {
   --product-header-background: url("/assets/lottery/headers/combinations.webp");
+  --product-header-background-shade: var(--product-header-copy-shade);
 }
 .product-header[data-product-header="立柱計算機"] {
   --product-header-background: url("/assets/lottery/headers/columns.webp");
+  --product-header-background-shade: var(--product-header-copy-shade);
 }
 .product-header[data-product-header="管理訂閱"] {
   --product-header-background: url("/assets/lottery/headers/subscription.webp");
 }
 .product-header[data-product-header="付款紀錄"] {
   --product-header-background: url("/assets/lottery/headers/payment-history.webp");
+  --product-header-background-shade: var(--product-header-copy-shade);
 }
 .product-header[data-product-header="訂閱方案與收費標準"] {
   --product-header-background: url("/assets/lottery/headers/pro-plans.webp");
 }
 .product-header[data-product-header="銀行轉帳付款"] {
   --product-header-background: url("/assets/lottery/headers/bank-transfer.webp");
+  --product-header-background-shade: var(--product-header-copy-shade);
 }
 .product-header[data-product-header="關於 樂彩 Matrix"] {
   --product-header-background: url("/assets/lottery/headers/about.webp");
+  --product-header-background-shade: var(--product-header-copy-shade);
 }
 .product-header[data-product-header="我的推薦碼/啟動碼"] {
   --product-header-background: url("/assets/lottery/headers/activation.webp");
+  --product-header-subtitle-tracking: var(--product-header-long-subtitle-tracking);
 }
 .product-header[data-product-header="服務內容與使用說明"] {
   --product-header-background: url("/assets/lottery/headers/service-info.webp");
 }
 .product-header[data-product-header="退款規範"] {
   --product-header-background: url("/assets/lottery/headers/refund.webp");
+  --product-header-background-shade: var(--product-header-copy-shade);
 }
 .product-header[data-product-header="聯絡客服/問題回報/商務合作"] {
   --product-header-background: url("/assets/lottery/headers/contact.webp");
@@ -2343,9 +2354,11 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .product-header[data-product-header="會員服務條例"] {
   --product-header-background: url("/assets/lottery/headers/terms.webp");
+  --product-header-background-shade: var(--product-header-copy-shade);
 }
 .product-header[data-product-header="隱私權政策"] {
   --product-header-background: url("/assets/lottery/headers/privacy.webp");
+  --product-header-background-shade: var(--product-header-copy-shade);
 }
 .product-header[data-product-header="聲明與免責事項"] {
   --product-header-background: url("/assets/lottery/headers/disclaimer.webp");
