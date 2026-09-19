@@ -14,3 +14,10 @@ it('shows stale observations and unavailable optimizer explicitly',()=>{
  expect(screen.getByText(/觀察已過期/)).toBeTruthy();
  expect(screen.getByText(/尚未執行深度檢查/)).toBeTruthy();
 });
+
+it('shows independent source freshness and the approved cadence',()=>{
+ render(<MatrixWatchdogPanel detail={{checkedAt:'2026-09-20T02:00:00Z',completedAt:'2026-09-20T02:00:00Z',optimizer:{checkedAt:'2026-09-20T02:00:00Z',candidates:[],coverage:[],retentionDays:90,sourceChecks:{railway:'2026-09-20T02:00:00Z'}}}} now={new Date('2026-09-20T02:01:00Z')} />);
+ expect(screen.getByText(/觀察保留 90 天/)).toBeTruthy();
+ expect(screen.getByText('Railway 最近檢查')).toBeTruthy();
+ expect(screen.getByText('資料庫最近檢查').nextElementSibling?.textContent).toBe('尚無紀錄');
+});

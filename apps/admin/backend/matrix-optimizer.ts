@@ -1,7 +1,7 @@
 import type { RailwayEvidence } from './matrix-railway-evidence';
 export type OptimizationCandidate = {category:'railway'|'database'|'security'|'code';subject:string;observation:string;evidence:string[];state:'candidate'|'insufficient-evidence'};
 type Observation = {subject:string;kind:'index'|'table';value:number;firstObservedAt:string;observedAt:string;statsReset:string|null};
-export type OptimizerReport = {checkedAt:string;candidates:OptimizationCandidate[];coverage:string[];observations?:Observation[]};
+export type OptimizerReport = {checkedAt:string;candidates:OptimizationCandidate[];coverage:string[];observations?:Observation[];retentionDays?:90;sourceChecks?:{railway?:string;database?:string}};
 type Row = Record<string,unknown>;
 const rows=(v:unknown):Row[]=>Array.isArray(v)?v.filter(r=>r&&typeof r==='object'&&!Array.isArray(r)).slice(0,300):[];
 export function optimizeSnapshot(database:Row|null,railway:RailwayEvidence[],at=new Date(),previous?:OptimizerReport):OptimizerReport {
@@ -39,14 +39,14 @@ export function optimizeSnapshot(database:Row|null,railway:RailwayEvidence[],at=
  }
  for(const service of railway) {
   const samples=service.samples;
-  if(!samples.length) {add('railway',service.service,'執行樣本不足',[service.code]);continue;}
+  if(!samples.length) {add('railway',service.service,'執行樣本不足',[service.code]);}
   for(const lottery of new Set(samples.map(s=>s.lottery))) {
    const group=samples.filter(s=>s.lottery===lottery);
    add('railway',`${service.service}:${lottery}`,'彩種執行時間觀察',[`samples=${group.length}; avg_ms=${(group.reduce((a,s)=>a+s.durationMs,0)/group.length).toFixed(1)}`]);
   }
   const failed=samples.filter(s=>s.outcome==='failed').length;
   const idle=samples.filter(s=>['already-acquired','already-analyzed','no-new-draw','not-due'].includes(s.outcome)).length;
-  add('railway',service.service,'執行時間與跳過次數觀察',[`samples=${samples.length}; avg_ms=${(samples.reduce((a,s)=>a+s.durationMs,0)/samples.length).toFixed(1)}; failures=${failed}; idle=${idle}`,`logs_truncated=${service.logsTruncated}; 僅代表所取樣本`,...service.metrics.map(m=>`${m.measurement}: avg=${m.average}; max=${m.max}; samples=${m.count}`)]);
+  add('railway',service.service,'執行時間與跳過次數觀察',[`samples=${samples.length}; avg_ms=${(samples.length?(samples.reduce((a,s)=>a+s.durationMs,0)/samples.length).toFixed(1):'unavailable')}; failures=${failed}; idle=${idle}`,`logs_truncated=${service.logsTruncated}; 僅代表所取樣本`,...service.metrics.map(m=>`${m.measurement}: avg=${m.average}; max=${m.max}; samples=${m.count}`)]);
   const completed=samples.filter(s=>s.period!==null&&['analysis-completed','complete'].includes(s.outcome));
   const keys=new Map<string,number>();for(const s of completed){const k=`${s.lottery}:${s.period}:${s.executionVersion}`;keys.set(k,(keys.get(k)??0)+1);}
   for(const [key,count] of keys) if(count>1) add('railway',`${service.service}:${key}`,'同一期與程式版本多次完整執行',[`次數=${count}`,'需排除來源修正與必要恢復；不同版本重算不計入'],'candidate');
@@ -57,5 +57,7 @@ export function sanitizeOptimizer(value:unknown):OptimizerReport|undefined {
  if(!value||typeof value!=='object')return;
  const raw=value as Row;if(typeof raw.checkedAt!=='string'||!Number.isFinite(Date.parse(raw.checkedAt)))return;
  const text=(v:unknown,max=240)=>typeof v==='string'?v.slice(0,max):'';
- return {checkedAt:raw.checkedAt,observations:rows(raw.observations).slice(0,300).filter(o=>(o.kind==='index'||o.kind==='table')&&Number.isFinite(o.value)&&Number.isFinite(Date.parse(String(o.observedAt)))&&Number.isFinite(Date.parse(String(o.firstObservedAt)))).map(o=>({subject:text(o.subject),kind:o.kind as Observation['kind'],value:Number(o.value),firstObservedAt:text(o.firstObservedAt,40),observedAt:text(o.observedAt,40),statsReset:typeof o.statsReset==='string'?text(o.statsReset,40):null})),candidates:rows(raw.candidates).slice(0,100).flatMap(c=>['railway','database','security','code'].includes(String(c.category))?[{category:c.category as OptimizationCandidate['category'],subject:text(c.subject),observation:text(c.observation),state:c.state==='candidate'?'candidate':'insufficient-evidence',evidence:Array.isArray(c.evidence)?c.evidence.slice(0,6).map(v=>text(v)):[]}]:[]),coverage:Array.isArray(raw.coverage)?raw.coverage.slice(0,8).map(v=>text(v)):[]};
+ const sourceChecks:OptimizerReport['sourceChecks']={};
+ if(raw.sourceChecks&&typeof raw.sourceChecks==='object')for(const scope of ['railway','database'] as const){const at=(raw.sourceChecks as Row)[scope];if(typeof at==='string'&&Number.isFinite(Date.parse(at)))sourceChecks[scope]=at;}
+ return {...(raw.retentionDays===90?{retentionDays:90 as const}:{}),...(Object.keys(sourceChecks).length?{sourceChecks}:{}),checkedAt:raw.checkedAt,observations:rows(raw.observations).slice(0,300).filter(o=>(o.kind==='index'||o.kind==='table')&&Number.isFinite(o.value)&&Number.isFinite(Date.parse(String(o.observedAt)))&&Number.isFinite(Date.parse(String(o.firstObservedAt)))).map(o=>({subject:text(o.subject),kind:o.kind as Observation['kind'],value:Number(o.value),firstObservedAt:text(o.firstObservedAt,40),observedAt:text(o.observedAt,40),statsReset:typeof o.statsReset==='string'?text(o.statsReset,40):null})),candidates:rows(raw.candidates).slice(0,100).flatMap(c=>['railway','database','security','code'].includes(String(c.category))?[{category:c.category as OptimizationCandidate['category'],subject:text(c.subject),observation:text(c.observation),state:c.state==='candidate'?'candidate':'insufficient-evidence',evidence:Array.isArray(c.evidence)?c.evidence.slice(0,6).map(v=>text(v)):[]}]:[]),coverage:Array.isArray(raw.coverage)?raw.coverage.slice(0,8).map(v=>text(v)):[]};
 }

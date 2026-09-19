@@ -1,5 +1,4 @@
-import { optimizeSnapshot } from './matrix-optimizer';
-import type { RailwayEvidence } from './matrix-railway-evidence';
+import { createOptimizerRunner, type OptimizerScope } from './matrix-optimizer-runner';
 import { createRailwayEvidenceCollector } from './matrix-railway-evidence';
 import { createSecurityMonitor } from './security-monitor';
 import { listMemberLoginHistory } from './member-login-history';
@@ -69,6 +68,10 @@ const railwayEvidence = createRailwayEvidenceCollector(async () => {
   const projectToken = String(await secrets.readSecret('MATRIX_RAILWAY_PROJECT_TOKEN') ?? '').trim();
   return projectToken ? {projectToken} : null;
 });
+const optimizerRunner = createOptimizerRunner({
+  collectRailway: railwayEvidence,
+  rpc: (name, body) => supabase.supabaseRequest(`rpc/${name}`, {method:'POST', body:JSON.stringify(body), signal:AbortSignal.timeout(8000)}),
+});
 const independentWatchdog = createIndependentWatchdog({
   collectRailway: railwayEvidence,
   loadSnapshot: createSupabaseWatchdogSnapshotLoader(supabase),
@@ -85,7 +88,10 @@ const connectionStatus = createConnectionStatus({
   loadConfig: () => getSupabaseConfig(secrets),
   getWorkerStatus: () => workerApi.getStatus(),
   loadWorkerUrl: async () => PRODUCTION_RAILWAY_API_BASE,
-  loadWatchdogStatus: () => watchdogStatus.load(),
+  loadWatchdogStatus: async () => {
+    const [heartbeat, optimizer] = await Promise.all([watchdogStatus.load(), optimizerRunner.latestReport().catch(() => undefined)]);
+    return heartbeat ? {...heartbeat, optimizer} : null;
+  },
   loadGithubToken: () => getGithubActionsToken(secrets),
 });
 const now = () => new Date().toISOString();
@@ -452,10 +458,21 @@ const routes: Record<string, unknown> = {
   'GET /api/system-status': [sessionGuard, moduleGuard('systemSettings', 'view'), async () =>
     json(await connectionStatus.get())],
 
+  'GET /api/system-status/optimizer-history': [sessionGuard, moduleGuard('systemSettings', 'view'), async (ctx: Context) => {
+    const scope = ctx.query?.scope;
+    const before = ctx.query?.before;
+    if ((scope !== 'railway' && scope !== 'database') || (before !== undefined && !Number.isFinite(Date.parse(before)))) return error('OPTIMIZER_QUERY_INVALID', 400);
+    try { return json(await optimizerRunner.history(scope, before)); }
+    catch { return error('OPTIMIZER_HISTORY_UNAVAILABLE', 503); }
+  }],
+
   'POST /api/internal/matrix-watchdog': [watchdogCronGuard, async (ctx: Context) => {
+    const optimizerScope = bodyOf(ctx).optimizerScope;
+    if (optimizerScope !== undefined && optimizerScope !== 'railway' && optimizerScope !== 'database') return error('OPTIMIZER_SCOPE_INVALID', 400);
     const result = await matrixIndependentWatchdog({
       scheduledTime: now(),
       optimizer: bodyOf(ctx).optimizer === true,
+      optimizerScope: optimizerScope as OptimizerScope | undefined,
       invocationId: `supabase-cron:${crypto.randomUUID()}`,
     });
     return result.statusCode === 200
@@ -686,15 +703,21 @@ const routes: Record<string, unknown> = {
 };
 
 export async function matrixIndependentWatchdog(
-  event: { scheduledTime?: string; invocationId?: string; optimizer?: boolean },
+  event: { scheduledTime?: string; invocationId?: string; optimizer?: boolean; optimizerScope?: OptimizerScope },
 ) {
   const scheduled = event?.scheduledTime ? new Date(event.scheduledTime) : new Date();
   const at = Number.isNaN(scheduled.getTime()) ? new Date() : scheduled;
   const owner = event?.invocationId || `cron:${at.toISOString()}`;
+  if (event.optimizer) {
+    try {
+      for (const scope of event.optimizerScope ? [event.optimizerScope] : ['railway','database'] as const) await optimizerRunner.run(scope, owner);
+      return {statusCode:200};
+    } catch { return {statusCode:503}; }
+  }
   let dueLotteries: WatchdogStatus['dueLotteries'] = [];
   let watchdogResult: Record<string, unknown>;
   try {
-    const runResult = await independentWatchdog.run(at, owner, {recover: !event.optimizer});
+    const runResult = await independentWatchdog.run(at, owner, {recover: true});
     dueLotteries = runResult.dueLotteries;
     watchdogResult = { ...runResult };
   } catch {
@@ -706,13 +729,6 @@ export async function matrixIndependentWatchdog(
       error: 'WATCHDOG_FAILED',
     };
   }
-  const previous = await watchdogStatus.load().catch(() => null);
-  if (event.optimizer) {
-    const database = await supabase.supabaseRequest<Record<string,unknown>>('rpc/matrix_optimizer_snapshot', {
-      method:'POST', body:'{}', signal:AbortSignal.timeout(8000),
-    }).catch(() => null);
-    watchdogResult.optimizer = optimizeSnapshot(database,(watchdogResult.railway ?? []) as RailwayEvidence[],at,previous?.optimizer);
-  } else if (previous?.optimizer) watchdogResult.optimizer = previous.optimizer;
   const completedAt = new Date().toISOString();
   const heartbeat = { ...watchdogResult, completedAt, dueLotteries };
   let result: WatchdogStatus;

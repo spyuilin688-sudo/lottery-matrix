@@ -20,3 +20,4 @@ jobs:
         with:
           name: matrix-optimization-candidates
           path: matrix-optimization-candidates.json
+          retention-days: 90

@@ -1,8 +1,9 @@
 # Matrix operational roles
 
-This change extends the existing Watchdog and stores observations in the existing
-`private.admin_watchdog_status` singleton. It creates no second monitor or repair
-log table. Recovery attempts use `matrix-recovery:<lottery>` rows in the existing
+This change extends the existing Watchdog and stores its latest operational state
+in the existing `private.admin_watchdog_status` singleton. Optimizer samples alone
+use `private.matrix_optimizer_observations`, a 90-day history with no operational
+status or recovery counters. It creates no second monitor or repair log table. Recovery attempts use `matrix-recovery:<lottery>` rows in the existing
 `system_job_status`; crawler job rows are not overwritten.
 
 ## Runtime behavior
@@ -33,14 +34,14 @@ log table. Recovery attempts use `matrix-recovery:<lottery>` rows in the existin
   slot is checked before any insertion. Pointer restoration alone does not count as
   recovery success: Custom Status and the final chain verification still follow.
 - **Optimizer:** reads SQL/index/table/RPC counters and Railway runtime/resource
-  samples, retaining bounded latest observations in the same singleton. Index
+  samples, retaining bounded hourly/daily observations in the private history. Index
   observation age resets when known PostgreSQL stats reset changes; unknown resets
   cannot establish a long observation interval. Table growth compares two observed
   samples. No candidates execute SQL/schema/permission/code mutations.
 
 ## Activation order and rollback
 
-1. Apply migrations 20260920001000 through 20260920005000 via the normal reviewed
+1. Apply 20260919174332 and migrations 20260920001000 through 20260920005000 via the normal reviewed
    Supabase release process. They require the existing active-version and custom
    status schema. Test on staging first, including concurrent draw/config changes.
 2. Deploy the matrix-status Edge Function and Railway recovery/API code, then the
@@ -50,20 +51,27 @@ log table. Recovery attempts use `matrix-recovery:<lottery>` rows in the existin
    production project/environment. This is a Railway **project token**, sent only
    in Project-Access-Token to the fixed Railway API host. Never reuse the Matrix
    admin status token. Without it all five service observations are CONFIG_MISSING.
-4. Existing watchdog Cron remains unchanged. A server-authorized POST to the
-   existing `/api/internal/matrix-watchdog` with JSON `{"optimizer":true}` collects
-   a **read-only** deep inspection and updates the existing status snapshot. It does
-   not claim recovery leases or dispatch work. The same watchdog cron guard applies.
-5. Optimizer frequency and long-term retention have not been chosen: no additional
-   recurring schedule is activated. The report retains latest bounded observations,
-   not a historical time-series. Choose the operational interval and retention before
-   enabling periodic deep inspections. Edge Function runtime statistics are explicitly
-   unavailable until a suitable provider log integration is configured.
-6. The main-push GitHub workflow emits a code candidate artifact. It searches exact
-   duplicate blocks/SQL, static references, endpoints, CSS selectors, large functions,
-   empty catches and test-name gaps; it checks JWT-disabled Edge handler auth clues.
-   These are review leads, not semantic dead-code/algorithm-equivalence or auth proofs.
-   Artifact retention inherits repository policy; no new retention period is invented.
+4. Existing watchdog Cron remains unchanged. A server-authorized POST to
+   `/api/internal/matrix-watchdog` with `{"optimizer":true,"optimizerScope":"railway"}`
+   or scope `database` collects a read-only deep inspection and saves its own history.
+   It never invokes Watchdog/Recovery or overwrites the heartbeat. Omitting scope runs
+   both independently. It shares the cron authorization guard and existing lease table
+   with distinct optimizer keys, owner fencing and one successful write per time slot.
+5. Approved cadence is Railway hourly (`0 * * * *`), database daily at Taiwan midnight
+   (`0 16 * * *` UTC), with 90-day history. Both new jobs are created **inactive**.
+   After every migration/receiver is deployed and each protected invocation succeeds,
+   activate only `matrix-optimizer-railway-v1` and `matrix-optimizer-database-v1` using
+   `cron.alter_job(jobid, active := true)`. Production activation requires deployment
+   authorization. Missing slots are not backfilled. Latest reports show separate source
+   timestamps. History is paginated through permission-guarded
+   `/api/system-status/optimizer-history?scope=railway|database&before=<ISO timestamp>`.
+   Pruning runs before credential checks on ticks and after successful writes; expired
+   records are excluded from reads even while cron is down. Edge runtime statistics
+   remain unavailable until an appropriate provider log integration is configured.
+6. The main-push GitHub workflow emits a code candidate artifact with 90-day retention.
+   It searches exact duplicate blocks/SQL, static references, endpoints, CSS selectors,
+   large functions, empty catches and test-name gaps; it checks JWT-disabled handler
+   auth clues. These are review leads, not semantic dead-code or authentication proofs.
 
 Rollback application consumers together if needed. Keep additive columns/functions;
 no data restoration or DROP is needed. Restore the former analysis-acquire function

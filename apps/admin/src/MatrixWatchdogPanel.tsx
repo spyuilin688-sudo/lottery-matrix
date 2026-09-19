@@ -27,8 +27,10 @@ export function MatrixWatchdogPanel({detail,now=new Date()}:{detail:unknown;now?
    })}
   </div>
   <details className="statusDetails"><summary>效能與優化候選</summary>
-   {!status.optimizer?<p className="statusEmpty">尚未執行深度檢查；定期頻率與觀察保留期限尚未設定。</p>:<>
-    <p className="statusScope">最近檢查：{formatAdminDateTime(status.optimizer.checkedAt)}。候選不會自動修改索引、權限或程式。</p>
+   <p className="statusScope">排程設定：Railway 每小時、資料庫每日台灣時間 00:00；觀察保留 90 天。實際執行請以各來源時間為準。</p>
+   {!status.optimizer?<p className="statusEmpty">尚未執行深度檢查；尚無可讀取的觀察紀錄。</p>:<>
+    <p className="statusScope">候選不會自動修改索引、權限或程式。</p>
+    <dl className="statusFacts">{(['railway','database'] as const).map(scope=><div key={scope}><dt>{scope==='railway'?'Railway 最近檢查':'資料庫最近檢查'}</dt><dd>{status.optimizer?.sourceChecks?.[scope]?formatAdminDateTime(status.optimizer.sourceChecks[scope]):'尚無紀錄'}</dd></div>)}</dl>
     {!status.optimizer.candidates.length&&<p className="statusEmpty">這次取樣未產出候選；不代表所有項目均已驗證。</p>}
     <div className="statusRows">{status.optimizer.candidates.map((candidate,i)=><details className="statusDetails" key={`${candidate.subject}:${i}`}><summary>{candidate.subject} · {candidate.observation}</summary><p className="statusScope">{candidate.state==='candidate'?'待審查':'證據不足，持續觀察'}</p><ul className="matrixEvidenceList">{candidate.evidence.map((e,i)=><li key={i}>{e}</li>)}</ul></details>)}</div>
    </>}

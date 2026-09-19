@@ -54,11 +54,14 @@ test('a LINE member can enter custom conditions and load their settings', async 
   await waitFor(() => expect(settings.listCustomStatusSettings).toHaveBeenCalled());
 });
 
-test('a non-LINE session does not satisfy the LINE entry requirement', async () => {
-  auth.getSession.mockResolvedValue({ data: { session: { ...lineSession, user: { ...lineSession.user, app_metadata: { provider: 'email' } } } }, error: null });
+test('a Google member can enter the notebook without a Pro condition', async () => {
+  auth.getSession.mockResolvedValue({ data: { session: {
+    access_token: 'google-session',
+    user: { id: 'google-user', app_metadata: { provider: 'google' }, identities: [] },
+  } }, error: null });
   render(<FeaturePageRouter screen="notebook" onNavigate={vi.fn()} />);
-  expect(await screen.findByRole('dialog', { name: '請先登入' })).toBeVisible();
-  expect(screen.queryByRole('button', { name: '新增筆記' })).toBeNull();
+  expect(await screen.findByRole('button', { name: '新增筆記' })).toBeVisible();
+  expect(screen.queryByRole('dialog')).toBeNull();
 });
 
 test('signing out removes the protected page immediately', async () => {

@@ -135,6 +135,7 @@ export function createWatchdogStatusStore(database: WatchdogStatusDatabase) {
 
     async save(value: unknown): Promise<WatchdogStatus> {
       const status = sanitizeWatchdogStatus(value);
+      delete status.optimizer;
       try {
         const { items } = await database.list<WatchdogStatus>(TABLE, { limit: 1 });
         const id = items[0]?.id;

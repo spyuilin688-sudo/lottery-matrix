@@ -8,7 +8,7 @@
 
 **Tech Stack:** 現有 TypeScript／React、Python、Supabase PostgreSQL／Edge Functions、Railway、GitHub Actions；不新增框架。
 
-**Spec:** `matrix-watchdog-four-roles-spec.md`，加上本對話已確認的六步實作方向。資料模型採 A：在既有 system_job_status 補三個欄位。Optimizer 排程頻率、長期保留仍未指定，本計畫不設定自動啟用值。
+**Spec:** `matrix-watchdog-four-roles-spec.md`，加上本對話已確認的六步實作方向。資料模型採 A：在既有 system_job_status 補三個欄位。後續已確認 Optimizer 每小時 Railway、每日資料庫、90 天保存；詳見 `../superpowers/plans/2026-09-20-optimizer-schedule-retention.md`。排程保持停用至部署驗證。
 
 ## Global Constraints
 
