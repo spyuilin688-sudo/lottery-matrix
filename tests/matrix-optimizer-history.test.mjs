@@ -19,6 +19,7 @@ async function fixture(){
  await db.exec(read('20260904103000_add_matrix_watchdog_leases.sql'));
  await db.exec(read('20260910123745_admin_watchdog_status_store.sql'));
  await db.exec(migration);
+ await db.exec(read('20260919181118_matrix_optimizer_cron_origin.sql'));
  // The generated migration precedes the existing PR's additive counter migration.
  await db.exec('alter table system_job_status add column retry_count bigint default 0,add column recovery_count bigint default 0,add column last_recovery_at timestamptz');
  return db;
@@ -58,6 +59,7 @@ test('HTTP tick prunes even when credentials are absent, and sends only the sele
  await db.exec("insert into vault.decrypted_secrets values('matrix_project_url','https://example.supabase.co'),('matrix_admin_watchdog_token','test-only')");
  assert.equal(await scalar(db,"select private.matrix_optimizer_http_tick('database')"),1);
  assert.deepEqual(await scalar(db,'select body from net.requests'),{optimizer:true,optimizerScope:'database'});
+ assert.equal((await scalar(db,'select headers from net.requests')).Origin,'https://matrixlottery.idv.tw');
 });
 test('normal heartbeat accepts chain evidence but never stores optimizer history',async t=>{
  const db=await fixture();t.after(()=>db.close());
