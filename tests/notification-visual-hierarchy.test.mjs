@@ -9,9 +9,9 @@ const css = readFileSync(new URL("../src/feature-page-adjustments.css", import.m
 test("全部關閉維持共用探索按鈕的次要邊框層級", () => {
   const base = ruleBodies(css, /^\.notifications-screen-v2 \.notification-bulk-disable$/);
   assert.equal(base.length, 1);
-  assert.match(base[0], /border:\s*1px solid rgba\(216, 195, 141, \.72\);/);
-  assert.match(base[0], /color:\s*#D8C38D;/);
-  assert.doesNotMatch(base[0], /background\s*:/);
+  assert.match(base[0], /border:\s*1px solid var\(--pwa-frame-tertiary\);/);
+  assert.match(base[0], /color:\s*var\(--lottery-text-secondary\);/);
+  assert.match(base[0], /background:\s*var\(--pwa-control-surface\);/);
   assert.equal(ruleBodies(css, /^\.notifications-screen-v2 \.notification-bulk-disable:active$/).length, 0);
 });
 
@@ -39,12 +39,12 @@ test("通知圖示降低亮度，讓名稱維持每列主閱讀點", () => {
   assert.ok(disabledIcon.some((body) => /filter:\s*brightness\(\.88\) saturate\(\.76\);/.test(body)));
 });
 
-test("Matrix Pro 標籤以既有比例縮減 30%", () => {
+test("Matrix Pro 保留精簡文字尺寸並採用共用框線", () => {
   const badge = ruleBodies(css, /^\.notifications-screen-v2 \.notification-pro-badge$/);
   assert.equal(badge.length, 1);
   assert.match(badge[0], /padding:\s*0 1\.4px;/);
-  assert.match(badge[0], /border:\s*\.7px solid #f6c95f;/);
-  assert.match(badge[0], /border-radius:\s*2\.1px;/);
+  assert.match(badge[0], /border:\s*1px solid var\(--pwa-frame-tertiary\);/);
+  assert.match(badge[0], /border-radius:\s*var\(--pwa-frame-radius\);/);
   assert.match(badge[0], /font-size:\s*4\.2px;/);
   assert.match(badge[0], /line-height:\s*5\.6px;/);
 });

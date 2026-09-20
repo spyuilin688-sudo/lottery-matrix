@@ -181,3 +181,27 @@
 @keyframes app-dialog-pop-in {
   from { opacity: 0; transform: translate(-50%, -48%) scale(0.97); }
 }
+
+.app-dialog-form {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  text-align: left;
+}
+.app-dialog-form input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--layout-touch-target);
+  padding: 8px;
+  border: 1px solid var(--dialog-accent);
+  border-radius: 8px;
+  background: var(--lottery-bg-base, #030912);
+  color: var(--lottery-text-primary);
+  font: inherit;
+  font-size: 16px;
+}
+.app-dialog-form input:focus-visible {
+  outline: 2px solid var(--dialog-accent-bright);
+  outline-offset: 2px;
+}

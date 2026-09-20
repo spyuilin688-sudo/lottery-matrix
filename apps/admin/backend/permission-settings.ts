@@ -1,8 +1,10 @@
 export type PermissionSettingKey =
   | 'subscriptionPurchaseVisible'
-  | 'registeredMemberFreeAccess';
+  | 'registeredMemberFreeAccess'
+  | 'ecpayReviewLoginVisible';
 
 export type MatrixPermissionSettings = {
+  ecpayReviewLoginVisible?: boolean;
   subscriptionPurchaseVisible: boolean;
   registeredMemberFreeAccess: boolean;
   revision: number;
@@ -24,7 +26,8 @@ class PermissionSettingsResponseError extends Error {
 
 export function isPermissionSettingKey(value: unknown): value is PermissionSettingKey {
   return value === 'subscriptionPurchaseVisible'
-    || value === 'registeredMemberFreeAccess';
+    || value === 'registeredMemberFreeAccess'
+    || value === 'ecpayReviewLoginVisible';
 }
 
 export function parseSettings(value: unknown): MatrixPermissionSettings {
@@ -33,7 +36,8 @@ export function parseSettings(value: unknown): MatrixPermissionSettings {
   }
   const record = value as Record<string, unknown>;
   if (
-    typeof record.subscriptionPurchaseVisible !== 'boolean'
+    (record.ecpayReviewLoginVisible !== undefined && typeof record.ecpayReviewLoginVisible !== 'boolean')
+    || typeof record.subscriptionPurchaseVisible !== 'boolean'
     || typeof record.registeredMemberFreeAccess !== 'boolean'
     || !Number.isInteger(record.revision)
     || Number(record.revision) < 0
@@ -43,6 +47,7 @@ export function parseSettings(value: unknown): MatrixPermissionSettings {
     throw new PermissionSettingsResponseError();
   }
   return {
+    ...(record.ecpayReviewLoginVisible !== undefined ? { ecpayReviewLoginVisible: record.ecpayReviewLoginVisible as boolean } : {}),
     subscriptionPurchaseVisible: record.subscriptionPurchaseVisible,
     registeredMemberFreeAccess: record.registeredMemberFreeAccess,
     revision: Number(record.revision),
