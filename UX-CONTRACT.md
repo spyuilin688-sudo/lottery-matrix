@@ -353,3 +353,13 @@ After result notification dispatch, the trusted producer requests immediate back
 - 窄螢幕方案 A 調整共用五碼列的間距及左右留白，維持原字級與卡片尺寸；使用者追加確認七碼列可縮窄公式欄並加寬號碼欄，保留整張卡片與字級。瀏覽器驗證須檢查每個號碼文字、鎖定框、參照框及特別號「＋」完整位於欄內且不互相重疊，期數與公式也必須完整顯示。天衡與天樞都要涵蓋拖牌與較長的合值公式，以及 320px、過渡寬度與 390px，不以外框尺寸相同取代可讀性驗證。
 
 2026-09-20：依使用者確認移除自訂觸發狀態的設定入口、頁面、讀寫 API、專用計算與資料。Watchdog、Inspector、Recovery 不再要求自訂狀態；一般 Matrix Status 與四彩開獎分析保留。
+
+## 綠界審核登入 — 2026-09-20
+
+來源：使用者已確認「綠界」按鈕位於 LINE 左側，彈出帳密登入視窗；專用會員可使用全部功能，但不具管理者權限；後台開關僅控制顯示。
+
+- `PermissionSwitches` 與既有設定 RPC 擁有 `ecpayReviewLoginVisible`，沿用超級管理員修改、版本衝突檢查。部署初值為關閉，未取得設定時不顯示入口。
+- `EcpayReviewLogin` 擁有帳密表單，Radix Dialog 擁有焦點圈限、Escape、返回焦點；共用 dialog CSS 擁有視覺。空欄位顯示錯誤並聚焦；失敗保留帳號、清除密碼，可重試；取消與卸載中止未完成的驗證。已驗證成功、開始寫入既有會員 session 時為不可取消的提交階段，取消按鈕暫時停用並等待結果，避免顯示已取消卻在稍後登入。
+- 先以不寫入儲存的暫時 Auth client 驗證，再由 `ecpay_review_access` 查核真正的 Auth app metadata 與有效完整會員資料，最後交給既有會員 session。驗證失敗不發布會員 session。
+- 會員功能仍由既有會員方案與伺服器授權管理；不建立管理員、不產生付款紀錄、不修改一般會員權限。入口隱藏與會員停用相互獨立。
+- 部署順序：資料庫 migration、前後台版本、專用 Auth／會員建立及實測，最後由後台開啟顯示。`scripts/provision-ecpay-review.mjs` 僅供可信任伺服器環境執行，以環境變數提供 Email／密碼，不將秘密放入原始碼。

@@ -3,6 +3,7 @@ import { getSupabaseClient } from './lib/supabase';
 import { invalidateMatrixData } from './matrix-data-revision';
 
 export type PermissionSettings = {
+  ecpayReviewLoginVisible?: boolean;
   subscriptionPurchaseVisible: boolean;
   registeredMemberFreeAccess: boolean;
   revision: number;
@@ -26,7 +27,8 @@ export async function refreshPermissionSettings(): Promise<PermissionSettings> {
   const sequence = ++requestSequence;
   try {
     const { data, error } = await getSupabaseClient().rpc('matrix_permission_settings');
-    if (error || !data || typeof data.subscriptionPurchaseVisible !== 'boolean'
+    if (error || !data || (data.ecpayReviewLoginVisible !== undefined && typeof data.ecpayReviewLoginVisible !== 'boolean')
+      || typeof data.subscriptionPurchaseVisible !== 'boolean'
       || typeof data.registeredMemberFreeAccess !== 'boolean'
       || !Number.isSafeInteger(data.revision) || data.revision < 0
       || typeof data.updatedAt !== 'string' || !Number.isFinite(Date.parse(data.updatedAt))) {

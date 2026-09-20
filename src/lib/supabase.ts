@@ -43,3 +43,16 @@ export function getSupabaseClient() {
 
   return client;
 }
+
+/** A non-persistent password check, isolated from the active member session. */
+export function createEcpayReviewAuthClient(signal: AbortSignal) {
+  return createClient(url, anonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      storageKey: 'matrix-ecpay-review-check',
+    },
+    global: { fetch: (input, init) => fetchWithPolicy(input, { ...init, signal }) },
+  });
+}

@@ -5,6 +5,8 @@ import { isActivationRedemptionError, redeemActivationCode, type ActivationRedem
 import { bootstrapMember, fetchMemberProfile, fetchMemberReferralSummary, fetchPendingTransferRequest, submitMemberReferralCode, submitTransferRequest, type MemberProfileResponse, type MemberReferralSummary, type MemberTransferRequest, type ManualTransferPlanCode } from "../member-api";
 import { readManualTransferPlan, saveManualTransferPlan } from "../manual-transfer-selection";
 import { reconcilePendingLineLogoutPresence, signInWithLine, signOutFromMatrix } from "../auth/line-auth";
+import { EcpayReviewLogin } from "../auth/EcpayReviewLogin";
+import { usePermissionSettings } from "../permission-settings";
 import { signInWithGoogle } from "../auth/google-auth";
 import { clearLineLoginAttempt, consumeLineLoginAttempt, markLineLoginAttempt } from "../auth/line-login-attempt";
 import { withDeadline } from "../lib/api-resilience";
@@ -173,6 +175,7 @@ export type ProfileAuthState =
 export const PROFILE_SESSION_TIMEOUT_MS = 2_500;
 
 export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
+  const ecpayReviewLoginVisible = usePermissionSettings()?.ecpayReviewLoginVisible === true;
   const subscriptionPurchaseVisible = useSubscriptionPurchaseVisible();
   const { confirm: confirmDialog, alert: alertDialog } = useAppDialog();
   const { showInstallAction, requestInstall } = usePwaLifecycle();
@@ -406,7 +409,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
     <FeatureShell title="我的" onNavigate={onNavigate} active="我的" className="profile-screen" compactHeader>
       <div className="membership-card-stack">
         <MembershipArtwork showSubscription={true} maskAuthPill={authState === "anonymous" || authState === "signing-in"} />
-        <section className="panel membership-card profile-card" data-auth-layout={authState === "anonymous" || authState === "signing-in" ? "multiple" : "single"}>
+        <section className="panel membership-card profile-card" data-review-login={ecpayReviewLoginVisible} data-auth-layout={authState === "anonymous" || authState === "signing-in" ? "multiple" : "single"}>
           <div className="profile-avatar">
             <img
               src={lineAvatarUrl ?? "/assets/lottery/matrix-profile-avatar.jpg"}
@@ -422,6 +425,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
           </div>
           {authState !== "initializing" ? <div className="profile-auth-actions">
             {authState === "anonymous" || authState === "signing-in" ? <>
+              {ecpayReviewLoginVisible && <EcpayReviewLogin disabled={authState === "signing-in"} />}
               <button
                 type="button"
                 className="profile-logout"

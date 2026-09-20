@@ -549,8 +549,13 @@
   --profile-auth-zone-width: 15.2cqw;
 }
 
+.profile-card[data-auth-layout="multiple"][data-review-login="true"] {
+  --profile-auth-zone-width: 31.3cqw;
+  --profile-auth-column-count: 2;
+}
+
 .profile-card[data-auth-layout="multiple"] .profile-auth-actions {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(var(--profile-auth-column-count), minmax(0, 1fr));
   align-items: stretch;
   gap: .9cqw;
 }
@@ -579,7 +584,7 @@
   box-shadow: inset 0 1px 0 rgba(255, 231, 171, .04);
 }
 
-.profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider]::before {
+.profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider]:not([data-login-provider="ecpay"])::before {
   display: block;
   width: 11px;
   height: 11px;
@@ -854,4 +859,10 @@
   .notifications-screen-v2 .notification-settings-toggle svg {
     transition-duration: 0s;
   }
+}
+.profile-card[data-auth-layout="multiple"][data-review-login="true"] .profile-logout[data-login-provider="google"] {
+  grid-column: 2;
+}
+.profile-card[data-auth-layout="multiple"] .profile-logout[data-login-provider="ecpay"] {
+  grid-template-columns: auto;
 }

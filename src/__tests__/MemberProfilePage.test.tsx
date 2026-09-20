@@ -7,6 +7,9 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 
 declare const process: { cwd(): string };
 
+const reviewSetting = vi.hoisted(() => ({ visible: false }));
+vi.mock("../permission-settings", () => ({ usePermissionSettings: () => ({ ecpayReviewLoginVisible: reviewSetting.visible }) }));
+
 const purchaseSetting = vi.hoisted(() => ({ visible: false }));
 vi.mock("../subscription-purchase-visibility", () => ({ useSubscriptionPurchaseVisible: () => purchaseSetting.visible }));
 
@@ -75,6 +78,7 @@ afterEach(() => {
 
 beforeEach(() => {
   purchaseSetting.visible = false;
+  reviewSetting.visible = false;
   memberApi.fetchMemberPaymentHistory.mockReset().mockResolvedValue([]);
   window.sessionStorage.clear();
   lineAuth.signInWithLine.mockReset().mockResolvedValue(undefined);
@@ -239,6 +243,24 @@ describe("ProfilePage member API", () => {
 
     expect(screen.getByRole("heading", { name: "我的", level: 1 })).toBeVisible();
     expect(screen.getByText("MY ACCOUNT")).toBeVisible();
+  });
+
+  it("綠界開關控制入口，按鈕位於 LINE 前且關閉不影響其他登入", async () => {
+    supabase.auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
+    const view = render(<ProfilePage onNavigate={vi.fn()} />);
+    await screen.findByRole("button", { name: "LINE 登入" });
+    expect(screen.queryByRole("button", { name: "綠界審核登入" })).not.toBeInTheDocument();
+    reviewSetting.visible = true;
+    view.rerender(<ProfilePage onNavigate={vi.fn()} />);
+    const providers = Array.from(document.querySelectorAll('[data-login-provider]')).map(node => node.getAttribute('data-login-provider'));
+    expect(providers).toEqual(['ecpay', 'line', 'google']);
+    fireEvent.click(screen.getByRole('button', { name: '綠界審核登入' }));
+    expect(screen.getByRole('dialog', { name: '綠界審核登入' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '取消' }));
+    reviewSetting.visible = false;
+    view.rerender(<ProfilePage onNavigate={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: '綠界審核登入' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'LINE 登入' })).toBeEnabled();
   });
 
   it("未登入時 LINE 與 Google 登入按鈕垂直排列", async () => {

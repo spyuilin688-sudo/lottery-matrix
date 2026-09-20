@@ -7,6 +7,7 @@ import { PermissionSwitches } from './PermissionSwitches';
 const current = {
   subscriptionPurchaseVisible: false,
   registeredMemberFreeAccess: true,
+  ecpayReviewLoginVisible: false,
   revision: 7,
   updatedAt: '2026-09-10T22:00:00.000Z',
 };
@@ -48,6 +49,20 @@ describe('permission switch workspace', () => {
     expect(switches().purchase?.disabled).toBe(true);
     expect(switches().free?.disabled).toBe(true);
     expect(container.textContent).toContain('僅超級管理員可修改');
+  });
+
+  it('changes review button visibility independently of member access', async () => {
+    const updated = { ...current, ecpayReviewLoginVisible: true, revision: 8 };
+    const client = { get: vi.fn(async () => ({ data: current })), put: vi.fn(async () => ({ data: updated })) };
+    await act(async () => root.render(<PermissionSwitches client={client} canEdit confirm={vi.fn(async () => true)} />));
+    await settle();
+    const review = container.querySelector<HTMLInputElement>('[role="switch"][aria-label="顯示綠界登入"]');
+    expect(review).not.toBeNull();
+    await act(async () => review?.click());
+    expect(review?.checked).toBe(true);
+    expect(client.put).toHaveBeenCalledWith('/api/permission-settings/ecpayReviewLoginVisible', { value: true, expectedRevision: 7 });
+    expect(switches().free?.checked).toBe(true);
+    expect(switches().purchase?.checked).toBe(false);
   });
 
   it('shows the current PWA state and refreshes it automatically every hour', async () => {
