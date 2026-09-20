@@ -74,7 +74,10 @@ it('uses a targeted RPC to search transfer requests by Google nickname', async (
       expect(JSON.parse(String(init?.body))).toEqual({ p_keyword: 'Google 搜尋會員' });
       return [{ member_id: GOOGLE_MEMBER_ID }];
     }
-    if (path.startsWith('/auth/v1/admin/users?')) return { users: [googleUser] };
+    if (path === '/rest/v1/rpc/admin_member_auth_profiles') {
+      expect(JSON.parse(String(init?.body))).toEqual({ p_auth_user_ids: [GOOGLE_AUTH_ID] });
+      return [googleUser];
+    }
     throw new Error(`unexpected request: ${path}`);
   });
   const requestPage = vi.fn(async (path: string) => {
@@ -132,4 +135,24 @@ it('shows both member name and provider ID in the subscription action dialog', (
 
   expect(dialog).toContain('editing.memberDisplayName');
   expect(dialog).toContain('editing.identityDisplay');
+});
+
+
+it('preserves missing LINE name fallback on a mixed provider page without listing unrelated users', async () => {
+  const lineId = '33333333-3333-4333-8333-333333333333';
+  const request = vi.fn(async (path: string, init?: RequestInit) => {
+    if (path === '/rest/v1/rpc/admin_member_auth_profiles') {
+      expect(JSON.parse(String(init?.body)).p_auth_user_ids.sort()).toEqual([GOOGLE_AUTH_ID, lineId].sort());
+      return [{ id: lineId, user_metadata: { full_name: 'LINE 備用名稱' } }, { id: GOOGLE_AUTH_ID, user_metadata: { name: 'Google 名稱' } }];
+    }
+    if (path.startsWith('/rest/v1/activation_codes?') && path.includes('offset=0')) return [
+      { id: 'line-code', redeemed_member: { id: 'line', auth_user_id: lineId, line_user_id: 'line-id', line_display_name: '' } },
+      { id: 'google-code', redeemed_member: { id: GOOGLE_MEMBER_ID, auth_user_id: GOOGLE_AUTH_ID, line_user_id: null, line_display_name: null } },
+    ];
+    if (path.startsWith('/rest/v1/activation_codes?')) return [];
+    throw new Error(`unexpected ${path}`);
+  });
+  const result = await listAdminTable('activationCodes', { request });
+  expect(result.items[0]).toMatchObject({ memberDisplayName: 'LINE 備用名稱', identityDisplay: 'LINE ID：line-id' });
+  expect(result.items[1]).toMatchObject({ memberDisplayName: 'Google 名稱' });
 });
