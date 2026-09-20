@@ -50,7 +50,7 @@ const ANALYSIS_STALE_MS = 45 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 8_000;
 const RECOVERY_LEASE_SECONDS = 20 * 60;
 const PHYSICAL_TICK_MINUTES = 10;
-const WATCHDOG_PHASES = [
+export const WATCHDOG_PHASES = [
   { first: 10, last: 90, every: 10 },
   { first: 120, last: 300, every: 30 },
   { first: 360, last: 1_380, every: 60 },

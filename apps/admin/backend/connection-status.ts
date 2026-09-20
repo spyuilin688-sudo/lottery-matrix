@@ -1,3 +1,4 @@
+import { WATCHDOG_PHASES } from './watchdog';
 import { apiStatusInventory, type ApiCheckEvidence, type ApiStatusDefinition } from './api-status-inventory';
 import { matrixStorageStatusId, parseMatrixStorageHealth } from './matrix-storage-status';
 import { notificationCalendarStatusId, parseNotificationCalendarStatus } from './notification-calendar-status';
@@ -60,11 +61,10 @@ const jobStaleMs = 20 * 60 * 1000;
 const watchdogScheduleDetail = {
   physicalCronIntervalMinutes: 10,
   freshnessThresholdMinutes: 18,
-  logicalPhases: [
-    { intervalMinutes: 6, checks: 50 },
-    { intervalMinutes: 10, checks: 60 },
-    { intervalMinutes: 30, checks: 18 },
-  ],
+  logicalPhases: WATCHDOG_PHASES.map(({ first, last, every }) => ({
+    firstMinute: first, lastMinute: last, intervalMinutes: every,
+    checks: Math.floor((last - first) / every) + 1,
+  })),
 } as const;
 const nullableString = (value: unknown): string | null => typeof value === 'string' ? value : null;
 

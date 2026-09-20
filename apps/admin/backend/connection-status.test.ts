@@ -423,9 +423,10 @@ describe('connection status', () => {
         physicalCronIntervalMinutes: 10,
         freshnessThresholdMinutes: 18,
         logicalPhases: [
-          { intervalMinutes: 6, checks: 50 },
-          { intervalMinutes: 10, checks: 60 },
-          { intervalMinutes: 30, checks: 18 },
+          { firstMinute: 10, lastMinute: 90, intervalMinutes: 10, checks: 9 },
+          { firstMinute: 120, lastMinute: 300, intervalMinutes: 30, checks: 7 },
+          { firstMinute: 360, lastMinute: 1380, intervalMinutes: 60, checks: 18 },
+          { firstMinute: 1410, lastMinute: 1410, intervalMinutes: 30, checks: 1 },
         ],
       },
     });

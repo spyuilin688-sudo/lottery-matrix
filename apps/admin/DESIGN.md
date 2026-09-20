@@ -104,3 +104,5 @@ Railway 原生彩種選單固定 104px 寬、28px 高、12px 字級；兩種操�
 系統設定沿用服務檢查的狀態列、statusFacts、原生 details 與 system-status.css。四彩以自然高度、窄版單欄顯示同一期各階段；文字區分已驗證、異常、等待與證據不足。恢復 accepted 只顯示等待驗證。過期觀察的總狀態改為待重新確認，保留最近證據。Inspector 及 Optimizer 為只讀資訊，未增加權限或自動修改動作。
 
 監控的新鮮度由 `backend/watchdog-status.ts` 統一判定。排程待命須有近期資料庫排程紀錄；保留的資料鏈標示「上次」並保留原檢查時間，不算本次重新驗證。應執行未完成或排程自身超過 18 分鐘未更新仍標示異常。通過的資料鏈不顯示故障未定位文案。
+
+Inspector 的執行證據依明確 outcome 分類：未取得、未到期與無新資料顯示 WAITING；未知 outcome 顯示 UNKNOWN，不視為成功。排程階段說明直接取自 Watchdog 的實際階段設定。
