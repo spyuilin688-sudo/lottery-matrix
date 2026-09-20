@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {PGlite} from '@electric-sql/pglite';
-const sql=readFileSync(new URL('../supabase/migrations/20260920230827_recovery_dynamic_slots.sql',import.meta.url),'utf8');
+const sql=readFileSync(new URL('../supabase/migrations/20260920233444_recovery_dynamic_slots.sql',import.meta.url),'utf8');
 async function fixture(){
  const db=new PGlite();
  await db.exec(`create role anon; create role authenticated; create role service_role;

@@ -52,3 +52,9 @@ Rollout not performed. Migration activates native cron jobs; matching backend mu
 ## Final review resolution
 
 Fresh independent reviewer identified two Important issues. Calendar eligibility now refreshes on requested ticks and calendar-write events rearm future slots without dispatch or new polling. Preliminary draw status now propagates to the planner and requests formal crawler recovery, retaining active-job guards. Both reproduced RED before fixes; GREEN:11 SQL tests and157 backend tests, typecheck passed. Completed/no-draw rows skip certificate reads. No second review pass.
+
+## Production rollout — 2026-09-21 07:35 Asia/Taipei
+
+PR #708 merged as920d84f6 after all seven CI jobs passed. Concurrent #707 query changes were disjoint and preserved. Admin Edge version40 was deployed and all35 packaged files were read back exactly; the preexisting deployed optimizer version was preserved. Migration applied as20260920233444, and the repository filename/test reference is aligned to that recorded version to prevent replay. Five affected Railway services report SUCCESS on920d84f6; their primary cron settings were not changed.
+
+Readback: old matrix-admin-watchdog-v1 removed; only daily recovery starts remain (UTC30 12 /30 1). The2026-09-20 evening lotteries are known no-draw; Fantasy5 is completed. Pending RPC is empty and the next opening is2026-09-21 09:30 Taipei. No fake recovery or future-time dispatch was invoked for validation. Full next-cycle scheduling has not yet been observed live.
