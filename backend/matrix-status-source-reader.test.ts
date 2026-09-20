@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   createMatrixStatusCompactReader,
+  createMatrixStatusIdentityReader,
   createMatrixStatusSourceReader,
   createMatrixStatusValidationReader,
 } from '../supabase/functions/matrix-status/source-reader';
@@ -96,4 +97,13 @@ describe('Matrix status source reader', () => {
       }),
     );
   });
+});
+
+
+it('requests DB summary projection and uses the existing lightweight identity RPC for cache validation', async () => {
+  const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(JSON.stringify({ analysisVersion: 'v1', drawPeriod: '115000210' })));
+  await createMatrixStatusCompactReader(() => config, fetcher)('今彩539', undefined, true);
+  expect(JSON.parse(String(fetcher.mock.calls[0][1]?.body))).toEqual({ p_request: { lottery: '今彩539', summaryOnly: true } });
+  await createMatrixStatusIdentityReader(() => config, fetcher)('今彩539');
+  expect(fetcher.mock.calls[1][0]).toBe('https://project.supabase.co/rest/v1/rpc/matrix_status_identity_get');
 });
