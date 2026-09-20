@@ -88,8 +88,28 @@ describe('member Supabase RPC', () => {
     const pending = fetchMemberProfile();
     if (recovery) await vi.waitFor(() => expect(supabase.rpc).toHaveBeenCalledTimes(2));
     switchMember('member-b');
+    const current = { memberId: 'member-b', planName: 'current-member-plan' };
+    supabase.rpc.mockResolvedValueOnce({ data: current, error: null });
     old.resolve({ data: { planName: 'previous-member-private-plan' }, error: null });
-    await expect(pending).rejects.toThrow('MEMBER_SESSION_CHANGED');
+    await expect(pending).resolves.toEqual(current);
+    expect(supabase.rpc).toHaveBeenCalledTimes(recovery ? 3 : 2);
+    expect(supabase.auth.signOut).not.toHaveBeenCalled();
+  });
+
+  it('rejects a second account change instead of returning another stale profile or retrying indefinitely', async () => {
+    const first = deferred<unknown>();
+    const retry = deferred<unknown>();
+    supabase.rpc.mockReturnValueOnce(first.promise).mockReturnValueOnce(retry.promise);
+    const pending = fetchMemberProfile();
+    switchMember('member-b');
+    first.resolve({ data: { planName: 'member-a-private-plan' }, error: null });
+    await vi.waitFor(() => expect(supabase.rpc).toHaveBeenCalledTimes(2));
+    switchMember('member-c');
+    const rejected = expect(pending).rejects.toThrow('MEMBER_SESSION_CHANGED');
+    retry.resolve({ data: { planName: 'member-b-private-plan' }, error: null });
+    await rejected;
+    expect(supabase.rpc).toHaveBeenCalledTimes(2);
+    expect(supabase.auth.signOut).not.toHaveBeenCalled();
   });
 
   it('reports whether a current authenticated member session exists', async () => {
