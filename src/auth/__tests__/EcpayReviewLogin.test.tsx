@@ -55,3 +55,15 @@ it('prevents dismissal while the verified session is being committed', async () 
   complete();
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 });
+
+it('accepts a plain username without browser email validation', async () => {
+  render(<EcpayReviewLogin />);
+  fireEvent.click(screen.getByRole('button', { name: '綠界審核登入' }));
+  const account = screen.getByLabelText('帳號');
+  expect(account).toHaveAttribute('type', 'text');
+  fireEvent.change(account, { target: { value: 'admin' } });
+  fireEvent.change(screen.getByLabelText('密碼'), { target: { value: 'test-password' } });
+  expect((account as HTMLInputElement).checkValidity()).toBe(true);
+  fireEvent.click(screen.getByRole('button', { name: '登入' }));
+  await waitFor(() => expect(login).toHaveBeenCalledWith('admin', 'test-password', expect.any(AbortSignal), expect.any(Function)));
+});

@@ -46,3 +46,15 @@ it('awaits an in-progress session commit rather than reporting cancellation whil
   expect(commit).toHaveBeenCalledOnce();
   expect(mocks.setSession).toHaveBeenCalledOnce();
 });
+
+it('resolves the admin review username without granting administrator access', async () => {
+  await signInForEcpayReview(' admin ', 'test-password');
+  expect(mocks.login).toHaveBeenCalledWith({ email: 'spyuilin688+ecpay@gmail.com', password: 'test-password' });
+  expect(mocks.rpc).toHaveBeenCalledWith('ecpay_review_access');
+});
+
+it('still refuses admin username login when review membership is missing', async () => {
+  mocks.rpc.mockResolvedValue({ data: false, error: null });
+  await expect(signInForEcpayReview('admin', 'test-password')).rejects.toThrow('REVIEW_LOGIN_FAILED');
+  expect(mocks.setSession).not.toHaveBeenCalled();
+});

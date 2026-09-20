@@ -4,7 +4,7 @@ import { signInForEcpayReview } from './ecpay-review-auth';
 
 export function EcpayReviewLogin({ disabled = false }: { disabled?: boolean }) {
   const [open, setOpen] = useState(false);
-  const [email, setEmail] = useState('');
+  const [account, setAccount] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
@@ -29,9 +29,9 @@ export function EcpayReviewLogin({ disabled = false }: { disabled?: boolean }) {
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (request.current) return;
-    if (!email.trim() || !password) {
+    if (!account.trim() || !password) {
       setError('請輸入帳號與密碼');
-      (!email.trim() ? accountInput : passwordInput).current?.focus();
+      (!account.trim() ? accountInput : passwordInput).current?.focus();
       return;
     }
     const controller = new AbortController();
@@ -39,7 +39,7 @@ export function EcpayReviewLogin({ disabled = false }: { disabled?: boolean }) {
     setPending(true);
     setError('');
     try {
-      await signInForEcpayReview(email, password, controller.signal, () => {
+      await signInForEcpayReview(account, password, controller.signal, () => {
         committingRef.current = true;
         setCommitting(true);
       });
@@ -73,7 +73,7 @@ export function EcpayReviewLogin({ disabled = false }: { disabled?: boolean }) {
         <Dialog.Description className="app-dialog-description">請輸入審核專用帳號與密碼</Dialog.Description>
         <form className="app-dialog-form" noValidate onSubmit={(event) => void submit(event)} aria-busy={pending}>
           <label htmlFor={`${id}-account`}>帳號</label>
-          <input id={`${id}-account`} ref={accountInput} type="email" autoComplete="username" autoCapitalize="none" spellCheck={false} value={email} onChange={(event) => setEmail(event.target.value)} readOnly={pending} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} />
+          <input id={`${id}-account`} ref={accountInput} type="text" autoComplete="username" autoCapitalize="none" spellCheck={false} value={account} onChange={(event) => setAccount(event.target.value)} readOnly={pending} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} />
           <label htmlFor={`${id}-password`}>密碼</label>
           <input id={`${id}-password`} ref={passwordInput} type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} readOnly={pending} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} />
           {error && <p id={`${id}-error`} className="app-dialog-description" role="alert">{error}</p>}

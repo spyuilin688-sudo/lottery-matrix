@@ -3,10 +3,12 @@ import { withDeadline } from '../lib/api-resilience';
 
 // Verify the dedicated member before publishing a session to the application.
 // The temporary client never writes tokens or credentials to browser storage.
-export async function signInForEcpayReview(email: string, password: string, signal?: AbortSignal, onCommit: () => void = () => {}) {
+export async function signInForEcpayReview(account: string, password: string, signal?: AbortSignal, onCommit: () => void = () => {}) {
+  // A review username is only an Auth identity alias, never an administrator role.
+  const email = account.trim() === 'admin' ? 'spyuilin688+ecpay@gmail.com' : account.trim();
   const session = await withDeadline(async (requestSignal) => {
     const client = createEcpayReviewAuthClient(requestSignal);
-    const { data, error } = await client.auth.signInWithPassword({ email: email.trim(), password });
+    const { data, error } = await client.auth.signInWithPassword({ email, password });
     if (error || !data.session) throw new Error('REVIEW_LOGIN_FAILED');
     const access = await client.rpc('ecpay_review_access');
     if (access.error || access.data !== true || requestSignal.aborted) {
