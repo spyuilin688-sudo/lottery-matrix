@@ -88,8 +88,12 @@ describe('member Supabase RPC', () => {
     const pending = fetchMemberProfile();
     if (recovery) await vi.waitFor(() => expect(supabase.rpc).toHaveBeenCalledTimes(2));
     switchMember('member-b');
+    const currentProfile = { planName: 'current-member-plan' };
+    supabase.rpc.mockResolvedValueOnce({ data: currentProfile, error: null });
     old.resolve({ data: { planName: 'previous-member-private-plan' }, error: null });
-    await expect(pending).rejects.toThrow('MEMBER_SESSION_CHANGED');
+    await expect(pending).resolves.toEqual(currentProfile);
+    expect(supabase.rpc).toHaveBeenCalledTimes(recovery ? 3 : 2);
+    expect(supabase.rpc).toHaveBeenLastCalledWith('member_profile');
   });
 
   it('reports whether a current authenticated member session exists', async () => {
