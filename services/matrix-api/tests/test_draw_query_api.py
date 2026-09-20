@@ -125,3 +125,28 @@ def test_validation_periods_reject_invalid_requests_before_database(periods):
     path = '/api/matrix/history/' + quote('今彩539') + '?' + urlencode({'periods': json.dumps(periods)})
     status, _ = handle_api_request('GET', path, None, repository)
     assert status == 400 and repository.calls == []
+
+
+def test_public_pages_share_cache_but_corrected_revision_forces_reload():
+    from app.draw_read_cache import DrawReadCache
+    class VersionedRepository(QueryRepository):
+        revision = 'v1'
+        def rpc(self, name, params):
+            self.calls.append((name, params))
+            if params['p_kind'] == 'latest':
+                data = {'items': [draw()], 'revision': self.revision}
+            elif params.get('p_cursor', {}).get('revision', self.revision) != self.revision:
+                data = {'error': 'DRAW_HISTORY_CHANGED'}
+            else:
+                data = {'items': [draw(self.revision)], 'revision': self.revision, 'nextCursor': None}
+            return SimpleNamespace(execute=lambda: SimpleNamespace(data=data))
+    repository = VersionedRepository(None)
+    repository.draw_read_cache = DrawReadCache()
+    from app.api_server import _draw_query, HistoryChangedError
+    first = _draw_query(repository, '今彩539', 'history', p_limit=500)
+    assert _draw_query(repository, '今彩539', 'history', p_limit=500) == first
+    assert len([p for _, p in repository.calls if p['p_kind'] == 'history']) == 1
+    repository.revision = 'v2'
+    assert _draw_query(repository, '今彩539', 'history', p_limit=500)['revision'] == 'v2'
+    with pytest.raises(HistoryChangedError):
+        _draw_query(repository, '今彩539', 'history', p_limit=500, p_cursor={'offset': 1, 'revision': 'v1'})
