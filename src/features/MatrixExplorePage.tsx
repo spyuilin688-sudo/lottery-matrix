@@ -6,7 +6,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronDownIcon, ChevronRightIcon, LockClosedIcon, MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { MATRIX_RESULTS_PER_PAGE, MatrixResultsPagination } from "./MatrixResultsPagination";
 import { type LotteryId } from "../Prototype";
-import { fetchExploreList, fetchExploreValidation, fetchTianyanList, fetchTianyanValidation, type ExploreListResponse, type ExploreValidation, type TianyanListResponse, type TianyanValidation } from "../matrix-algorithm-api";
+import { fetchExploreList, fetchExploreValidation, fetchTianyanList, fetchTianyanValidation, type ExploreListRequest, type ExploreListResponse, type ExploreValidation, type TianyanListResponse, type TianyanValidation } from "../matrix-algorithm-api";
 import * as matrixAlgorithmApi from "../matrix-algorithm-api";
 import { fetchTianhengList, fetchTianhengValidation, type TianhengApiRow, type TianhengListRequest, type TianhengListResponse, type TianhengValidation, type TianshuApiRow, type TianshuListResponse, type TianshuValidation } from "../matrix-algorithm-api";
 import { bootstrapMember, fetchMemberProfile, type MemberProfileResponse } from "../member-api";
@@ -135,7 +135,8 @@ export function MatrixExplorePage({
       roadTypes[0],
     ),
   );
-  const [exploreResponse, setExploreResponse] = useState<ExploreListResponse | null>(null);
+  type ExploreAccess = Pick<ExploreListRequest, "explorePeriods" | "exploreRange">;
+  const [exploreResponse, setExploreResponse] = useState<(ExploreListResponse & { access: ExploreAccess }) | null>(null);
   const [tianyanResponse, setTianyanResponse] = useState<TianyanListResponse | null>(null);
   type TianhengAccess = Pick<TianhengListRequest, "explorePeriods" | "exploreRange">;
   const [tianhengResponse, setTianhengResponse] = useState<((TianhengListResponse | TianshuListResponse) & { access: TianhengAccess }) | null>(null);
@@ -328,12 +329,15 @@ export function MatrixExplorePage({
       }
       if (title !== "Matrix 探索") return;
       const roadType = road.startsWith("合值") ? "合值" : road.startsWith("拖牌") ? "拖牌" : "加減";
+      const access: ExploreAccess = {
+        explorePeriods: selectedExplorePeriods,
+        exploreRange: exploreRange as "標準範圍" | "完整範圍",
+      };
       const response = await fetchExploreList({
         lottery,
         numberOrder: numberOrder as "依號碼由小到大排序" | "依實際開獎順序排序",
-        explorePeriods: selectedExplorePeriods,
+        ...access,
         exploreDateOffset,
-        exploreRange: exploreRange as "標準範圍" | "完整範圍",
         ruleCount: hit.includes("鎖定2碼") ? 2 : 1,
         roadTypes: [roadType],
         selectedStreaks: nextFilters,
@@ -341,7 +345,7 @@ export function MatrixExplorePage({
         ...(nextPredictionNumber ? { predictionNumber: nextPredictionNumber } : {}),
       });
       if (!isCurrent()) return;
-      setExploreResponse(response);
+      setExploreResponse({ ...response, access });
       setValidationById({});
       setExpandedRoad(null);
     } catch (cause) {
@@ -484,10 +488,7 @@ export function MatrixExplorePage({
       lottery: exploreResponse.lottery,
       drawPeriod: exploreResponse.drawPeriod,
       analysisVersion: exploreResponse.analysisVersion,
-    }, itemId, {
-      explorePeriods: selectedExplorePeriods,
-      exploreRange: exploreRange as "標準範圍" | "完整範圍",
-    }).then((response) => {
+    }, itemId, exploreResponse.access).then((response) => {
       if (generation !== cacheGeneration.current || revision !== queryRevision.current) return;
       setValidationById((current) => ({ ...current, [cacheKey]: response.validation }));
     }).catch(() => {

@@ -211,7 +211,7 @@ export function getGithubStatusFacts(item: SystemStatusItem): SystemStatusFact[]
   const facts: SystemStatusFact[] = [
     { label: '排程名稱', value: workflow.name },
     { label: '排程檔案', value: workflow.path },
-    { label: '排程開關', value: formatSystemStatusValue(workflow.state) },
+    { label: '工作流程狀態', value: formatSystemStatusValue(workflow.state) },
   ];
   if (item.detail.latestRun === null) {
     return [...facts, { label: '最近執行', value: '尚無執行紀錄' }];

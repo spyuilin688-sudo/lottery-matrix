@@ -46,6 +46,8 @@ const JOB_NAME: Record<WatchdogLottery, string> = {
   大樂透: 'matrix-649-refresh-v2',
 };
 const JOB_STALE_MS = 20 * 60 * 1000;
+// Match the scheduled crawler's RETRY_SECONDS in fantasy5_railway_job.py.
+const FANTASY5_SOURCE_RETRY_MS = 600 * 1000;
 const ANALYSIS_STALE_MS = 45 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 8_000;
 const RECOVERY_LEASE_SECONDS = 20 * 60;
@@ -287,7 +289,15 @@ export function planWatchdogActions(
         && Boolean(jobHeartbeat)
         && !isOlderThan(jobHeartbeat, now, JOB_STALE_MS)
       );
-      if (crawlerIsRunning) continue;
+      // finish_job writes updatedAt after each attempt, before the cron sleeps.
+      const sourceRetryAgeMs = now.getTime() - Date.parse(snapshot.job?.updatedAt ?? '');
+      const crawlerIsWaitingToRetry = (
+        snapshot.lottery === '天天樂'
+        && snapshot.job?.status === 'waiting_source'
+        && sourceRetryAgeMs >= 0
+        && sourceRetryAgeMs < FANTASY5_SOURCE_RETRY_MS
+      );
+      if (crawlerIsRunning || crawlerIsWaitingToRetry) continue;
       if (snapshot.job?.status === 'failed') {
         add(snapshot.lottery, crawlerTarget, 'job-failed');
       } else if (

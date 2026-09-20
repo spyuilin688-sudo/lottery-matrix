@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import type { Session } from '@supabase/supabase-js';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 const api = vi.hoisted(() => ({ fetchMatrixStatusSummaries: vi.fn() }));
 vi.mock('../matrix-status-api', () => api);
@@ -9,6 +10,7 @@ import Prototype, { type LotteryId } from '../Prototype';
 import { MobileDeviceProvider } from '../mobile/Device';
 import { KeyboardProvider } from '../mobile/Keyboard';
 import { invalidateMatrixData } from '../matrix-data-revision';
+import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
 import { AppDialogProvider } from '../dialog/AppDialog';
 import { FIRST_VISIT_GUIDE_SEEN_KEY } from '../onboarding/FirstVisitGuide';
 import { API_REQUEST_TIMEOUT_MS } from '../lib/api-resilience';
@@ -16,9 +18,13 @@ import { API_REQUEST_TIMEOUT_MS } from '../lib/api-resilience';
 vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} unobserve() {} });
 const lotteries: LotteryId[] = ['今彩539', '天天樂', '六合彩', '大樂透'];
 const response = (status = 'ACTIVE') => ({ kind: 'status-summary-batch', items: lotteries.map(lottery => ({ lottery, status: 200, body: { kind: 'status-summary', lottery, summary: { status, count: 1, message: '' } } })) });
+const session = (memberId: string, tokenVersion = 1) => ({
+  user: { id: memberId },
+  access_token: `header.${btoa(JSON.stringify({ session_id: memberId, version: tokenVersion }))}.signature`,
+}) as Session;
 const mount = () => render(<AppDialogProvider><MobileDeviceProvider><KeyboardProvider><Prototype /></KeyboardProvider></MobileDeviceProvider></AppDialogProvider>);
 const flush = () => act(async () => { await vi.advanceTimersByTimeAsync(0); });
-beforeEach(() => { window.localStorage.setItem(FIRST_VISIT_GUIDE_SEEN_KEY, '1'); vi.useFakeTimers(); api.fetchMatrixStatusSummaries.mockReset().mockImplementation(async () => response()); });
+beforeEach(() => { window.localStorage.setItem(FIRST_VISIT_GUIDE_SEEN_KEY, '1'); updateAlgorithmCacheSession(session('member-a')); vi.useFakeTimers(); api.fetchMatrixStatusSummaries.mockReset().mockImplementation(async () => response()); });
 afterEach(() => { vi.useRealTimers(); });
 
 test('讀取失敗不可顯示成沉寂；下一次更新可恢復', async () => {
@@ -81,4 +87,57 @@ test('舊請求晚回應不可覆蓋新一期狀態，卸載後停止刷新', as
   act(() => { invalidateMatrixData(); window.dispatchEvent(new Event('online')); });
   await act(async () => { await vi.advanceTimersByTimeAsync(3_600_000); });
   expect(api.fetchMatrixStatusSummaries).not.toHaveBeenCalled();
+});
+
+test('切換帳號會取消先前首頁請求並忽略晚回應', async () => {
+  let resolveOld!: (value: ReturnType<typeof response>) => void;
+  api.fetchMatrixStatusSummaries.mockImplementationOnce(() => new Promise((resolve) => { resolveOld = resolve; }));
+  mount(); await flush();
+  const oldSignal = api.fetchMatrixStatusSummaries.mock.calls[0][1] as AbortSignal;
+  api.fetchMatrixStatusSummaries.mockImplementation(async () => response('FOCUS'));
+
+  act(() => { updateAlgorithmCacheSession(session('member-b')); });
+  await flush();
+
+  expect(oldSignal.aborted).toBe(true);
+  expect(screen.getByRole('button', { name: '今彩539 聚合' })).toBeInTheDocument();
+  await act(async () => { resolveOld(response('CRITICAL')); });
+  expect(screen.queryByRole('button', { name: '今彩539 臨界' })).toBeNull();
+  expect(screen.getByRole('button', { name: '今彩539 聚合' })).toBeInTheDocument();
+});
+
+test.each([
+  ['登出', null],
+  ['切換帳號', session('member-b')],
+] as const)('離開首頁後%s，回首頁等待新回應時不顯示先前會員狀態', async (_action, nextSession) => {
+  api.fetchMatrixStatusSummaries.mockImplementation(async () => response('CRITICAL'));
+  mount(); await flush();
+  expect(screen.getByRole('button', { name: '今彩539 臨界' })).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: '我的' }));
+  await flush();
+  api.fetchMatrixStatusSummaries.mockClear();
+  act(() => { updateAlgorithmCacheSession(nextSession); });
+
+  let resolveCurrent!: (value: ReturnType<typeof response>) => void;
+  api.fetchMatrixStatusSummaries.mockImplementationOnce(() => new Promise((resolve) => { resolveCurrent = resolve; }));
+  fireEvent.click(screen.getByRole('button', { name: '首頁' }));
+  await flush();
+
+  expect(api.fetchMatrixStatusSummaries).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole('button', { name: '今彩539 臨界' })).toBeNull();
+  expect(screen.getByRole('button', { name: '今彩539 讀取中' })).toBeInTheDocument();
+  await act(async () => { resolveCurrent(response('FOCUS')); });
+  expect(screen.getByRole('button', { name: '今彩539 聚合' })).toBeInTheDocument();
+});
+
+test('相同登入工作階段更新 token 不重新讀取首頁狀態', async () => {
+  mount(); await flush();
+  api.fetchMatrixStatusSummaries.mockClear();
+
+  act(() => { updateAlgorithmCacheSession(session('member-a', 2)); });
+  await flush();
+
+  expect(api.fetchMatrixStatusSummaries).not.toHaveBeenCalled();
+  expect(screen.getByRole('button', { name: '今彩539 啟動' })).toBeInTheDocument();
 });
