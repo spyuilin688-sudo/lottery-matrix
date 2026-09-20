@@ -365,3 +365,30 @@ test('unsaved return confirmation cannot navigate after the account changes', as
   expect(screen.queryByRole('dialog')).toBeNull();
   expect(screen.queryByDisplayValue('私人草稿')).toBeNull();
 });
+
+test('notebook pages contain ten notes and numbered navigation has no entry count', async () => {
+  const many = Array.from({ length: 21 }, (_, i) => ({ ...notes[0], id: `page-${i}`, title: `分頁筆記${i + 1}` }));
+  window.localStorage.setItem(keyA, JSON.stringify({ notes: many }));
+  await openNotebook();
+  const list = screen.getByRole('region', { name: '筆記列表' });
+  expect(within(list).getAllByRole('article')).toHaveLength(10);
+  expect(screen.queryByText('21 筆筆記')).toBeNull();
+  const pages = screen.getByRole('navigation', { name: '筆記分頁' });
+  fireEvent.click(within(pages).getByRole('button', { name: '第 2 頁' }));
+  expect(screen.queryByText('分頁筆記1')).toBeNull();
+  expect(screen.getByText('分頁筆記11')).toBeVisible();
+  expect(within(list).getAllByRole('article')).toHaveLength(10);
+  fireEvent.click(within(pages).getByRole('button', { name: '第 3 頁' }));
+  expect(within(list).getAllByRole('article')).toHaveLength(1);
+  fireEvent.click(screen.getByRole('button', { name: '刪除' }));
+  fireEvent.click(screen.getByRole('button', { name: '刪除筆記：分頁筆記21' }));
+  fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: '刪除' }));
+  await waitFor(() => expect(within(pages).queryByRole('button', { name: '第 3 頁' })).toBeNull());
+  expect(within(pages).getByRole('button', { name: '第 2 頁' })).toHaveAttribute('aria-current', 'page');
+  expect(within(list).getAllByRole('article')).toHaveLength(10);
+  fireEvent.click(screen.getByRole('button', { name: '新增筆記' }));
+  fireEvent.change(screen.getByRole('textbox', { name: '筆記標題' }), { target: { value: '新增後可見' } });
+  await confirmWrite();
+  expect(await screen.findByText('新增後可見')).toBeVisible();
+  expect(screen.getByRole('button', { name: '第 1 頁' })).toHaveAttribute('aria-current', 'page');
+});
