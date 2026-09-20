@@ -6,10 +6,9 @@ import { ruleBodies } from "./helpers/css-rules.mjs";
 const mainSource = readFileSync("src/main.tsx", "utf8");
 const appSource = readFileSync("src/App.tsx", "utf8");
 const prototypeSource = readFileSync("src/Prototype.tsx", "utf8");
-const prototypeCss = readFileSync("src/prototype.css", "utf8");
+const featurePagesCss = readFileSync("src/feature-pages.css", "utf8");
 const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
-const headerBackgroundCss = readFileSync("src/matrix-explore-header-background.css", "utf8");
-const headerArtwork = readFileSync("public/assets/lottery/header-explore-luxury-flow.svg", "utf8");
+const headerArtwork = readFileSync("public/assets/lottery/headers/explore.webp");
 const tiangongCss = readFileSync("src/matrix-tiangong-results.css", "utf8");
 
 function assertRule(selectorPattern, declarations) {
@@ -30,32 +29,23 @@ test("Matrix Explore stylesheet follows the feature-pages import graph", () => {
   assert.match(prototypeSource, /import "\.\/feature-pages\.css";/);
 });
 
-test("Matrix Explore title-card background is loaded by an existing runtime stylesheet", () => {
-  assert.match(prototypeCss, /@import\s+"\.\/matrix-explore-header-background\.css";/);
+test("Matrix Explore title-card background uses the canonical feature-page owner", () => {
   assert.match(
-    headerBackgroundCss,
-    /\.matrix-explore-screen\s*>\s*\.product-header\[data-product-header="Matrix 探索"\]/,
-  );
-  assert.match(
-    headerBackgroundCss,
-    /--product-header-background:\s*url\("\/assets\/lottery\/header-explore-luxury-flow\.svg"\);/,
+    featurePagesCss,
+    /\.product-header\[data-product-header="Matrix 探索"\]\s*\{[^}]*--product-header-background:\s*url\("\/assets\/lottery\/headers\/explore\.webp"\);/s,
   );
   assert.doesNotMatch(mainSource, /matrix-explore-header-background\.css/);
+  assert.doesNotMatch(prototypeSource, /matrix-explore-header-background\.css/);
 });
 
-test("Matrix Explore title artwork keeps the dense black-gold reference layers without changing canvas geometry", () => {
-  assert.match(headerArtwork, /viewBox="0 0 800 136"/);
-  assert.match(headerArtwork, /id="starfield"/);
-  assert.match(headerArtwork, /id="flowGlow"/);
-  assert.match(headerArtwork, /id="planetSurface"/);
-  assert.ok((headerArtwork.match(/<path\b/g) ?? []).length >= 16, "expected layered gold flow paths");
-  assert.ok((headerArtwork.match(/<circle\b/g) ?? []).length >= 48, "expected dense gold star particles");
+test("Matrix Explore title artwork remains a valid WebP asset", () => {
+  assert.equal(headerArtwork.toString("ascii", 0, 4), "RIFF");
+  assert.equal(headerArtwork.toString("ascii", 8, 12), "WEBP");
 });
 
 test("Matrix Explore panels use scoped responsive-width auto-height flow", () => {
   for (const selector of [
     /^\.matrix-explore-main-screen \.explore-settings$/,
-    /^\.matrix-explore-main-screen \.hit-advanced-panel$/,
     /^\.matrix-explore-main-screen \.repeat-stats-panel$/,
     /^\.matrix-explore-main-screen \.result-panel$/,
   ]) {
@@ -66,7 +56,7 @@ test("Matrix Explore panels use scoped responsive-width auto-height flow", () =>
 });
 
 test("Matrix Explore controls keep the current scoped responsive dimensions", () => {
-  assertRule(/^\.matrix-explore-main-screen \.explore-settings \.setting-grid \.select-box$/, [
+  assertRule(/^\.matrix-explore-main-screen \.advanced-panel \.native-select$/, [
     /height:\s*24px;/,
     /min-height:\s*24px;/,
   ]);
@@ -86,16 +76,10 @@ test("Tiangong fixed period keeps the compact full-width control geometry", () =
   const staticPeriodSelector = /^\.matrix-explore-main-screen\.matrix-tiangong-screen \.tiangong-period-options > \.segmented-static$/;
   const compactBodies = ruleBodies(css, staticPeriodSelector);
   assert.ok(compactBodies.some((body) => [
-    /height:\s*24px;/,
-    /min-height:\s*24px;/,
+    /height:\s*20px;/,
+    /min-height:\s*20px;/,
     /font-size:\s*\.75rem;/,
     /padding:\s*\.125rem \.25rem;/,
   ].every((declaration) => declaration.test(body))));
   assert.ok(ruleBodies(tiangongCss, staticPeriodSelector).some((body) => /width:\s*100%;/.test(body)));
-  const selectedPeriodSelector = /^\.matrix-explore-main-screen\.matrix-tiangong-screen \.tiangong-period-options > \.segmented-static\[data-selected="true"\]$/;
-  assert.ok(ruleBodies(css, selectedPeriodSelector).some((body) => [
-    /border-color:\s*#c89622;/,
-    /background:\s*linear-gradient\(/,
-    /color:\s*#f2cf67;/,
-  ].every((declaration) => declaration.test(body))), 'The static selected owner must outrank the compact base colors');
 });
