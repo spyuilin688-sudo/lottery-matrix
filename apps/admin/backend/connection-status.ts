@@ -1,4 +1,4 @@
-import { WATCHDOG_PHASES } from './watchdog';
+import { buildWatchdogPhasePlan } from './watchdog';
 import { apiStatusInventory, type ApiCheckEvidence, type ApiStatusDefinition } from './api-status-inventory';
 import { matrixStorageStatusId, parseMatrixStorageHealth } from './matrix-storage-status';
 import { notificationCalendarStatusId, parseNotificationCalendarStatus } from './notification-calendar-status';
@@ -59,12 +59,10 @@ const defaultRequestTimeoutMs = 10_000;
 // Match watchdog.ts JOB_STALE_MS: a running crawler uses its latest heartbeat.
 const jobStaleMs = 20 * 60 * 1000;
 const watchdogScheduleDetail = {
-  physicalCronIntervalMinutes: 10,
+  schedulingMode: 'next-pending-slot',
   freshnessThresholdMinutes: 18,
-  logicalPhases: WATCHDOG_PHASES.map(({ first, last, every }) => ({
-    firstMinute: first, lastMinute: last, intervalMinutes: every,
-    checks: Math.floor((last - first) / every) + 1,
-  })),
+  eveningOffsetsMinutes: buildWatchdogPhasePlan('evening'),
+  fantasy5OffsetsMinutes: buildWatchdogPhasePlan('fantasy5'),
 } as const;
 const nullableString = (value: unknown): string | null => typeof value === 'string' ? value : null;
 
@@ -115,7 +113,7 @@ const safeWatchdogDetail = (status: WatchdogStatus) => ({
   status: status.status,
   checkedAt: status.checkedAt,
   completedAt: status.completedAt,
-  ...(status.schedule ? { schedule: { checkedAt: status.schedule.checkedAt, due: status.schedule.due, pendingSince: status.schedule.pendingSince } } : {}),
+  ...(status.schedule ? { schedule: { checkedAt: status.schedule.checkedAt, due: status.schedule.due, pendingSince: status.schedule.pendingSince, ...(status.schedule.nextCheckAt ? {nextCheckAt:status.schedule.nextCheckAt} : {}) } } : {}),
   dueLotteries: [...status.dueLotteries],
   actions: status.actions.map(({ lottery, target, reasons, outcome }) => ({
     lottery, target, reasons: [...reasons], outcome,

@@ -6,6 +6,8 @@ export type WatchdogLottery = '今彩539' | '天天樂' | '六合彩' | '大樂�
 export type WatchdogSnapshot = {
   lottery: WatchdogLottery;
   drawDays?: string[];
+  recoveryCycleDate?: string;
+  recoveryComplete?: boolean;
   chain?: ChainReport;
   unavailable?: boolean;
   job: null | {
@@ -13,7 +15,7 @@ export type WatchdogSnapshot = {
     startedAt: string | null;
     updatedAt: string | null;
   };
-  latestDraw: null | { period: string; drawDate: string | null };
+  latestDraw: null | { period: string; drawDate: string | null; resultStatus?: string | null };
   latestAnalysis: null | {
     drawPeriod: string;
     status: 'running' | 'complete' | 'failed';
@@ -52,23 +54,13 @@ const ANALYSIS_STALE_MS = 45 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 8_000;
 const RECOVERY_LEASE_SECONDS = 20 * 60;
 const PHYSICAL_TICK_MINUTES = 10;
-export const WATCHDOG_PHASES = [
-  { first: 10, last: 90, every: 10 },
-  { first: 120, last: 300, every: 30 },
-  { first: 360, last: 1_380, every: 60 },
-  { first: 1_410, last: 1_410, every: 30 },
-] as const;
-const MARKSIX_SATURDAY_RECOVERY_LIMIT_MINUTES = 90;
-
-export function buildWatchdogPhasePlan(): number[] {
-  return WATCHDOG_PHASES.flatMap(({ first, last, every }) => {
-    const checkpoints: number[] = [];
-    for (let minute = first; minute <= last; minute += every) checkpoints.push(minute);
-    return checkpoints;
-  });
+export function buildWatchdogPhasePlan(group: 'evening'|'fantasy5' = 'evening'): number[] {
+  return [
+    ...Array.from({length:27},(_,i)=>i*10),
+    ...Array.from({length:group==='evening'?6:5},(_,i)=>270+i*50),
+    ...(group==='evening'?[930,1290]:[870,1230]),
+  ];
 }
-
-const WATCHDOG_CHECKPOINT_MINUTES = buildWatchdogPhasePlan();
 
 type LocalDay = { year: number; month: number; day: number };
 
@@ -129,70 +121,8 @@ function isConfiguredDrawDay(
   return legacyDrawDayFallback(lottery, day);
 }
 
-function isRecoveryCycleDay(
-  lottery: WatchdogLottery,
-  day: LocalDay,
-  drawDays?: readonly string[],
-): boolean {
-  return (
-    isConfiguredDrawDay(lottery, day, drawDays)
-    || (
-      lottery === '六合彩'
-      && weekday(day) === 0
-      && isConfiguredDrawDay(lottery, addDays(day, -1), drawDays)
-    )
-  );
-}
-
-function checkpointAllowed(
-  lottery: WatchdogLottery,
-  cycleDay: LocalDay,
-  checkpoint: number,
-): boolean {
-  return !(
-    lottery === '六合彩'
-    && weekday(cycleDay) === 6
-    && checkpoint > MARKSIX_SATURDAY_RECOVERY_LIMIT_MINUTES
-  );
-}
-
-function zonedParts(value: Date, timeZone: string): LocalDay & { hour: number; minute: number } {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).formatToParts(value);
-  const get = (type: string) => Number(parts.find((part) => part.type === type)?.value);
-  return {
-    year: get('year'),
-    month: get('month'),
-    day: get('day'),
-    hour: get('hour'),
-    minute: get('minute'),
-  };
-}
-
-function callClock(lottery: WatchdogLottery, day: LocalDay): [number, number] {
-  if (lottery === '今彩539') return [20, 33];
-  if (lottery === '大樂透') return [20, 53];
-  if (lottery === '六合彩') return [21, 33];
-  const sourceDay = addDays(day, -1);
-  for (const hour of [9, 10]) {
-    const candidate = new Date(taipeiInstant(day, hour, 33));
-    const california = zonedParts(candidate, 'America/Los_Angeles');
-    if (
-      california.year === sourceDay.year
-      && california.month === sourceDay.month
-      && california.day === sourceDay.day
-      && california.hour === 18
-      && california.minute === 33
-    ) return [hour, 33];
-  }
-  throw new Error('FANTASY5_CALL_CLOCK_NOT_FOUND');
+function callClock(lottery: WatchdogLottery, _day: LocalDay): [number, number] {
+  return lottery === '天天樂' ? [9,30] : [20,30];
 }
 
 function taipeiInstant(day: LocalDay, hour: number, minute: number): number {
@@ -223,12 +153,11 @@ export function expectedDrawDateForDueWindow(
   const previousTick = currentMinute - PHYSICAL_TICK_MINUTES * 60_000;
   for (const offset of [0, -1]) {
     const cycleDay = addDays(local, offset);
-    if (!isRecoveryCycleDay(lottery, cycleDay, drawDays)) continue;
+    if (!isConfiguredDrawDay(lottery, cycleDay, drawDays)) continue;
     const [hour, minute] = callClock(lottery, cycleDay);
     const base = taipeiInstant(cycleDay, hour, minute);
     const nextPrimary = nextPrimaryInstant(lottery, cycleDay, drawDays);
-    const hasDueCheckpoint = WATCHDOG_CHECKPOINT_MINUTES.some((checkpoint) => {
-      if (!checkpointAllowed(lottery, cycleDay, checkpoint)) return false;
+    const hasDueCheckpoint = buildWatchdogPhasePlan(lottery === '天天樂' ? 'fantasy5' : 'evening').some((checkpoint) => {
       const dueAt = base + checkpoint * 60_000;
       return (
         dueAt < nextPrimary
@@ -241,11 +170,8 @@ export function expectedDrawDateForDueWindow(
   return null;
 }
 
-function minimumExpectedDrawDate(lottery: WatchdogLottery, expectedDate: string): string {
-  if (lottery !== '六合彩') return expectedDate;
-  const [year, month, day] = expectedDate.split('-').map(Number);
-  const cycleDay = { year, month, day };
-  return weekday(cycleDay) === 0 ? dateText(addDays(cycleDay, -1)) : expectedDate;
+function minimumExpectedDrawDate(_lottery: WatchdogLottery, expectedDate: string): string {
+  return expectedDate;
 }
 
 function isOlderThan(value: string | null | undefined, now: Date, ageMs: number): boolean {
@@ -267,8 +193,8 @@ export function planWatchdogActions(
   };
 
   for (const snapshot of snapshots) {
-    if (snapshot.unavailable) continue;
-    const expectedDate = expectedDrawDateForDueWindow(
+    if (snapshot.unavailable || snapshot.recoveryComplete) continue;
+    const expectedDate = snapshot.recoveryCycleDate ?? expectedDrawDateForDueWindow(
       snapshot.lottery,
       now,
       snapshot.drawDays,
@@ -281,6 +207,7 @@ export function planWatchdogActions(
       !drawDate
       || !/^\d{4}-\d{2}-\d{2}$/.test(drawDate)
       || drawDate < minimumDrawDate
+      || snapshot.latestDraw?.resultStatus === 'preliminary'
     );
     if (staleDraw) {
       const jobHeartbeat = snapshot.job?.updatedAt ?? snapshot.job?.startedAt;
@@ -426,7 +353,16 @@ function calendarDrawDays(
 }
 
 export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
-  return async (at: Date = new Date()): Promise<WatchdogSnapshot[]> => {
+  return async (at: Date = new Date(), scheduled = false): Promise<WatchdogSnapshot[]> => {
+    let pending: Array<{lottery: WatchdogLottery; cycleDate:string}> | null = null;
+    if (scheduled) {
+      const value = await supabaseRequest<unknown>(supabase,'rpc/matrix_recovery_pending', {
+        method:'POST',body:JSON.stringify({p_now:at.toISOString()}),
+      });
+      if (!Array.isArray(value) || value.length>4 || value.some(row => !row || !LOTTERIES.includes(row.lottery) || !/^\d{4}-\d{2}-\d{2}$/.test(row.cycleDate))) throw new Error('RECOVERY_PENDING_INVALID');
+      pending = value;
+      if (!pending.length) return [];
+    }
     const range = drawDayRange(at);
     const calendar = await supabaseRequest<Record<string, unknown>>(
       supabase,
@@ -441,7 +377,8 @@ export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
       },
     );
 
-    return Promise.all(LOTTERIES.map(async (lottery) => {
+    return Promise.all(LOTTERIES.filter(lottery => !pending || pending.some(row => row.lottery === lottery)).map(async (lottery) => {
+      const recoveryCycleDate = pending?.find(row => row.lottery === lottery)?.cycleDate;
       let unavailable = false;
       const missing = () => { unavailable = true; return []; };
       const [jobRows, drawRows] = await Promise.all([
@@ -449,7 +386,7 @@ export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
           `system_job_status?select=status,started_at,updated_at,written_period,database_period&job_name=eq.${encode(JOB_NAME[lottery])}&limit=1`,
         ).catch(missing),
         supabaseRequest<Record<string, unknown>[]>(supabase,
-          `lottery_draws?select=period,draw_date&lottery=eq.${encode(lottery)}&order=draw_date.desc.nullslast,period.desc&limit=1`,
+          `lottery_draws?select=period,draw_date,result_status&lottery=eq.${encode(lottery)}&order=draw_date.desc.nullslast,period.desc&limit=1`,
         ).catch(missing),
       ]);
       const jobRow = jobRows[0];
@@ -475,7 +412,7 @@ export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
         || analysisStatus === 'complete'
         || analysisStatus === 'failed'
       ) ? analysisStatus : null;
-      const expected = expectedDrawDateForDueWindow(lottery, at, calendarDrawDays(calendar, lottery));
+      const expected = recoveryCycleDate ?? expectedDrawDateForDueWindow(lottery, at, calendarDrawDays(calendar, lottery));
       const currentDraw = Boolean(period && (!expected || (String(drawRow?.draw_date ?? '') >= minimumExpectedDrawDate(lottery, expected))));
       const jobMatches = Boolean(period && (jobRow?.written_period === period || jobRow?.database_period === period));
       const observedAt = at.toISOString();
@@ -490,8 +427,15 @@ export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
         evidence('analysis', !chainState ? 'UNKNOWN' : verifiedAnalysis ? 'PASS' : liveAnalysis ? 'WAITING' : 'FAIL', verifiedAnalysis ? 'ACTIVE_ANALYSIS_COMPLETE' : liveAnalysis ? 'ANALYSIS_LEASE_ACTIVE' : 'ANALYSIS_INCOMPLETE', 'matrix_watchdog_chain_state'),
         evidence('matrix-status', !chainState ? 'UNKNOWN' : chainState.matrixStatusComplete === true ? 'PASS' : verifiedAnalysis ? 'FAIL' : 'WAITING', 'MATRIX_STATUS_ARTIFACT', 'matrix_watchdog_chain_state'),
       ];
+      let recoveryComplete = false;
+      if (scheduled && period && drawRow?.result_status === 'confirmed' && drawRow?.draw_date === recoveryCycleDate && verifiedAnalysis && chainState?.matrixStatusComplete === true) {
+        recoveryComplete = await supabaseRequest<boolean>(supabase,'rpc/matrix_recovery_complete', {
+          method:'POST',body:JSON.stringify({p_lottery:lottery,p_period:period}),
+        }).catch(() => false);
+      }
       return {
         lottery,
+        ...(recoveryCycleDate ? {recoveryCycleDate,recoveryComplete} : {}),
         unavailable,
         chain: evaluateChain({lottery,drawPeriod:period,checkedAt:observedAt,stages}),
         drawDays: calendarDrawDays(calendar, lottery),
@@ -503,6 +447,7 @@ export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
         latestDraw: period ? {
           period,
           drawDate: nullableString(drawRow?.draw_date),
+          resultStatus: nullableString(drawRow?.result_status),
         } : null,
         latestAnalysis: visibleAnalysisStatus ? {
           drawPeriod: nullableString(analysisState?.drawPeriod) ?? '',
@@ -592,7 +537,7 @@ export type RecoveryTarget = {stage:'crawler'|'analysis'|'matrix-status';drawPer
 
 type WatchdogDependencies = {
   collectRailway?: (at?: Date) => Promise<RailwayEvidence[]>;
-  loadSnapshot: (at?: Date) => Promise<WatchdogSnapshot[]>;
+  loadSnapshot: (at?: Date, scheduled?: boolean) => Promise<WatchdogSnapshot[]>;
   claimLease: (key: string, owner: string) => Promise<boolean>;
   releaseLease: (key: string, owner: string) => Promise<void>;
   recoverRailway: (lottery: WatchdogLottery, leaseOwner: string, target?: RecoveryTarget) => Promise<unknown>;
@@ -604,7 +549,7 @@ export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
     async run(at: Date = new Date(), owner = crypto.randomUUID(), options: {recover?: boolean} = {}) {
       let snapshots: WatchdogSnapshot[];
       try {
-        snapshots = await dependencies.loadSnapshot(at);
+        snapshots = await dependencies.loadSnapshot(at, options.recover !== false);
       } catch {
         return {
           status: 'degraded',
@@ -615,13 +560,13 @@ export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
         };
       }
       const dueLotteries = snapshots
-        .filter((snapshot) => expectedDrawDateForDueWindow(
+        .filter((snapshot) => !snapshot.recoveryComplete && (snapshot.recoveryCycleDate ?? expectedDrawDateForDueWindow(
           snapshot.lottery,
           at,
           snapshot.drawDays,
-        ) !== null)
+        )) != null)
         .map((snapshot) => snapshot.lottery);
-      const railway = await dependencies.collectRailway?.(at).catch(() => []) ?? [];
+      const railway = snapshots.length ? await dependencies.collectRailway?.(at).catch(() => []) ?? [] : [];
       const reports = snapshots.map(s => s.chain ?? evaluateChain({lottery:s.lottery,drawPeriod:s.latestDraw?.period ?? null,checkedAt:at.toISOString(),stages:[]}));
       const actions = options.recover === false ? [] : planWatchdogActions(snapshots, at);
       const results = await Promise.all(actions.map(async (action) => {
@@ -641,7 +586,7 @@ export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
             const snapshot = snapshots.find(s => s.lottery === action.lottery)!;
             const crawler = action.reasons.some(r => ['job-failed','job-stuck','crawler-stale'].includes(r));
             const stage: RecoveryTarget['stage'] = crawler ? 'crawler' : action.reasons.some(r => r.startsWith('analysis-')) ? 'analysis' : 'matrix-status';
-            const expectedDate = expectedDrawDateForDueWindow(action.lottery,at,snapshot.drawDays);
+            const expectedDate = snapshot.recoveryCycleDate ?? expectedDrawDateForDueWindow(action.lottery,at,snapshot.drawDays);
             const target: RecoveryTarget = {stage,drawPeriod:crawler ? null : snapshot.latestDraw?.period ?? null,...(crawler && expectedDate ? {minimumDrawDate:minimumExpectedDrawDate(action.lottery,expectedDate)} : {})};
             const response = await dependencies.recoverRailway(action.lottery, owner, target) as { status?: unknown };
             outcome = response?.status === 'already-running' ? 'already-running' : 'accepted';
@@ -658,9 +603,8 @@ export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
         checkedAt: at.toISOString(),
         dueLotteries,
         actions: results,
-        reports,
+        ...(options.recover === false ? {reports,diagnoses:reports.map(report => inspectChain(report,railway))} : {recoveryReports:reports}),
         railway,
-        diagnoses: reports.map(report => inspectChain(report,railway)),
       };
     },
   };

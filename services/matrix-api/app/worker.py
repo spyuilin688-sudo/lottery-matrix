@@ -346,6 +346,27 @@ def _read_worker_completion(
     return {**snapshot, "identity": identity} if snapshot is not None else None
 
 
+def certify_completed_result(
+    lottery: str, result: dict[str, Any], repository: AnalysisRepository,
+    notification_emitter: NotificationEventEmitter | None,
+    *, scope: str = "scheduled",
+    ready_check: Callable[[dict[str, Any]], bool] | None = None,
+) -> None:
+    if result.get("status") != "complete":
+        return
+    snapshot = _read_worker_completion(lottery, repository, notification_emitter, scope=scope)
+    if snapshot is None or snapshot.get("ready") is True:
+        return
+    draw = snapshot.get("draw")
+    if not isinstance(draw, dict) or str(draw.get("period")) != str(result.get("drawPeriod")):
+        return
+    ready = ready_check(draw) if ready_check else _completed_period_idle_ready(
+        lottery, draw, repository, notification_emitter,
+    )
+    if ready:
+        _certify_worker_completion(lottery, str(draw["period"]), repository, notification_emitter, snapshot)
+
+
 def _certify_worker_completion(
     lottery: str, period: str, repository: AnalysisRepository,
     notification_emitter: NotificationEventEmitter | None,

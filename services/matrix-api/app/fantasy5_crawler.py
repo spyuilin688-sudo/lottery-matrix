@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -103,13 +103,15 @@ def run_fantasy5_crawler(
     repository: AnalysisRepository,
     source: DrawSource,
     now: datetime | None = None,
+    *, expected_draw_date: str | None = None,
 ) -> dict[str, Any]:
+    target_date = date.fromisoformat(expected_draw_date).isoformat() if expected_draw_date is not None else _expected_source_draw_date(now)
     latest = repository.list_draws(FANTASY5, PREFLIGHT_HISTORY_LIMIT)
     database_period = str(latest[0]["period"]) if latest else None
     if (
         latest
         and _normalized_draw_date(latest[0].get("drawDate"))
-        == _expected_source_draw_date(now)
+        == target_date
         and not _has_known_period_gap(latest)
     ):
         return {
@@ -135,7 +137,7 @@ def run_fantasy5_crawler(
         try:
             draw = refresh.fetch(FANTASY5)
             source_period = str(draw["period"])
-            if _normalized_draw_date(draw.get("drawDate")) != _expected_source_draw_date(now):
+            if _normalized_draw_date(draw.get("drawDate")) != target_date:
                 acquisition = {
                     "sourcePeriod": source_period,
                     "databasePeriod": database_period,
@@ -193,7 +195,7 @@ def run_fantasy5_crawler(
     }
 
 
-def run_fantasy5_crawler_once() -> dict[str, Any]:
+def run_fantasy5_crawler_once(*, expected_draw_date: str | None = None) -> dict[str, Any]:
     settings = load_settings()
     repository = create_supabase_repository(
         settings.supabase_url,
@@ -206,7 +208,7 @@ def run_fantasy5_crawler_once() -> dict[str, Any]:
             settings,
             telemetry=create_tinyfish_telemetry(repository),
         )
-        return run_fantasy5_crawler(repository, source)
+        return run_fantasy5_crawler(repository, source, expected_draw_date=expected_draw_date)
 
 
 def main() -> int:

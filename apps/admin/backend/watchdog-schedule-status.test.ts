@@ -41,3 +41,11 @@ it('still fails when cron itself stops or schedule evidence is invalid', async (
 it('does not turn a previous failed chain healthy just because cron is idle', async () => {
   expect((await check(idle, { status: 'degraded', error: 'WATCHDOG_FAILED' })).ok).toBe(false);
 });
+it('keeps an intentional long rest healthy until its persisted next check',async()=>{
+ const item=await check({...idle,checkedAt:'2026-09-19T12:30:00Z',due:false,nextCheckAt:'2026-09-20T01:30:00Z'});
+ expect(item.ok).toBe(true);
+});
+it('does not hide missed dynamic checks or outstanding HTTP failures',async()=>{
+ expect((await check({...idle,checkedAt:'2026-09-19T12:30:00Z',nextCheckAt:'2026-09-19T21:30:00Z'})).ok).toBe(false);
+ expect((await check({...idle,nextCheckAt:'2026-09-20T01:30:00Z',pendingSince:'2026-09-19T21:00:00Z'})).ok).toBe(false);
+});
