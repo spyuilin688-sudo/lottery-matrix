@@ -1,6 +1,6 @@
 # 樂彩 Matrix 專案交接
 
-更新日期：2026-09-08。內容依目前原始碼、套件與已核對的正式部署整理。
+更新日期：2026-09-20（本次更新 Railway 排程與 Optimizer 說明；其餘章節保留原核對日期）。
 
 ## 專案與版本
 
@@ -23,17 +23,21 @@
 
 API 執行方式見 [services/matrix-api/README.md](services/matrix-api/README.md)。Repository 中的 `railway*.json` 是否生效，須比對正式服務綁定。
 
-2026-09-08 核對 Railway `divine-simplicity` 的 production 環境，畫面列出三個服務：
+以下服務於 2026-09-08 建立交接記錄；2026-09-20 以 Railway 控制面重新核對 `lottery-matrix` 的 production 設定：
 
 | 服務 | 實際啟動命令 | 正式設定 |
 | --- | --- | --- |
-| `lottery-matrix` | `uv run python -u -m app.worker_all` | 綁定 `/services/matrix-api/railway.json`，cron 為 `3/5 * * * *` |
+| `lottery-matrix` | `uv run python -u -m app.worker_all` | 綁定 `/services/matrix-api/railway.json`，cron 為 `3/10 * * * *`（每小時 03、13、23、33、43、53 分） |
 | `fantasy5-analysis` | `uv run python -u -m app.analysis_worker --lottery 天天樂` | 已設定定時執行，最近執行成功 |
 | `heartfelt-generosity` | `uv run python -u -m app.api_server` | 常駐 API，沒有 cron，healthcheck 為 `/health` |
 
-此 production 環境未列出六合彩或大樂透的獨立 Worker；另一已核對專案 `lucky-reflection` 僅顯示一個 offline 服務。因此本次沒有依據停用或合併正式排程，也未改寫 `railway*.json`。
+此 production 環境未列出六合彩或大樂透的獨立 Worker；另一已核對專案 `lucky-reflection` 僅顯示一個 offline 服務。以上為歷史服務盤點，不代表本次完整服務清單。2026-09-20 僅調整 repository：舊 `railway.marksix.json`、`railway.lotto649.json` 移除 cron，保留單次手動 Worker 命令；移除已退役的 `deploy/matrix-worker.timer`，保留 `matrix-worker.service` 手動入口，避免未來部署再建立重複排程。未修改正式 Railway 設定。若其他主機已安裝舊 timer，須另行確認後停用；刪除 repository 檔案不會停止既有主機 timer。
 
-`.github/workflows/matrix-analysis.yml` 僅接受手動 `workflow_dispatch` 與既有路徑篩選的 `push`，用於復原分析；沒有 GitHub 定時觸發。其 `--scheduled` 是 Worker 執行模式，與 GitHub `schedule` 事件不同。
+`.github/workflows/matrix-analysis.yml` 目前僅接受手動 `workflow_dispatch`，用於復原分析；沒有 `push` 或 GitHub 定時觸發。其 `--scheduled` 是 Worker 執行模式，與 GitHub `schedule` 事件不同。
+
+## Optimizer 空轉判定
+
+Railway 樣本中至少兩筆不同時間的不同執行均為 `already-acquired`、`already-analyzed`、`no-new-draw` 或 `not-due` 時，列為「重複空轉執行候選」。顯示實際樣本數、起迄與時間跨度、平均耗時、CPU／RAM 與截斷資訊；不使用任意長期時數或低用量門檻，也不把缺少日誌等同空轉。此候選僅供審查排程與待命成本，不代表服務永久無用途，不會自動停用。每小時報告僅包含前一小時的有界日誌樣本，不能宣稱涵蓋全部長期工作負載。
 
 ## 入口與共用介面
 

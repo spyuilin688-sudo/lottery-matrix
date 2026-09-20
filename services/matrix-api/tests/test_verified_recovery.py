@@ -97,3 +97,22 @@ def test_targeted_recovery_receives_the_claimed_lease_identity():
     coordinator.enqueue('天天樂', 'owner', draw_period='12004', stage='analysis')
     assert done.wait(2)
     assert calls == [(('天天樂', '12004', 'analysis', None), {'lease_owner': 'owner', 'runner_id': 'runner'})]
+
+
+def test_failed_verification_records_specific_reason_before_release(capsys):
+    for verified, completed, reason in [
+        (False, True, 'CHAIN_INCOMPLETE'),
+        (True, False, 'COMPLETION_NOT_RECORDED'),
+    ]:
+        done = Event()
+        calls = []
+        coordinator = RecoveryCoordinator(lambda _: None, begin_lease=lambda *_: True,
+            targeted_runner=lambda *_, **__: '115000228', verify=lambda *_: verified,
+            record_success=lambda *_: (calls.append('record'), completed)[1],
+            release_lease=lambda *_: done.set())
+        coordinator.enqueue('今彩539', 'owner', draw_period='115000228', stage='analysis')
+        assert done.wait(2)
+        record = json.loads(capsys.readouterr().out)
+        assert record == {'event': 'recovery-not-verified', 'lottery': '今彩539',
+            'period': '115000228', 'stage': 'analysis', 'reason': reason}
+        assert calls == (['record'] if verified else [])
