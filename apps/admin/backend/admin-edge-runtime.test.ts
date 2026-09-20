@@ -11,6 +11,11 @@ describe('Supabase admin Edge runtime', () => {
       .toBe('../../../apps/admin/shared/admin-business-time.ts');
   });
 
+  it('resolves the shared manual refresh DTO in the deployed Edge bundle', () => {
+    const importMap = JSON.parse(readFileSync(new URL('../../../supabase/functions/admin-api/deno.json', import.meta.url), 'utf8'));
+    expect(importMap.imports['../../../apps/admin/shared/manual-refresh']).toBe('../../../apps/admin/shared/manual-refresh.ts');
+  });
+
   it('maps every new permission settings module into the Edge bundle', () => {
     const importMap = JSON.parse(readFileSync(
       new URL('../../../supabase/functions/admin-api/deno.json', import.meta.url),

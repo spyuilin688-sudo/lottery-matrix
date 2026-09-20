@@ -66,9 +66,11 @@ describe('system status client', () => {
       period: '115000211',
       drawDate: '2026-09-01',
     };
-    const post = vi.fn(async () => ({ data: { refresh } }));
+    const requestId = '11111111-1111-4111-8111-111111111111';
+    const post = vi.fn(async () => ({ data: { refresh: { ...refresh, period: null, drawDate: null, requestId, status: 'accepted', error: null } } }));
+    const get = vi.fn(async () => ({data: {refresh: {...refresh, requestId, status: 'complete', error: null}}}));
 
-    await expect(refreshCrawlerSystemStatus({ post }, 'cron-matrix-539-refresh-v2')).resolves.toEqual(refresh);
+    await expect(refreshCrawlerSystemStatus({ post, get }, 'cron-matrix-539-refresh-v2')).resolves.toEqual(refresh);
     expect(post).toHaveBeenCalledWith('/api/system-status/cron-matrix-539-refresh-v2/refresh');
   });
 
@@ -289,4 +291,23 @@ describe('Matrix Storage presentation', () => {
     const noRun = matrixStorageFixture(); noRun.cleanup.last_finished_at = null;
     expect(getMatrixStorageFacts(item(noRun))).toContainEqual({ label: '最近清理', value: '尚無完成紀錄' });
   });
+});
+
+it('bounds polling, keeps an uncertain outcome, and resumes by request ID without another POST', async () => {
+  vi.useFakeTimers();
+  try {
+    const task = {lottery:'天天樂', requestId:'11111111-1111-4111-8111-111111111111',status:'running',period:null,drawDate:null,error:null};
+    const post = vi.fn(async()=>({data:{refresh:{...task,status:'accepted'}}}));
+    const get = vi.fn(async()=>({data:{refresh:task}}));
+    const pending = expect(refreshCrawlerSystemStatus({post,get}, 'cron-matrix-fantasy5-refresh-v2')).rejects.toThrow('更新尚未確認完成');
+    await vi.advanceTimersByTimeAsync(300_000);
+    await pending;
+    const reads = get.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(get).toHaveBeenCalledTimes(reads);
+    get.mockResolvedValueOnce({data:{refresh:{...task,status:'complete',period:'123' as any}}});
+    expect(await refreshCrawlerSystemStatus({post,get}, 'cron-matrix-fantasy5-refresh-v2', {requestId:task.requestId})).toMatchObject({period:'123'});
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+  } finally {vi.useRealTimers();}
 });

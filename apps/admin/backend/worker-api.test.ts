@@ -54,6 +54,14 @@ const unavailable = {
 const unavailableAfterHealth = { ...unavailable, health };
 
 describe('Railway worker status adapter', () => {
+  it.each(['tianheng', 'tianshu'])('accepts the active %s analysis phase', async phase => {
+    const activeJobs = structuredClone(jobs);
+    Object.assign(activeJobs.items[0].latestAnalysis, { phase, status: 'running', completedAt: null });
+    const api = createWorkerApi(async () => ({ baseUrl: 'https://railway.example', statusToken: 'token' }),
+      vi.fn(async input => jsonResponse(String(input).endsWith('/health') ? health : activeJobs)));
+    expect(await api.getStatus()).toMatchObject({ ok: true, jobs: { items: [expect.objectContaining({ latestAnalysis: expect.objectContaining({ phase }) }), ...activeJobs.items.slice(1)] } });
+  });
+
   it('reports a Railway-side missing admin token without calling protected jobs', async () => {
     const fetcher = vi.fn(async () => jsonResponse({
       ...health,
@@ -156,9 +164,8 @@ describe('Railway worker status adapter', () => {
 
   it('requests one protected latest-draw refresh without exposing the token to the client', async () => {
     const fetcher = vi.fn(async () => jsonResponse({
-      lottery: '今彩539',
-      period: '115000211',
-      drawDate: '2026-09-01',
+      lottery: '今彩539', requestId: '11111111-1111-4111-8111-111111111111',
+      status: 'accepted', period: null, drawDate: null, error: null,
     }));
     const api = createWorkerApi(
       async () => ({
@@ -169,9 +176,8 @@ describe('Railway worker status adapter', () => {
     );
 
     await expect(api.refreshLottery('今彩539')).resolves.toEqual({
-      lottery: '今彩539',
-      period: '115000211',
-      drawDate: '2026-09-01',
+      lottery: '今彩539', requestId: '11111111-1111-4111-8111-111111111111',
+      status: 'accepted', period: null, drawDate: null, error: null,
     });
     expect(fetcher).toHaveBeenCalledTimes(1);
     const [url, init] = fetcher.mock.calls[0];
@@ -188,41 +194,26 @@ describe('Railway worker status adapter', () => {
     });
   });
 
-  it('keeps a manual refresh alive beyond the status-check deadline', async () => {
+  it('bounds enqueue and status requests to a short deadline', async () => {
     vi.useFakeTimers();
     try {
-      let resolveResponse: ((response: Response) => void) | undefined;
-      const fetcher = vi.fn(() => new Promise<Response>((resolve) => {
-        resolveResponse = resolve;
-      }));
-      const api = createWorkerApi(
-        async () => ({
-          baseUrl: 'https://railway.example',
-          statusToken: 'server-token',
-        }),
-        fetcher as typeof fetch,
-      );
-      const pending = api.refreshLottery('今彩539');
-      let outcome = 'pending';
-      void pending.then(
-        () => { outcome = 'success'; },
-        () => { outcome = 'error'; },
-      );
-
-      await vi.advanceTimersByTimeAsync(30_001);
-
-      expect(fetcher).toHaveBeenCalledTimes(1);
-      expect(outcome).toBe('pending');
-      resolveResponse?.(jsonResponse({
-        lottery: '今彩539',
-        period: '115000211',
-        drawDate: '2026-09-01',
-      }));
-      await expect(pending).resolves.toMatchObject({ period: '115000211' });
+      const api = createWorkerApi(async () => ({ baseUrl: 'https://railway.example', statusToken: 'token' }),
+        vi.fn(() => new Promise<Response>(() => {})));
+      const pending = expect(api.refreshLottery('今彩539')).rejects.toThrow('無法更新');
+      await vi.advanceTimersByTimeAsync(5_001);
+      await pending;
       expect(vi.getTimerCount()).toBe(0);
-    } finally {
-      vi.useRealTimers();
-    }
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('queries only the correlated task and rejects another request result', async () => {
+    const requestId = '11111111-1111-4111-8111-111111111111';
+    const fetcher = vi.fn(async () => jsonResponse({ lottery: '天天樂', requestId, status: 'running', period: null, drawDate: null, error: null }));
+    const api = createWorkerApi(async () => ({ baseUrl: 'https://railway.example', statusToken: 'token' }), fetcher);
+    expect(await api.refreshLottery('天天樂', requestId)).toMatchObject({ requestId, status: 'running' });
+    expect(String(fetcher.mock.calls[0][0])).toContain('/jobs/refresh/status?');
+    expect(fetcher.mock.calls[0][1]).toMatchObject({ method: 'GET', cache: 'no-store', headers: { 'X-Matrix-Admin-Token': 'token' } });
+    await expect(api.refreshLottery('天天樂', '22222222-2222-4222-8222-222222222222')).rejects.toThrow();
   });
 
   it.each([

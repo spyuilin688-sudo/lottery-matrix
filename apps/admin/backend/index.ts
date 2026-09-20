@@ -1,3 +1,4 @@
+import { isRefreshRequestId } from '../shared/manual-refresh';
 import { createOptimizerRunner, type OptimizerScope } from './matrix-optimizer-runner';
 import { createRailwayEvidenceCollector } from './matrix-railway-evidence';
 import { createSecurityMonitor } from './security-monitor';
@@ -504,20 +505,28 @@ const routes: Record<string, unknown> = {
             admin: actor.name || actor.account,
             operation_type: '手動更新',
             target_table: 'lottery_draws',
-            target_id: refresh.period,
-            content: `更新${refresh.lottery}最新開獎資料`,
+            target_id: refresh.requestId,
+            content: `手動更新${refresh.lottery}已受理（${refresh.status}）`,
             before_data: null,
             after_data: refresh,
             ...requestMetadata(ctx),
           }]);
         } catch {
-          // A completed crawler refresh must not look failed only because audit storage is down.
+          // An accepted task must not look rejected only because audit storage is down.
         }
       }
       return json({ refresh });
     } catch (cause) {
       return fail(cause);
     }
+  }],
+
+  'GET /api/system-status/:id/refresh/:requestId': [sessionGuard, moduleGuard('systemSettings', 'edit', 'edit'), async (ctx: Context) => {
+    const lottery = crawlerLotteryByStatusId[ctx.params.id];
+    if (!lottery || !isRefreshRequestId(ctx.params.requestId)) return error('無效更新工作', 400);
+    try {
+      return json({ refresh: await workerApi.refreshLottery(lottery, ctx.params.requestId) });
+    } catch (cause) { return fail(cause); }
   }],
 
   'POST /api/system-status/:id/recover': [sessionGuard, moduleGuard('systemSettings', 'edit', 'edit'), async (ctx: Context) => {

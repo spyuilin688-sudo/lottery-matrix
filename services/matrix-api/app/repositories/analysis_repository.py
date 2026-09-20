@@ -1,3 +1,4 @@
+from app.manual_refresh import InMemoryRefreshStore, SupabaseRefreshStore, RefreshStore
 import re
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
@@ -42,6 +43,7 @@ def required_artifact_kinds(analysis_version: str) -> frozenset[str]:
 
 
 class AnalysisRepository(Protocol):
+    manual_refresh: RefreshStore
     def health_check(self) -> None: ...
     def list_job_statuses(self) -> list[dict[str, Any]]: ...
     def start_job(self, job_name: str, lottery: str, started_at: str) -> None: ...
@@ -100,6 +102,7 @@ class AnalysisRepository(Protocol):
 
 class InMemoryAnalysisRepository:
     def __init__(self) -> None:
+        self.manual_refresh = InMemoryRefreshStore()
         self.draws: dict[tuple[str, str], dict[str, Any]] = {}
         self.runs: dict[tuple[str, str, str], dict[str, Any]] = {}
         self.active_versions: dict[tuple[str, str, str], str] = {}
@@ -806,6 +809,7 @@ class InMemoryAnalysisRepository:
 class SupabaseAnalysisRepository:
     def __init__(self, client: Any) -> None:
         self.client = client
+        self.manual_refresh = SupabaseRefreshStore(client)
 
     @staticmethod
     def _one(response: Any) -> dict[str, Any]:

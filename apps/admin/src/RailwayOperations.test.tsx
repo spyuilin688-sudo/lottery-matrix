@@ -4,6 +4,11 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RailwayOperations } from './RailwayOperations';
 
+const task = (status: 'accepted' | 'running' | 'complete' | 'failed') => ({
+  lottery: '今彩539', requestId: '11111111-1111-4111-8111-111111111111', status,
+  period: status === 'complete' ? '115211' : null, drawDate: null, error: status === 'failed' ? 'SOURCE_NOT_READY' : null,
+});
+
 let root: Root;
 let container: HTMLDivElement;
 const button = (name: string) => [...container.querySelectorAll('button')].find(node => node.textContent === name)!;
@@ -11,7 +16,7 @@ const click = async (name: string) => { await act(async () => button(name).click
 const setup = async (canEdit = true) => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   container = document.createElement('div'); document.body.append(container); root = createRoot(container);
-  const client = { post: vi.fn(async (): Promise<{data: any}> => ({ data: { refresh: { lottery: '今彩539', period: '115211', drawDate: null } } })) };
+  const client = { get: vi.fn(async (): Promise<{data: any}> => ({data: {refresh: task('complete')}})), post: vi.fn(async (): Promise<{data: any}> => ({ data: { refresh: task('accepted') } })) };
   const confirm = vi.fn(async () => true);
   await act(async () => root.render(<RailwayOperations client={client} canEdit={canEdit} confirm={confirm} />));
   return { client, confirm };
@@ -28,7 +33,8 @@ describe('Railway operation controls', () => {
     const { client, confirm } = await setup();
     const select = container.querySelector('select')!;
     await act(async () => { select.value = '大樂透'; select.dispatchEvent(new Event('change', { bubbles: true })); });
-    client.post.mockResolvedValueOnce({ data: { refresh: { lottery: '大樂透', period: '115088', drawDate: null } } });
+    client.post.mockResolvedValueOnce({ data: { refresh: { ...task('accepted'), lottery: '大樂透' } } });
+    client.get.mockResolvedValueOnce({data: {refresh: {...task('complete'), lottery: '大樂透', period: '115088'}}});
     await click('手動更新');
     expect(container.querySelector('[role=status]')?.textContent).toContain('大樂透 已手動更新至 115088 期');
     expect(confirm).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('大樂透') }));
@@ -72,4 +78,36 @@ describe('Railway operation controls', () => {
     expect(container.querySelector('[role=alert]')?.textContent).toContain('未取得有效操作結果');
     expect(container.querySelector('[role=status]')).toBeNull();
   });
+  it('shows acceptance before completion and polls without submitting twice', async () => {
+    vi.useFakeTimers();
+    try {
+      const {client} = await setup();
+      client.get.mockResolvedValueOnce({data: {refresh: task('running')}});
+      await click('手動更新');
+      expect(container.textContent).toContain('執行中');
+      expect(container.textContent).not.toContain('已手動更新至');
+      expect(button('手動更新').disabled).toBe(true);
+      await act(async () => vi.advanceTimersByTimeAsync(5_000));
+      expect(container.textContent).toContain('已手動更新至 115211 期');
+      expect(client.post).toHaveBeenCalledTimes(1);
+      expect(client.get).toHaveBeenCalledTimes(2);
+    } finally { vi.useRealTimers(); }
+  });
+  it('reports source-not-ready as failure without a success message', async () => {
+    const {client} = await setup();
+    client.get.mockResolvedValueOnce({data: {refresh: task('failed')}});
+    await click('手動更新');
+    expect(container.querySelector('[role=alert]')?.textContent).toContain('來源尚未');
+    expect(container.textContent).not.toContain('已手動更新至');
+  });
+  it('can query an uncertain task again without enqueueing another', async () => {
+    const {client} = await setup();
+    client.get.mockRejectedValueOnce(new Error('連線中斷'));
+    await click('手動更新');
+    expect(container.querySelector('[role=alert]')?.textContent).toContain('連線中斷');
+    await click('查詢更新狀態');
+    expect(container.textContent).toContain('已手動更新至');
+    expect(client.post).toHaveBeenCalledTimes(1);
+  });
+
 });
