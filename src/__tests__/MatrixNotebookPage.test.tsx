@@ -392,3 +392,9 @@ test('notebook pages contain ten notes and numbered navigation has no entry coun
   expect(await screen.findByText('新增後可見')).toBeVisible();
   expect(screen.getByRole('button', { name: '第 1 頁' })).toHaveAttribute('aria-current', 'page');
 });
+
+test.each([0, 2, 10, 11])('pagination is visible only above ten notes (%i notes)', async (count) => {
+  window.localStorage.setItem(keyA, JSON.stringify({ notes: Array.from({ length: count }, (_, i) => ({ ...notes[0], id: `boundary-${i}` })) }));
+  await openNotebook();
+  expect(screen.queryByRole('navigation', { name: '筆記分頁' }) !== null).toBe(count > 10);
+});
