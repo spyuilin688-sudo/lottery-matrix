@@ -19,6 +19,7 @@ const measureDescription = (node: Element) => {
     bottom: Math.max(box.bottom, textBox.bottom),
     scrollHeight: node.scrollHeight,
     clientHeight: node.clientHeight,
+    lineHeight: parseFloat(getComputedStyle(node).lineHeight),
   };
 };
 
@@ -33,7 +34,7 @@ for (const { state, planName } of paidScenarios) {
       const description = profile.locator(".subscription-plan p");
       // Measure the settled paid state, never the initially empty loading copy.
       await expect(profile.locator(".subscription-plan strong")).toHaveText(planName);
-      await expect(description).toHaveText("依目前方案享有 Matrix Pro 權限");
+      await expect(description).toHaveText("Matrix Pro 權限");
       await page.evaluate(() => document.fonts.ready);
 
       const stack = profile.locator(".membership-card-stack");
@@ -94,8 +95,9 @@ for (const { state, planName } of paidScenarios) {
       expect(descriptionBox.left).toBeGreaterThanOrEqual(cardBoxes[1].left - 0.5);
       expect(descriptionBox.right).toBeLessThanOrEqual(cardBoxes[1].right + 0.5);
       expect(descriptionBox.scrollHeight).toBeLessThanOrEqual(descriptionBox.clientHeight + 1);
+      expect(Math.abs(descriptionBox.clientHeight - descriptionBox.lineHeight)).toBeLessThanOrEqual(1);
       expect(entryBox!.y + entryBox!.height).toBeLessThanOrEqual(cardBoxes[1].bottom + 0.5);
-      // Wrapped copy determines the height. Bound spare space below the final action
+      // Content determines the height. Bound spare space below the final action
       // to the frame inset instead of imposing a ratio that can clip paid details.
       expect(stackBox.bottom - (entryBox!.y + entryBox!.height)).toBeLessThanOrEqual(24);
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -122,7 +124,7 @@ for (const width of [320, 430]) {
     const card = page.locator(".subscription-status-card");
     const description = card.locator(".subscription-plan p");
     await expect(card.locator(".subscription-plan strong")).toHaveText("終身方案");
-    await expect(description).toHaveText("依目前方案享有 Matrix Pro 權限");
+    await expect(description).toHaveText("Matrix Pro 權限");
     await expect(card.getByRole("button", { name: "訂閱方案／收費標準" })).toHaveCount(0);
     await page.evaluate(() => document.fonts.ready);
 
@@ -140,6 +142,7 @@ for (const width of [320, 430]) {
     expect(descriptionBox.left).toBeGreaterThanOrEqual(cardBox!.x - 0.5);
     expect(descriptionBox.right).toBeLessThanOrEqual(cardBox!.x + cardBox!.width + 0.5);
     expect(descriptionBox.scrollHeight).toBeLessThanOrEqual(descriptionBox.clientHeight + 1);
+    expect(Math.abs(descriptionBox.clientHeight - descriptionBox.lineHeight)).toBeLessThanOrEqual(1);
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 }

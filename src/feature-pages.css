@@ -1182,6 +1182,9 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   font-size: 2.58cqw;
   line-height: 3.5cqw;
 }
+.subscription-status-content .subscription-plan p {
+  white-space: nowrap;
+}
 .subscription-entry {
   display: grid;
   box-sizing: border-box;
