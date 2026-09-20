@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   createRoot: vi.fn(() => ({ render: vi.fn() })),
+  finishLineLoginPopup: vi.fn(),
   getSession: vi.fn(),
+  getSupabaseClient: vi.fn(),
   hasLineOAuthCallback: vi.fn(),
   isPwaDisplayMode: vi.fn(),
   requestLinePwaReturn: vi.fn(),
@@ -14,9 +16,9 @@ vi.mock('../../input-behavior', () => ({ installGlobalInputBehavior: vi.fn() }))
 vi.mock('../../push-subscription', () => ({ registerPushServiceWorker: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../../visitor-counts', () => ({ installVisitorTracking: vi.fn(() => vi.fn()) }));
 vi.mock('../line-pwa-diagnostics', () => ({ flushLinePwaDiagnostics: vi.fn() }));
-vi.mock('../line-login-popup', () => ({ finishLineLoginPopup: vi.fn().mockResolvedValue(false) }));
+vi.mock('../line-login-popup', () => ({ finishLineLoginPopup: mocks.finishLineLoginPopup }));
 vi.mock('../../lib/supabase', () => ({
-  getSupabaseClient: () => ({ auth: { getSession: mocks.getSession } }),
+  getSupabaseClient: mocks.getSupabaseClient,
 }));
 vi.mock('../../pwa-display-mode', () => ({ isPwaDisplayMode: mocks.isPwaDisplayMode }));
 vi.mock('../line-pwa-return', () => ({
@@ -25,12 +27,15 @@ vi.mock('../line-pwa-return', () => ({
   requestLinePwaReturn: mocks.requestLinePwaReturn,
 }));
 vi.mock('../../App', () => ({ default: () => null }));
+vi.mock('../PasswordRecovery', () => ({ PasswordRecovery: function PasswordRecovery() { return null; } }));
 
 describe('LINE callback bootstrap', () => {
   beforeEach(() => {
     vi.resetModules();
     mocks.createRoot.mockClear();
+    mocks.finishLineLoginPopup.mockReset().mockResolvedValue(false);
     mocks.getSession.mockReset().mockResolvedValue({ data: { session: { access_token: 'signed-in' } }, error: null });
+    mocks.getSupabaseClient.mockReset().mockImplementation(() => ({ auth: { getSession: mocks.getSession } }));
     mocks.hasLineOAuthCallback.mockReset().mockReturnValue(true);
     mocks.isPwaDisplayMode.mockReset().mockReturnValue(false);
     mocks.requestLinePwaReturn.mockReset().mockResolvedValue(false);
@@ -45,6 +50,25 @@ describe('LINE callback bootstrap', () => {
       configurable: true,
       value: 'Mozilla/5.0 (Linux; Android 16) Chrome/140 Mobile',
     });
+  });
+
+  it.each([
+    '/#access_token=recovery-access&refresh_token=recovery-refresh&type=recovery',
+    '/reset-password?code=recovery-code',
+    '/reset-password?error=access_denied&error_code=otp_expired',
+  ])('opens password recovery before LINE or session consumption for %s', async (url) => {
+    window.history.replaceState({}, '', url);
+
+    await import('../../main');
+
+    await vi.waitFor(() => expect(mocks.createRoot).toHaveBeenCalledOnce());
+    const screen = mocks.createRoot.mock.results[0].value.render.mock.calls[0][0].props.children;
+    expect(screen.type.name).toBe('PasswordRecovery');
+    expect(mocks.requestLinePwaReturn).not.toHaveBeenCalled();
+    expect(mocks.finishLineLoginPopup).not.toHaveBeenCalled();
+    expect(mocks.getSupabaseClient).not.toHaveBeenCalled();
+    expect(mocks.getSession).not.toHaveBeenCalled();
+    expect(window.location.href).toBe(new URL(url, window.location.origin).href);
   });
 
   it('shows the return action after login succeeds but automatic PWA handoff fails', async () => {
