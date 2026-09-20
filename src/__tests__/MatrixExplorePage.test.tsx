@@ -520,6 +520,28 @@ test.each([
   expect(screen.getByRole('region', { name: '驗證過程' }).innerHTML).toBe(before);
 });
 
+test.each([
+  ['十三期', 13, '完整範圍', '二期', '標準範圍'],
+  ['二期', 2, '標準範圍', '十三期', '完整範圍'],
+] as const)('探索%s結果的驗證使用已提交的%s期及%s，不受未提交設定影響', async (periodLabel, periods, range, draftPeriod, draftRange) => {
+  await act(async () => { render(<MatrixExplorePage onNavigate={vi.fn()} />); });
+  fireEvent.click(screen.getByText(periodLabel).closest('button')!);
+  fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
+  fireEvent.click(screen.getByText(range).closest('button')!);
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  const result = await screen.findByRole('button', { name: /展開版路/ });
+
+  fireEvent.click(screen.getByText(draftPeriod).closest('button')!);
+  fireEvent.click(screen.getByText(draftRange).closest('button')!);
+  fireEvent.click(result);
+
+  expect(matrixApi.fetchExploreValidation).toHaveBeenCalledWith({
+    lottery: '今彩539', drawPeriod: '114000123', analysisVersion: '114000123:v1',
+  }, 'api-item-1', { explorePeriods: periods, exploreRange: range });
+  expect(await screen.findByRole('region', { name: '驗證過程' })).not.toBeNull();
+  expect(matrixApi.fetchExploreList).toHaveBeenCalledTimes(1);
+});
+
 test('驗證期在鎖定條件之後時排列在第二列', async () => {
   matrixApi.fetchExploreList.mockResolvedValue({
     ...exploreEnvelope,

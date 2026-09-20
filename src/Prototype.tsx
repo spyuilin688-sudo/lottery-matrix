@@ -24,6 +24,7 @@ import type { LotteryDrawRecord } from "./lottery-api";
 import { formatCountdown, formatNextDrawAt, nextCountdownSeconds, parseCountdown, secondsUntil } from "./countdown.mjs";
 import { fetchMatrixStatusSummaries, type MatrixStatusSummary } from "./matrix-status-api";
 import { subscribeMatrixDataRevision } from "./matrix-data-revision";
+import { subscribeAlgorithmCacheScope } from "./auth/algorithm-cache-scope";
 import { withDeadline } from "./lib/api-resilience";
 import { HomeFreeStatement } from "./homepage/HomeFreeStatement";
 import { FirstVisitGuide } from "./onboarding/FirstVisitGuide";
@@ -465,6 +466,10 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   const drawResult: DrawResultData = latestDraw ? toDrawResult(selected, latestDraw) : DRAW_RESULTS[selected];
 
   useEffect(() => { setDeviceId("pixel-10"); }, [setDeviceId]);
+  useEffect(() => subscribeAlgorithmCacheScope(() => {
+    setMatrixStatuses(MATRIX_STATUS_BY_LOTTERY);
+    setMatrixStatusLoads(loadingStatusStates());
+  }, { notifyOnInitialize: true }), []);
   useEffect(() => {
     if (screen !== "home") return;
     let active = true;
@@ -506,6 +511,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     const invalidate = () => {
       generation += 1;
       request?.abort();
+      setMatrixStatuses(MATRIX_STATUS_BY_LOTTERY);
       setMatrixStatusLoads(loadingStatusStates());
       queueRefresh();
     };
@@ -513,6 +519,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     // Homepage status is precomputed data; periodic polling only needs an hourly fallback.
     const timer = setInterval(refresh, 3_600_000);
     const unsubscribe = subscribeMatrixDataRevision(invalidate);
+    const unsubscribeSession = subscribeAlgorithmCacheScope(invalidate, { notifyOnInitialize: true });
     document.addEventListener("visibilitychange", queueRefresh);
     window.addEventListener("online", queueRefresh);
     return () => {
@@ -522,6 +529,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       clearInterval(timer);
       if (queued !== undefined) clearTimeout(queued);
       unsubscribe();
+      unsubscribeSession();
       document.removeEventListener("visibilitychange", queueRefresh);
       window.removeEventListener("online", queueRefresh);
     };

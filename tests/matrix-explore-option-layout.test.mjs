@@ -21,15 +21,15 @@ test("Matrix Explore canonical scoped stylesheet remains the final loaded layout
   assert.match(body, /width:\s*100%;/);
   assert.match(body, /max-width:\s*none;/);
   assert.match(body, /padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\);/);
-  const title = oneRule(css, /^\.matrix-explore-main-screen \.matrix-title-banner$/);
-  assert.match(title, /width:\s*calc\(100% - \(var\(--layout-page-inline\) \* 2\)\);/);
-  assert.match(title, /max-width:\s*none;/);
+  const directChild = oneRule(css, /^\.matrix-explore-main-screen \.feature-body > :not\(\.result-panel\)$/);
+  assert.match(directChild, /width:\s*100%;/);
+  assert.match(directChild, /min-width:\s*0;/);
 });
 
 test("Matrix Explore DOM keeps icon and field title in the same horizontal label group", () => {
   assert.match(exploreSource, /export function MatrixExplorePage/);
-  assert.match(exploreSource, /<label><span><SettingLabelIcon type="lottery" \/><b>彩球類型<\/b><\/span>/s);
-  assert.match(exploreSource, /<label><span><SettingLabelIcon type="period" \/>探索期數<\/span>/s);
+  assert.match(exploreSource, /<LotteryTabs selected=\{lottery\} onChange=\{changeLottery\} \/>/);
+  assert.match(exploreSource, /<label><span><SettingLabelIcon type="period" \/>\{settingsName\}期數<\/span>/s);
   assert.match(exploreSource, /<label><span><SettingLabelIcon type="road" \/>版路類型<\/span>/s);
   assert.doesNotMatch(exploreSource, /style=\{/);
 });
@@ -46,11 +46,11 @@ test("Matrix Explore 兩組三列圖示的垂直邊距都是 7px", () => {
   assert.match(oneRule(css, /^\.matrix-explore-main-screen \.advanced-panel label > \.advanced-setting-title$/), /padding-bottom:\s*0;/);
 });
 
-test("Matrix Explore selects and general option buttons are 24px high, hit options are 28px", () => {
-  assert.match(oneRule(css, /^\.matrix-explore-main-screen \.advanced-panel \.select-box$/), /height:\s*24px;[\s\S]*min-height:\s*24px;/);
-  assert.match(oneRule(css, /^\.matrix-explore-main-screen \.advanced-panel \.select-box select$/), /height:\s*24px;[\s\S]*min-height:\s*24px;/);
-  assert.match(oneRule(css, /^\.matrix-explore-main-screen \.segmented button$/), /height:\s*24px;[\s\S]*min-height:\s*24px;/);
-  assert.match(css, /\.matrix-explore-main-screen \.hit-options button\s*\{[^}]*box-sizing:\s*border-box;[^}]*height:\s*28px;[^}]*min-height:\s*28px;[^}]*padding:\s*\.125rem \.25rem;[^}]*flex:\s*1 1 0;/s);
+test("Matrix Explore native selects are 24px and compact option buttons are 20px high", () => {
+  assert.match(oneRule(css, /^\.matrix-explore-main-screen \.advanced-panel \.native-select$/), /height:\s*24px;[\s\S]*min-height:\s*24px;/);
+  assert.match(oneRule(css, /^\.matrix-explore-main-screen \.segmented button$/), /height:\s*20px;[\s\S]*min-height:\s*20px;/);
+  assert.match(oneRule(css, /^\.matrix-explore-main-screen \.hit-options button$/), /height:\s*20px;[\s\S]*min-height:\s*20px;/);
+  assert.match(oneRule(css, /^\.matrix-explore-main-screen \.hit-options$/), /height:\s*20px;/);
 });
 
 test("Matrix Explore button badges sit above the upper-right border without covering option text", () => {

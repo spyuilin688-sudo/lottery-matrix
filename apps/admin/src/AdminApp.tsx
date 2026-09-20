@@ -1092,7 +1092,7 @@ function UserManager({
   const { setPage, paged, loading, error } = memberPage;
   const [userInfo, setUserInfo] = useState<Row | null>(null);
   const fields = ["memberDisplayName", "registeredAt", "lastOnlineAt", "recentOnlineMinutes", "status", "recentIp", "estimatedRegion"];
-  const statusText = (value: unknown) => String(value) === "disabled" || String(value) === "停用" ? "停用" : "啟用";
+  const statusText = (value: unknown) => ["disabled", "inactive", "停用"].includes(String(value)) ? "停用" : "啟用";
   const showValue = (field: string, row: Row) => field === "status"
     ? statusText(row[field])
     : field === "recentOnlineMinutes" ? `${Number(row[field] || 0)} 分鐘`
@@ -1424,10 +1424,11 @@ function AdminManager({
                     {isSuper && (
                       <td>
                         <div className="rowActions">
-                          <button onClick={() => onEdit(r)} disabled={busy}>
+                          <button aria-label={`編輯管理員 ${text(r.account)}`} onClick={() => onEdit(r)} disabled={busy}>
                             <Pencil size={15} />
                           </button>
                           <button
+                            aria-label={`刪除管理員 ${text(r.account)}`}
                             className="danger"
                             onClick={() => onDelete(r.id)}
                             disabled={busy}

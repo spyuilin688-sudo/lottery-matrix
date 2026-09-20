@@ -18,6 +18,12 @@ const setup = async (canEdit = true) => {
 };
 afterEach(async () => { await act(async () => root?.unmount()); container?.remove(); });
 describe('Railway operation controls', () => {
+  it('states that recovery includes Fantasy5 data and analysis', async () => {
+    await setup();
+    expect(container.querySelector('#railway-recover-help')?.textContent).toContain('包含天天樂');
+    expect(container.querySelector('#railway-recover-help')?.textContent).not.toContain('天天樂僅復原分析');
+  });
+
   it('submits only the selected lottery and displays the returned period', async () => {
     const { client, confirm } = await setup();
     const select = container.querySelector('select')!;

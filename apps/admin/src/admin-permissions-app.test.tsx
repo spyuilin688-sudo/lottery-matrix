@@ -14,6 +14,7 @@ const app = vi.hoisted(() => {
       permissions: { view: true, add: true, edit: true, delete: true },
     } as Record<string, unknown>,
     failPaymentRead: false,
+    memberStatus: 'active',
     nextSubscriptionRead: null as Promise<{ data: { items: Array<{ id: string; status: string }> } }> | null,
     permissionSettings: {
       subscriptionPurchaseVisible: true,
@@ -66,7 +67,7 @@ const app = vi.hoisted(() => {
     } };
     if (url === '/api/permission-settings') return { data: state.permissionSettings };
     if (path === '/api/data/admins') return { data: { items: [otherAdmin], total: 37, currentPage: 1, totalPages: 2 } };
-    if (url.startsWith('/api/data/users?')) return { data: { items: [{ id: 'member-1', status: 'active' }], total: 1, currentPage: 1, totalPages: 1 } };
+    if (url.startsWith('/api/data/users?')) return { data: { items: [{ id: 'member-1', memberDisplayName: '測試會員', status: state.memberStatus }], total: 1, currentPage: 1, totalPages: 1 } };
     if (url.startsWith('/api/data/subscriptions?')) {
       if (state.nextSubscriptionRead) {
         const pending = state.nextSubscriptionRead;
@@ -128,6 +129,7 @@ describe('administrator operation permission editing', () => {
       permissions: { view: true, add: true, edit: true, delete: true },
     };
     app.state.failPaymentRead = false;
+    app.state.memberStatus = 'active';
     app.state.nextSubscriptionRead = null;
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -246,9 +248,9 @@ describe('administrator operation permission editing', () => {
       .find((cell) => cell.textContent === 'other@example.com');
     expect(accountCell).toBeDefined();
     const row = accountCell?.closest('tr');
-    const editButton = row?.querySelector('button');
-    expect(editButton).not.toBeNull();
-    await act(async () => editButton?.click());
+    const editButton = within(row!).getByRole('button', { name: '編輯管理員 other@example.com' });
+    expect(within(row!).getByRole('button', { name: '刪除管理員 other@example.com' })).toBeDefined();
+    await act(async () => editButton.click());
 
     const checkbox = (label: string) => container.querySelector<HTMLInputElement>(
       `input[type="checkbox"][aria-label="${label}"]`,
@@ -309,6 +311,20 @@ describe('administrator operation permission editing', () => {
       account: 'new@example.com', name: '新管理員', password: 'new-admin-password', role: '查看人員',
     }));
     expect(app.api.put).not.toHaveBeenCalled();
+  });
+
+  it('shows an inactive member as disabled', async () => {
+    app.state.memberStatus = 'inactive';
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '用戶管理')?.click());
+    await settle();
+
+    const memberCell = [...container.querySelectorAll('td')].find(cell => cell.textContent === '測試會員');
+    const memberRow = memberCell?.closest('tr');
+    expect(memberRow).toBeDefined();
+    expect(within(memberRow!).getByText('停用')).toBeDefined();
+    expect(memberRow?.textContent).not.toContain('inactive');
   });
 
   it('shows the independent permission switch menu and lets a super administrator operate it', async () => {

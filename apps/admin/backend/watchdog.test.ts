@@ -179,6 +179,66 @@ describe('independent Matrix watchdog planning', () => {
     )).toEqual([]);
   });
 
+  it('lets the scheduled Fantasy5 crawler finish its ten-minute wait before recovering the same stale draw', () => {
+    const snapshot = healthy('天天樂', '12003', '2026-09-18');
+    snapshot.job = {
+      status: 'waiting_source',
+      startedAt: '2026-09-19T01:20:00.000Z',
+      updatedAt: '2026-09-19T01:35:40.000Z',
+    };
+
+    expect(planWatchdogActions([snapshot], new Date('2026-09-19T01:43:00.000Z'))).toEqual([]);
+    expect(planWatchdogActions([snapshot], new Date('2026-09-19T01:53:00.000Z'))).toEqual([{
+      lottery: '天天樂', target: 'railway', reasons: ['crawler-stale'],
+    }]);
+  });
+
+  it.each([
+    ['just before the retry interval ends', '2026-09-19T01:33:00.001Z', []],
+    ['at the retry interval boundary', '2026-09-19T01:33:00.000Z', ['crawler-stale']],
+    ['missing completion time', null, ['crawler-stale']],
+    ['invalid completion time', 'not-a-date', ['crawler-stale']],
+    ['future completion time', '2026-09-19T01:44:00.000Z', ['crawler-stale']],
+  ])('bounds Fantasy5 waiting-source protection for %s', (_label, updatedAt, reasons) => {
+    const snapshot = healthy('天天樂', '12003', '2026-09-18');
+    snapshot.job = { status: 'waiting_source', startedAt: '2026-09-19T01:42:00.000Z', updatedAt };
+    expect(planWatchdogActions([snapshot], new Date('2026-09-19T01:43:00.000Z'))).toEqual(
+      reasons.length ? [{ lottery: '天天樂', target: 'railway', reasons }] : [],
+    );
+  });
+
+  it('does not bypass the pending Fantasy5 acquisition to recover an old period analysis', () => {
+    const snapshot = healthy('天天樂', '12003', '2026-09-18');
+    snapshot.job = { status: 'waiting_source', startedAt: null, updatedAt: '2026-09-19T01:40:00.000Z' };
+    snapshot.latestAnalysis = null;
+    expect(planWatchdogActions([snapshot], new Date('2026-09-19T01:43:00.000Z'))).toEqual([]);
+  });
+
+  it('still recovers a genuine Fantasy5 crawler failure with a fresh timestamp', () => {
+    const snapshot = healthy('天天樂', '12003', '2026-09-18');
+    snapshot.job = { status: 'failed', startedAt: null, updatedAt: '2026-09-19T01:42:00.000Z' };
+    expect(planWatchdogActions([snapshot], new Date('2026-09-19T01:43:00.000Z'))).toEqual([{
+      lottery: '天天樂', target: 'railway', reasons: ['job-failed', 'crawler-stale'],
+    }]);
+  });
+
+  it('still recovers missing current-period analysis after Fantasy5 acquisition is complete', () => {
+    const snapshot = healthy('天天樂', '12004', '2026-09-19');
+    snapshot.job = { status: 'waiting_source', startedAt: null, updatedAt: '2026-09-19T01:42:00.000Z' };
+    snapshot.latestAnalysis = null;
+    expect(planWatchdogActions([snapshot], new Date('2026-09-19T01:43:00.000Z'))).toEqual([{
+      lottery: '天天樂', target: 'railway', reasons: ['analysis-missing'],
+    }]);
+  });
+
+  it('does not defer another lottery merely because its source is waiting', () => {
+    const snapshot = healthy('今彩539', '115000227', '2026-09-18');
+    snapshot.job = { status: 'waiting_source', startedAt: null, updatedAt: '2026-09-19T12:42:00.000Z' };
+    expect(planWatchdogActions([snapshot], new Date('2026-09-19T12:43:00.000Z'))).toEqual([{
+      lottery: '今彩539', target: 'railway', reasons: ['crawler-stale'],
+    }]);
+  });
+
   it('recovers Fantasy5 analysis on Railway without asking GitHub to run algorithms', () => {
     const snapshot = healthy('天天樂', '11989', '2026-09-04');
     snapshot.latestAnalysis = null;
