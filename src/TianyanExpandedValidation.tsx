@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { ExploreValidationSummary } from "./ExploreValidationSummary";
-import { fetchLotteryHistory, type LotteryDrawRecord } from "./lottery-api";
+import { fetchLotteryHistoryPeriods, type LotteryDrawRecord } from "./lottery-api";
 import type {
   MatrixNumberOrder,
   TianyanApiRow,
@@ -627,10 +627,8 @@ export function TianyanExpandedValidationGroups({
         return;
       }
 
-      let lookup = buildHistoryNumbers(lottery, numberOrder, await fetchLotteryHistory(lottery, 1000));
-      if (!hasRequiredPeriods(lottery, lookup, validation)) {
-        lookup = buildHistoryNumbers(lottery, numberOrder, await fetchLotteryHistory(lottery, 5000));
-      }
+      const lookup = buildHistoryNumbers(lottery, numberOrder,
+        await fetchLotteryHistoryPeriods(lottery, [...new Set(required)]));
       if (!cancelled && hasRequiredPeriods(lottery, lookup, validation)) {
         setHistoryNumbers(lookup);
       }

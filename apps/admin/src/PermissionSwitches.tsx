@@ -4,9 +4,11 @@ import './permission-switches.css';
 
 type PermissionSettingKey =
   | 'subscriptionPurchaseVisible'
-  | 'registeredMemberFreeAccess';
+  | 'registeredMemberFreeAccess'
+  | 'ecpayReviewLoginVisible';
 
 type MatrixPermissionSettings = {
+  ecpayReviewLoginVisible?: boolean;
   subscriptionPurchaseVisible: boolean;
   registeredMemberFreeAccess: boolean;
   revision: number;
@@ -31,6 +33,12 @@ const definitions: Array<{
   consequence: string;
 }> = [
   {
+    key: 'ecpayReviewLoginVisible',
+    label: '顯示綠界登入',
+    description: '控制綠界審核登入按鈕的顯示；關閉不會停用帳號或變更會員權限。',
+    consequence: '綠界審核登入按鈕的顯示',
+  },
+  {
     key: 'subscriptionPurchaseVisible',
     label: '顯示訂閱購買',
     description: '控制訂閱購買入口、付款紀錄、退款規範與相關購買內容。',
@@ -54,7 +62,8 @@ function settingsFrom(value: unknown): MatrixPermissionSettings | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const record = value as Record<string, unknown>;
   if (
-    typeof record.subscriptionPurchaseVisible !== 'boolean'
+    (record.ecpayReviewLoginVisible !== undefined && typeof record.ecpayReviewLoginVisible !== 'boolean')
+    || typeof record.subscriptionPurchaseVisible !== 'boolean'
     || typeof record.registeredMemberFreeAccess !== 'boolean'
     || !Number.isInteger(record.revision)
     || Number(record.revision) < 0
@@ -62,6 +71,7 @@ function settingsFrom(value: unknown): MatrixPermissionSettings | null {
     || !Number.isFinite(Date.parse(record.updatedAt))
   ) return null;
   return {
+    ...(record.ecpayReviewLoginVisible !== undefined ? { ecpayReviewLoginVisible: record.ecpayReviewLoginVisible as boolean } : {}),
     subscriptionPurchaseVisible: record.subscriptionPurchaseVisible,
     registeredMemberFreeAccess: record.registeredMemberFreeAccess,
     revision: Number(record.revision),
@@ -177,7 +187,7 @@ export function PermissionSwitches({
       <header className="permissionSwitchesHeader">
         <div>
           <h2 id="permission-switches-title">權限切換</h2>
-          <p>兩個設定彼此獨立，儲存後由前台依最新版本套用。</p>
+          <p>各項設定彼此獨立，儲存後由前台依最新版本套用。</p>
         </div>
         {!canEdit && <span className="permissionReadOnly">僅超級管理員可修改</span>}
       </header>
@@ -199,7 +209,7 @@ export function PermissionSwitches({
           </div>
           <div className="permissionSwitchRows">
             {definitions.map((definition) => {
-            const checked = settings[definition.key];
+            const checked = settings[definition.key] === true;
             const descriptionId = `permission-${definition.key}-description`;
             return (
               <article className="permissionSwitchRow" key={definition.key}>

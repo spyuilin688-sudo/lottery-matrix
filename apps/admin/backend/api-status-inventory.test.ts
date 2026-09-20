@@ -27,7 +27,7 @@ describe('api status inventory', () => {
       expect.objectContaining({ id: 'railway-jobs-recover', endpoint: '/jobs/recover', checkMode: 'service' }),
       expect.objectContaining({ id: 'railway-number-reference', endpoint: '/api/matrix/number-reference' }),
     ]));
-    expect(apiStatusInventory).toHaveLength(65);
+    expect(apiStatusInventory).toHaveLength(68);
     expect(apiStatusInventory.some(item => item.endpoint.includes('matrix_custom_status'))).toBe(false);
     expect(new Set(apiStatusInventory.map((item) => item.id)).size).toBe(apiStatusInventory.length);
     expect(apiStatusInventory.every((item) => item.name && item.group && item.endpoint)).toBe(true);
@@ -54,6 +54,9 @@ describe('api status inventory', () => {
       'member_referral_submit',
       'member_line_pwa_diagnostics_submit',
       'record_matrix_visit',
+      'matrix_manual_refresh_claim',
+      'matrix_manual_refresh_status',
+      'matrix_manual_refresh_update',
       'claim_matrix_watchdog_lease',
       'release_matrix_watchdog_lease',
       'begin_matrix_watchdog_recovery',

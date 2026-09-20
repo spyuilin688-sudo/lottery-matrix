@@ -184,6 +184,48 @@ describe('lottery-api response validation', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 
+  it('歷史版本未變時超過五分鐘只核對最新版本，不重傳歷史', async () => {
+    vi.useFakeTimers();
+    const draw = { period: '115000207', numbers: ['01'], resultStatus: 'confirmed' };
+    const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) =>
+      String(url).includes('/latest/')
+        ? jsonResponse({ item: draw, revision: 'unchanged' })
+        : jsonResponse({ items: [draw], revision: 'unchanged', nextCursor: null }));
+    await fetchLotteryHistory('今彩539', 1000);
+    resetReadCacheForTests();
+    vi.advanceTimersByTime(6 * 60_000);
+    await expect(fetchLotteryHistory('今彩539', 1000)).resolves.toMatchObject([{ numbers: ['01'] }]);
+    expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/history/'))).toHaveLength(1);
+  });
+
+  it('缺少歷史版本時仍在五分鐘後重新下載，不無限延用舊資料', async () => {
+    vi.useFakeTimers();
+    const draw = { period: '115000207', numbers: ['01'], resultStatus: 'confirmed' };
+    const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) =>
+      String(url).includes('/latest/')
+        ? jsonResponse({ item: draw, revision: 'latest-only' })
+        : jsonResponse({ items: [draw], nextCursor: null }));
+    await fetchLotteryHistory('今彩539', 1000);
+    vi.advanceTimersByTime(6 * 60_000);
+    await fetchLotteryHistory('今彩539', 1000);
+    expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/history/'))).toHaveLength(2);
+  });
+
+  it('舊期資料更正而最新期號未變，仍以版本更新歷史', async () => {
+    vi.useFakeTimers();
+    const draw = { period: '115000207', numbers: ['01'], resultStatus: 'confirmed' };
+    let revision = 'before';
+    const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) =>
+      String(url).includes('/latest/')
+        ? jsonResponse({ item: draw, revision })
+        : jsonResponse({ items: [{ ...draw, numbers: [revision === 'before' ? '01' : '02'] }], revision, nextCursor: null }));
+    await fetchLotteryHistory('今彩539', 1000);
+    revision = 'after';
+    vi.advanceTimersByTime(31_000);
+    await expect(fetchLotteryHistory('今彩539', 1000)).resolves.toMatchObject([{ numbers: ['02'] }]);
+    expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/history/'))).toHaveLength(2);
+  });
+
   it('同星只下載資料庫篩選後的配對結果', async () => {
     const request = {
       lottery: '今彩539' as const,

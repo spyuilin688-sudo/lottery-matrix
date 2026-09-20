@@ -13,6 +13,10 @@ from secrets import compare_digest
 from collections.abc import Callable
 from typing import Any
 from threading import BoundedSemaphore
+from uuid import UUID
+from app.draw_read_cache import DrawReadCache
+from app.manual_refresh import ManualRefreshCoordinator, SourceNotReady
+from app.fantasy5_crawler import run_fantasy5_crawler_once
 from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 import httpx
@@ -48,7 +52,7 @@ MAX_REQUEST_BODY_BYTES = 64 * 1024
 PUBLIC_API_MAX_CONCURRENCY = 32
 SERVICE_NAME = "matrix-railway-api"
 CARD_PREFIX = "/api/matrix/cards/"
-FANTASY5_CRAWLER_ERROR = "FANTASY5_CRAWLER_GITHUB_ONLY"
+_REFRESH_COORDINATOR = ManualRefreshCoordinator()
 
 
 def _service_version() -> str:
@@ -221,6 +225,19 @@ def _draw_query(repository: AnalysisRepository, lottery: str, kind: str, **param
     cursor = params.get("p_cursor")
     if cursor is not None and not isinstance(cursor, dict):
         raise ValueError("INVALID_CURSOR")
+    cache = getattr(repository, "draw_read_cache", None)
+    if cache is not None and kind in {"history", "tongxing"}:
+        # Revalidate with a small latest-row response before reusing a large page.
+        # Database revisions cover all history corrections and cross-process writers.
+        latest = _execute_draw_query(repository, lottery, "latest")
+        revision = latest.get("revision")
+        if isinstance(revision, str) and revision and (cursor is None or cursor.get("revision") == revision):
+            key = json.dumps([lottery, revision, kind, params], sort_keys=True, ensure_ascii=False)
+            return cache.read(key, lambda: _execute_draw_query(repository, lottery, kind, **params))
+    return _execute_draw_query(repository, lottery, kind, **params)
+
+
+def _execute_draw_query(repository: AnalysisRepository, lottery: str, kind: str, **params: Any) -> dict[str, Any]:
     data = repository.client.rpc("matrix_draw_query", {
         "p_lottery": lottery, "p_kind": kind, **params,
     }).execute().data
@@ -414,7 +431,15 @@ def refresh_latest_draw(
     repository: AnalysisRepository,
 ) -> dict[str, Any]:
     if lottery == "天天樂":
-        raise ValueError(FANTASY5_CRAWLER_ERROR)
+        result = run_fantasy5_crawler_once()
+        if result.get("status") == "not-acquired":
+            raise SourceNotReady()
+        if result.get("status") not in {"acquired", "already-acquired"}:
+            raise ValueError("INVALID_CRAWLER_RESULT")
+        draw = repository.get_draw(lottery, str(result.get("drawPeriod") or ""))
+        if draw is None:
+            raise ValueError("DRAW_NOT_STORED")
+        return draw
     with httpx.Client(verify=create_railway_ssl_context()) as client:
         return DrawRefreshService(repository, LatestDrawSource(client)).refresh(lottery)
 
@@ -492,17 +517,23 @@ def handle_api_request(
             if not _status_token_authorized(request_monitor_token):
                 return 403, {"error": "FORBIDDEN"}
             lottery = _parse_lottery(_decode_body(body).get("lottery"))
-            if lottery == "天天樂":
-                return 409, {"error": FANTASY5_CRAWLER_ERROR}
             try:
-                draw = (refresh_lottery or refresh_latest_draw)(lottery, repository)
-                return 200, {
-                    "lottery": lottery,
-                    "period": str(draw["period"]),
-                    "drawDate": draw.get("drawDate"),
-                }
+                task = _REFRESH_COORDINATOR.enqueue(lottery, repository.manual_refresh,
+                    lambda: (refresh_lottery or refresh_latest_draw)(lottery, repository))
+                return 202, task
             except Exception:
                 return 503, {"error": "REFRESH_UNAVAILABLE"}
+        if method == "GET" and path == "/jobs/refresh/status":
+            if not _status_token_authorized(request_monitor_token):
+                return 403, {"error": "FORBIDDEN"}
+            query = parse_qs(parsed.query)
+            lottery = _parse_lottery(query.get("lottery", [None])[0])
+            request_id = str(UUID(query.get("requestId", [""])[0]))
+            try:
+                task = repository.manual_refresh.get(lottery, request_id)
+                return (200, task) if task else (404, {"error": "REFRESH_NOT_FOUND"})
+            except Exception:
+                return 503, {"error": "STATUS_UNAVAILABLE"}
         if method == "POST" and path == "/jobs/recover":
             if not _status_token_authorized(request_monitor_token):
                 return 403, {"error": "FORBIDDEN"}
@@ -580,6 +611,20 @@ def handle_api_request(
         if method == "GET" and path.startswith(history_prefix):
             lottery = _parse_lottery(unquote(path[len(history_prefix):]))
             query = parse_qs(parsed.query)
+            if "periods" in query:
+                periods = json.loads(query["periods"][0])
+                if (not isinstance(periods, list) or len(periods) > 500
+                    or any(not isinstance(period, str) or not period.isascii()
+                           or not period.isdigit() or not 1 <= len(period) <= 12 for period in periods)):
+                    raise ValueError("INVALID_PERIODS")
+                data = repository.client.rpc("matrix_draw_periods", {
+                    "p_lottery": lottery, "p_periods": list(dict.fromkeys(periods)),
+                }).execute().data
+                if not isinstance(data, dict) or not isinstance(data.get("items"), list):
+                    if isinstance(data, dict) and data.get("error") == "DRAW_HISTORY_CONFLICT":
+                        raise ValueError("DRAW_HISTORY_CONFLICT")
+                    raise RuntimeError("DRAW_QUERY_INVALID_RESPONSE")
+                return 200, {"items": [_normalize_supabase_draw(row) for row in data["items"]]}
             # Explicit pagination preserves the full legacy response for installed clients.
             # Updated PWA clients always use pageSize and follow nextCursor.
             if "pageSize" in query:
@@ -697,6 +742,7 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
         return urlsplit(self.path).path in {
             "/jobs/status",
             "/jobs/refresh",
+            "/jobs/refresh/status",
             "/jobs/recover",
             "/jobs/result-ready",
         }
@@ -840,9 +886,11 @@ def create_repository() -> AnalysisRepository:
                          ),
                          follow_redirects=True)
     try:
-        return create_supabase_repository(
+        repository = create_supabase_repository(
             settings.supabase_url, settings.supabase_secret_key, httpx_client=client,
         )
+        repository.draw_read_cache = DrawReadCache()
+        return repository
     except Exception:
         client.close()
         raise

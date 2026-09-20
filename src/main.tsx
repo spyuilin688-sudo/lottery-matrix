@@ -32,12 +32,17 @@ import {
 import { isPwaDisplayMode } from './pwa-display-mode';
 import { clearLineLoginAttempt } from './auth/line-login-attempt';
 import { clearLineLoginCallbackError, readLineLoginCallbackError } from './auth/line-login-callback-error';
+import { PasswordRecovery } from './auth/PasswordRecovery';
+import { isPasswordRecoveryUrl } from './auth/password-recovery';
 
-const lineLoginError = readLineLoginCallbackError(new URL(window.location.href));
+// Preserve the callback purpose before Supabase can consume its URL parameters.
+const launchUrl = new URL(window.location.href);
+const hasPasswordRecovery = isPasswordRecoveryUrl(launchUrl);
+const lineLoginError = hasPasswordRecovery ? undefined : readLineLoginCallbackError(launchUrl);
 
 installGlobalInputBehavior();
 
-const linePwaWorkerReady = 'serviceWorker' in navigator
+const linePwaWorkerReady = !hasPasswordRecovery && 'serviceWorker' in navigator
   ? registerPushServiceWorker()
     .then(() => registerLinePwaClient())
     .catch(() => false)
@@ -71,10 +76,23 @@ const renderLinePwaReturnFallback = () => {
   );
 };
 
+const renderPasswordRecovery = () => {
+  ReactDOM.createRoot(root).render(
+    <React.StrictMode>
+      <PasswordRecovery />
+    </React.StrictMode>,
+  );
+};
+
 root.textContent = '正在開啟樂彩 Matrix…';
-const hasNormalLineCallback = hasLineOAuthCallback();
+const hasNormalLineCallback = !hasPasswordRecovery && hasLineOAuthCallback();
 
 async function bootstrap() {
+  if (hasPasswordRecovery) {
+    renderPasswordRecovery();
+    return;
+  }
+
   if (hasNormalLineCallback) {
     const callbackIsOutsidePwa = !isPwaDisplayMode(window);
     if ('serviceWorker' in navigator) {
@@ -109,4 +127,4 @@ async function bootstrap() {
   if (!handled) renderApp();
 }
 
-void bootstrap().catch(renderApp);
+void bootstrap().catch(hasPasswordRecovery ? renderPasswordRecovery : renderApp);

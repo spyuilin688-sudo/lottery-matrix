@@ -36,6 +36,6 @@ test('Matrix status lottery labels have no checkbox and Matrix Pro uses one 3px 
   assert.match(css, /\.notifications-screen-v2\s*\{[^}]*--notification-pro-badge-overlap:\s*3px;/s);
   assert.doesNotMatch(css, /\.notifications-screen-v2 \.notification-heading:has\(\.notification-pro-badge\)\s*\{/s);
   assert.match(css, /\.notifications-screen-v2 \.notification-icon-stack\s*\{[^}]*display:\s*grid;[^}]*justify-items:\s*center;[^}]*gap:\s*0;/s);
-  assert.match(css, /\.notifications-screen-v2 \.notification-pro-badge\s*\{[^}]*padding:\s*0 1\.4px;[^}]*border:\s*\.7px solid #f6c95f;[^}]*font-size:\s*4\.2px;[^}]*translate:\s*0 var\(--notification-pro-badge-overlap\);/s);
+  assert.match(css, /\.notifications-screen-v2 \.notification-pro-badge\s*\{[^}]*padding:\s*0 1\.4px;[^}]*border:\s*1px solid var\(--pwa-frame-tertiary\);[^}]*font-size:\s*4\.2px;[^}]*translate:\s*0 var\(--notification-pro-badge-overlap\);/s);
   assert.doesNotMatch(css, /\.notifications-screen-v2 \.notification-pro-badge\s*\{[^}]*transform\s*:/s);
 });

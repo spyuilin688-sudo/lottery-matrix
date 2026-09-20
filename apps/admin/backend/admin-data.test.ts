@@ -1,8 +1,12 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 import { getDashboard, listAdminLoginRecordPage, listAdminMemberPage, listAdminTable } from './admin-data';
 
+import { dashboardDb, dashboardFromRows } from './admin-dashboard-db.fixture';
+afterAll(async () => dashboardDb.close());
+
 // Model the REST offset/limit behavior for fixture-backed table responses.
-const fixtureRequest = (respond: (path: string) => Promise<unknown>, serverCap = 1000) => vi.fn(async (path: string) => {
+const fixtureRequest = (respond: (path: string) => Promise<unknown>, serverCap = 1000) => vi.fn(async (path: string, init?: RequestInit) => {
+  if (path === '/rest/v1/rpc/admin_dashboard_summary') return dashboardFromRows(respond, JSON.parse(String(init?.body)).p_now);
   const data = await respond(path);
   if (!Array.isArray(data)) return data;
   const query = new URL(path, 'https://example.test').searchParams;
@@ -251,7 +255,7 @@ describe('getDashboard', () => {
       quarterlyPro: 1,
       yearlyPro: 1,
     });
-    expect(api.request).toHaveBeenCalledWith(expect.stringContaining('registered_at'));
+    expect(api.request).toHaveBeenCalledWith('/rest/v1/rpc/admin_dashboard_summary', expect.objectContaining({ method: 'POST' }));
   });
 });
 
@@ -314,7 +318,7 @@ describe('dashboard complete Taipei revenue', () => {
     const dashboard = await getDashboard({ request }, new Date('2026-09-06T02:00:00Z'));
     expect(dashboard).toMatchObject({ todayRevenue: 11050, cumulativeRevenue: 11050 });
     const offsets = request.mock.calls.filter(([path]) => path.includes('/payments?')).map(([path]) => Number(new URL(path, 'https://test').searchParams.get('offset')));
-    expect(offsets).toEqual([0, 137, 274, 411, 548, 685, 822, 959, 1096, 1105]);
+    expect(offsets).toEqual([]); // Aggregation stays in Postgres, no REST detail pages.
   });
 
   it.each([
@@ -329,23 +333,14 @@ describe('dashboard complete Taipei revenue', () => {
     expect(await getDashboard({ request }, new Date(now))).toMatchObject({ ...expected, cumulativeRevenue: 30 });
   });
 
-  it('uses total counts when available and does not stop at a capped short page', async () => {
-    const request = fixtureRequest(async () => []);
-    const requestPage = vi.fn().mockResolvedValueOnce({ items: [{ id: 'a', amount: 10, paid_at: '2026-09-14T00:00:00Z', status: 'confirmed' }], total: 2 })
-      .mockResolvedValueOnce({ items: [{ id: 'b', amount: 20, paid_at: '2026-09-14T00:00:00Z', status: 'confirmed' }], total: 2 });
-    expect(await getDashboard({ request, requestPage }, new Date('2026-09-14T01:00:00Z'))).toMatchObject({ cumulativeRevenue: 30 });
-    expect(requestPage).toHaveBeenCalledTimes(2);
-    expect(new URL(requestPage.mock.calls[1][0], 'https://test').searchParams.get('offset')).toBe('1');
+  it('does not publish partial revenue when the aggregate read fails', async () => {
+    const request = vi.fn(async (path: string) => {
+      if (path === '/rest/v1/rpc/admin_dashboard_summary') throw new Error('summary unavailable');
+      return {};
+    });
+    await expect(getDashboard({ request })).rejects.toThrow('summary unavailable');
   });
 
-  it('does not publish partial revenue when a later capped page fails', async () => {
-    const request = vi.fn(async (path: string) => {
-      if (!path.includes('/payments?')) return [];
-      if (path.includes('offset=0')) return [{ amount: 10, paid_at: '2026-09-14T00:00:00Z', status: 'confirmed' }];
-      throw new Error('payment page unavailable');
-    });
-    await expect(getDashboard({ request })).rejects.toThrow('payment page unavailable');
-  });
 });
 
 describe('dashboard revenue eligibility remains unchanged', () => {
@@ -360,10 +355,18 @@ describe('dashboard revenue eligibility remains unchanged', () => {
     const request = fixtureRequest(async path => path.includes('/admin_revenue_settings?') ? [{ reset_at: resetAt }] : path.includes('/payments?') ? payments : [], 2);
     const result = await getDashboard({ request }, new Date('2026-09-14T01:00:00Z'));
     expect(result).toMatchObject({ todayRevenue: 150, monthRevenue: 150, quarterRevenue: 150, yearRevenue: 150, cumulativeRevenue: 150 });
-    for (const [path] of request.mock.calls.filter(([path]) => path.includes('/payments?'))) {
-      const query = new URL(path, 'https://test').searchParams;
-      expect(query.get('status')).toBe('eq.confirmed');
-      expect(query.get('paid_at')).toBe(`gte.${resetAt}`);
-    }
+    expect(request.mock.calls.some(([path]) => path.includes('/payments?'))).toBe(false);
   });
+});
+
+
+it('reads a bounded dashboard aggregate and visitor counts without transferring detail rows', async () => {
+  const summary = { totalUsers: 10000, cumulativeRevenue: 300, userGrowth: [], revenueGrowth: [] };
+  const request = vi.fn(async (path: string) => {
+    if (path === '/rest/v1/rpc/admin_dashboard_summary') return summary;
+    if (path === '/rest/v1/rpc/admin_visitor_stats') return { todayVisitors: 1, monthVisitors: 2, totalVisitors: 3 };
+    throw new Error('unexpected full-table read');
+  });
+  expect(await getDashboard({ request })).toMatchObject({ ...summary, totalVisitors: 3 });
+  expect(request).toHaveBeenCalledTimes(2);
 });

@@ -299,6 +299,8 @@ def _idle_exit_result(
     notification_emitter: NotificationEventEmitter | None,
     latest: list[dict[str, Any]],
     cycle: datetime | None,
+    *,
+    certified: bool = False,
 ) -> dict[str, Any] | None:
     if not latest:
         return None
@@ -319,7 +321,7 @@ def _idle_exit_result(
         ):
             return None
 
-    if not _completed_period_idle_ready(
+    if not certified and not _completed_period_idle_ready(
         lottery, draw, repository, notification_emitter,
     ):
         return None
@@ -328,6 +330,55 @@ def _idle_exit_result(
         "drawPeriod": draw["period"],
         "status": "not-due" if cycle is None else "already-acquired",
     }
+
+
+def _read_worker_completion(
+    lottery: str, repository: AnalysisRepository,
+    notification_emitter: NotificationEventEmitter | None,
+    *, scope: str = "scheduled",
+) -> dict[str, Any] | None:
+    deployment = (environ.get("RAILWAY_GIT_COMMIT_SHA") or environ.get("GITHUB_SHA") or "").strip()
+    if not deployment:
+        return None
+    read = getattr(repository, "read_worker_completion", None)
+    identity = f"{ANALYSIS_VERSION}:completion-v1:{scope}:{deployment}"
+    snapshot = read(lottery, identity, _notification_enabled(notification_emitter)) if callable(read) else None
+    return {**snapshot, "identity": identity} if snapshot is not None else None
+
+
+def certify_completed_result(
+    lottery: str, result: dict[str, Any], repository: AnalysisRepository,
+    notification_emitter: NotificationEventEmitter | None,
+    *, scope: str = "scheduled",
+    ready_check: Callable[[dict[str, Any]], bool] | None = None,
+) -> None:
+    if result.get("status") != "complete":
+        return
+    snapshot = _read_worker_completion(lottery, repository, notification_emitter, scope=scope)
+    if snapshot is None or snapshot.get("ready") is True:
+        return
+    draw = snapshot.get("draw")
+    if not isinstance(draw, dict) or str(draw.get("period")) != str(result.get("drawPeriod")):
+        return
+    ready = ready_check(draw) if ready_check else _completed_period_idle_ready(
+        lottery, draw, repository, notification_emitter,
+    )
+    if ready:
+        _certify_worker_completion(lottery, str(draw["period"]), repository, notification_emitter, snapshot)
+
+
+def _certify_worker_completion(
+    lottery: str, period: str, repository: AnalysisRepository,
+    notification_emitter: NotificationEventEmitter | None,
+    snapshot: dict[str, Any] | None,
+) -> None:
+    if snapshot is None or snapshot.get("ready") is True:
+        return
+    # Compare-and-swap rejects any mutation during the full readiness checks.
+    repository.certify_worker_completion(
+        lottery, period, snapshot["identity"], _notification_enabled(notification_emitter),
+        snapshot["generation"],
+    )
 
 
 def _best_effort_telemetry(write: Callable[[], None]) -> None:
@@ -479,9 +530,16 @@ def run_scheduled_worker(
     builders: Mapping[str, ArtifactBuilder] | None = None,
     notification_emitter: NotificationEventEmitter | None = None,
     allow_recovery_crawl: bool = False,
+    *,
+    _completion_snapshot: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     emitted_event_keys: set[str] = set()
-    latest = repository.list_draws(lottery, 1)
+    completion = _completion_snapshot
+    if completion is None:
+        completion = _read_worker_completion(lottery, repository, notification_emitter)
+    latest = (
+        [completion["draw"]] if completion and completion.get("draw") else []
+    ) if completion is not None else repository.list_draws(lottery, 1)
     if allow_recovery_crawl:
         cycle = due_call_cycle(lottery, now, allow_weekend_fallback=True)
     else:
@@ -489,8 +547,10 @@ def run_scheduled_worker(
 
     idle_result = _idle_exit_result(
         lottery, now, repository, notification_emitter, latest, cycle,
+        certified=completion is not None and completion.get("ready") is True,
     )
     if idle_result is not None:
+        _certify_worker_completion(lottery, str(latest[0]["period"]), repository, notification_emitter, completion)
         return idle_result
 
     def notify_cards(*, final: bool = False) -> None:

@@ -93,8 +93,8 @@ Draw ingestion and Matrix analysis are split for 天天樂:
 | GitHub Actions `fantasy5-crawler.yml` | `app.fantasy5_crawler` | Fetch, validate, repair recent gaps, and upsert 天天樂 draws only |
 | Railway `railway.fantasy5.json` | `app.analysis_worker --lottery 天天樂` | Read stored 天天樂 draws and process pending Matrix analysis only |
 | Railway `railway.json` | `app.worker_all` | Scheduled ingestion and analysis for 今彩539、六合彩、大樂透 |
-| Railway `railway.marksix.json` | `app.worker --lottery 六合彩 --scheduled` | Existing 六合彩 worker |
-| Railway `railway.lotto649.json` | `app.worker --lottery 大樂透 --scheduled` | Existing 大樂透 worker |
+| Railway `railway.marksix.json` | `app.worker --lottery 六合彩 --scheduled` | Manual single-run entry; no cron |
+| Railway `railway.lotto649.json` | `app.worker --lottery 大樂透 --scheduled` | Manual single-run entry; no cron |
 
 The GitHub crawler uses only `SUPABASE_URL` and `SUPABASE_SECRET_KEY`. It obtains
 the latest California Fantasy5 draw through the existing source implementation,

@@ -93,6 +93,7 @@ describe('member Supabase RPC', () => {
     old.resolve({ data: { planName: 'previous-member-private-plan' }, error: null });
     await expect(pending).resolves.toEqual(current);
     expect(supabase.rpc).toHaveBeenCalledTimes(recovery ? 3 : 2);
+    expect(supabase.rpc).toHaveBeenLastCalledWith('member_profile');
     expect(supabase.auth.signOut).not.toHaveBeenCalled();
   });
 

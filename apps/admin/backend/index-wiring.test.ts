@@ -6,7 +6,7 @@ vi.mock('./security-monitor', () => ({createSecurityMonitor: () => securityWirin
 const wiring = vi.hoisted(() => {
   const workerStatus = { ok: false, health: null, jobs: null, reason: 'RAILWAY_UNAVAILABLE' } as const;
   const workerGetStatus = vi.fn(async () => workerStatus);
-  const workerRefreshLottery = vi.fn(async (lottery: string) => ({ lottery, period: '115000211', drawDate: '2026-09-01' }));
+  const workerRefreshLottery = vi.fn(async (lottery: string) => ({ lottery, requestId: '11111111-1111-4111-8111-111111111111', status: 'accepted', period: null, drawDate: null, error: null }));
   const workerRecoverLottery = vi.fn(async (lottery: string, _leaseOwner: string) => ({ lottery, status: 'accepted' }));
   const getWorkerConfig = vi.fn(async () => ({ baseUrl: 'https://railway.example', statusToken: 'server-token' }));
   const createWorkerApi = vi.fn(() => ({
@@ -455,10 +455,24 @@ describe('admin Railway route wiring', () => {
     const permissionGuard = routes[route][1] as (input: typeof context) => Promise<unknown>;
     const routeHandler = routes[route][2] as (input: typeof context) => Promise<unknown>;
     await permissionGuard(context);
-    await expect(routeHandler(context)).resolves.toMatchObject({ body: { refresh: { lottery: '今彩539', period: '115000211' } } });
+    await expect(routeHandler(context)).resolves.toMatchObject({ body: { refresh: { lottery: '今彩539', status: 'accepted' } } });
     expect(wiring.requirePermission).toHaveBeenCalledWith(wiring.admin, 'edit');
     expect(wiring.workerRefreshLottery).toHaveBeenCalledWith('今彩539');
     expect(wiring.insertRows).not.toHaveBeenCalled();
+  });
+
+  it('protects correlated refresh status with session and edit permissions', async () => {
+    const route = 'GET /api/system-status/:id/refresh/:requestId';
+    const requestId = '11111111-1111-4111-8111-111111111111';
+    const context = await authenticate(route, sessionContext({ id: 'cron-matrix-fantasy5-refresh-v2', requestId }));
+    await (routes[route][1] as any)(context);
+    await (routes[route][2] as any)(context);
+    expect(wiring.requireModulePermission).toHaveBeenLastCalledWith(wiring.admin, 'systemSettings', 'edit');
+    expect(wiring.workerRefreshLottery).toHaveBeenLastCalledWith('天天樂', requestId);
+    wiring.workerRefreshLottery.mockClear();
+    const invalid = await authenticate(route, sessionContext({ id: 'cron-matrix-fantasy5-refresh-v2', requestId: 'bad-id' }));
+    expect(await (routes[route][2] as any)(invalid)).toMatchObject({status: 400});
+    expect(wiring.workerRefreshLottery).not.toHaveBeenCalled();
   });
 
   it('rejects non-crawler status items without calling Railway refresh', async () => {

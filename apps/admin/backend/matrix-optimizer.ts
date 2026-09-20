@@ -47,6 +47,20 @@ export function optimizeSnapshot(database:Row|null,railway:RailwayEvidence[],at=
   const failed=samples.filter(s=>s.outcome==='failed').length;
   const idle=samples.filter(s=>['already-acquired','already-analyzed','no-new-draw','not-due'].includes(s.outcome)).length;
   add('railway',service.service,'執行時間與跳過次數觀察',[`samples=${samples.length}; avg_ms=${(samples.length?(samples.reduce((a,s)=>a+s.durationMs,0)/samples.length).toFixed(1):'unavailable')}; failures=${failed}; idle=${idle}`,`logs_truncated=${service.logsTruncated}; 僅代表所取樣本`,...service.metrics.map(m=>`${m.measurement}: avg=${m.average}; max=${m.max}; samples=${m.count}`)]);
+  // This is evidence of repeated idle work in the sampled interval, not a
+  // claim that the service is permanently unnecessary or safe to disable.
+  const distinct=new Map(samples.map(sample=>[JSON.stringify(sample),sample]));
+  const idleSamples=[...distinct.values()];
+  const times=idleSamples.map(sample=>Date.parse(sample.finishedAt));
+  if(service.code==='OBSERVED'&&service.logsAvailable&&idleSamples.length>1&&idle===samples.length&&times.every(Number.isFinite)&&Math.max(...times)>Math.min(...times)) {
+   add('railway',service.service,'重複空轉執行候選',[
+    `samples=${idleSamples.length}; idle=${idleSamples.length}; avg_ms=${(idleSamples.reduce((sum,s)=>sum+s.durationMs,0)/idleSamples.length).toFixed(1)}`,
+    `from=${new Date(Math.min(...times)).toISOString()}; to=${new Date(Math.max(...times)).toISOString()}; span_ms=${Math.max(...times)-Math.min(...times)}`,
+    `logs_truncated=${service.logsTruncated}; 僅代表所取樣本，非完整長期工作負載`,
+    ...service.metrics.map(m=>`${m.measurement}: avg=${m.average}; max=${m.max}; samples=${m.count}`),
+    '可審查排程與待命成本；不代表服務無用途，不自動停用',
+   ],'candidate');
+  }
   const completed=samples.filter(s=>s.period!==null&&['analysis-completed','complete'].includes(s.outcome));
   const keys=new Map<string,number>();for(const s of completed){const k=`${s.lottery}:${s.period}:${s.executionVersion}`;keys.set(k,(keys.get(k)??0)+1);}
   for(const [key,count] of keys) if(count>1) add('railway',`${service.service}:${key}`,'同一期與程式版本多次完整執行',[`次數=${count}`,'需排除來源修正與必要恢復；不同版本重算不計入'],'candidate');

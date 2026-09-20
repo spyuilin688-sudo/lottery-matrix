@@ -2,6 +2,7 @@
 import type { Session, SupportedStorage } from '@supabase/supabase-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as supabaseModule from './supabase';
+import { API_REQUEST_TIMEOUT_MS } from './api-resilience';
 import { postMemberOnline } from '../member-online-api';
 import {
   createProviderTokenSafeStorage,
@@ -175,7 +176,7 @@ describe('production Supabase configuration', () => {
         outcome = error;
       },
     );
-    await vi.advanceTimersByTimeAsync(8_000 - 1);
+    await vi.advanceTimersByTimeAsync(API_REQUEST_TIMEOUT_MS - 1);
     expect(settled).toBe(false);
 
     await vi.advanceTimersByTimeAsync(1);

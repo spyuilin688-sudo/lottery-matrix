@@ -144,7 +144,7 @@ def test_protected_status_errors_have_no_store_and_no_cors(monkeypatch) -> None:
         assert response.getheader("Access-Control-Allow-Origin") is None
 
 
-@pytest.mark.parametrize("path", ["/jobs/status", "/jobs/refresh", "/jobs/recover"])
+@pytest.mark.parametrize("path", ["/jobs/status", "/jobs/refresh", "/jobs/refresh/status", "/jobs/recover"])
 def test_protected_status_preflight_does_not_advertise_admin_header(monkeypatch, path) -> None:
     monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
     with running_server(HttpOperationalRepository()) as address:
@@ -262,14 +262,17 @@ def test_manual_refresh_returns_only_the_latest_draw(monkeypatch) -> None:
             },
             json.dumps({"lottery": "今彩539"}).encode("utf-8"),
         )
+        assert response.status == 202
+        assert response.getheader("Cache-Control") == "no-store"
+        assert response.getheader("Access-Control-Allow-Origin") is None
+        task = json.loads(body)
+        assert task["status"] == "accepted"
+        from urllib.parse import urlencode
+        response, body = request(address, "GET", "/jobs/refresh/status?" + urlencode({"lottery": "今彩539", "requestId": task["requestId"]}), {"X-Matrix-Admin-Token": "expected-token"})
         assert response.status == 200
         assert response.getheader("Cache-Control") == "no-store"
         assert response.getheader("Access-Control-Allow-Origin") is None
-        assert json.loads(body) == {
-            "lottery": "今彩539",
-            "period": "115000211",
-            "drawDate": "2026-09-01",
-        }
+        assert "numbers" not in json.loads(body)
     assert calls == [("今彩539", repository)]
 
 

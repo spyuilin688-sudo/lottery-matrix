@@ -150,7 +150,18 @@ describe('Matrix status Edge Function', () => {
     expect(body.items.find((item: { lottery: MatrixLottery }) => item.lottery === '大樂透')?.body)
       .toMatchObject({ kind: 'status-summary', summary: { status: 'RESONANCE' } });
     expect(readCompactStatus).toHaveBeenCalledTimes(4);
+    expect(deps.requireMember).toHaveBeenCalledTimes(1);
+    expect(readCompactStatus).toHaveBeenCalledWith('今彩539', undefined, true);
     expect(deps.readStatusSources).not.toHaveBeenCalled();
+
+    // The shared authentication must be request-local, including token changes.
+    await handler(new Request('https://example.test/functions/v1/matrix-status', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer another-member' },
+      body: JSON.stringify({ action: 'summary-batch', lotteries }),
+    }));
+    expect(deps.requireMember).toHaveBeenCalledTimes(2);
+    expect(deps.requireMember).toHaveBeenLastCalledWith('Bearer another-member');
   });
 
   it('rejects unsupported methods without reading analysis data', async () => {
@@ -181,4 +192,24 @@ describe('Matrix status Edge Function', () => {
       lottery, drawPeriod, analysisVersion, 'road-2',
     );
   });
+});
+
+
+it('rechecks current entitlements through lightweight identity without reading result payloads', async () => {
+  const deps = dependencies();
+  const readStatusIdentity = vi.fn(async () => ({ drawPeriod, analysisVersion }));
+  const handler = createMatrixStatusEdgeHandler({ ...deps, readStatusIdentity });
+  const read = async () => {
+    const response = await handler(new Request('https://example.test/functions/v1/matrix-status', {
+      method: 'POST', headers: { Authorization: 'Bearer same-member' },
+      body: JSON.stringify({ action: 'identity', lottery }),
+    }));
+    return response.json();
+  };
+  expect(await read()).toMatchObject({ kind: 'status-identity', entitlements: { canUseThirteen: true } });
+  deps.requireMember.mockResolvedValue({ authUserId: 'user-1', memberId: 'member-1', plan: 'free', active: false, referralSuccessCount: 0 });
+  expect(await read()).toMatchObject({ kind: 'status-identity', entitlements: { canUseThirteen: false } });
+  expect(deps.requireMember).toHaveBeenCalledTimes(2);
+  expect(deps.readStatusSources).not.toHaveBeenCalled();
+  expect(readStatusIdentity).toHaveBeenCalledTimes(2);
 });

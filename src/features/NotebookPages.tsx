@@ -6,6 +6,8 @@ import { readNotebookData, writeNotebookData, type NotebookData } from "./notebo
 import { FeatureShell } from "./shared";
 import { Navigate, QuickNavigationContext, useQuickNavigation } from "./navigation";
 
+const NOTES_PER_PAGE = 10;
+
 export type NotebookView = "list" | "note";
 export type NotebookNote = { id: string; title: string; content: string; updatedAt: string };
 
@@ -60,6 +62,10 @@ function OwnedNotebookPage({ owner, onNavigate }: { owner: NotebookOwner; onNavi
     return true;
   };
   const [view, setView] = useState<NotebookView>("list");
+  const [page, setPage] = useState(1);
+  const pageCount = Math.max(1, Math.ceil(notes.length / NOTES_PER_PAGE));
+  const currentPage = Math.min(page, pageCount);
+  const visibleNotes = notes.slice((currentPage - 1) * NOTES_PER_PAGE, currentPage * NOTES_PER_PAGE);
   const [deletingNotes, setDeletingNotes] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteTitle, setNoteTitle] = useState("");
@@ -103,7 +109,10 @@ function OwnedNotebookPage({ owner, onNavigate }: { owner: NotebookOwner; onNavi
     const next = editingNoteId
       ? notes.map((entry) => entry.id === editingNoteId ? { ...entry, title: noteTitle, content: noteContent, updatedAt: now } : entry)
       : [{ id: `note-${crypto.randomUUID()}`, title: noteTitle, content: noteContent, updatedAt: now }, ...notes];
-    if (persist({ notes: next }, { kind: "note" })) setView("list");
+    if (persist({ notes: next }, { kind: "note" })) {
+      if (!editingNoteId) setPage(1);
+      setView("list");
+    }
   };
   const saveNote = async () => {
     if (!noteTitle.trim() && !noteContent.trim()) return;
@@ -111,7 +120,10 @@ function OwnedNotebookPage({ owner, onNavigate }: { owner: NotebookOwner; onNavi
     commitNote();
   };
   const commitDeleteNote = (id: string) => {
-    if (persist({ notes: notes.filter((note) => note.id !== id) }, { kind: "delete-note", id })) setDeletingNotes(false);
+    if (persist({ notes: notes.filter((note) => note.id !== id) }, { kind: "delete-note", id })) {
+      setPage(Math.min(currentPage, Math.max(1, Math.ceil((notes.length - 1) / NOTES_PER_PAGE))));
+      setDeletingNotes(false);
+    }
   };
   const deleteNote = async (entry: NotebookNote) => {
     if (!await confirmCurrent({ title: "確認刪除？", description: `刪除後將移除「${entry.title.trim() || "未命名筆記"}」。`, confirmLabel: "刪除", tone: "danger" })) return;
@@ -137,22 +149,28 @@ function OwnedNotebookPage({ owner, onNavigate }: { owner: NotebookOwner; onNavi
     }}>
     <FeatureShell title="Matrix 筆記本" onNavigate={navigateFromNotebook} active="快捷" className="matrix-notebook-screen">
       {failedAction ? <div className="panel" role="alert"><p>筆記本尚未儲存，請重試。請勿關閉頁面，以免遺失目前修改。</p><button type="button" className="title-card-compact-action" aria-label="重試儲存筆記本" disabled={confirmBusy} onClick={retrySave}>重試儲存</button></div> : null}
-      {view === "list" ? <>
+      {view === "list" ? <div className="notebook-sheet">
         <section className="notebook-heading" aria-label="筆記本工具列">
-          <span className="notebook-entry-count">{notes.length} 筆筆記</span>
           <div className="notebook-note-actions">
-            <button type="button" onClick={() => startNote()}><PlusIcon aria-hidden="true" />新增筆記</button>
+            <button type="button" aria-label="新增筆記" onClick={() => startNote()}><PlusIcon aria-hidden="true" />新增</button>
             <button type="button" className="notebook-delete-action" aria-pressed={deletingNotes} disabled={notes.length === 0} onClick={() => deletingNotes ? cancelNoteDeletion() : setDeletingNotes(true)}>{deletingNotes ? "取消刪除" : "刪除"}</button>
           </div>
+          {pageCount > 1 ? <nav className="lottery-tabs notebook-pagination" aria-label="筆記分頁">
+            {Array.from({ length: pageCount }, (_, index) => index + 1).map((number) => <button
+              type="button" key={number} aria-label={`第 ${number} 頁`}
+              aria-current={number === currentPage ? "page" : undefined} data-selected={number === currentPage}
+              onClick={() => setPage(number)}
+            ><span>{number}</span></button>)}
+          </nav> : null}
         </section>
         {deletingNotes ? <p className="notebook-delete-hint" role="status">請選擇要刪除的筆記</p> : null}
         <section className="notebook-entry-list" aria-label="筆記列表">
-          {notes.map((entry) => <article className="panel notebook-entry" data-deleting={deletingNotes} key={entry.id}>
+          {visibleNotes.map((entry) => <article className="panel notebook-entry" data-deleting={deletingNotes} key={entry.id}>
             <button type="button" className="notebook-entry-open" aria-label={`${deletingNotes ? "刪除" : "展開"}筆記：${entry.title.trim() || "未命名筆記"}`} onClick={() => deletingNotes ? void deleteNote(entry) : startNote(entry)}><span><strong>{entry.title.trim() || "未命名筆記"}</strong><small>{formatTime(entry.updatedAt)}</small></span><ChevronRightIcon aria-hidden="true" /></button>
           </article>)}
           {notes.length === 0 ? <div className="panel notebook-empty"><img src="/assets/quick/matrix-notebook.png" alt="" /><strong>尚無筆記</strong></div> : null}
         </section>
-      </> : null}
+      </div> : null}
 
       {view === "note" ? <section className="panel matrix-notebook-editor">
         <header><button type="button" onClick={returnFromNote}><ChevronLeftIcon />返回列表</button></header>

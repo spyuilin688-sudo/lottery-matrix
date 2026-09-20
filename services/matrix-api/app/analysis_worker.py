@@ -28,6 +28,9 @@ from app.worker import (
     _draw_from_history,
     _durable_notification_event_exists,
     _run_analysis,
+    _read_worker_completion,
+    _certify_worker_completion,
+    certify_completed_result,
     analysis_version_for_order,
 )
 
@@ -270,6 +273,17 @@ def run_analysis_only_worker(
         raise ValueError("ANALYSIS_ONLY_LOTTERY_UNSUPPORTED")
 
     emitted_event_keys: set[str] = set()
+    completion = _read_worker_completion(lottery, repository, notification_emitter, scope="analysis-only")
+    if completion is not None and completion.get("ready") is True:
+        completed_draw = completion.get("draw")
+        if completed_draw and completed_draw.get("resultStatus", "confirmed") == "confirmed":
+            period = str(completed_draw["period"])
+            return {
+                "lottery": lottery,
+                "drawPeriod": period,
+                "analysisVersion": analysis_version_for_order(period),
+                "status": "already-analyzed",
+            }
     candidates = repository.list_draws(lottery, ANALYSIS_CANDIDATE_LIMIT)
     if not candidates:
         return {
@@ -299,6 +313,7 @@ def run_analysis_only_worker(
             notification_emitter,
         )
     ):
+        _certify_worker_completion(lottery, period, repository, notification_emitter, completion)
         return {
             "lottery": lottery,
             "drawPeriod": period,
@@ -389,10 +404,18 @@ def main(argv: list[str] | None = None) -> int:
         )
         with notification_emitter_context(settings) as notification_emitter:
             if notification_emitter is None:
-                return run_analysis_only_worker(lottery, repository)
-            return run_analysis_only_worker(
-                lottery, repository, notification_emitter=notification_emitter,
+                result = run_analysis_only_worker(lottery, repository)
+            else:
+                result = run_analysis_only_worker(lottery, repository, notification_emitter=notification_emitter)
+            certify_completed_result(
+                lottery, result, repository, notification_emitter, scope="analysis-only",
+                ready_check=lambda draw: _completed_period_idle_ready(
+                    {"lottery": lottery, **draw},
+                    repository.get_progress(lottery, str(draw["period"]), analysis_version_for_order(str(draw["period"]))),
+                    repository, notification_emitter,
+                ),
             )
+            return result
 
     log_worker_run(lottery, run_once)
     return 0

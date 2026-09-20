@@ -434,6 +434,29 @@ export async function fetchLotteryHistoryYears(lottery: NumberBallLottery): Prom
   });
 }
 
+/** Bounded period lookup for validation evidence; does not scan history pages. */
+export async function fetchLotteryHistoryPeriods(
+  lottery: NumberBallLottery, periods: string[],
+): Promise<LotteryDrawRecord[]> {
+  const requested = [...new Set(periods)].sort();
+  if (!requested.length) return [];
+  if (requested.length > 500 || requested.some(period => !/^[0-9]{1,12}$/.test(period))) {
+    throw new Error('INVALID_PERIODS');
+  }
+  await fetchLatestLotteryDraw(lottery);
+  return readThroughCache(
+    stableCacheKey(`lottery:history:${lottery}:periods`, requested), LOTTERY_READ_CACHE_MS,
+    async ({ isCurrent }) => {
+      const query = new URLSearchParams({ periods: JSON.stringify(requested) });
+      const data = await requestJson<{ items: LotteryDrawRecord[] }>(`/api/matrix/history/${encodeURIComponent(lottery)}?${query}`);
+      if (!isCurrent()) return fetchLotteryHistoryPeriods(lottery, requested);
+      assertArrayField(data.items, 'items');
+      data.items.forEach((item, index) => assertLotteryDrawRecord(item, `items[${index}]`));
+      return data.items.map(item => normalizeRecord(lottery, item));
+    },
+  );
+}
+
 export async function fetchLotteryHistory(
   lottery: NumberBallLottery,
   limit?: number,
@@ -448,18 +471,26 @@ export async function fetchLotteryHistory(
     LOTTERY_READ_CACHE_MS,
     async ({ isCurrent }) => {
       const stored = drawPeriod ? readLotteryHistoryCacheEntry<LotteryDrawRecord[]>(lottery, drawPeriod, limit, Infinity) : null;
-      const cached = drawPeriod ? readLotteryHistoryCacheEntry<LotteryDrawRecord[]>(lottery, drawPeriod, limit) : null;
+      // A server revision covers corrections to every draw, not just the latest period.
+      const revisionUnchanged = typeof latest?.sourceRevision === 'string'
+        && latest.sourceRevision.length > 0 && stored?.revision === latest.sourceRevision;
+      const cached = revisionUnchanged ? stored
+        : drawPeriod ? readLotteryHistoryCacheEntry<LotteryDrawRecord[]>(lottery, drawPeriod, limit) : null;
       // Older clients persisted fabricated draw-order fallbacks. Revalidate those snapshots.
       if (cached && cached.value.every(record => record.resultStatus)) {
-        expiresAt = cached.savedAt + LOTTERY_READ_CACHE_MS;
+        expiresAt = (revisionUnchanged ? Date.now() : cached.savedAt) + LOTTERY_READ_CACHE_MS;
         historyRecords.set(historyKey, cached.value);
         return cached.value;
       }
       const previous = historyRecords.get(historyKey) ?? stored?.value;
+      let historyRevision: string | undefined;
       const items = await collectQueryPages<LotteryDrawRecord>(async (cursor, size) => {
         const query = new URLSearchParams({ pageSize: String(size) });
         if (cursor) query.set('cursor', JSON.stringify(cursor));
         const data = await requestJson<LotteryHistoryResponse>(`/api/matrix/history/${encodeURIComponent(lottery)}?${query}`);
+        const revision = Array.isArray(data) ? undefined : data.revision;
+        if (!cursor) historyRevision = revision;
+        else if (historyRevision !== revision) historyRevision = undefined;
         const items = Array.isArray(data) ? data : data?.items;
         assertArrayField(items, 'items');
         return Array.isArray(data) ? { items } : { ...data, items };
@@ -471,7 +502,7 @@ export async function fetchLotteryHistory(
       const result = items.map((item) => normalizeRecord(lottery, item));
       if (previous && historyFingerprint(previous) !== historyFingerprint(result)) invalidateLotteryData(lottery);
       const resultPeriod = drawPeriod ?? result[0]?.period;
-      if (resultPeriod) writeLotteryHistoryCache(lottery, resultPeriod, limit, result);
+      if (resultPeriod) writeLotteryHistoryCache(lottery, resultPeriod, limit, result, historyRevision);
       historyRecords.set(historyKey, result);
       expiresAt = Date.now() + LOTTERY_READ_CACHE_MS;
       return result;

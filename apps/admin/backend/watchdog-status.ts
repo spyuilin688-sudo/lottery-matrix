@@ -23,10 +23,11 @@ export type WatchdogStatusAction = {
 export type WatchdogStatus = {
   status: 'ok' | 'degraded';
   reports?: ChainReport[];
+  recoveryReports?: ChainReport[];
   diagnoses?: Diagnosis[];
   railway?: RailwayEvidence[];
   optimizer?: OptimizerReport;
-  schedule?: { checkedAt: string; due: boolean; pendingSince: string | null };
+  schedule?: { checkedAt: string; due: boolean; pendingSince: string | null; nextCheckAt?: string };
   checkedAt: string;
   completedAt: string;
   dueLotteries: WatchdogStatusAction['lottery'][];
@@ -42,6 +43,12 @@ export function watchdogObservation(status: WatchdogStatus, now: Date): 'fresh' 
   const schedule = status.schedule;
   if (schedule) {
     if (!valid(schedule.checkedAt) || (schedule.pendingSince !== null && !valid(schedule.pendingSince))) return 'invalid';
+    if (schedule.nextCheckAt !== undefined) {
+      const next = Date.parse(schedule.nextCheckAt);
+      if (!Number.isFinite(next) || next <= Date.parse(schedule.checkedAt)) return 'invalid';
+      if (schedule.pendingSince !== null) return age(schedule.pendingSince) > 18 * 60_000 ? 'stale' : 'pending';
+      return now.getTime() > next + 18*60_000 ? 'stale' : 'idle';
+    }
     if (age(schedule.checkedAt) > 18 * 60_000) return 'stale';
     if (schedule.pendingSince !== null) return age(schedule.pendingSince) > 18 * 60_000 ? 'stale' : 'pending';
     if (!schedule.due) return 'idle';
@@ -124,7 +131,11 @@ export function sanitizeWatchdogStatus(value: unknown): WatchdogStatus {
   if (isRow(source.schedule) && typeof source.schedule.due === 'boolean'
     && typeof source.schedule.checkedAt === 'string' && Number.isFinite(Date.parse(source.schedule.checkedAt))
     && (source.schedule.pendingSince === null || (typeof source.schedule.pendingSince === 'string' && Number.isFinite(Date.parse(source.schedule.pendingSince))))) {
-    result.schedule = { checkedAt: source.schedule.checkedAt, due: source.schedule.due, pendingSince: source.schedule.pendingSince as string | null };
+    result.schedule = { checkedAt: source.schedule.checkedAt, due: source.schedule.due, pendingSince: source.schedule.pendingSince as string | null, ...(typeof source.schedule.nextCheckAt === 'string' ? {nextCheckAt:source.schedule.nextCheckAt} : {}) };
+  }
+  if (Array.isArray(source.recoveryReports)) {
+    result.recoveryReports = sanitizeChainReports(source.recoveryReports);
+    if (result.recoveryReports.some(r => r.state !== 'PASS')) result.status = 'degraded';
   }
   if (Array.isArray(source.reports)) {
     result.reports = sanitizeChainReports(source.reports);

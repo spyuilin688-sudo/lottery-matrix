@@ -157,7 +157,8 @@ describe('admin interface styles', () => {
   it('keeps retry and permission-gated crawler refresh actions identifiable', () => {
     expect(appSource).toMatch(/<SystemSettings\s+canEdit=\{moduleCan\("systemSettings",\s*"edit",\s*"edit"\)\}\s+confirm=\{requestConfirmation\}\s*\/>/);
     expect(appSource).toContain('canRefreshCrawler(item, canEdit)');
-    expect(appSource).toContain('refreshCrawlerSystemStatus(api, item.id)');
+    expect(appSource).toContain('refreshCrawlerSystemStatus(api, item.id, { requestId, current, signal: refreshPolling.current.signal, onProgress:');
+    expect(appSource).toContain('查詢更新狀態');
     expect(appSource).toContain('重新呼叫 Railway');
     expect(appSource).toContain('手動更新開獎資料');
   });

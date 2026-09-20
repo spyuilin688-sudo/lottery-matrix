@@ -22,6 +22,8 @@ def test_api_parallel_tongxing_avoids_terminated_http2_connection(monkeypatch):
             assert request.method == "POST"
             assert request.url.path == "/rest/v1/rpc/matrix_draw_query"
             params = json.loads(request.content)
+            if params["p_kind"] == "latest":
+                return httpx.Response(200, json={"revision": "transport-test", "items": []})
             assert params == {
                 "p_lottery": params["p_lottery"], "p_kind": "tongxing",
                 "p_limit": 500, "p_cursor": None,
@@ -58,7 +60,9 @@ def test_api_parallel_tongxing_avoids_terminated_http2_connection(monkeypatch):
         with ThreadPoolExecutor(max_workers=4) as pool:
             results = list(pool.map(query, lotteries * 3))
         assert [status for status, _ in results] == [200] * 12
-        assert len(requests) == 12
+        query_kinds = [json.loads(request.content)["p_kind"] for request in requests]
+        assert query_kinds.count("latest") == 12
+        assert query_kinds.count("tongxing") == 4
         for _, payload in results:
             assert len(payload["groups"]) == 1
             assert payload["groups"][0]["predictedEntry"]["period"] == "115000002"

@@ -61,12 +61,13 @@
   --lottery-tab-selected-background: var(--pwa-control-selected);
   --lottery-tab-selected-underline: transparent;
   display: grid;
-  height: 36px;
+  height: var(--lottery-tabs-height, 36px);
   margin: 0 0 var(--lottery-tabs-bottom-gap, 8px);
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: var(--lottery-tabs-columns, repeat(4, minmax(0, 1fr)));
 }
 .matrix-explore-screen .lottery-tabs,
-.matrix-card-body .lottery-tabs {
+.matrix-card-body .lottery-tabs,
+.notebook-pagination {
   --lottery-tab-border-width: 0px;
   --lottery-tab-border-color: transparent;
   --lottery-tab-background: transparent;
@@ -946,6 +947,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 /* Approved A+B artwork stays at its original aspect ratio. Live data is HTML. */
 .membership-card-stack {
   position: relative;
+  display: grid;
   container-type: inline-size;
   /* Raster frame rails sit inside the 1563px artwork canvas; preserve their approved visible gutter. */
   width: calc(100% + 20px);
@@ -966,9 +968,10 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .membership-reference-art {
   position: relative;
   display: grid;
+  grid-area: 1 / 1;
   width: 100%;
   /* Extend only the straight frame rails between the information and button. */
-  grid-template-rows: 44.27383cqw var(--subscription-content-shift) 12.22009cqw;
+  grid-template-rows: 44.27383cqw minmax(0, 1fr) 12.22009cqw;
   pointer-events: none;
 }
 .membership-reference-art > svg {
@@ -1116,9 +1119,15 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .profile-logout:not([data-auth-state="authenticated"]) { font-size: 2.75cqw; }
 .profile-logout > span { white-space: nowrap; }
 .profile-logout:disabled { cursor: wait; opacity: .56; }
-.subscription-status-card {
-  top: var(--membership-profile-height);
-  height: calc(34.80494cqw + var(--subscription-content-shift));
+.profile-screen .panel.subscription-status-card {
+  position: relative;
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: var(--membership-profile-height);
+  padding-top: var(--subscription-content-top);
+  padding-bottom: .37494cqw;
 }
 .subscription-status-card > .section-title {
   position: absolute;
@@ -1137,23 +1146,17 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .subscription-status-card > .section-title::before,
 .subscription-status-card > .section-title::after { display: none; }
 .subscription-status-content {
-  position: absolute;
-  inset: var(--subscription-content-top) 0 auto;
+  display: grid;
+  grid-template-columns: 29.4cqw 29cqw;
+  column-gap: 8.03cqw;
   min-width: 0;
-  margin: 0;
+  min-height: 12.55cqw;
+  margin: 0 12.14cqw 0 21.43cqw;
 }
 .subscription-status-content > div {
-  position: absolute;
-  top: 0;
   min-width: 0;
 }
-.subscription-status-content .subscription-plan {
-  left: 21.43cqw;
-  width: 29.4cqw;
-}
 .subscription-status-content .subscription-expiry {
-  left: 58.86cqw;
-  width: 29cqw;
   padding: 0;
   border: 0;
 }
@@ -1179,17 +1182,16 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   font-size: 2.58cqw;
   line-height: 3.5cqw;
 }
+.subscription-status-content .subscription-plan p {
+  white-space: nowrap;
+}
 .subscription-entry {
-  position: absolute;
-  left: 4.73cqw;
-  top: calc(28.28cqw + var(--subscription-content-shift));
-  transform: translateY(-50%);
   display: grid;
   box-sizing: border-box;
   width: 90.53cqw;
   min-height: 44px;
   height: 12.3cqw;
-  margin: 0;
+  margin: auto auto 0;
   padding: 0;
   place-items: center;
   border: 0;
@@ -1325,10 +1327,13 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .status-detail p strong { color: var(--tone); font-size: 14px; }
 .matrix-notebook-screen > .feature-body { padding-inline: var(--layout-page-inline); }
 
-.notebook-heading { display: flex; flex-wrap: wrap; min-width: 0; align-items: center; margin-bottom: 8px; gap: var(--layout-section-gap); }
-.notebook-entry-count { flex: 1 0 auto; min-width: 0; color: var(--lottery-text-secondary); font-size: 11px; }
+.notebook-heading { display: flex; min-width: 0; align-items: center; margin-bottom: 8px; gap: var(--layout-section-gap); }
+.notebook-sheet { position: relative; isolation: isolate; min-height: 65dvh; }
+.notebook-sheet::before { content: ""; position: absolute; z-index: -1; inset: 0 0 auto; height: 460px; max-height: 100%; background: url("/assets/quick/matrix-notebook.png") center 35% / 145% auto no-repeat; opacity: .12; mask-image: radial-gradient(ellipse at 50% 35%, #000 15%, transparent 70%); pointer-events: none; }
+.notebook-pagination { --lottery-tabs-height: 34px; --lottery-tabs-bottom-gap: 0px; --lottery-tabs-columns: none; flex: 1; min-width: 0; grid-auto-flow: column; grid-auto-columns: minmax(28px, 1fr); overflow-x: auto; scrollbar-width: thin; }
+.notebook-pagination button + button { border-inline-start: 1px solid var(--pwa-frame-tertiary); border-radius: 0; }
 .notebook-heading button svg { width: 14px; height: 14px; }
-.notebook-note-actions { display: flex; flex-wrap: wrap; min-width: 0; margin-inline-start: auto; gap: var(--layout-section-gap); }
+.notebook-note-actions { display: flex; flex-shrink: 0; min-width: 0; gap: 4px; }
 .notebook-note-actions > button { display: flex; box-sizing: border-box; min-width: 0; min-height: 34px; padding: 6px 10px; align-items: center; justify-content: center; gap: 4px; border: 1px solid var(--pwa-frame-tertiary); border-radius: var(--pwa-frame-radius); color: var(--pwa-frame-secondary); background: var(--pwa-control-surface); font-size: 11px; line-height: 1.45; }
 .notebook-note-actions > .notebook-delete-action { min-width: 6em; color: #d88a8a; border-color: #773434; background: rgba(54, 10, 10, .16); }
 .notebook-delete-action[aria-pressed="true"],

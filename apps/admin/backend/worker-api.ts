@@ -1,3 +1,4 @@
+import { isRefreshRequestId, parseManualRefresh, type ManualRefreshTask } from '../shared/manual-refresh';
 import type { RecoveryTarget } from './watchdog';
 export type WorkerConfig = { baseUrl: string; statusToken: string };
 export type WorkerConfigLoader = () => Promise<WorkerConfig | null>;
@@ -30,7 +31,7 @@ export type RailwayLatestDraw = {
 export type RailwayLatestAnalysis = {
   drawPeriod: string;
   status: 'running' | 'complete' | 'failed';
-  phase: 'explore' | 'tianyan' | 'tiangong' | 'status' | 'complete';
+  phase: 'explore' | 'tianheng' | 'tianshu' | 'tianyan' | 'tiangong' | 'status' | 'complete';
   startedAt: string;
   completedAt: string | null;
   error: 'ANALYSIS_FAILED' | null;
@@ -69,11 +70,7 @@ export type WorkerStatus =
     health: RailwayHealth | null;
     jobs: null;
   };
-export type WorkerRefresh = {
-  lottery: CrawlerLottery;
-  period: string;
-  drawDate: string | null;
-};
+export type WorkerRefresh = ManualRefreshTask;
 export type WorkerRecovery = {
   lottery: CrawlerLottery;
   status: 'accepted' | 'already-running';
@@ -91,13 +88,15 @@ const jobStatuses = ['running', 'waiting_source', 'success', 'failed'] as const;
 const analysisStatuses = ['running', 'complete', 'failed'] as const;
 const analysisPhases = [
   'explore',
+  'tianheng',
+  'tianshu',
   'tianyan',
   'tiangong',
   'status',
   'complete',
 ] as const;
 const DEFAULT_STATUS_TIMEOUT_MS = 5_000;
-const DEFAULT_MANUAL_REFRESH_TIMEOUT_MS = 90_000;
+const DEFAULT_MANUAL_REFRESH_TIMEOUT_MS = 5_000;
 export const PRODUCTION_RAILWAY_API_BASE =
   'https://heartfelt-generosity-production-9f2b.up.railway.app';
 export const PRODUCTION_RAILWAY_WORKER_URL =
@@ -273,15 +272,6 @@ function parseJobs(value: unknown): RailwayJobs | null {
   return { items: lotteries.map((lottery) => byLottery.get(lottery)!), tinyfish };
 }
 
-function parseRefresh(
-  value: unknown,
-  lottery: CrawlerLottery,
-): WorkerRefresh | null {
-  if (!isRecord(value) || value.lottery !== lottery) return null;
-  if (!isString(value.period) || !isNullableString(value.drawDate)) return null;
-  return { lottery, period: value.period, drawDate: value.drawDate };
-}
-
 function parseRecovery(
   value: unknown,
   lottery: CrawlerLottery,
@@ -407,7 +397,8 @@ export function createWorkerApi(
         if (timer !== undefined) clearTimeout(timer);
       }
     },
-    async refreshLottery(lottery: CrawlerLottery): Promise<WorkerRefresh> {
+    async refreshLottery(lottery: CrawlerLottery, requestId?: string): Promise<WorkerRefresh> {
+      if (requestId !== undefined && !isRefreshRequestId(requestId)) throw new WorkerRefreshError();
       const controller = new AbortController();
       let timer: ReturnType<typeof setTimeout> | undefined;
       const timeout = new Promise<never>((_, reject) => {
@@ -423,8 +414,10 @@ export function createWorkerApi(
         if (!baseUrl || !statusToken || controller.signal.aborted) {
           throw new WorkerRefreshError();
         }
-        const response = await fetcher(`${baseUrl}/jobs/refresh`, {
-          method: 'POST',
+        const path = requestId === undefined ? '/jobs/refresh'
+          : `/jobs/refresh/status?${new URLSearchParams({ lottery, requestId })}`;
+        const response = await fetcher(`${baseUrl}${path}`, {
+          method: requestId === undefined ? 'POST' : 'GET',
           signal: controller.signal,
           redirect: 'error',
           cache: 'no-store',
@@ -432,13 +425,13 @@ export function createWorkerApi(
             'Content-Type': 'application/json',
             'X-Matrix-Admin-Token': statusToken,
           },
-          body: JSON.stringify({ lottery }),
+          body: requestId === undefined ? JSON.stringify({ lottery }) : undefined,
         });
         if (!response.ok) {
           controller.abort();
           throw new WorkerRefreshError();
         }
-        const refresh = parseRefresh(await response.json(), lottery);
+        const refresh = parseManualRefresh(await response.json(), lottery, requestId);
         if (!refresh) throw new WorkerRefreshError();
         return refresh;
       })();

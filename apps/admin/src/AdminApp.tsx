@@ -1,3 +1,4 @@
+import type { ManualRefreshTask } from '../shared/manual-refresh';
 import { MatrixWatchdogPanel } from "./MatrixWatchdogPanel";
 import { loadAdminBootstrap, createActivationBatchSubmitter } from "./admin-recovery";
 import { useAdminMemberPage } from "./use-admin-member-page";
@@ -1534,12 +1535,13 @@ function Revenue({
     </>
   );
 }
-function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (request: Omit<ConfirmationRequest, 'resolve'>) => Promise<boolean> }) {
+export function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (request: Omit<ConfirmationRequest, 'resolve'>) => Promise<boolean> }) {
   const [items, setItems] = useState<SystemStatusItem[]>([]);
   const [checkedAt, setCheckedAt] = useState("");
   const [checking, setChecking] = useState(false);
   const [retryingId, setRetryingId] = useState("");
   const [refreshingId, setRefreshingId] = useState("");
+  const [refreshTasks, setRefreshTasks] = useState<Record<string, ManualRefreshTask>>({});
   const [operating, setOperating] = useState(false);
   const [statusError, setStatusError] = useState("");
   const [statusNotice, setStatusNotice] = useState("");
@@ -1547,6 +1549,10 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
   const requestInFlight = useRef(false);
   const requestSequence = useRef(0);
   const mounted = useRef(true);
+  const refreshPolling = useRef<AbortController | null>(null);
+  const editAllowed = useRef(canEdit);
+  editAllowed.current = canEdit;
+  useEffect(() => { if (!canEdit) refreshPolling.current?.abort(); }, [canEdit]);
   const captureRequest = () => {
     const sequence = ++requestSequence.current;
     return () => mounted.current && sequence === requestSequence.current;
@@ -1594,15 +1600,20 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
       if (current()) setRetryingId("");
     }
   };
-  const refreshCrawler = async (item: SystemStatusItem) => {
-    if (requestInFlight.current || !canRefreshCrawler(item, canEdit)) return;
+  const refreshCrawler = async (item: SystemStatusItem, requestId?: string) => {
+    if (requestInFlight.current || !canEdit || (requestId ? refreshTasks[item.id]?.requestId !== requestId : !canRefreshCrawler(item, canEdit))) return;
     requestInFlight.current = true;
-    const current = captureRequest();
+    const requestCurrent = captureRequest();
+    const current = () => requestCurrent() && editAllowed.current;
+    refreshPolling.current = new AbortController();
     setRefreshingId(item.id);
     setStatusError("");
     setStatusNotice("");
     try {
-      const result = await refreshCrawlerSystemStatus(api, item.id);
+      const result = await refreshCrawlerSystemStatus(api, item.id, { requestId, current, signal: refreshPolling.current.signal, onProgress: task => {
+        if (current()) setRefreshTasks(tasks => ({ ...tasks, [item.id]: task }));
+        if (current() && ["accepted", "running"].includes(task.status)) setStatusNotice(`${task.lottery} 更新${task.status === "accepted" ? "已受理" : "執行中"}，尚未完成。`);
+      } });
       if (!current()) return;
       setStatusNotice(`${result.lottery} 已手動更新至 ${result.period} 期`);
       try {
@@ -1618,16 +1629,17 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
       }
     } catch (cause) {
       if (!current()) return;
+      setStatusNotice("");
       setStatusError(cause instanceof Error ? cause.message : "開獎資料手動更新失敗");
     } finally {
       requestInFlight.current = false;
-      if (current()) setRefreshingId("");
+      if (requestCurrent()) setRefreshingId("");
     }
   };
   useEffect(() => {
     mounted.current = true;
     void refresh();
-    return () => { mounted.current = false; requestSequence.current += 1; requestInFlight.current = false; };
+    return () => { mounted.current = false; refreshPolling.current?.abort(); requestSequence.current += 1; requestInFlight.current = false; };
   }, []);
   useEffect(() => {
     if (!focusRequest) return;
@@ -1701,12 +1713,15 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
                         </dl>
                         </details>
                       </div>
-                      {(canRetrySystemStatus(item) || canRefreshCrawler(item, canEdit)) && (
+                      {(canRetrySystemStatus(item) || canRefreshCrawler(item, canEdit) || (canEdit && refreshTasks[item.id])) && (
                         <div className="statusRowActions">
                           {canRetrySystemStatus(item) && (
                             <button className="compactButton statusRetryButton" onClick={() => retry(item.id)} disabled={actionPending} aria-busy={retryingId === item.id}>
                               <RefreshCw size={14} />{retryingId === item.id ? "呼叫 Railway 中…" : "重新呼叫 Railway"}
                             </button>
+                          )}
+                          {canEdit && refreshTasks[item.id] && (
+                            <button className="compactButton" onClick={() => refreshCrawler(item, refreshTasks[item.id].requestId)} disabled={actionPending}>查詢更新狀態</button>
                           )}
                           {canRefreshCrawler(item, canEdit) && (
                             <button className="compactButton statusManualRefreshButton" onClick={() => refreshCrawler(item)} disabled={actionPending} aria-busy={refreshingId === item.id}>

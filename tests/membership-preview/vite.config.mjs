@@ -13,7 +13,7 @@ export default defineConfig({
       name: "membership-qa-service-boundaries",
       enforce: "pre",
       transform(_code, id) {
-        if (/\/src\/lib\/supabase\.ts$/.test(id)) return `export { getSupabaseClient, hasSupabaseConfig } from ${JSON.stringify(state)};`;
+        if (/\/src\/lib\/supabase\.ts$/.test(id)) return `export { getSupabaseClient, getSupabaseClient as createEcpayReviewAuthClient, hasSupabaseConfig } from ${JSON.stringify(state)};`;
         if (/\/src\/auth\/line-auth\.ts$/.test(id)) return `export { signInWithLine, signOutFromMatrix, reconcilePendingLineLogoutPresence } from ${JSON.stringify(state)};`;
         if (/\/src\/pwa-lifecycle\.tsx$/.test(id)) return `export { usePwaLifecycle } from ${JSON.stringify(state)};`;
         if (/\/src\/permission-settings\.ts$/.test(id)) return `export { usePermissionSettings } from ${JSON.stringify(state)};`;

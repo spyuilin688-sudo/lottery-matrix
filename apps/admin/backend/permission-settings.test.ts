@@ -7,6 +7,7 @@ import {
 const current = {
   subscriptionPurchaseVisible: false,
   registeredMemberFreeAccess: true,
+  ecpayReviewLoginVisible: false,
   revision: 7,
   updatedAt: '2026-09-10T22:00:00.000Z',
 };
@@ -56,9 +57,10 @@ describe('administrator Matrix permission settings adapter', () => {
     });
   });
 
-  it('recognizes only the two existing public setting keys', () => {
+  it('recognizes the independent review-button visibility key', () => {
     expect(isPermissionSettingKey('subscriptionPurchaseVisible')).toBe(true);
     expect(isPermissionSettingKey('registeredMemberFreeAccess')).toBe(true);
+    expect(isPermissionSettingKey('ecpayReviewLoginVisible')).toBe(true);
     expect(isPermissionSettingKey('unknown')).toBe(false);
     expect(isPermissionSettingKey(null)).toBe(false);
   });

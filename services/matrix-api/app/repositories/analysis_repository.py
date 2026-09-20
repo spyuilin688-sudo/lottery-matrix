@@ -1,3 +1,4 @@
+from app.manual_refresh import InMemoryRefreshStore, SupabaseRefreshStore, RefreshStore
 import re
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
@@ -42,6 +43,7 @@ def required_artifact_kinds(analysis_version: str) -> frozenset[str]:
 
 
 class AnalysisRepository(Protocol):
+    manual_refresh: RefreshStore
     def health_check(self) -> None: ...
     def list_job_statuses(self) -> list[dict[str, Any]]: ...
     def start_job(self, job_name: str, lottery: str, started_at: str) -> None: ...
@@ -100,6 +102,7 @@ class AnalysisRepository(Protocol):
 
 class InMemoryAnalysisRepository:
     def __init__(self) -> None:
+        self.manual_refresh = InMemoryRefreshStore()
         self.draws: dict[tuple[str, str], dict[str, Any]] = {}
         self.runs: dict[tuple[str, str, str], dict[str, Any]] = {}
         self.active_versions: dict[tuple[str, str, str], str] = {}
@@ -806,6 +809,41 @@ class InMemoryAnalysisRepository:
 class SupabaseAnalysisRepository:
     def __init__(self, client: Any) -> None:
         self.client = client
+        self.manual_refresh = SupabaseRefreshStore(client)
+
+    def read_worker_completion(
+        self, lottery: str, analysis_name: str, require_notifications: bool,
+    ) -> dict[str, Any] | None:
+        try:
+            data = self.client.rpc("matrix_worker_completion_snapshot", {
+                "p_lottery": lottery,
+                "p_analysis_name": analysis_name,
+                "p_require_notifications": require_notifications,
+            }).execute().data
+        except APIError as error:
+            if str(error.code) in {"PGRST202", "42883"}:
+                return None  # Rolling deployment: retain the existing readiness path.
+            raise
+        if not isinstance(data, dict) or not isinstance(data.get("generation"), int):
+            return None
+        raw_draw = data.get("draw")
+        return {
+            "generation": data["generation"],
+            "ready": data.get("ready") is True,
+            "draw": self._normalize_draw(raw_draw) if isinstance(raw_draw, dict) else None,
+        }
+
+    def certify_worker_completion(
+        self, lottery: str, draw_period: str, analysis_name: str,
+        require_notifications: bool, generation: int,
+    ) -> bool:
+        return self.client.rpc("matrix_worker_completion_certify", {
+            "p_lottery": lottery,
+            "p_draw_period": draw_period,
+            "p_analysis_name": analysis_name,
+            "p_require_notifications": require_notifications,
+            "p_generation": generation,
+        }).execute().data is True
 
     @staticmethod
     def _one(response: Any) -> dict[str, Any]:

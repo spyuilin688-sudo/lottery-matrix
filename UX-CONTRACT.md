@@ -250,6 +250,7 @@ After result notification dispatch, the trusted producer requests immediate back
 ## Notebook and custom-condition entry — 2026-09-08
 
 - Check LINE login at the entry click, before changing the screen or shortcut state. Guests see the existing login dialog and remain on their originating page when it closes; never redirect them home. This applies to normal navigation, opening a saved shortcut, selecting a shortcut, and the first tap on the custom-condition icon. Logged-in custom-condition entry retains its existing double-tap behavior. The shared feature router additionally prevents protected content from mounting without a LINE session. Session-read failures have a separate retry-later prompt. Sign-out removes page access, and stale session reads must not restore it. Existing server and entitlement checks remain authoritative.
+- Notebook list pagination shows 10 notes per page with numbered buttons, `aria-current="page"`, and the card page’s shared transparent/gold-underlined switch styling. Add/delete stay left with a 4px gap and pagination stays right on the same row; no note count is displayed. Hide pagination when there are ten or fewer notes. A shared static notebook watermark spans the list and toolbar without intercepting input. Successful creation returns to page 1; editing preserves the page; deletion clamps to the last remaining page.
 - Notebook deletion starts with the toolbar delete action, then selection of one note, then the existing destructive confirmation. Cancel preserves data. Opening a note uses the separate editor; saving and leaving unsaved content retain their confirmations.
 - Notebook pages use 16px side insets, 8px title-card/editor spacing and toolbar gaps. The editor has 8px top padding and an 8px gap below its return row. Title padding is 5px on top/left/bottom; content padding is 5px on top/left/right. Text size remains unchanged on the compact add/delete and branded write actions.
 - Notebook provides notes only. Notes persist in a `matrix-notebook:v2:<userId>` browser-local snapshot owned by the stable authenticated LINE account's Supabase user id. When v2 is absent, only valid notes from that same owner's v1 snapshot are read; later saves write notes only to v2. Retired record/settings snapshots and unowned keys remain untouched. An existing empty v2 snapshot never falls back to older notes. Tokens never identify the notebook; this does not provide cloud synchronization.
@@ -352,3 +353,15 @@ After result notification dispatch, the trusted producer requests immediate back
 - 窄螢幕方案 A 調整共用五碼列的間距及左右留白，維持原字級與卡片尺寸；使用者追加確認七碼列可縮窄公式欄並加寬號碼欄，保留整張卡片與字級。瀏覽器驗證須檢查每個號碼文字、鎖定框、參照框及特別號「＋」完整位於欄內且不互相重疊，期數與公式也必須完整顯示。天衡與天樞都要涵蓋拖牌與較長的合值公式，以及 320px、過渡寬度與 390px，不以外框尺寸相同取代可讀性驗證。
 
 2026-09-20：依使用者確認移除自訂觸發狀態的設定入口、頁面、讀寫 API、專用計算與資料。Watchdog、Inspector、Recovery 不再要求自訂狀態；一般 Matrix Status 與四彩開獎分析保留。
+
+## 綠界審核登入 — 2026-09-20
+
+來源：使用者已確認「綠界」按鈕位於 LINE 左側，彈出帳密登入視窗；專用會員可使用全部功能，但不具管理者權限；後台開關僅控制顯示。
+
+- `PermissionSwitches` 與既有設定 RPC 擁有 `ecpayReviewLoginVisible`，沿用超級管理員修改、版本衝突檢查。部署初值為關閉，未取得設定時不顯示入口。
+- `EcpayReviewLogin` 擁有帳密表單，Radix Dialog 擁有焦點圈限、Escape、返回焦點；共用 dialog CSS 擁有視覺。空欄位顯示錯誤並聚焦；失敗保留帳號、清除密碼，可重試；取消與卸載中止未完成的驗證。已驗證成功、開始寫入既有會員 session 時為不可取消的提交階段，取消按鈕暫時停用並等待結果，避免顯示已取消卻在稍後登入。
+- 先以不寫入儲存的暫時 Auth client 驗證，再由 `ecpay_review_access` 查核真正的 Auth app metadata 與有效完整會員資料，最後交給既有會員 session。驗證失敗不發布會員 session。
+- 會員功能仍由既有會員方案與伺服器授權管理；不建立管理員、不產生付款紀錄、不修改一般會員權限。入口隱藏與會員停用相互獨立。
+- 部署順序：資料庫 migration、前後台版本、專用 Auth／會員建立及實測，最後由後台開啟顯示。`scripts/provision-ecpay-review.mjs` 僅供可信任伺服器環境執行，以環境變數提供 Email／密碼，不將秘密放入原始碼。
+
+- 密碼重設信回到 `#type=recovery` 或 `/reset-password` 時，`main.tsx` 必須在 Auth 消耗網址前辨識用途，直接呈現 `PasswordRecovery`；不進入 LINE popup、PWA 登入接力或會員註冊引導。重設頁沿用 Radix Dialog 與共用表單樣式，以獨立、不持久化的 Auth client 驗證信件 session，避免沿用既有會員登入。新密碼與確認欄位支援密碼管理器、貼上、首個錯誤聚焦與防重送；只有 Supabase 確認更新成功才顯示成功並清除密碼。失效信件留在明確錯誤畫面，不轉往 LINE 登入。驗證依據為 password recovery、bootstrap 與 client 隔離的指定測試檔案。
