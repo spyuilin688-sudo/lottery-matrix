@@ -1,6 +1,7 @@
 // Explicit test data only; no real tokens, storage, provider calls or payment mutations.
 const scenario = new URLSearchParams(location.search).get("state") ?? "year";
 const signedIn = scenario !== "anonymous";
+const isLifetime = scenario === "lifetime" || scenario === "lifetime-hidden";
 let session: unknown = signedIn ? {
   access_token: "qa-only-not-a-token",
   user: { id: "qa-user", user_metadata: {
@@ -28,9 +29,9 @@ const client = {
       if (scenario === "profile-error") return { data: null, error: new Error("QA_PROFILE_UNAVAILABLE") };
       return { data: {
         lineUserId: "qa-line",
-        planName: scenario === "free" ? "免費會員" : scenario === "lifetime" ? "終身方案" : "年費方案",
+        planName: scenario === "free" ? "免費會員" : isLifetime ? "終身方案" : "年費方案",
         planExpiresAt: scenario === "free" ? null : "2027-10-29T00:00:00.000Z",
-        isLifetime: scenario === "lifetime",
+        isLifetime,
       }, error: null };
     }
     throw new Error("QA_UNSUPPORTED_OPERATION");
@@ -50,7 +51,7 @@ export function usePwaLifecycle() {
 }
 export function usePermissionSettings() {
   return {
-    subscriptionPurchaseVisible: true,
+    subscriptionPurchaseVisible: scenario !== "lifetime-hidden",
     registeredMemberFreeAccess: false,
     revision: 1,
     updatedAt: "2026-09-10T00:00:00.000Z",

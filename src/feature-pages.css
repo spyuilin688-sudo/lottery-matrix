@@ -947,6 +947,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 /* Approved A+B artwork stays at its original aspect ratio. Live data is HTML. */
 .membership-card-stack {
   position: relative;
+  display: grid;
   container-type: inline-size;
   /* Raster frame rails sit inside the 1563px artwork canvas; preserve their approved visible gutter. */
   width: calc(100% + 20px);
@@ -967,9 +968,10 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .membership-reference-art {
   position: relative;
   display: grid;
+  grid-area: 1 / 1;
   width: 100%;
   /* Extend only the straight frame rails between the information and button. */
-  grid-template-rows: 44.27383cqw var(--subscription-content-shift) 12.22009cqw;
+  grid-template-rows: 44.27383cqw minmax(0, 1fr) 12.22009cqw;
   pointer-events: none;
 }
 .membership-reference-art > svg {
@@ -1117,9 +1119,15 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .profile-logout:not([data-auth-state="authenticated"]) { font-size: 2.75cqw; }
 .profile-logout > span { white-space: nowrap; }
 .profile-logout:disabled { cursor: wait; opacity: .56; }
-.subscription-status-card {
-  top: var(--membership-profile-height);
-  height: calc(34.80494cqw + var(--subscription-content-shift));
+.profile-screen .panel.subscription-status-card {
+  position: relative;
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: var(--membership-profile-height);
+  padding-top: var(--subscription-content-top);
+  padding-bottom: .37494cqw;
 }
 .subscription-status-card > .section-title {
   position: absolute;
@@ -1138,23 +1146,17 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .subscription-status-card > .section-title::before,
 .subscription-status-card > .section-title::after { display: none; }
 .subscription-status-content {
-  position: absolute;
-  inset: var(--subscription-content-top) 0 auto;
+  display: grid;
+  grid-template-columns: 29.4cqw 29cqw;
+  column-gap: 8.03cqw;
   min-width: 0;
-  margin: 0;
+  min-height: 12.55cqw;
+  margin: 0 12.14cqw 0 21.43cqw;
 }
 .subscription-status-content > div {
-  position: absolute;
-  top: 0;
   min-width: 0;
 }
-.subscription-status-content .subscription-plan {
-  left: 21.43cqw;
-  width: 29.4cqw;
-}
 .subscription-status-content .subscription-expiry {
-  left: 58.86cqw;
-  width: 29cqw;
   padding: 0;
   border: 0;
 }
@@ -1181,16 +1183,12 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   line-height: 3.5cqw;
 }
 .subscription-entry {
-  position: absolute;
-  left: 4.73cqw;
-  top: calc(28.28cqw + var(--subscription-content-shift));
-  transform: translateY(-50%);
   display: grid;
   box-sizing: border-box;
   width: 90.53cqw;
   min-height: 44px;
   height: 12.3cqw;
-  margin: 0;
+  margin: auto auto 0;
   padding: 0;
   place-items: center;
   border: 0;
