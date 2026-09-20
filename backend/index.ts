@@ -7,10 +7,7 @@ import { createMatrixTianyanRoutes } from './matrix-tianyan-routes';
 import type { TianyanArtifact } from './matrix-tianyan-service';
 import { createMatrixTiangongRoutes } from './matrix-tiangong-routes';
 import type { TiangongArtifact } from './matrix-tiangong-service';
-import { createCustomStatusStore } from './matrix-custom-status-store';
-import { createMatrixCustomStatusRoutes } from './matrix-custom-status-routes';
 import { createMatrixStatusRoutes } from './matrix-status-routes';
-import { createMatrixStatusRecomputeClient } from './matrix-status-recompute-client';
 import type { ExploreArtifact, TianyanArtifact as StatusTianyanArtifact } from './matrix-status-service';
 import { readReadyAnalysis } from './matrix-ready-analysis';
 import { readStoredStatusExplore } from './matrix-status-analysis-reader';
@@ -47,13 +44,6 @@ const memberNotificationRoutes = createMemberNotificationRoutes({
 const memberBootstrap = createMemberBootstrap(loadMatrixSupabaseConfig);
 const memberBootstrapRoutes = createMemberBootstrapRoutes({
     bootstrap: authorization => memberBootstrap.bootstrap(authorization),
-});
-const matrixCustomStatusStore = createCustomStatusStore(loadMatrixSupabaseConfig);
-const matrixStatusRecompute = createMatrixStatusRecomputeClient(loadMatrixSupabaseConfig);
-const matrixCustomStatusRoutes = createMatrixCustomStatusRoutes({
-    requireMember: authorization => matrixMemberAuth.requireMember(authorization),
-    store: matrixCustomStatusStore,
-    recomputeStatus: (memberId,lottery) => matrixStatusRecompute(memberId,lottery),
 });
 const readCompletedMatrixAnalysis = (
     kind: 'tianyan'|'tiangong',
@@ -95,7 +85,6 @@ const matrixStatusRoutes = createMatrixStatusRoutes({
             tianyan:tianyan.data as StatusTianyanArtifact,
         };
     },
-    listConfigs: memberId => matrixCustomStatusStore.list(memberId),
 });
 const matrixTianyanRoutes = createMatrixTianyanRoutes({
     requireMember: authorization => matrixMemberAuth.requireMember(authorization),
@@ -138,18 +127,6 @@ export const handler = router({
     }],
     'POST /api/matrix/algorithm/tiangong/validation': [async ({ body,event }) => {
         const response = await matrixTiangongRoutes.validation({ authorization:authorizationHeader(event),body });
-        return json(response.body,response.status);
-    }],
-    'GET /api/matrix/status/settings': [async ({ event }) => {
-        const response = await matrixCustomStatusRoutes.list({ authorization:authorizationHeader(event),body:{} });
-        return json(response.body,response.status);
-    }],
-    'POST /api/matrix/status/settings': [async ({ body,event }) => {
-        const response = await matrixCustomStatusRoutes.save({ authorization:authorizationHeader(event),body });
-        return json(response.body,response.status);
-    }],
-    'POST /api/matrix/status/settings/reset': [async ({ body,event }) => {
-        const response = await matrixCustomStatusRoutes.reset({ authorization:authorizationHeader(event),body });
         return json(response.body,response.status);
     }],
     'POST /api/matrix/status': [async ({ body,event }) => {

@@ -12,13 +12,6 @@ const guideStart = source.indexOf("export function MatrixGuidePage");
 const guideEnd = source.indexOf("export function MatrixNotebookPage", guideStart);
 const guideSource = source.slice(guideStart, guideEnd);
 
-test("Matrix 指南說明自訂觸發條件按鈕的位置與開啟方式", () => {
-  assert.match(
-    guideSource,
-    /title: "自訂觸發條件", items: \[[^\]]*在 Matrix 狀態頁面，連續點擊右下角設定按鈕兩下，即可開啟「Matrix 自訂觸發狀態」。/s,
-  );
-});
-
 test("Matrix 指南章節卡縮小並與上下分隔線保留 3px", () => {
   const strip = ruleBodies(adjustments, /^\.matrix-guide-screen \.guide-category-strip$/);
   const card = ruleBodies(adjustments, /^\.matrix-guide-screen \.guide-category-strip \.guide-category-card$/);

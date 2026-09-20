@@ -1,6 +1,6 @@
 /* Homepage visual-language overrides for the approved restrained black-gold system. */
 
-:is(.home-screen, .matrix-status-screen, .matrix-custom-status-screen) {
+:is(.home-screen, .matrix-status-screen) {
   --home-octagon-cut: clamp(4px, 1.54vw, 6px);
   --home-frame-border: color-mix(in srgb, var(--lottery-gold-500) 56%, transparent);
   --home-frame-color: var(--home-frame-border);

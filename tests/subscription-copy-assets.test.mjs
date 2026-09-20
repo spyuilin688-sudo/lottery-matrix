@@ -24,22 +24,36 @@ test("subscription pricing and naming use the current approved copy", () => {
   assert.doesNotMatch(featurePagesSource, /amount: (?:1880|4580|16800)/);
 });
 
-test("profile detail pages use the uploaded title artwork", () => {
-  assert.match(featurePagesSource, /\/assets\/lottery\/functions\/訂閱方案標題K\.png/);
-  assert.doesNotMatch(featurePagesSource, /\/assets\/lottery\/functions\/會員方案標題K\.png/);
-  assert.match(
-    featurePagesSource,
-    /ProfileDetailShell title="我的推薦碼\/啟動碼"[^>]*headerArtwork="\/assets\/lottery\/functions\/推薦啟動標題K\.png"/,
-  );
+test("profile detail pages use the shared header and approved page-specific backgrounds", () => {
+  // Shared BrandHeader migration and the 32-background contract (DESIGN.md, PR #670).
+  const css = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
+  const header = readFileSync(new URL("../src/features/BrandHeader.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(featurePagesSource, /headerArtwork|(?:訂閱方案|會員方案|推薦啟動|法律資訊)標題K\.png/);
+  assert.match(featurePagesSource, /<FeatureShell title=\{title\}[^>]*active="我的"[^>]*backTarget="profile"/);
   const legalWrapper = featurePagesSource.slice(
     featurePagesSource.indexOf("function LegalInfoDocument("),
     featurePagesSource.indexOf("function LegalInfoSection("),
   );
-  assert.match(legalWrapper, /<ProfileDetailShell[^>]*headerArtwork="\/assets\/lottery\/functions\/法律資訊標題K\.png"/);
-  for (const title of ["服務內容與使用說明", "退款規範", "會員服務條例", "隱私權政策", "聲明與免責事項"]) {
-    assert.ok(featurePagesSource.includes('<LegalInfoDocument title="' + title + '"'), title + " must use the shared legal artwork owner");
+  assert.match(legalWrapper, /<ProfileDetailShell title=\{title\}/);
+  const pages = [
+    ["訂閱方案與收費標準", "pro-plans", "ProfileDetailShell"],
+    ["我的推薦碼/啟動碼", "activation", "ProfileDetailShell"],
+    ["關於 樂彩 Matrix", "about", "ProfileDetailShell"],
+    ["服務內容與使用說明", "service-info", "LegalInfoDocument"],
+    ["退款規範", "refund", "LegalInfoDocument"],
+    ["會員服務條例", "terms", "LegalInfoDocument"],
+    ["隱私權政策", "privacy", "LegalInfoDocument"],
+    ["聲明與免責事項", "disclaimer", "LegalInfoDocument"],
+  ];
+  for (const [title, artwork, shell] of pages) {
+    assert.ok(featurePagesSource.includes(`<${shell} title="${title}"`), `${title} uses its shared shell`);
+    assert.ok(header.includes(`"${title}":`), `${title} has a shared subtitle`);
+    const selector = `.product-header[data-product-header="${title}"]`;
+    const start = css.indexOf(selector);
+    assert.notEqual(start, -1, `${title} has a background owner`);
+    const rule = css.slice(start, css.indexOf("}", start));
+    assert.ok(rule.includes(`--product-header-background: url("/assets/lottery/headers/${artwork}.webp")`), `${title} uses its approved artwork`);
   }
-  assert.match(featurePagesSource, /<ProfileDetailShell title="關於 樂彩 Matrix"[^>]*headerArtwork="\/assets\/lottery\/functions\/法律資訊標題K\.png"/);
 });
 
 test("database plan prices are migrated to the current approved amounts", () => {

@@ -1,3 +1,4 @@
+import type { RecoveryTarget } from './watchdog';
 export type WorkerConfig = { baseUrl: string; statusToken: string };
 export type WorkerConfigLoader = () => Promise<WorkerConfig | null>;
 export type CrawlerLottery = '今彩539' | '天天樂' | '六合彩' | '大樂透';
@@ -453,6 +454,7 @@ export function createWorkerApi(
     async recoverLottery(
       lottery: CrawlerLottery,
       leaseOwner: string,
+      target?: RecoveryTarget,
     ): Promise<WorkerRecovery> {
       const controller = new AbortController();
       let timer: ReturnType<typeof setTimeout> | undefined;
@@ -478,7 +480,7 @@ export function createWorkerApi(
             'Content-Type': 'application/json',
             'X-Matrix-Admin-Token': statusToken,
           },
-          body: JSON.stringify({ lottery, leaseOwner }),
+          body: JSON.stringify({ lottery, leaseOwner, ...target }),
         });
         if (!response.ok) throw new WorkerRecoveryError();
         const recovery = parseRecovery(await response.json(), lottery);

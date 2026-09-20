@@ -7,8 +7,8 @@ import { MatrixNotebookPage } from '../features/NotebookPages';
 
 const auth = vi.hoisted(() => ({ getSession: vi.fn(), onAuthStateChange: vi.fn() }));
 vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ auth }) }));
-const account = (id: string, token = `token-${id}`) => ({
-  access_token: token, user: { id, app_metadata: { provider: 'custom:line' }, identities: [] },
+const account = (id: string, token = `token-${id}`, provider = 'custom:line') => ({
+  access_token: token, user: { id, app_metadata: { provider }, identities: [] },
 });
 let emitAuth: (event: string, session: unknown) => void;
 const keyA = 'matrix-notebook:v2:account-a';
@@ -42,6 +42,35 @@ async function confirmWrite() {
   fireEvent.click(screen.getByRole('button', { name: '寫入筆記' }));
   fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: '確認寫入' }));
 }
+
+test('a Google member can read and save their own notebook', async () => {
+  auth.getSession.mockResolvedValue({ data: { session: account('account-a', 'google-access-token', 'google') }, error: null });
+  const rendered = await openNotebook();
+  fireEvent.click(screen.getByRole('button', { name: '展開筆記：第一張筆記' }));
+  expect(screen.getByRole('textbox', { name: '筆記內容' })).toHaveValue('保留第一張內容');
+  fireEvent.change(screen.getByRole('textbox', { name: '筆記內容' }), { target: { value: 'Google 會員更新內容' } });
+  await confirmWrite();
+  await screen.findByRole('region', { name: '筆記列表' });
+  expect(JSON.parse(window.localStorage.getItem(keyA)!).notes[0].content).toBe('Google 會員更新內容');
+  expect(window.localStorage.getItem(keyB)).toBeNull();
+  rendered.unmount();
+  await openNotebook();
+  fireEvent.click(screen.getByRole('button', { name: '展開筆記：第一張筆記' }));
+  expect(screen.getByRole('textbox', { name: '筆記內容' })).toHaveValue('Google 會員更新內容');
+});
+
+test.each([
+  ['signed out', null],
+  ['missing token', account('account-a', '', 'google')],
+  ['missing user id', account(' ', 'google-access-token', 'google')],
+])('an invalid member session (%s) cannot open stored notes', async (_name, session) => {
+  auth.getSession.mockResolvedValue({ data: { session }, error: null });
+  render(<MatrixNotebookPage onNavigate={vi.fn()} />);
+  expect(await screen.findByText('請先登入後再使用 Matrix 筆記本')).toBeVisible();
+  expect(screen.queryByRole('button', { name: '新增筆記' })).toBeNull();
+  expect(screen.queryByText('第一張筆記')).toBeNull();
+  expect(JSON.parse(window.localStorage.getItem(keyA)!).notes).toEqual(notes);
+});
 
 test('notebook exposes only notes after record retirement', async () => {
   await openNotebook();
@@ -115,29 +144,35 @@ test('legacy unowned notes, records and settings stay untouched and are not adop
   expect(window.localStorage.getItem(keyA)).toBeNull();
 });
 
-test('switching accounts clears the draft and an old save confirmation cannot write', async () => {
+test.each([
+  ['custom:line', 'custom:line'],
+  ['custom:line', 'google'],
+  ['google', 'custom:line'],
+])('switching accounts (%s to %s) clears the draft and an old save confirmation cannot write', async (from, to) => {
+  auth.getSession.mockResolvedValue({ data: { session: account('account-a', 'token-a', from) }, error: null });
   await openNotebook();
   fireEvent.click(screen.getByRole('button', { name: '展開筆記：第一張筆記' }));
   fireEvent.change(screen.getByRole('textbox', { name: '筆記內容' }), { target: { value: 'A 的私人草稿' } });
   fireEvent.click(screen.getByRole('button', { name: '寫入筆記' }));
   const oldConfirmation = within(await screen.findByRole('dialog')).getByRole('button', { name: '確認寫入' });
-  act(() => emitAuth('SIGNED_IN', account('account-b')));
+  act(() => emitAuth('SIGNED_IN', account('account-b', 'token-b', to)));
   fireEvent.click(oldConfirmation);
   expect(screen.queryByDisplayValue('A 的私人草稿')).toBeNull();
   expect(screen.queryByText('第一張筆記')).toBeNull();
   expect(await screen.findByText('尚無筆記')).toBeVisible();
   expect(JSON.parse(window.localStorage.getItem(keyA)!).notes).toEqual(notes);
   expect(window.localStorage.getItem(keyB)).toBeNull();
-  act(() => emitAuth('SIGNED_IN', account('account-a')));
+  act(() => emitAuth('SIGNED_IN', account('account-a', 'token-a', from)));
   expect(await screen.findByText('第一張筆記')).toBeVisible();
   expect(screen.queryByRole('textbox', { name: '筆記內容' })).toBeNull();
 });
 
-test('token refresh preserves the same account draft and refresh reads only committed content', async () => {
+test.each(['custom:line', 'google'])('token refresh preserves the same %s account draft and refresh reads only committed content', async (provider) => {
+  auth.getSession.mockResolvedValue({ data: { session: account('account-a', 'token-a', provider) }, error: null });
   const rendered = await openNotebook();
   fireEvent.click(screen.getByRole('button', { name: '展開筆記：第一張筆記' }));
   fireEvent.change(screen.getByRole('textbox', { name: '筆記內容' }), { target: { value: '未寫入草稿' } });
-  act(() => emitAuth('TOKEN_REFRESHED', account('account-a', 'renewed-secret-token')));
+  act(() => emitAuth('TOKEN_REFRESHED', account('account-a', 'renewed-secret-token', provider)));
   expect(screen.getByRole('textbox', { name: '筆記內容' })).toHaveValue('未寫入草稿');
   rendered.unmount();
   await openNotebook();
@@ -146,22 +181,26 @@ test('token refresh preserves the same account draft and refresh reads only comm
   expect(Object.keys(window.localStorage).some((key) => key.includes('token'))).toBe(false);
 });
 
-test.each(['INITIAL_SESSION', 'TOKEN_REFRESHED', 'USER_UPDATED'])('logout clears content and ignores a stale %s event', async (event) => {
+test.each([
+  ['custom:line', 'INITIAL_SESSION'], ['custom:line', 'TOKEN_REFRESHED'], ['custom:line', 'USER_UPDATED'],
+  ['google', 'INITIAL_SESSION'], ['google', 'TOKEN_REFRESHED'], ['google', 'USER_UPDATED'],
+])('logout clears %s content and ignores a stale %s event', async (provider, event) => {
+  auth.getSession.mockResolvedValue({ data: { session: account('account-a', 'token-a', provider) }, error: null });
   await openNotebook();
   fireEvent.click(screen.getByRole('button', { name: '展開筆記：第一張筆記' }));
   act(() => emitAuth('SIGNED_OUT', null));
-  act(() => emitAuth(event, account('account-a')));
+  act(() => emitAuth(event, account('account-a', 'token-a', provider)));
   expect(screen.queryByRole('textbox', { name: '筆記內容' })).toBeNull();
   expect(screen.queryByRole('button', { name: '新增筆記' })).toBeNull();
   expect(JSON.parse(window.localStorage.getItem(keyA)!).notes).toEqual(notes);
 });
 
-test('an older initial session read cannot replace the account selected by an auth event', async () => {
+test('an older initial session read cannot replace the Google account selected by an auth event', async () => {
   let finish!: (value: unknown) => void;
   auth.getSession.mockReturnValue(new Promise((resolve) => { finish = resolve; }));
   render(<MatrixNotebookPage onNavigate={vi.fn()} />);
   await waitFor(() => expect(auth.getSession).toHaveBeenCalled());
-  act(() => emitAuth('SIGNED_IN', account('account-b')));
+  act(() => emitAuth('SIGNED_IN', account('account-b', 'google-access-token', 'google')));
   await act(async () => finish({ data: { session: account('account-a') }, error: null }));
   expect(screen.queryByText('第一張筆記')).toBeNull();
   expect(await screen.findByText('尚無筆記')).toBeVisible();

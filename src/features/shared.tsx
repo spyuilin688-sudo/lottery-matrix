@@ -120,7 +120,6 @@ export function FeatureShell({
   className = "",
   backTarget = "home",
   headerAction,
-  headerActionPlacement = "bottom-right",
   headerSettings,
   compactHeader = false,
   bodyLayout,
@@ -132,7 +131,6 @@ export function FeatureShell({
   className?: string;
   backTarget?: ScreenId;
   headerAction?: React.ReactNode;
-  headerActionPlacement?: "bottom-right" | "top-right";
   headerSettings?: HeaderSettings;
   compactHeader?: boolean;
   bodyLayout?: "matrix-card";
@@ -145,7 +143,6 @@ export function FeatureShell({
         title={title}
         onBack={() => quickActive && onQuickBack ? onQuickBack() : onNavigate(backTarget)}
         action={headerAction}
-        actionPlacement={headerActionPlacement}
         settings={headerSettings}
         showBack={!logoOnlyHeader || (active === "我的" && backTarget === "profile") || title === "Matrix 筆記本"}
       />

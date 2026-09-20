@@ -39,32 +39,34 @@ test('篩選設定按鈕由標題卡內容寬度控制器定位 [header migratio
   const css = readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
   const actions = ruleBodies(css, /^\.product-header__actions$/);
   assert.equal(actions.length, 1);
-  assert.match(actions[0], /grid-area:\s*actions;/);
+  assert.match(actions[0], /position:\s*absolute;[^}]*right:\s*4px;[^}]*bottom:\s*0px;/s);
   assert.match(actions[0], /min-width:\s*0;/);
-  assert.doesNotMatch(actions[0], /translate|position:\s*absolute/);
+  assert.doesNotMatch(actions[0], /translate/);
 });
 
-test('歷史篩選設定按鈕的完整 cascade 不保留固定高度', () => {
+test('共用歷史設定入口保留 24px 透明控制', () => {
   const dom = new JSDOM(`
     <style>${featureCss}\n${responsiveCss}</style>
     <main class="draw-history-screen">
-      <button class="history-filter-trigger title-card-compact-action">篩選設定</button>
+      <header class="product-header"><button class="product-header__settings-toggle">篩選設定</button></header>
     </main>
   `);
-  const button = dom.window.document.querySelector('.history-filter-trigger');
+  const button = dom.window.document.querySelector('.product-header__settings-toggle');
   const style = dom.window.getComputedStyle(button);
 
-  assert.equal(style.height, 'auto');
+  assert.equal(style.height, '24px');
+  assert.equal(style.backgroundColor, 'rgba(0, 0, 0, 0)');
+  assert.equal(style.fontSize, '12px');
 });
 
 test('未設定快捷功能時點擊快捷會開啟既有設定', () => {
   assert.match(prototypeSource, /if \(!quickTarget\) \{ setQuickSettingsOpen\(true\); return; \}/);
 });
 
-test('底部導覽三頁的共用頁首使用首頁 matrixya Logo [header migration]', () => {
+test('底部導覽三頁的共用頁首使用首頁 matrixYY Logo [header migration]', () => {
   const header = readFileSync(new URL('../src/features/BrandHeader.tsx', import.meta.url), 'utf8');
   assert.match(header, /matrixYY\.png/);
-  assert.match(brandCss, /\.product-header\s*\{[^}]*width:\s*100%;[^}]*padding:\s*0 var\(--layout-page-inline\) 8px;/s);
+  assert.match(brandCss, /\.product-header\s*\{[^}]*width:\s*100%;[^}]*padding:\s*0 var\(--layout-page-inline\);[^}]*margin-bottom:\s*var\(--layout-section-gap\);/s);
   assert.match(brandCss, /\.product-header__mark\s*\{[^}]*width:\s*56px;[^}]*height:\s*48px;/s);
 });
 

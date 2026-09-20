@@ -93,7 +93,7 @@ beforeEach(() => {
   supabase.getClient.mockClear();
   supabase.auth.onAuthStateChange.mockClear();
   supabase.auth.getSession.mockReset().mockResolvedValue({
-    data: { session: { access_token: "member-session" } },
+    data: { session: { access_token: "member-session", user: { user_metadata: { name: "LINE 會員" } } } },
     error: null,
   });
   memberApi.fetchMemberProfile.mockReset().mockResolvedValue({
@@ -110,21 +110,23 @@ beforeEach(() => {
 });
 
 describe("ProfilePage member API", () => {
-  it("購買關閉時隱藏訂閱狀態、付款紀錄與退款規範，保留登入", async () => {
+  it("購買關閉時保留訂閱狀態與登入，隱藏購買入口、付款紀錄與退款規範", async () => {
     const onNavigate = vi.fn();
     render(<ProfilePage onNavigate={onNavigate} />);
 
     const logout = await screen.findByRole("button", { name: "登出" });
     expect(parseFloat(getComputedStyle(logout).minHeight)).toBeGreaterThanOrEqual(44);
     expect(screen.queryByRole("button", { name: "訂閱方案／收費標準" })).not.toBeInTheDocument();
-    expect(screen.queryByText("目前訂閱狀態")).not.toBeInTheDocument();
-    expect(document.querySelector(".subscription-status-card")).toBeNull();
+    expect(screen.getByText("目前訂閱狀態")).toBeInTheDocument();
+    expect(document.querySelector(".subscription-status-card")).toBeInTheDocument();
+    expect(await screen.findByText("年費方案")).toBeInTheDocument();
     const artwork = document.querySelector(".membership-reference-art")!;
-    expect(artwork.querySelectorAll(":scope > svg")).toHaveLength(1);
+    expect(artwork).toHaveAttribute("data-subscription-visible", "true");
     const [, artworkTop, , artworkHeight] = artwork.querySelector("svg")!.getAttribute("viewBox")!.split(" ").map(Number);
-    // The subscription artwork starts at source y=387 and must not leak into free mode.
-    expect(artworkTop + artworkHeight).toBeLessThanOrEqual(387);
-    expect(artwork.querySelector(".subscription-information-art")).toBeNull();
+    // Existing subscription information and its artwork remain visible when purchases are hidden.
+    expect(artworkTop).toBeLessThan(387);
+    expect(artworkTop + artworkHeight).toBeGreaterThanOrEqual(740);
+    expect(artwork.querySelector(".subscription-information-art")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "付款紀錄" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "退款規範" })).not.toBeInTheDocument();
     expect(screen.queryByText("會員相關")).not.toBeInTheDocument();
@@ -147,11 +149,12 @@ describe("ProfilePage member API", () => {
     expect(memberApi.fetchMemberPaymentHistory).not.toHaveBeenCalled();
   });
 
-  it("LINE ID為資訊文字，不呈現輸入框邊線", async () => {
+  it("LINE 暱稱為資訊文字，不呈現輸入框邊線", async () => {
     render(<ProfilePage onNavigate={vi.fn()} />);
     await screen.findByRole("button", { name: "登出" });
-    const providerId = await screen.findByText("LINE ID：line-real");
-    expect(getComputedStyle(providerId).borderTopWidth).toBe("0px");
+    const nickname = await screen.findByText("LINE 會員");
+    expect(screen.queryByText(/LINE ID：/)).not.toBeInTheDocument();
+    expect(getComputedStyle(nickname).borderTopWidth).toBe("0px");
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
 
@@ -617,7 +620,7 @@ describe("ProfilePage member API", () => {
     );
   });
 
-  it("顯示 LINE ID，長ID在固定框內縮小並省略", async () => {
+  it("顯示 LINE 暱稱，長暱稱在固定框內縮小並省略", async () => {
     const nickname = "這是一個很長的 LINE 會員暱稱";
     const lineId = "line-user-id-that-is-long-123456";
     supabase.auth.getSession.mockResolvedValueOnce({
@@ -635,17 +638,18 @@ describe("ProfilePage member API", () => {
 
     render(<ProfilePage onNavigate={vi.fn()} />);
 
-    const providerIdFrame = await screen.findByText(`LINE ID：${lineId}`);
+    const nicknameFrame = await screen.findByText(nickname);
+    expect(screen.queryByText(new RegExp(lineId))).not.toBeInTheDocument();
     expect(screen.queryByText(/會員ID：/)).not.toBeInTheDocument();
     expect(screen.queryByText(/會員名稱：/)).not.toBeInTheDocument();
-    expect(providerIdFrame).toHaveAttribute("data-name-fit", "compact");
-    expect(getComputedStyle(providerIdFrame).fontSize).toBe("2.8cqw");
-    expect(getComputedStyle(providerIdFrame).overflow).toBe("hidden");
-    expect(getComputedStyle(providerIdFrame).textOverflow).toBe("ellipsis");
-    expect(getComputedStyle(providerIdFrame).whiteSpace).toBe("nowrap");
+    expect(nicknameFrame).toHaveAttribute("data-name-fit", "compact");
+    expect(getComputedStyle(nicknameFrame).fontSize).toBe("2.8cqw");
+    expect(getComputedStyle(nicknameFrame).overflow).toBe("hidden");
+    expect(getComputedStyle(nicknameFrame).textOverflow).toBe("ellipsis");
+    expect(getComputedStyle(nicknameFrame).whiteSpace).toBe("nowrap");
   });
 
-  it("以登入會員 API 資料顯示登入供應商ID、方案與到期日", async () => {
+  it("以登入工作階段顯示暱稱，並以會員 API 資料顯示方案與到期日", async () => {
     purchaseSetting.visible = true;
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-12T04:00:00.000Z"));
@@ -656,7 +660,8 @@ describe("ProfilePage member API", () => {
     expect(memberApi.bootstrapMember.mock.invocationCallOrder[0]).toBeLessThan(
       memberApi.fetchMemberProfile.mock.invocationCallOrder[0],
     );
-    expect(screen.getByText("LINE ID：line-real")).toBeInTheDocument();
+    expect(screen.getByText("LINE 會員")).toBeInTheDocument();
+    expect(screen.queryByText(/line-real/)).not.toBeInTheDocument();
     expect(screen.getByText("年費方案")).toBeInTheDocument();
     expect(screen.getByText("2026/09/22")).toBeInTheDocument();
     expect(screen.getByText("剩餘 10 天")).toBeInTheDocument();
@@ -694,7 +699,7 @@ describe("ProfilePage member API", () => {
 
     render(<ProfilePage onNavigate={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getByText("LINE ID：line-lifetime")).toBeInTheDocument());
+    expect(await screen.findByText("終身方案")).toBeInTheDocument();
     expect(screen.queryByText("2027/07/23")).not.toBeInTheDocument();
     expect(screen.queryByText(/剩餘 .* 天/)).not.toBeInTheDocument();
   });
@@ -823,7 +828,7 @@ describe("ProfilePage member API", () => {
 });
 
 
-it("開啟購買開關後恢復入口，關閉後不需重掛即可隱藏", async () => {
+it("開啟購買開關後恢復入口，關閉後不需重掛即可隱藏入口並保留訂閱狀態", async () => {
   const onNavigate = vi.fn();
   const view = render(<ProfilePage onNavigate={onNavigate} />);
   await screen.findByRole("button", { name: "登出" });
@@ -841,7 +846,7 @@ it("開啟購買開關後恢復入口，關閉後不需重掛即可隱藏", asyn
   purchaseSetting.visible = false;
   view.rerender(<ProfilePage onNavigate={onNavigate} />);
   expect(screen.queryByRole("button", { name: "訂閱方案／收費標準" })).not.toBeInTheDocument();
-  expect(screen.queryByText("目前訂閱狀態")).not.toBeInTheDocument();
+  expect(screen.getByText("目前訂閱狀態")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "付款紀錄" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "退款規範" })).not.toBeInTheDocument();
 });

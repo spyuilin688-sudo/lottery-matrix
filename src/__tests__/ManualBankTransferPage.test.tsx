@@ -154,7 +154,7 @@ describe('Matrix Pro manual bank transfer', () => {
     expect(screen.queryByRole('heading', { name: '轉帳資料' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '確定付款' })).toHaveClass('primary-action', 'branded-explore-action');
     expect(screen.getByRole('checkbox', { name: '自動續訂' })).toBeDisabled();
-    expect(screen.getByText(/手動轉帳不會自動扣款/)).toBeInTheDocument();
+    expect(screen.getByText('Matrix Pro 訂閱付款將採用綠界金流；綠界付款與自動續訂尚未開放。')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '確定付款' }));
 
     await waitFor(() => expect(selection.saveManualTransferPlan).toHaveBeenCalledWith('month'));

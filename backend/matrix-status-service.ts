@@ -1,11 +1,4 @@
-import {
-  evaluateCustomStatusRoads,
-  normalizeCustomStatusConfig,
-  type CustomGroupResult,
-  resolveStatusEvaluationMode,
-  type CustomConditionMatch,
-  type CustomStatusConfig,
-} from './matrix-custom-status.ts';
+import type { MatrixLottery, MatrixNumberOrder } from '../shared/matrix-status-presets.ts';
 import type { MatrixEntitlements } from './matrix-entitlements.ts';
 import {
   evaluateChapter15,
@@ -29,11 +22,11 @@ type ExploreArtifactRow = {
   number: string;
   lockedPosition: number;
   predictionDistance: number;
-  consecutive: CustomConditionMatch['consecutive'];
+  consecutive: string;
   highestStreak: number;
   predictionNumbers: string[];
   algorithmType: StatusRoad['algorithmType'];
-  numberOrder: CustomConditionMatch['numberOrder'];
+  numberOrder: MatrixNumberOrder;
   explorePeriods: 2 | 7 | 13;
   exploreDateOffset: number;
   ruleCount: number;
@@ -43,23 +36,23 @@ type ExploreArtifactRow = {
 };
 
 export type ExploreArtifact = {
-  lottery: CustomStatusConfig['lottery'];
+  lottery: MatrixLottery;
   drawPeriod: string;
   items: ExploreArtifactRow[];
 };
 
 export type TianyanArtifact = {
-  lottery: CustomStatusConfig['lottery'];
+  lottery: MatrixLottery;
   drawPeriod: string;
   items: Array<{
     id: string;
     number: string;
     lockedPosition: number;
     predictionDistance: number;
-    consecutive: CustomConditionMatch['consecutive'];
+    consecutive: string;
     highestStreak: number;
     predictionNumbers: string[];
-    numberOrder: CustomConditionMatch['numberOrder'];
+    numberOrder: MatrixNumberOrder;
     explorePeriods: 2 | 7 | 13;
     exploreDateOffset: number;
     lockedSourceIndex?: number;
@@ -67,13 +60,6 @@ export type TianyanArtifact = {
 };
 
 const priority: MatrixStatus[] = ['CRITICAL', 'RESONANCE', 'FOCUS', 'ACTIVE', 'DORMANT'];
-const messages: Record<MatrixStatus, string> = {
-  ACTIVE: '具備基本參考價值',
-  FOCUS: '具備明顯規律集中性',
-  RESONANCE: '具備強烈共振效應',
-  CRITICAL: '極為罕見版路狀態',
-  DORMANT: '本期尚無符合條件的狀態。',
-};
 
 function normalizedResult(values: string[]) {
   return values.map((value) => String(value).padStart(2, '0'));
@@ -136,20 +122,6 @@ function chapterRoads(items: ExploreArtifactRow[]): StatusRoad[] {
   return roads;
 }
 
-function tianyanRoads(artifact: TianyanArtifact | null): StatusRoad[] {
-  if (!artifact) return [];
-  return artifact.items.filter((item) => (
-    item.exploreDateOffset === 0
-    && (item.lockedSourceIndex === undefined ? item.explorePeriods === 13 : item.lockedSourceIndex < 13)
-    && item.predictionNumbers.length > 0
-  )).map((item) => ({
-    id: item.id, hitType: 'two-code', result: normalizedResult(item.predictionNumbers),
-    algorithmType: '複合', numberOrder: item.numberOrder, streak: item.highestStreak,
-    predictionDistance: item.predictionDistance, position: item.lockedPosition,
-    lockedNumber: item.number, explorePeriods: item.explorePeriods, validationItemId: item.id,
-  }));
-}
-
 function sortedStatusRoads(roads: StatusRoad[]) {
   return [...roads].sort((left, right) => (
     right.streak - left.streak
@@ -199,72 +171,20 @@ function visibleStatusCards(
   });
 }
 
-function customCard(status: CustomStatusConfig['status'], match: CustomGroupResult): StatusTriggerCard {
-  return {
-    id: `custom:${status}:${match.groupId}:${match.result.join(',')}`,
-    ruleId: `CUSTOM:${status}:${match.groupId}`,
-    status, hitType: match.hitType, result: match.result,
-    sameCodeRoadCount: match.roads.length, roads: match.roads,
-  };
-}
-
-function withoutExcludedGroups(config: CustomStatusConfig, excludedGroupIds: string[]) {
-  const excluded = new Set(excludedGroupIds);
-  return {
-    ...config,
-    oneCodeGroups: config.oneCodeGroups.filter((group) => !excluded.has(group.id)),
-    twoCodeGroups: config.twoCodeGroups.filter((group) => !excluded.has(group.id)),
-  };
-}
-
 export function buildMatrixStatusArtifact(
   explore: ExploreArtifact,
-  tianyan: TianyanArtifact | null,
-  configs: CustomStatusConfig[],
   entitlements: MatrixEntitlements,
 ) {
-  if (tianyan && (tianyan.lottery !== explore.lottery || tianyan.drawPeriod !== explore.drawPeriod)) {
-    throw new Error('INVALID_REQUEST');
-  }
-  const exploreRows = eligibleExploreRows(explore);
   const chapter = evaluateChapter15({
     lottery: explore.lottery,
     drawPeriod: explore.drawPeriod,
     roads: chapterRoads(chapterExploreRows(explore)),
   });
-  let cards: StatusTriggerCard[] = [...chapter.cards];
-  const counts = { ...chapter.counts };
-  const customRoads = [...chapterRoads(exploreRows.filter((row) => row.ruleCount === 1 || row.ruleCount === 2)), ...tianyanRoads(tianyan)];
-  const customTriggers: Array<{ status: CustomStatusConfig['status']; groupId: string }> = [];
-  const customSettings = configs
-    .filter((config) => config.lottery === explore.lottery)
-    .map(normalizeCustomStatusConfig)
-    .map((config) => {
-      const evaluation = resolveStatusEvaluationMode(config, entitlements);
-      if (evaluation.mode === 'custom') {
-        const activeConfig = withoutExcludedGroups(config, evaluation.excludedGroupIds);
-        const result = evaluateCustomStatusRoads(activeConfig, customRoads);
-        cards = cards.filter((card) => card.status !== config.status);
-        counts[config.status] = result.matchedGroups.length;
-        customTriggers.push(...result.matchedGroupIds.map((groupId) => ({ status: config.status, groupId })));
-        cards.push(...result.matchedGroups.map((match) => customCard(config.status, match)));
-      }
-      return { config, evaluation };
-    });
-  const status = priority.find((value) => value !== 'DORMANT' && counts[value] > 0) ?? 'DORMANT';
   return {
     lottery: explore.lottery,
     drawPeriod: explore.drawPeriod,
-    summary: {
-      lottery: explore.lottery,
-      drawPeriod: explore.drawPeriod,
-      status,
-      count: status === 'DORMANT' ? 0 : counts[status],
-      message: messages[status],
-    },
-    counts,
-    cards: visibleStatusCards(sortedStatusCards(cards), entitlements),
-    customTriggers,
-    customSettings,
+    summary: chapter.summary,
+    counts: chapter.counts,
+    cards: visibleStatusCards(sortedStatusCards(chapter.cards), entitlements),
   };
 }

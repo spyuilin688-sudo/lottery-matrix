@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from app.targeted_recovery import run_targeted_recovery, verify_recovery
+from app.watchdog_lease import complete_recovery
+
 from collections.abc import Callable
 from os import environ
 from typing import Any
@@ -74,6 +77,9 @@ def run_full_lottery_recovery(
 
 _RECOVERY_COORDINATOR = RecoveryCoordinator(
     run_full_lottery_recovery,
+    targeted_runner=run_targeted_recovery,
+    verify=verify_recovery,
+    record_success=complete_recovery,
     begin_lease=begin_recovery_lease,
     renew_lease=renew_recovery_lease,
     release_lease=release_recovery_lease,

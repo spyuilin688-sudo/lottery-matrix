@@ -1,4 +1,4 @@
-import { chapter15Rules, type CustomConditionRow, type MatrixLottery, type MatrixNumberOrder } from '../shared/matrix-status-config.ts';
+import { chapter15Rules, type PresetConditionRow, type MatrixLottery, type MatrixNumberOrder } from '../shared/matrix-status-presets.ts';
 
 export type MatrixStatus = 'ACTIVE' | 'FOCUS' | 'RESONANCE' | 'CRITICAL' | 'DORMANT';
 export type StatusRoadType = '加減' | '合值' | '拖牌' | '複合';
@@ -25,9 +25,7 @@ export type MatrixStatusRuleId =
   | 'CRITICAL-2'
   | 'CRITICAL-3'
   | 'CRITICAL-4';
-export type StatusTriggerRuleId =
-  | MatrixStatusRuleId
-  | `CUSTOM:${Exclude<MatrixStatus, "DORMANT">}:${string}`;
+export type StatusTriggerRuleId = MatrixStatusRuleId;
 
 export type StatusRoad = {
   id: string;
@@ -147,7 +145,7 @@ export function groupRoads(roads: StatusRoad[]): RoadGroup[] {
 }
 
 /** One row counts all selected roads within the numeric interval for one result. */
-export function matchingConditionRoads(roads: StatusRoad[], row: CustomConditionRow): StatusRoad[] {
+export function matchingConditionRoads(roads: StatusRoad[], row: PresetConditionRow): StatusRoad[] {
   const alternatives = row.roadTypeAlternatives ?? [row.roadTypes];
   const witnesses: StatusRoad[] = [];
   for (const types of alternatives) {
@@ -163,7 +161,7 @@ export function matchingConditionRoads(roads: StatusRoad[], row: CustomCondition
   return uniqueRoads(witnesses);
 }
 
-export function matchingGroupRoads(roads: StatusRoad[], rows: CustomConditionRow[]): StatusRoad[] {
+export function matchingGroupRoads(roads: StatusRoad[], rows: PresetConditionRow[]): StatusRoad[] {
   if (!rows.length) return [];
   const evidence = rows.map((row) => matchingConditionRoads(roads, row));
   return evidence.every((matched) => matched.length > 0) ? uniqueRoads(evidence.flat()) : [];

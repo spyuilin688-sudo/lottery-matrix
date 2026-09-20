@@ -1,3 +1,4 @@
+import { MatrixWatchdogPanel } from "./MatrixWatchdogPanel";
 import { loadAdminBootstrap, createActivationBatchSubmitter } from "./admin-recovery";
 import { useAdminMemberPage } from "./use-admin-member-page";
 import { useAdminDataPage, type AdminDataPageController } from "./use-admin-data-page";
@@ -1643,6 +1644,7 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
       {statusNotice && <div className="systemStatusNotice" role="status">{statusNotice}</div>}
       <RailwayOperations client={api} canEdit={canEdit} confirm={confirm} disabled={checking || Boolean(retryingId) || Boolean(refreshingId)} onBusyChange={value => { requestInFlight.current = value; setOperating(value); }} />
       {items.length === 0 && <div className="statusEmpty">{checking ? "正在檢查服務狀態…" : "目前沒有服務狀態"}</div>}
+      {items.some(item => item.id === "supabase-watchdog-heartbeat") && <MatrixWatchdogPanel detail={items.find(item => item.id === "supabase-watchdog-heartbeat")?.detail} />}
       <div className="statusGroups">
         {groupSystemStatusItems(items).map((group) => {
           const normalCount = group.items.filter((item) => getSystemStatusPresentation(item).tone === "good").length;
@@ -1691,8 +1693,8 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
                           {item.id === "supabase-watchdog-heartbeat" && (
                             <>
                               <div><dt>監控完成時間</dt><dd>{formatAdminDateTime(detail?.completedAt)}</dd></div>
-                              <div><dt>執行頻率</dt><dd>每 10 分鐘</dd></div>
-                              <div><dt>檢查設定</dt><dd>依序為 6 分鐘／50 次、10 分鐘／60 次、30 分鐘／18 次；實際每 10 分鐘執行一次。</dd></div>
+                              <div><dt>排程檢查頻率</dt><dd>每 10 分鐘；依指定時點執行監控</dd></div>
+                              <div><dt>檢查設定</dt><dd>依序為 6 分鐘／50 次、10 分鐘／60 次、30 分鐘／18 次；每 10 分鐘檢查是否到指定時點。</dd></div>
                             </>
                           )}
                         </dl>

@@ -18,9 +18,6 @@ export async function prepareLineMember(page: Page, now = new Date()) {
   await page.route('https://*.supabase.co/**', async route => {
     const path = new URL(route.request().url()).pathname;
     if (path === '/auth/v1/user') return route.fulfill({ json: user });
-    if (path === '/rest/v1/rpc/matrix_custom_status_list') {
-      return route.fulfill({ json: { items: [], entitlements: { canCustomizeStatus: true, canUseCompositeCustomRoad: false } } });
-    }
     if (['member_bootstrap', 'member_online_start', 'member_online_end'].some(name => path === `/rest/v1/rpc/${name}`)) {
       return route.fulfill({ json: {} });
     }

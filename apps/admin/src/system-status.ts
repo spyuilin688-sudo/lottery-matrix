@@ -75,6 +75,11 @@ export function getSystemStatusPresentation(item: SystemStatusItem) {
     scope: '工作正在執行，最近的執行紀錄仍持續更新，尚未完成。',
   };
   if (item.ok && item.healthState === 'waiting') {
+    if (item.id === 'supabase-watchdog-heartbeat') {
+      const schedule = isRecord(item.detail) && isRecord(item.detail.schedule) ? item.detail.schedule : null;
+      return schedule?.pendingSince ? { label: '等待監控完成', tone: 'limited' as const, scope: '已到指定檢查時點，正在等待新的監控結果；下方保留上次紀錄。' }
+        : { label: '排程待命', tone: 'limited' as const, scope: '排程持續檢查，目前未到指定檢查時點；下方保留上次紀錄。' };
+    }
     if (item.id === 'railway-cards') {
       const samples = isRecord(item.detail) && Array.isArray(item.detail.samples) ? item.detail.samples : [];
       if (samples.some(sample => isRecord(sample) && sample.waitingFor === 'generation')) return {
@@ -157,6 +162,10 @@ export function getServiceEvidenceFacts(item: SystemStatusItem): SystemStatusFac
   }
   if (!isRecord(item.detail)) return [];
   const facts: SystemStatusFact[] = [];
+  if (item.id === 'supabase-watchdog-heartbeat' && isRecord(item.detail.schedule)) {
+    facts.push({ label: '最近排程檢查', value: item.detail.schedule.checkedAt, format: 'date' });
+    if (item.detail.schedule.pendingSince) facts.push({ label: '等待監控開始時間', value: item.detail.schedule.pendingSince, format: 'date' });
+  }
   if (isRecord(item.detail.activity)) {
     const activity = item.detail.activity;
     if (typeof activity.source === 'string') facts.push({ label: '紀錄來源', value: activity.source });
@@ -291,6 +300,7 @@ export function getMatrixStorageFacts(item: SystemStatusItem, section: 'summary'
   return [
     { label: '探索大小', value: size(storage?.tables.explore.size_bytes) },
     { label: '天衡大小', value: size(storage?.tables.tianheng.size_bytes) },
+    { label: '天樞大小', value: size(storage?.tables.tianshu.size_bytes) },
     { label: '成品大小', value: size(storage?.tables.artifacts.size_bytes) },
     { label: '分塊大小', value: size(storage?.tables.chunks.size_bytes) },
     { label: '啟用版本數', value: count(storage?.active_versions) },

@@ -76,3 +76,12 @@ def terminate_on_lease_loss(
     _runner_id: str,
 ) -> None:
     kill(getpid(), SIGTERM)
+
+
+def complete_recovery(lottery: str, owner: str, runner_id: str, period: str | None) -> bool:
+    if not period:
+        return False
+    return _rpc_boolean("complete_matrix_watchdog_recovery", {
+        "p_lottery": lottery, "p_owner_id": owner, "p_runner_id": runner_id,
+        "p_draw_period": period,
+    })

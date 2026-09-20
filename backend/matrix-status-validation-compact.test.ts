@@ -18,7 +18,7 @@ describe('Matrix status validation compact read path', () => {
     let validationReads = 0;
     const api = createMatrixStatusRoutes({
       requireMember: async () => freeMember,
-      listConfigs: async () => [],
+
       readCompactStatus: async () => ({
         analysisVersion: 'v1',
         drawPeriod,

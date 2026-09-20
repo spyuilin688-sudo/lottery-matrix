@@ -1,6 +1,5 @@
 // Only safe metadata from existing records is returned to the admin client.
 export const operationSources: Record<string, string> = {
-  matrix_custom_status_save: '自訂條件更新',
   admin_matrix_permission_settings_update: '權限設定修訂',
   member_bootstrap: '會員建立',
   member_line_pwa_diagnostics_submit: 'LINE PWA 診斷提交',

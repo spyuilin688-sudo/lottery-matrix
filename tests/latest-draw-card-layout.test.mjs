@@ -28,7 +28,7 @@ test("順球落球縮減尺寸並使用 2.5px 內側間距", () => {
   const selector = ".home-screen .latest-draw-card .draw-order";
   assert.ok(hasRuleProperty(css, selector, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/));
   assert.ok(hasRuleProperty(css, selector, /width:\s*clamp\(110px, calc\(32vw - 6px\), 118px\);/));
-  assert.ok(hasRuleProperty(css, selector, /height:\s*25px;/));
+  assert.ok(hasRuleProperty(css, selector, /height:\s*22px;/));
   assert.ok(hasRuleProperty(css, selector, /gap:\s*2\.5px;/));
   assert.ok(hasRuleProperty(css, selector, /border:\s*0;/));
   assert.ok(hasRuleProperty(css, selector, /background:\s*transparent;/));

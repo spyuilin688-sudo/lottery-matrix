@@ -11,5 +11,5 @@ export { MatrixGuidePage } from "./features/MatrixGuidePage";
 export { MatrixNotebookPage } from "./features/NotebookPages";
 export { NotificationsPage } from "./features/LegacyNotificationsPage";
 export { ProfilePage, PaymentHistoryPage, ProPlansPage, ManualTransferPage } from "./features/MemberPages";
-export { MatrixStatusPage, MatrixCustomStatusPage } from "./features/MatrixStatusPages";
+export { MatrixStatusPage } from "./features/MatrixStatusPages";
 export { FeaturePageRouter } from "./features/router";

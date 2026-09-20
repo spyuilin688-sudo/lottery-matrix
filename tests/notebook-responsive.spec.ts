@@ -26,20 +26,25 @@ for (const width of [320, 360, 390, 430]) {
     await expectPageInsets(page);
     const toolbar = await page.locator('.notebook-heading').evaluate((heading) => {
       const rect = (selector: string) => heading.querySelector(selector)!.getBoundingClientRect();
-      const left = rect(':scope > img');
+      const count = rect('.notebook-entry-count');
       const actions = rect('.notebook-note-actions');
-      const add = rect('.notebook-note-actions > button:last-child');
+      const add = rect('.notebook-note-actions > button:first-child');
       const remove = rect('.notebook-delete-action');
       return {
-        leftGap: actions.left - left.right,
-        iconSizes: Array.from(heading.querySelectorAll('img')).map((img) => [img.width, img.height]),
+        countBeforeActions: count.right <= actions.left,
+        actionsOnSameRow: add.top === remove.top,
+        addBeforeDelete: add.right < remove.left,
+        noDecorativeIcon: heading.querySelector('img') === null,
         buttonHeights: [add.height, remove.height],
-        equalWidths: add.width === remove.width,
-        addFontSize: getComputedStyle(heading.querySelector('.notebook-note-actions > button:last-child')!).fontSize,
+        addFontSize: getComputedStyle(heading.querySelector('.notebook-note-actions > button:first-child')!).fontSize,
         hasDuplicateTitle: Boolean(heading.querySelector('h2')),
       };
     });
-    expect(toolbar).toEqual({ leftGap: 8, iconSizes: [[42, 42]], buttonHeights: [26, 26], equalWidths: true, addFontSize: '11px', hasDuplicateTitle: false });
+    expect(toolbar).toEqual({ countBeforeActions: true, actionsOnSameRow: true, addBeforeDelete: true, noDecorativeIcon: true, buttonHeights: [34, 34], addFontSize: '11px', hasDuplicateTitle: false });
+    await page.getByRole('button', { name: '刪除', exact: true }).click();
+    await expect(page.getByRole('button', { name: '取消刪除', exact: true })).toBeVisible();
+    await expectPageInsets(page);
+    await page.getByRole('button', { name: '取消刪除', exact: true }).click();
     await expect(page.locator('.notebook-entry-open').first()).toHaveCSS('padding-top', '5px');
     await expect(page.locator('.notebook-entry-open').first()).toHaveCSS('padding-bottom', '5px');
     await page.screenshot({ path: testInfo.outputPath(`notebook-list-${width}.png`), fullPage: true });
@@ -54,7 +59,8 @@ for (const width of [320, 360, 390, 430]) {
       titleGap: element.getBoundingClientRect().top - document.querySelector('.feature-brand-header')!.getBoundingClientRect().bottom,
       returnGap: element.querySelector('input')!.getBoundingClientRect().top - element.querySelector('header')!.getBoundingClientRect().bottom,
     }));
-    expect(gaps).toEqual({ titleGap: 8, returnGap: 8 });
+    // Main 7905e458/2eb63484 set feature title spacing to 14px; editor spacing stays 8px.
+    expect(gaps).toEqual({ titleGap: 14, returnGap: 8 });
     const title = page.getByRole('textbox', { name: '筆記標題' });
     const content = page.getByRole('textbox', { name: '筆記內容' });
     for (const edge of ['top', 'left', 'bottom']) await expect(title).toHaveCSS(`padding-${edge}`, '5px');

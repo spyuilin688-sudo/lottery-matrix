@@ -16,6 +16,7 @@ import { usePwaLifecycle } from "../pwa-lifecycle";
 import { useSubscriptionPurchaseVisible } from "../subscription-purchase-visibility";
 import { Navigate, ScreenId } from "./navigation";
 import { FeatureShell, SectionTitle } from "./shared";
+import { MATRIX_PRO_COMMON_FEATURES, SUBSCRIPTION_PAYMENT_NOTICE } from "../matrix-pro-copy";
 import { usePaymentHistory } from "./use-payment-history";
 
 
@@ -270,7 +271,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   }, [authState, memberUserId]);
   const expiry = memberProfile?.isLifetime ? null : memberExpiryInTaipei(memberProfile?.planExpiresAt ?? null);
   const displayedPlanName = memberProfile ? memberProfile.planName ?? "免費會員" : "";
-  const displayedPlanDescription = displayedPlanName === "免費會員" ? "核心功能體驗" : "享有所有 Matrix Pro 功能";
+  const displayedPlanDescription = displayedPlanName === "免費會員" ? "核心功能體驗" : "依目前方案享有 Matrix Pro 權限";
   const handleAuthAction = async () => {
     if (authRetrying || authState === "initializing" || authState === "signing-in" || authState === "signing-out") return;
     if (authState === "degraded") {
@@ -626,9 +627,9 @@ export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
   const appDialog = useAppDialog();
   const { profile: renewalProfile, error: renewalProfileError } = useSubscriptionProfile();
   const plans = [
-    { code: "month", name: "月費方案", price: "$2,880", days: 30, icons: [], features: ["Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
-    { code: "quarter", name: "季費方案", price: "$5,580", days: 90, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }], features: ["Matrix 天衍 - 使用權限", "Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
-    { code: "year", name: "年費方案", price: "$17,800", days: 365, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }, { src: "/assets/matrix-explore/tiangong.jpg", alt: "天工" }], features: ["Matrix 天衍 - 使用權限", "Matrix 天工 - 使用權限", "Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
+    { code: "month", name: "月費方案", price: "$2,880", days: 30, icons: [], features: [...MATRIX_PRO_COMMON_FEATURES] },
+    { code: "quarter", name: "季費方案", price: "$5,580", days: 90, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }], features: ["Matrix 天衍 - 使用權限", ...MATRIX_PRO_COMMON_FEATURES] },
+    { code: "year", name: "年費方案", price: "$17,800", days: 365, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }, { src: "/assets/matrix-explore/tiangong.jpg", alt: "天工" }], features: ["Matrix 天衍 - 使用權限", "Matrix 天工 - 使用權限", ...MATRIX_PRO_COMMON_FEATURES] },
   ] as const;
   const carouselPlans = [plans[2], ...plans, plans[0]] as const;
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -714,7 +715,7 @@ export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
             </label>
             <strong data-active={false}>目前狀態：關閉</strong>
           </div>
-          <p className="auto-renew-note">手動轉帳不會自動扣款；金流 API 上線後再提供自動續訂。</p>
+          <p className="auto-renew-note">{SUBSCRIPTION_PAYMENT_NOTICE}</p>
         </section>
         <button type="button" className="confirm-payment primary-action branded-explore-action" onClick={handlePayment}><span>確定付款</span></button>
         <p className="payment-note">點擊 確定付款 將跳轉付款頁面</p>
@@ -1068,9 +1069,36 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
           {referralLoginRequired && <p className="activation-result" role="status">請先使用 LINE 或 Google 登入</p>}
           {!referralLoading && !referralLoginRequired && referralSummary === null && <p className="activation-result error" role="alert">推薦碼資訊暫時無法讀取，請稍後再試</p>}
         </div>
-        <CollapsibleRuleCard title="推薦成功認定" open={openRules.recognition} onToggle={() => toggleRule("recognition")}><DetailList items={["每個 LINE 或 Google 帳號，僅能輸入一次推薦碼。", ...(subscriptionPurchaseVisible ? ["輸入推薦碼的帳號，完成訂閱 Matrix Pro 月方案、季方案或年方案任一方案後，該筆推薦即計為「推薦成功」。", "若該筆訂閱後續發生退款、刷退或交易取消，該筆推薦成功將失效，推薦成功人數同步扣除，相關獎勵資格，將依最新推薦成功人數重新計算。"] : [])]} /></CollapsibleRuleCard>
-        <CollapsibleRuleCard title="推薦成功獎勵" open={openRules.reward} onToggle={() => toggleRule("reward")}><DetailList items={["推薦成功滿 10 人：Matrix 探索期數 (七期) 開放日：每週二、五開放變為每週一、二、四、五。", "推薦成功滿 15 人：Matrix 探索期數 (七期)：永久開放。", "推薦成功滿 30 人：Matrix 探索範圍 (完整範圍)：由不開放變為每週二、五開放。", "推薦成功滿 50 人：Matrix 探索範圍 (完整範圍)：永久開放。"]} /></CollapsibleRuleCard>
-        {subscriptionPurchaseVisible && <CollapsibleRuleCard title="推薦獎勵補充規則" open={openRules.supplement} onToggle={() => toggleRule("supplement")}><DetailList items={["推薦獎勵不需本人訂閱 Matrix Pro。", "當達成對應的推薦成功人數門檻後，即可使用已解鎖的 Matrix 探索權限。", "若因退款、刷退或交易取消等情況，導致推薦成功人數低於原獎勵門檻：已取得的對應獎勵將同步取消。並依最新的推薦成功人數，重新計算資格與獎勵。", "樂彩 Matrix 保留活動內容、參加資格、獎勵內容、活動規則、資格認定、發放方式、終止、修改、解釋及最終決定之權利。"]} /></CollapsibleRuleCard>}
+        <CollapsibleRuleCard title="推薦成功認定" open={openRules.recognition} onToggle={() => toggleRule("recognition")}>
+          <DetailList items={[
+            "每個 LINE 或 Google 帳號，僅能輸入一次推薦碼。",
+            ...(subscriptionPurchaseVisible ? ["輸入推薦碼的帳號，完成訂閱 Matrix Pro 月方案、季方案或年方案任一方案後，該筆推薦即計為「推薦成功」。"] : []),
+          ]} />
+        </CollapsibleRuleCard>
+        <CollapsibleRuleCard title="推薦成功獎勵" open={openRules.reward} onToggle={() => toggleRule("reward")}>
+          <dl className="referral-rewards">
+            {[
+              { count: 10, feature: "七期", availability: "每週一、二、四、五開放" },
+              { count: 15, feature: "七期", availability: "永久開放" },
+              { count: 30, feature: "完整範圍", availability: "每週二、五開放" },
+              { count: 50, feature: "完整範圍", availability: "永久開放" },
+            ].map(({ count, feature, availability }) => (
+              <div key={count}>
+                <dt>推薦成功滿 <strong>{count}</strong> 人</dt>
+                <dd><span>Matrix 探索 {feature}</span><span>{availability}</span></dd>
+              </div>
+            ))}
+          </dl>
+          <p className="referral-rewards-note">永久開放仍須維持對應的推薦成功人數門檻。</p>
+        </CollapsibleRuleCard>
+        {subscriptionPurchaseVisible && <CollapsibleRuleCard title="推薦獎勵補充規則" open={openRules.supplement} onToggle={() => toggleRule("supplement")}>
+          <DetailList items={[
+            "推薦獎勵不需本人訂閱 Matrix Pro。",
+            "當達成對應的推薦成功人數門檻後，即可使用已解鎖的 Matrix 探索權限。",
+            "若該筆訂閱發生退款、刷退或交易取消，該筆推薦成功將失效，推薦成功人數同步扣除。資格與獎勵依最新推薦成功人數重新計算；低於對應門檻時，已取得的對應獎勵同步取消。",
+            "樂彩 Matrix 保留活動內容、參加資格、獎勵內容、活動規則、資格認定、發放方式、終止、修改、解釋及最終決定之權利。",
+          ]} />
+        </CollapsibleRuleCard>}
       </section>
       <section className="panel activation-code-section" aria-label="啟動碼">
         <div className="activation-card">
@@ -1161,6 +1189,7 @@ export function ServiceInfoPage({ onNavigate }: { onNavigate: Navigate }) {
             <ul className="legal-info-subfunctions">
               <li>Matrix 探索</li>
               <li>Matrix 天衡</li>
+              <li>Matrix 天樞</li>
               <li>Matrix 天衍</li>
               <li>Matrix 天工</li>
             </ul>
@@ -1174,6 +1203,7 @@ export function ServiceInfoPage({ onNavigate }: { onNavigate: Navigate }) {
       <LegalInfoSection title="五、使用方式">
         <p>使用者透過 LINE 或 Google 登入後，可查看會員資訊、訂閱資訊及目前帳號可使用的功能。</p>
         <p>Matrix 天衡以同一期的兩個球位與對應號碼共同作為條件，比對歷史紀錄。可設定天衡期數、版路類型、天衡條件及進階選項，按下「開始天衡」後查看天衡結果、重複號碼統計及版路驗證過程。</p>
+        <p>Matrix 天樞以同一期的三個球位與對應號碼共同作為條件，比對歷史紀錄。可設定天樞期數、版路類型、天樞條件及進階選項，按下「開始天樞」後查看天樞結果、重複號碼統計及版路驗證過程。</p>
         <p>不同會員狀態可使用的功能及權限，依目前帳號顯示為準。</p>
       </LegalInfoSection>
       <LegalInfoSection title="六、探索結果說明">
@@ -1181,7 +1211,7 @@ export function ServiceInfoPage({ onNavigate }: { onNavigate: Navigate }) {
       </LegalInfoSection>
       {subscriptionPurchaseVisible && <LegalInfoSection title="七、Matrix Pro 說明">
         <p>Matrix Pro 為樂彩 Matrix 的付費訂閱方案，提供月方案、季方案及年方案。</p>
-        <p>使用者可自行選擇是否開啟自動續訂。</p>
+        <p>{SUBSCRIPTION_PAYMENT_NOTICE}</p>
         <p>實際方案價格、訂閱期間、功能權限及目前可使用內容，依「訂閱方案與收費標準」及帳號顯示為準。</p>
       </LegalInfoSection>}
     </LegalInfoDocument>
@@ -1191,11 +1221,11 @@ export function ServiceInfoPage({ onNavigate }: { onNavigate: Navigate }) {
 export function RefundPolicyPage({ onNavigate }: { onNavigate: Navigate }) {
   return (
     <LegalInfoDocument title="退款規範" onNavigate={onNavigate}>
-      <LegalInfoSection title="一、適用範圍"><p>本退款規範適用於樂彩 Matrix 提供的 Matrix Pro 付費方案。</p><p>Matrix Pro 提供單次訂閱及自動續訂方式，實際付款方式，依使用者訂閱時的選擇為準。</p></LegalInfoSection>
-      <LegalInfoSection title="二、自動續訂"><p>使用者可自行選擇是否開啟自動續訂。</p><p>開啟自動續訂後，系統將於目前訂閱方案到期時，依原訂閱方案及續訂當時顯示的價格自動扣款，並延長相對應的 Matrix Pro 訂閱期間。</p><p>使用者可於下一次扣款前，先行關閉自動續訂。關閉自動續訂後，已付款的訂閱期間仍可使用至到期日，期滿後不再自動扣款或續訂。</p><p>關閉自動續訂僅停止下一期扣款，不等同取消目前訂閱或申請退款。</p><p>自動續訂扣款成功後，視為一筆新的 Matrix Pro 訂閱交易；如需申請退款，依本退款規範辦理。</p></LegalInfoSection>
+      <LegalInfoSection title="一、適用範圍"><p>本退款規範適用於樂彩 Matrix 提供的 Matrix Pro 付費方案。</p><p>{SUBSCRIPTION_PAYMENT_NOTICE}</p></LegalInfoSection>
+      <LegalInfoSection title="二、自動續訂"><p>自動續訂尚未開放，目前不會自動扣款或續訂。</p></LegalInfoSection>
       <LegalInfoSection title="三、七日解除權與數位服務"><p>Matrix Pro 為付款後，提供使用權限的數位服務。</p><p>若付款流程已事先告知，並取得使用者同意立即提供數位內容或線上服務，且服務已開始提供，依法得排除七日解除權，不適用七日無條件解除。</p></LegalInfoSection>
       <LegalInfoSection title="四、可申請退款情形"><DetailList items={["重複付款。", "付款成功但 Matrix Pro 權限未開通。", "因 樂彩 Matrix 系統異常，致已購買的主要服務無法使用。", "其他依法應辦理退款的情形。"]} /></LegalInfoSection>
-      <LegalInfoSection title="五、不予退款情形"><DetailList items={["使用者已事先同意立即提供數位服務，且 Matrix Pro 權限已開通並開始使用，依法得排除七日解除權的情形。", "非屬本規範或法律規定應退款的情形。", "關閉自動續訂僅停止下一期扣款，不溯及已完成的當期訂閱交易。"]} /></LegalInfoSection>
+      <LegalInfoSection title="五、不予退款情形"><DetailList items={["使用者已事先同意立即提供數位服務，且 Matrix Pro 權限已開通並開始使用，依法得排除七日解除權的情形。", "非屬本規範或法律規定應退款的情形。"]} /></LegalInfoSection>
       <LegalInfoSection title="六、退款申請方式"><p>請寄送電子郵件至 <a href="mailto:matrix.lottery@gmail.com">matrix.lottery@gmail.com</a>，並提供會員帳號、付款日期、付款金額、訂單或交易資料及退款原因。</p></LegalInfoSection>
       <LegalInfoSection title="七、退款處理"><p>收到申請後，將依付款紀錄、權限開通狀態及服務使用情形進行核對。</p><p>符合退款條件者，退款方式及實際入帳時間，將依原付款方式與金流服務商作業時間辦理。</p></LegalInfoSection>
       <LegalInfoSection title="八、其他"><p>本規範如與中華民國法令的強制或禁止規定不同，依相關法令辦理。</p><p>樂彩 Matrix 保留退款申請資料核對、交易狀態確認及退款資格認定之權利；退款處理仍依中華民國相關法令及本退款規範辦理。</p></LegalInfoSection>
@@ -1225,7 +1255,7 @@ export function MemberTermsPage({ onNavigate }: { onNavigate: Navigate }) {
   const sections: Array<[string, React.ReactNode]> = [
     ["一、服務範圍", <p>樂彩 Matrix 提供 {subscriptionPurchaseVisible ? "Matrix 分析" : "Matrix 查詢"}、歷史資料查詢、號碼紀錄、計算工具、牌單及通知等功能。</p>],
     ["二、會員登入", <p>使用者透過 LINE 或 Google 登入後使用會員功能。</p>],
-    ["三、Matrix Pro 訂閱", <><p>Matrix Pro 提供月方案、季方案及年方案。</p><p>使用者可自行選擇是否開啟自動續訂。</p><p>開啟自動續訂後，系統將於目前方案到期時，依原訂閱方案自動續訂並扣款。</p><p>使用者可於方案到期前，先行關閉自動續訂；關閉之後，已付款的 Matrix Pro 仍可使用至到期日，期滿後不再自動續訂。</p></>],
+    ["三、Matrix Pro 訂閱", <><p>Matrix Pro 提供月方案、季方案及年方案。</p><p>{SUBSCRIPTION_PAYMENT_NOTICE}</p></>],
     ["四、訂閱方案", <><ul className="legal-info-plans">{[
       "月方案：30 天，NT$2,880",
       "季方案：90 天，NT$5,580",
@@ -1247,7 +1277,7 @@ export function PrivacyPolicyPage({ onNavigate }: { onNavigate: Navigate }) {
     <LegalInfoDocument title="隱私權政策" onNavigate={onNavigate}>
       <LegalInfoSection title="一、蒐集的資料"><DetailList items={["登入服務所提供的帳號識別資料", ...(subscriptionPurchaseVisible ? ["Matrix Pro 訂閱狀態", "訂閱到期日"] : []), "啟動碼使用紀錄", "推薦碼使用紀錄", "推薦成功人數", "通知設定"]} /></LegalInfoSection>
       <LegalInfoSection title="二、使用目的"><DetailList items={["會員登入與帳號識別", ...(subscriptionPurchaseVisible ? ["顯示會員及訂閱狀態", "Matrix Pro 啟用、續訂及權限管理"] : []), "提供使用者已選擇的功能", ...(subscriptionPurchaseVisible ? ["推薦活動資格與獎勵管理"] : []), "系統通知與服務通知"]} /></LegalInfoSection>
-      <LegalInfoSection title="三、第三方服務"><p>目前使用 LINE 與 Google 登入服務。</p></LegalInfoSection>
+      <LegalInfoSection title="三、第三方服務"><p>目前使用 LINE 與 Google 登入服務。</p>{subscriptionPurchaseVisible && <p>訂閱付款將採用綠界金流，目前尚未開放。</p>}</LegalInfoSection>
       <LegalInfoSection title="四、資料使用範圍"><p>蒐集之資料，僅用於本政策所載之使用目的及提供樂彩 Matrix 服務，不會於未經使用者同意或法律另有規定之情況下，提供予第三方。</p></LegalInfoSection>
       <LegalInfoSection title="五、資料安全"><p>樂彩 Matrix 將採取合理之安全措施保護會員資料，避免未經授權之存取、使用、修改或洩漏。</p></LegalInfoSection>
       <LegalInfoSection title="六、隱私權政策調整"><p>樂彩 Matrix 保留修改本隱私權政策之權利，更新後將公布於本頁面，並自公告日起生效。</p></LegalInfoSection>
@@ -1264,7 +1294,7 @@ export function DisclaimerPage({ onNavigate }: { onNavigate: Navigate }) {
       <LegalInfoSection title="三、使用者決定"><p>使用者應自行決定如何使用服務內提供的資料、{subscriptionPurchaseVisible ? "功能及分析結果" : "功能及查詢結果"}，並自行承擔相關決定所產生的結果。</p></LegalInfoSection>
       <LegalInfoSection title="四、資料差異"><p>如服務內資料與官方公布資料不同，請以官方公布資料為準。</p></LegalInfoSection>
       <LegalInfoSection title="五、系統與服務"><p>樂彩 Matrix 不保證服務持續不中斷、完全無錯誤，或所有功能於任何時間皆可正常使用。</p><p>如因系統維護、更新、網路異常、第三方服務或其他原因造成服務中斷、延遲或資料顯示異常，將依實際情況處理。</p></LegalInfoSection>
-      <LegalInfoSection title="六、第三方服務"><p>本服務使用 LINE、Google 登入、金流服務或其他第三方服務。</p><p>第三方服務之使用方式、資料處理及服務狀態，依各第三方服務提供者之規定辦理。</p></LegalInfoSection>
+      <LegalInfoSection title="六、第三方服務"><p>本服務使用 LINE 與 Google 登入服務。</p>{subscriptionPurchaseVisible && <p>訂閱付款將採用綠界金流，目前尚未開放。</p>}<p>第三方服務之使用方式、資料處理及服務狀態，依各第三方服務提供者之規定辦理。</p></LegalInfoSection>
       <LegalInfoSection title="七、責任範圍"><p>因使用或無法使用樂彩 Matrix 所提供的資料、{subscriptionPurchaseVisible ? "功能、分析結果或第三方服務" : "功能、查詢結果或第三方服務"}所產生的影響，應依實際情況及相關法令認定。</p></LegalInfoSection>
       <LegalInfoSection title="八、內容調整"><p>樂彩 Matrix 得依服務實際運作需要調整功能、內容及相關說明。</p><p>如涉及會員權益或重要內容調整，將於服務內公告。</p></LegalInfoSection>
       <LegalInfoSection title="九、最終說明"><p>本聲明與免責事項如與中華民國法令的強制或禁止規定不同，依相關法令辦理。</p><p>樂彩 Matrix 保留服務內容、功能說明、資料呈現、規則內容、修改、解釋及最終決定之權利。</p></LegalInfoSection>

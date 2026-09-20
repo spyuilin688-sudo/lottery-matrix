@@ -5,7 +5,7 @@ import test from "node:test";
 const source = readFileSync(new URL("../src/features/MatrixGuidePage.tsx", import.meta.url), "utf8");
 
 test("Matrix guide uses requested spacing and current opening instructions", () => {
-  assert.match(source, /Matrix Core \(Matrix 探索、Matrix 天衡、Matrix 天衍、Matrix 天工\)/);
+  assert.match(source, /Matrix Core \(Matrix 探索、Matrix 天衡、Matrix 天樞、Matrix 天衍、Matrix 天工\)/);
   assert.ok(source.includes("今彩539與天天樂每期使用 5 個球位；六合彩與大樂透使用 6 個正碼球位及特別號"));
   assert.ok(source.includes("標準範圍：上 1 ~ 7、當期"));
   assert.ok(source.includes("完整範圍：上 1 ~ 14、當期"));
@@ -16,7 +16,7 @@ test("Matrix guide uses requested spacing and current opening instructions", () 
   assert.ok(source.includes("複合版路每組使用 1 個鎖定條件與 2 條規則"));
   assert.ok(source.includes("每條規則各驗證 1 個球位"));
   assert.ok(source.includes("固定使用五十期、二段式與準 2 進 3"));
-  assert.ok(source.includes("準 3 進 4排除"));
+  assert.ok(source.includes("準 3 進 4 排除"));
   assert.ok(source.includes("輸入 2 至 3 個指定號碼後"));
   assert.ok(source.includes("至少輸入 2 個、最多 3 個號碼"));
   assert.ok(source.includes("可選擇 1 至 30 期"));

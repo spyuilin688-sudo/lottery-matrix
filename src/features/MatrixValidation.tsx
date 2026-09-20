@@ -615,7 +615,7 @@ export function TianhengValidationProcess({
                     <span className="validation-summary-primary">{item.firstNumber}{" "}</span>
                     <span>
                       第 <i className="validation-summary-position">{item.firstLockedPosition}</i> 顆、同期{" "}<i className="validation-summary-primary">{item.secondNumber}</i> 第 <i className="validation-summary-position">{item.secondLockedPosition}</i> 顆
-                      {'thirdNumber' in item ? <>、同期{" "}<i className="validation-summary-primary">{item.thirdNumber}</i> 第 <i className="validation-summary-position">{item.thirdLockedPosition}</i> 顆</> : null}
+                      {'thirdNumber' in item ? <>、跟{" "}<i className="validation-summary-primary">{item.thirdNumber}</i> 第 <i className="validation-summary-position">{item.thirdLockedPosition}</i> 顆</> : null}
                     </span>
                   </span>
                   <span className="tianyan-validation-summary-row" data-testid={`${algorithmId}-summary-row`}>

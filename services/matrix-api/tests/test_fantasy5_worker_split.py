@@ -82,20 +82,13 @@ def test_fantasy5_github_workflow_is_crawler_only() -> None:
     assert "AnalysisPipeline" not in entrypoint
     assert "create_artifact_builders" not in entrypoint
     assert "_run_analysis" not in entrypoint
-    expected_crons = (
-        "33 1 * 3-11 *",
-        "33 2 * 11,12,1-3 *",
-    )
-    assert tuple(re.findall(r'^\s+- cron: "([^"]+)"$', workflow, re.MULTILINE)) == (
-        expected_crons
-    )
-    assert "TZ=America/Los_Angeles date +%z" in workflow
-    assert 'expected_offset="-0700"' in workflow
-    assert 'expected_offset="-0800"' in workflow
-    assert "taipei_month_day" not in workflow
-    assert workflow.index("Gate daylight-saving season") < workflow.index(
-        "Check out repository"
-    )
+    # Railway owns the recurring crawler. GitHub remains an explicitly dispatched
+    # fallback, so this workflow must not restore a second recurring schedule.
+    assert "workflow_dispatch:" in workflow
+    assert not re.search(r'^\s+schedule:', workflow, re.MULTILINE)
+    assert not re.search(r'^\s+- cron:', workflow, re.MULTILINE)
+    assert "group: fantasy5-draw-crawler" in workflow
+    assert "cancel-in-progress: false" in workflow
 
 
 def test_existing_github_analysis_workflow_excludes_fantasy5() -> None:
@@ -504,4 +497,3 @@ def test_analysis_worker_cli_reads_only_supabase(monkeypatch) -> None:
 
     assert analysis_worker.main(["--lottery", "天天樂"]) == 0
     assert calls == [("天天樂", repository)]
-

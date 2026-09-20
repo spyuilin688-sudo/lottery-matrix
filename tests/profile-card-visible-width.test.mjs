@@ -19,5 +19,8 @@ test("我的頁面會員卡裁除素材頂端留白後仍保持內容座標對�
   assert.match(css, /--membership-profile-height:\s*21\.68906cqw;/);
   assert.match(css, /\.profile-avatar\s*\{[^}]*top:\s*3\.64698cqw;/s);
   assert.match(css, /\.profile-copy\s*\{[^}]*top:\s*5\.81898cqw;/s);
-  assert.match(css, /\.profile-logout\s*\{[^}]*top:\s*10\.68898cqw;/s);
+  // Google login ownership moved positioning to the shared actions wrapper.
+  assert.match(component, /className="profile-auth-actions"/);
+  assert.match(css, /\.profile-logout\s*\{[^}]*position:\s*static;[^}]*min-height:\s*44px;/s);
+  assert.match(css, /\.profile-auth-actions\s*\{[^}]*top:\s*10\.68898cqw;/s);
 });

@@ -7,16 +7,20 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf
 const prototype = read("src/Prototype.tsx");
 const switcher = read("src/homepage/lottery-switcher.css");
 const spacing = read("src/matrix-explore-spacing.css");
+const featureCss = read("src/feature-pages.css");
 const pages = readFeaturePagesSource();
 
-test("首頁彩種使用單層圓角框並以背景明暗表示選取狀態", () => {
+test("首頁彩種使用單層圓角框並以Logo 透明度與淡金底表示選取狀態", () => {
   assert.doesNotMatch(prototype, /className="lottery-selected-frame"/);
-  assert.match(switcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid var\(--home-frame-muted\);[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*background-color:\s*rgba\(0, 0, 0, \.4\);[^}]*background-blend-mode:\s*multiply;/s);
-  assert.match(switcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]\s*\{[^}]*background-color:\s*transparent;/s);
+  assert.match(switcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid color-mix\(in srgb, var\(--home-frame-gold\) 22%, transparent\);[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*background:\s*var\(--lottery-neutral-950\);/s);
+  assert.match(switcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]\s*\{[^}]*border-color:\s*color-mix\(in srgb, var\(--home-frame-bright\) 55%, transparent\);[^}]*background:\s*color-mix\(in srgb, var\(--home-frame-gold\) 6%, var\(--lottery-neutral-950\)\);/s);
+  // DESIGN.md compact Selector; later selected-frame refinement is covered by pwa-frame-system.
+  assert.match(switcher, /\.lottery-selector-logo\s*\{[^}]*opacity:\s*\.6;/s);
+  assert.match(switcher, /\.lottery-card\[data-selected="true"\] \.lottery-selector-logo\s*\{[^}]*opacity:\s*1;/s);
   assert.doesNotMatch(switcher, /\.lottery-card(?:\[data-selected="true"\])?::(?:before|after)\s*\{/);
 });
 
-test("探索取消分隔線，天工進階設定保留 6px 分隔", () => {
+test("探索與天工一般設定不加分隔線，天工段落使用 8px 分隔", () => {
   assert.match(
     spacing,
     /\.matrix-explore-main-screen \.hit-options\s*\{[^}]*margin:\s*0;[^}]*padding:\s*0;/s,
@@ -28,7 +32,7 @@ test("探索取消分隔線，天工進階設定保留 6px 分隔", () => {
   );
   assert.match(
     spacing,
-    /\.matrix-tiangong-screen \.tiangong-general-settings \.tiangong-advanced-divider\s*\{[^}]*padding-bottom:\s*6px;[^}]*border-bottom:\s*1px solid rgba\(212, 165, 47, \.28\);/s,
+    /\.matrix-tiangong-screen \.tiangong-stage-settings \.tiangong-stage-block \+ \.tiangong-stage-block\s*\{[^}]*margin-top:\s*8px;[^}]*padding-top:\s*8px;[^}]*border-top:\s*1px solid var\(--pwa-frame-secondary\);/s,
   );
 });
 
@@ -48,15 +52,15 @@ test("天工指定選項共用探索期數的右側欄寬並平均分配", () =>
 });
 
 
-test("天工探索期數以下沿用相同右側欄寬，且彩球類型與探索期數保留 10px 間距", () => {
+test("天工設定沿用相同右側欄寬與一般列間距，不再加個別欄位補償", () => {
   assert.match(
     spacing,
     /\.matrix-tiangong-screen \.tiangong-settings\s*\{[^}]*--tiangong-label-column:\s*88\.8px;/s,
   );
-  assert.match(
-    spacing,
-    /\.tiangong-general-settings \.setting-grid > label:first-child \+ label\s*\{[^}]*margin-top:\s*10px;/s,
-  );
+  // Main 12a4f59 (2026-09-15) removes the per-row margins and advanced divider.
+  assert.doesNotMatch(spacing, /\.tiangong-general-settings \.setting-grid > (?:\* \+ \*|label:first-child \+ label)\s*\{/);
+  assert.doesNotMatch(spacing, /\.tiangong-general-settings \.tiangong-advanced-divider(?: \+ \.tiangong-advanced-row)?\s*\{/);
+  assert.match(featureCss, /\.matrix-tiangong-screen \.tiangong-settings \.tiangong-setting-row\s*\{[^}]*margin:\s*0;[^}]*padding:\s*0;[^}]*grid-template-columns:\s*var\(--tiangong-label-column\) minmax\(0, 1fr\);[^}]*border:\s*0;/s);
   assert.match(
     spacing,
     /@media \(min-width:\s*40rem\)[\s\S]*?\.matrix-tiangong-screen \.tiangong-settings\s*\{[^}]*--tiangong-label-column:\s*104\.8px;/s,

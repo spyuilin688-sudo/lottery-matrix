@@ -9,6 +9,7 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import { MatrixExplorePage, TongXingPage } from '../FeaturePages';
 import { resetReadCacheForTests } from '../read-cache';
 import { fetchLotteryHistory } from '../lottery-api';
+import { HistoryList } from '../features/shared';
 
 const matrixApi = vi.hoisted(() => ({
   fetchExploreList: vi.fn(),
@@ -227,50 +228,45 @@ test('Matrix 同星探索結果左欄期數在上、日期在下', async () => {
   }
 });
 
-test('近10期開獎號碼剛進頁面時保持展開', () => {
+// The frame refinement contract removed HistoryList from the Explore page.
+test('探索頁保留設定與開始探索入口，不顯示或讀取近10期開獎號碼', () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} />);
 
-  const toggle = screen.getByRole('button', { name: '收合近10期開獎號碼' });
-  const table = document.querySelector<HTMLElement>('.history-table');
-
-  expect(toggle.getAttribute('aria-expanded')).toBe('true');
-  expect(toggle.getAttribute('aria-controls')).toBe('matrix-explore-history-table');
-  expect(toggle.textContent).toContain('近10期開獎號碼');
-  expect(toggle.textContent).not.toContain('依號碼由小到大排序');
-  expect(toggle.querySelector('.section-title')).not.toBeNull();
-  expect(toggle.querySelector('h2')).toBeNull();
-  expect(table?.hidden).toBe(false);
+  expect(screen.getByRole('heading', { name: '探索設定' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: '開始探索' })).toBeTruthy();
+  expect(screen.queryByText('近10期開獎號碼')).toBeNull();
+  expect(screen.queryByRole('button', { name: /近10期開獎號碼/ })).toBeNull();
+  expect(document.querySelector('.history-panel')).toBeNull();
+  expect(fetchLotteryHistory).not.toHaveBeenCalled();
 });
 
-test('近10期開獎號碼可用收合按鍵切換顯示狀態', () => {
-  render(<MatrixExplorePage onNavigate={vi.fn()} />);
-
-  fireEvent.click(screen.getByRole('button', { name: '收合近10期開獎號碼' }));
-
-  expect(screen.getByRole('button', { name: '展開近10期開獎號碼' }).getAttribute('aria-expanded')).toBe('false');
-  expect(document.querySelector<HTMLElement>('.history-table')?.hidden).toBe(true);
-});
-
-test('開始探索後自動收合近10期開獎號碼', () => {
+test('開始探索顯示 API 結果，不恢復近10期卡片或讀取歷史', async () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} />);
 
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
 
-  expect(screen.getByRole('button', { name: '展開近10期開獎號碼' }).getAttribute('aria-expanded')).toBe('false');
-  expect(document.querySelector<HTMLElement>('.history-table')?.hidden).toBe(true);
+  expect(await screen.findByText('22.26')).toBeTruthy();
+  expect(screen.getByRole('button', { name: /展開版路/ })).toBeTruthy();
+  expect(screen.queryByText('近10期開獎號碼')).toBeNull();
+  expect(document.querySelector('.history-panel')).toBeNull();
+  expect(fetchLotteryHistory).not.toHaveBeenCalled();
 });
 
-test('切換彩種時自動展開近10期開獎號碼', () => {
+test('切換彩種沿用探索查詢，不恢復近10期卡片或讀取歷史', async () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} />);
 
-  fireEvent.click(screen.getByRole('button', { name: '收合近10期開獎號碼' }));
   fireEvent.click(screen.getByRole('tab', { name: '六合彩' }));
+  expect(screen.getByRole('tab', { name: '六合彩' }).getAttribute('aria-selected')).toBe('true');
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
 
-  expect(screen.getByRole('button', { name: '收合近10期開獎號碼' }).getAttribute('aria-expanded')).toBe('true');
-  expect(document.querySelector<HTMLElement>('.history-table')?.hidden).toBe(false);
+  expect(await screen.findByText('22.26')).toBeTruthy();
+  expect(matrixApi.fetchExploreList).toHaveBeenCalledWith(expect.objectContaining({ lottery: '六合彩' }));
+  expect(screen.queryByText('近10期開獎號碼')).toBeNull();
+  expect(document.querySelector('.history-panel')).toBeNull();
+  expect(fetchLotteryHistory).not.toHaveBeenCalled();
 });
 
-test('近10期依 API 唯一期號契約只請求並顯示完整 10 期', async () => {
+test('共用歷史元件依 API 唯一期號契約只請求並顯示完整 10 期', async () => {
   const lotteryApi = await vi.importActual<typeof import('../lottery-api')>('../lottery-api');
   vi.mocked(fetchLotteryHistory).mockImplementation(lotteryApi.fetchLotteryHistory);
   const uniqueRecords = Array.from({ length: 10 }, (_, index) => ({
@@ -294,7 +290,7 @@ test('近10期依 API 唯一期號契約只請求並顯示完整 10 期', async 
     });
   }) as typeof fetch;
 
-  render(<MatrixExplorePage onNavigate={vi.fn()} />);
+  render(<HistoryList lottery="今彩539" numberOrder="依號碼由小到大排序" onOpenHistory={vi.fn()} />);
 
   await waitFor(() => {
     expect(document.querySelectorAll('.history-row:not(.history-head)')).toHaveLength(10);

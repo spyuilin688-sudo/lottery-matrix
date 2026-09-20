@@ -13,12 +13,15 @@ const migration = readdirSync('supabase/migrations')
   .join('\n');
 
 test('Tianyan result UI matches the approved differences', () => {
-  assert.match(source, /\{isExplore \? \([\s\S]*?<HistoryList/);
+  // Explore history was retired in 9ad9f417; both algorithm pages omit the table.
+  const explorePage = readFileSync("src/features/MatrixExplorePage.tsx", "utf8");
+  assert.doesNotMatch(explorePage, /<HistoryList/);
   assert.match(source, /\? \["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"\]/);
   assert.match(source, /algorithmType: item\.roadTypeLabel/);
   assert.match(source, /numberOrder: item\.numberOrder/);
   assert.match(source, /aria-label="天衍驗證過程"/);
-  assert.match(source, /const matchedRules = \[row\.rule1, row\.rule2\]\.filter\(\(rule\) => rule\.hit\);/);
+  assert.match(source, /<TianyanExpandedValidationGroups/);
+  assert.match(readFileSync("src/TianyanExpandedValidation.tsx", "utf8"), /const matchedRules = \[row\.rule1, row\.rule2\]\.filter\(\(rule\) => rule\.hit\);/);
 });
 
 test('Tianyan road types are exactly the six approved labels', () => {

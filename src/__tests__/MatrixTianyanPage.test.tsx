@@ -43,6 +43,8 @@ const validation = {
 
 beforeEach(() => {
   document.body.innerHTML = '';
+  // LotteryTabs persists the current lottery across page mounts.
+  window.sessionStorage.clear();
   matrixApi.fetchTianyanList.mockReset().mockResolvedValue(envelope);
   matrixApi.fetchTianyanValidation.mockReset().mockResolvedValue({ ...envelope, itemId: 'tianyan-api-1', validation });
   globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ records: [] }) }) as typeof fetch;

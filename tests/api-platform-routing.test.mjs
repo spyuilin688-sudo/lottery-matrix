@@ -28,7 +28,7 @@ test('routes member, LINE and completed Matrix results to Supabase', async () =>
   assert.match(matrix, /matrix_tianyan_list/);
   assert.match(matrix, /matrix_tiangong_list/);
   assert.match(status, /functions\.invoke\('matrix-status'/);
-  assert.match(status, /matrix_custom_status_list/);
+  assert.doesNotMatch(status, /matrix_custom_status|custom-save|custom-reset/);
   assert.match(online, /member_online_start/);
 });
 

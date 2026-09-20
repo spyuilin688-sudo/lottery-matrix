@@ -14,14 +14,14 @@ test("history search uses the last edited date-or-range control as the active mo
   assert.match(source, /range: dateIsPrimary \? "所有期數" : range/);
 });
 
-test("homepage owns the approved 9–12px, 8px, and responsive navigation rhythm from one parent", async () => {
+test("homepage owns the approved matching 9–12px Core gaps and responsive navigation rhythm from one parent", async () => {
   const css = await read("src/homepage/base.css");
   const homeLayout = css.match(/\.home-screen \.home-layout \{([\s\S]*?)\n\}/)?.[1] ?? "";
   const lotteryScreen = css.match(/\.home-screen \.lottery-screen \{([\s\S]*?)\n\}/)?.[1] ?? "";
   const bottomGroup = css.match(/\.home-screen \.home-bottom-group \{([\s\S]*?)\n\}/)?.[1] ?? "";
 
   assert.match(homeLayout, /--home-gap-status-core:\s*clamp\(9px,\s*1\.35dvh,\s*12px\)/);
-  assert.match(homeLayout, /--home-gap-core-features:\s*8px/);
+  assert.match(homeLayout, /--home-gap-core-features:\s*var\(--home-gap-status-core\)/);
   assert.match(homeLayout, /--home-gap-features-nav:\s*clamp\(8px,\s*1\.15dvh,\s*12px\)/);
   assert.match(homeLayout, /padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ var\(--home-gap-features-nav\)\)/);
   assert.doesNotMatch(lotteryScreen, /--home-gap-(?:status-core|core-features)/);
@@ -38,16 +38,18 @@ test("single-number marking remains independent from the selected row", async ()
   assert.doesNotMatch(body, /setMarkedRows/);
 });
 
-test("Matrix switcher exposes all four pages in one compact horizontal control", async () => {
+test("Matrix switcher exposes all five pages in one compact horizontal control", async () => {
   const [source, css] = await Promise.all([
     Promise.all([read("src/features/shared.tsx"), read("src/features/MatrixExplorePage.tsx"), read("src/features/MatrixTiangongPage.tsx")]).then(parts => parts.join("\n")),
     read("src/feature-pages.css"),
   ]);
   const switcher = source.slice(source.indexOf("function MatrixPageSwitcher"), source.indexOf("const ROAD_VALIDATION_SAMPLE_HISTORY"));
+  const items = source.match(/export const MATRIX_PAGE_ITEMS = \[([\s\S]*?)\] as const;/)?.[1] ?? "";
+  assert.deepEqual([...items.matchAll(/screen: "([^"]+)"/g)].map(match => match[1]), ["explore", "tianheng", "tianshu", "tianyan", "tiangong"]);
   assert.match(switcher, /MATRIX_PAGE_ITEMS\.map/);
   assert.match(switcher, /aria-current=\{item\.screen === current \? "page" : undefined\}/);
   assert.match(switcher, /onClick=\{\(\) => onNavigate\(item\.screen\)\}/);
-  assert.match(source, /current=\{isTianheng \? "tianheng" : isTianyan \? "tianyan" : "explore"\}/);
+  assert.match(source, /current=\{isTianshu \? "tianshu" : isTianheng \? "tianheng" : isTianyan \? "tianyan" : "explore"\}/);
   assert.match(source, /current="tiangong"/);
   assert.match(css, /\.matrix-page-switcher\s*\{[^}]*display:\s*flex;[^}]*align-items:\s*stretch;[^}]*gap:\s*0;/s);
   assert.match(css, /\.matrix-page-switcher button\s*\{[^}]*min-width:\s*0;[^}]*height:\s*100%;[^}]*flex:\s*1 1 0;/s);

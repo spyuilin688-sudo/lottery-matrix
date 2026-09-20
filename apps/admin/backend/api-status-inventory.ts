@@ -18,13 +18,12 @@ const supabaseRpcDefinitions = [
   ['matrix_explore_validation', 'Matrix 探索驗證', 'Matrix 演算法', '取得探索結果的驗證資料。'],
   ['matrix_tianheng_list', 'Matrix 天衡清單', 'Matrix 演算法', '取得 Matrix 天衡分析清單。'],
   ['matrix_tianheng_validation', 'Matrix 天衡驗證', 'Matrix 演算法', '取得 Matrix 天衡分析驗證資料。'],
+  ['matrix_tianshu_list', 'Matrix 天樞清單', 'Matrix 演算法', '取得 Matrix 天樞分析清單。'],
+  ['matrix_tianshu_validation', 'Matrix 天樞驗證', 'Matrix 演算法', '取得 Matrix 天樞分析驗證資料。'],
   ['matrix_tianyan_list', 'Matrix 天衍清單', 'Matrix 演算法', '取得 Matrix 天衍分析清單。'],
   ['matrix_tianyan_validation', 'Matrix 天衍驗證', 'Matrix 演算法', '取得 Matrix 天衍分析驗證資料。'],
   ['matrix_tiangong_list', 'Matrix 天工清單', 'Matrix 演算法', '取得 Matrix 天工分析清單。'],
   ['matrix_tiangong_validation', 'Matrix 天工驗證', 'Matrix 演算法', '取得 Matrix 天工分析驗證資料。'],
-  ['matrix_custom_status_list', '自訂觸發條件清單', 'Matrix 狀態', '取得會員自訂觸發條件。'],
-  ['matrix_custom_status_save', '儲存自訂觸發條件', 'Matrix 狀態', '儲存會員自訂觸發條件。'],
-  ['matrix_custom_status_reset', '重設自訂觸發條件', 'Matrix 狀態', '重設會員自訂觸發條件。'],
   ['matrix_permission_settings', 'Matrix 權限設定', '權限設定', '取得目前 Matrix 權限開關設定。'],
   ['admin_matrix_permission_settings_update', '管理員更新 Matrix 權限設定', '權限設定', '由管理者後臺更新一項 Matrix 權限開關。'],
   ['member_bootstrap', '建立會員資料', '會員', '建立或補齊會員資料。'],
@@ -59,7 +58,7 @@ const supabaseRpcDefinitions = [
 
 // One classification for both the backend checks and UI evidence descriptions.
 const publicReadRpcs = new Set<string>(['matrix_explore_list', 'matrix_explore_validation', 'matrix_tianheng_list', 'matrix_tianheng_validation', 'matrix_permission_settings']);
-const memberReadRpcs = new Set<string>(['matrix_tianyan_list', 'matrix_tianyan_validation', 'matrix_tiangong_list', 'matrix_tiangong_validation', 'matrix_custom_status_list', 'member_referral_summary', 'member_profile', 'member_notification_settings_get', 'member_pending_transfer_request', 'member_payment_history_get', 'member_push_subscription_status']);
+const memberReadRpcs = new Set<string>(['matrix_tianshu_list', 'matrix_tianshu_validation', 'matrix_tianyan_list', 'matrix_tianyan_validation', 'matrix_tiangong_list', 'matrix_tiangong_validation', 'member_referral_summary', 'member_profile', 'member_notification_settings_get', 'member_pending_transfer_request', 'member_payment_history_get', 'member_push_subscription_status']);
 
 const supabaseRpcInventory: ApiStatusDefinition[] = supabaseRpcDefinitions.map(
   ([rpc, name, group, description]) => ({
@@ -76,7 +75,7 @@ const supabaseRpcInventory: ApiStatusDefinition[] = supabaseRpcDefinitions.map(
 
 export const apiStatusInventory: readonly ApiStatusDefinition[] = [
   { id: 'admin-api', name: '管理者後臺 API', group: '系統', location: 'Supabase', endpoint: '/admin/api/_healthcheck', checkMode: 'live', description: '確認正式管理者後臺 API 可正常回應。' },
-  { id: 'supabase-watchdog-heartbeat', name: '自動監控執行狀態', group: '自動監控', location: 'Supabase', endpoint: '/functions/v1/admin-api/api/internal/matrix-watchdog', checkMode: 'service', description: '每 10 分鐘由 Supabase 執行自動監控；這裡顯示最近一次執行結果。' },
+  { id: 'supabase-watchdog-heartbeat', name: '自動監控執行狀態', group: '自動監控', location: 'Supabase', endpoint: '/functions/v1/admin-api/api/internal/matrix-watchdog', checkMode: 'service', description: 'Supabase 每 10 分鐘檢查排程，依指定時點執行監控；這裡顯示最近一次執行結果。' },
   { id: 'supabase-database', name: '資料庫連線', group: '系統', location: 'Supabase', endpoint: '/rest/v1/plans?select=id&limit=1', checkMode: 'live', description: '讀取一筆訂閱方案，確認資料庫能回傳資料。' },
   { id: 'matrix-storage', name: 'Matrix Storage', group: '系統', location: 'Supabase', endpoint: '/rest/v1/rpc/matrix_analysis_storage_health', checkMode: 'service', description: '查看分析資料的實際儲存大小、版本與清理紀錄。' },
   { id: 'notification-calendar', name: '六合彩開獎日曆', group: '通知', location: 'Supabase', endpoint: '/rest/v1/rpc/notification_draw_calendar_status', checkMode: 'service', description: '依香港賽馬會官方日期決定選號提醒；日期待確認時暫停提醒。' },
