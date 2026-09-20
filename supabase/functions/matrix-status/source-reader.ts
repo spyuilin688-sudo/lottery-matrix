@@ -66,12 +66,12 @@ export function createMatrixStatusCompactReader(
   loadConfig: () => Config,
   fetcher: typeof fetch = fetch,
 ) {
-  return async (lottery: MatrixLottery, drawPeriod?: string) => {
+  return async (lottery: MatrixLottery, drawPeriod?: string, summaryOnly = false) => {
     const config = loadConfig();
     const response = await fetcher(`${config.url}/rest/v1/rpc/matrix_status_compact_get`, {
       method: 'POST',
       headers: serviceHeaders(config.serviceRoleKey),
-      body: JSON.stringify({ p_request: { lottery, ...(drawPeriod ? { drawPeriod } : {}) } }),
+      body: JSON.stringify({ p_request: { lottery, ...(drawPeriod ? { drawPeriod } : {}), ...(summaryOnly ? { summaryOnly: true } : {}) } }),
     });
     return readAnalysisResponse<MatrixStatusCompactPayload>(
       response,
@@ -103,5 +103,17 @@ export function createMatrixStatusValidationReader(
     );
     if (!response.ok) throw new Error('SUPABASE_VALIDATION_READ_FAILED');
     return response.json() as Promise<MatrixStatusValidationSourcePayload>;
+  };
+}
+
+
+export function createMatrixStatusIdentityReader(loadConfig: () => Config, fetcher: typeof fetch = fetch) {
+  return async (lottery: MatrixLottery, drawPeriod?: string) => {
+    const config = loadConfig();
+    const response = await fetcher(`${config.url}/rest/v1/rpc/matrix_status_identity_get`, {
+      method: 'POST', headers: serviceHeaders(config.serviceRoleKey),
+      body: JSON.stringify({ p_request: { lottery, ...(drawPeriod ? { drawPeriod } : {}) } }),
+    });
+    return readAnalysisResponse<{ analysisVersion: string; drawPeriod: string }>(response, 'SUPABASE_ANALYSIS_READ_FAILED');
   };
 }
