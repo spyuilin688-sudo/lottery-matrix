@@ -14,7 +14,7 @@ from app.scraping.sources import LatestDrawSource
 from app.settings import load_settings
 from app.services.marksix_calendar import sync_marksix_calendar
 from app.services.tinyfish_status import create_tinyfish_telemetry
-from app.worker import create_notification_emitter, run_scheduled_worker
+from app.worker import _read_worker_completion, create_notification_emitter, run_scheduled_worker
 
 
 LOTTERIES = ("今彩539", "六合彩", "大樂透")
@@ -125,41 +125,21 @@ def main() -> int:
         notification_emitter = create_notification_emitter(settings, client)
 
         def run_one(lottery: str) -> dict[str, Any]:
-            retry_formal_source = _needs_formal_source_retry(repository, lottery)
-            if notification_emitter is None:
-                if retry_formal_source:
-                    result = run_scheduled_worker(
-                        lottery,
-                        None,
-                        repository,
-                        source,
-                        allow_recovery_crawl=True,
-                    )
-                else:
-                    result = run_scheduled_worker(
-                        lottery,
-                        None,
-                        repository,
-                        source,
-                    )
-            elif retry_formal_source:
-                result = run_scheduled_worker(
-                    lottery,
-                    None,
-                    repository,
-                    source,
-                    notification_emitter=notification_emitter,
-                    allow_recovery_crawl=True,
+            completion = _read_worker_completion(lottery, repository, notification_emitter)
+            options: dict[str, Any] = {}
+            if completion is not None:
+                options["_completion_snapshot"] = completion
+                retry_formal_source = bool(
+                    completion.get("draw")
+                    and completion["draw"].get("resultStatus") == "preliminary"
                 )
             else:
-                result = run_scheduled_worker(
-                    lottery,
-                    None,
-                    repository,
-                    source,
-                    notification_emitter=notification_emitter,
-                )
-            return result
+                retry_formal_source = _needs_formal_source_retry(repository, lottery)
+            if retry_formal_source:
+                options["allow_recovery_crawl"] = True
+            if notification_emitter is not None:
+                options["notification_emitter"] = notification_emitter
+            return run_scheduled_worker(lottery, None, repository, source, **options)
 
         result = run_all_workers(run_one)
     for run in result["runs"]:

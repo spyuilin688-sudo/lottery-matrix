@@ -54,6 +54,8 @@ before(async () => {
     [JSON.stringify([...fixture, ...fixture.filter((_, index) => index % 4 === 0)
       .map(draw => ({ ...draw, period: draw.period.padStart(9, '0') }))])]);
   await db.exec(await readFile(new URL('../migrations/20260914114420_matrix_draw_query_pagination.sql', import.meta.url), 'utf8'));
+  await db.exec(await readFile(new URL('../migrations/20260917002000_optimize_matrix_draw_query_read_path.sql', import.meta.url), 'utf8'));
+  await db.exec(await readFile(new URL('../migrations/20260920192323_matrix_draw_indexed_read_cache.sql', import.meta.url), 'utf8'));
 });
 after(async () => db.close());
 
@@ -193,6 +195,76 @@ test('conflicting canonical dates, numbers and statuses fail closed before pages
       }
     } finally { await db.exec('rollback'); }
   }
+});
+
+test('content corrections without timestamp changes invalidate cursors and refresh newest row', async () => {
+  await db.exec('begin');
+  try {
+    const before = await query({ limit: 3 });
+    await db.query("update public.lottery_draws set numbers = '[49]' where period = '99001051'");
+    assert.equal((await query({ cursor: before.nextCursor })).error, 'DRAW_HISTORY_CHANGED');
+    assert.equal((await query({ kind: 'history' })).items.find(row => row.period === '099001051').numbers[0], 49);
+  } finally { await db.exec('rollback'); }
+});
+
+test('latest/page reads use only maintained canonical rows and revision state', async () => {
+  await db.exec('begin');
+  try {
+    await db.exec('revoke select on public.lottery_draws from service_role; set role service_role');
+    assert.deepEqual((await query({ kind: 'latest' })).items, expectedHistory.slice(0, 1));
+    assert.deepEqual((await query({ limit: 3 })).items, expectedHistory.slice(0, 3));
+  } finally { await db.exec('rollback; reset role'); }
+});
+
+test('truncate invalidates cursors, clears canonical rows and rollback restores state', async () => {
+  const before = await query({ limit: 3 });
+  await db.exec('begin');
+  try {
+    await db.exec('truncate public.lottery_draws');
+    assert.deepEqual((await query({ kind: 'latest' })).items, []);
+    assert.equal((await query({ cursor: before.nextCursor })).error, 'DRAW_HISTORY_CHANGED');
+  } finally { await db.exec('rollback'); }
+  assert.equal((await query()).revision, before.revision);
+});
+
+test('latest index plan visits one canonical row with no history sort', async () => {
+  await db.exec('analyze private.matrix_draw_read_rows');
+  const { rows } = await db.query(`explain (analyze, format json)
+    select raw from private.matrix_draw_read_rows where lottery = '今彩539'
+    order by draw_date desc nulls last, canonical_period desc limit 1`);
+  const plan = rows[0]['QUERY PLAN'][0].Plan;
+  assert.equal(plan['Node Type'], 'Limit');
+  assert.equal(plan.Plans[0]['Index Name'], 'matrix_draw_read_page_idx');
+  assert.equal(plan.Plans[0]['Actual Rows'], 1);
+});
+
+test('lottery and period moves refresh both keys and invalidate only affected lotteries', async () => {
+  await db.exec('begin');
+  try {
+    const old = await query({ limit: 3 });
+    const other = await query({ lottery: '天天樂' });
+    const unaffected = await query({ lottery: '六合彩' });
+    await db.query("update lottery_draws set lottery='天天樂', period='moved' where period='99001051'");
+    assert.equal((await query({ cursor: old.nextCursor })).error, 'DRAW_HISTORY_CHANGED');
+    assert.notEqual((await query({ lottery: '天天樂' })).revision, other.revision);
+    assert.equal((await query({ lottery: '六合彩' })).revision, unaffected.revision);
+    assert.ok(!(await allPages()).some(row => row.period === '099001051'));
+    assert.equal((await query({ lottery: '天天樂' })).items[0].period, 'moved');
+    await db.query("update lottery_draws set period='renamed' where lottery='天天樂'");
+    assert.deepEqual((await query({ lottery: '天天樂' })).items.map(row => row.period), ['renamed']);
+    await db.query("delete from lottery_draws where lottery='天天樂'");
+    assert.deepEqual((await query({ lottery: '天天樂' })).items, []);
+  } finally { await db.exec('rollback'); }
+});
+
+test('removing conflicting alias restores reads without losing remaining draw', async () => {
+  await db.exec('begin');
+  try {
+    await db.query("update lottery_draws set draw_date='2026-01-01' where period='099000000'");
+    assert.equal((await query({ kind: 'latest' })).error, 'DRAW_HISTORY_CONFLICT');
+    await db.query("delete from lottery_draws where period='099000000'");
+    assert.deepEqual(await allPages(), expectedHistory);
+  } finally { await db.exec('rollback'); }
 });
 
 test('rollback only removes the query function, preserving the original draws', async () => {

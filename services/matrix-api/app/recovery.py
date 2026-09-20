@@ -204,8 +204,19 @@ class RecoveryCoordinator:
                 if heartbeat.is_alive():
                     raise RuntimeError("RECOVERY_HEARTBEAT_NOT_STOPPED")
             if lease_begun and lease_owner and self._verify and self._record_success:
-                if self._verify(lottery, verified_period):
-                    self._record_success(lottery, lease_owner, runner_id, verified_period)
+                reason = None
+                if not self._verify(lottery, verified_period):
+                    reason = "CHAIN_INCOMPLETE"
+                elif self._record_success(lottery, lease_owner, runner_id, verified_period) is False:
+                    reason = "COMPLETION_NOT_RECORDED"
+                if reason:
+                    # A successful main refresh is independent of this attempt.
+                    # Preserve failed release semantics and expose why verification
+                    # did not produce a durable recovery success record.
+                    print(json.dumps({
+                        "event": "recovery-not-verified", "lottery": lottery,
+                        "period": verified_period, "stage": stage, "reason": reason,
+                    }, ensure_ascii=False), flush=True)
         except Exception as error:
             # Record only bounded diagnostic fields, never request URLs, headers or bodies.
             print(json.dumps({

@@ -1,17 +1,10 @@
-from datetime import datetime
 import json
-import re
 import ssl
 from pathlib import Path
 from types import SimpleNamespace
-from zoneinfo import ZoneInfo
 
 from app import worker_all
-from app.schedule import due_call_cycle
 from app.worker_all import LOTTERIES, run_all_workers
-
-
-TAIPEI = ZoneInfo("Asia/Taipei")
 
 
 def test_runs_all_three_railway_crawler_lotteries_in_order() -> None:
@@ -107,11 +100,11 @@ def test_primary_railway_config_matches_deployed_worker_cadence() -> None:
         "uv run python -u -m app.worker --lottery " + "六合彩 --scheduled",
         "uv run python -u -m app.worker --lottery 大樂透 --scheduled",
     ]
-    assert [config["deploy"]["cronSchedule"] for config in configs] == [
+    assert [config["deploy"].get("cronSchedule") for config in configs] == [
         "3/10 * * * *",
         "3/10 * * * *",
-        "3/5 * * * *",
-        "3/5 * * * *",
+        None,
+        None,
     ]
     assert all(config["deploy"]["restartPolicyType"] == "NEVER" for config in configs)
 
@@ -130,24 +123,10 @@ def test_other_automated_worker_entrypoints_use_scheduled_mode() -> None:
     assert 'uv run python -m app.worker --lottery "$LOTTERY" --scheduled' in workflow
 
 
-def test_systemd_timer_covers_the_scheduled_worker_grid() -> None:
+def test_deprecated_systemd_timer_cannot_reintroduce_a_duplicate_schedule() -> None:
     root = Path(__file__).parents[1]
-    timer = (root / "deploy" / "matrix-worker.timer").read_text(encoding="utf-8")
-    match = re.search(r"^OnCalendar=\*:(\d+)/(\d+)$", timer, flags=re.MULTILINE)
-
-    assert match is not None
-    start, interval = (int(value) for value in match.groups())
-    timer_minutes = set(range(start, 60, interval))
-    scheduled_calls = (
-        ("今彩539", datetime(2026, 8, 28, 20, 33, tzinfo=TAIPEI)),
-        ("今彩539", datetime(2026, 8, 28, 20, 38, tzinfo=TAIPEI)),
-        ("天天樂", datetime(2026, 8, 28, 9, 33, tzinfo=TAIPEI)),
-        ("六合彩", datetime(2026, 8, 29, 21, 33, tzinfo=TAIPEI)),
-        ("大樂透", datetime(2026, 8, 28, 20, 53, tzinfo=TAIPEI)),
-    )
-
-    assert all(due_call_cycle(lottery, now) is not None for lottery, now in scheduled_calls)
-    assert {now.minute for _, now in scheduled_calls} <= timer_minutes
+    assert not (root / "deploy" / "matrix-worker.timer").exists()
+    assert (root / "deploy" / "matrix-worker.service").is_file()
 
 
 def test_batch_worker_invokes_the_scheduled_entrypoint(monkeypatch) -> None:
