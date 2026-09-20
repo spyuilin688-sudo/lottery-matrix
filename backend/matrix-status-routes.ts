@@ -26,8 +26,9 @@ type RouteInput = { authorization?: string; body: unknown };
 type RouteResult = { status: number; body: Record<string, unknown> };
 type Dependencies = {
   requireMember(authorization?: string): Promise<MemberContext>;
+  readStatusIdentity?(lottery: LotteryId, drawPeriod?: string): Promise<{ analysisVersion: string; drawPeriod: string } | null>;
   readStatusSources(lottery: LotteryId, drawPeriod?: string): Promise<StatusSources | null>;
-  readCompactStatus?(lottery: LotteryId, drawPeriod?: string): Promise<CompactStatus | null>;
+  readCompactStatus?(lottery: LotteryId, drawPeriod?: string, summaryOnly?: boolean): Promise<CompactStatus | null>;
   readStatusValidation?(
     lottery: LotteryId,
     drawPeriod: string,
@@ -147,6 +148,21 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
     ? dependencies.requireMember(authorization)
     : Promise.resolve(anonymousMatrixMember);
   return {
+    async identity(input: RouteInput): Promise<RouteResult> {
+      try {
+        const member = await memberFor(input.authorization);
+        const body = record(input.body);
+        const lottery = String(body.lottery ?? '') as LotteryId;
+        if (!lotteries.includes(lottery)) throw new Error('INVALID_REQUEST');
+        const period = body.drawPeriod ? String(body.drawPeriod) : undefined;
+        const identity = await dependencies.readStatusIdentity?.(lottery, period);
+        if (!identity?.analysisVersion || !identity.drawPeriod) throw new Error('ANALYSIS_NOT_READY');
+        return { status: 200, body: {
+          kind: 'status-identity', lottery, ...identity,
+          entitlements: resolveMatrixEntitlements(member, now()),
+        } };
+      } catch (cause) { return failure(cause); }
+    },
     async summary(input: RouteInput): Promise<RouteResult> {
       try {
         const member = await memberFor(input.authorization);
@@ -157,7 +173,7 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
         const entitlements = resolveMatrixEntitlements(member, now());
 
         if (dependencies.readCompactStatus) {
-          const compact = await dependencies.readCompactStatus(lottery, requestedPeriod);
+          const compact = await dependencies.readCompactStatus(lottery, requestedPeriod, true);
           if (!compact?.analysisVersion || !compact.drawPeriod || !compact.payload) {
             throw new Error('ANALYSIS_NOT_READY');
           }
@@ -237,6 +253,7 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
               ...artifact,
               detailLocked: !entitlements.canViewFullStatus,
               cards: artifact.cards,
+              cacheIdentity: { drawPeriod: compact.drawPeriod, analysisVersion: compact.analysisVersion, entitlements },
             },
           };
         }
@@ -267,6 +284,7 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
             ...artifact,
             detailLocked,
             cards: artifact.cards,
+            cacheIdentity: { drawPeriod: sources.drawPeriod, analysisVersion: sources.analysisVersion, entitlements },
           },
         };
       } catch (cause) {
@@ -347,6 +365,7 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
             analysisVersion,
             itemId,
             validation: source.validation,
+            cacheIdentity: { drawPeriod, analysisVersion, entitlements },
           },
         };
       } catch (cause) {

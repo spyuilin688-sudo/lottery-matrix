@@ -1,5 +1,4 @@
 import { adminBusinessDateKey, adminBusinessDateRange } from '../shared/admin-business-time';
-import { cumulativeGrowthSeries } from '../shared/admin-growth-series';
 import { lookupLocations, memberConnectionSummaries, normalizeIpAddress } from './member-login-history';
 import { memberDisplayNameFromAuthUser, providerIdentityFromAuthUser, type AuthUserForIdentity } from './member-provider-identity';
 type Requester = {
@@ -238,18 +237,6 @@ async function enrichLoginRecords(items: Array<Row & { id: string }>, api: Reque
   return items.map((item, index) => ({ ...item, estimatedRegion: ips[index] ? locations.get(ips[index]!) || null : null }));
 }
 
-type AuthUsersResponse = { users?: AuthUserForIdentity[] };
-
-async function listAllAuthUsers(api: Requester) {
-  const users: AuthUserForIdentity[] = [];
-  for (let page = 1; ; page += 1) {
-    const response = await api.request<AuthUsersResponse>(`/auth/v1/admin/users?page=${page}&per_page=${adminReadPageSize}`);
-    const current = Array.isArray(response?.users) ? response.users : [];
-    users.push(...current);
-    if (current.length < adminReadPageSize) return users;
-  }
-}
-
 async function googleMemberNameClauses(table: string, keyword: string, api: Requester) {
   if (!keyword || keyword.length > 200 || !['users', 'subscriptions', 'subscriptionRecords', 'transferRequests', 'activationCodes'].includes(table)) {
     return [];
@@ -278,8 +265,14 @@ async function googleMemberNameClauses(table: string, keyword: string, api: Requ
 
 async function enrichProviderIdentities(items: Array<Row & { id: string }>, api: Requester) {
   if (!items.length) return [];
-  const needsAuth = items.some((item) => !item.lineUserId && item.authUserId);
-  const authUsers = needsAuth ? await listAllAuthUsers(api) : [];
+  const ids = [...new Set(items.filter(item => item.authUserId && (!item.lineUserId || !String(item.lineDisplayName ?? '').trim()))
+    .map(item => String(item.authUserId)))];
+  const authUsers: AuthUserForIdentity[] = [];
+  for (let offset = 0; offset < ids.length; offset += 100) {
+    authUsers.push(...await api.request<AuthUserForIdentity[]>('/rest/v1/rpc/admin_member_auth_profiles', {
+      method: 'POST', body: JSON.stringify({ p_auth_user_ids: ids.slice(offset, offset + 100) }),
+    }));
+  }
   const byId = new Map(authUsers.map((user) => [String(user.id ?? ''), user]));
   return items.map((item) => {
     const authUser = byId.get(String(item.authUserId ?? ''));
@@ -556,93 +549,25 @@ export async function listAdminMemberPage(
   return { ...result, items };
 }
 
-const dashboardPaymentPageSize = 1000;
-
-async function listDashboardPayments(api: Requester, resetFilter: string) {
-  const rows: Row[] = [];
-  for (;;) {
-    const path = `/rest/v1/payments?select=id,amount,paid_at,status&status=eq.confirmed${resetFilter}&order=paid_at.asc,id.asc&limit=${dashboardPaymentPageSize}&offset=${rows.length}`;
-    const result = api.requestPage ? await api.requestPage<Row>(path) : null;
-    const page = result ? result.items : await api.request<Row[]>(path);
-    if (page.length === 0) return rows;
-    rows.push(...page);
-    // Supabase's configured row cap may be lower than our requested page size.
-    if (result && rows.length >= result.total) return rows;
-  }
-}
+type DashboardSummary = {
+  totalUsers: number; monthlyPro: number; quarterlyPro: number; yearlyPro: number; expiring: number;
+  todayRevenue: number; monthRevenue: number; quarterRevenue: number; yearRevenue: number; cumulativeRevenue: number;
+  userGrowth: Array<{ date: string; value: number }>;
+  revenueGrowth: Array<{ date: string; value: number }>;
+};
 
 export async function getDashboard(api: Requester, currentDate = new Date()) {
-  const settings = await api.request<Row[]>('/rest/v1/admin_revenue_settings?select=reset_at&id=eq.1&limit=1');
-  const storedResetAt = typeof settings[0]?.reset_at === 'string'
-    ? new Date(settings[0].reset_at)
-    : null;
-  const resetTime = storedResetAt && Number.isFinite(storedResetAt.getTime())
-    ? storedResetAt.getTime()
-    : null;
-  const resetFilter = resetTime === null
-    ? ''
-    : `&paid_at=gte.${encodeURIComponent(new Date(resetTime).toISOString())}`;
-  const [members, paymentRows, visitorStats] = await Promise.all([
-    listAllRows(api, '/rest/v1/members?select=registered_at,plan_expires_at,status,current_plan:plans!members_current_plan_id_fkey(duration_days)&order=id.asc'),
-    listDashboardPayments(api, resetFilter),
+  const [summary, visitorStats] = await Promise.all([
+    api.request<DashboardSummary>('/rest/v1/rpc/admin_dashboard_summary', {
+      method: 'POST', body: JSON.stringify({ p_now: currentDate.toISOString() }),
+    }),
     api.request<{ todayVisitors: number; monthVisitors: number; totalVisitors: number }>('/rest/v1/rpc/admin_visitor_stats', { method: 'POST', body: '{}' }).catch(() => null),
   ]);
-  const payments = paymentRows
-    .filter((row) => row.status === 'confirmed'
-      && typeof row.paid_at === 'string'
-      && (resetTime === null || new Date(row.paid_at).getTime() >= resetTime))
-    .map((row) => ({
-      amount: Number(row.amount ?? 0),
-      paidAt: adminBusinessDateKey(String(row.paid_at)),
-    }));
-  const userGrowth = cumulativeGrowthSeries(members.map((member) => ({
-    date: typeof member.registered_at === 'string' ? adminBusinessDateKey(member.registered_at) : '',
-    delta: 1,
-  })));
-  const revenueGrowth = cumulativeGrowthSeries(payments.map((payment) => ({
-    date: payment.paidAt,
-    delta: payment.amount,
-  })));
-  const duration = (member: Row) => Number((member.current_plan as Row | null)?.duration_days ?? 0);
-  const hasCurrentFixedDurationPlan = (member: Row) => {
-    if (typeof member.plan_expires_at !== 'string') return false;
-    const expiresAt = new Date(member.plan_expires_at).getTime();
-    return Number.isFinite(expiresAt)
-      && expiresAt > currentDate.getTime()
-      && !['停用', 'disabled', 'inactive'].includes(String(member.status ?? ''));
-  };
-  const today = adminBusinessDateKey(currentDate);
-  const month = today.slice(0, 7);
-  const year = today.slice(0, 4);
-  const quarter = Math.floor((Number(today.slice(5, 7)) - 1) / 3);
-  const sum = (predicate: (payment: { amount: number; paidAt: string }) => boolean) =>
-    payments.filter(predicate).reduce((total, payment) => total + payment.amount, 0);
-  const expiresWithinSevenDays = members.filter((member) => {
-    if (typeof member.plan_expires_at !== 'string') return false;
-    const expiresAt = new Date(member.plan_expires_at);
-    const remaining = expiresAt.getTime() - currentDate.getTime();
-    return Number.isFinite(remaining) && remaining >= 0 && remaining <= 7 * 86_400_000;
-  }).length;
-
   return {
+    ...summary,
     todayVisitors: visitorStats?.todayVisitors ?? null,
     monthVisitors: visitorStats?.monthVisitors ?? null,
     totalVisitors: visitorStats?.totalVisitors ?? null,
-    totalUsers: members.length,
-    userGrowth,
-    revenueGrowth,
-    monthlyPro: members.filter((member) => hasCurrentFixedDurationPlan(member) && duration(member) === 30).length,
-    quarterlyPro: members.filter((member) => hasCurrentFixedDurationPlan(member) && duration(member) === 90).length,
-    yearlyPro: members.filter((member) => hasCurrentFixedDurationPlan(member) && duration(member) === 365).length,
-    expiring: expiresWithinSevenDays,
-    todayRevenue: sum((payment) => payment.paidAt.startsWith(today)),
-    monthRevenue: sum((payment) => payment.paidAt.startsWith(month)),
-    quarterRevenue: sum((payment) => {
-      return payment.paidAt.startsWith(year)
-        && Math.floor((Number(payment.paidAt.slice(5, 7)) - 1) / 3) === quarter;
-    }),
-    yearRevenue: sum((payment) => payment.paidAt.startsWith(year)),
-    cumulativeRevenue: sum(() => true),
   };
 }
 

@@ -597,6 +597,20 @@ def handle_api_request(
         if method == "GET" and path.startswith(history_prefix):
             lottery = _parse_lottery(unquote(path[len(history_prefix):]))
             query = parse_qs(parsed.query)
+            if "periods" in query:
+                periods = json.loads(query["periods"][0])
+                if (not isinstance(periods, list) or len(periods) > 500
+                    or any(not isinstance(period, str) or not period.isascii()
+                           or not period.isdigit() or not 1 <= len(period) <= 12 for period in periods)):
+                    raise ValueError("INVALID_PERIODS")
+                data = repository.client.rpc("matrix_draw_periods", {
+                    "p_lottery": lottery, "p_periods": list(dict.fromkeys(periods)),
+                }).execute().data
+                if not isinstance(data, dict) or not isinstance(data.get("items"), list):
+                    if isinstance(data, dict) and data.get("error") == "DRAW_HISTORY_CONFLICT":
+                        raise ValueError("DRAW_HISTORY_CONFLICT")
+                    raise RuntimeError("DRAW_QUERY_INVALID_RESPONSE")
+                return 200, {"items": [_normalize_supabase_draw(row) for row in data["items"]]}
             # Explicit pagination preserves the full legacy response for installed clients.
             # Updated PWA clients always use pageSize and follow nextCursor.
             if "pageSize" in query:

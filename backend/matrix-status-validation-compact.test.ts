@@ -69,6 +69,14 @@ describe('Matrix status validation compact read path', () => {
         analysisVersion: 'v1',
         itemId: 'road-7',
         validation: { itemId: 'road-7', ruleSets: [] },
+        cacheIdentity: {
+          drawPeriod,
+          analysisVersion: 'v1',
+          entitlements: {
+            canUseFullRange: false, canUseSeven: true, canUseThirteen: false,
+            canUseTiangong: false, canUseTianyan: false, canViewFullStatus: false,
+          },
+        },
       },
     });
     expect(sourceReads).toBe(0);

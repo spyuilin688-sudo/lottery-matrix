@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { fetchLotteryHistory, fetchTongXing, fetchLatestLotteryDraw } from '../lottery-api';
+import { fetchLotteryHistoryPeriods, fetchLotteryHistory, fetchTongXing, fetchLatestLotteryDraw } from '../lottery-api';
 import { clearReadCache, resetReadCacheForTests } from '../read-cache';
 
 const latest = { period: '115000200', numbers: ['01'] };
@@ -73,4 +73,20 @@ it('queries matching tongxing pairs remotely and follows group pages', async () 
   const result=await fetchTongXing({lottery:'今彩539',numberOrder:'依號碼由小到大排序',numbers:['01'],futureOffset:1});
   expect(result.groups.map(g=>g.lockedEntry.period)).toEqual(['115198','115199']);
   expect(inputs).toHaveLength(2);
+});
+
+
+it('fetches only requested validation periods and shares equivalent reads', async () => {
+  const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async url => {
+    if (String(url).includes('/latest/')) return response({ item: latest, revision: 'periods-r1' });
+    const u = new URL(String(url));
+    expect(JSON.parse(u.searchParams.get('periods')!)).toEqual(['115198', '115199']);
+    expect(u.searchParams.has('pageSize')).toBe(false);
+    return response({ items: [{ period: '115000198', numbers: ['03'] }, { period: '115000199', numbers: ['02'] }] });
+  });
+  const a = await fetchLotteryHistoryPeriods('今彩539', ['115199', '115198', '115199']);
+  const b = await fetchLotteryHistoryPeriods('今彩539', ['115198', '115199']);
+  expect(a).toEqual(b);
+  expect(a.map(row => row.period)).toEqual(['115198', '115199']);
+  expect(fetcher).toHaveBeenCalledTimes(2);
 });

@@ -144,6 +144,10 @@ describe('Matrix status route', () => {
         kind: 'status-validation', lottery: '今彩539', drawPeriod: artifact.drawPeriod,
         analysisVersion: 'v1', itemId: 'road-7',
         validation: { itemId: 'road-7', ruleSets: [] },
+        cacheIdentity: { drawPeriod: artifact.drawPeriod, analysisVersion: 'v1', entitlements: {
+          canUseSeven: true, canUseThirteen: false, canUseFullRange: false,
+          canUseTianyan: false, canUseTiangong: false, canViewFullStatus: false,
+        } },
       },
     });
   });

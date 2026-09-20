@@ -1,9 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getDashboard } from './admin-data';
+import { dashboardFromRows } from './admin-dashboard-db.fixture';
 
 type Row = Record<string, unknown>;
 
-const fixtureRequest = (respond: (path: string) => Promise<unknown>) => vi.fn(async (path: string) => {
+const fixtureRequest = (respond: (path: string) => Promise<unknown>) => vi.fn(async (path: string, init?: RequestInit) => {
+  if (path === '/rest/v1/rpc/admin_dashboard_summary') {
+    return dashboardFromRows(respond, JSON.parse(String(init?.body)).p_now);
+  }
   const data = await respond(path);
   if (!Array.isArray(data)) return data;
   const query = new URL(path, 'https://example.test').searchParams;

@@ -434,6 +434,29 @@ export async function fetchLotteryHistoryYears(lottery: NumberBallLottery): Prom
   });
 }
 
+/** Bounded period lookup for validation evidence; does not scan history pages. */
+export async function fetchLotteryHistoryPeriods(
+  lottery: NumberBallLottery, periods: string[],
+): Promise<LotteryDrawRecord[]> {
+  const requested = [...new Set(periods)].sort();
+  if (!requested.length) return [];
+  if (requested.length > 500 || requested.some(period => !/^[0-9]{1,12}$/.test(period))) {
+    throw new Error('INVALID_PERIODS');
+  }
+  await fetchLatestLotteryDraw(lottery);
+  return readThroughCache(
+    stableCacheKey(`lottery:history:${lottery}:periods`, requested), LOTTERY_READ_CACHE_MS,
+    async ({ isCurrent }) => {
+      const query = new URLSearchParams({ periods: JSON.stringify(requested) });
+      const data = await requestJson<{ items: LotteryDrawRecord[] }>(`/api/matrix/history/${encodeURIComponent(lottery)}?${query}`);
+      if (!isCurrent()) return fetchLotteryHistoryPeriods(lottery, requested);
+      assertArrayField(data.items, 'items');
+      data.items.forEach((item, index) => assertLotteryDrawRecord(item, `items[${index}]`));
+      return data.items.map(item => normalizeRecord(lottery, item));
+    },
+  );
+}
+
 export async function fetchLotteryHistory(
   lottery: NumberBallLottery,
   limit?: number,
