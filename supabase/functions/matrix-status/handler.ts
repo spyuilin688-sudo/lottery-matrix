@@ -23,7 +23,6 @@ function record(value: unknown) {
 }
 
 export function createMatrixStatusEdgeHandler(dependencies: MatrixStatusDependencies) {
-  const routes = createMatrixStatusRoutes(dependencies);
   return async (request: Request) => {
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders });
@@ -37,6 +36,12 @@ export function createMatrixStatusEdgeHandler(dependencies: MatrixStatusDependen
     } catch {
       return json({ error: { code: 'INVALID_REQUEST' } }, 400);
     }
+    // Share authentication only inside this HTTP request, never across members.
+    let member: ReturnType<MatrixStatusDependencies['requireMember']> | undefined;
+    const routes = createMatrixStatusRoutes({
+      ...dependencies,
+      requireMember: (authorization) => member ??= dependencies.requireMember(authorization),
+    });
     const value = record(body);
     const action = value ? String(value.action ?? '') : '';
     const authorization = request.headers.get('authorization') ?? undefined;
@@ -71,7 +76,7 @@ export function createMatrixStatusEdgeHandler(dependencies: MatrixStatusDependen
       }, 200);
     }
 
-    const route = action === 'validation' ? routes.validation : routes.get;
+    const route = action === 'identity' ? routes.identity : action === 'validation' ? routes.validation : routes.get;
     const result = await route({
       authorization,
       body,
