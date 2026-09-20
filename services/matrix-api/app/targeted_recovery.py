@@ -29,7 +29,13 @@ def run_targeted_recovery(lottery: str, period: str | None, stage: str, minimum_
     if stage == 'crawler':
         # Existing full path owns source refresh, history repair and its retries.
         from app.recovery_server import run_full_lottery_recovery
-        run_full_lottery_recovery(lottery)
+        if lottery == "天天樂":
+            from app.fantasy5_crawler import run_fantasy5_crawler_once
+            run_full_lottery_recovery(lottery, fantasy5_crawler=lambda: run_fantasy5_crawler_once(
+                expected_draw_date=minimum_draw_date,
+            ))
+        else:
+            run_full_lottery_recovery(lottery)
     repository = make_repository()
     latest = repository.list_draws(lottery, 1)
     if not latest:

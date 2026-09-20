@@ -497,3 +497,13 @@ def test_analysis_worker_cli_reads_only_supabase(monkeypatch) -> None:
 
     assert analysis_worker.main(["--lottery", "天天樂"]) == 0
     assert calls == [("天天樂", repository)]
+
+
+def test_midnight_recovery_acquires_the_requested_previous_cycle():
+    repository = InMemoryAnalysisRepository()
+    repository.upsert_draw(_draw('12003', '2026-09-19'))
+    source = Fantasy5Source(_draw('12004', '2026-09-20'))
+    result = run_fantasy5_crawler(repository, source,
+        datetime(2026, 9, 21, 0, 0, tzinfo=TAIPEI), expected_draw_date='2026-09-20')
+    assert result['status'] == 'acquired'
+    assert repository.list_draws('天天樂', 1)[0]['period'] == '12004'

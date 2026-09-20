@@ -14,7 +14,7 @@ from app.scraping.sources import LatestDrawSource
 from app.settings import load_settings
 from app.services.marksix_calendar import sync_marksix_calendar
 from app.services.tinyfish_status import create_tinyfish_telemetry
-from app.worker import _read_worker_completion, create_notification_emitter, run_scheduled_worker
+from app.worker import certify_completed_result, _read_worker_completion, create_notification_emitter, run_scheduled_worker
 
 
 LOTTERIES = ("今彩539", "六合彩", "大樂透")
@@ -139,7 +139,9 @@ def main() -> int:
                 options["allow_recovery_crawl"] = True
             if notification_emitter is not None:
                 options["notification_emitter"] = notification_emitter
-            return run_scheduled_worker(lottery, None, repository, source, **options)
+            result = run_scheduled_worker(lottery, None, repository, source, **options)
+            certify_completed_result(lottery, result, repository, notification_emitter)
+            return result
 
         result = run_all_workers(run_one)
     for run in result["runs"]:

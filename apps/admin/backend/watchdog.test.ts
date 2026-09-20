@@ -49,34 +49,17 @@ const plannedAtOffsets = (
 };
 
 describe('independent Matrix watchdog planning', () => {
-  it('backs off from ten-minute to thirty-minute and hourly recovery without reaching the next primary', () => {
-    const checkpoints = buildWatchdogPhasePlan();
-    const cycleCall = new Date('2026-09-05T12:33:00.000Z');
-    const stale = healthy('今彩539', '115000215', '2026-09-04');
-    const offsets = plannedAtOffsets(stale, cycleCall, 10, 1_440);
-
-    const tenMinutePhase = checkpoints.slice(0, 9);
-    const thirtyMinutePhase = checkpoints.slice(9, 16);
-    const hourlyPhase = checkpoints.slice(16, 34);
-
-    expect(checkpoints).toHaveLength(35);
-    expect(tenMinutePhase).toHaveLength(9);
-    expect([tenMinutePhase[0], tenMinutePhase.at(-1)]).toEqual([10, 90]);
-    expect(thirtyMinutePhase).toHaveLength(7);
-    expect([thirtyMinutePhase[0], thirtyMinutePhase.at(-1)]).toEqual([120, 300]);
-    expect(hourlyPhase).toHaveLength(18);
-    expect([hourlyPhase[0], hourlyPhase.at(-1)]).toEqual([360, 1_380]);
-    expect(checkpoints.at(-1)).toBe(1_410);
-    expect(offsets).toEqual(checkpoints);
-    expect(offsets).not.toContain(1_440);
+  it('uses exact ten/fifty minute offsets and the two extra evening checks', () => {
+    expect(buildWatchdogPhasePlan()).toEqual([
+      ...Array.from({length:27},(_,i)=>i*10),270,320,370,420,470,520,930,1290,
+    ]);
+    const stale=healthy('今彩539','old','2026-09-04');
+    expect(plannedAtOffsets(stale,new Date('2026-09-05T12:30:00Z'),0,1430)).toEqual(buildWatchdogPhasePlan());
   });
-
-  it('does not recover before the first ten-minute checkpoint', () => {
-    const cycleCall = new Date('2026-09-05T12:33:00.000Z');
-    const stale = healthy('今彩539', '115000215', '2026-09-04');
-    expect(planWatchdogActions([stale], minutesAfter(cycleCall, 9))).toEqual([]);
-    expect(planWatchdogActions([stale], minutesAfter(cycleCall, 10))).toHaveLength(1);
-    expect(planWatchdogActions([stale], minutesAfter(cycleCall, 20))).toHaveLength(1);
+  it('starts at20:30 and does not run before the opening',()=>{
+    const stale=healthy('今彩539','old','2026-09-04');
+    expect(planWatchdogActions([stale],new Date('2026-09-05T12:29:00Z'))).toEqual([]);
+    expect(planWatchdogActions([stale],new Date('2026-09-05T12:30:00Z'))).toHaveLength(1);
   });
 
   it('runs Mark Six only on Tuesday, Thursday, Saturday, and Sunday fallback windows', () => {
@@ -93,10 +76,10 @@ describe('independent Matrix watchdog planning', () => {
     ], new Date('2026-09-06T13:43:00.000Z'))).toEqual([]);
   });
 
-  it('stops uncertain Saturday Mark Six recovery after ninety minutes', () => {
+  it('continues Saturday Mark Six on the same requested evening cycle', () => {
     const stale = healthy('六合彩', '026095', '2026-09-03');
     expect(planWatchdogActions([stale], new Date('2026-09-05T15:03:00.000Z'))).toHaveLength(1);
-    expect(planWatchdogActions([stale], new Date('2026-09-05T15:13:00.000Z'))).toEqual([]);
+    expect(planWatchdogActions([stale], new Date('2026-09-05T15:13:00.000Z'))).toHaveLength(1);
   });
 
   it('handles non-draw days, midnight crossing, California DST, and the next draw cycle', () => {
@@ -104,7 +87,7 @@ describe('independent Matrix watchdog planning', () => {
     const currentThroughSaturday = healthy('今彩539', '115000216', '2026-09-05');
     expect(planWatchdogActions(
       [stale539],
-      new Date('2026-09-05T18:33:00.000Z'),
+      new Date('2026-09-05T18:43:00.000Z'),
     )).toEqual([{
       lottery: '今彩539',
       target: 'railway',
@@ -376,12 +359,12 @@ describe('independent Matrix watchdog planning', () => {
     }
   });
 
-  it('does not run the previous Fantasy5 recovery at the spring DST primary', () => {
+  it('opens the new fixed09:30 Fantasy5 cycle across spring DST', () => {
     const primary = new Date('2026-03-09T01:33:00.000Z');
-    expect(expectedDrawDateForDueWindow('天天樂', primary)).toBeNull();
+    expect(expectedDrawDateForDueWindow('天天樂', primary)).toBe('2026-03-09');
     expect(planWatchdogActions([
       healthy('天天樂', '11989', '2026-03-07'),
-    ], primary)).toEqual([]);
+    ], primary)).toHaveLength(1);
   });
 
 });

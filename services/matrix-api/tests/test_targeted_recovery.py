@@ -99,3 +99,13 @@ def test_recovery_http_rejects_retired_stage_without_enqueuing(monkeypatch):
     )
     assert status == 400
     assert payload == {'error': 'RECOVERY_STAGE_INVALID'}
+
+
+def test_fantasy5_extra_check_carries_previous_cycle_to_crawler(monkeypatch):
+    from app import recovery_server, fantasy5_crawler
+    calls = []
+    monkeypatch.setattr(fantasy5_crawler, 'run_fantasy5_crawler_once', lambda **kwargs: calls.append(kwargs) or {'status':'acquired'})
+    monkeypatch.setattr(recovery_server, 'run_full_lottery_recovery', lambda lottery, **kwargs: kwargs['fantasy5_crawler']())
+    monkeypatch.setattr('app.targeted_recovery.make_repository', lambda: Repo())
+    assert run_targeted_recovery('天天樂', None, 'crawler', '2026-09-20') == '12005'
+    assert calls == [{'expected_draw_date':'2026-09-20'}]

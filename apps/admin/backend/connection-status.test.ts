@@ -420,14 +420,10 @@ describe('connection status', () => {
         completedAt: '2026-09-04T11:42:00.000Z',
         dueLotteries: ['天天樂'],
         actions: heartbeat.actions,
-        physicalCronIntervalMinutes: 10,
-        freshnessThresholdMinutes: 18,
-        logicalPhases: [
-          { firstMinute: 10, lastMinute: 90, intervalMinutes: 10, checks: 9 },
-          { firstMinute: 120, lastMinute: 300, intervalMinutes: 30, checks: 7 },
-          { firstMinute: 360, lastMinute: 1380, intervalMinutes: 60, checks: 18 },
-          { firstMinute: 1410, lastMinute: 1410, intervalMinutes: 30, checks: 1 },
-        ],
+        schedulingMode:'next-pending-slot',
+        freshnessThresholdMinutes:18,
+        eveningOffsetsMinutes:[...Array.from({length:27},(_,i)=>i*10),270,320,370,420,470,520,930,1290],
+        fantasy5OffsetsMinutes:[...Array.from({length:27},(_,i)=>i*10),270,320,370,420,470,870,1230],
       },
     });
     expect(JSON.stringify(result)).not.toContain('raw-heartbeat-secret');

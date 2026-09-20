@@ -30,6 +30,7 @@ from app.worker import (
     _run_analysis,
     _read_worker_completion,
     _certify_worker_completion,
+    certify_completed_result,
     analysis_version_for_order,
 )
 
@@ -403,10 +404,18 @@ def main(argv: list[str] | None = None) -> int:
         )
         with notification_emitter_context(settings) as notification_emitter:
             if notification_emitter is None:
-                return run_analysis_only_worker(lottery, repository)
-            return run_analysis_only_worker(
-                lottery, repository, notification_emitter=notification_emitter,
+                result = run_analysis_only_worker(lottery, repository)
+            else:
+                result = run_analysis_only_worker(lottery, repository, notification_emitter=notification_emitter)
+            certify_completed_result(
+                lottery, result, repository, notification_emitter, scope="analysis-only",
+                ready_check=lambda draw: _completed_period_idle_ready(
+                    {"lottery": lottery, **draw},
+                    repository.get_progress(lottery, str(draw["period"]), analysis_version_for_order(str(draw["period"]))),
+                    repository, notification_emitter,
+                ),
             )
+            return result
 
     log_worker_run(lottery, run_once)
     return 0
