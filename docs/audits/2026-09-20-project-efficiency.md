@@ -4,7 +4,7 @@
 
 ## 本次範圍
 
-依使用者清單處理 P0 查詢與 Worker 空轉成本、權限請求重複、P1 儲存盤點與舊排程、P2 索引／服務盤點及監控。保留既有演算法、驗證內容與功能流程。正式服務尚未部署本次變更；列出的歷史用量不是本次改善後實測值。
+依使用者清單處理 P0 查詢與 Worker 空轉成本、權限請求重複、P1 儲存盤點與舊排程、P2 索引／服務盤點及監控。保留既有演算法、驗證內容與功能流程。程式／資料庫優化尚未部署；四個退役函式已刪除。列出的歷史用量不是本次改善後實測值。
 
 | 項目 | 處理內容與界線 |
 | --- | --- |
@@ -20,7 +20,7 @@
 
 draw 快速讀取會增加一份正規化開獎快取與寫入維護成本，並非總儲存量減少；目的是避免每次查詢重做歷史整理與 MD5。結果表的儲存去重仍只完成盤點，未改寫正式資料。
 
-## Edge Functions 清理受限
+## Edge Functions 已清理
 
 已重新讀取下列四個已部署函式的完整內容，均只有 `410`、`DECOMMISSIONED`，且 repository 搜尋無引用：
 
@@ -29,7 +29,7 @@ draw 快速讀取會增加一份正規化開獎快取與寫入維護成本，並
 - `edge-loader-capability-test-2`，version 5。
 - `edge-loader-capability-test-3`，version 5。
 
-目前 Supabase 連線工具未提供 delete-function。已查閱 CLI delete 說明；唯讀 `functions list --project-ref wcimzbbapfrdotjsfyxa` 回覆 `LegacyPlatformAuthRequiredError`／Access token not provided。**尚未刪除**，不將退役回應視為已刪除。
+已透過已登入的 Supabase 管理介面刪除上述四個函式。刪除後重新呼叫 Supabase 函式清單確認：總數由 16 減為 12，四個名稱均已不存在；其餘正式函式保留。此項清理已在正式環境完成，與本 PR 尚待部署的程式／資料庫優化分開記錄。
 
 ## Railway 舊服務盤點
 
