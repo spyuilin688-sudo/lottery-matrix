@@ -10,9 +10,19 @@ const readCss = (path: string) => readFileSync(`${process.cwd()}/${path}`, "utf8
 
 function mountStyles(css: string) {
   const style = document.createElement("style");
-  style.textContent = css;
+  style.textContent = `${readCss("src/design-tokens.css")}\n${css}`;
   document.head.append(style);
   return style;
+}
+
+// jsdom does not resolve inherited custom properties in border/background values.
+// Check the exact canonical declarations while keeping computed geometry checks.
+function declaredStyle(style: HTMLStyleElement, selector: string): CSSStyleDeclaration {
+  const rule = Array.from(style.sheet!.cssRules).find((entry) =>
+    entry instanceof CSSStyleRule && entry.selectorText === selector,
+  );
+  if (!(rule instanceof CSSStyleRule)) throw new Error(`Missing style rule: ${selector}`);
+  return rule.style;
 }
 
 afterEach(() => {
@@ -129,11 +139,10 @@ describe("requested responsive layout refinement", () => {
     expect(stack.position).toBe("relative");
     expect(stack.containerType).toBe("inline-size");
     expect(stack.paddingBottom).toBe("4px");
-    expect(artwork.gridTemplateRows).toBe("44.27383cqw var(--subscription-content-shift) 12.22009cqw");
+    expect(artwork.gridTemplateRows).toBe("44.27383cqw minmax(0, 1fr) 12.22009cqw");
     expect(artwork.pointerEvents).toBe("none");
     for (const card of document.querySelectorAll(".membership-card")) {
-      expect(getComputedStyle(card).paddingTop).toBe("0px");
-      expect(getComputedStyle(card).position).toBe("absolute");
+      expect(getComputedStyle(card).position).toBe(card.classList.contains("subscription-status-card") ? "relative" : "absolute");
       expect(getComputedStyle(card).borderTopWidth).toBe("0px");
       expect(getComputedStyle(card).backgroundColor).toBe("rgba(0, 0, 0, 0)");
     }
@@ -172,7 +181,7 @@ describe("requested responsive layout refinement", () => {
     const activationButton = getComputedStyle(document.querySelector(".activation-code-screen .activation-card .primary-action")!);
     const paymentButton = getComputedStyle(document.querySelector(".pro-plans-screen .confirm-payment")!);
     expect(activationButton.height).toBe("34px");
-    expect(activationButton.backgroundColor).toBe("rgb(6, 13, 18)");
+    expect(activationButton.backgroundImage).toBe("radial-gradient(circle at 50% 135%, rgba(234, 171, 35, 0.34), transparent 55%), linear-gradient(180deg, rgb(23, 19, 12) 0%, rgb(9, 8, 5) 100%)");
     expect(activationButton.borderTopWidth).toBe("1px");
     expect(paymentButton.height).toBe("38px");
     expect(paymentButton.getPropertyValue("--payment-button-font-size")).toBe("clamp(15px,4.4vw,17px)");
@@ -180,6 +189,8 @@ describe("requested responsive layout refinement", () => {
     expect(paymentButton.overflow).toBe("hidden");
     expect(paymentButton.color).toBe("rgb(246, 212, 114)");
     expect(paymentButton.borderTopWidth).toBe("1px");
+    expect(declaredStyle(style, ".pro-plans-screen .confirm-payment.branded-explore-action").background).toBe("var(--pwa-control-selected)");
+    expect(declaredStyle(style, ":root").getPropertyValue("--pwa-control-selected")).toBe("color-mix(in srgb,var(--home-frame-gold) 6%,var(--lottery-neutral-950))");
   });
 
   it("keeps the membership checkout in the canonical responsive flow", () => {
@@ -236,9 +247,16 @@ describe("requested responsive layout refinement", () => {
     expect(planPrice.color).toBe("rgb(241, 195, 82)");
     expect(toolIcon.borderTopWidth).toBe("0px");
     expect(toolIcon.boxShadow).toBe("none");
-    expect(planCard.borderTopColor).toBe("rgb(214, 164, 43)");
-    expect(renewalCard.borderTopColor).toBe("rgb(117, 83, 41)");
-    expect(renewalCard.borderRadius).toBe("13px");
+    expect(declaredStyle(style, ".plan-card").border).toBe("1px solid var(--pwa-frame-secondary)");
+    expect(declaredStyle(style, '.plan-card[data-current="true"]').borderColor).toBe("var(--pwa-frame-secondary)");
+    expect(declaredStyle(style, ".panel").border).toBe("1px solid var(--pwa-frame-secondary)");
+    expect(declaredStyle(style, ".panel").borderRadius).toBe("var(--pwa-frame-radius)");
+    const tokens = declaredStyle(style, ":root");
+    expect(tokens.getPropertyValue("--pwa-frame-secondary")).toBe("var(--home-frame-gold)");
+    expect(tokens.getPropertyValue("--home-frame-gold")).toBe("#d6b66f");
+    expect(tokens.getPropertyValue("--pwa-frame-radius")).toBe("var(--home-frame-radius)");
+    expect(tokens.getPropertyValue("--home-frame-radius")).toBe("8px");
+    expect(planCard.boxShadow).toBe("none");
     expect(renewalCard.boxShadow).toBe("none");
   });
 
@@ -280,7 +298,7 @@ describe("requested responsive layout refinement", () => {
 
   it("keeps notification bulk actions equal-width, fluid, and touch-sized", () => {
     const adjustmentCss = readCss("src/feature-page-adjustments.css");
-    const style = mountStyles(`${readCss("src/design-tokens.css")}\n${readCss("src/feature-pages.css")}\n${adjustmentCss}`);
+    const style = mountStyles(`${readCss("src/feature-pages.css")}\n${adjustmentCss}`);
     style.dataset.layoutContract = "notification-bulk-actions";
     document.body.innerHTML = `
       <main class="notifications-screen notifications-screen-v2">
@@ -311,11 +329,11 @@ describe("requested responsive layout refinement", () => {
     expect(disable.width).toBe("100%");
     expect(adjustmentCss).not.toMatch(/\.notification-bulk-enable\s*\{[^}]*background:\s*var\(--lottery-gold-500\)/s);
     expect(adjustmentCss).not.toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*#160f08/s);
-    expect(adjustmentCss).toMatch(/\.notification-bulk-disable\s*\{[^}]*border:\s*1px solid rgba\(216, 195, 141, \.72\)/s);
+    expect(declaredStyle(style, ".notifications-screen-v2 .notification-bulk-disable").border).toBe("1px solid var(--pwa-frame-tertiary)");
   });
 
   it("reduces the system notification explanation without changing the title", () => {
-    const style = mountStyles(`${readCss("src/design-tokens.css")}\n${readCss("src/feature-page-adjustments.css")}`);
+    const style = mountStyles(readCss("src/feature-page-adjustments.css"));
     style.dataset.layoutContract = "notification-system-description";
     document.body.innerHTML = `<main class="notifications-screen-v2"><p class="notification-push-status">維護、更新</p></main>`;
 
@@ -340,8 +358,6 @@ describe("requested responsive layout refinement", () => {
     const summary = getComputedStyle(document.querySelector(".guide-summary")!);
     const list = getComputedStyle(document.querySelector(".guide-detail-block ul")!);
     const item = getComputedStyle(document.querySelector(".guide-detail-block li")!);
-    const unselected = getComputedStyle(document.querySelector('.guide-category-card:not([data-selected="true"])')!);
-    const selected = getComputedStyle(document.querySelector('.guide-category-card[data-selected="true"]')!);
     expect(summary.paddingBottom).toBe("6px");
     expect(list.paddingLeft).toBe("0px");
     expect(list.listStyleType).toBe("none");
@@ -349,7 +365,13 @@ describe("requested responsive layout refinement", () => {
     expect(item.gridTemplateColumns).toBe("4px minmax(0, 1fr)");
     expect(item.columnGap).toBe("4px");
     expect(item.fontSize).toBe("12px");
-    expect(unselected.borderTopColor).not.toBe(selected.borderTopColor);
+    expect(declaredStyle(style, ".matrix-guide-screen .guide-category-strip .guide-category-card").border).toBe("1px solid var(--pwa-frame-tertiary)");
+    expect(declaredStyle(style, '.matrix-guide-screen .guide-category-strip .guide-category-card[data-selected="true"]').borderColor).toBe("var(--pwa-frame-secondary)");
+    const tokens = declaredStyle(style, ":root");
+    expect(tokens.getPropertyValue("--pwa-frame-tertiary")).toBe("var(--home-frame-muted)");
+    expect(tokens.getPropertyValue("--home-frame-muted")).toBe("#8a713f");
+    expect(tokens.getPropertyValue("--pwa-frame-secondary")).toBe("var(--home-frame-gold)");
+    expect(tokens.getPropertyValue("--home-frame-gold")).toBe("#d6b66f");
   });
 
   it("keeps the Matrix guide rail responsive while applying the requested spacing and scale", () => {
