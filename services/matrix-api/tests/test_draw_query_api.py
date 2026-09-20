@@ -109,3 +109,19 @@ def test_tongxing_legacy_rejects_nonadvancing_or_skipping_cursor(next_cursor):
     status, payload = handle_api_request('POST', '/api/matrix/tongxing', json.dumps(body).encode(), repository)
     assert (status, payload) == (500, {'error': 'INTERNAL_ERROR'})
     assert len(repository.calls) == 1
+
+
+def test_validation_periods_use_a_bounded_rpc_without_loading_all_history():
+    repository = QueryRepository({'items': [draw()]})
+    path = '/api/matrix/history/' + quote('今彩539') + '?' + urlencode({'periods': json.dumps(['115001'])})
+    status, payload = handle_api_request('GET', path, None, repository)
+    assert status == 200 and len(payload['items']) == 1
+    assert repository.calls == [('matrix_draw_periods', {'p_lottery': '今彩539', 'p_periods': ['115001']})]
+
+
+@pytest.mark.parametrize('periods', [None, {}, ['bad'], [1], ['123'] * 501])
+def test_validation_periods_reject_invalid_requests_before_database(periods):
+    repository = QueryRepository({})
+    path = '/api/matrix/history/' + quote('今彩539') + '?' + urlencode({'periods': json.dumps(periods)})
+    status, _ = handle_api_request('GET', path, None, repository)
+    assert status == 400 and repository.calls == []
