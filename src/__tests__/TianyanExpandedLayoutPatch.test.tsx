@@ -10,7 +10,7 @@ import {
 } from "../TianyanExpandedValidation";
 
 const api = vi.hoisted(() => ({ history: vi.fn() }));
-vi.mock("../lottery-api", () => ({ fetchLotteryHistory: api.history }));
+vi.mock("../lottery-api", () => ({ fetchLotteryHistoryPeriods: api.history }));
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 const item: TianyanApiRow = {
@@ -130,7 +130,7 @@ describe("Tianyan expanded validation", () => {
     );
 
     await waitFor(() => expect(container.querySelector(".tianyan-expanded-validation-group")).not.toBeNull());
-    expect(api.history).toHaveBeenCalledWith("六合彩", 1000);
+    expect(api.history).toHaveBeenCalledWith("六合彩", expect.arrayContaining(["115044", "115045"]));
     const rows = container.querySelectorAll(".tianyan-expanded-validation-group .explore-validation-numbers");
     expect(rows.length).toBeGreaterThan(0);
     rows.forEach((row) => {
