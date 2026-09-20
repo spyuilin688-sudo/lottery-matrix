@@ -1,3 +1,5 @@
+import { signClientIp } from '../../../apps/admin/shared/admin-client-ip';
+
 type PagesContext = {
   request: Request;
   env: Record<string, unknown>;
@@ -36,7 +38,7 @@ function proxyError(code: string, status: number) {
 }
 
 export function createAdminApiProxy(fetcher: typeof fetch = fetch) {
-  return async (request: Request, _env: Record<string, unknown>): Promise<Response> => {
+  return async (request: Request, env: Record<string, unknown>): Promise<Response> => {
     const incoming = new URL(request.url);
     if (!incoming.pathname.startsWith(`${ADMIN_API_PREFIX}/`)) return proxyError('NOT_FOUND', 404);
 
@@ -67,6 +69,11 @@ export function createAdminApiProxy(fetcher: typeof fetch = fetch) {
         if (bytes.byteLength > MAX_BODY_BYTES) return proxyError('REQUEST_BODY_TOO_LARGE', 413);
         body = bytes.byteLength > 0 ? bytes : undefined;
       }
+      await signClientIp(headers, visitorIp, env.MATRIX_ADMIN_PROXY_SECRET, {
+        method: request.method,
+        path: upstream.pathname.slice(new URL(SUPABASE_ADMIN_API).pathname.length) + upstream.search,
+        origin: origin ?? '',
+      });
       const response = await fetcher(upstream.href, {
         method: request.method,
         headers,

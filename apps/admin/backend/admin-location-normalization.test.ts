@@ -2,6 +2,26 @@ import { expect, it, vi } from 'vitest';
 import { normalizeIpAddress, lookupLocations } from './member-login-history';
 import { listAdminLoginRecordPage } from './admin-data';
 
+it('does not locate historical Cloudflare Worker chains using the cached Portland result', async () => {
+  const ip = '2a06:98c0:3600::103,2a06:98c0:3600::103, 99.82.170.148';
+  const request = vi.fn(async () => [{ ip: '2a06:98c0:3600::103', country_code: 'US', city: 'Portland', checked_at: new Date().toISOString() }]);
+  const requestPage = async () => ({ items: [{ id: 'r1', ip, admin_account: { role: '營運管理員' } }], total: 1 });
+  const result = await listAdminLoginRecordPage({}, { request, requestPage } as never);
+  expect(result.items[0].estimatedRegion).toBeNull();
+  expect(request).not.toHaveBeenCalled();
+});
+
+it.each([
+  '2a06:98c0:3600::103',
+  '2A06:98C0:3600:0000:0000:0000:0000:0103, 13.248.115.52',
+  '::ffff:2a06:98c0:3600::103',
+  '999.1.2.3',
+  ':::1',
+  'bad',
+])('does not use invalid or known Worker IP %s for geolocation', value => {
+  expect(normalizeIpAddress(value)).toBeNull();
+});
+
 it('normalizes the first forwarded IP before geolocation and maps the region back to the admin record', async () => {
   expect(normalizeIpAddress('203.0.113.1, 198.51.100.2')).toBe('203.0.113.1');
   const fetcher = vi.fn(async () => new Response(JSON.stringify({ success: true, country_code: 'TW', city: 'Taipei' }), { status: 200, headers: { 'content-type': 'application/json' } }));
