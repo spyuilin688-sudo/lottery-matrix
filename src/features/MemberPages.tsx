@@ -274,7 +274,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   }, [authState, memberUserId]);
   const expiry = memberProfile?.isLifetime ? null : memberExpiryInTaipei(memberProfile?.planExpiresAt ?? null);
   const displayedPlanName = memberProfile ? memberProfile.planName ?? "免費會員" : "";
-  const displayedPlanDescription = displayedPlanName === "免費會員" ? "核心功能體驗" : "依目前方案享有 Matrix Pro 權限";
+  const displayedPlanDescription = displayedPlanName === "免費會員" ? "核心功能體驗" : "Matrix Pro 權限";
   const handleAuthAction = async () => {
     if (authRetrying || authState === "initializing" || authState === "signing-in" || authState === "signing-out") return;
     if (authState === "degraded") {
