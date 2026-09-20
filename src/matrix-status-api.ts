@@ -2,6 +2,9 @@ import type { LotteryId } from './Prototype';
 import { getSupabaseClient } from './lib/supabase';
 import { MatrixApiError } from './matrix-api-client';
 import type { ExploreValidationResponse } from './matrix-algorithm-api';
+import { readThroughCache, stableCacheKey } from './read-cache';
+import { readAlgorithmCacheScope } from './auth/algorithm-cache-scope';
+import { getMatrixDataRevision } from './matrix-data-revision';
 
 export type MatrixStatusCode = 'ACTIVE' | 'FOCUS' | 'RESONANCE' | 'CRITICAL' | 'DORMANT';
 export type MatrixTriggerStatusCode = Exclude<MatrixStatusCode, 'DORMANT'>;
@@ -121,7 +124,53 @@ export function fetchMatrixStatusSummaries(lotteries: LotteryId[], signal?: Abor
 }
 
 async function fetchMatrixStatusFromFunction(lottery: LotteryId, signal?: AbortSignal) {
-  return statusFunction<MatrixStatusResponse>({ lottery }, signal);
+  // A caller-owned abort signal must not cancel another consumer's shared read.
+  return signal ? statusFunction<MatrixStatusResponse>({ lottery }, signal)
+    : cachedStatusFunction<MatrixStatusResponse>({ lottery });
+}
+
+async function cachedStatusFunction<T>(body: Record<string, unknown>): Promise<T> {
+  const client = getSupabaseClient();
+  const scope = await readAlgorithmCacheScope(client, { allowGuest: true });
+  const revision = getMatrixDataRevision();
+  const assertCurrent = async () => {
+    if (await readAlgorithmCacheScope(client, { allowGuest: true }) !== scope) {
+      throw new MatrixApiError('AUTH_REQUIRED', 401);
+    }
+    if (getMatrixDataRevision() !== revision) {
+      throw new MatrixApiError('ANALYSIS_VERSION_MISMATCH', 409);
+    }
+  };
+  // Every access revalidates current membership and active analysis identity.
+  // Only the large result is cached; expiry, revocation and weekday perks stay server-owned.
+  const identityBody = { action: 'identity', lottery: body.lottery,
+    ...(body.drawPeriod ? { drawPeriod: body.drawPeriod } : {}) };
+  const identityKey = stableCacheKey('matrix-rpc:status-access', { scope, revision, identityBody });
+  const identity = await readThroughCache(identityKey, 0, async () => {
+    const value = await statusFunction<{ kind: string; drawPeriod: string; analysisVersion: string; entitlements: Record<string, boolean> }>(identityBody);
+    await assertCurrent();
+    if (value?.kind !== 'status-identity' || !value.drawPeriod || !value.analysisVersion || !value.entitlements) {
+      throw new MatrixApiError('API_ERROR', 500);
+    }
+    return value;
+  });
+  await assertCurrent();
+  if (body.analysisVersion && body.analysisVersion !== identity.analysisVersion) {
+    throw new MatrixApiError('ANALYSIS_VERSION_MISMATCH', 409);
+  }
+  const cacheIdentity = { drawPeriod: identity.drawPeriod, analysisVersion: identity.analysisVersion, entitlements: identity.entitlements };
+  const key = stableCacheKey('matrix-rpc:status', { scope, revision, cacheIdentity, body });
+  const result = await readThroughCache(key, 60_000, async ({ isCurrent }) => {
+    const value = await statusFunction<T & { cacheIdentity?: unknown }>(body);
+    await assertCurrent();
+    if (stableCacheKey('', value?.cacheIdentity) !== stableCacheKey('', cacheIdentity)) {
+      throw new MatrixApiError('ANALYSIS_VERSION_MISMATCH', 409);
+    }
+    if (!isCurrent()) throw new MatrixApiError('ANALYSIS_VERSION_MISMATCH', 409);
+    return value;
+  });
+  await assertCurrent();
+  return result;
 }
 
 async function statusFunction<T>(body: Record<string, unknown>, signal?: AbortSignal) {
@@ -150,7 +199,7 @@ export function fetchMatrixStatusValidation(
   meta: { lottery: LotteryId; drawPeriod: string; analysisVersion: string },
   itemId: string,
 ) {
-  return statusFunction<MatrixStatusValidationResponse>({
+  return cachedStatusFunction<MatrixStatusValidationResponse>({
     action: 'validation',
     ...meta,
     itemId,
