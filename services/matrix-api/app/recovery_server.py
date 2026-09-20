@@ -30,7 +30,7 @@ from app.watchdog_lease import (
 
 
 SERVICE_NAME = "matrix-railway-recovery"
-GET_PATHS = {"/health", "/jobs/status"}
+GET_PATHS = {"/health", "/jobs/status", "/jobs/refresh/status"}
 POST_PATHS = {"/jobs/refresh", "/jobs/recover", "/jobs/result-ready"}
 
 

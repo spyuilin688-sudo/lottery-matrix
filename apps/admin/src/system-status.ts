@@ -1,3 +1,4 @@
+import { parseManualRefresh, type ManualRefreshTask } from '../shared/manual-refresh';
 import { matrixStorageStatusId, parseMatrixStorageHealth } from '../backend/matrix-storage-status';
 import { nativeNotificationStatusId, parseNativeNotificationHealth } from '../backend/native-notification-status';
 import { apiStatusInventory, type ApiStatusDefinition, type ApiCheckEvidence, type ApiLocation } from '../backend/api-status-inventory';
@@ -257,12 +258,56 @@ export async function retrySystemStatus(
   return response.data.item;
 }
 
+export type RefreshClient = {
+  post(url: string): Promise<{ data: { refresh?: unknown } }>;
+  get(url: string): Promise<{ data: { refresh?: unknown } }>;
+};
+const refreshLotteries: Record<string, ManualRefreshTask['lottery']> = {
+  'cron-matrix-539-refresh-v2': '今彩539', 'cron-matrix-fantasy5-refresh-v2': '天天樂',
+  'cron-matrix-marksix-refresh-v2': '六合彩', 'cron-matrix-649-refresh-v2': '大樂透',
+};
 export async function refreshCrawlerSystemStatus(
-  api: { post(url: string): Promise<{ data: { refresh: CrawlerRefreshResult } }> },
-  id: string,
-) {
-  const response = await api.post(`/api/system-status/${id}/refresh`);
-  return response.data.refresh;
+  api: RefreshClient, id: string,
+  options: { requestId?: string; signal?: AbortSignal; current?: () => boolean; onProgress?: (task: ManualRefreshTask) => void } = {},
+): Promise<CrawlerRefreshResult> {
+  const path = `/api/system-status/${id}/refresh`;
+  const checkCurrent = () => {
+    if (options.signal?.aborted || options.current?.() === false) throw new DOMException('查詢已停止', 'AbortError');
+  };
+  const parse = (value: unknown, requestId?: string) => {
+    const task = parseManualRefresh(value, refreshLotteries[id], requestId);
+    if (!task) throw new Error('未取得有效更新狀態，請查詢工作狀態後再決定是否重試。');
+    options.onProgress?.(task);
+    return task;
+  };
+  checkCurrent();
+  const initial = options.requestId
+    ? await api.get(`${path}/${options.requestId}`) : await api.post(path);
+  checkCurrent();
+  let task = parse(initial.data.refresh, options.requestId);
+  const deadline = Date.now() + 5 * 60_000;
+  let reads = options.requestId ? 1 : 0;
+  for (;;) {
+    checkCurrent();
+    if (task.status === 'complete') return { lottery: task.lottery, period: task.period!, drawDate: task.drawDate };
+    if (task.status === 'failed') {
+      const errors = { SOURCE_NOT_READY: '開獎來源尚未提供本期資料，這次更新未完成。', REFRESH_INTERRUPTED: '更新工作已逾期或中斷，請檢查實際資料後再重試。', REFRESH_FAILED: '開獎資料更新失敗，請檢查工作紀錄。' };
+      throw new Error(errors[task.error!]);
+    }
+    if (Date.now() >= deadline) throw new Error('更新尚未確認完成；已停止自動查詢，可稍後再次查詢更新狀態。');
+    // First read immediately; following reads are spaced and cancellable.
+    if (reads++ > 0) {
+      await new Promise<void>((resolve, reject) => {
+        const abort = () => { clearTimeout(timer); reject(new DOMException('查詢已停止', 'AbortError')); };
+        const timer = setTimeout(() => { options.signal?.removeEventListener('abort', abort); resolve(); }, 5_000);
+        options.signal?.addEventListener('abort', abort, { once: true });
+      });
+    }
+    checkCurrent();
+    const response = await api.get(`${path}/${task.requestId}`);
+    checkCurrent();
+    task = parse(response.data.refresh, task.requestId);
+  }
 }
 
 export function canRefreshCrawler(item: SystemStatusItem, canEdit: boolean) {

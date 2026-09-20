@@ -248,6 +248,16 @@ def test_jobs_status_returns_only_stable_unavailable_error(monkeypatch) -> None:
     assert "fake-database-secret" not in str(payload)
 
 
+def _refresh_result(repository, task):
+    import time
+    for _ in range(200):
+        result = repository.manual_refresh.get(task["lottery"], task["requestId"])
+        if result["status"] in {"complete", "failed"}:
+            return result
+        time.sleep(0.01)
+    raise AssertionError("refresh never completed")
+
+
 def test_jobs_refresh_requires_the_admin_token_and_returns_only_the_latest_draw(monkeypatch) -> None:
     monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
     repository = OperationalRepository()
@@ -274,11 +284,10 @@ def test_jobs_refresh_requires_the_admin_token_and_returns_only_the_latest_draw(
         refresh_lottery=refresh,
     )
 
-    assert (status, payload) == (200, {
-        "lottery": "今彩539",
-        "period": "115000211",
-        "drawDate": "2026-09-01",
-    })
+    assert status == 202
+    assert payload["status"] == "accepted"
+    result = _refresh_result(repository, payload)
+    assert result == {**payload, "status": "complete", "period": "115000211", "drawDate": "2026-09-01"}
     assert calls == ["今彩539"]
 
 
@@ -302,46 +311,34 @@ def test_jobs_refresh_does_not_invoke_the_crawler_without_a_valid_admin_token(mo
     assert calls == []
 
 
-def test_jobs_refresh_rejects_fantasy5_without_invoking_a_railway_crawler(monkeypatch) -> None:
+def test_jobs_refresh_accepts_fantasy5_and_exposes_protected_correlated_status(monkeypatch):
+    from urllib.parse import urlencode
     monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
-    calls: list[str] = []
-
-    status, payload = handle_api_request(
-        "POST",
-        "/jobs/refresh",
-        json.dumps({
-            "lottery": "天天樂",
-            "leaseOwner": "invocation-1",
-        }, ensure_ascii=False).encode("utf-8"),
-        OperationalRepository(),
-        request_monitor_token="expected-token",
-        refresh_lottery=lambda lottery, _: calls.append(lottery) or {},
-    )
-
-    assert (status, payload) == (409, {"error": "FANTASY5_CRAWLER_GITHUB_ONLY"})
-    assert calls == []
+    repository = OperationalRepository()
+    status, task = handle_api_request("POST", "/jobs/refresh", json.dumps({"lottery": "天天樂"}).encode(), repository,
+        request_monitor_token="expected-token", refresh_lottery=lambda lottery, _: {"lottery": lottery, "period": "123", "drawDate": None})
+    assert status == 202
+    result = _refresh_result(repository, task)
+    path = "/jobs/refresh/status?" + urlencode({"lottery": "天天樂", "requestId": task["requestId"]})
+    assert handle_api_request("GET", path, None, repository) == (403, {"error": "FORBIDDEN"})
+    assert handle_api_request("GET", path, None, repository, request_monitor_token="expected-token") == (200, result)
+    assert result["status"] == "complete"
+    wrong = path.replace(task["requestId"], "00000000-0000-0000-0000-000000000000")
+    assert handle_api_request("GET", wrong, None, repository, request_monitor_token="expected-token")[0] == 404
 
 
-def test_jobs_refresh_hides_upstream_failure_details(monkeypatch) -> None:
+def test_jobs_refresh_hides_upstream_failure_details(monkeypatch):
     monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
-
-    def refresh(_lottery: str, _repository: InMemoryAnalysisRepository) -> dict:
+    repository = OperationalRepository()
+    def refresh(*_):
         raise RuntimeError("source api key fake-secret")
-
-    status, payload = handle_api_request(
-        "POST",
-        "/jobs/refresh",
-        json.dumps({
-            "lottery": "今彩539",
-            "leaseOwner": "invocation-1",
-        }, ensure_ascii=False).encode("utf-8"),
-        OperationalRepository(),
-        request_monitor_token="expected-token",
-        refresh_lottery=refresh,
-    )
-
-    assert (status, payload) == (503, {"error": "REFRESH_UNAVAILABLE"})
-    assert "fake-secret" not in str(payload)
+    status, payload = handle_api_request("POST", "/jobs/refresh", json.dumps({"lottery": "今彩539"}).encode(), repository,
+        request_monitor_token="expected-token", refresh_lottery=refresh)
+    assert status == 202
+    result = _refresh_result(repository, payload)
+    assert result["status"] == "failed"
+    assert result["error"] == "REFRESH_FAILED"
+    assert "fake-secret" not in str(result)
 
 
 def test_refresh_latest_draw_upserts_one_formal_latest_draw(monkeypatch) -> None:
@@ -377,15 +374,20 @@ def test_refresh_latest_draw_upserts_one_formal_latest_draw(monkeypatch) -> None
     assert client_options == [{"verify": "ssl-context"}]
 
 
-def test_refresh_latest_draw_rejects_fantasy5_before_constructing_http(monkeypatch) -> None:
-    monkeypatch.setattr(
-        api_server.httpx,
-        "Client",
-        lambda **_: (_ for _ in ()).throw(AssertionError("Railway must not crawl Fantasy5")),
-    )
-
-    with pytest.raises(ValueError, match="FANTASY5_CRAWLER_GITHUB_ONLY"):
-        api_server.refresh_latest_draw("天天樂", InMemoryAnalysisRepository())
+@pytest.mark.parametrize("acquisition", ["acquired", "already-acquired", "not-acquired"])
+def test_refresh_latest_draw_reuses_fantasy5_crawler_without_analysis(monkeypatch, acquisition):
+    from app.manual_refresh import SourceNotReady
+    repository = InMemoryAnalysisRepository()
+    repository.upsert_draw(_draw("天天樂", "123", "2026-09-20", ["01", "02", "03", "04", "05"]))
+    calls = []
+    monkeypatch.setattr(api_server, "run_fantasy5_crawler_once", lambda: calls.append("crawl") or {"status": acquisition, "drawPeriod": "123"})
+    monkeypatch.setattr(api_server, "run_lottery_recovery", lambda *_: pytest.fail("manual refresh must not run analysis"))
+    if acquisition == "not-acquired":
+        with pytest.raises(SourceNotReady):
+            api_server.refresh_latest_draw("天天樂", repository)
+    else:
+        assert api_server.refresh_latest_draw("天天樂", repository)["period"] == "123"
+    assert calls == ["crawl"]
 
 
 class ExplodingHistoryRepository(InMemoryAnalysisRepository):
