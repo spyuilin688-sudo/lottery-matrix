@@ -34,6 +34,7 @@ getSupabaseClient().auth.onAuthStateChange = () => ({ data: { subscription: {
 window.localStorage.setItem('matrix-notebook:v2:notebook-layout-fixture', JSON.stringify({
   notes: [
     { id: 'first', title: '第一張筆記', content: '保留原有內容', updatedAt: '2026-09-08T10:00:00Z' },
+    ...Array.from({ length: 39 }, (_, i) => ({ id: `extra-${i}`, title: `筆記 ${i + 2}`, content: '分頁內容', updatedAt: '2026-09-08T11:00:00Z' })),
     { id: 'long', title: '長標題'.repeat(30), content: '長內容'.repeat(100), updatedAt: '2026-09-08T11:00:00Z' },
   ],
 }));

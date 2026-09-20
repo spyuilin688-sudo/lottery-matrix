@@ -26,12 +26,14 @@ for (const width of [320, 360, 390, 430]) {
     await expectPageInsets(page);
     const toolbar = await page.locator('.notebook-heading').evaluate((heading) => {
       const rect = (selector: string) => heading.querySelector(selector)!.getBoundingClientRect();
-      const count = rect('.notebook-entry-count');
+      const pagination = rect('.notebook-pagination');
       const actions = rect('.notebook-note-actions');
       const add = rect('.notebook-note-actions > button:first-child');
       const remove = rect('.notebook-delete-action');
       return {
-        countBeforeActions: count.right <= actions.left,
+        actionsBeforePages: actions.right <= pagination.left,
+        pagesOnSameRow: pagination.top === add.top,
+        countHidden: heading.querySelector(".notebook-entry-count") === null,
         actionsOnSameRow: add.top === remove.top,
         addBeforeDelete: add.right < remove.left,
         noDecorativeIcon: heading.querySelector('img') === null,
@@ -40,13 +42,25 @@ for (const width of [320, 360, 390, 430]) {
         hasDuplicateTitle: Boolean(heading.querySelector('h2')),
       };
     });
-    expect(toolbar).toEqual({ countBeforeActions: true, actionsOnSameRow: true, addBeforeDelete: true, noDecorativeIcon: true, buttonHeights: [34, 34], addFontSize: '11px', hasDuplicateTitle: false });
+    expect(toolbar).toEqual({ actionsBeforePages: true, pagesOnSameRow: true, countHidden: true, actionsOnSameRow: true, addBeforeDelete: true, noDecorativeIcon: true, buttonHeights: [34, 34], addFontSize: '11px', hasDuplicateTitle: false });
     await page.getByRole('button', { name: '刪除', exact: true }).click();
     await expect(page.getByRole('button', { name: '取消刪除', exact: true })).toBeVisible();
     await expectPageInsets(page);
     await page.getByRole('button', { name: '取消刪除', exact: true }).click();
     await expect(page.locator('.notebook-entry-open').first()).toHaveCSS('padding-top', '5px');
     await expect(page.locator('.notebook-entry-open').first()).toHaveCSS('padding-bottom', '5px');
+    await expect(page.locator('.notebook-entry')).toHaveCount(10);
+    await page.getByRole('button', { name: '第 5 頁', exact: true }).click();
+    await expect(page.locator('.notebook-entry')).toHaveCount(1);
+    await expect(page.getByRole('button', { name: '第 5 頁', exact: true })).toHaveAttribute('aria-current', 'page');
+    await page.getByRole('button', { name: '第 1 頁', exact: true }).click();
+    const watermark = await page.locator('.notebook-sheet').evaluate((element) => {
+      const style = getComputedStyle(element, '::before');
+      return { image: style.backgroundImage, opacity: style.opacity, pointerEvents: style.pointerEvents };
+    });
+    expect(watermark.image).toContain('matrix-notebook.png');
+    expect(watermark.opacity).toBe('0.12');
+    expect(watermark.pointerEvents).toBe('none');
     await page.screenshot({ path: testInfo.outputPath(`notebook-list-${width}.png`), fullPage: true });
 
     await page.getByRole('button', { name: '展開筆記：第一張筆記', exact: true }).click();
