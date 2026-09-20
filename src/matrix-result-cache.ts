@@ -183,7 +183,7 @@ export function writeLotteryQueryCache<T>(lottery: string, drawPeriod: string, q
   writeJsonStorage(buildLotteryQueryCacheKey(lottery, drawPeriod, query), result);
 }
 
-export type TimedLotteryCache<T> = { savedAt: number; value: T };
+export type TimedLotteryCache<T> = { savedAt: number; value: T; revision?: string };
 const LOTTERY_CACHE_MAX_AGE_MS = 5 * 60 * 1_000;
 
 function readTimedCache<T>(key: string, maxAgeMs: number): TimedLotteryCache<T> | null {
@@ -228,8 +228,8 @@ export function readLotteryHistoryCache<T>(lottery: string, drawPeriod: string, 
   return readLotteryHistoryCacheEntry<T>(lottery, drawPeriod, limit)?.value ?? null;
 }
 
-export function writeLotteryHistoryCache<T>(lottery: string, drawPeriod: string, limit: number | undefined, value: T) {
+export function writeLotteryHistoryCache<T>(lottery: string, drawPeriod: string, limit: number | undefined, value: T, revision?: string) {
   if (!storageAvailable() || !drawPeriod) return;
   setMatrixCurrentPeriod(lottery, drawPeriod);
-  writeJsonStorage(buildLotteryHistoryCacheKey(lottery, drawPeriod, limit), { savedAt: Date.now(), value } satisfies TimedLotteryCache<T>);
+  writeJsonStorage(buildLotteryHistoryCacheKey(lottery, drawPeriod, limit), { savedAt: Date.now(), value, revision } satisfies TimedLotteryCache<T>);
 }

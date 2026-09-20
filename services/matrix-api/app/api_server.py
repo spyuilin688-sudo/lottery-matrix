@@ -14,6 +14,7 @@ from collections.abc import Callable
 from typing import Any
 from threading import BoundedSemaphore
 from uuid import UUID
+from app.draw_read_cache import DrawReadCache
 from app.manual_refresh import ManualRefreshCoordinator, SourceNotReady
 from app.fantasy5_crawler import run_fantasy5_crawler_once
 from urllib.parse import parse_qs, quote, unquote, urlsplit
@@ -224,6 +225,19 @@ def _draw_query(repository: AnalysisRepository, lottery: str, kind: str, **param
     cursor = params.get("p_cursor")
     if cursor is not None and not isinstance(cursor, dict):
         raise ValueError("INVALID_CURSOR")
+    cache = getattr(repository, "draw_read_cache", None)
+    if cache is not None and kind in {"history", "tongxing"}:
+        # Revalidate with a small latest-row response before reusing a large page.
+        # Database revisions cover all history corrections and cross-process writers.
+        latest = _execute_draw_query(repository, lottery, "latest")
+        revision = latest.get("revision")
+        if isinstance(revision, str) and revision and (cursor is None or cursor.get("revision") == revision):
+            key = json.dumps([lottery, revision, kind, params], sort_keys=True, ensure_ascii=False)
+            return cache.read(key, lambda: _execute_draw_query(repository, lottery, kind, **params))
+    return _execute_draw_query(repository, lottery, kind, **params)
+
+
+def _execute_draw_query(repository: AnalysisRepository, lottery: str, kind: str, **params: Any) -> dict[str, Any]:
     data = repository.client.rpc("matrix_draw_query", {
         "p_lottery": lottery, "p_kind": kind, **params,
     }).execute().data
@@ -872,9 +886,11 @@ def create_repository() -> AnalysisRepository:
                          ),
                          follow_redirects=True)
     try:
-        return create_supabase_repository(
+        repository = create_supabase_repository(
             settings.supabase_url, settings.supabase_secret_key, httpx_client=client,
         )
+        repository.draw_read_cache = DrawReadCache()
+        return repository
     except Exception:
         client.close()
         raise
