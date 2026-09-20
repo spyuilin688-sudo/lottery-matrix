@@ -36,13 +36,14 @@ for (const width of [320, 360, 390, 430]) {
         countHidden: heading.querySelector(".notebook-entry-count") === null,
         actionsOnSameRow: add.top === remove.top,
         addBeforeDelete: add.right < remove.left,
+        actionGap: remove.left - add.right,
         noDecorativeIcon: heading.querySelector('img') === null,
         buttonHeights: [add.height, remove.height],
         addFontSize: getComputedStyle(heading.querySelector('.notebook-note-actions > button:first-child')!).fontSize,
         hasDuplicateTitle: Boolean(heading.querySelector('h2')),
       };
     });
-    expect(toolbar).toEqual({ actionsBeforePages: true, pagesOnSameRow: true, countHidden: true, actionsOnSameRow: true, addBeforeDelete: true, noDecorativeIcon: true, buttonHeights: [34, 34], addFontSize: '11px', hasDuplicateTitle: false });
+    expect(toolbar).toEqual({ actionsBeforePages: true, pagesOnSameRow: true, countHidden: true, actionsOnSameRow: true, addBeforeDelete: true, actionGap: 4, noDecorativeIcon: true, buttonHeights: [34, 34], addFontSize: '11px', hasDuplicateTitle: false });
     await page.getByRole('button', { name: '刪除', exact: true }).click();
     await expect(page.getByRole('button', { name: '取消刪除', exact: true })).toBeVisible();
     await expectPageInsets(page);

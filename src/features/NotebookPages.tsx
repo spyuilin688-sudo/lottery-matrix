@@ -155,13 +155,13 @@ function OwnedNotebookPage({ owner, onNavigate }: { owner: NotebookOwner; onNavi
             <button type="button" aria-label="新增筆記" onClick={() => startNote()}><PlusIcon aria-hidden="true" />新增</button>
             <button type="button" className="notebook-delete-action" aria-pressed={deletingNotes} disabled={notes.length === 0} onClick={() => deletingNotes ? cancelNoteDeletion() : setDeletingNotes(true)}>{deletingNotes ? "取消刪除" : "刪除"}</button>
           </div>
-          <nav className="lottery-tabs notebook-pagination" aria-label="筆記分頁">
+          {pageCount > 1 ? <nav className="lottery-tabs notebook-pagination" aria-label="筆記分頁">
             {Array.from({ length: pageCount }, (_, index) => index + 1).map((number) => <button
               type="button" key={number} aria-label={`第 ${number} 頁`}
               aria-current={number === currentPage ? "page" : undefined} data-selected={number === currentPage}
               onClick={() => setPage(number)}
             ><span>{number}</span></button>)}
-          </nav>
+          </nav> : null}
         </section>
         {deletingNotes ? <p className="notebook-delete-hint" role="status">請選擇要刪除的筆記</p> : null}
         <section className="notebook-entry-list" aria-label="筆記列表">

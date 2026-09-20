@@ -1332,7 +1332,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .notebook-pagination { --lottery-tabs-height: 34px; --lottery-tabs-bottom-gap: 0px; --lottery-tabs-columns: none; flex: 1; min-width: 0; grid-auto-flow: column; grid-auto-columns: minmax(28px, 1fr); overflow-x: auto; scrollbar-width: thin; }
 .notebook-pagination button + button { border-inline-start: 1px solid var(--pwa-frame-tertiary); border-radius: 0; }
 .notebook-heading button svg { width: 14px; height: 14px; }
-.notebook-note-actions { display: flex; flex-shrink: 0; min-width: 0; gap: var(--layout-section-gap); }
+.notebook-note-actions { display: flex; flex-shrink: 0; min-width: 0; gap: 4px; }
 .notebook-note-actions > button { display: flex; box-sizing: border-box; min-width: 0; min-height: 34px; padding: 6px 10px; align-items: center; justify-content: center; gap: 4px; border: 1px solid var(--pwa-frame-tertiary); border-radius: var(--pwa-frame-radius); color: var(--pwa-frame-secondary); background: var(--pwa-control-surface); font-size: 11px; line-height: 1.45; }
 .notebook-note-actions > .notebook-delete-action { min-width: 6em; color: #d88a8a; border-color: #773434; background: rgba(54, 10, 10, .16); }
 .notebook-delete-action[aria-pressed="true"],
