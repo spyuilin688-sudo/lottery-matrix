@@ -103,7 +103,7 @@ describe('createPushNotifications', () => {
         identityLabel: 'LINE ID',
         identityValue: 'line-user-one',
         identityDisplay: 'LINE ID：line-user-one',
-        displayName: '目前會員一',
+        displayName: '持久化會員一',
         pictureUrl: 'https://metadata.example/one.png',
         pushEnabled: true,
       },
@@ -147,7 +147,7 @@ describe('createPushNotifications', () => {
       if (url.includes('/rest/v1/members?')) {
         return range === '0-999'
           ? response(memberPageOne, 200, 1001)
-          : response([{ auth_user_id: targetUserId, line_display_name: 'stale target' }], 200, 1001);
+          : response([{ auth_user_id: targetUserId, line_display_name: 'stored target' }], 200, 1001);
       }
       if (url.includes('/auth/v1/admin/users?')) {
         return url.includes('?page=1&')
@@ -175,7 +175,7 @@ describe('createPushNotifications', () => {
       identityLabel: null,
       identityValue: null,
       identityDisplay: null,
-      displayName: 'target metadata',
+      displayName: 'stored target',
       pictureUrl: 'https://metadata.example/target.png',
       pushEnabled: true,
     });
@@ -188,6 +188,36 @@ describe('createPushNotifications', () => {
       expect.objectContaining({ url: expect.stringContaining('/auth/v1/admin/users?page=2&per_page=1000') }),
       expect.objectContaining({ url: expect.stringContaining('/rest/v1/member_push_subscriptions?'), range: '1000-1999' }),
     ]));
+  });
+
+  it('falls back to Auth metadata when a stored member name is blank', async () => {
+    const fetcher = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.includes('/rest/v1/members?')) {
+        return response([{ auth_user_id: USER_TWO, line_display_name: '  ' }]);
+      }
+      if (url.includes('/auth/v1/admin/users?')) {
+        return response({ users: [{
+          id: USER_TWO,
+          user_metadata: { name: 'Google 會員二' },
+          identities: [{ provider: 'google', provider_id: 'google-user-two' }],
+        }] });
+      }
+      if (url.includes('/rest/v1/member_push_subscriptions?')) return response([]);
+      return response({}, 404);
+    });
+
+    await expect(createPushNotifications(config, fetcher).listMemberPushStatus()).resolves.toEqual([
+      {
+        userId: USER_TWO,
+        identityLabel: 'Google ID',
+        identityValue: 'google-user-two',
+        identityDisplay: 'Google ID：google-user-two',
+        displayName: 'Google 會員二',
+        pictureUrl: null,
+        pushEnabled: false,
+      },
+    ]);
   });
 
   it('maps delivery log columns and requests newest records first', async () => {

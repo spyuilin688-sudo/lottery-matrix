@@ -4,6 +4,7 @@ import type { NumberBallLottery } from './NumberBall';
 import { fetchLatestLotteryDraw, type LotteryDrawRecord } from './lottery-api';
 
 export function useLatestLotteryDraw(lottery: NumberBallLottery) {
+  const [dataLottery, setDataLottery] = useState(lottery);
   const [data, setData] = useState<LotteryDrawRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -11,6 +12,7 @@ export function useLatestLotteryDraw(lottery: NumberBallLottery) {
   useEffect(() => {
     let active = true;
     let revision = 0;
+    setDataLottery(lottery);
     setData(null);
     setLoading(true);
     setError(null);
@@ -42,7 +44,11 @@ export function useLatestLotteryDraw(lottery: NumberBallLottery) {
     };
   }, [lottery]);
 
-  return { data, loading, error };
+  // Effects run after render: never pair the newly selected lottery with the
+  // previous lottery's result, even during that first render before cleanup.
+  return dataLottery === lottery
+    ? { data, loading, error }
+    : { data: null, loading: true, error: null };
 }
 
 export default useLatestLotteryDraw;

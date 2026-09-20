@@ -2,7 +2,7 @@
 
 > **For agentic workers:** Use superpowers:executing-plans. This ledger records a partial implementation, not a production cutover.
 
-Goal: implement the user's two Taipei time windows and completion-dependent next start, then connect Railway only after resolving recovery ownership.
+Goal: implement the user's two Taipei time windows and completion-dependent next start, then connect Railway after completing the primary worker control flow. Recovery ownership and its independent schedule are now resolved.
 Base: freshly verified GitHub main 39c56ef373cb61821df8db7e371a35e824958916.
 
 ## Requirements
@@ -27,7 +27,7 @@ No I/O; consumers must provide verified current-cycle completion.
 
 ## Task 2: Integration gate
 
-Existing watchdog can recover after these stop times. The user's explicit times refer to primary workers; whether to suppress exceptional recovery was not explicitly stated. Resolve this user-visible behavior before editing watchdog or claiming all work stops.
+Resolved by the user's later explicit recovery schedule: recovery is independent, with fifty-minute late slots and extra checks. See 2026-09-21-recovery-dynamic-slots.md. Do not apply the primary thirty-minute windows to recovery or remove its extra slots.
 Worker service lacks a Railway project token; do not copy secrets into source or logs.
 A lone daily cron at an intermediate slot does not guarantee the next daily start after a crash. Resolve this together with existing recovery, without silently adding another controller.
 Do not switch production cron or remove repository cron until the whole control flow is ready.
@@ -50,3 +50,7 @@ Do not switch production cron or remove repository cron until the whole control 
 - Task 1: complete, RED missing app.worker_schedule; GREEN 44 passed in 0.10s (22 new, 22 existing). Used existing Python virtualenv; tests imported this worktree.
 - Task 2: not implemented. No entrypoint, Railway config, credential, DB, watchdog, or production changes. Current policy is unconnected and does not reduce production startups yet.
 - Final independent review: no material correctness bugs in pure policy. Review confirmed cutoff exclusion and that active allows delayed starts within window; consumers must enforce cadence and verify completion. Reviewer read tests but did not rerun them. No deferred minors.
+
+## Current handoff after PR #708 / #709
+
+The primary runtime integration remains unfinished; its production cron was not changed. Recovery has been deployed separately and cancels completed cycles. The older2026-09-20 daily-runner plan is retired, not an alternative execution instruction. Keep existing in-flight work and the independent recovery contract when implementing primary next-run scheduling.

@@ -16,6 +16,21 @@ afterEach(() => {
 });
 
 describe("useLatestLotteryDraw", () => {
+  it("切換彩種的每次 render 都不暴露上一彩種資料", async () => {
+    mockedFetchLatestLotteryDraw.mockResolvedValueOnce({
+      period: "old-539", drawDate: "2026/09/19", numbers: ["02", "17", "27", "29", "35"],
+    }).mockImplementationOnce(() => new Promise(() => {}));
+    const observed: Array<{ lottery: NumberBallLottery; period: string | null }> = [];
+    const { result, rerender } = renderHook(({ lottery }: { lottery: NumberBallLottery }) => {
+      const state = useLatestLotteryDraw(lottery);
+      observed.push({ lottery, period: state.data?.period ?? null });
+      return state;
+    }, { initialProps: { lottery: "今彩539" as NumberBallLottery } });
+    await waitFor(() => expect(result.current.data?.period).toBe("old-539"));
+    rerender({ lottery: "天天樂" });
+    expect(observed.filter(row => row.lottery === "天天樂").every(row => row.period === null)).toBe(true);
+  });
+
   it("切換彩種時立即清除上一彩種的開獎資料", async () => {
     mockedFetchLatestLotteryDraw.mockResolvedValueOnce({
       period: "115194",
