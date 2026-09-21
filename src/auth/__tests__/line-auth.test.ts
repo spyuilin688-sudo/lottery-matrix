@@ -88,15 +88,20 @@ describe('LINE auth helper', () => {
     }
   });
 
-  it('prepares the LINE OAuth URL without JavaScript browser navigation', async () => {
-    const url = 'https://project.supabase.co/auth/v1/authorize?provider=custom%3Aline';
-    const signInWithOAuth = vi.fn().mockResolvedValue({ data: { url }, error: null });
+  it('prepares the LINE OAuth URL without JavaScript browser navigation or Supabase redirect-control leakage', async () => {
+    const generatedUrl = 'https://project.supabase.co/auth/v1/authorize?provider=custom%3Aline&redirect_to=https%3A%2F%2Fmatrix.example%2F&skip_http_redirect=true';
+    const signInWithOAuth = vi.fn().mockResolvedValue({ data: { url: generatedUrl }, error: null });
 
-    await expect(prepareLineLoginUrl(
+    const prepared = await prepareLineLoginUrl(
       undefined,
       { auth: { signInWithOAuth } } as unknown as SupabaseClient,
-    )).resolves.toBe(url);
+    );
 
+    const preparedUrl = new URL(prepared);
+    expect(preparedUrl.origin + preparedUrl.pathname).toBe('https://project.supabase.co/auth/v1/authorize');
+    expect(preparedUrl.searchParams.get('provider')).toBe('custom:line');
+    expect(preparedUrl.searchParams.get('redirect_to')).toBe('https://matrix.example/');
+    expect(preparedUrl.searchParams.has('skip_http_redirect')).toBe(false);
     expect(signInWithOAuth).toHaveBeenCalledExactlyOnceWith({
       provider: 'custom:line',
       options: {
