@@ -28,7 +28,7 @@ test("Matrix Explore lower result sections match reference image two", () => {
   );
   assert.match(
     layout,
-    /\.matrix-explore-main-screen \.road-results article \+ article\s*\{[^}]*border-top:\s*1px solid rgba\(57, 55, 49, \.58\);/s,
+    /\.matrix-explore-main-screen \.road-results article \+ article\s*\{[^}]*border-top:\s*1px solid var\(--pwa-frame-divider\);/s,
   );
   assert.match(
     layout,
@@ -36,7 +36,7 @@ test("Matrix Explore lower result sections match reference image two", () => {
   );
   assert.match(
     layout,
-    /\.matrix-explore-main-screen \.consecutive-filter-button,\s*\.matrix-explore-main-screen \.repeat-stats-heading button\s*\{[^}]*border:\s*1px solid rgba\(117, 83, 41, \.62\);[^}]*background:\s*transparent;[^}]*color:\s*#aaa7a2;/s,
+    /\.matrix-explore-main-screen \.consecutive-filter-button,\s*\.matrix-explore-main-screen \.repeat-stats-heading button\s*\{[^}]*border:\s*1px solid var\(--pwa-frame-tertiary\);[^}]*background:\s*var\(--pwa-control-surface\);[^}]*color:\s*var\(--lottery-text-secondary\);/s,
   );
   assert.match(
     layout,
