@@ -4,7 +4,7 @@
 }
 
 .draw-history-screen .draw-history-panel:is([data-lottery="今彩539"], [data-lottery="天天樂"]) .history-main-numbers {
-  gap: clamp(6px, 2.4vw, 10px);
+  gap: clamp(5px, 2vw, 8px);
 }
 
 .draw-history-screen .draw-history-panel:is([data-lottery="今彩539"], [data-lottery="天天樂"]) .history-row.history-head {

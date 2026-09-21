@@ -63,7 +63,7 @@ test("歷史今彩539與天天樂增加呼吸空間且不影響六加一彩種",
     /^\.draw-history-screen \.draw-history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.history-main-numbers$/,
   );
   assert.equal(fiveBallSpacing.length, 1);
-  assert.match(fiveBallSpacing[0], /gap:\s*clamp\(6px,\s*2\.4vw,\s*10px\);/);
+  assert.match(fiveBallSpacing[0], /gap:\s*clamp\(5px,\s*2vw,\s*8px\);/);
 
   const fiveBallHeadDivider = ruleBodies(
     historyReadabilityCss,
