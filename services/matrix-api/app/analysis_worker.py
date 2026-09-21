@@ -1,7 +1,8 @@
 import argparse
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from os import environ
+from time import monotonic
 from typing import Any
 
 from app.repositories.card_repository import is_card_published
@@ -272,25 +273,49 @@ def run_analysis_only_worker(
     if lottery != FANTASY5:
         raise ValueError("ANALYSIS_ONLY_LOTTERY_UNSUPPORTED")
 
+    stage_timings: dict[str, float] = {}
+
+    def measured(stage: str, call: Callable[[], Any]) -> Any:
+        started = monotonic()
+        try:
+            return call()
+        finally:
+            elapsed = (monotonic() - started) * 1000
+            stage_timings[stage] = stage_timings.get(stage, 0.0) + elapsed
+
+    def finish(result: dict[str, Any]) -> dict[str, Any]:
+        merged = dict(stage_timings)
+        for stage, duration in dict(result.get("stageTimingsMs") or {}).items():
+            merged[stage] = merged.get(stage, 0.0) + float(duration)
+        return {
+            **result,
+            "stageTimingsMs": {
+                stage: round(duration, 3) for stage, duration in merged.items()
+            },
+        }
+
     emitted_event_keys: set[str] = set()
     completion = _read_worker_completion(lottery, repository, notification_emitter, scope="analysis-only")
     if completion is not None and completion.get("ready") is True:
         completed_draw = completion.get("draw")
         if completed_draw and completed_draw.get("resultStatus", "confirmed") == "confirmed":
             period = str(completed_draw["period"])
-            return {
+            return finish({
                 "lottery": lottery,
                 "drawPeriod": period,
                 "analysisVersion": analysis_version_for_order(period),
                 "status": "already-analyzed",
-            }
-    candidates = repository.list_draws(lottery, ANALYSIS_CANDIDATE_LIMIT)
+            })
+    candidates = measured(
+        "history",
+        lambda: repository.list_draws(lottery, ANALYSIS_CANDIDATE_LIMIT),
+    )
     if not candidates:
-        return {
+        return finish({
             "lottery": lottery,
             "drawPeriod": "",
             "status": "waiting-draw",
-        }
+        })
 
     periods = [str(draw["period"]) for draw in candidates]
     progress_by_period = repository.list_progress_for_periods(
@@ -314,59 +339,47 @@ def run_analysis_only_worker(
         )
     ):
         _certify_worker_completion(lottery, period, repository, notification_emitter, completion)
-        return {
+        return finish({
             "lottery": lottery,
             "drawPeriod": period,
             "analysisVersion": analysis_version,
             "status": "already-analyzed",
-        }
+        })
 
-    _emit_early_notifications(
-        latest_draw,
-        repository,
-        notification_emitter,
-        emitted_event_keys,
-    )
-    publish_current_card(lottery, repository)
-    _emit_early_notifications(
-        latest_draw,
-        repository,
-        notification_emitter,
-        emitted_event_keys,
-    )
+    measured("notification", lambda: _emit_early_notifications(
+        latest_draw, repository, notification_emitter, emitted_event_keys,
+    ))
+    measured("card", lambda: publish_current_card(lottery, repository))
+    measured("notification", lambda: _emit_early_notifications(
+        latest_draw, repository, notification_emitter, emitted_event_keys,
+    ))
 
     progress = progress_by_period.get(period)
     if progress is not None and progress.get("status") == "complete" and repository.has_artifact(
         lottery, period, analysis_version, "explore",
     ):
-        _restore_completed_explore_results(
-            repository,
-            lottery,
-            period,
-            analysis_version,
-        )
-        _restore_completed_tianheng_results(
+        measured("write", lambda: _restore_completed_explore_results(
             repository, lottery, period, analysis_version,
-        )
-        _restore_completed_tianshu_results(
+        ))
+        measured("write", lambda: _restore_completed_tianheng_results(
             repository, lottery, period, analysis_version,
-        )
-        _emit_ready_notifications(
-            draw,
-            repository,
-            notification_emitter,
-            emitted_event_keys,
-        )
-        return {
+        ))
+        measured("write", lambda: _restore_completed_tianshu_results(
+            repository, lottery, period, analysis_version,
+        ))
+        measured("notification", lambda: _emit_ready_notifications(
+            draw, repository, notification_emitter, emitted_event_keys,
+        ))
+        return finish({
             "lottery": lottery,
             "drawPeriod": period,
             "analysisVersion": analysis_version,
             "status": "already-analyzed",
-        }
+        })
 
-    repository.cleanup_expired(datetime.now(UTC))
+    measured("write", lambda: repository.cleanup_expired(datetime.now(UTC)))
     history = _history_through_period(
-        repository.list_draws(lottery, None),
+        measured("history", lambda: repository.list_draws(lottery, None)),
         period,
     )
     require_complete_history(
@@ -377,13 +390,10 @@ def run_analysis_only_worker(
     draw = _draw_from_history(lottery, period, history)
     result = _run_analysis(repository, draw, history, builders)
     if result.get("status") == "complete":
-        _emit_ready_notifications(
-            draw,
-            repository,
-            notification_emitter,
-            emitted_event_keys,
-        )
-    return result
+        measured("notification", lambda: _emit_ready_notifications(
+            draw, repository, notification_emitter, emitted_event_keys,
+        ))
+    return finish(result)
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -62,6 +62,7 @@ def test_fantasy5_transient_official_outage_is_waiting_source_not_failed() -> No
         {},
     )
 
+    assert all(value >= 0 for value in result.pop("stageTimingsMs").values())
     assert result == {
         "lottery": "天天樂",
         "drawPeriod": "11987",
@@ -101,6 +102,7 @@ def test_predraw_recovery_skips_network_when_previous_draw_is_already_current() 
         {},
     )
 
+    assert all(value >= 0 for value in result.pop("stageTimingsMs").values())
     assert result == {
         "lottery": "今彩539",
         "drawPeriod": "115000208",
@@ -159,4 +161,3 @@ def test_fantasy5_predraw_recovery_targets_previous_draw_not_upcoming_draw() -> 
     assert repository.list_draws("天天樂", 1)[0]["period"] == "11988"
     assert repository.list_draws("天天樂", 1)[0]["drawDate"] == "2026-09-03"
     assert source.events == ["latest"]
-

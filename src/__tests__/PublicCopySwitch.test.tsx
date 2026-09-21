@@ -7,12 +7,26 @@ import { FirstVisitGuide } from '../onboarding/FirstVisitGuide';
 import { AboutMatrixPage, ActivationCodePage, DisclaimerPage, MemberTermsPage, PrivacyPolicyPage, ProPlansPage, RefundPolicyPage, ServiceInfoPage } from '../features/MemberPages';
 import { MatrixGuidePage } from '../features/MatrixGuidePage';
 
-const settings = vi.hoisted(() => ({ visible: true, listeners: new Set<() => void>() }));
+const settings = vi.hoisted(() => ({ visible: true, free: false, listeners: new Set<() => void>() }));
 vi.mock('../subscription-purchase-visibility', async () => {
   const { useSyncExternalStore } = await import('react');
   return { useSubscriptionPurchaseVisible: () => useSyncExternalStore(
     listener => { settings.listeners.add(listener); return () => { settings.listeners.delete(listener); }; },
     () => settings.visible,
+  ) };
+});
+vi.mock('../permission-settings', async () => {
+  const { useSyncExternalStore } = await import('react');
+  const paidSettings = {
+    subscriptionPurchaseVisible: true,
+    registeredMemberFreeAccess: false,
+    revision: 1,
+    updatedAt: '2026-09-21T00:00:00.000Z',
+  };
+  const freeSettings = { ...paidSettings, registeredMemberFreeAccess: true };
+  return { usePermissionSettings: () => useSyncExternalStore(
+    listener => { settings.listeners.add(listener); return () => { settings.listeners.delete(listener); }; },
+    () => settings.free ? freeSettings : paidSettings,
   ) };
 });
 vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ auth: {
@@ -22,8 +36,31 @@ vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ auth: {
 const toggle = (visible: boolean) => act(() => { settings.visible = visible; settings.listeners.forEach(listener => listener()); });
 beforeEach(() => {
   settings.visible = true;
+  settings.free = false;
   localStorage.clear();
   vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
+});
+
+test('registered-member free mode explains actual temporary access without promising full status', async () => {
+  settings.free = true;
+  const navigate = vi.fn();
+  const firstVisit = render(<AppDialogProvider><FirstVisitGuide enabled onNavigate={navigate} /></AppDialogProvider>);
+  expect(await screen.findByText(/登入後目前可免費使用 Matrix 探索十三期與完整範圍/)).toBeInTheDocument();
+  expect(screen.getByText(/Matrix 狀態進階資訊仍依訂閱權限開放/)).toBeInTheDocument();
+  firstVisit.unmount();
+  localStorage.clear();
+
+  const guide = render(<MatrixGuidePage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '04Matrix 探索' }));
+  expect(guide.container.querySelector('.guide-preview')).toHaveTextContent('有效會員目前可免費使用十三期與完整範圍');
+  fireEvent.click(screen.getByRole('button', { name: /^16Matrix Pro$/ }));
+  expect(guide.container.querySelector('.guide-preview')).toHaveTextContent('Matrix 狀態進階資訊仍依訂閱權限開放');
+  guide.unmount();
+
+  const plans = render(<AppDialogProvider><ProPlansPage onNavigate={vi.fn()} /></AppDialogProvider>);
+  await act(async () => {});
+  expect(plans.container).toHaveTextContent('目前免費開放期間');
+  expect(plans.container).toHaveTextContent('Matrix 狀態進階資訊仍依訂閱權限開放');
 });
 
 test.each([

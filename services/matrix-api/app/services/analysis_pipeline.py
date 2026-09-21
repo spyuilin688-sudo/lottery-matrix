@@ -1,5 +1,6 @@
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
+from time import monotonic
 from typing import Any
 from uuid import uuid4
 
@@ -52,8 +53,10 @@ class AnalysisPipeline:
         self._draw_snapshot: dict[str, Any] | None = None
         self._verified_history: tuple[Any, ...] | None = None
         self._run_started_at = ""
+        self._stage_timings_ms: dict[str, float] = {}
 
     def run(self, draw: dict[str, Any], history: Sequence[dict[str, Any]]) -> dict[str, Any]:
+        self._stage_timings_ms = {}
         self._validate_draw(draw)
         lottery = draw["lottery"]
         period = draw["period"]
@@ -63,14 +66,18 @@ class AnalysisPipeline:
         if self.number_orders is None and not self.repository.list_draws(lottery, 1):
             self.repository.upsert_draw(draw)
         self._require_current_draw()
-        run = self.repository.begin_run(
-            lottery, period, self.analysis_version, datetime.now(UTC).isoformat(),
-            owner_id=self.owner_id, lease_seconds=self.lease_seconds,
-        )
+        write_started = monotonic()
+        try:
+            run = self.repository.begin_run(
+                lottery, period, self.analysis_version, datetime.now(UTC).isoformat(),
+                owner_id=self.owner_id, lease_seconds=self.lease_seconds,
+            )
+        finally:
+            self._record_timing("write", write_started)
         if run["status"] == "complete":
-            return {**run, "skipped": True}
+            return self._result({**run, "skipped": True})
         if run.get("leaseAcquired") is False:
-            return {**run, "skipped": True}
+            return self._result({**run, "skipped": True})
         self._run_started_at = str(run["startedAt"])
 
         context = {"draw": draw, "history": list(history), "artifacts": {},
@@ -94,7 +101,7 @@ class AnalysisPipeline:
                         "limit": batch_size,
                     }
                     self._require_lease(lottery, period)
-                    built = self.builders[phase](context)
+                    built = self._build_phase(phase, context)
                     checkpoint = built.get("_checkpoint") if isinstance(built, dict) else None
                     if isinstance(checkpoint, dict) and "artifact" in built:
                         payload = built["artifact"]
@@ -129,7 +136,7 @@ class AnalysisPipeline:
                             result = self.repository.get_progress(
                                 lottery, period, self.analysis_version,
                             )
-                            return {**(result or {}), "skipped": False}
+                            return self._result({**(result or {}), "skipped": False})
                         materialized = self.repository.materialize_artifact(
                             lottery, period, self.analysis_version, phase, total,
                         )
@@ -166,7 +173,7 @@ class AnalysisPipeline:
                     continue
                 self._hydrate_dependencies(context, lottery, period, phase)
                 self._require_lease(lottery, period)
-                built = self.builders[phase](context)
+                built = self._build_phase(phase, context)
                 checkpoint = built.get("_checkpoint") if isinstance(built, dict) else None
                 if isinstance(checkpoint, dict) and "artifact" in built:
                     payload = built["artifact"]
@@ -181,7 +188,7 @@ class AnalysisPipeline:
                         result = self.repository.get_progress(
                             lottery, period, self.analysis_version,
                         )
-                        return {**(result or {}), "skipped": False}
+                        return self._result({**(result or {}), "skipped": False})
                     continue
                 self._update_progress(lottery, period, self.analysis_version, phase, phase_index, phase_total)
                 self._save_artifact(lottery, period, self.analysis_version, phase, built)
@@ -191,7 +198,7 @@ class AnalysisPipeline:
             result = self.repository.get_progress(
                 lottery, period, self.analysis_version,
             )
-            return {**(result or {}), "skipped": False}
+            return self._result({**(result or {}), "skipped": False})
         except Exception as error:
             if str(error) in {"ANALYSIS_DRAW_CHANGED", "ANALYSIS_RUN_LEASE_LOST"}:
                 raise
@@ -204,6 +211,26 @@ class AnalysisPipeline:
                 if str(lease_error) != "ANALYSIS_RUN_LEASE_LOST":
                     raise
             raise
+
+    def _record_timing(self, stage: str, started: float) -> None:
+        elapsed = (monotonic() - started) * 1000
+        self._stage_timings_ms[stage] = self._stage_timings_ms.get(stage, 0.0) + elapsed
+
+    def _build_phase(self, phase: str, context: dict[str, Any]) -> Any:
+        started = monotonic()
+        try:
+            return self.builders[phase](context)
+        finally:
+            self._record_timing(phase, started)
+
+    def _result(self, result: dict[str, Any]) -> dict[str, Any]:
+        return {
+            **result,
+            "stageTimingsMs": {
+                stage: round(duration, 3)
+                for stage, duration in self._stage_timings_ms.items()
+            },
+        }
 
     def _history_signature(self, history: Sequence[dict[str, Any]]) -> tuple[Any, ...]:
         lottery = str(self._draw_snapshot["lottery"])
@@ -272,53 +299,81 @@ class AnalysisPipeline:
             raise RuntimeError("ANALYSIS_RUN_LEASE_LOST")
 
     def _save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any) -> None:
-        self._require_lease(lottery, draw_period)
-        self.repository.save_artifact(
-            lottery, draw_period, analysis_version, kind, payload,
-            owner_id=self.owner_id, run_started_at=self._run_started_at,
-        )
+        started = monotonic()
+        try:
+            self._require_lease(lottery, draw_period)
+            self.repository.save_artifact(
+                lottery, draw_period, analysis_version, kind, payload,
+                owner_id=self.owner_id, run_started_at=self._run_started_at,
+            )
+        finally:
+            self._record_timing("write", started)
 
     def _save_artifact_chunk(self, lottery: str, draw_period: str, analysis_version: str, kind: str, chunk_index: int, cursor_start: int, cursor_end: int, payload: Any) -> None:
-        self._require_lease(lottery, draw_period)
-        self.repository.save_artifact_chunk(
-            lottery, draw_period, analysis_version, kind, chunk_index, cursor_start, cursor_end, payload,
-            owner_id=self.owner_id, run_started_at=self._run_started_at,
-        )
+        started = monotonic()
+        try:
+            self._require_lease(lottery, draw_period)
+            self.repository.save_artifact_chunk(
+                lottery, draw_period, analysis_version, kind, chunk_index, cursor_start, cursor_end, payload,
+                owner_id=self.owner_id, run_started_at=self._run_started_at,
+            )
+        finally:
+            self._record_timing("write", started)
 
     def _save_explore_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any) -> None:
-        self._require_lease(lottery, draw_period)
-        self.repository.save_explore_results(
-            lottery, draw_period, analysis_version, payload,
-            owner_id=self.owner_id, run_started_at=self._run_started_at,
-        )
+        started = monotonic()
+        try:
+            self._require_lease(lottery, draw_period)
+            self.repository.save_explore_results(
+                lottery, draw_period, analysis_version, payload,
+                owner_id=self.owner_id, run_started_at=self._run_started_at,
+            )
+        finally:
+            self._record_timing("write", started)
 
     def _save_tianheng_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any) -> None:
-        self._require_lease(lottery, draw_period)
-        self.repository.save_tianheng_results(
-            lottery, draw_period, analysis_version, payload,
-            owner_id=self.owner_id, run_started_at=self._run_started_at,
-        )
+        started = monotonic()
+        try:
+            self._require_lease(lottery, draw_period)
+            self.repository.save_tianheng_results(
+                lottery, draw_period, analysis_version, payload,
+                owner_id=self.owner_id, run_started_at=self._run_started_at,
+            )
+        finally:
+            self._record_timing("write", started)
 
     def _save_tianshu_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any) -> None:
-        self._require_lease(lottery, draw_period)
-        self.repository.save_tianshu_results(
-            lottery, draw_period, analysis_version, payload,
-            owner_id=self.owner_id, run_started_at=self._run_started_at,
-        )
+        started = monotonic()
+        try:
+            self._require_lease(lottery, draw_period)
+            self.repository.save_tianshu_results(
+                lottery, draw_period, analysis_version, payload,
+                owner_id=self.owner_id, run_started_at=self._run_started_at,
+            )
+        finally:
+            self._record_timing("write", started)
 
     def _update_progress(self, lottery: str, draw_period: str, analysis_version: str, phase: str, cursor: int, total: int) -> None:
-        self._require_lease(lottery, draw_period)
-        self.repository.update_progress(
-            lottery, draw_period, analysis_version, phase, cursor, total,
-            owner_id=self.owner_id,
-        )
+        started = monotonic()
+        try:
+            self._require_lease(lottery, draw_period)
+            self.repository.update_progress(
+                lottery, draw_period, analysis_version, phase, cursor, total,
+                owner_id=self.owner_id,
+            )
+        finally:
+            self._record_timing("write", started)
 
     def _complete_run(self, lottery: str, draw_period: str, analysis_version: str, completed_at: str) -> None:
-        self._require_lease(lottery, draw_period)
-        self.repository.complete_run(
-            lottery, draw_period, analysis_version, completed_at,
-            owner_id=self.owner_id,
-        )
+        started = monotonic()
+        try:
+            self._require_lease(lottery, draw_period)
+            self.repository.complete_run(
+                lottery, draw_period, analysis_version, completed_at,
+                owner_id=self.owner_id,
+            )
+        finally:
+            self._record_timing("write", started)
 
     def _hydrate_dependencies(
         self,

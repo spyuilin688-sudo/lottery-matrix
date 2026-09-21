@@ -61,6 +61,7 @@ before(async () => {
     '20260913133102_notification_reminder_draw_days.sql',
     '20260913153424_notification_marksix_official_calendar.sql',
     '20260913190020_notification_delivery_receipts.sql',
+    '20260921012052_enforce_active_member_notifications.sql',
   ]) await db.exec(read(file));
 });
 after(async () => db.close());
@@ -317,6 +318,16 @@ test('an already accepted expired reminder records sent without becoming deliver
   assert.equal(completed.status, 'sent');
   assert.equal(completed.attempt_count, 1);
   assert.equal(iso(completed.processed_at), '2026-09-12T12:00:00.000Z');
+});
+
+test('disabled members cannot receive unaccepted queued notifications', async () => {
+  const id = await work();
+  await owner(() => db.query("update public.members set status='disabled' where id=$1", [memberId]));
+  assert.deepEqual(await claim(), []);
+  const skipped = await state(id);
+  assert.equal(skipped.status, 'skipped');
+  assert.equal(skipped.last_error, 'member_inactive');
+  assert.equal(skipped.attempt_count, 0);
 });
 
 for (const role of ['anon', 'authenticated']) test(`${role} cannot forge or update receipts or finalize work`, async () => {

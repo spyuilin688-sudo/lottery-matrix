@@ -278,6 +278,7 @@ def test_scheduled_worker_does_not_resume_when_current_version_is_complete() -> 
         UnexpectedSource(),
     )
 
+    assert all(value >= 0 for value in result.pop("stageTimingsMs").values())
     assert result == {
         "lottery": LOTTERY,
         "drawPeriod": PERIOD,

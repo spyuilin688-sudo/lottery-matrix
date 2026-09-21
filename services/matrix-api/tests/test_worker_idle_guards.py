@@ -124,6 +124,7 @@ def test_completed_confirmed_period_fast_exits_before_card_publish_restore_or_so
         notification_emitter=RaisingEmitter(),
     )
 
+    assert result.pop("stageTimingsMs") == {}
     assert result == {
         "lottery": LOTTERY,
         "drawPeriod": PERIOD,

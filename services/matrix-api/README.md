@@ -104,7 +104,7 @@ upserts `lottery_draws`. It owns 天天樂 acquisition status in
 
 The dedicated Railway 天天樂 process reads a bounded set of recent
 `lottery_draws` from Supabase and batch-checks their
-`period:matrix-python-v14-sorted` progress rows. It processes a new tail in order and
+`period:matrix-python-v15-sorted` progress rows. It processes a new tail in order and
 repairs bounded analysis gaps such as a late-backfilled period between two
 completed periods. Full-history reads restart if concurrent ingestion shifts an
 offset page, so no duplicated draw reaches the algorithms. It does not
@@ -143,11 +143,12 @@ Matrix background analysis writes its run/artifact data to the existing Supabase
 
 `v12` names the canonical Explore algorithm specification in
 `docs/specs/Matrix_Explore_Canonical_v12_20260902.md`; it is not a deploy or
-artifact version. `v13` introduced the Tianheng phase and is retained only as a
-historical artifact version. The current runtime/result artifact versions are
-`<period>:matrix-python-v14-sorted` and, where the source provides draw order,
-`<period>:matrix-python-v14-draw`. The Railway execution version is the deployed
-Git commit SHA and is recorded separately.
+artifact version. `v13` introduced the Tianheng artifact contract. `v14` added
+separate sorted-order and draw-order artifacts. Both remain historical result
+versions. `v15` adds the independent Tianshu phase and is the current
+runtime/result artifact contract: `<period>:matrix-python-v15-sorted` and, where
+the source provides draw order, `<period>:matrix-python-v15-draw`. The Railway
+execution version is the deployed Git commit SHA and is recorded separately.
 
 `app.domain.explore_engine` is the only production Explore/Status core. It builds a complete-history occurrence
 index per lottery/order and reuses cached range cells across the thirteen source
@@ -159,14 +160,13 @@ the same locked condition is finalized before a result is emitted. Each
 persisted Explore row includes its validation payload for the
 `matrix_explore_validation` RPC and the expandable road details in the PWA.
 
-## Tianheng analysis integration (v13)
+## Current analysis integration (v15)
 
-Analysis phases run in order: Explore, Tianheng, Tianyan, Tiangong, Status.
-Tianheng reuses the cached Explore engine session and runs in resumable,
-lease-guarded batches with independent `tianheng` artifact chunks and normalized
-`matrix_tianheng_results` rows. Both workers repair missing Explore and Tianheng
-normalized result sets from completed artifacts without rerunning analysis.
-Matrix Status continues to consume only Explore and Tianyan.
+Analysis phases run in order: Explore, Tianheng, Tianshu, Tianyan, Tiangong,
+Status. Tianheng and Tianshu run in resumable, lease-guarded batches with their
+own artifact chunks and normalized result rows. Workers repair missing Explore,
+Tianheng, and Tianshu normalized result sets from completed artifacts without
+rerunning analysis. Matrix Status continues to consume only Explore and Tianyan.
 
 ## Local verification
 

@@ -35,6 +35,7 @@ def log_worker_run(
             "acquired": "complete",
             "waiting-draw": "no-new-draw",
         }.get(status, status)
+        record["stageTimingsMs"] = dict(result.get("stageTimingsMs") or {})
         return result
     except Exception as error:
         # Keep credentials and arbitrary exception text out of structured evidence.

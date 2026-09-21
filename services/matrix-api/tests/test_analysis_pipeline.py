@@ -108,6 +108,10 @@ def test_pipeline_runs_tiangong_before_status() -> None:
 
     assert result["status"] == "complete"
     assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"]
+    assert set(result["stageTimingsMs"]) == {
+        "explore", "tianheng", "tianyan", "tiangong", "status", "write",
+    }
+    assert all(value >= 0 for value in result["stageTimingsMs"].values())
 
 def test_pipeline_requires_an_explicit_analysis_version() -> None:
     repository = InMemoryAnalysisRepository()
@@ -343,4 +347,3 @@ def test_retry_after_final_explore_publication_does_not_overwrite_final_chunk() 
     assert repository.read_completed_artifact("今彩539", "114000123", "status") == {
         "source": [0, 1, 2],
     }
-

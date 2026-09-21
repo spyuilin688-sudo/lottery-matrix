@@ -100,6 +100,7 @@ def test_completed_fantasy5_period_exits_before_card_restore_or_http(
         notification_emitter=RejectingEmitter(),
     )
 
+    assert all(value >= 0 for value in result.pop("stageTimingsMs").values())
     assert result == {
         "lottery": LOTTERY,
         "drawPeriod": PERIOD,

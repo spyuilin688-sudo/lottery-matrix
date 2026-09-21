@@ -4,6 +4,7 @@ import type { MouseEvent as ReactMouseEvent } from "react";
 import { Navigate } from "./navigation";
 import { FeatureShell } from "./shared";
 import { MATRIX_PRO_COMMON_FEATURES, SUBSCRIPTION_PAYMENT_NOTICE } from "../matrix-pro-copy";
+import { usePermissionSettings } from "../permission-settings";
 
 export const GUIDE_LOOP_GROUPS = ["leading", "canonical", "trailing"] as const;
 
@@ -11,6 +12,15 @@ export const GUIDE_LOOP_IDLE_MS = 200;
 
 export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
   const subscriptionPurchaseVisible = useSubscriptionPurchaseVisible();
+  const registeredMemberFreeAccess = usePermissionSettings()?.registeredMemberFreeAccess === true;
+  const exploreAccessCopy = registeredMemberFreeAccess
+    ? "登入的有效會員目前可免費使用十三期與完整範圍。"
+    : subscriptionPurchaseVisible
+      ? "十三期與完整範圍依 Matrix Pro 權限開放。"
+      : "十三期與完整範圍依目前系統權限設定開放。";
+  const extendedRangeAccessCopy = registeredMemberFreeAccess
+    ? "登入的有效會員目前可免費使用十三期與完整範圍。"
+    : "十三期與完整範圍依目前帳號權限開放。";
   type GuideSection = { title: string; summary: string; blocks: Array<{ title: string; items: string[] }> };
   const allSections: GuideSection[] = [
     {
@@ -44,7 +54,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       title: "Matrix 探索",
       summary: "依彩種、探索期數、版路類型、命中條件與進階設定，篩選符合條件的版路結果。",
       blocks: [
-        { title: "探索設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "探索期數：二期、七期、十三期。", "版路類型：加減版路、合值版路、拖牌版路。", "命中條件：準4+ (鎖定1碼)、準5+ (鎖定2碼)。", subscriptionPurchaseVisible ? "十三期與完整範圍依 Matrix Pro 權限開放。" : "十三期與完整範圍依目前系統權限設定開放。"] },
+        { title: "探索設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "探索期數：二期、七期、十三期。", "版路類型：加減版路、合值版路、拖牌版路。", "命中條件：準4+ (鎖定1碼)、準5+ (鎖定2碼)。", exploreAccessCopy] },
         { title: "鎖定條件與驗證", items: ["系統依所選彩種、探索期數、號碼順序與球位建立鎖定條件，再以歷史資料完成版路驗證。", "今彩539與天天樂每期使用 5 個球位；六合彩與大樂透使用 6 個正碼球位及特別號，因此不同彩種的可比對組合數不同。", "加減、合值與拖牌依各自規則進行驗證，實際結果以目前演算法版本運算為準。"] },
         { title: "進階探索設定", items: ["號碼順序：今彩539、六合彩、大樂透可選依號碼由小到大排序或依實際開獎順序排序；天天樂固定依號碼由小到大排序。", "探索日期：可選本日 (最新)、昨日 (上1期)、前日 (上2期)。", "標準範圍：上 1 ~ 7、當期、下 N 至結果期前一期；不包含結果期。", "完整範圍：上 1 ~ 14、當期、下 N 至結果期前一期；不包含結果期。"] },
         { title: "查看結果", items: ["按下「開始探索」後，查看重複號碼統計與探索結果。", "結果顯示位置、號碼、結果期、連準次數、結果及版路類型。", "可使用同碼、結果號碼與連準篩選，並展開每條版路查看驗證過程。"] },
@@ -56,7 +66,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       blocks: [
         { title: "天衡設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "天衡期數：三期、十三期。", "版路類型：加減版路、合值版路、拖牌版路。", "天衡條件：準5+ (鎖定1碼)、準6+ (鎖定2碼)。"] },
         { title: "比對方式", items: ["每組以同一期的兩個不同球位與對應號碼作為條件，查找歷史中相同球位及號碼同時出現的紀錄。", "加減版路與合值版路依所選範圍比對參考球位；拖牌版路使用第一個條件球位的號碼進行驗證。", "來源條件固定包含兩個球位；「鎖定 1 碼、鎖定 2 碼」是結果規則的設定，不會改變來源條件的球位數。"] },
-        { title: "進階天衡設定", items: ["號碼順序：今彩539、六合彩、大樂透可選依號碼由小到大排序或依實際開獎順序排序；天天樂固定依號碼由小到大排序。", "天衡日期：可選本日 (最新)、昨日 (上1期)、前日 (上2期)。", "標準範圍包含上 1 ~ 7 期、當期及當期之後至結果期前一期的參考球位；完整範圍向上擴大至 14 期，皆不包含結果期。", "十三期與完整範圍依目前帳號權限開放。"] },
+        { title: "進階天衡設定", items: ["號碼順序：今彩539、六合彩、大樂透可選依號碼由小到大排序或依實際開獎順序排序；天天樂固定依號碼由小到大排序。", "天衡日期：可選本日 (最新)、昨日 (上1期)、前日 (上2期)。", "標準範圍包含上 1 ~ 7 期、當期及當期之後至結果期前一期的參考球位；完整範圍向上擴大至 14 期，皆不包含結果期。", extendedRangeAccessCopy] },
         { title: "查看結果", items: ["按下「開始天衡」後，查看重複號碼統計與天衡結果。", "結果顯示兩個條件球位、對應號碼、結果期、連準次數、結果及版路類型。", "「結果期」以該組來源期為基準，顯示相隔多少期；「連準次數」表示連續通過驗證的歷史條件組數。", "可使用同碼、結果號碼與連準篩選，或點選重複號碼統計中的號碼篩選版路；展開版路可查看驗證過程與版路結果。"] },
       ],
     },
@@ -66,7 +76,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       blocks: [
         { title: "天樞設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "天樞期數：三期、十三期。", "版路類型：加減版路、合值版路、拖牌版路。", "天樞條件：準5+ (鎖定1碼)、準6+ (鎖定2碼)。"] },
         { title: "比對方式", items: ["每組以同一期的三個不同球位與對應號碼作為條件，查找歷史中相同球位及號碼同時出現的紀錄。", "加減版路與合值版路依所選範圍比對參考球位；拖牌版路使用第一個條件球位的號碼進行驗證。", "來源條件固定包含三個球位；「鎖定 1 碼、鎖定 2 碼」是結果規則的設定，不會改變來源條件的球位數。"] },
-        { title: "進階天樞設定", items: ["號碼順序：今彩539、六合彩、大樂透可選依號碼由小到大排序或依實際開獎順序排序；天天樂固定依號碼由小到大排序。", "天樞日期：可選本日 (最新)、昨日 (上1期)、前日 (上2期)。", "標準範圍包含上 1 ~ 7 期、當期及當期之後至結果期前一期的參考球位；完整範圍向上擴大至 14 期，皆不包含結果期。", "十三期與完整範圍依目前帳號權限開放。"] },
+        { title: "進階天樞設定", items: ["號碼順序：今彩539、六合彩、大樂透可選依號碼由小到大排序或依實際開獎順序排序；天天樂固定依號碼由小到大排序。", "天樞日期：可選本日 (最新)、昨日 (上1期)、前日 (上2期)。", "標準範圍包含上 1 ~ 7 期、當期及當期之後至結果期前一期的參考球位；完整範圍向上擴大至 14 期，皆不包含結果期。", extendedRangeAccessCopy] },
         { title: "查看結果", items: ["按下「開始天樞」後，查看重複號碼統計與天樞結果。", "結果顯示三個條件球位、對應號碼、結果期、連準次數、結果及版路類型。", "「結果期」以該組來源期為基準，顯示相隔多少期；「連準次數」表示連續通過驗證的歷史條件組數。", "可使用同碼、結果號碼與連準篩選，或點選重複號碼統計中的號碼篩選版路；展開版路可查看驗證過程與版路結果。"] },
       ],
     },
@@ -151,7 +161,9 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       summary: "Matrix Pro 為樂彩 Matrix 的付費訂閱方案。",
       blocks: [
         { title: "方案與期間", items: ["提供月方案、季方案與年方案。", "實際價格、期間及權限請至「訂閱方案與收費標準」查看。"] },
-        { title: "權限內容", items: [...MATRIX_PRO_COMMON_FEATURES, "依訂閱方案顯示 Matrix 天衍、Matrix 天工權限。"] },
+        { title: "權限內容", items: registeredMemberFreeAccess
+          ? ["目前免費開放期間，登入的有效會員可使用 Matrix 探索十三期與完整範圍、天衡、天樞、天衍及天工。", "Matrix 狀態進階資訊仍依訂閱權限開放。", "恢復收費模式時，天衍與天工依訂閱方案開放。"]
+          : [...MATRIX_PRO_COMMON_FEATURES, "依訂閱方案顯示 Matrix 天衍、Matrix 天工權限。"] },
         { title: "付款與續訂", items: [SUBSCRIPTION_PAYMENT_NOTICE, "可前往「我的」查看付款紀錄與管理訂閱。"] },
       ],
     },
@@ -251,7 +263,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       resizeObserver.disconnect();
       if (correctionTimer !== null) window.clearTimeout(correctionTimer);
     };
-  }, [subscriptionPurchaseVisible]);
+  }, [registeredMemberFreeAccess, subscriptionPurchaseVisible]);
 
   return (
     <FeatureShell title="Matrix 指南" onNavigate={onNavigate} className="matrix-guide-screen">

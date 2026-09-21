@@ -281,5 +281,8 @@ def test_out_of_schedule_call_does_not_overwrite_job_status() -> None:
         _builders(),
     )
 
-    assert result == {"lottery": "今彩539", "status": "not-due"}
+    assert result["lottery"] == "今彩539"
+    assert result["status"] == "not-due"
+    assert set(result["stageTimingsMs"]) == {"card", "notification"}
+    assert all(value >= 0 for value in result["stageTimingsMs"].values())
     assert repository.job_events == []
