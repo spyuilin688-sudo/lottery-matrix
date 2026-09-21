@@ -64,7 +64,7 @@ test('calculator controls use the approved responsive touch sizes without changi
   assert.match(block(feature, '.calculator-screen > .feature-body'), /padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\)/);
   assert.equal(style('.calculator-screen .feature-body').getPropertyValue('--layout-page-inline'), '16px');
   assert.equal(style('.column-panel').paddingTop, '13px');
-  assert.equal(style('.column-panel').paddingBottom, '4px');
+  assert.equal(style('.column-panel').paddingBottom, '8px');
   assert.equal(style('.calculator-screen .section-title').fontSize, '16px');
   assert.match(block(feature, '.calculator-panel > header .calculator-heading > span'), /font-size:\s*clamp\(12px,\s*3\.3vw,\s*14px\)/);
 
@@ -132,7 +132,8 @@ test('calculator settings header separates copy and actions without overlap', ()
 test('49-number layout keeps seven columns with responsive controls and no horizontal overflow', () => {
   const grid = block(feature, '.number-grid');
   assert.match(grid, /grid-template-columns:\s*repeat\(7, minmax\(0, 1fr\)\)/);
-  assert.match(grid, /gap:\s*var\(--calculator-grid-gap\)/);
+  assert.match(grid, /column-gap:\s*var\(--calculator-grid-gap\)/);
+  assert.match(grid, /row-gap:\s*clamp\(5px,\s*1\.5vw,\s*7px\)/);
 
   const button = block(feature, '.number-grid button');
   assert.match(button, /width:\s*var\(--calculator-number-size\)/);
@@ -174,6 +175,7 @@ test('calculator responsive geometry remains inside 430px, 390px, 375px and 360p
     const panelInnerWidth = bodyWidth - 2 - (2 * panelInlinePadding);
     const resultInnerWidth = bodyWidth - 10;
     const gridGap = clamp(4, viewport * 0.012, 6);
+    const rowGap = clamp(5, viewport * 0.015, 7);
     const numberSize = clamp(36, (viewport - 74) / 7, 48);
     const numberGridWidth = (7 * numberSize) + (6 * gridGap);
     const resultCardWidth = (resultInnerWidth - (3 * 8)) / 4;
@@ -186,6 +188,7 @@ test('calculator responsive geometry remains inside 430px, 390px, 375px and 360p
     const columnLabelWidth = columnCellWidth - (2 * columnPadding) - (2 * controlWidth) - valueWidth - (3 * columnGap);
 
     assert.ok(numberGridWidth <= panelInnerWidth, `${viewport}px calculator grid must keep seven responsive controls on one row`);
+    assert.ok(rowGap > gridGap, `${viewport}px number-grid vertical spacing must be slightly larger than horizontal spacing`);
     assert.ok(numberSize > 38, `${viewport}px number controls must be larger than the previous 38px size`);
     assert.ok(controlWidth >= 28 && controlWidth <= 32, `${viewport}px column controls must stay within the reduced responsive range`);
     assert.ok(actionHeight >= 28 && actionHeight <= 34, `${viewport}px action buttons must be 6px shorter than the previous responsive range`);
