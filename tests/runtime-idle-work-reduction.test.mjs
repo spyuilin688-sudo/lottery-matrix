@@ -24,7 +24,7 @@ test('Pilio cron only runs inside the two Taipei result windows', () => {
 });
 
 test('Playwright runtime never falls back to the production Railway API', () => {
-  assert.match(playwright, /VITE_RAILWAY_API_BASE=http:\/\/127\.0\.0\.1:\$\{testPort\}/);
+  assert.match(playwright, /VITE_RAILWAY_API_BASE:\s*`http:\/\/127\.0\.0\.1:\$\{testPort\}`/);
   assert.match(runtimeVite, /matrix-runtime-api-fixture/);
   assert.match(runtimeVite, /\/api\/matrix\/latest\//);
   assert.doesNotMatch(runtimeVite, /heartfelt-generosity-production/);
