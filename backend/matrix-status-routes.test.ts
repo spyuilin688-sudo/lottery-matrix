@@ -31,7 +31,6 @@ function routes(context: MemberContext, now = new Date('2026-08-21T00:00:00Z')) 
   return createMatrixStatusRoutes({
     requireMember: async () => context,
     resolveEntitlements: async () => testMatrixEntitlements(context, now),
-    resolveEntitlements: async () => testMatrixEntitlements(member('monthly')),
     readStatusSources: async () => ({
       analysisVersion: 'v1',
       drawPeriod: artifact.drawPeriod,
@@ -64,7 +63,6 @@ describe('Matrix status route', () => {
     const api = createMatrixStatusRoutes({
       requireMember: async () => { authCalls += 1; throw new Error('should not authenticate'); },
       resolveEntitlements: async () => testMatrixEntitlements({ authUserId: '', memberId: '', plan: 'free', active: false, referralSuccessCount: 0, loginPerksEligible: false }, new Date('2026-08-21T00:00:00Z')),
-    resolveEntitlements: async () => testMatrixEntitlements(member('monthly')),
       readStatusSources: async () => ({
         analysisVersion: 'v1',
         drawPeriod: artifact.drawPeriod,
@@ -196,8 +194,7 @@ describe('Matrix status route', () => {
   });
 
   it('returns analysis-not-ready instead of sample data', async () => {
-    const api = createMatrixStatusRoutes({ requireMember: async () => member('monthly'),
-    resolveEntitlements: async () => testMatrixEntitlements(member('monthly')), readStatusSources: async () => null });
+    const api = createMatrixStatusRoutes({ requireMember: async () => member('monthly'), readStatusSources: async () => null });
     await expect(api.get({ authorization: 'Bearer token', body: { lottery: '今彩539' } })).resolves.toMatchObject({ status: 404, body: { error: { code: 'ANALYSIS_NOT_READY' } } });
   });
 
