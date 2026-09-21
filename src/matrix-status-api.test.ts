@@ -16,9 +16,26 @@ import {
 import { resetReadCacheForTests } from './read-cache';
 import { invalidateMatrixData } from './matrix-data-revision';
 
+
+function installLocalStorage() {
+  const store = new Map<string, string>();
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    value: {
+      get length() { return store.size; },
+      key(index: number) { return [...store.keys()][index] ?? null; },
+      getItem(key: string) { return store.get(key) ?? null; },
+      setItem(key: string, value: string) { store.set(key, String(value)); },
+      removeItem(key: string) { store.delete(key); },
+      clear() { store.clear(); },
+    },
+  });
+}
+
 const resultData = (data: Record<string, unknown>, canUseSeven = true) => ({ data: { ...data, cacheIdentity: { drawPeriod: '115000210', analysisVersion: 'v1', entitlements: { canUseSeven } } }, error: null });
 
 beforeEach(() => {
+  installLocalStorage();
   resetReadCacheForTests();
   getSession.mockReset().mockResolvedValue({ data: { session: { user: { id: 'member' } } }, error: null });
   rpc.mockReset().mockResolvedValue({ data: {}, error: null });
@@ -173,5 +190,47 @@ describe('time-window status cache', () => {
     await fetchMatrixStatus('今彩539');
     expect(statusRead).toHaveBeenCalledTimes(2);
     vi.useRealTimers();
+  });
+});
+
+
+describe('homepage summary persistent cache', () => {
+  it('refetches only 天天樂 after its short cache expires while the other lotteries remain stable', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-22T10:00:00+08:00'));
+    const lotteries = ['今彩539', '天天樂', '六合彩', '大樂透'] as const;
+    const summaryPayload = (requested: readonly string[]) => ({
+      kind: 'status-summary-batch',
+      items: requested.map((lottery) => ({
+        lottery,
+        status: 200,
+        body: {
+          kind: 'status-summary',
+          lottery,
+          drawPeriod: lottery === '天天樂' ? '26092201' : '115000207',
+          analysisVersion: 'v1:status',
+          summary: { status: 'ACTIVE', count: 1, message: '' },
+        },
+      })),
+    });
+    invoke.mockImplementation((_name, options) => {
+      if (options.body.action === 'summary-batch') {
+        return Promise.resolve({ data: summaryPayload(options.body.lotteries), error: null });
+      }
+      return options.body.action === 'identity' ? access(options) : statusRead(options);
+    });
+
+    await expect(fetchMatrixStatusSummaries([...lotteries])).resolves.toMatchObject({
+      items: [{ lottery: '今彩539' }, { lottery: '天天樂' }, { lottery: '六合彩' }, { lottery: '大樂透' }],
+    });
+    resetReadCacheForTests();
+    vi.setSystemTime(new Date('2026-09-22T10:06:00+08:00'));
+
+    const second = await fetchMatrixStatusSummaries([...lotteries]);
+
+    const summaryCalls = invoke.mock.calls.filter(([, options]) => options.body.action === 'summary-batch');
+    expect(summaryCalls).toHaveLength(2);
+    expect(summaryCalls[1][1].body.lotteries).toEqual(['天天樂']);
+    expect(second.items.map((item) => item.lottery)).toEqual([...lotteries]);
   });
 });
