@@ -36,7 +36,7 @@ PWA
   -> Supabase stored draw/card data
 ```
 
-正式公開 API 目前由 Railway 的 `heartfelt-generosity` 服務提供；前端實際 API 基址以 `src/runtime-api-config.ts` 與相關資料層為準。
+正式公開 API 目前由 Railway project `lottery-matrix-production` 的 `matrix-public-api` 服務提供；既有 Railway domain 不因顯示名稱調整而更換，前端實際 API 基址以 `src/runtime-api-config.ts` 與相關資料層為準。
 
 ### Matrix 查詢
 
