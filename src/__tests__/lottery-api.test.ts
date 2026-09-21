@@ -200,6 +200,7 @@ describe('lottery-api response validation', () => {
 
   it('缺少歷史版本時仍在五分鐘後重新下載，不無限延用舊資料', async () => {
     vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-22T20:30:00+08:00'));
     const draw = { period: '115000207', numbers: ['01'], resultStatus: 'confirmed' };
     const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) =>
       String(url).includes('/latest/')
@@ -213,6 +214,7 @@ describe('lottery-api response validation', () => {
 
   it('舊期資料更正而最新期號未變，仍以版本更新歷史', async () => {
     vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-22T20:30:00+08:00'));
     const draw = { period: '115000207', numbers: ['01'], resultStatus: 'confirmed' };
     let revision = 'before';
     const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) =>
@@ -357,7 +359,7 @@ describe('lottery-api response validation', () => {
 describe('cache freshness and draw corrections', () => {
   it('does not restart the latest expiry when persistent data enters memory', async () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-09-01T00:00:00Z'));
+    vi.setSystemTime(new Date('2026-09-01T13:00:00Z'));
     const first = { period: '115207', numbers: ['01'] };
     const second = { period: '115208', numbers: ['02'] };
     const fetcher = vi.spyOn(globalThis, 'fetch')
@@ -374,7 +376,7 @@ describe('cache freshness and draw corrections', () => {
 
   it('refreshes same-period history and derived results at the original history expiry', async () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-09-01T00:00:00Z'));
+    vi.setSystemTime(new Date('2026-09-01T13:00:00Z'));
     const latest = { period: '115208', numbers: ['02'] };
     let historicalNumber = '01';
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => jsonResponse(
@@ -494,12 +496,10 @@ describe('Taipei lottery cache windows', () => {
       ));
 
       await fetchLotteryHistoryYears(lottery);
-      resetReadCacheForTests();
       vi.setSystemTime(new Date('2026-09-22T19:59:59+08:00'));
       await fetchLotteryHistoryYears(lottery);
       expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/history-years/'))).toHaveLength(1);
 
-      resetReadCacheForTests();
       vi.setSystemTime(new Date('2026-09-22T20:00:00+08:00'));
       await fetchLotteryHistoryYears(lottery);
       expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/history-years/'))).toHaveLength(2);
@@ -517,12 +517,10 @@ describe('Taipei lottery cache windows', () => {
     ));
 
     await fetchLotteryHistoryYears('天天樂');
-    resetReadCacheForTests();
     vi.setSystemTime(new Date('2026-09-23T08:59:59+08:00'));
     await fetchLotteryHistoryYears('天天樂');
     expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/history-years/'))).toHaveLength(1);
 
-    resetReadCacheForTests();
     vi.setSystemTime(new Date('2026-09-23T09:00:00+08:00'));
     await fetchLotteryHistoryYears('天天樂');
     expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/history-years/'))).toHaveLength(2);
