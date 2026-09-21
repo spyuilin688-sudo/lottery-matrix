@@ -9,11 +9,13 @@ const wiring = vi.hoisted(() => {
   const workerRefreshLottery = vi.fn(async (lottery: string) => ({ lottery, requestId: '11111111-1111-4111-8111-111111111111', status: 'accepted', period: null, drawDate: null, error: null }));
   const workerRecoverLottery = vi.fn(async (lottery: string, _leaseOwner: string) => ({ lottery, status: 'accepted' }));
   const workerRunPrimary = vi.fn(async (group: string) => ({ group, status: 'accepted' }));
+  const workerRefreshMarkSixCalendar = vi.fn(async () => ({ lottery: '六合彩', status: 'synced', days: 30 }));
   const getWorkerConfig = vi.fn(async () => ({ baseUrl: 'https://railway.example', statusToken: 'server-token' }));
   const createWorkerApi = vi.fn(() => ({
     getStatus: workerGetStatus,
     refreshLottery: workerRefreshLottery,
     recoverLottery: workerRecoverLottery,
+    refreshMarkSixCalendar: workerRefreshMarkSixCalendar,
     runPrimary: workerRunPrimary,
   }));
   const insertRows = vi.fn(async () => []);
@@ -89,7 +91,7 @@ const wiring = vi.hoisted(() => {
     remove: todoRemove,
   }));
   return {
-    workerGetStatus, workerRefreshLottery, workerRecoverLottery, workerRunPrimary, getWorkerConfig, createWorkerApi, insertRows, supabaseRequest,
+    workerGetStatus, workerRefreshLottery, workerRecoverLottery, workerRunPrimary, workerRefreshMarkSixCalendar, getWorkerConfig, createWorkerApi, insertRows, supabaseRequest,
     createSupabaseTransport, requestPage, createConnectionStatus, admin, requireAdmin, requirePermission, requireModulePermission,
     shouldRecordAdminActivity, getAdminFromHeaders, createAdminCredentialAuth, listMemberPushStatus,
     sendMemberTestPush, listPushDeliveryLogs, createPushNotifications,
@@ -406,6 +408,30 @@ describe('Supabase watchdog invocation route', () => {
       expect.stringMatching(/^supabase-cron:/),
       { recover: true },
     );
+  });
+});
+
+describe('Supabase Mark Six calendar invocation route', () => {
+  const route = 'POST /api/internal/marksix-calendar';
+  const execute = async (token = 'cron-secret') => {
+    const ctx = {
+      body: {},
+      params: {},
+      event: { headers: { 'x-matrix-watchdog-token': token } },
+    };
+    for (const middleware of routes[route] as Array<(input: typeof ctx) => Promise<unknown>>) {
+      const result = await middleware(ctx);
+      if (result) return result;
+    }
+  };
+
+  it('authenticates and invokes only the calendar refresh adapter', async () => {
+    wiring.supabaseRequest.mockResolvedValueOnce(true);
+    wiring.workerRefreshMarkSixCalendar.mockClear();
+    wiring.workerRunPrimary.mockClear();
+    await expect(execute()).resolves.toMatchObject({ status: 200 });
+    expect(wiring.workerRefreshMarkSixCalendar).toHaveBeenCalledTimes(1);
+    expect(wiring.workerRunPrimary).not.toHaveBeenCalled();
   });
 });
 
