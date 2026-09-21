@@ -5,6 +5,7 @@ from app.watchdog_lease import complete_recovery
 from app.security_monitor import SecurityMonitor, request_category
 
 import json
+from hashlib import sha256
 import logging
 import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -226,10 +227,14 @@ def _draw_query(repository: AnalysisRepository, lottery: str, kind: str, **param
     if cursor is not None and not isinstance(cursor, dict):
         raise ValueError("INVALID_CURSOR")
     cache = getattr(repository, "draw_read_cache", None)
+    if cache is not None and kind == "latest":
+        # Share only concurrent probes; never retain a version for later requests.
+        key = json.dumps([lottery, "latest", params], sort_keys=True, ensure_ascii=False)
+        return cache.read(key, lambda: _execute_draw_query(repository, lottery, kind, **params), cache_result=False)
     if cache is not None and kind in {"history", "tongxing"}:
         # Revalidate with a small latest-row response before reusing a large page.
         # Database revisions cover all history corrections and cross-process writers.
-        latest = _execute_draw_query(repository, lottery, "latest")
+        latest = _draw_query(repository, lottery, "latest")
         revision = latest.get("revision")
         if isinstance(revision, str) and revision and (cursor is None or cursor.get("revision") == revision):
             key = json.dumps([lottery, revision, kind, params], sort_keys=True, ensure_ascii=False)
@@ -724,17 +729,28 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
     ) -> None:
         self._security_outcome(status)
         encoded = b"" if status == 204 else json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+        history_read = self.command == "GET" and urlsplit(self.path).path.startswith("/api/matrix/history/")
+        etag = None
+        if history_read and status == 200 and not no_store:
+            etag = '"' + sha256(encoded).hexdigest() + '"'
+            validators = [value.strip().removeprefix("W/")
+                          for value in self.headers.get("If-None-Match", "").split(",")]
+            if etag in validators or validators == ["*"]:
+                status, encoded = 304, b""
         self.send_response(status)
-        if status != 204:
+        if status not in (204, 304):
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(encoded)))
         if status == 429:
             self.send_header("Retry-After", str(self._security_retry_after))
-        if no_store:
+        if etag is not None:
+            self.send_header("ETag", etag)
+            self.send_header("Cache-Control", "private, no-cache")
+        elif no_store or history_read:
             self.send_header("Cache-Control", "no-store")
         if allow_cors:
             self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Access-Control-Allow-Headers", "Content-Type,X-Request-ID")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type,X-Request-ID,If-None-Match")
             self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
         self._write_response(encoded)
 

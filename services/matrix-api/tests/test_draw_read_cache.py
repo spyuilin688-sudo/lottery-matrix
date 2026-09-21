@@ -38,3 +38,60 @@ def test_failure_is_retryable_and_capacity_and_expiry_are_bounded():
     assert cache.read('failed', lambda: {'fresh': True}) == {'fresh': True}
     assert cache.read('large', lambda: {'data': 'x' * 100}) == {'data': 'x' * 100}
     assert cache.read('large', lambda: {'data': 'new'}) == {'data': 'new'}
+
+
+def test_inflight_only_shares_pending_read_but_rechecks_next_request(monkeypatch):
+    import app.draw_read_cache as module
+    from concurrent.futures import Future
+    joined, started, release = Event(), Event(), Event()
+
+    class ObservedFuture(Future):
+        def result(self, *args, **kwargs):
+            joined.set()
+            return super().result(*args, **kwargs)
+
+    monkeypatch.setattr(module, 'Future', ObservedFuture)
+    cache = DrawReadCache()
+    calls = []
+
+    def load():
+        calls.append(1)
+        started.set()
+        assert release.wait(2)
+        return {'revision': 'v1'}
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(cache.read, 'latest', load, cache_result=False)
+        try:
+            assert started.wait(2)
+            second = pool.submit(cache.read, 'latest', load, cache_result=False)
+            assert joined.wait(2)
+        finally:
+            release.set()
+        assert first.result() == second.result() == {'revision': 'v1'}
+    assert len(calls) == 1
+    assert cache.read('latest', lambda: {'revision': 'v2'}, cache_result=False) == {'revision': 'v2'}
+
+
+def test_finished_probe_cannot_be_joined_before_owner_cleanup(monkeypatch):
+    import app.draw_read_cache as module
+    from concurrent.futures import Future
+    published, release = Event(), Event()
+
+    class PausedFuture(Future):
+        def set_result(self, result):
+            super().set_result(result)
+            if not published.is_set():
+                published.set()
+                assert release.wait(2)
+
+    monkeypatch.setattr(module, 'Future', PausedFuture)
+    cache = DrawReadCache()
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        first = pool.submit(cache.read, 'latest', lambda: {'revision': 'v1'}, cache_result=False)
+        try:
+            assert published.wait(2)
+            assert cache.read('latest', lambda: {'revision': 'v2'}, cache_result=False) == {'revision': 'v2'}
+        finally:
+            release.set()
+        assert first.result() == {'revision': 'v1'}

@@ -372,3 +372,36 @@ def test_railway_recovery_explicitly_enables_conditional_crawler_retry(monkeypat
             "allow_recovery_crawl": True,
         },
     )]
+
+
+def test_history_http_revalidation_omits_unchanged_body_and_sends_corrections(monkeypatch):
+    payload = {'items': [{'numbers': ['01']}], 'revision': 'v1'}
+    monkeypatch.setattr(api_server, 'handle_api_request', lambda *a, **k: (200, payload))
+    path = '/api/matrix/history/' + quote('今彩539') + '?pageSize=500'
+    with running_server(HttpOperationalRepository()) as address:
+        first, body = request(address, 'GET', path)
+        tag = first.getheader('ETag')
+        assert tag and first.getheader('Cache-Control') == 'private, no-cache'
+        assert body
+        same, empty = request(address, 'GET', path, {'If-None-Match': '"other", W/' + tag})
+        assert same.status == 304 and empty == b''
+        assert same.getheader('Access-Control-Allow-Origin') == '*'
+        assert same.getheader('ETag') == tag
+        payload['items'][0]['numbers'] = ['02']
+        changed, body = request(address, 'GET', path, {'If-None-Match': tag})
+        assert changed.status == 200 and json.loads(body)['items'][0]['numbers'] == ['02']
+        assert changed.getheader('ETag') != tag
+        monkeypatch.setattr(api_server, 'handle_api_request', lambda *a, **k: (409, {'error': 'DRAW_HISTORY_CHANGED'}))
+        failed, body = request(address, 'GET', path, {'If-None-Match': '*'})
+        assert failed.status == 409 and json.loads(body)['error'] == 'DRAW_HISTORY_CHANGED'
+        assert failed.getheader('ETag') is None
+        assert failed.getheader('Cache-Control') == 'no-store'
+
+
+def test_conditional_headers_do_not_cache_jobs_or_post(monkeypatch):
+    monkeypatch.setattr(api_server, 'handle_api_request', lambda *a, **k: (200, {'items': []}))
+    with running_server(HttpOperationalRepository()) as address:
+        for method, path in [('GET', '/jobs/status'), ('POST', '/api/matrix/tongxing')]:
+            response, body = request(address, method, path, {'If-None-Match': '*'}, b'{}' if method == 'POST' else None)
+            assert response.status == 200 and body
+            assert response.getheader('ETag') is None
