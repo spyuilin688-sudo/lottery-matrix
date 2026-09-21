@@ -2442,12 +2442,12 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   min-width: 0;
   padding: 16px;
   gap: 12px;
+  --rule-content-padding: 8px 0;
+  --rule-list-indent: 1em;
 }
 .referral-code-section {
   --rule-chevron-closed: 90deg;
   --rule-chevron-open: -90deg;
-  --rule-content-padding: 8px 0;
-  --rule-list-indent: 1em;
 }
 .referral-summary-card,
 .referral-input-card,
