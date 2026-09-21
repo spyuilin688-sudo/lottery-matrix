@@ -194,7 +194,7 @@ describe('Matrix status route', () => {
   });
 
   it('returns analysis-not-ready instead of sample data', async () => {
-    const api = createMatrixStatusRoutes({ requireMember: async () => member('monthly'), readStatusSources: async () => null });
+    const api = createMatrixStatusRoutes({ requireMember: async () => member('monthly'), resolveEntitlements: async () => testMatrixEntitlements(member('monthly')), readStatusSources: async () => null });
     await expect(api.get({ authorization: 'Bearer token', body: { lottery: '今彩539' } })).resolves.toMatchObject({ status: 404, body: { error: { code: 'ANALYSIS_NOT_READY' } } });
   });
 
