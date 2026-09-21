@@ -51,11 +51,6 @@
   gap: 3px;
 }
 
-.activation-code-screen .referral-input-card .code-entry-block,
-.activation-code-screen .activation-card .code-entry-block {
-  gap: 8px;
-}
-
 .activation-code-screen .code-entry-block::after {
   display: block;
   width: 100%;
