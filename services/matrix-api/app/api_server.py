@@ -40,6 +40,7 @@ from app.schedule import next_lottery_draw_time
 from app.scraping.sources import LatestDrawSource
 from app.services.draw_refresh import DrawRefreshService
 from app.services.notification_events import notification_emitter_context
+from app.services.marksix_calendar import sync_marksix_calendar
 from app.services.tinyfish_status import tinyfish_status_payload
 from app.settings import load_settings
 from app.worker import create_notification_emitter, run_scheduled_worker
@@ -534,6 +535,11 @@ _RECOVERY_COORDINATOR = RecoveryCoordinator(
 )
 
 
+def refresh_marksix_calendar(repository: AnalysisRepository) -> dict[str, Any]:
+    with httpx.Client(verify=create_railway_ssl_context()) as client:
+        return sync_marksix_calendar(repository, client)
+
+
 def handle_api_request(
     method: str,
     target: str,
@@ -543,6 +549,7 @@ def handle_api_request(
     refresh_lottery: Callable[[str, AnalysisRepository], dict[str, Any]] | None = None,
     recover_lottery: Callable[[str, str], str] | None = None,
     run_primary: Callable[[str, date, tuple[str, ...]], str] | None = None,
+    refresh_marksix: Callable[[AnalysisRepository], dict[str, Any]] | None = None,
     request_notification_token: str | None = None,
 ) -> tuple[int, dict[str, Any]]:
     parsed = urlsplit(target)
@@ -615,6 +622,22 @@ def handle_api_request(
                 return 202, {"lottery": lottery, "status": recovery_status}
             except Exception:
                 return 503, {"error": "RECOVERY_UNAVAILABLE"}
+        if method == "POST" and path == "/jobs/calendar/marksix":
+            if not _status_token_authorized(request_monitor_token):
+                return 403, {"error": "FORBIDDEN"}
+            try:
+                result = (refresh_marksix or refresh_marksix_calendar)(repository)
+            except Exception:
+                return 503, {"error": "CALENDAR_UNAVAILABLE"}
+            status = result.get("status")
+            if status == "unavailable":
+                return 503, {"error": "CALENDAR_UNAVAILABLE"}
+            if status not in {"synced", "not-due"}:
+                return 503, {"error": "CALENDAR_UNAVAILABLE"}
+            payload: dict[str, Any] = {"lottery": "六合彩", "status": status}
+            if isinstance(result.get("days"), int):
+                payload["days"] = result["days"]
+            return 200, payload
         if method == "POST" and path == "/jobs/primary":
             if not _status_token_authorized(request_monitor_token):
                 return 403, {"error": "FORBIDDEN"}
@@ -838,6 +861,7 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
             "/jobs/refresh",
             "/jobs/refresh/status",
             "/jobs/recover",
+            "/jobs/calendar/marksix",
             "/jobs/primary",
             "/jobs/result-ready",
         }

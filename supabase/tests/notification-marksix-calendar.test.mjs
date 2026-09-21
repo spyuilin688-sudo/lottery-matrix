@@ -1,3 +1,6 @@
+// Historical migration regression for 20260913153424 only.
+// Current fixed-time scheduling, Sunday safety, dedicated refresh routing and
+// next-slot validity are covered by the later marksix-calendar runtime tests.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { after, afterEach, before, beforeEach, mock, test } from 'node:test';

@@ -32,7 +32,7 @@ from app.watchdog_lease import (
 
 SERVICE_NAME = "matrix-railway-recovery"
 GET_PATHS = {"/health", "/jobs/status", "/jobs/refresh/status"}
-POST_PATHS = {"/jobs/refresh", "/jobs/recover", "/jobs/primary", "/jobs/result-ready"}
+POST_PATHS = {"/jobs/refresh", "/jobs/recover", "/jobs/calendar/marksix", "/jobs/primary", "/jobs/result-ready"}
 
 
 def _service_version() -> str:

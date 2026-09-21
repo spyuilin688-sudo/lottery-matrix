@@ -62,7 +62,7 @@ def source_identity(peer: str, secret: str, trust_direct_peer: bool = False):
 
 def request_category(target: str, method: str = "GET"):
     path = urlsplit(target).path
-    if path == "/health" or path in {"/jobs/status", "/jobs/refresh", "/jobs/recover", "/jobs/primary", "/jobs/result-ready"}:
+    if path == "/health" or path in {"/jobs/status", "/jobs/refresh", "/jobs/recover", "/jobs/calendar/marksix", "/jobs/primary", "/jobs/result-ready"}:
         return None
     if method == "GET" and path.startswith((
         "/api/matrix/latest/", "/api/matrix/history-years/", "/api/matrix/cards/",

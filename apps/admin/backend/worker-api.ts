@@ -80,6 +80,11 @@ export type WorkerPrimary = {
   group: PrimaryWorkerGroup;
   status: 'accepted' | 'already-running';
 };
+export type WorkerMarkSixCalendar = {
+  lottery: '六合彩';
+  status: 'synced' | 'not-due';
+  days?: number;
+};
 
 const jobNameByLottery: Record<CrawlerLottery, string> = {
   今彩539: 'matrix-539-refresh-v2',
@@ -102,6 +107,7 @@ const analysisPhases = [
 ] as const;
 const DEFAULT_STATUS_TIMEOUT_MS = 5_000;
 const DEFAULT_MANUAL_REFRESH_TIMEOUT_MS = 5_000;
+const DEFAULT_CALENDAR_REFRESH_TIMEOUT_MS = 35_000;
 export const PRODUCTION_RAILWAY_API_BASE =
   'https://heartfelt-generosity-production-9f2b.up.railway.app';
 export const PRODUCTION_RAILWAY_WORKER_URL =
@@ -295,6 +301,15 @@ function parsePrimary(
   return { group, status: value.status };
 }
 
+function parseMarkSixCalendar(value: unknown): WorkerMarkSixCalendar | null {
+  if (!isRecord(value) || value.lottery !== '六合彩') return null;
+  if (!includes(['synced', 'not-due'] as const, value.status)) return null;
+  if (value.days !== undefined && (typeof value.days !== 'number' || !Number.isInteger(value.days) || value.days < 0)) return null;
+  return value.days === undefined
+    ? { lottery: '六合彩', status: value.status }
+    : { lottery: '六合彩', status: value.status, days: value.days as number };
+}
+
 const unavailable = (
   reason: Extract<WorkerStatus, { ok: false }>['reason'] = 'RAILWAY_UNAVAILABLE',
   health: RailwayHealth | null = null,
@@ -326,6 +341,14 @@ class WorkerPrimaryError extends Error {
 
   constructor() {
     super('無法啟動主排程，請稍後再試');
+  }
+}
+
+class WorkerMarkSixCalendarError extends Error {
+  statusCode = 503;
+
+  constructor() {
+    super('無法確認六合彩官方日曆，請稍後再試');
   }
 }
 
@@ -507,6 +530,47 @@ export function createWorkerApi(
       } catch {
         controller.abort();
         throw new WorkerRecoveryError();
+      } finally {
+        if (timer !== undefined) clearTimeout(timer);
+      }
+    },
+    async refreshMarkSixCalendar(): Promise<WorkerMarkSixCalendar> {
+      const controller = new AbortController();
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          controller.abort();
+          reject(new WorkerMarkSixCalendarError());
+        }, DEFAULT_CALENDAR_REFRESH_TIMEOUT_MS);
+      });
+      const work = (async (): Promise<WorkerMarkSixCalendar> => {
+        const config = await loadConfig();
+        const baseUrl = config?.baseUrl.trim().replace(/\/+$/, '') ?? '';
+        const statusToken = config?.statusToken.trim() ?? '';
+        if (!baseUrl || !statusToken || controller.signal.aborted) {
+          throw new WorkerMarkSixCalendarError();
+        }
+        const response = await fetcher(`${baseUrl}/jobs/calendar/marksix`, {
+          method: 'POST',
+          signal: controller.signal,
+          redirect: 'error',
+          cache: 'no-store',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Matrix-Admin-Token': statusToken,
+          },
+          body: JSON.stringify({}),
+        });
+        if (!response.ok) throw new WorkerMarkSixCalendarError();
+        const calendar = parseMarkSixCalendar(await response.json());
+        if (!calendar) throw new WorkerMarkSixCalendarError();
+        return calendar;
+      })();
+      try {
+        return await Promise.race([work, timeout]);
+      } catch {
+        controller.abort();
+        throw new WorkerMarkSixCalendarError();
       } finally {
         if (timer !== undefined) clearTimeout(timer);
       }
