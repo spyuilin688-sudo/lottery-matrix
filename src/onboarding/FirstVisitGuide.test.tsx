@@ -49,17 +49,16 @@ function GuideHarness({ initialScreen = 'home' }: { initialScreen?: ScreenId }) 
 }
 
 describe('首次進站引導', () => {
-  it('首次首頁說明 LINE 或 Google 登入、LINE 試用及探索入口，按免費註冊後進入既有會員頁', async () => {
+  it('首次首頁顯示版路分析工具文案與登入、探索入口，按免費註冊後進入既有會員頁', async () => {
     mountHomepage();
 
-    const guide = await screen.findByRole('dialog', { name: '免費註冊會員' });
-    expect(guide).toHaveTextContent('「我的」');
-    expect(guide).toHaveTextContent('LINE 或 Google 登入');
-    expect(guide).toHaveTextContent('新註冊 LINE 會員');
-    expect(guide).toHaveTextContent('天衍 2 天');
-    expect(guide).toHaveTextContent('天工 1 天');
+    const guide = await screen.findByRole('dialog', { name: '真正的「版路分析」工具' });
+    expect(guide).toHaveTextContent('點擊下方「我的」，選擇使用 LINE 或 Google 登入。');
     expect(guide).toHaveTextContent('Matrix Core');
-    expect(guide).toHaveTextContent('探索');
+    expect(guide).toHaveTextContent('即可開始探索各種類型的版路。');
+    expect(guide).not.toHaveTextContent('新註冊 LINE 會員');
+    expect(guide).not.toHaveTextContent('天衍 2 天');
+    expect(guide).not.toHaveTextContent('天工 1 天');
 
     fireEvent.click(screen.getByRole('button', { name: '免費註冊' }));
 
@@ -97,7 +96,7 @@ describe('首次進站引導', () => {
     render(<AppDialogProvider><GuideHarness /></AppDialogProvider>);
     const trigger = screen.getByRole('button', { name: '我的' });
     trigger.focus();
-    await screen.findByRole('dialog', { name: '免費註冊會員' });
+    await screen.findByRole('dialog', { name: '真正的「版路分析」工具' });
     fireEvent.keyDown(document, { key: 'Escape' });
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(screen.getByRole('status', { name: '目前頁面' })).toHaveTextContent('home');
@@ -122,7 +121,7 @@ describe('首次進站引導', () => {
     await act(async () => {});
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '首頁' }));
-    expect(await screen.findByRole('dialog', { name: '免費註冊會員' })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: '真正的「版路分析」工具' })).toBeInTheDocument();
   });
 
   it.each(['/?code=line-callback', '/#access_token=line-callback', '/explore-result-preview'])('不在登入回傳或其他網站路徑 %s 開啟引導', async (path) => {
