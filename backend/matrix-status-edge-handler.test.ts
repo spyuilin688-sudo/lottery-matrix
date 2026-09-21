@@ -210,6 +210,7 @@ it('rechecks current entitlements through lightweight identity without reading r
   };
   expect(await read()).toMatchObject({ kind: 'status-identity', entitlements: { canUseThirteen: true } });
   deps.requireMember.mockResolvedValue({ authUserId: 'user-1', memberId: 'member-1', plan: 'free', active: false, referralSuccessCount: 0 });
+  deps.resolveEntitlements.mockResolvedValue(testMatrixEntitlements({ authUserId: 'user-1', memberId: 'member-1', plan: 'free', active: false, referralSuccessCount: 0 }, new Date('2026-08-29T00:00:00Z')));
   expect(await read()).toMatchObject({ kind: 'status-identity', entitlements: { canUseThirteen: false } });
   expect(deps.requireMember).toHaveBeenCalledTimes(2);
   expect(deps.readStatusSources).not.toHaveBeenCalled();
