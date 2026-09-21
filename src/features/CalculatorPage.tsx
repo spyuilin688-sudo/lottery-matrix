@@ -12,7 +12,7 @@ export function CalculatorPage({ onNavigate }: { onNavigate: Navigate }) {
   const [collisionMode, setCollisionMode] = useTimedState<"總數" | "選號">("calculator-collision-mode", "總數");
   const [totalCount, setTotalCount] = useTimedState("calculator-total", 0);
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [columns, setColumns] = useTimedState("calculator-columns", [3, 2, 4, 3, 2, 0, 0, 0, 0, 0, 0, 0]);
+  const [columns, setColumns] = useTimedState("calculator-columns", Array<number>(12).fill(0));
   const [bulkColumnSetting, setBulkColumnSetting] = useState<{ value: number | null; phase: 0 | 1 | 2 }>({ value: null, phase: 0 });
   const toggleNumber = (number: number) => {
     const next = new Set(selected);
