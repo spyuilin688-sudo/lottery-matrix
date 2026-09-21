@@ -22,8 +22,9 @@ describe('system status query count labels', () => {
       },
     };
 
-    expect(getSystemStatusPresentation(item)).toMatchObject({ label: '查詢正常', tone: 'good' });
+    expect(getSystemStatusPresentation(item)).toMatchObject({ label: '實際查詢已驗證', tone: 'good' });
     expect(getServiceEvidenceFacts(item)).toEqual([
+      { label: '驗證方式', value: '實際查詢' },
       { label: '今彩539', value: '115000224 期 · 測試條件 5筆 · 實際儲存結果 2,605筆 · 通過' },
     ]);
   });
@@ -45,6 +46,7 @@ describe('system status query count labels', () => {
     };
 
     expect(getServiceEvidenceFacts(item)).toEqual([
+      { label: '驗證方式', value: '實際查詢' },
       { label: '天天樂', value: '115000211 期 · 測試條件 9筆 · 通過' },
     ]);
   });

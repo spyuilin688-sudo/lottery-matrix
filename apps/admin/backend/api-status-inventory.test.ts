@@ -7,7 +7,7 @@ describe('api status inventory', () => {
       expect.objectContaining({ id: 'admin-api', location: 'Supabase', endpoint: '/admin/api/_healthcheck' }),
       expect.objectContaining({ id: 'supabase-watchdog-heartbeat', location: 'Supabase' }),
       expect.objectContaining({ id: 'supabase-auth', location: 'Supabase' }),
-      expect.objectContaining({ id: 'native-notification-dispatch', endpoint: '/rest/v1/rpc/admin_native_notification_health', checkMode: 'service' }),
+      expect.objectContaining({ id: 'native-notification-dispatch', endpoint: '/rest/v1/rpc/admin_notification_delivery_health', checkMode: 'service' }),
       expect.objectContaining({ id: 'matrix-status-function', endpoint: '/functions/v1/matrix-status' }),
       expect.objectContaining({ id: 'supabase-rpc-matrix_explore_list', endpoint: '/rest/v1/rpc/matrix_explore_list' }),
       expect.objectContaining({ id: 'supabase-rpc-matrix_tianheng_list', rpcAccess: 'public-read' }),

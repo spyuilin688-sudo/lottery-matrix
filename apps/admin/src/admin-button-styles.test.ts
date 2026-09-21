@@ -149,7 +149,9 @@ describe('admin interface styles', () => {
     expect(appSource).toContain('const presentation = getSystemStatusPresentation(item)');
     expect(appSource).toContain('className={`statusBadge ${presentation.tone}`}');
     expect(appSource).toContain('className="statusScope">{presentation.scope}');
-    expect(appSource).toContain('項僅部分檢查');
+    expect(appSource).toContain('項部分驗證');
+    expect(appSource).toContain('className="systemStatusLegend"');
+    expect(rule(statusCss, '.systemStatusLegend')).toContain('font-size: 11px;');
     expect(rule(statusCss, '.statusState .statusBadge.limited')).toContain('color: #9dcfff;');
     expect(rule(statusCss, '.statusRowTitle')).toContain('grid-template-columns: minmax(0, 1fr) auto;');
     expect(rule(statusCss, '.statusState .statusBadge')).toContain('font-size: 11px;');

@@ -298,10 +298,10 @@ export function createConnectionStatus(dependencies: Dependencies) {
         }
         if (observation === 'idle' || observation === 'pending') return { ...finish(true, detail), healthState: 'waiting' };
       } else if (definition.id === nativeNotificationStatusId) {
-        const health = parseNativeNotificationHealth(await shared.readRpc('admin_native_notification_health'), now());
+        const health = parseNativeNotificationHealth(await shared.readRpc('admin_notification_delivery_health'), now());
         if (!health) throw new Error('NATIVE_NOTIFICATION_HEALTH_INVALID');
         const warning = nativeNotificationWarning(health, now());
-        return { ...finish(!warning, health, warning), healthState: warning ? 'failed' : health.enabled_devices === 0 ? 'waiting' : 'healthy' };
+        return { ...finish(!warning, health, warning), healthState: warning ? 'failed' : 'healthy' };
       } else if (definition.id === notificationCalendarStatusId) {
         const current = await shared.config();
         const response = await fetchWithDeadline(`${current.url}${definition.endpoint}`, {
@@ -405,7 +405,7 @@ export function createConnectionStatus(dependencies: Dependencies) {
       if (definition.id === 'supabase-rpc-matrix_permission_settings') return finish(false, undefined, '權限設定讀取失敗或資料格式不完整，請重新檢查。');
       if (protectedResultKinds[definition.id]) return finish(false, undefined, '分析資料或 API 登記暫時無法確認，請重新檢查。');
       if (definition.id === nativeNotificationStatusId) return {
-        ...finish(false, null, '原生通知狀態暫時無法取得，請重新檢查。'), healthState: 'unknown',
+        ...finish(false, null, '通知派送狀態暫時無法取得，請重新檢查。'), healthState: 'unknown',
       };
       if (definition.id === notificationCalendarStatusId) return {
         ...finish(false, null, '六合彩開獎日曆狀態暫時無法取得。'), healthState: 'unknown',

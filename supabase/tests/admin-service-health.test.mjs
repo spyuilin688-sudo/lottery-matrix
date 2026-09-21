@@ -23,6 +23,9 @@ before(async () => {
     create table public.member_online_sessions(started_at timestamptz,ended_at timestamptz);
     create table public.activation_codes(redeemed_at timestamptz);
     create table public.matrix_watchdog_leases(acquired_at timestamptz,recovery_started_at timestamptz);
+    create table private.matrix_visitor_identifiers(created_at timestamptz);
+    create table public.matrix_manual_refresh_jobs(expires_at timestamptz);
+    create table public.system_job_status(job_name text,error text,finished_at timestamptz);
     create table public.notification_events(source text,created_at timestamptz);
     create table public.notification_outbox(status text,attempt_count int,updated_at timestamptz,processed_at timestamptz,processing_started_at timestamptz);`);
   const active = read('20260912230514_matrix_analysis_active_versions.sql');
@@ -33,6 +36,7 @@ before(async () => {
   await db.exec(fn(read('20260829093000_matrix_result_rpc.sql'), 'private.matrix_artifact_payload').replaceAll('pg_catalog.coalesce', 'coalesce'));
   await db.exec(read('20260913171551_admin_service_health_evidence.sql'));
   await db.exec(fn(read('20260920006000_retire_matrix_custom_status.sql'), 'public.admin_service_operation_evidence'));
+  await db.exec(read('20260921234200_admin_service_operation_evidence_v2.sql'));
   await db.exec('drop table public.matrix_custom_status_configs');
 });
 after(() => db.close());
@@ -97,10 +101,13 @@ test('reads chunked Tianyan through the canonical reader and fails when chunks a
 test('operation evidence reports stored timestamps and null absence without performing notification writes', async () => {
   await db.exec("insert into notification_outbox(status,processed_at) values ('skipped','2026-09-13T10:00:00Z'),('skipped','2026-09-12T10:00:00Z')");
   const rows=(await db.query('select * from public.admin_service_operation_evidence()')).rows;
-  assert.equal(rows.length,18);
+  assert.equal(rows.length,21);
   assert.equal(rows.some(r=>r.rpc_name==='matrix_custom_status_save'),false);
   assert.equal(new Date(rows.find(r=>r.rpc_name==='notification_dispatch_mark_skipped').observed_at).toISOString(),'2026-09-13T10:00:00.000Z');
   assert.equal(rows.find(r=>r.rpc_name==='notification_dispatch_mark_failed').observed_at,null);
+  assert.equal(rows.find(r=>r.rpc_name==='record_matrix_visit').observed_at,null);
+  assert.equal(rows.find(r=>r.rpc_name==='matrix_manual_refresh_claim').observed_at,null);
+  assert.equal(rows.find(r=>r.rpc_name==='finish_matrix_watchdog_recovery').observed_at,null);
   assert.equal((await db.query('select count(*)::int as n from notification_outbox')).rows[0].n,2);
 });
 test('includes administrator notices submitted through the same notification enqueue RPC', async () => {
