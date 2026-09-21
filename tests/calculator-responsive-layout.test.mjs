@@ -56,7 +56,7 @@ test('calculator controls use the approved responsive touch sizes without changi
 
   const panel = block(feature, '.calculator-panel');
   assert.match(panel, /--calculator-number-size:\s*clamp\(36px,\s*calc\(\(100vw - 74px\) \/ 7\),\s*48px\)/);
-  assert.match(panel, /--calculator-action-height:\s*clamp\(34px,\s*9\.3vw,\s*40px\)/);
+  assert.match(panel, /--calculator-action-height:\s*clamp\(28px,\s*calc\(9\.3vw - 6px\),\s*34px\)/);
   assert.match(panel, /--calculator-column-control-size:\s*clamp\(28px,\s*8vw,\s*32px\)/);
   assert.match(panel, /--calculator-column-row-height:\s*clamp\(50px,\s*14vw,\s*60px\)/);
   assert.match(panel, /padding:\s*8px clamp\(4px,\s*1\.3vw,\s*6px\) 12px/);
@@ -96,6 +96,7 @@ test('calculator controls use the approved responsive touch sizes without changi
   assert.match(columnButton, /width:\s*var\(--calculator-column-control-size\)/);
   assert.match(columnButton, /height:\s*var\(--calculator-column-control-size\)/);
   assert.match(columnButton, /font-size:\s*clamp\(18px,\s*5vw,\s*22px\)/);
+  assert.match(block(feature, '.column-grid span'), /text-align:\s*center/);
   dom.window.close();
 });
 
@@ -178,6 +179,7 @@ test('calculator responsive geometry remains inside 430px, 390px, 375px and 360p
     const resultCardWidth = (resultInnerWidth - (3 * 8)) / 4;
     const columnCellWidth = panelInnerWidth / 2;
     const controlWidth = clamp(28, viewport * 0.08, 32);
+    const actionHeight = clamp(28, (viewport * 0.093) - 6, 34);
     const valueWidth = clamp(18, viewport * 0.048, 22);
     const columnGap = clamp(2, viewport * 0.006, 3);
     const columnPadding = clamp(4, viewport * 0.015, 7);
@@ -186,6 +188,7 @@ test('calculator responsive geometry remains inside 430px, 390px, 375px and 360p
     assert.ok(numberGridWidth <= panelInnerWidth, `${viewport}px calculator grid must keep seven responsive controls on one row`);
     assert.ok(numberSize > 38, `${viewport}px number controls must be larger than the previous 38px size`);
     assert.ok(controlWidth >= 28 && controlWidth <= 32, `${viewport}px column controls must stay within the reduced responsive range`);
+    assert.ok(actionHeight >= 28 && actionHeight <= 34, `${viewport}px action buttons must be 6px shorter than the previous responsive range`);
     assert.ok(resultCardWidth >= 71, `${viewport}px result cards must remain readable`);
     assert.ok(columnLabelWidth >= 47, `${viewport}px column labels must remain visible`);
   }
