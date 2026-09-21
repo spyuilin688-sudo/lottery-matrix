@@ -15,7 +15,9 @@ let requestSequence = 0;
 let lastSettledRequest = 0;
 const refreshIntervalMs = 30_000;
 let lastRefreshStartedAt = -Infinity;
+let lastSuccessfulRefreshAt = -Infinity;
 let activeRequests = 0;
+let sharedRead: Promise<PermissionSettings> | null = null;
 const listeners = new Set<() => void>();
 const notify = () => listeners.forEach(listener => listener());
 const subscribe = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; };
@@ -50,17 +52,36 @@ export async function refreshPermissionSettings(): Promise<PermissionSettings> {
     }
     if (!settings) throw new Error('PERMISSION_SETTINGS_UNAVAILABLE');
     lastSettledRequest = Math.max(lastSettledRequest, sequence);
+    lastSuccessfulRefreshAt = Date.now();
     return settings;
   } catch (error) {
     // Hide purchase entries and discard protected cached results on an unknown state.
     if (sequence >= lastSettledRequest) {
       lastSettledRequest = sequence;
+      lastSuccessfulRefreshAt = -Infinity;
       if (settings) { settings = null; invalidateMatrixData(); notify(); }
     }
     throw error;
   } finally {
     activeRequests--;
   }
+}
+
+/**
+ * Read the permission revision used only to key short-lived result caches.
+ * The protected result RPC remains authoritative for access control, so sharing
+ * one successful settings read for the existing 30-second refresh window
+ * removes duplicate network round-trips without extending authorization.
+ */
+export function readPermissionSettings(): Promise<PermissionSettings> {
+  if (settings && Date.now() - lastSuccessfulRefreshAt < refreshIntervalMs) {
+    return Promise.resolve(settings);
+  }
+  if (sharedRead) return sharedRead;
+  sharedRead = refreshPermissionSettings().finally(() => {
+    sharedRead = null;
+  });
+  return sharedRead;
 }
 
 export function installPermissionSettingsRefresh() {
