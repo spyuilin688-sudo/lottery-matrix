@@ -107,6 +107,7 @@ const analysisPhases = [
 ] as const;
 const DEFAULT_STATUS_TIMEOUT_MS = 5_000;
 const DEFAULT_MANUAL_REFRESH_TIMEOUT_MS = 5_000;
+const DEFAULT_CALENDAR_REFRESH_TIMEOUT_MS = 35_000;
 export const PRODUCTION_RAILWAY_API_BASE =
   'https://heartfelt-generosity-production-9f2b.up.railway.app';
 export const PRODUCTION_RAILWAY_WORKER_URL =
@@ -540,7 +541,7 @@ export function createWorkerApi(
         timer = setTimeout(() => {
           controller.abort();
           reject(new WorkerMarkSixCalendarError());
-        }, timeoutMs);
+        }, DEFAULT_CALENDAR_REFRESH_TIMEOUT_MS);
       });
       const work = (async (): Promise<WorkerMarkSixCalendar> => {
         const config = await loadConfig();
