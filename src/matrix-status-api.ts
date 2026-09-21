@@ -170,7 +170,7 @@ export async function fetchMatrixStatusSummaries(
     const freshByLottery = new Map(fresh.items.map((item) => [item.lottery, item] as const));
     for (const lottery of missing) {
       const item = freshByLottery.get(lottery);
-      if (!item) throw new MatrixApiError('API_ERROR', 500);
+      if (!item) continue;
       itemsByLottery.set(lottery, item);
       if (cacheableSummaryItem(item, lottery)) {
         writeMatrixStatusSummaryCache(lottery, item, dataRevision);
@@ -180,10 +180,9 @@ export async function fetchMatrixStatusSummaries(
 
   return {
     kind: 'status-summary-batch',
-    items: lotteries.map((lottery) => {
+    items: lotteries.flatMap((lottery) => {
       const item = itemsByLottery.get(lottery);
-      if (!item) throw new MatrixApiError('API_ERROR', 500);
-      return item;
+      return item ? [item] : [];
     }),
   };
 }
