@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { API_REQUEST_TIMEOUT_MS } from '../lib/api-resilience';
-import { LOTTERY_API_BASE, fetchLatestLotteryDraw, fetchLotteryHistory, fetchNumberReference, fetchTongXing, normalizePeriod } from '../lottery-api';
+import { LOTTERY_API_BASE, fetchLatestLotteryDraw, fetchLotteryHistory, fetchLotteryHistoryYears, fetchNumberReference, fetchTongXing, normalizePeriod } from '../lottery-api';
 import { clearReadCache, readThroughCache, resetReadCacheForTests } from '../read-cache';
 
 afterEach(() => {
@@ -438,4 +438,93 @@ it('does not restore an older pending history after a newer draw invalidates it'
   resetReadCacheForTests();
   expect((await fetchLotteryHistory('今彩539', 1000))[0].period).toBe('115209');
   expect(historyCalls).toBe(2);
+});
+
+
+describe('Taipei lottery cache windows', () => {
+  it.each(['今彩539', '六合彩', '大樂透'] as const)(
+    '%s keeps latest draw cached from 01:00 until 20:00 and expires at 20:00',
+    async (lottery) => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-09-22T10:00:00+08:00'));
+      const draw = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
+      const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(draw));
+
+      await fetchLatestLotteryDraw(lottery);
+      resetReadCacheForTests();
+      vi.setSystemTime(new Date('2026-09-22T19:59:59+08:00'));
+      await fetchLatestLotteryDraw(lottery);
+      expect(fetcher).toHaveBeenCalledTimes(1);
+
+      resetReadCacheForTests();
+      vi.setSystemTime(new Date('2026-09-22T20:00:00+08:00'));
+      await fetchLatestLotteryDraw(lottery);
+      expect(fetcher).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it('天天樂 keeps latest draw cached from 13:00 through overnight until 09:00', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-22T23:00:00+08:00'));
+    const draw = { period: '26092201', numbers: ['01', '02', '03', '04', '05'] };
+    const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(draw));
+
+    await fetchLatestLotteryDraw('天天樂');
+    resetReadCacheForTests();
+    vi.setSystemTime(new Date('2026-09-23T08:59:59+08:00'));
+    await fetchLatestLotteryDraw('天天樂');
+    expect(fetcher).toHaveBeenCalledTimes(1);
+
+    resetReadCacheForTests();
+    vi.setSystemTime(new Date('2026-09-23T09:00:00+08:00'));
+    await fetchLatestLotteryDraw('天天樂');
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(['今彩539', '六合彩', '大樂透'] as const)(
+    '%s keeps five-minute-class reads cached until 20:00 inside the stable window',
+    async (lottery) => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-09-22T10:00:00+08:00'));
+      const draw = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
+      const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => (
+        String(url).includes('/history-years/')
+          ? jsonResponse({ years: ['2026'] })
+          : jsonResponse(draw)
+      ));
+
+      await fetchLotteryHistoryYears(lottery);
+      resetReadCacheForTests();
+      vi.setSystemTime(new Date('2026-09-22T19:59:59+08:00'));
+      await fetchLotteryHistoryYears(lottery);
+      expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/history-years/'))).toHaveLength(1);
+
+      resetReadCacheForTests();
+      vi.setSystemTime(new Date('2026-09-22T20:00:00+08:00'));
+      await fetchLotteryHistoryYears(lottery);
+      expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/history-years/'))).toHaveLength(2);
+    },
+  );
+
+  it('天天樂 keeps five-minute-class reads cached until 09:00 across midnight', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-22T23:00:00+08:00'));
+    const draw = { period: '26092201', numbers: ['01', '02', '03', '04', '05'] };
+    const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => (
+      String(url).includes('/history-years/')
+        ? jsonResponse({ years: ['2026'] })
+        : jsonResponse(draw)
+    ));
+
+    await fetchLotteryHistoryYears('天天樂');
+    resetReadCacheForTests();
+    vi.setSystemTime(new Date('2026-09-23T08:59:59+08:00'));
+    await fetchLotteryHistoryYears('天天樂');
+    expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/history-years/'))).toHaveLength(1);
+
+    resetReadCacheForTests();
+    vi.setSystemTime(new Date('2026-09-23T09:00:00+08:00'));
+    await fetchLotteryHistoryYears('天天樂');
+    expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/history-years/'))).toHaveLength(2);
+  });
 });
