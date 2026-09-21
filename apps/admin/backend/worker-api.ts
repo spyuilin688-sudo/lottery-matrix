@@ -75,6 +75,11 @@ export type WorkerRecovery = {
   lottery: CrawlerLottery;
   status: 'accepted' | 'already-running';
 };
+export type PrimaryWorkerGroup = 'evening' | 'fantasy5';
+export type WorkerPrimary = {
+  group: PrimaryWorkerGroup;
+  status: 'accepted' | 'already-running';
+};
 
 const jobNameByLottery: Record<CrawlerLottery, string> = {
   今彩539: 'matrix-539-refresh-v2',
@@ -281,6 +286,15 @@ function parseRecovery(
   return { lottery, status: value.status };
 }
 
+function parsePrimary(
+  value: unknown,
+  group: PrimaryWorkerGroup,
+): WorkerPrimary | null {
+  if (!isRecord(value) || value.group !== group) return null;
+  if (!includes(['accepted', 'already-running'] as const, value.status)) return null;
+  return { group, status: value.status };
+}
+
 const unavailable = (
   reason: Extract<WorkerStatus, { ok: false }>['reason'] = 'RAILWAY_UNAVAILABLE',
   health: RailwayHealth | null = null,
@@ -304,6 +318,14 @@ class WorkerRecoveryError extends Error {
 
   constructor() {
     super('無法啟動自動恢復，請稍後再試');
+  }
+}
+
+class WorkerPrimaryError extends Error {
+  statusCode = 503;
+
+  constructor() {
+    super('無法啟動主排程，請稍後再試');
   }
 }
 
@@ -485,6 +507,51 @@ export function createWorkerApi(
       } catch {
         controller.abort();
         throw new WorkerRecoveryError();
+      } finally {
+        if (timer !== undefined) clearTimeout(timer);
+      }
+    },
+    async runPrimary(
+      group: PrimaryWorkerGroup,
+      cycleDate: string,
+      primaryLotteries: CrawlerLottery[],
+    ): Promise<WorkerPrimary> {
+      const controller = new AbortController();
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          controller.abort();
+          reject(new WorkerPrimaryError());
+        }, timeoutMs);
+      });
+      const work = (async (): Promise<WorkerPrimary> => {
+        const config = await loadConfig();
+        const baseUrl = config?.baseUrl.trim().replace(/\/+$/, '') ?? '';
+        const statusToken = config?.statusToken.trim() ?? '';
+        if (!baseUrl || !statusToken || controller.signal.aborted) {
+          throw new WorkerPrimaryError();
+        }
+        const response = await fetcher(`${baseUrl}/jobs/primary`, {
+          method: 'POST',
+          signal: controller.signal,
+          redirect: 'error',
+          cache: 'no-store',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Matrix-Admin-Token': statusToken,
+          },
+          body: JSON.stringify({ group, cycleDate, lotteries: primaryLotteries }),
+        });
+        if (!response.ok) throw new WorkerPrimaryError();
+        const primary = parsePrimary(await response.json(), group);
+        if (!primary) throw new WorkerPrimaryError();
+        return primary;
+      })();
+      try {
+        return await Promise.race([work, timeout]);
+      } catch {
+        controller.abort();
+        throw new WorkerPrimaryError();
       } finally {
         if (timer !== undefined) clearTimeout(timer);
       }

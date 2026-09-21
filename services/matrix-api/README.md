@@ -99,7 +99,7 @@ Draw ingestion and Matrix analysis are split for 天天樂:
 | Railway `fantasy5-crawler` | `app.fantasy5_railway_job` | Scheduled acquisition; UTC `33 1,2 * * *`, DST gate selects one start, at most 10 attempts 600 seconds apart |
 | GitHub Actions `fantasy5-crawler.yml` (manual fallback only) | `app.fantasy5_crawler` | Fetch, validate, repair recent gaps, and upsert 天天樂 draws only |
 | Railway `railway.fantasy5.json` | `app.analysis_worker --lottery 天天樂` | Read stored 天天樂 draws and process pending Matrix analysis only |
-| Railway `railway.json` | `app.worker_all` | Scheduled ingestion and analysis for 今彩539、六合彩、大樂透 |
+| Railway `railway.json` | `app.primary_worker --group evening` | One daily fallback for 今彩539、六合彩、大樂透 after the dynamic window |
 | Railway `railway.marksix.json` | `app.worker --lottery 六合彩 --scheduled` | Manual single-run entry; no cron |
 | Railway `railway.lotto649.json` | `app.worker --lottery 大樂透 --scheduled` | Manual single-run entry; no cron |
 
@@ -109,8 +109,10 @@ date and numbers, repair recent period gaps, and upsert `lottery_draws`. They ow
 artifact builders. Completion telemetry is fenced by each attempt's `started_at`,
 so an older attempt cannot finish or overwrite a newer attempt's status.
 
-Production inventory verified on 2026-09-21: `lottery-matrix` (`worker_all`) and
-`fantasy5-analysis` both use all-day `3/10 * * * *` cron;
+The primary schedule is stored in Supabase and dispatches only inside the two
+configured Taipei windows. `lottery-matrix` and `fantasy5-analysis` retain one
+daily Railway fallback at 06:10 and 18:10 Asia/Taipei respectively, after each
+dynamic window has closed, instead of starting every ten minutes all day;
 `fantasy5-crawler` uses `33 1,2 * * *` UTC; the public API and recovery server
 are persistent services. Repository configuration alone is not evidence of the
 live service binding.

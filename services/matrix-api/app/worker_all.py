@@ -69,11 +69,15 @@ def create_railway_ssl_context() -> ssl.SSLContext:
     return context
 
 
-def run_all_workers(run_one: Callable[[str], dict[str, Any]]) -> dict[str, Any]:
+def run_all_workers(
+    run_one: Callable[[str], dict[str, Any]],
+    *,
+    lotteries: tuple[str, ...] = LOTTERIES,
+) -> dict[str, Any]:
     completed: list[str] = []
     failed: dict[str, str] = {}
     runs: list[dict[str, Any]] = []
-    for lottery in LOTTERIES:
+    for lottery in lotteries:
         started_at = datetime.now(UTC)
         started_clock = monotonic()
         try:

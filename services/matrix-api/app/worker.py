@@ -1,6 +1,6 @@
 import argparse
 from collections.abc import Callable, Mapping
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from os import environ
 from time import monotonic, sleep
 from typing import Any
@@ -13,7 +13,7 @@ from app.domain.models import lottery_position_count
 from app.repositories.card_repository import is_card_published
 from app.services.card_publication import publish_current_card
 from app.repositories.analysis_repository import AnalysisRepository, JOB_NAME_BY_LOTTERY, create_supabase_repository
-from app.schedule import due_call_cycle, previous_lottery_call_time
+from app.schedule import TAIPEI, due_call_cycle, lottery_call_time, previous_lottery_call_time
 from app.scraping.sources import LatestDrawSource
 from app.services.analysis_pipeline import AnalysisPipeline, ArtifactBuilder
 from app.services.artifact_builders import create_artifact_builders
@@ -561,6 +561,7 @@ def run_scheduled_worker(
     builders: Mapping[str, ArtifactBuilder] | None = None,
     notification_emitter: NotificationEventEmitter | None = None,
     allow_recovery_crawl: bool = False,
+    primary_cycle_date: date | None = None,
     *,
     _completion_snapshot: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -573,6 +574,7 @@ def run_scheduled_worker(
         builders,
         notification_emitter,
         allow_recovery_crawl,
+        primary_cycle_date,
         _completion_snapshot=_completion_snapshot,
         _stage_timings=stage_timings,
     )
@@ -587,6 +589,7 @@ def _run_scheduled_worker(
     builders: Mapping[str, ArtifactBuilder] | None = None,
     notification_emitter: NotificationEventEmitter | None = None,
     allow_recovery_crawl: bool = False,
+    primary_cycle_date: date | None = None,
     *,
     _completion_snapshot: dict[str, Any] | None = None,
     _stage_timings: dict[str, float],
@@ -606,7 +609,12 @@ def _run_scheduled_worker(
     latest = (
         [completion["draw"]] if completion and completion.get("draw") else []
     ) if completion is not None else repository.list_draws(lottery, 1)
-    if allow_recovery_crawl:
+    if primary_cycle_date is not None:
+        cycle = lottery_call_time(
+            lottery,
+            datetime.combine(primary_cycle_date, time(12), TAIPEI),
+        )
+    elif allow_recovery_crawl:
         cycle = due_call_cycle(lottery, now, allow_weekend_fallback=True)
     else:
         cycle = due_call_cycle(lottery, now)
@@ -662,6 +670,8 @@ def _run_scheduled_worker(
 
     current = now or datetime.now(cycle.tzinfo)
     current_minute = current.astimezone(cycle.tzinfo).replace(second=0, microsecond=0)
+    if primary_cycle_date is not None and current_minute < cycle:
+        return {"lottery": lottery, "status": "not-due"}
     is_pre_draw_recovery = current.astimezone(cycle.tzinfo) < cycle
     target_cycle = previous_lottery_call_time(lottery, cycle) if is_pre_draw_recovery else cycle
     expected_draw_dates = _expected_source_draw_dates(lottery, target_cycle)
@@ -702,7 +712,7 @@ def _run_scheduled_worker(
             "status": "already-acquired",
         }
 
-    if not allow_recovery_crawl and current_minute != cycle:
+    if not allow_recovery_crawl and primary_cycle_date is None and current_minute != cycle:
         if latest and latest[0].get("resultStatus") == "preliminary":
             resumed = _resume_stored_analysis(lottery, repository, source, latest[0], builders, on_cards_ready=notify_cards)
             if resumed is not None:
