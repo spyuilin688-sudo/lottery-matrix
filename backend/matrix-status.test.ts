@@ -23,8 +23,8 @@ function roads(hitType: StatusRoad['hitType'], streak: number, types: RoadType[]
   }));
 }
 
-function source(allRoads: StatusRoad[]): StatusSource {
-  return { lottery: '今彩539', drawPeriod: '114000123', roads: allRoads };
+function source(allRoads: StatusRoad[], lottery: StatusSource['lottery'] = '今彩539'): StatusSource {
+  return { lottery, drawPeriod: '114000123', roads: allRoads };
 }
 
 function repeated(type: RoadType, count: number) { return Array(count).fill(type) as RoadType[]; }
@@ -102,6 +102,50 @@ describe('Chapter 15 thresholds', () => {
     const card = evaluateChapter15(source(allRoads)).cards.find((candidate) => candidate.ruleId === ruleId);
     expect(card).toEqual(expect.objectContaining({ ruleId, status }));
     expect(card?.sameCodeRoadCount).toBe(card?.roads.length);
+  });
+});
+
+describe('Large-lottery ACTIVE and FOCUS thresholds', () => {
+  const largeLotteries: Array<StatusSource['lottery']> = ['六合彩', '大樂透'];
+
+  it.each(largeLotteries)('%s uses explicit doubled ACTIVE thresholds', (lottery) => {
+    expect(evaluateChapter15(source(roads('one-code', 5, repeated('加減', 3)), lottery)).cards.some((card) => card.ruleId === 'ACTIVE-1')).toBe(false);
+    expect(evaluateChapter15(source(roads('one-code', 5, repeated('加減', 4)), lottery)).cards.some((card) => card.ruleId === 'ACTIVE-1')).toBe(true);
+    expect(evaluateChapter15(source(roads('two-code', 7, repeated('合值', 5)), lottery)).cards.some((card) => card.ruleId === 'ACTIVE-2')).toBe(false);
+    expect(evaluateChapter15(source(roads('two-code', 7, repeated('合值', 6)), lottery)).cards.some((card) => card.ruleId === 'ACTIVE-2')).toBe(true);
+  });
+
+  it.each(largeLotteries)('%s uses explicit doubled FOCUS thresholds', (lottery) => {
+    const hasRule = (allRoads: StatusRoad[], ruleId: MatrixStatusRuleId) =>
+      evaluateChapter15(source(allRoads, lottery)).cards.some((card) => card.ruleId === ruleId);
+
+    expect(hasRule(roads('one-code', 5, repeated('加減', 9)), 'FOCUS-1')).toBe(false);
+    expect(hasRule(roads('one-code', 5, repeated('加減', 10)), 'FOCUS-1')).toBe(true);
+
+    expect(hasRule(roads('one-code', 5, ['加減', '加減', '加減', '加減', '拖牌']), 'FOCUS-2')).toBe(false);
+    expect(hasRule(roads('one-code', 5, ['加減', '加減', '加減', '加減', '加減', '拖牌']), 'FOCUS-2')).toBe(true);
+
+    expect(hasRule(roads('one-code', 7, ['拖牌']), 'FOCUS-3')).toBe(false);
+    expect(hasRule(roads('one-code', 7, ['拖牌', '拖牌']), 'FOCUS-3')).toBe(true);
+
+    expect(hasRule(roads('two-code', 7, repeated('合值', 11)), 'FOCUS-4')).toBe(false);
+    expect(hasRule(roads('two-code', 7, repeated('合值', 12)), 'FOCUS-4')).toBe(true);
+
+    expect(hasRule([...roads('two-code', 11, ['加減']), ...roads('two-code', 7, ['合值'])], 'FOCUS-5')).toBe(false);
+    expect(hasRule([...roads('two-code', 11, ['加減', '合值']), ...roads('two-code', 7, ['合值', '加減'])], 'FOCUS-5')).toBe(true);
+
+    expect(hasRule([...roads('two-code', 11, repeated('加減', 5)), ...roads('two-code', 5, repeated('合值', 12))], 'FOCUS-6')).toBe(false);
+    expect(hasRule([...roads('two-code', 11, repeated('加減', 6)), ...roads('two-code', 5, repeated('合值', 12))], 'FOCUS-6')).toBe(true);
+  });
+
+  it.each(['今彩539', '天天樂'] as const)('%s keeps the existing ACTIVE and FOCUS thresholds', (lottery) => {
+    expect(evaluateChapter15(source(roads('one-code', 5, repeated('加減', 2)), lottery)).cards.some((card) => card.ruleId === 'ACTIVE-1')).toBe(true);
+    expect(evaluateChapter15(source(roads('one-code', 5, repeated('加減', 5)), lottery)).cards.some((card) => card.ruleId === 'FOCUS-1')).toBe(true);
+  });
+
+  it.each(largeLotteries)('%s leaves RESONANCE and CRITICAL thresholds unchanged', (lottery) => {
+    expect(evaluateChapter15(source(roads('one-code', 7, ['加減']), lottery)).cards.some((card) => card.ruleId === 'RESONANCE-1')).toBe(true);
+    expect(evaluateChapter15(source(roads('one-code', 7, ['拖牌', '拖牌']), lottery)).cards.some((card) => card.ruleId === 'CRITICAL-3')).toBe(true);
   });
 });
 
