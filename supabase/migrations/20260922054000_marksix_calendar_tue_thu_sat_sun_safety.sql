@@ -36,7 +36,7 @@ as $$
       time '21:05',
       time '21:10'
     ]) as t(slot_time)
-    where pg_catalog.extract(isodow from local_now.value)::integer in (2,4,6,7)
+    where pg_catalog.date_part('isodow', local_now.value)::integer in (2,4,6,7)
   )
   select max(slot_at)
   from slots
