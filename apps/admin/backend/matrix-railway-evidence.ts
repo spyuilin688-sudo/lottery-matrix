@@ -5,7 +5,7 @@ export const MATRIX_SERVICES = {
  'lottery-matrix':'f421c5a3-0fd2-4a0b-813a-9d68ad9418b9',
  'fantasy5-crawler':'205035ff-0cdf-495b-9911-cef3db4dce71',
  'fantasy5-analysis':'fd39e53e-7c2c-4a9d-bc17-288535ff3e19',
- 'heartfelt-generosity':'58a61045-f675-4862-9847-6f4f430f2050',
+ 'matrix-public-api':'58a61045-f675-4862-9847-6f4f430f2050',
  'matrix-recovery':'4214c2e9-0e07-46df-9d50-7dcb151cd2af',
 } as const;
 export type RuntimeSample = {lottery:string;period:string|null;outcome:string;durationMs:number;executionVersion:string;finishedAt:string};
