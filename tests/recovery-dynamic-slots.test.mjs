@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {PGlite} from '@electric-sql/pglite';
 const sql=readFileSync(new URL('../supabase/migrations/20260920233444_recovery_dynamic_slots.sql',import.meta.url),'utf8');
+const refreshSql=readFileSync(new URL('../supabase/migrations/20260921075225_refresh_watchdog_after_recovery.sql',import.meta.url),'utf8');
 async function fixture(){
  const db=new PGlite();
  await db.exec(`create role anon; create role authenticated; create role service_role;
@@ -22,10 +23,11 @@ async function fixture(){
  create function public.matrix_watchdog_chain_state(l text,p text) returns jsonb language sql as $$select jsonb_build_object('latestPeriod',period,'analysisComplete',ready,'matrixStatusComplete',ready) from private.test_chain where lottery=l and period=p$$;
  create table vault.decrypted_secrets(name text,decrypted_secret text);
  insert into vault.decrypted_secrets values('matrix_project_url','https://example.test'),('matrix_admin_watchdog_token','test');
- create table net.requests(body jsonb);
- create function net.http_post(url text,headers jsonb,body jsonb,timeout_milliseconds int) returns bigint language plpgsql as $$begin insert into net.requests values(body);return 1;end$$;
+ create table net.requests(url text,body jsonb);
+ create function net.http_post(url text,headers jsonb,body jsonb,timeout_milliseconds int) returns bigint language plpgsql as $$begin insert into net.requests values(url,body);return 1;end$$;
  select cron.schedule('matrix-admin-watchdog-v1','3-59/10 * * * *','old');`);
  await db.exec(sql);
+ await db.exec(refreshSql);
  return db;
 }
 const scalar=async(db,q,p=[])=>Object.values((await db.query(q,p)).rows[0])[0];
@@ -88,6 +90,7 @@ test('members cannot forge completion or change schedule',async t=>{
   assert.equal(await scalar(db,"select has_function_privilege($1,'public.matrix_recovery_pending(timestamptz)','execute')",[role]),false);
   assert.equal(await scalar(db,"select has_table_privilege($1,'private.matrix_recovery_schedule','update')",[role]),false);
  }
+ assert.equal(await scalar(db,"select has_function_privilege('service_role','private.matrix_watchdog_refresh_dispatch()','execute')"),false);
 });
 test('a worker certificate cancels its remaining checks through the real trigger',async t=>{
  const db=await fixture();t.after(()=>db.close());
@@ -119,5 +122,25 @@ test('calendar updates skip and rearm an unfinished cycle without dispatch',asyn
  assert.equal(await scalar(db,"select skip_reason from private.matrix_recovery_schedule where lottery='六合彩'"),'no-draw');
  await db.exec("update private.notification_draw_day_overrides set is_draw_day=true where lottery='六合彩'");
  assert.equal(await scalar(db,"select skip_reason from private.matrix_recovery_schedule where lottery='六合彩'"),null);
+ assert.equal(await scalar(db,'select count(*) from net.requests'),0);
+});
+test('successful recovery queues a fresh watchdog check exactly once',async t=>{
+ const db=await fixture();t.after(()=>db.close());
+ await db.exec("insert into system_job_status values('matrix-recovery:天天樂','天天樂','running',null,0)");
+ await db.exec("update system_job_status set status='success',written_period='42',recovery_count=1 where job_name='matrix-recovery:天天樂'");
+ assert.equal(await scalar(db,"select count(*) from net.requests where url like '%/api/internal/matrix-watchdog'"),1);
+ await db.exec("update system_job_status set written_period='43' where job_name='matrix-recovery:天天樂'");
+ assert.equal(await scalar(db,'select count(*) from net.requests'),1);
+});
+test('ordinary job updates never queue a watchdog refresh',async t=>{
+ const db=await fixture();t.after(()=>db.close());
+ await db.exec("insert into system_job_status values('matrix-crawler:天天樂','天天樂','success','42',1)");
+ assert.equal(await scalar(db,'select count(*) from net.requests'),0);
+});
+test('refresh failure cannot roll back a verified recovery status',async t=>{
+ const db=await fixture();t.after(()=>db.close());
+ await db.exec("delete from vault.decrypted_secrets;insert into system_job_status values('matrix-recovery:天天樂','天天樂','running',null,0)");
+ await db.exec("update system_job_status set status='success',written_period='42',recovery_count=1 where job_name='matrix-recovery:天天樂'");
+ assert.equal(await scalar(db,"select status from system_job_status where job_name='matrix-recovery:天天樂'"),'success');
  assert.equal(await scalar(db,'select count(*) from net.requests'),0);
 });
