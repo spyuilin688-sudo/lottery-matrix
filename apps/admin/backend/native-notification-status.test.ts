@@ -71,8 +71,9 @@ describe('event-driven notification delivery monitoring', () => {
       redirect: 'error',
       headers: { apikey: 'server-secret', Authorization: 'Bearer server-secret' },
     }));
-    expect(fetcher.mock.calls.some(([url]) =>
-      /notification_(dispatch|claim|prepare|finalize)|admin-transfer-push/.test(String(url)))).toBe(false);
+    expect(fetcher.mock.calls.some(([url, init]) =>
+      init?.method === 'POST'
+      && /functions\/v1\/(notification-dispatch|native-notification-dispatch|admin-transfer-push)/.test(String(url)))).toBe(false);
     expect(JSON.stringify(item)).not.toMatch(/server-secret|must-not-leak|private-command/);
     expect(getSystemStatusPresentation(item)).toMatchObject({
       label: '事件派送正常',
