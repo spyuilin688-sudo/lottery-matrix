@@ -20,8 +20,8 @@ def roads(hit_type: str, streak: int, types: list[str], result: list[str] | None
     ]
 
 
-def evaluate(all_roads: list[dict]) -> dict:
-    return evaluate_chapter15({"lottery": "今彩539", "drawPeriod": "114000123", "roads": all_roads})
+def evaluate(all_roads: list[dict], lottery: str = "今彩539") -> dict:
+    return evaluate_chapter15({"lottery": lottery, "drawPeriod": "114000123", "roads": all_roads})
 
 
 CASES = [
@@ -88,6 +88,59 @@ def test_every_rule_is_an_independently_identified_trigger(
     card = next(card for card in evaluate(all_roads)["cards"] if card["ruleId"] == rule_id)
     assert card["status"] == status
     assert card["sameCodeRoadCount"] == len(card["roads"])
+
+
+@pytest.mark.parametrize("lottery", ["六合彩", "大樂透"])
+def test_large_lotteries_use_explicit_doubled_active_thresholds(lottery: str) -> None:
+    assert not any(card["ruleId"] == "ACTIVE-1" for card in evaluate(roads("one-code", 5, ["加減"] * 3), lottery)["cards"])
+    assert any(card["ruleId"] == "ACTIVE-1" for card in evaluate(roads("one-code", 5, ["加減"] * 4), lottery)["cards"])
+    assert not any(card["ruleId"] == "ACTIVE-2" for card in evaluate(roads("two-code", 7, ["合值"] * 5), lottery)["cards"])
+    assert any(card["ruleId"] == "ACTIVE-2" for card in evaluate(roads("two-code", 7, ["合值"] * 6), lottery)["cards"])
+
+
+@pytest.mark.parametrize("lottery", ["六合彩", "大樂透"])
+def test_large_lotteries_use_explicit_doubled_focus_thresholds(lottery: str) -> None:
+    def has_rule(all_roads: list[dict], rule_id: str) -> bool:
+        return any(card["ruleId"] == rule_id for card in evaluate(all_roads, lottery)["cards"])
+
+    assert not has_rule(roads("one-code", 5, ["加減"] * 9), "FOCUS-1")
+    assert has_rule(roads("one-code", 5, ["加減"] * 10), "FOCUS-1")
+
+    assert not has_rule(roads("one-code", 5, ["加減"] * 4 + ["拖牌"]), "FOCUS-2")
+    assert has_rule(roads("one-code", 5, ["加減"] * 5 + ["拖牌"]), "FOCUS-2")
+
+    assert not has_rule(roads("one-code", 7, ["拖牌"]), "FOCUS-3")
+    assert has_rule(roads("one-code", 7, ["拖牌", "拖牌"]), "FOCUS-3")
+
+    assert not has_rule(roads("two-code", 7, ["合值"] * 11), "FOCUS-4")
+    assert has_rule(roads("two-code", 7, ["合值"] * 12), "FOCUS-4")
+
+    assert not has_rule(roads("two-code", 11, ["加減"]) + roads("two-code", 7, ["合值"]), "FOCUS-5")
+    assert has_rule(
+        roads("two-code", 11, ["加減", "合值"]) + roads("two-code", 7, ["合值", "加減"]),
+        "FOCUS-5",
+    )
+
+    assert not has_rule(
+        roads("two-code", 11, ["加減"] * 5) + roads("two-code", 5, ["合值"] * 12),
+        "FOCUS-6",
+    )
+    assert has_rule(
+        roads("two-code", 11, ["加減"] * 6) + roads("two-code", 5, ["合值"] * 12),
+        "FOCUS-6",
+    )
+
+
+@pytest.mark.parametrize("lottery", ["今彩539", "天天樂"])
+def test_small_lotteries_keep_existing_active_and_focus_thresholds(lottery: str) -> None:
+    assert any(card["ruleId"] == "ACTIVE-1" for card in evaluate(roads("one-code", 5, ["加減"] * 2), lottery)["cards"])
+    assert any(card["ruleId"] == "FOCUS-1" for card in evaluate(roads("one-code", 5, ["加減"] * 5), lottery)["cards"])
+
+
+@pytest.mark.parametrize("lottery", ["六合彩", "大樂透"])
+def test_large_lotteries_leave_resonance_and_critical_thresholds_unchanged(lottery: str) -> None:
+    assert any(card["ruleId"] == "RESONANCE-1" for card in evaluate(roads("one-code", 7, ["加減"]), lottery)["cards"])
+    assert any(card["ruleId"] == "CRITICAL-3" for card in evaluate(roads("one-code", 7, ["拖牌", "拖牌"]), lottery)["cards"])
 
 
 def test_priority_duplicate_display_sort_and_dormant() -> None:

@@ -15,6 +15,10 @@ export type PresetConditionRow = {
   roadTypeAlternatives?: PresetRoadType[][];
 };
 export type Chapter15Rule = {
-  ruleId: string; status: PresetStatus; hitType: 'one-code' | 'two-code'; rows: PresetConditionRow[];
+  ruleId: string;
+  status: PresetStatus;
+  hitType: 'one-code' | 'two-code';
+  rows: PresetConditionRow[];
+  lotteryRows?: Partial<Record<MatrixLottery, PresetConditionRow[]>>;
 };
 export const chapter15Rules = ruleTemplates as Chapter15Rule[];
