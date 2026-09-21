@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -10,6 +11,9 @@ const root = new URL('.', import.meta.url).pathname;
 export default defineConfig(({ mode }) => ({
     root,
     plugins: [react()],
+    test: {
+        setupFiles: [new URL('../../test/dialog-test-setup.ts', import.meta.url).pathname],
+    },
     base: pagesBuild ? '/admin/' : './',
     resolve: {
         alias: mode === 'test'
