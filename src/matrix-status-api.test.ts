@@ -123,3 +123,55 @@ it('does not cache a result produced under a different permission snapshot', asy
   } }, error: null });
   await expect(fetchMatrixStatus('今彩539')).rejects.toMatchObject({ code: 'ANALYSIS_VERSION_MISMATCH' });
 });
+
+
+describe('time-window status cache', () => {
+  it('keeps 今彩539 status payload cached until 20:00 while revalidating access', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-22T10:00:00+08:00'));
+    statusRead.mockResolvedValue(resultData({ detailLocked: false }));
+
+    await fetchMatrixStatus('今彩539');
+    vi.setSystemTime(new Date('2026-09-22T19:59:59+08:00'));
+    await fetchMatrixStatus('今彩539');
+    expect(statusRead).toHaveBeenCalledTimes(1);
+    expect(access).toHaveBeenCalledTimes(2);
+
+    vi.setSystemTime(new Date('2026-09-22T20:00:00+08:00'));
+    await fetchMatrixStatus('今彩539');
+    expect(statusRead).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
+  it('keeps 天天樂 status payload cached through overnight until 09:00', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-22T23:00:00+08:00'));
+    statusRead.mockResolvedValue(resultData({ detailLocked: false }));
+
+    await fetchMatrixStatus('天天樂');
+    vi.setSystemTime(new Date('2026-09-23T08:59:59+08:00'));
+    await fetchMatrixStatus('天天樂');
+    expect(statusRead).toHaveBeenCalledTimes(1);
+
+    vi.setSystemTime(new Date('2026-09-23T09:00:00+08:00'));
+    await fetchMatrixStatus('天天樂');
+    expect(statusRead).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
+  it('uses five minutes outside the stable status window', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-22T20:30:00+08:00'));
+    statusRead.mockResolvedValue(resultData({ detailLocked: false }));
+
+    await fetchMatrixStatus('今彩539');
+    vi.setSystemTime(new Date('2026-09-22T20:34:59+08:00'));
+    await fetchMatrixStatus('今彩539');
+    expect(statusRead).toHaveBeenCalledTimes(1);
+
+    vi.setSystemTime(new Date('2026-09-22T20:35:00+08:00'));
+    await fetchMatrixStatus('今彩539');
+    expect(statusRead).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+});
