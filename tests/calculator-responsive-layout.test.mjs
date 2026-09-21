@@ -57,12 +57,13 @@ test('calculator controls use the approved responsive touch sizes without changi
   const panel = block(feature, '.calculator-panel');
   assert.match(panel, /--calculator-number-size:\s*clamp\(36px,\s*calc\(\(100vw - 74px\) \/ 7\),\s*48px\)/);
   assert.match(panel, /--calculator-action-height:\s*clamp\(34px,\s*9\.3vw,\s*40px\)/);
-  assert.match(panel, /--calculator-column-control-size:\s*clamp\(30px,\s*9\.3vw,\s*40px\)/);
+  assert.match(panel, /--calculator-column-control-size:\s*clamp\(28px,\s*8vw,\s*32px\)/);
   assert.match(panel, /--calculator-column-row-height:\s*clamp\(50px,\s*14vw,\s*60px\)/);
   assert.match(panel, /padding:\s*8px clamp\(4px,\s*1\.3vw,\s*6px\) 12px/);
   assert.match(block(feature, '.panel'), /border:\s*1px solid var\(--pwa-frame-secondary\)/);
   assert.match(block(feature, '.calculator-screen > .feature-body'), /padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\)/);
   assert.equal(style('.calculator-screen .feature-body').getPropertyValue('--layout-page-inline'), '16px');
+  assert.equal(style('.column-panel').paddingTop, '13px');
   assert.equal(style('.column-panel').paddingBottom, '4px');
   assert.equal(style('.calculator-screen .section-title').fontSize, '16px');
   assert.match(block(feature, '.calculator-panel > header .calculator-heading > span'), /font-size:\s*clamp\(12px,\s*3\.3vw,\s*14px\)/);
@@ -176,7 +177,7 @@ test('calculator responsive geometry remains inside 430px, 390px, 375px and 360p
     const numberGridWidth = (7 * numberSize) + (6 * gridGap);
     const resultCardWidth = (resultInnerWidth - (3 * 8)) / 4;
     const columnCellWidth = panelInnerWidth / 2;
-    const controlWidth = clamp(30, viewport * 0.093, 40);
+    const controlWidth = clamp(28, viewport * 0.08, 32);
     const valueWidth = clamp(18, viewport * 0.048, 22);
     const columnGap = clamp(2, viewport * 0.006, 3);
     const columnPadding = clamp(4, viewport * 0.015, 7);
@@ -184,7 +185,7 @@ test('calculator responsive geometry remains inside 430px, 390px, 375px and 360p
 
     assert.ok(numberGridWidth <= panelInnerWidth, `${viewport}px calculator grid must keep seven responsive controls on one row`);
     assert.ok(numberSize > 38, `${viewport}px number controls must be larger than the previous 38px size`);
-    assert.ok(controlWidth > 28, `${viewport}px column controls must be larger than the previous 28px size`);
+    assert.ok(controlWidth >= 28 && controlWidth <= 32, `${viewport}px column controls must stay within the reduced responsive range`);
     assert.ok(resultCardWidth >= 71, `${viewport}px result cards must remain readable`);
     assert.ok(columnLabelWidth >= 47, `${viewport}px column labels must remain visible`);
   }
