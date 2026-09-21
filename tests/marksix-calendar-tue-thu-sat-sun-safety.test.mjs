@@ -1,3 +1,5 @@
+// Historical schedule regression for the 20260922054000 migration only.
+// Later migrations add the M/W/F 23:00 backup check.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
