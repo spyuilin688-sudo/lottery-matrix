@@ -7,6 +7,7 @@ const db = new PGlite();
 const migrations = new URL('../supabase/migrations/', import.meta.url);
 const userA = '00000000-0000-0000-0000-000000000001';
 const userB = '00000000-0000-0000-0000-000000000002';
+const disabledUser = '00000000-0000-0000-0000-000000000003';
 const endpoint = 'https://fcm.googleapis.com/fcm/send/owned-device';
 const save = (url, key = 'browser-public-key', auth = 'browser-auth-secret') => db.query(
   'select public.member_push_subscription_save($1,$2,$3) as result', [url, key, auth],
@@ -20,9 +21,22 @@ before(async () => {
     create table auth.users(id uuid primary key);
     create function auth.uid() returns uuid language sql stable as
       $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+    create table public.members(id uuid primary key,auth_user_id uuid,status text);
+    create function private.active_member_id() returns uuid language plpgsql stable security definer set search_path='' as $$
+    declare v_member_id uuid;
+    begin
+      select id into v_member_id from public.members
+      where auth_user_id=auth.uid() and coalesce(status,'') not in ('停用','disabled','inactive');
+      if v_member_id is null then raise exception using errcode='42501',message='FORBIDDEN'; end if;
+      return v_member_id;
+    end$$;
     grant usage on schema auth,public to anon,authenticated,service_role;
     grant execute on function auth.uid() to anon,authenticated,service_role;
-    insert into auth.users values ('${userA}'),('${userB}');
+    insert into auth.users values ('${userA}'),('${userB}'),('${disabledUser}');
+    insert into public.members values
+      ('10000000-0000-0000-0000-000000000001','${userA}','active'),
+      ('10000000-0000-0000-0000-000000000002','${userB}','active'),
+      ('10000000-0000-0000-0000-000000000003','${disabledUser}','disabled');
   `);
   for (const file of ['20260830144700_mobile_push_notifications.sql','20260830223000_fix_mobile_push_rpc_nullif.sql']) {
     await db.exec(await readFile(new URL(file, migrations), 'utf8'));
@@ -30,7 +44,7 @@ before(async () => {
   for (const file of (await readdir(migrations)).filter(name => name.endsWith('_member_push_endpoint_security.sql')).sort()) {
     await db.exec(await readFile(new URL(file, migrations), 'utf8'));
   }
-  if (process.env.MATRIX_PUSH_MIGRATION) await db.exec(await readFile(process.env.MATRIX_PUSH_MIGRATION, 'utf8'));
+  await db.exec(await readFile(new URL('20260921012052_enforce_active_member_notifications.sql', migrations), 'utf8'));
 });
 after(() => db.close());
 
@@ -82,4 +96,14 @@ test('same device can change account only with both existing browser keys', asyn
 test('anonymous callers cannot register push subscriptions', async () => {
   await db.exec('reset role; set role anon;');
   await assert.rejects(save(endpoint), /permission denied/);
+});
+
+test('disabled members cannot save, inspect or disable push subscriptions', async () => {
+  const disabledEndpoint = 'https://fcm.googleapis.com/fcm/send/disabled-member-fixture';
+  await asUser(userA);
+  await save(disabledEndpoint);
+  await asUser(disabledUser);
+  await assert.rejects(save('https://fcm.googleapis.com/fcm/send/disabled-device'), /FORBIDDEN/);
+  await assert.rejects(db.query('select member_push_subscription_status($1)', [disabledEndpoint]), /FORBIDDEN/);
+  await assert.rejects(db.query('select member_push_subscription_disable($1)', [disabledEndpoint]), /FORBIDDEN/);
 });

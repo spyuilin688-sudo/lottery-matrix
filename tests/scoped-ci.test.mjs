@@ -127,7 +127,7 @@ test('every runner receives explicit absolute test paths; empty or unsafe scope 
     assert.ok(command.args.every(arg => !arg.includes('*')));
     assert.equal(commandFor(group, [], '/repo'), null);
   }
-  assert.deepEqual(commandFor('node', [examples.node], '/repo').args.slice(0, -1), ['--test']);
+  assert.deepEqual(commandFor('node', [examples.node], '/repo').args.slice(0, -1), ['--experimental-transform-types', '--test']);
   assert.ok(commandFor('edge', [examples.edge], '/repo').args.includes('vitest.edge-functions.config.ts'));
   assert.ok(commandFor('admin', [examples.admin], '/repo').args.includes('apps/admin/vite.config.ts'));
   assert.ok(commandFor('membership', [examples.membership], '/repo').args.includes('playwright.membership-preview.config.ts'));

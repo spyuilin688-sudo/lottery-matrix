@@ -71,3 +71,27 @@ def test_inflight_only_shares_pending_read_but_rechecks_next_request(monkeypatch
         assert first.result() == second.result() == {'revision': 'v1'}
     assert len(calls) == 1
     assert cache.read('latest', lambda: {'revision': 'v2'}, cache_result=False) == {'revision': 'v2'}
+
+
+def test_finished_probe_cannot_be_joined_before_owner_cleanup(monkeypatch):
+    import app.draw_read_cache as module
+    from concurrent.futures import Future
+    published, release = Event(), Event()
+
+    class PausedFuture(Future):
+        def set_result(self, result):
+            super().set_result(result)
+            if not published.is_set():
+                published.set()
+                assert release.wait(2)
+
+    monkeypatch.setattr(module, 'Future', PausedFuture)
+    cache = DrawReadCache()
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        first = pool.submit(cache.read, 'latest', lambda: {'revision': 'v1'}, cache_result=False)
+        try:
+            assert published.wait(2)
+            assert cache.read('latest', lambda: {'revision': 'v2'}, cache_result=False) == {'revision': 'v2'}
+        finally:
+            release.set()
+        assert first.result() == {'revision': 'v1'}

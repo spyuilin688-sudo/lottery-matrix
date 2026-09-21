@@ -329,6 +329,7 @@ def test_analysis_only_worker_skips_a_completed_latest_version() -> None:
         {kind: unexpected_builder for kind in ARTIFACT_KINDS},
     )
 
+    assert all(value >= 0 for value in result.pop("stageTimingsMs").values())
     assert result == {
         "lottery": "天天樂",
         "drawPeriod": "11988",

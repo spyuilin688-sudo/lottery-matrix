@@ -225,6 +225,7 @@ def test_completed_analysis_backfills_missing_explore_query_results() -> None:
         _builders([]),
     )
 
+    assert all(value >= 0 for value in result.pop("stageTimingsMs").values())
     assert result == {"lottery": "今彩539", "status": "not-due"}
     assert repository.explore_results
 

@@ -2,7 +2,7 @@ import argparse
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime, timedelta
 from os import environ
-from time import sleep
+from time import monotonic, sleep
 from typing import Any
 
 import httpx
@@ -106,23 +106,51 @@ def _run_analysis(
     )
     failures = 0
     result: dict[str, Any] = {}
+    stage_timings: dict[str, float] = {}
+
+    def finish(current: dict[str, Any]) -> dict[str, Any]:
+        for stage, duration in dict(current.get("stageTimingsMs") or {}).items():
+            stage_timings[stage] = stage_timings.get(stage, 0.0) + float(duration)
+        return {
+            **current,
+            "stageTimingsMs": {
+                stage: round(duration, 3) for stage, duration in stage_timings.items()
+            },
+        }
+
     for _ in range(MAX_CYCLES_PER_INVOCATION):
         try:
             result = pipeline.run(draw, history)
+            timed_result = finish(result)
             failures = 0
         except Exception as error:
             if str(error) in {"ANALYSIS_DRAW_CHANGED", "ANALYSIS_RUN_LEASE_LOST"}:
-                return {"lottery": draw["lottery"], "drawPeriod": draw["period"], "analysisVersion": version, "status": "superseded"}
+                return finish({"lottery": draw["lottery"], "drawPeriod": draw["period"], "analysisVersion": version, "status": "superseded"})
             failures += 1
             if failures >= MAX_FAILURES_PER_INVOCATION:
                 raise
             _wait_before_retry(error, failures)
             continue
         if result.get("leaseAcquired") is False:
-            return result
+            return timed_result
         if result.get("status") != "running":
-            return result
-    return result
+            return timed_result
+    return timed_result
+
+
+def _merge_stage_timings(
+    result: dict[str, Any],
+    timings: Mapping[str, float],
+) -> dict[str, Any]:
+    merged = {stage: float(duration) for stage, duration in timings.items()}
+    for stage, duration in dict(result.get("stageTimingsMs") or {}).items():
+        merged[stage] = merged.get(stage, 0.0) + float(duration)
+    return {
+        **result,
+        "stageTimingsMs": {
+            stage: round(duration, 3) for stage, duration in merged.items()
+        },
+    }
 
 
 def _notification_enabled(notification_emitter: NotificationEventEmitter | None) -> bool:
@@ -533,6 +561,41 @@ def run_scheduled_worker(
     *,
     _completion_snapshot: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    stage_timings: dict[str, float] = {}
+    result = _run_scheduled_worker(
+        lottery,
+        now,
+        repository,
+        source,
+        builders,
+        notification_emitter,
+        allow_recovery_crawl,
+        _completion_snapshot=_completion_snapshot,
+        _stage_timings=stage_timings,
+    )
+    return _merge_stage_timings(result, stage_timings)
+
+
+def _run_scheduled_worker(
+    lottery: str,
+    now: datetime | None,
+    repository: AnalysisRepository,
+    source: DrawSource,
+    builders: Mapping[str, ArtifactBuilder] | None = None,
+    notification_emitter: NotificationEventEmitter | None = None,
+    allow_recovery_crawl: bool = False,
+    *,
+    _completion_snapshot: dict[str, Any] | None = None,
+    _stage_timings: dict[str, float],
+) -> dict[str, Any]:
+    def measured(stage: str, call: Callable[[], Any]) -> Any:
+        started = monotonic()
+        try:
+            return call()
+        finally:
+            elapsed = (monotonic() - started) * 1000
+            _stage_timings[stage] = _stage_timings.get(stage, 0.0) + elapsed
+
     emitted_event_keys: set[str] = set()
     completion = _completion_snapshot
     if completion is None:
@@ -554,16 +617,19 @@ def run_scheduled_worker(
         return idle_result
 
     def notify_cards(*, final: bool = False) -> None:
-        current = repository.list_draws(lottery, 1)
-        if current:
-            try:
-                emit_ready_notifications(lottery, str(current[0]["period"]), repository, notification_emitter, emitted_event_keys)
-            except NotificationDeliveryError:
-                if final:
-                    raise
+        def notify() -> None:
+            current = repository.list_draws(lottery, 1)
+            if current:
+                try:
+                    emit_ready_notifications(lottery, str(current[0]["period"]), repository, notification_emitter, emitted_event_keys)
+                except NotificationDeliveryError:
+                    if final:
+                        raise
+
+        measured("notification", notify)
 
     notify_cards()
-    publish_current_card(lottery, repository, now)
+    measured("card", lambda: publish_current_card(lottery, repository, now))
     notify_cards()
     latest = repository.list_draws(lottery, 1)
     idle_result = _idle_exit_result(
@@ -648,7 +714,7 @@ def run_scheduled_worker(
         try:
             if not repository.list_draws(lottery, 1):
                 refresh.ensure_history(lottery)
-            draw = refresh.fetch(lottery)
+            draw = measured("fetch", lambda: refresh.fetch(lottery))
         except httpx.HTTPError as error:
             if lottery == "天天樂" and _is_transient_service_error(error):
                 return {
@@ -672,12 +738,12 @@ def run_scheduled_worker(
                 "writtenPeriod": None,
             }
 
-        draw = refresh.store(draw)
+        draw = measured("write", lambda: refresh.store(draw))
         # Result delivery must not wait for archive repair, rasterization, or
         # algorithm work. The durable event key/date fence absorbs retries.
         notify_cards()
-        refresh.ensure_history(lottery)
-        publish_current_card(lottery, repository, now)
+        measured("history", lambda: refresh.ensure_history(lottery))
+        measured("card", lambda: publish_current_card(lottery, repository, now))
         notify_cards()
         return {
             "lottery": lottery,

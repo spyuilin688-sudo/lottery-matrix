@@ -62,6 +62,28 @@ def test_analysis_cli_logs_failure_and_preserves_exception(analysis_cli, monkeyp
     assert "private-token" not in json.dumps(logs)
 
 
+def test_analysis_cli_records_worker_stage_timings(analysis_cli, monkeypatch, capsys):
+    monkeypatch.setattr(analysis_worker, "run_analysis_only_worker", lambda *_: {
+        "lottery": "天天樂",
+        "drawPeriod": "12004",
+        "status": "complete",
+        "stageTimingsMs": {
+            "history": 2.5,
+            "explore": 10.25,
+            "write": 4.75,
+            "notification": 1.0,
+        },
+    })
+
+    assert analysis_worker.main(["--lottery", "天天樂"]) == 0
+    assert records(capsys)[0]["stageTimingsMs"] == {
+        "history": 2.5,
+        "explore": 10.25,
+        "write": 4.75,
+        "notification": 1.0,
+    }
+
+
 def test_analysis_cli_records_setup_failure(analysis_cli, monkeypatch, capsys):
     def fail():
         raise ValueError("invalid configuration")

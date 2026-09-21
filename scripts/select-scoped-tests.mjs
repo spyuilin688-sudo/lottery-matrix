@@ -173,7 +173,7 @@ export function commandFor(group, files, root) {
     }
   }
   const absolute = [...new Set(files)].map(file => path.resolve(root, file));
-  if (group === 'node') return { bin: process.execPath, args: ['--test', ...absolute], cwd: root };
+  if (group === 'node') return { bin: process.execPath, args: ['--experimental-transform-types', '--test', ...absolute], cwd: root };
   if (group === 'python') return { bin: 'uv', args: ['run', 'pytest', '-q', ...absolute], cwd: path.join(root, PYTHON_ROOT) };
   if (['playwright', 'membership'].includes(group)) return {
     bin: path.join(root, 'node_modules/.bin/playwright'),

@@ -27,6 +27,8 @@ class DrawReadCache:
                 self._values.move_to_end(key)
                 return json.loads(cached[1])
             future = self._pending.get(key)
+            if future is not None and future.done():
+                future = None
             owner = future is None
             if owner:
                 future = Future()
@@ -51,4 +53,5 @@ class DrawReadCache:
             raise
         finally:
             with self._lock:
-                self._pending.pop(key, None)
+                if self._pending.get(key) is future:
+                    self._pending.pop(key, None)

@@ -76,6 +76,7 @@ def test_predraw_recovery_skips_all_network_for_every_lottery_when_latest_is_cur
         {},
     )
 
+    assert all(value >= 0 for value in result.pop("stageTimingsMs").values())
     assert result == {
         "lottery": lottery,
         "drawPeriod": period,

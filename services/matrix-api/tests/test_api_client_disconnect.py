@@ -29,6 +29,9 @@ def test_response_write_does_not_escape_when_client_disconnects(
     disconnect_at: str,
 ) -> None:
     handler = object.__new__(RailwayApiHandler)
+    handler.command = "GET"
+    handler.path = "/health"
+    handler.headers = {}
     handler.security_monitor = None
     handler._security_retry_after = 0
     handler.send_response = lambda *_: None
