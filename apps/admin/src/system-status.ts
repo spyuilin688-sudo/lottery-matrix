@@ -56,10 +56,10 @@ const statusLocationOrder: SystemStatusItem['location'][] = [
 export function getSystemStatusPresentation(item: SystemStatusItem) {
   if (item.id === nativeNotificationStatusId) {
     const health = parseNativeNotificationHealth(item.detail, new Date(item.checkedAt));
-    if (!health) return { label: '狀態待確認', tone: 'limited' as const, scope: '目前無法取得完整原生通知紀錄，請重新檢查。' };
-    const scope = '排程紀錄只證明排程曾執行；尚未驗證本次 OAuth、FCM 連線及裝置收到通知。';
+    if (!health) return { label: '狀態待確認', tone: 'limited' as const, scope: '目前無法取得完整通知派送健康資料，請重新檢查。' };
+    const scope = '已讀取事件觸發、5 分鐘 Recovery 與 Web／Native／管理員通知佇列；健康檢查不發送測試通知，裝置實際顯示仍需正式派送紀錄確認。';
     if (!item.ok) return { label: '需查看紀錄', tone: 'warning' as const, scope };
-    return { label: health.enabled_devices === 0 ? '待命（無啟用裝置）' : '排程紀錄正常', tone: 'limited' as const, scope };
+    return { label: '事件派送正常', tone: 'limited' as const, scope };
   }
   if (item.id === matrixStorageStatusId) {
     const storage = parseMatrixStorageHealth(item.detail);
@@ -104,26 +104,26 @@ export function getSystemStatusPresentation(item: SystemStatusItem) {
   const access = item.rpcAccess ?? (apiStatusInventory.find(definition => definition.id === item.id) ?? apiStatusInventory.find(definition => definition.endpoint === item.endpoint))?.rpcAccess;
   const activity = isRecord(item.detail) && isRecord(item.detail.activity) ? item.detail.activity : null;
   const registration = access === 'member-read'
-    ? { label: '需會員驗證', tone: 'limited', scope: 'API 已建立；此查詢需要會員登入，自動檢查尚未驗證會員查詢流程。' }
+    ? { label: '需會員流程驗證', tone: 'limited', scope: 'API 已確認存在；此查詢需要會員登入與會員權限，自動健康檢查不會假冒會員執行完整流程。' }
     : access === 'public-read'
-      ? { label: '尚未驗證查詢', tone: 'limited', scope: '目前僅確認 API 已建立；請重新檢查以取得實際查詢結果。' }
+      ? { label: 'API 已確認', tone: 'limited', scope: 'API 已確認存在，但此項目前沒有獨立的實際查詢探測。' }
       : activity?.state === 'recorded'
-        ? { label: '有相關紀錄', tone: 'limited', scope: '已找到正式資料中的相關操作紀錄；可在明細查看時間與來源，本次未重新執行操作。' }
+        ? { label: '正式執行紀錄', tone: 'limited', scope: '已在正式資料中找到相關執行證據；本次健康檢查沒有重新執行寫入操作。' }
         : activity?.state === 'none'
-          ? { label: '尚無相關紀錄', tone: 'limited', scope: 'API 已建立，目前保留的資料中尚無相關紀錄；沒有紀錄不代表功能故障。' }
+          ? { label: '尚無執行紀錄', tone: 'limited', scope: 'API 已確認存在，目前保留的正式資料中尚無相關執行紀錄；沒有紀錄不代表功能故障。' }
           : activity?.state === 'unavailable'
-            ? { label: '紀錄待確認', tone: 'limited', scope: 'API 已建立，但本次無法讀取相關紀錄；請重新檢查。' }
-            : { label: '未驗證操作', tone: 'limited', scope: 'API 已建立；此操作會修改資料或工作狀態，自動檢查不會執行正式操作。目前沒有可獨立辨識的執行紀錄。' };
+            ? { label: '紀錄待確認', tone: 'limited', scope: 'API 已確認存在，但本次無法讀取正式執行證據；請重新檢查。' }
+            : { label: 'API 已確認', tone: 'limited', scope: 'API 已確認存在；為避免修改正式資料、工作狀態或發送通知，健康檢查不自動執行寫入操作。' };
   const permissionQuery = item.id === 'supabase-rpc-matrix_permission_settings';
   const presentations = {
-    query: { label: '查詢正常', tone: 'good', scope: permissionQuery ? '已實際讀取目前權限設定，兩項開關、版本與更新時間格式正常。' : '四彩種均完成實際查詢，回傳資料格式正常。' },
-    data: { label: '分析資料可讀', tone: 'limited', scope: '四彩種順球分析資料已完成讀取檢查；會員登入、權限與查詢篩選流程仍需會員驗證。' },
-    'no-sample': { label: '缺少測試資料', tone: 'limited', scope: isRecord(item.detail) && item.detail.probe === 'data' ? '分析資料可讀，但部分彩種沒有驗證樣本；本次未驗證會員查詢流程。' : '清單查詢正常，但部分彩種沒有符合條件的結果，本次無法完整檢查展開資料。' },
-    live: { label: '連線正常', tone: 'good', scope: '此項連線或資料讀取檢查已通過。' },
+    query: { label: '實際查詢已驗證', tone: 'good', scope: permissionQuery ? '已實際讀取目前權限設定，兩項開關、版本與更新時間格式正常。' : '四彩種均完成實際查詢，回傳資料格式正常。' },
+    data: { label: '正式資料已驗證', tone: 'limited', scope: '已直接讀取正式分析資料並檢查格式；會員登入、權限與查詢篩選流程仍需會員身分流程驗證。' },
+    'no-sample': { label: '缺少驗證樣本', tone: 'limited', scope: isRecord(item.detail) && item.detail.probe === 'data' ? '正式分析資料可讀，但部分彩種沒有可驗證樣本；本次不推定會員流程已通過。' : '清單查詢正常，但部分彩種沒有符合條件的結果，本次無法完整檢查展開資料。' },
+    live: { label: '即時檢查正常', tone: 'good', scope: '已在本次檢查中實際完成連線或唯讀資料讀取。' },
     registered: registration,
-    options: { label: '連線正常', tone: 'limited', scope: '已收到連線回應；自動檢查不會派送通知、處理事件或執行登出。' },
-    inherited: { label: '主機正常', tone: 'limited', scope: '主機與排程查詢正常；自動檢查不會啟動資料更新或復原工作。' },
-    reported: { label: '執行正常', tone: 'good', scope: '最近的執行紀錄正常；這次檢查沒有重新執行工作。' },
+    options: { label: 'Endpoint 已驗證', tone: 'limited', scope: '已確認 Endpoint 可回應 OPTIONS；健康檢查不會為驗證而派送通知、處理事件或執行登出。' },
+    inherited: { label: '所屬服務已驗證', tone: 'limited', scope: '已驗證所屬 Railway 主機與排程查詢；健康檢查不會為驗證而啟動資料更新或復原工作。' },
+    reported: { label: '執行紀錄正常', tone: 'good', scope: '已讀取最近正式執行紀錄；這次檢查沒有重新執行工作。' },
   } as const;
   const presentation = presentations[evidence];
   const failedScopes = {
@@ -146,23 +146,63 @@ export function getServiceEvidenceFacts(item: SystemStatusItem): SystemStatusFac
     const count = (value: number) => value.toLocaleString('zh-TW');
     const time = (label: string, value: string | null): SystemStatusFact => value ? { label, value, format: 'date' } : { label, value: '尚無紀錄' };
     return [
-      { label: '排程開關', value: health.schedule.enabled ? '已啟用' : '已停用' },
-      { label: '排程頻率', value: health.schedule.every_minute ? '每分鐘' : '未設定為每分鐘' },
-      time('最近排程開始', health.schedule.last_started_at), time('最近排程結束', health.schedule.last_finished_at),
-      { label: '最近排程結果', value: formatSystemStatusValue(health.schedule.last_status) },
-      { label: '啟用裝置數', value: count(health.enabled_devices) },
-      { label: '待處理通知', value: count(health.deliveries.pending) },
-      { label: '處理中通知', value: count(health.deliveries.processing) },
-      { label: '到期逾 5 分鐘工作', value: count(health.deliveries.overdue) },
-      { label: '24 小時內派送成功', value: count(health.deliveries.sent_24h) },
-      { label: '24 小時內派送失敗', value: count(health.deliveries.failed_24h) },
-      { label: '24 小時內取消', value: count(health.deliveries.canceled_24h) },
-      time('最近派送成功', health.deliveries.last_sent_at), time('最近派送失敗', health.deliveries.last_failed_at),
-      { label: '驗證範圍', value: '排程成功只表示排程 SQL 完成，不代表 OAuth、FCM 或裝置收件已驗證；派送成功紀錄表示服務商接受，未確認裝置顯示。' },
+      { label: '驗證方式', value: '事件觸發＋Recovery＋正式佇列紀錄' },
+      { label: '派送模式', value: '事件觸發' },
+      { label: '事件觸發', value: health.event_trigger_enabled ? '已啟用' : '已停用' },
+      { label: '管理員轉帳觸發', value: health.admin_transfer_trigger_enabled ? '已啟用' : '已停用' },
+      { label: 'Recovery 開關', value: health.recovery.enabled ? '已啟用' : '已停用' },
+      { label: 'Recovery 頻率', value: health.recovery.schedule === '*/5 * * * *' ? '每 5 分鐘' : (health.recovery.schedule ?? '未設定') },
+      time('最近 Recovery 開始', health.recovery.last_started_at),
+      time('最近 Recovery 結束', health.recovery.last_finished_at),
+      { label: '最近 Recovery 結果', value: formatSystemStatusValue(health.recovery.last_status) },
+      { label: 'Web 待處理', value: count(health.web.pending) },
+      { label: 'Web 處理中', value: count(health.web.processing) },
+      { label: 'Web 逾時', value: count(health.web.overdue) },
+      { label: '24 小時 Web 派送成功', value: count(health.web.sent_24h) },
+      { label: '24 小時 Web 派送失敗', value: count(health.web.failed_24h) },
+      { label: 'Native 啟用裝置', value: count(health.native.enabled_devices) },
+      { label: 'Native 待處理', value: count(health.native.pending) },
+      { label: 'Native 處理中', value: count(health.native.processing) },
+      { label: 'Native 逾時', value: count(health.native.overdue) },
+      { label: '24 小時 Native 派送成功', value: count(health.native.sent_24h) },
+      { label: '24 小時 Native 派送失敗', value: count(health.native.failed_24h) },
+      { label: 'Admin 啟用訂閱', value: count(health.admin.enabled_subscriptions) },
+      { label: 'Admin 待處理', value: count(health.admin.pending) },
+      { label: 'Admin 處理中', value: count(health.admin.sending) },
+      { label: 'Admin 逾時', value: count(health.admin.overdue) },
+      { label: '24 小時 Admin 派送成功', value: count(health.admin.sent_24h) },
+      { label: '24 小時 Admin 派送失敗', value: count(health.admin.failed_24h) },
+      time('最近 Web 派送成功', health.web.last_sent_at),
+      time('最近 Web 派送失敗', health.web.last_failed_at),
+      time('最近 Native 派送成功', health.native.last_sent_at),
+      time('最近 Native 派送失敗', health.native.last_failed_at),
+      time('最近 Admin 派送成功', health.admin.last_sent_at),
+      time('最近 Admin 派送失敗', health.admin.last_failed_at),
+      { label: '驗證範圍', value: '健康檢查不發送測試通知；事件觸發、Recovery、佇列與正式派送紀錄可驗證，服務商接受不等於裝置一定顯示。' },
     ];
   }
-  if (!isRecord(item.detail)) return [];
-  const facts: SystemStatusFact[] = [];
+  const evidence = item.checkEvidence ?? (
+    item.endpoint.startsWith('/functions/v1/') ? 'options'
+      : item.checkMode === 'openapi' || item.checkMode === 'registry' ? 'registered'
+        : item.location === 'Railway' && item.checkMode === 'service' ? 'inherited'
+          : item.id === 'supabase-watchdog-heartbeat' || item.id.startsWith('cron-') ? 'reported' : 'live'
+  );
+  const access = item.rpcAccess ?? (apiStatusInventory.find(definition => definition.id === item.id)
+    ?? apiStatusInventory.find(definition => definition.endpoint === item.endpoint))?.rpcAccess;
+  const activity = isRecord(item.detail) && isRecord(item.detail.activity) ? item.detail.activity : null;
+  const method = evidence === 'query' ? '實際查詢'
+    : evidence === 'data' || evidence === 'no-sample' ? '正式資料'
+      : evidence === 'live' ? '即時連線／讀取'
+        : evidence === 'options' ? 'Endpoint 連線'
+          : evidence === 'inherited' ? '所屬服務'
+            : evidence === 'reported' ? '正式執行紀錄'
+              : access === 'member-read' ? 'API 註冊＋會員流程未執行'
+                : activity?.state === 'recorded' ? 'API 註冊＋正式執行紀錄'
+                  : activity?.state === 'none' ? 'API 註冊＋正式紀錄查核'
+                    : access === 'operation' ? 'API 註冊；寫入操作未執行'
+                      : 'API 註冊';
+  const facts: SystemStatusFact[] = [{ label: '驗證方式', value: method }];
+  if (!isRecord(item.detail)) return facts;
   if (item.id === 'supabase-watchdog-heartbeat' && isRecord(item.detail.schedule)) {
     facts.push({ label: '最近排程檢查', value: item.detail.schedule.checkedAt, format: 'date' });
     if (item.detail.schedule.pendingSince) facts.push({ label: '等待監控開始時間', value: item.detail.schedule.pendingSince, format: 'date' });
