@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { testMatrixEntitlements } from './test-matrix-entitlements';
 
 import type { MemberContext } from './matrix-entitlements';
 import { createMatrixStatusEdgeHandler } from '../supabase/functions/matrix-status/handler';
@@ -41,6 +42,7 @@ function dependencies(member?: MemberContext) {
       active: true,
       referralSuccessCount: 0,
     }),
+    resolveEntitlements: vi.fn(async () => testMatrixEntitlements(member ?? { authUserId: '', memberId: '', plan: 'free', active: false, referralSuccessCount: 0, loginPerksEligible: false }, new Date('2026-08-29T00:00:00Z'))),
     readStatusSources: vi.fn(async (requestedLottery: MatrixLottery = lottery) => ({
       analysisVersion,
       drawPeriod,
