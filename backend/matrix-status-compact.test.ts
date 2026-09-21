@@ -2,6 +2,7 @@ import { expect, it, vi } from 'vitest';
 import type { MatrixLottery } from '../shared/matrix-status-presets';
 import type { MemberContext } from './matrix-entitlements';
 import { createMatrixStatusRoutes } from './matrix-status-routes';
+import { testMatrixEntitlements } from './test-matrix-entitlements';
 
 const drawPeriod = '114000123';
 const lotteries: MatrixLottery[] = ['今彩539', '天天樂', '六合彩', '大樂透'];
@@ -53,6 +54,7 @@ it('uses ordinary compact precomputed status for a member', async () => {
   let rawCalls = 0;
   const routes = createMatrixStatusRoutes({
     requireMember: async () => member('monthly'),
+    resolveEntitlements: async () => testMatrixEntitlements(member('monthly')),
     readCompactStatus: async () => { compactCalls += 1; return compact; },
     readStatusSources: async () => { rawCalls += 1; throw new Error('raw source should not be read'); },
     now: () => new Date('2026-08-24T00:00:00Z'),
@@ -76,7 +78,8 @@ it.each(lotteries)('uses ordinary precomputed status for %s', async (lottery) =>
   const readCompactStatus = vi.fn(async () => compactFor(lottery));
   const readStatusSources = vi.fn(async () => { throw new Error('raw sources must not be read'); });
   const routes = createMatrixStatusRoutes({
-    requireMember: async () => member('monthly'), readCompactStatus, readStatusSources,
+    requireMember: async () => member('monthly'),
+    resolveEntitlements: async () => testMatrixEntitlements(member('monthly')), readCompactStatus, readStatusSources,
   });
   const response = await routes.get({ authorization: 'Bearer token', body: { lottery } });
   expect(response).toMatchObject({ status: 200, body: { lottery, drawPeriod,
