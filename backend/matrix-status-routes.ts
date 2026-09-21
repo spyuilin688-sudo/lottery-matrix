@@ -150,7 +150,7 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
     : Promise.resolve(anonymousMatrixMember);
   const entitlementsFor = async (authorization: string | undefined, member: MemberContext) => dependencies.resolveEntitlements
     ? dependencies.resolveEntitlements(authorization)
-    : await entitlementsFor(input.authorization, member);
+    : resolveMatrixEntitlements(member, now());
   return {
     async identity(input: RouteInput): Promise<RouteResult> {
       try {
