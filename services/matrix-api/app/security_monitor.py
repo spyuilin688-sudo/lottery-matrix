@@ -6,7 +6,7 @@ import ipaddress
 import json
 import logging
 import math
-from queue import Queue, Full, Empty
+from queue import Queue, Full
 from threading import Event, Lock, Thread
 from time import monotonic
 from urllib.parse import urlsplit
@@ -95,6 +95,7 @@ class SecurityMonitor:
         self.endpoint_limiter = endpoint_limiter or EndpointRateLimiter()
         self._queue = Queue(maxsize=max(1, min(queue_size, 256)))
         self._stop = Event()
+        self._stop_item = object()
         self._thread = Thread(target=self._run, daemon=True, name="security-observation")
         self._thread.start()
         self.dropped = 0
@@ -165,11 +166,12 @@ class SecurityMonitor:
         )
 
     def _run(self):
-        while not self._stop.is_set():
-            try:
-                payload, future = self._queue.get(timeout=0.05)
-            except Empty:
-                continue
+        while True:
+            item = self._queue.get()
+            if item is self._stop_item:
+                self._queue.task_done()
+                break
+            payload, future = item
             result = dict(ALLOW)
             started = monotonic()
             try:
@@ -217,8 +219,14 @@ class SecurityMonitor:
             finally:
                 future.set_result(result)
                 self._queue.task_done()
+            if self._stop.is_set():
+                break
         self.client.close()
 
     def close(self):
         self._stop.set()
-        self._thread.join(timeout=0.4)
+        try:
+            self._queue.put_nowait(self._stop_item)
+        except Full:
+            pass
+        self._thread.join(timeout=max(0.4, self.observation_timeout + 0.1))

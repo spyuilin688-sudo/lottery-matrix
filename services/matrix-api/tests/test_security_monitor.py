@@ -148,3 +148,33 @@ def test_valid_result_ready_is_not_preclassified_as_unauthorized(monkeypatch):
         }, json.dumps({'lottery':'今彩539','drawDate':'2026-09-05'}).encode())
         assert response.status == 202
     assert monitor.events == []
+
+
+def test_idle_security_monitor_blocks_instead_of_polling(monkeypatch):
+    import queue
+    import time
+    import app.security_monitor as security_monitor_module
+
+    class CountingQueue(queue.Queue):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.get_calls = 0
+
+        def get(self, *args, **kwargs):
+            self.get_calls += 1
+            return super().get(*args, **kwargs)
+
+    monkeypatch.setattr(security_monitor_module, 'Queue', CountingQueue)
+    monitor = SecurityMonitor(
+        'https://example.test',
+        'secret',
+        client=httpx.Client(transport=httpx.MockTransport(
+            lambda request: httpx.Response(200, json={'allowed': True, 'mode': 'observe'})
+        )),
+    )
+    try:
+        time.sleep(0.18)
+        assert monitor._queue.get_calls == 1
+    finally:
+        monitor.close()
+    assert not monitor._thread.is_alive()
