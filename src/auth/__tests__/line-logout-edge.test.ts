@@ -1,5 +1,5 @@
 // @ts-expect-error Vitest runs on Node; this project intentionally omits global Node types from app compilation.
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 declare const process: { cwd(): string };
@@ -26,11 +26,6 @@ function assertNoDuplicateLineRoute(source: string) {
   const registeredRoutes = routeKeys(source);
   expect(registeredRoutes).not.toContain('POST /api/auth/line/logout');
   expect(registeredRoutes.some((key) => key.endsWith(' /api/auth/line/logout'))).toBe(false);
-  expect(registeredRoutes).toEqual(expect.arrayContaining([
-    'GET /api/_healthcheck',
-    'POST /api/member-online/start',
-    'POST /api/member-online/end',
-  ]));
 }
 
 describe('LINE logout ownership contracts', () => {
@@ -44,11 +39,7 @@ describe('LINE logout ownership contracts', () => {
     expect(() => assertNoDuplicateLineRoute(renamedInlineRoute)).toThrow();
   });
 
-  it('does not load LINE credentials in the AppDeploy backend', () => {
-    const backendIndex = readFileSync(new URL('../../../backend/index.ts', import.meta.url), 'utf8');
-
-    expect(backendIndex).not.toContain('loadLineLoginConfig');
-    expect(backendIndex).not.toContain('LINE_CHANNEL_ID');
-    expect(backendIndex).not.toContain('LINE_CHANNEL_SECRET');
+  it('does not retain the retired root AppDeploy backend entrypoint', () => {
+    expect(existsSync(new URL('../../../backend/index.ts', import.meta.url))).toBe(false);
   });
 });

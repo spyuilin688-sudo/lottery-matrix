@@ -2,13 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const index = fs.readFileSync(new URL('../backend/index.ts', import.meta.url), 'utf8');
 const statusRoutes = fs.readFileSync(new URL('../backend/matrix-status-routes.ts', import.meta.url), 'utf8');
 const entitlements = fs.readFileSync(new URL('../backend/matrix-entitlements.ts', import.meta.url), 'utf8');
 
-test('retired AppDeploy Matrix routes remain unreachable from the backend entrypoint', () => {
-  assert.doesNotMatch(index, /createMatrix(?:Tianyan|Tiangong|Status)Routes/);
-  assert.doesNotMatch(index, /\/api\/matrix\/(?:algorithm|status)/);
+test('retired AppDeploy backend entrypoint stays absent', () => {
+  assert.equal(fs.existsSync(new URL('../backend/index.ts', import.meta.url)), false);
 });
 
 test('production status route requires injected canonical entitlements', () => {

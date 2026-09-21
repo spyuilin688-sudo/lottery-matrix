@@ -1,6 +1,6 @@
 # 樂彩 Matrix 專案交接
 
-更新日期：2026-09-21（本次核對正式服務、主排程與獨立補救；其餘章節保留原核對日期）。
+更新日期：2026-09-22（本次續核對正式服務、AppDeploy 退役來源與架構清理；其餘章節保留原核對日期）。
 
 ## 專案與版本
 
@@ -16,12 +16,14 @@
 | 項目 | 目前位置與用途 |
 | --- | --- |
 | PWA | Cloudflare Pages，https://matrixlottery.idv.tw/ |
-| 管理後台 | https://matrixlottery.idv.tw/admin/；來源位於 `apps/admin/`。舊 AppDeploy `matrix-sanqwn` 網址仍可連線，但部署內容與資料所有權未完成核對 |
+| 管理後台 | https://matrixlottery.idv.tw/admin/；來源位於 `apps/admin/`，正式後端為 Supabase `admin-api` Edge Function。AppDeploy 不再列為正式管理後台服務 |
 | 公開資料 API | Railway，`https://heartfelt-generosity-production-9f2b.up.railway.app`；latest、history、cards、同星與號碼對照單相容 API |
 | 爬蟲與背景分析 | Railway Python 服務，來源位於 `services/matrix-api/`；天天樂定時爬蟲為 Railway `fantasy5-crawler`；GitHub workflow 僅供手動備援；Railway 獨立服務執行補救與分析 |
 | 會員、登入、通知、開獎及演算結果 | Supabase 專案 `wcimzbbapfrdotjsfyxa`；PWA 的探索、天衍、天工使用 Supabase RPC |
 
 API 執行方式見 [services/matrix-api/README.md](services/matrix-api/README.md)。Repository 中的 `railway*.json` 是否生效，須比對正式服務綁定。
+
+2026-09-22 讀回 AppDeploy 帳號清單時，既有樂彩／預覽 apps 均為 `deleted`。Repository 根目錄 `backend/` 仍有被 PWA 與 Supabase Edge Function 直接引用的共用 TypeScript 模組，因此不能整批視為 legacy；本次僅移除已無 production import 的 AppDeploy root entrypoint、舊 AppDeploy Matrix storage adapter、舊 realtime adapter 與空 `cron.json`。`apps/admin/backend/` 的 `@appdeploy/sdk` 介面由 Supabase `admin-api` import map 映射到 Edge runtime，不能依套件名稱誤判為舊 AppDeploy 部署。 PWA 的會員 bootstrap／profile／notification／online 已由 `src/member-api.ts` 與 `src/member-online-api.ts` 直接呼叫 Supabase RPC；舊 root AppDeploy member HTTP helper 同步退役。
 
 以下為 2026-09-21 核對並調整的主要 Railway production 服務：
 
@@ -33,7 +35,7 @@ API 執行方式見 [services/matrix-api/README.md](services/matrix-api/README.m
 | `heartfelt-generosity` | `uv run python -u -m app.api_server` | 常駐 API，沒有 cron，healthcheck 為 `/health` |
 | recovery server | `uv run python -u -m app.recovery_server` | 常駐補救服務，沒有 cron |
 
-此 production 環境未列出六合彩或大樂透的獨立 Worker；另一已核對專案 `lucky-reflection` 僅顯示一個 offline 服務。此處列出本次確認的五個主要服務，不推斷其他專案的用途。2026-09-20 僅調整 repository：舊 `railway.marksix.json`、`railway.lotto649.json` 移除 cron，保留單次手動 Worker 命令；移除已退役的 `deploy/matrix-worker.timer`，保留 `matrix-worker.service` 手動入口，避免未來部署再建立重複排程。未修改正式 Railway 設定。若其他主機已安裝舊 timer，須另行確認後停用；刪除 repository 檔案不會停止既有主機 timer。
+此 production 環境未列出六合彩或大樂透的獨立 Worker；此處列出本次確認的五個主要服務。2026-09-22 平台讀回時，`impartial-wholeness` 與 `lucky-reflection` 均無服務；先前列出的舊驗證／空服務已不在目前 service list。獨立 `matrix-core-review-site` 維持審查站用途，不併入正式 PWA production 服務。2026-09-20 僅調整 repository：舊 `railway.marksix.json`、`railway.lotto649.json` 移除 cron，保留單次手動 Worker 命令；移除已退役的 `deploy/matrix-worker.timer`，保留 `matrix-worker.service` 手動入口，避免未來部署再建立重複排程。未修改正式 Railway 設定。若其他主機已安裝舊 timer，須另行確認後停用；刪除 repository 檔案不會停止既有主機 timer。
 
 `.github/workflows/matrix-analysis.yml` 目前僅接受手動 `workflow_dispatch`，用於復原分析；沒有 `push` 或 GitHub 定時觸發。其 `--scheduled` 是 Worker 執行模式，與 GitHub `schedule` 事件不同。
 
