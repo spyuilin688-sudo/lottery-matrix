@@ -110,7 +110,7 @@ test("歷史今彩539與天天樂增加呼吸空間且不影響六加一彩種",
     /^\.draw-history-screen \.draw-history-panel\[data-lottery="大樂透"\]$/,
   );
   assert.equal(grandLottoPanel.length, 1);
-  assert.match(grandLottoPanel[0], /--matrix-history-ball-size:\s*clamp\(20px,\s*6\.15vw,\s*24px\);/);
+  assert.match(grandLottoPanel[0], /--matrix-history-ball-size:\s*clamp\(21px,\s*6\.4vw,\s*25px\);/);
 });
 
 test("篩選條件由標題卡內容寬度與內容驅動的精簡控制器承接 [header migration]", () => {
