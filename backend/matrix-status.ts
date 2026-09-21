@@ -177,8 +177,9 @@ export function evaluateChapter15(source: StatusSource): Chapter15Result {
     const triggers: Trigger[] = chapter15Rules
       .filter((rule) => rule.hitType === group.hitType)
       .map((rule) => ({
-        ruleId: rule.ruleId as MatrixStatusRuleId, status: rule.status,
-        roads: matchingGroupRoads(group.roads, rule.rows),
+        ruleId: rule.ruleId as MatrixStatusRuleId,
+        status: rule.status,
+        roads: matchingGroupRoads(group.roads, rule.lotteryRows?.[source.lottery] ?? rule.rows),
       }))
       .filter((trigger) => trigger.roads.length > 0);
     for (const matched of triggers) {
