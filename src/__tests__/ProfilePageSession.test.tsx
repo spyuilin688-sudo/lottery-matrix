@@ -9,7 +9,13 @@ const auth = vi.hoisted(() => ({ getSession: vi.fn(), onAuthStateChange: vi.fn()
 const member = vi.hoisted(() => ({ bootstrapMember: vi.fn(), fetchMemberProfile: vi.fn() }));
 vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ auth }) }));
 vi.mock('../member-api', async importOriginal => ({ ...await importOriginal<typeof import('../member-api')>(), ...member }));
-vi.mock('../auth/line-auth', () => ({ reconcilePendingLineLogoutPresence: vi.fn(), signInWithLine: vi.fn(), signOutFromMatrix: vi.fn() }));
+vi.mock('../auth/line-auth', () => ({
+  prepareLineLoginUrl: vi.fn(),
+  shouldUseDirectLineBrowserLink: vi.fn(() => false),
+  reconcilePendingLineLogoutPresence: vi.fn(),
+  signInWithLine: vi.fn(),
+  signOutFromMatrix: vi.fn(),
+}));
 vi.mock('../pwa-lifecycle', () => ({ usePwaLifecycle: () => ({ showInstallAction: false, requestInstall: vi.fn() }) }));
 vi.mock('../subscription-purchase-visibility', () => ({ useSubscriptionPurchaseVisible: () => true }));
 const session = (id: string): Session => ({
