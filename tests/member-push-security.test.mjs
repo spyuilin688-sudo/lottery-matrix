@@ -44,7 +44,7 @@ before(async () => {
   for (const file of (await readdir(migrations)).filter(name => name.endsWith('_member_push_endpoint_security.sql')).sort()) {
     await db.exec(await readFile(new URL(file, migrations), 'utf8'));
   }
-  if (process.env.MATRIX_PUSH_MIGRATION) await db.exec(await readFile(process.env.MATRIX_PUSH_MIGRATION, 'utf8'));
+  await db.exec(await readFile(new URL('20260921012052_enforce_active_member_notifications.sql', migrations), 'utf8'));
 });
 after(() => db.close());
 
