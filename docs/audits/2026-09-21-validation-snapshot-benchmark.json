@@ -1,0 +1,126 @@
+{
+  "rows": 2000,
+  "scopeCount": 6,
+  "baseline": {
+    "allocated_bytes": 3457024,
+    "payload_bytes": 2941651
+  },
+  "variants": [
+    {
+      "threshold": 1,
+      "snapshots": 6974,
+      "roundtrip": "PASS",
+      "payload": [
+        {
+          "kind": "explore",
+          "bytes": 942809
+        },
+        {
+          "kind": "tianheng",
+          "bytes": 1057179
+        },
+        {
+          "kind": "dictionary",
+          "bytes": 1678712
+        }
+      ],
+      "allocated": {
+        "result_bytes": 2326528,
+        "dictionary_bytes": 2293760
+      }
+    },
+    {
+      "threshold": 2,
+      "snapshots": 3632,
+      "roundtrip": "PASS",
+      "payload": [
+        {
+          "kind": "explore",
+          "bytes": 968481
+        },
+        {
+          "kind": "tianheng",
+          "bytes": 1269035
+        },
+        {
+          "kind": "dictionary",
+          "bytes": 881924
+        }
+      ],
+      "allocated": {
+        "result_bytes": 2588672,
+        "dictionary_bytes": 1236992
+      }
+    },
+    {
+      "threshold": 4,
+      "snapshots": 1833,
+      "roundtrip": "PASS",
+      "payload": [
+        {
+          "kind": "explore",
+          "bytes": 1029004
+        },
+        {
+          "kind": "tianheng",
+          "bytes": 1445467
+        },
+        {
+          "kind": "dictionary",
+          "bytes": 443046
+        }
+      ],
+      "allocated": {
+        "result_bytes": 2899968,
+        "dictionary_bytes": 655360
+      }
+    },
+    {
+      "threshold": 8,
+      "snapshots": 875,
+      "roundtrip": "PASS",
+      "payload": [
+        {
+          "kind": "explore",
+          "bytes": 1170676
+        },
+        {
+          "kind": "tianheng",
+          "bytes": 1557376
+        },
+        {
+          "kind": "dictionary",
+          "bytes": 210846
+        }
+      ],
+      "allocated": {
+        "result_bytes": 3211264,
+        "dictionary_bytes": 344064
+      }
+    },
+    {
+      "threshold": 16,
+      "snapshots": 286,
+      "roundtrip": "PASS",
+      "payload": [
+        {
+          "kind": "explore",
+          "bytes": 1375061
+        },
+        {
+          "kind": "tianheng",
+          "bytes": 1626744
+        },
+        {
+          "kind": "dictionary",
+          "bytes": 67620
+        }
+      ],
+      "allocated": {
+        "result_bytes": 3432448,
+        "dictionary_bytes": 147456
+      }
+    }
+  ],
+  "limitations": "Isolated PGlite, validation-only tables, no production-reader latency measurement; compact representation is independently decoded for every sampled row; production integration and full workload benchmarks are not implemented."
+}
