@@ -422,8 +422,9 @@ def _run_tracked_job(
     execute: Callable[[], dict[str, Any]],
 ) -> dict[str, Any]:
     job_name = JOB_NAME_BY_LOTTERY[lottery]
+    started_at = datetime.now(UTC).isoformat()
     _best_effort_telemetry(
-        lambda: repository.start_job(job_name, lottery, datetime.now(UTC).isoformat())
+        lambda: repository.start_job(job_name, lottery, started_at)
     )
     try:
         result = execute()
@@ -434,6 +435,7 @@ def _run_tracked_job(
                 "failed",
                 datetime.now(UTC).isoformat(),
                 str(error)[:1000],
+                started_at=started_at,
             )
         )
         raise
@@ -443,6 +445,7 @@ def _run_tracked_job(
             job_name,
             job_status,
             datetime.now(UTC).isoformat(),
+            started_at=started_at,
             source_period=result.get("sourcePeriod"),
             database_period=result.get("databasePeriod"),
             written_period=result.get("writtenPeriod"),

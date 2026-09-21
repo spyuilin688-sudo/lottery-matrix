@@ -25,6 +25,7 @@ const app = vi.hoisted(() => {
   };
   const otherAdmin = {
     id: 'admin-2',
+    revision: 7,
     account: 'other@example.com',
     name: '其他管理員',
     role: '營運管理員',
@@ -280,8 +281,44 @@ describe('administrator operation permission editing', () => {
     await settle();
 
     expect(app.api.put).toHaveBeenCalledWith('/api/admins/admin-2', expect.objectContaining({
+      expectedRevision: 7,
       permissions: { view: false, add: true, edit: false, delete: true },
     }));
+  });
+
+  it('retains the edit draft and shows a conflict without silently retrying stale permissions', async () => {
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '管理員權限')?.click());
+    await settle();
+    await act(async () => within(container).getByRole('button', { name: '編輯管理員 other@example.com' }).click());
+    await act(async () => fireEvent.change(within(container).getByLabelText('管理員名稱'), { target: { value: '新名稱' } }));
+    app.api.put.mockRejectedValueOnce(new Error('管理員資料已變更，請取消編輯並重新載入後再試'));
+    await act(async () => within(container).getByRole('button', { name: '儲存' }).click());
+    await act(async () => within(within(container).getByRole('alertdialog')).getByRole('button', { name: '確認修改' }).click());
+    await settle();
+    expect(container.textContent).toContain('管理員資料已變更，請取消編輯並重新載入後再試');
+    expect((within(container).getByLabelText('管理員名稱') as HTMLInputElement).value).toBe('新名稱');
+    expect(app.api.put).toHaveBeenCalledTimes(1);
+    expect(app.api.put).toHaveBeenCalledWith('/api/admins/admin-2', expect.objectContaining({ expectedRevision: 7 }));
+  });
+
+  it('opens confirmation as a native modal, focuses cancel, and restores focus after Escape', async () => {
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '管理員權限')?.click());
+    await settle();
+    const trigger = within(container).getByRole('button', { name: '刪除管理員 other@example.com' });
+    trigger.focus();
+    await act(async () => trigger.click());
+    const dialog = within(container).getByRole('alertdialog');
+    expect(dialog.tagName).toBe('DIALOG');
+    expect((dialog as HTMLDialogElement).open).toBe(true);
+    expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: '取消' }));
+    await act(async () => fireEvent(dialog, new Event('cancel', { cancelable: true })));
+    expect(container.querySelector('[role="alertdialog"]')).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+    expect(app.api.delete).not.toHaveBeenCalled();
   });
 
   it('starts a clean create after cancelling an administrator edit and posts the new account', async () => {

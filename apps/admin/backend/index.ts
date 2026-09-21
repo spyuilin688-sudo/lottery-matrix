@@ -203,6 +203,7 @@ function adminInput(body: Record<string, unknown>) {
     can_add: Boolean(permissions.add),
     can_edit: Boolean(permissions.edit),
     can_delete: Boolean(permissions.delete),
+    expectedRevision: body.expectedRevision as number | undefined,
   };
 }
 
@@ -394,9 +395,9 @@ const routes: Record<string, unknown> = {
     } catch (cause) { return fail(cause); }
   }],
 
-  'GET /api/push-members': [sessionGuard, guard('view'), async () => {
+  'GET /api/push-members': [sessionGuard, guard('view'), async (ctx: Context) => {
     try {
-      return json({ items: await pushNotifications.listMemberPushStatus() });
+      return json(await pushNotifications.listMemberPushStatus(ctx.query ?? {}));
     } catch (cause) {
       return fail(cause);
     }

@@ -40,7 +40,13 @@ export function NotificationManagement({ client, canEdit }: Props) {
   const [members, setMembers] = useState<PushMember[]>([]);
   const [logs, setLogs] = useState<PushDeliveryLog[]>([]);
   const [logPage, setLogPage] = useState(1);
-  const [selectedId, setSelectedId] = useState('');
+  const [selectedMember, setSelectedMember] = useState<PushMember | null>(null);
+  const selectedId = selectedMember?.userId ?? '';
+  const [memberPage, setMemberPage] = useState({ total: 0, currentPage: 1, totalPages: 1 });
+  const [memberQuery, setMemberQuery] = useState({ page: 1, keyword: '' });
+  const [search, setSearch] = useState('');
+  const [composing, setComposing] = useState(false);
+  const searchInput = useRef<HTMLInputElement>(null);
   const [membersLoading, setMembersLoading] = useState(true);
   const [logsLoading, setLogsLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -57,13 +63,9 @@ export function NotificationManagement({ client, canEdit }: Props) {
   const [exclusiveMemberRetry] = useState(createExclusiveAction);
   const [exclusiveLogRetry] = useState(createExclusiveAction);
 
-  const selectedMember = useMemo(
-    () => members.find((member) => member.userId === selectedId) ?? null,
-    [members, selectedId],
-  );
   const membersById = useMemo(
-    () => new Map(members.map((member) => [member.userId, member])),
-    [members],
+    () => new Map([...members, ...(selectedMember ? [selectedMember] : [])].map((member) => [member.userId, member])),
+    [members, selectedMember],
   );
   const sendAvailable = canSendTestPush(selectedMember, canEdit, sending)
     && !membersLoading
@@ -74,10 +76,18 @@ export function NotificationManagement({ client, canEdit }: Props) {
     setMembersLoading(true);
     setMembersError('');
     try {
-      const nextMembers = await listPushMembers(client);
+      const nextPage = await listPushMembers(client, memberQuery);
+      // An off-page selection also needs an explicit status retry after a
+      // failed post-send recheck; refreshing this page alone cannot recover it.
+      let recoveredSelection: PushMember | null | undefined;
+      if (membersError && selectedMember && !nextPage.items.some(member => member.userId === selectedMember.userId)) {
+        const selectedPage = await listPushMembers(client, { userId: selectedMember.userId });
+        recoveredSelection = selectedPage.items.find(member => member.userId === selectedMember.userId) ?? null;
+      }
       if (!memberRequests.canCommit(request)) return;
-      setMembers(nextMembers);
-      setSelectedId((current) => nextMembers.some((member) => member.userId === current) ? current : '');
+      setMembers(nextPage.items);
+      setMemberPage(nextPage);
+      setSelectedMember(current => recoveredSelection !== undefined ? recoveredSelection : current ? nextPage.items.find(member => member.userId === current.userId) ?? current : null);
     } catch {
       if (memberRequests.canCommit(request)) setMembersError('會員列表讀取失敗，請稍後再試');
     } finally {
@@ -110,7 +120,7 @@ export function NotificationManagement({ client, canEdit }: Props) {
     memberRequests.mount();
     logRequests.mount();
     sendRequests.mount();
-    void loadMembers();
+    setSelectedMember(null);
     void loadLogs();
     return () => {
       memberRequests.dispose();
@@ -118,6 +128,30 @@ export function NotificationManagement({ client, canEdit }: Props) {
       sendRequests.dispose();
     };
   }, [client]);
+
+  useEffect(() => {
+    void loadMembers();
+    return () => { memberRequests.begin(); };
+  }, [client, memberQuery]);
+
+  useEffect(() => {
+    if (composing || search.trim() === memberQuery.keyword) return;
+    const timer = window.setTimeout(() => setMemberQuery({ page: 1, keyword: search.trim() }), search ? 300 : 0);
+    return () => window.clearTimeout(timer);
+  }, [search, composing, memberQuery.keyword]);
+
+  const changeSearch = (value: string) => {
+    memberRequests.begin();
+    setSearch(value);
+    setMembersLoading(true);
+    if (!value.trim() || value.trim() === memberQuery.keyword) setMemberQuery({ page: 1, keyword: value.trim() });
+  };
+
+  const changePage = (page: number) => {
+    memberRequests.begin();
+    setMembersLoading(true);
+    setMemberQuery(current => ({ ...current, page }));
+  };
 
   const send = () => {
     if (!sendAvailable || !selectedMember) return;
@@ -130,12 +164,24 @@ export function NotificationManagement({ client, canEdit }: Props) {
         const result = await sendTestPush(client, selectedMember.userId);
         if (!sendRequests.canCommit(request) || !editAllowed.current) return;
         setSendResult(result);
-        const memberRefresh = loadMembers();
         void loadLogs();
-        await memberRefresh;
+        // Recheck only the actual recipient, even if another page is visible.
+        try {
+          const refreshed = await listPushMembers(client, { userId: selectedMember.userId });
+          if (!sendRequests.canCommit(request)) return;
+          const recipient = refreshed.items.find(member => member.userId === selectedMember.userId) ?? null;
+          setSelectedMember(recipient);
+          setMembers(current => current.map(member => member.userId === selectedMember.userId ? recipient ?? { ...member, pushEnabled: false } : member));
+        } catch {
+          if (sendRequests.canCommit(request)) {
+            setSelectedMember(current => current ? { ...current, pushEnabled: false } : null);
+            setMembersError('會員狀態更新失敗，請重新讀取會員');
+          }
+        }
       } catch (cause) {
         if (sendRequests.canCommit(request) && editAllowed.current) {
           if (isNoActiveSubscriptionsError(cause)) {
+            setSelectedMember(current => current ? { ...current, pushEnabled: false } : null);
             setMembers((current) => current.map((member) => member.userId === selectedMember.userId
               ? { ...member, pushEnabled: false }
               : member));
@@ -164,19 +210,36 @@ export function NotificationManagement({ client, canEdit }: Props) {
       <section className="panel notificationComposer" aria-labelledby="test-push-title">
         <div className="notificationComposerHeading"><h2 id="test-push-title">單一會員測試推播</h2><span>選擇對象後，確認內容再發送</span></div>
         <div className="notificationMemberColumn">
+          <label className="notificationMemberSelect" htmlFor="notification-member-search">搜尋會員</label>
+          <div className="notificationMemberSearch">
+            <input id="notification-member-search" ref={searchInput} type="search" value={search} maxLength={200}
+              placeholder="會員名稱或登入身分" disabled={sending}
+              onChange={event => changeSearch(event.target.value)}
+              onCompositionStart={() => setComposing(true)}
+              onCompositionEnd={() => setComposing(false)}
+              onKeyDown={event => {
+                if (event.key === 'Enter' && !event.nativeEvent.isComposing && !composing) {
+                  memberRequests.begin();
+                  setMemberQuery({ page: 1, keyword: search.trim() });
+                }
+              }}
+            />
+            {search && <button type="button" className="compactButton" aria-label="清除會員搜尋" disabled={sending} onClick={() => { changeSearch(''); searchInput.current?.focus(); }}>清除</button>}
+          </div>
           <label className="notificationMemberSelect">
             選擇會員
             <select
               aria-label="選擇會員"
               value={selectedId}
               onChange={(event) => {
-                setSelectedId(event.target.value);
+                setSelectedMember(membersById.get(event.target.value) ?? null);
                 setSendError('');
                 setSendResult(null);
               }}
               disabled={membersLoading || Boolean(membersError) || sending}
             >
               <option value="">請選擇會員</option>
+              {selectedMember && !members.some(member => member.userId === selectedId) && <option value={selectedId}>{memberName(selectedMember)}（已選擇）</option>}
               {members.map((member) => <option key={member.userId} value={member.userId}>{memberName(member)}</option>)}
             </select>
           </label>
@@ -194,7 +257,12 @@ export function NotificationManagement({ client, canEdit }: Props) {
               </button>
             </div>
           )}
-          {!membersLoading && !membersError && members.length === 0 && <div className="empty notificationEmpty">目前沒有會員資料</div>}
+          {!membersLoading && !membersError && members.length === 0 && <div className="empty notificationEmpty">{memberQuery.keyword ? '找不到符合條件的會員' : '目前沒有會員資料'}</div>}
+          {!membersError && memberPage.total > 0 && <div className="pagination notificationMemberPagination" aria-label="會員分頁">
+            <button type="button" disabled={membersLoading || sending || memberPage.currentPage <= 1} onClick={() => changePage(memberPage.currentPage - 1)}>上一頁</button>
+            <span>第 {memberPage.currentPage}／{memberPage.totalPages} 頁，共 {memberPage.total} 位</span>
+            <button type="button" disabled={membersLoading || sending || memberPage.currentPage >= memberPage.totalPages} onClick={() => changePage(memberPage.currentPage + 1)}>下一頁</button>
+          </div>}
           {selectedMember && (
             <div className="notificationMemberSummary">
               <MemberAvatar member={selectedMember} />
@@ -262,7 +330,7 @@ export function NotificationManagement({ client, canEdit }: Props) {
                 <tbody>{visibleLogs.map((log) => (
                   <tr key={log.id}>
                     <td data-label="發送時間">{formatAdminDateTime(log.sentAt)}</td>
-                    <td data-label="會員">{membersById.has(log.userId) ? memberName(membersById.get(log.userId)!) : '—'}</td>
+                    <td data-label="會員">{log.displayName || (membersById.has(log.userId) ? memberName(membersById.get(log.userId)!) : '—')}</td>
                     <td data-label="結果"><span className={log.status === 'sent' ? 'notificationLogSuccess' : 'notificationLogFailure'}>{log.status === 'sent' ? '成功' : '失敗'}</span></td>
                     <td data-label="失敗原因">{log.failureReason || '—'}</td>
                   </tr>

@@ -54,6 +54,7 @@ class AnalysisRepository(Protocol):
         finished_at: str,
         error: str | None = None,
         *,
+        started_at: str,
         source_period: str | None = None,
         database_period: str | None = None,
         written_period: str | None = None,
@@ -137,11 +138,15 @@ class InMemoryAnalysisRepository:
         finished_at: str,
         error: str | None = None,
         *,
+        started_at: str,
         source_period: str | None = None,
         database_period: str | None = None,
         written_period: str | None = None,
     ) -> None:
-        self.job_statuses[job_name].update({
+        job = self.job_statuses.get(job_name)
+        if job is None or job["startedAt"] != started_at:
+            return
+        job.update({
             "status": status,
             "finishedAt": finished_at,
             "error": error,
@@ -952,6 +957,7 @@ class SupabaseAnalysisRepository:
         finished_at: str,
         error: str | None = None,
         *,
+        started_at: str,
         source_period: str | None = None,
         database_period: str | None = None,
         written_period: str | None = None,
@@ -964,7 +970,7 @@ class SupabaseAnalysisRepository:
             "database_period": database_period,
             "written_period": written_period,
             "updated_at": finished_at,
-        }).eq("job_name", job_name).execute()
+        }).eq("job_name", job_name).eq("started_at", started_at).execute()
 
     def list_job_statuses(self) -> list[dict[str, Any]]:
         job_response = self.client.table("system_job_status").select(

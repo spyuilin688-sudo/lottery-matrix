@@ -13,6 +13,7 @@ export type PushMember = {
 
 export type PushDeliveryLog = {
   id: string;
+  displayName?: string | null;
   userId: string;
   subscriptionId: string | null;
   title: string;
@@ -36,9 +37,19 @@ function itemsFrom<T>(data: unknown): T[] {
   return Array.isArray(items) ? items as T[] : [];
 }
 
-export async function listPushMembers(client: Pick<NotificationApiClient, 'get'>) {
-  const response = await client.get('/api/push-members');
-  return itemsFrom<PushMember>(response.data);
+export type PushMemberPage = { items: PushMember[]; total: number; currentPage: number; totalPages: number };
+export async function listPushMembers(
+  client: Pick<NotificationApiClient, 'get'>,
+  query: { page?: number; keyword?: string; userId?: string } = {},
+): Promise<PushMemberPage> {
+  const params = new URLSearchParams();
+  if (query.page && (query.page !== 1 || query.keyword)) params.set('page', String(query.page));
+  if (query.keyword) params.set('keyword', query.keyword);
+  if (query.userId) params.set('userId', query.userId);
+  const response = await client.get(`/api/push-members${params.size ? `?${params}` : ''}`);
+  const items = itemsFrom<PushMember>(response.data);
+  const data = response.data as Partial<PushMemberPage>;
+  return { items, total: data.total ?? items.length, currentPage: data.currentPage ?? 1, totalPages: data.totalPages ?? 1 };
 }
 
 export async function listPushDeliveryLogs(client: Pick<NotificationApiClient, 'get'>) {

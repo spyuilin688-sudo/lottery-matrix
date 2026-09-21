@@ -409,6 +409,7 @@ describe('authorized Supabase writes', () => {
       ...input,
       account: 'super@example.com',
       name: 'Super',
+      expectedRevision: 0,
       role: '查看人員',
     }, actor)).rejects.toMatchObject({ statusCode: 400 });
     expect(updateRows).not.toHaveBeenCalled();

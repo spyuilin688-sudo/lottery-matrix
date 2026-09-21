@@ -46,13 +46,17 @@ or other browser configuration.
 
 The health payload reports `adminApi.status` as `ok` or `misconfigured` without
 exposing the secret. Supabase `admin-api` is the administrator-backend consumer.
-AppDeploy is not in the production request path.
+The current administrator UI is `https://matrixlottery.idv.tw/admin/`. The old
+AppDeploy endpoint remains reachable; its deployed code and data ownership have
+not been verified in this audit.
 
 `POST /jobs/refresh` accepts `{"lottery":"今彩539"}` for 今彩539、六合彩、or
 大樂透, then fetches and upserts only its latest draw. It does not backfill
 history, run Matrix analysis, or update scheduled-job status records. Requests
-for 天天樂 return `409 FANTASY5_CRAWLER_GITHUB_ONLY`; its only ingestion path is
-the GitHub crawler.
+for 天天樂 return `409 FANTASY5_CRAWLER_GITHUB_ONLY`; this public API does not
+ingest 天天樂. The scheduled Railway crawler and the
+manual GitHub fallback use the dedicated crawler entrypoint. The existing error
+code is a legacy name, not a description of current deployment ownership.
 
 `POST /jobs/recover` starts one deduplicated background recovery for the selected
 lottery and returns `202` immediately. For 天天樂 it invokes only
@@ -67,22 +71,24 @@ terminates before a replacement may continue.
 
 ### Independent watchdog
 
-Supabase Cron runs `matrix-admin-watchdog-v1` on the
-`3-59/10 * * * *` grid and invokes the Supabase `admin-api` Edge Function. Its
-logical checkpoints run every 6 minutes for 50 checks, every 10 minutes for 60
-checks, then every 30 minutes for 18 checks after each lottery's base call. It reads
-`system_job_status`, `lottery_draws`, and `matrix_analysis_runs` directly
-from Supabase, then calls `POST /jobs/recover` only for a stuck, missing, failed
-analysis, or due-but-stale draw. A 20-minute atomic Supabase lease prevents
-concurrent watchdog invocations from dispatching the same recovery twice.
+Supabase recovery uses daily cycle starts at 20:30 and 09:30 Asia/Taipei
+(`matrix-recovery-start-evening` / `matrix-recovery-start-fantasy5`) and one
+pending next-slot job per group. The old `matrix-admin-watchdog-v1` all-day
+poller was retired by `20260920233444_recovery_dynamic_slots.sql`.
+Evening recovery checks every 10 minutes until 01:00, then every 50 minutes
+before 06:00, with extra checks at 12:00 and 18:00. 天天樂 checks every 10
+minutes until 14:00, then every 50 minutes before 18:00, with extra checks at
+00:00 and 06:00 the next day. Verified current-cycle completion or a known
+no-draw day cancels remaining checks; unknown calendar data does not.
+Recovery reads job, draw, and analysis state and uses a durable lease before
+dispatch. Its schedule is independent of the primary workers.
 
-天天樂 draw recovery is dispatched only to
-`.github/workflows/fantasy5-crawler.yml`; Railway recovery remains
-analysis-only. The Supabase `admin-api` Edge Function requires a server-only `GITHUB_ACTIONS_TOKEN` with
-Actions read/write access to inspect active runs and dispatch that workflow.
-Deployment must validate this secret before enabling the watchdog schedule; a missing
-value is emitted as a degraded backend error. The token must never be exposed
-to frontend code.
+The watchdog dispatches targeted crawler, analysis, or Matrix-status work to the
+independent Railway recovery service (`app.recovery_server`, configured by
+`railway.recovery.json`). Unlike the public API's analysis-only 天天樂 recovery
+entry, this service can invoke the dedicated 天天樂 crawler and then resume
+analysis. The GitHub `fantasy5-crawler.yml` workflow remains a dispatch-only
+fallback; it does not own recurring acquisition or current scheduled recovery.
 
 ### Scheduled workers
 
@@ -90,17 +96,24 @@ Draw ingestion and Matrix analysis are split for 天天樂:
 
 | Deployment | Entrypoint | Responsibility |
 | --- | --- | --- |
-| GitHub Actions `fantasy5-crawler.yml` | `app.fantasy5_crawler` | Fetch, validate, repair recent gaps, and upsert 天天樂 draws only |
+| Railway `fantasy5-crawler` | `app.fantasy5_railway_job` | Scheduled acquisition; UTC `33 1,2 * * *`, DST gate selects one start, at most 10 attempts 600 seconds apart |
+| GitHub Actions `fantasy5-crawler.yml` (manual fallback only) | `app.fantasy5_crawler` | Fetch, validate, repair recent gaps, and upsert 天天樂 draws only |
 | Railway `railway.fantasy5.json` | `app.analysis_worker --lottery 天天樂` | Read stored 天天樂 draws and process pending Matrix analysis only |
 | Railway `railway.json` | `app.worker_all` | Scheduled ingestion and analysis for 今彩539、六合彩、大樂透 |
 | Railway `railway.marksix.json` | `app.worker --lottery 六合彩 --scheduled` | Manual single-run entry; no cron |
 | Railway `railway.lotto649.json` | `app.worker --lottery 大樂透 --scheduled` | Manual single-run entry; no cron |
 
-The GitHub crawler uses only `SUPABASE_URL` and `SUPABASE_SECRET_KEY`. It obtains
-the latest California Fantasy5 draw through the existing source implementation,
-validates the source date and numbers, repairs internal recent-period gaps, and
-upserts `lottery_draws`. It owns 天天樂 acquisition status in
-`system_job_status` and never constructs Matrix artifact builders.
+Both crawler entrypoints use the same acquisition service, validate the source
+date and numbers, repair recent period gaps, and upsert `lottery_draws`. They own
+天天樂 acquisition telemetry in `system_job_status` and never construct Matrix
+artifact builders. Completion telemetry is fenced by each attempt's `started_at`,
+so an older attempt cannot finish or overwrite a newer attempt's status.
+
+Production inventory verified on 2026-09-21: `lottery-matrix` (`worker_all`) and
+`fantasy5-analysis` both use all-day `3/10 * * * *` cron;
+`fantasy5-crawler` uses `33 1,2 * * *` UTC; the public API and recovery server
+are persistent services. Repository configuration alone is not evidence of the
+live service binding.
 
 The dedicated Railway 天天樂 process reads a bounded set of recent
 `lottery_draws` from Supabase and batch-checks their
@@ -122,22 +135,32 @@ Base call times in Asia/Taipei:
 今彩539  20:33
 大樂透   20:53
 六合彩   21:33
-天天樂 GitHub crawler   Los Angeles PDT 09:33
-天天樂 GitHub crawler   Los Angeles PST 10:33
+天天樂 Railway crawler   Taipei 09:33 during Los Angeles PDT
+天天樂 Railway crawler   Taipei 10:33 during Los Angeles PST
 ```
 
-The three existing Railway crawl workers retain their current pre-draw and retry
-grid. The GitHub 天天樂 crawler runs only at the bounded post-draw retry offsets:
-every 5 minutes from 0 through 45 minutes after the base call, then at 75, 105,
-135, 165, 225, 285, and 345 minutes. An `America/Los_Angeles` UTC-offset gate follows the real annual DST
-transition and prevents the overlapping March and November cron ranges from
-running twice.
+The three evening lotteries retain their existing draw admission/retry rules.
+The scheduled 天天樂 crawler uses an `America/Los_Angeles` UTC-offset gate so
+only one of its two daily UTC starts performs acquisition. It exits after
+`acquired` or `already-acquired`; waiting-source attempts are bounded to 10.
+The GitHub workflow is dispatch-only and uses the same bounded retry count.
+
+`app.worker_schedule.plan_run` expresses the approved primary windows: evening
+20:30–01:00 every 10 minutes, then every 30 minutes before 06:00; 天天樂 analysis
+09:30–14:00 every 10 minutes, then every 30 minutes before 18:00. This pure policy
+is **not connected to production entrypoints** and does not reduce all-day
+Railway starts. The integration plan requires a crash-safe next daily start,
+verified current-cycle completion, preservation of pending repair/in-flight work,
+and independent recovery. No cron or admission change is made by this audit fix.
+See `docs/superpowers/plans/2026-09-21-dynamic-worker-schedule.md` for the open
+integration work. Existing completion certificates already skip heavy analysis
+reads when the current stored results and downstream work are verified complete.
 
 ## Supabase data boundary
 
 `lottery_draws` stores historical draws. History is not capped at 80 records. The public history API paginates Supabase reads so 1000/3000/5000-period number-reference queries are not silently truncated.
 
-Matrix background analysis writes its run/artifact data to the existing Supabase Matrix analysis tables. Matrix Explore is read by the PWA through the existing Supabase RPCs `matrix_explore_list` and `matrix_explore_validation`; the legacy AppDeploy app is not used for Matrix Explore or administrator requests.
+Matrix background analysis writes its run/artifact data to the existing Supabase Matrix analysis tables. Matrix Explore is read by the PWA through the existing Supabase RPCs `matrix_explore_list` and `matrix_explore_validation`; the current administrator UI is served at `/admin/`; ownership of the old live AppDeploy endpoint remains unverified.
 
 ## Algorithm specification and runtime versions
 
@@ -163,7 +186,11 @@ persisted Explore row includes its validation payload for the
 ## Current analysis integration (v15)
 
 Analysis phases run in order: Explore, Tianheng, Tianshu, Tianyan, Tiangong,
-Status. Tianheng and Tianshu run in resumable, lease-guarded batches with their
+Status. Tian Gong is generated by this leased pipeline; the obsolete
+push-triggered artifact refresh script/job has been removed. The retained Tian
+Gong workflow runs layout checks only and has no database credentials. Artifact
+writes continue to require both the current owner and run-start fence.
+Tianheng and Tianshu run in resumable, lease-guarded batches with their
 own artifact chunks and normalized result rows. Workers repair missing Explore,
 Tianheng, and Tianshu normalized result sets from completed artifacts without
 rerunning analysis. Matrix Status continues to consume only Explore and Tianyan.

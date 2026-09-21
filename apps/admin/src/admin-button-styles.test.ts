@@ -73,8 +73,10 @@ describe('admin interface styles', () => {
     expect(appSource).toContain('aria-label={`刪除啟動碼 ${text(r.code)}`}');
   });
 
-  it('renders the shared confirmation dialog above other dialogs', () => {
-    expect(rule(operationsCss, '.confirmationBackdrop')).toMatch(/z-index\s*:\s*60/);
+  it('styles the native modal confirmation backdrop and bounds its content', () => {
+    expect(rule(operationsCss, '.confirmationDialog::backdrop')).toMatch(/background\s*:\s*#000a/);
+    expect(rule(operationsCss, '.confirmationDialog')).toMatch(/max-height\s*:\s*calc\(100dvh - 32px\)/);
+    expect(rule(operationsCss, '.confirmationDialog')).toMatch(/overflow-y\s*:\s*auto/);
     expect(rule(operationsCss, '.confirmationDialog')).toMatch(/max-width\s*:\s*420px/);
   });
 

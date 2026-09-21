@@ -1,6 +1,7 @@
 from typing import Any
 
 import httpx
+import pytest
 from postgrest import SyncPostgrestClient
 
 from app.repositories.analysis_repository import InMemoryAnalysisRepository, SupabaseAnalysisRepository
@@ -62,6 +63,7 @@ def test_in_memory_job_status_keeps_latest_transition() -> None:
         "matrix-539-refresh-v2",
         "success",
         "2026-08-29T01:01:00+00:00",
+        started_at="2026-08-29T01:00:00+00:00",
         source_period="003118",
         database_period="003117",
         written_period="003118",
@@ -90,6 +92,7 @@ def test_job_status_projection_hides_raw_errors_and_unreliable_timestamps() -> N
         "failed",
         "2026-08-29T01:01:00+00:00",
         "password=raw-worker-secret",
+        started_at="2026-08-29T01:00:00+00:00",
     )
     repository.upsert_draw({
         "lottery": "今彩539",
@@ -229,7 +232,7 @@ def test_supabase_job_status_projection_hides_raw_rows_and_errors() -> None:
     assert "unreliable-analysis-timestamp" not in serialized
 
 
-def test_supabase_job_status_start_and_finish_use_primary_key() -> None:
+def test_supabase_job_status_finish_matches_primary_key_and_attempt() -> None:
     client = FakeClient()
     repository = SupabaseAnalysisRepository(client)
 
@@ -239,6 +242,7 @@ def test_supabase_job_status_start_and_finish_use_primary_key() -> None:
         "failed",
         "2026-08-29T01:01:00+00:00",
         "builder failed",
+        started_at="2026-08-29T01:00:00+00:00",
         source_period="003118",
         database_period="003117",
         written_period=None,
@@ -276,6 +280,26 @@ def test_supabase_job_status_start_and_finish_use_primary_key() -> None:
                 "updated_at": "2026-08-29T01:01:00+00:00",
             },
             "onConflict": None,
-            "filters": [("job_name", "matrix-539-refresh-v2")],
+            "filters": [
+                ("job_name", "matrix-539-refresh-v2"),
+                ("started_at", "2026-08-29T01:00:00+00:00"),
+            ],
         },
     ]
+
+
+@pytest.mark.parametrize("late_status", ["success", "failed", "waiting_source"])
+def test_old_attempt_cannot_finish_a_newer_job(late_status: str) -> None:
+    repository = InMemoryAnalysisRepository()
+    job_name = "matrix-539-refresh-v2"
+    repository.start_job(job_name, "今彩539", "2026-09-21T01:00:00+00:00")
+    repository.start_job(job_name, "今彩539", "2026-09-21T01:01:00+00:00")
+    newer = dict(repository.job_statuses[job_name])
+
+    repository.finish_job(
+        job_name, late_status, "2026-09-21T01:02:00+00:00",
+        started_at="2026-09-21T01:00:00+00:00",
+        source_period="old-period", written_period="old-period",
+    )
+
+    assert repository.job_statuses[job_name] == newer

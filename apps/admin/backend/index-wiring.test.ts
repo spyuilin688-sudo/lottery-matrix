@@ -40,7 +40,7 @@ const wiring = vi.hoisted(() => {
     setPassword: vi.fn(async () => undefined),
     passwordFields: vi.fn(async () => ({ password_salt: 'salt', password_hash: 'hash' })),
   }));
-  const listMemberPushStatus = vi.fn(async () => [{ userId: 'member-1' }]);
+  const listMemberPushStatus = vi.fn(async () => ({ items: [{ userId: 'member-1' }], total: 1, currentPage: 1, totalPages: 1 }));
   const sendMemberTestPush = vi.fn(async () => ({ sent: 1, failed: 0 }));
   const listPushDeliveryLogs = vi.fn(async () => [{ id: 'log-1' }]);
   const createPushNotifications = vi.fn(() => ({ listMemberPushStatus, sendMemberTestPush, listPushDeliveryLogs }));
@@ -495,6 +495,32 @@ describe('admin Railway route wiring', () => {
   });
 });
 
+describe('administrator revision route forwarding', () => {
+  it.each([undefined, '0'])('rejects missing or string revision %s without reading or writing accounts', async expectedRevision => {
+    const transport = wiring.createSupabaseTransport.mock.results[0].value;
+    transport.selectRows.mockClear();
+    transport.updateRows.mockClear();
+    const route = 'PUT /api/admins/:id';
+    const context = await authenticate(route, sessionContext({ id: 'operator' }));
+    const handler = routes[route][2] as (ctx: typeof context & { body: unknown }) => Promise<unknown>;
+    await expect(handler({ ...context, body: { expectedRevision } })).resolves.toMatchObject({ status: 409 });
+    expect(transport.selectRows).not.toHaveBeenCalled();
+    expect(transport.updateRows).not.toHaveBeenCalled();
+  });
+
+  it('passes the exact numeric revision through to the conditional account write', async () => {
+    const transport = wiring.createSupabaseTransport.mock.results[0].value;
+    const row = { id: 'operator', account: 'operator', name: 'Operator', role: '查看人員', status: '啟用', revision: 7 };
+    transport.selectRows.mockResolvedValueOnce([row] as never[]);
+    transport.updateRows.mockResolvedValueOnce([{ ...row, revision: 8 }] as never[]);
+    const route = 'PUT /api/admins/:id';
+    const context = await authenticate(route, sessionContext({ id: 'operator' }));
+    const handler = routes[route][2] as (ctx: typeof context & { body: unknown }) => Promise<unknown>;
+    await expect(handler({ ...context, body: { ...row, expectedRevision: 7, permissions: {} } })).resolves.toMatchObject({ status: 200 });
+    expect(transport.updateRows).toHaveBeenLastCalledWith('admin_accounts', 'id=eq.operator&revision=eq.7', expect.any(Object));
+  });
+});
+
 describe('admin push notification route wiring', () => {
   it('protects the exact routes with credential sessions and global permissions', async () => {
     wiring.requirePermission.mockClear();
@@ -531,6 +557,15 @@ describe('admin push notification route wiring', () => {
       context = await authenticate(route, sessionContext({ id: '11111111-1111-4111-8111-111111111111' }));
       await expect(routeHandler(context)).resolves.toEqual({ error: message, status: statusCode });
     }
+  });
+
+  it('forwards bounded member search and pagination without changing permissions', async () => {
+    const route = 'GET /api/push-members';
+    const context = await authenticate(route, sessionContext());
+    const query = { page: '4', keyword: 'Google 會員', userId: '11111111-1111-4111-8111-111111111111' };
+    const handler = routes[route][2] as (input: typeof context & { query: typeof query }) => Promise<unknown>;
+    await expect(handler({ ...context, query })).resolves.toMatchObject({ body: { total: 1, currentPage: 1, totalPages: 1 } });
+    expect(wiring.listMemberPushStatus).toHaveBeenLastCalledWith(query);
   });
 
   it('routes list requests to member and delivery-log APIs', async () => {

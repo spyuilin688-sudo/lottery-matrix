@@ -78,6 +78,7 @@ type Dashboard = {
   cumulativeRevenue: number;
 };
 type AdminForm = {
+  expectedRevision?: number;
   account: string;
   name: string;
   password: string;
@@ -140,6 +141,7 @@ const labels: Record<string, string[]> = {
   loginRecords: [
     "account",
     "loginAt",
+    "logoutAt",
     "ip",
     "estimatedRegion",
     "device",
@@ -672,6 +674,7 @@ function AdminApp() {
   const editAdmin = (r: Row) => {
     const p = (r.permissions || {}) as Record<string, boolean>;
     setAdminForm({
+      expectedRevision: typeof r.revision === "number" ? r.revision : undefined,
       account: String(r.account || ""),
       name: String(r.name || ""),
       password: "",
@@ -1066,17 +1069,25 @@ function ConfirmationDialog({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const cancelButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const element = dialog.current!;
+    const previous = document.activeElement as HTMLElement | null;
+    element.showModal();
+    cancelButton.current?.focus();
+    return () => { element.close(); previous?.focus(); };
+  }, []);
   return (
-    <div className="modalBackdrop confirmationBackdrop" role="presentation">
-      <div className="confirmationDialog" role="alertdialog" aria-modal="true" aria-labelledby="confirmation-title" aria-describedby="confirmation-message">
+      <dialog ref={dialog} className="confirmationDialog" role="alertdialog" aria-modal="true" aria-labelledby="confirmation-title" aria-describedby="confirmation-message"
+        onCancel={(event) => { event.preventDefault(); onCancel(); }}>
         <h2 id="confirmation-title">{request.title}</h2>
         <p id="confirmation-message">{request.message}</p>
         <div className="formActions">
-          <button onClick={onCancel}>取消</button>
+          <button ref={cancelButton} type="button" onClick={onCancel}>取消</button>
           <button className={request.tone === "danger" ? "confirmDanger" : "primary"} onClick={onConfirm}>{request.confirmLabel}</button>
         </div>
-      </div>
-    </div>
+      </dialog>
   );
 }
 

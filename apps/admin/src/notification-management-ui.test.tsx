@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotificationManagement } from './NotificationManagement';
 
@@ -41,7 +42,7 @@ function client(overrides: Partial<{
 }> = {}) {
   return {
     get: vi.fn(async (url: string) => ({
-      data: url === '/api/push-members' ? { items: members } : { items: [failedLog] },
+      data: url.startsWith('/api/push-members') ? { items: members } : { items: [failedLog] },
     })),
     post: vi.fn(async () => ({ data: { sent: 1, failed: 1 } })),
     ...overrides,
@@ -77,19 +78,19 @@ async function chooseMember(userId: string) {
 }
 
 describe('NotificationManagement', () => {
-  it('keeps sending disabled until an active member is selected and shows the provider ID', async () => {
+  it('keeps sending disabled until an active member is selected and shows the member name', async () => {
     await renderManager();
     expect(sendButton().disabled).toBe(true);
 
     await chooseMember('member-2');
-    expect(container.textContent).toContain('Google ID：google-2');
+    expect(container.textContent).toContain('會員二');
     expect(container.textContent).toContain('未開啟');
     expect(sendButton().disabled).toBe(true);
 
     await chooseMember('member-1');
-    expect(container.textContent).toContain('LINE ID：line-1');
+    expect(container.textContent).toContain('會員一');
     expect(container.textContent).toContain('已開啟');
-    expect(container.querySelector('img[alt="LINE ID：line-1 的會員頭貼"]')).not.toBeNull();
+    expect(container.querySelector('img[alt="會員一 的會員頭貼"]')).not.toBeNull();
     expect(sendButton().disabled).toBe(false);
   });
 
@@ -98,7 +99,8 @@ describe('NotificationManagement', () => {
 
     expect(container.textContent).toContain('樂彩 Matrix 測試通知');
     expect(container.textContent).toContain('手機推播已成功啟用');
-    expect(container.querySelector('input, textarea')).toBeNull();
+    expect(container.querySelector('textarea')).toBeNull();
+    expect(container.querySelector('input:not([type=search])')).toBeNull();
     expect(container.textContent).not.toMatch(/全體|群發|排程/);
   });
 
@@ -130,7 +132,7 @@ describe('NotificationManagement', () => {
     let memberRequest = 0;
     let logRequest = 0;
     const get = vi.fn(async (url: string) => {
-      if (url === '/api/push-members') {
+      if (url.startsWith('/api/push-members')) {
         memberRequest += 1;
         return { data: { items: memberRequest === 1 ? members : [{ ...members[0], pushEnabled: false }, members[1]] } };
       }
@@ -154,7 +156,7 @@ describe('NotificationManagement', () => {
     const oldLogs = new Promise<{ data: { items: Array<typeof failedLog> } }>((resolve) => { releaseOld = resolve; });
     let logRequest = 0;
     const get = vi.fn(async (url: string) => {
-      if (url === '/api/push-members') return { data: { items: members } };
+      if (url.startsWith('/api/push-members')) return { data: { items: members } };
       logRequest += 1;
       if (logRequest === 1) return oldLogs;
       return { data: { items: [{ ...failedLog, id: 'fresh-log', failureReason: 'fresh reason' }] } };
@@ -177,7 +179,7 @@ describe('NotificationManagement', () => {
     const pendingRefresh = new Promise<{ data: { items: Array<typeof failedLog> } }>(() => undefined);
     let logRequest = 0;
     const get = vi.fn(async (url: string) => {
-      if (url === '/api/push-members') return { data: { items: members } };
+      if (url.startsWith('/api/push-members')) return { data: { items: members } };
       logRequest += 1;
       return logRequest === 1 ? { data: { items: [failedLog] } } : pendingRefresh;
     });
@@ -238,7 +240,7 @@ describe('NotificationManagement', () => {
     let logRequest = 0;
     const freshLog = { ...failedLog, id: 'log-2', failureReason: 'recovered reason' };
     const get = vi.fn(async (url: string) => {
-      if (url === '/api/push-members') return { data: { items: members } };
+      if (url.startsWith('/api/push-members')) return { data: { items: members } };
       logRequest += 1;
       if (logRequest === 1) return { data: { items: [failedLog] } };
       if (logRequest === 2) throw new Error('refresh failed');
@@ -257,6 +259,79 @@ describe('NotificationManagement', () => {
     expect(container.textContent).not.toContain('發送紀錄更新失敗');
   });
 
+  it('preserves the explicitly selected recipient across pages and refreshes only that recipient after sending', async () => {
+    const get = vi.fn(async (url: string) => {
+      if (url.includes('userId=member-1')) return { data: { items: [{ ...members[0], pushEnabled: false }], total: 1, currentPage: 1, totalPages: 1 } };
+      if (url.startsWith('/api/push-members')) return { data: { items: url.includes('page=2') ? [members[1]] : [members[0]], total: 31, currentPage: url.includes('page=2') ? 2 : 1, totalPages: 2 } };
+      return { data: { items: [failedLog] } };
+    });
+    const api = client({ get });
+    await renderManager(api);
+    await chooseMember('member-1');
+    await act(async () => { (container.querySelector('[aria-label="會員分頁"] button:last-child') as HTMLButtonElement).click(); });
+    expect(selector().value).toBe('member-1');
+    expect(container.querySelector('.notificationMemberSummary')?.textContent).toContain('會員一');
+    await act(async () => { sendButton().click(); });
+    expect(api.post).toHaveBeenCalledWith('/api/push-members/member-1/test', {});
+    expect(get.mock.calls.filter(([url]) => url === '/api/push-members')).toHaveLength(1);
+    expect(get.mock.calls.some(([url]) => url.includes('userId=member-1'))).toBe(true);
+    expect(sendButton().disabled).toBe(true);
+  });
+
+  it('retries recipient status after a post-send refresh failure even when the selection is off-page', async () => {
+    let recipientAttempts = 0;
+    const get = vi.fn(async (url: string) => {
+      if (url.includes('userId=member-1')) {
+        recipientAttempts += 1;
+        if (recipientAttempts === 1) throw new Error('offline');
+        return { data: { items: [members[0]] } };
+      }
+      if (url.startsWith('/api/push-members')) return { data: { items: url.includes('page=2') ? [members[1]] : [members[0]], total: 31, currentPage: url.includes('page=2') ? 2 : 1, totalPages: 2 } };
+      return { data: { items: [] } };
+    });
+    await renderManager(client({ get }));
+    await chooseMember('member-1');
+    await act(async () => { (container.querySelector('[aria-label="會員分頁"] button:last-child') as HTMLButtonElement).click(); });
+    await act(async () => { sendButton().click(); });
+    expect(sendButton().disabled).toBe(true);
+    await act(async () => { buttonNamed('重新讀取會員').click(); });
+    expect(selector().value).toBe('member-1');
+    expect(recipientAttempts).toBe(2);
+    expect(sendButton().disabled).toBe(false);
+  });
+
+  it('debounces name search, ignores stale pages and clears search immediately', async () => {
+    let finishOld!: (response: { data: unknown }) => void;
+    const get = vi.fn(async (url: string) => {
+      if (url.includes('page=2')) return new Promise<{ data: unknown }>(resolve => { finishOld = resolve; });
+      if (url.startsWith('/api/push-members')) return { data: { items: url.includes('keyword=Google') ? [members[1]] : [members[0]], total: 31, currentPage: 1, totalPages: 2 } };
+      return { data: { items: [] } };
+    });
+    await renderManager(client({ get }));
+    await act(async () => { (container.querySelector('[aria-label="會員分頁"] button:last-child') as HTMLButtonElement).click(); });
+    const search = container.querySelector('input[type=search]') as HTMLInputElement;
+    vi.useFakeTimers();
+    try {
+      act(() => { fireEvent.change(search, { target: { value: 'Google' } }); });
+      expect(get.mock.calls.some(([url]) => url.includes('keyword=Google'))).toBe(false);
+      await act(async () => { await vi.advanceTimersByTimeAsync(300); });
+      expect(get.mock.calls.some(([url]) => url.includes('page=1') && url.includes('keyword=Google'))).toBe(true);
+      await act(async () => { finishOld({ data: { items: [{ ...members[0], displayName: 'stale' }], total: 31, currentPage: 2, totalPages: 2 } }); });
+      expect(container.textContent).not.toContain('stale');
+      expect(selector().textContent).toContain('會員二');
+      await act(async () => { (container.querySelector('[aria-label="清除會員搜尋"]') as HTMLButtonElement).click(); });
+      expect(search.value).toBe('');
+      expect(document.activeElement).toBe(search);
+      expect(selector().textContent).toContain('會員一');
+    } finally { vi.useRealTimers(); }
+  });
+
+  it.each(['Google 紀錄會員', 'Google ID：google-log-only', 'LINE ID：line-log-only'])('shows the server-resolved label %s for an off-page log recipient', async displayName => {
+    const get = vi.fn(async (url: string) => ({ data: { items: url.startsWith('/api/push-members') ? [members[0]] : [{ ...failedLog, userId: 'off-page-google', displayName }] } }));
+    await renderManager(client({ get }));
+    expect(container.querySelector('tbody')?.textContent).toContain(displayName);
+  });
+
   it('renders delivery logs five per page in one semantic responsive table', async () => {
     const manyLogs = Array.from({ length: 200 }, (_, index) => ({
       ...failedLog,
@@ -273,7 +348,7 @@ describe('NotificationManagement', () => {
     expect(container.textContent).toContain('第 1／40 頁');
     expect(container.textContent).toContain('reason-4');
     expect(container.textContent).not.toContain('reason-5');
-    await act(async () => { buttonNamed('下一頁').click(); });
+    await act(async () => { (container.querySelector('[aria-label="發送紀錄分頁"] button:last-child') as HTMLButtonElement).click(); });
     expect(container.textContent).toContain('第 2／40 頁');
     expect(container.textContent).toContain('reason-5');
     expect(container.textContent).not.toContain('reason-4');

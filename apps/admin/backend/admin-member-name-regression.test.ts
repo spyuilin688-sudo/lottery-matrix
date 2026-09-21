@@ -7,7 +7,7 @@ const USER_ID = '22222222-2222-4222-8222-222222222222';
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...(Array.isArray(body) ? { 'Content-Range': `0-${body.length - 1}/${body.length}` } : {}) },
   });
 }
 
@@ -35,8 +35,8 @@ it('uses the canonical Google full_name fallback in push-member status', async (
     if (url.includes('/rest/v1/members?')) {
       return jsonResponse([{ auth_user_id: USER_ID, line_user_id: null, line_display_name: null }]);
     }
-    if (url.includes('/auth/v1/admin/users?')) {
-      return jsonResponse({ users: [{
+    if (url.includes('/auth/v1/admin/users/')) {
+      return jsonResponse({
         id: USER_ID,
         user_metadata: { full_name: 'Google 會員' },
         identities: [{
@@ -44,7 +44,7 @@ it('uses the canonical Google full_name fallback in push-member status', async (
           provider_id: 'google-user',
           identity_data: { full_name: 'Google 會員' },
         }],
-      }] });
+      });
     }
     if (url.includes('/rest/v1/member_push_subscriptions?')) return jsonResponse([]);
     return jsonResponse({}, 404);
@@ -55,7 +55,7 @@ it('uses the canonical Google full_name fallback in push-member status', async (
     serviceRoleKey: 'service-role-secret',
   }, fetcher).listMemberPushStatus();
 
-  expect(members[0]).toMatchObject({
+  expect(members.items[0]).toMatchObject({
     identityDisplay: 'Google ID：google-user',
     displayName: 'Google 會員',
   });

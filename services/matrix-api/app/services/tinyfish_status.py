@@ -53,6 +53,7 @@ def record_tinyfish_fallback(
         status,
         finished_at,
         error,
+        started_at=finished_at,
         source_period=source_period,
     )
 
