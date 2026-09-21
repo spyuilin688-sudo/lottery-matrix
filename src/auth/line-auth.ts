@@ -107,7 +107,12 @@ export async function prepareLineLoginUrl(
   });
   if (error) throw error;
   if (!data?.url) throw new Error('LINE_LOGIN_URL_MISSING');
-  return data.url;
+  const loginUrl = new URL(data.url);
+  // auth-js adds this only to suppress its own browser navigation. Once the
+  // URL becomes a real user-clicked link, keep the normal /authorize redirect
+  // semantics and do not forward this client-control parameter to LINE.
+  loginUrl.searchParams.delete('skip_http_redirect');
+  return loginUrl.href;
 }
 
 export async function signInWithLine(
