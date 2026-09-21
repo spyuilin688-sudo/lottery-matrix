@@ -13,6 +13,10 @@ export default defineConfig({
   },
   webServer: {
     command: `npm run dev -- --config vite.runtime-tests.config.ts --host 127.0.0.1 --port ${testPort}`,
+    env: {
+      ...process.env,
+      VITE_RAILWAY_API_BASE: `http://127.0.0.1:${testPort}`,
+    },
     url: `http://127.0.0.1:${testPort}/tests/runtime-fixture.html`,
     reuseExistingServer: process.env.MOBILE_RUNTIME_TEST_PORT == null,
   },
