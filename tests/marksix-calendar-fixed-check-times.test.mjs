@@ -32,7 +32,16 @@ test('UTC cron expressions expand to all 16 requested Taipei checks', () => {
   ]) {
     assert.ok(source.includes(`'${schedule}'`), schedule);
   }
-  assert.equal((source.match(/matrix-marksix-calendar-/g) ?? []).length >= 12, true);
+  for (const job of [
+    'matrix-marksix-calendar-midday',
+    'matrix-marksix-calendar-45',
+    'matrix-marksix-calendar-15',
+    'matrix-marksix-calendar-2030',
+    'matrix-marksix-calendar-2055',
+    'matrix-marksix-calendar-2105-2110',
+  ]) {
+    assert.ok(source.includes(job), job);
+  }
 });
 
 test('five-minute notification recovery no longer performs calendar checks', () => {
