@@ -43,7 +43,7 @@ it('renders a failed TinyFish check and its evidence without issuing write reque
     expect(row).not.toBeNull();
     expect(row?.querySelector('.statusBadge.bad')?.textContent).toBe('異常');
     expect(row?.querySelector('[role="alert"]')?.textContent).toBe('最近備援抓取失敗。');
-    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('TinyFish正常 0／1 · 0 項僅部分檢查 · 1 項異常');
+    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('TinyFish正常 0／1 · 0 項部分驗證 · 1 項異常');
     expect(mocks.post).not.toHaveBeenCalled();
     expect(mocks.put).not.toHaveBeenCalled();
     expect(mocks.delete).not.toHaveBeenCalled();
@@ -75,7 +75,7 @@ it('renders event-driven notification health without sending a notification from
     const row = container.querySelector('[data-status-id="native-notification-dispatch"]')!;
     expect(row.querySelector('.statusBadge.limited')?.textContent).toBe('事件派送正常');
     expect(row.querySelector('.statusScope')?.textContent).toContain('5 分鐘 Recovery');
-    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('正常 0／1 · 1 項僅部分檢查 · 0 項異常');
+    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('正常 0／1 · 1 項部分驗證 · 0 項異常');
     await act(async () => row.querySelector('summary')?.click());
     expect(row.querySelector('details')?.textContent).toContain('派送模式事件觸發');
     expect(row.querySelector('details')?.textContent).toContain('Recovery 頻率每 5 分鐘');
@@ -130,6 +130,7 @@ it('keeps purpose, evidence and errors visible while technical details collapse 
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
     const rows = container.querySelectorAll('.statusRow');
     expect(rows).toHaveLength(2);
+    expect(container.querySelector('.systemStatusLegend')?.textContent).toContain('系統不會為健康檢查執行寫入、派送通知或啟動復原');
     expect(rows[0].querySelector('.statusBadge')?.textContent).toBe('API 已確認');
     expect(rows[0].querySelector('.statusDescription')?.closest('details')).toBeNull();
     expect(rows[0].querySelector('.statusScope')?.textContent).toContain('不自動執行寫入操作');
@@ -168,7 +169,7 @@ it('counts only actual failures as abnormal while running, waiting and unknown j
     expect([...container.querySelectorAll('.statusBadge')].map(badge => [badge.textContent, badge.classList.contains('bad')])).toEqual([
       ['執行中', false], ['等待開獎來源更新', false], ['狀態待確認', false], ['異常', true],
     ]);
-    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('正常 0／4 · 3 項僅部分檢查 · 1 項異常');
+    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('正常 0／4 · 3 項部分驗證 · 1 項異常');
     expect(container.querySelectorAll('.statusRow [role=alert]')).toHaveLength(1);
   } finally {
     await act(async () => root.unmount()); container.remove();
