@@ -490,6 +490,14 @@ const routes: Record<string, unknown> = {
       : error('WATCHDOG_DEGRADED', 503);
   }],
 
+  'POST /api/internal/marksix-calendar': [watchdogCronGuard, async () => {
+    try {
+      return json({ calendar: await workerApi.refreshMarkSixCalendar() });
+    } catch (cause) {
+      return fail(cause);
+    }
+  }],
+
   'POST /api/internal/matrix-primary': [watchdogCronGuard, async (ctx: Context) => {
     const body = bodyOf(ctx);
     const group = body.group;
