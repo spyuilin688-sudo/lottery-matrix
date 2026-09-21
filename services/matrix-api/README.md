@@ -46,9 +46,10 @@ or other browser configuration.
 
 The health payload reports `adminApi.status` as `ok` or `misconfigured` without
 exposing the secret. Supabase `admin-api` is the administrator-backend consumer.
-The current administrator UI is `https://matrixlottery.idv.tw/admin/`. The old
-AppDeploy endpoint remains reachable; its deployed code and data ownership have
-not been verified in this audit.
+The current administrator UI is `https://matrixlottery.idv.tw/admin/`. Its
+canonical backend is the Supabase `admin-api` Edge Function. The 2026-09-22
+AppDeploy account readback showed the owned legacy lottery/preview apps as
+`deleted`; they are not production administrator endpoints.
 
 `POST /jobs/refresh` accepts `{"lottery":"今彩539"}` for 今彩539、六合彩、or
 大樂透, then fetches and upserts only its latest draw. It does not backfill
