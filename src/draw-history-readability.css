@@ -1,0 +1,8 @@
+/* Draw History only: improve five-ball readability without changing record grouping or six-plus-one layouts. */
+.draw-history-screen .draw-history-panel:is([data-lottery="今彩539"], [data-lottery="天天樂"]) {
+  --mx-history-row-height: 59px;
+}
+
+.draw-history-screen .draw-history-panel:is([data-lottery="今彩539"], [data-lottery="天天樂"]) .history-main-numbers {
+  gap: clamp(8px, 3vw, 12px);
+}
