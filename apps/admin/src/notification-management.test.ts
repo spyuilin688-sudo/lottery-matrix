@@ -41,7 +41,7 @@ describe('notification management client', () => {
       data: url === '/api/push-members' ? { items: members } : { items: logs },
     }));
 
-    await expect(listPushMembers({ get })).resolves.toEqual(members);
+    await expect(listPushMembers({ get })).resolves.toEqual({ items: members, total: 1, currentPage: 1, totalPages: 1 });
     await expect(listPushDeliveryLogs({ get })).resolves.toEqual(logs);
     expect(get).toHaveBeenNthCalledWith(1, '/api/push-members');
     expect(get).toHaveBeenNthCalledWith(2, '/api/push-delivery-logs');

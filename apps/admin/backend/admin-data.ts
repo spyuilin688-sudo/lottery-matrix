@@ -24,6 +24,7 @@ export type AdminAccountInput = {
   can_add: boolean;
   can_edit: boolean;
   can_delete: boolean;
+  expectedRevision?: number;
   password_salt?: string;
   password_hash?: string;
 };
@@ -147,13 +148,14 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   admins: {
-    path: '/rest/v1/admin_accounts?select=id,account,name,role,status,can_view,can_add,can_edit,can_delete,last_login_at,created_at&order=created_at.asc,id.asc',
+    path: '/rest/v1/admin_accounts?select=id,account,name,role,status,can_view,can_add,can_edit,can_delete,last_login_at,created_at,revision&order=created_at.asc,id.asc',
     map: (row) => ({
       id: String(row.id),
       account: row.account,
       name: row.name,
       role: row.role,
       status: row.status,
+      revision: row.revision,
       permissions: {
         view: Boolean(row.can_view),
         add: Boolean(row.can_add),
@@ -663,12 +665,15 @@ export function createAdminData(transport: WriteTransport) {
   }
 
   async function updateAdminAccount(id: string, input: AdminAccountInput, actor: AdminActor) {
+    const conflict = () => new AdminDataError('管理員資料已變更，請取消編輯並重新載入後再試', 409);
+    if (!Number.isSafeInteger(input.expectedRevision) || Number(input.expectedRevision) < 0) throw conflict();
     const [before] = await transport.selectRows<Row>('admin_accounts', `select=*&id=eq.${encodeURIComponent(id)}`);
     if (!before) throw new AdminDataError('Not found', 404);
     const record = validateAdminInput(input);
     await protectLastEnabledSuper(before, { role: record.role, status: record.status });
-    const [updated] = await transport.updateRows<Row>('admin_accounts', `id=eq.${encodeURIComponent(id)}`, record);
-    if (!updated) throw new AdminDataError('更新管理員失敗', 500);
+    // The predicate is checked by PostgreSQL at the write, including changes after the read.
+    const [updated] = await transport.updateRows<Row>('admin_accounts', `id=eq.${encodeURIComponent(id)}&revision=eq.${input.expectedRevision}`, record);
+    if (!updated) throw conflict();
     await writeAudit({
       actor,
       operationType: '修改',

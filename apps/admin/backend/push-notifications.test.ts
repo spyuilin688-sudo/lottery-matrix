@@ -56,168 +56,101 @@ describe('createPushNotifications', () => {
     );
   });
 
-  it('maps member identity, LINE profile, and enabled subscriptions by auth user id', async () => {
+  it('loads only one bounded member page and enriches those recipients', async () => {
     const fetcher = vi.fn(async (input: string | URL | Request) => {
-      const url = String(input);
-      if (url.includes('/rest/v1/members?')) {
-        return response([
-          { auth_user_id: USER_ONE, line_user_id: 'line-user-one', line_display_name: '持久化會員一' },
-          { auth_user_id: USER_TWO, line_user_id: null, line_display_name: '持久化會員二' },
-        ]);
-      }
-      if (url.includes('/auth/v1/admin/users?')) {
-        return response({ users: [
-          {
-            id: USER_ONE,
-            user_metadata: {
-              name: '目前會員一',
-              picture: 'https://metadata.example/one.png',
-            },
-            identities: [{
-              provider: 'custom:line',
-              provider_id: 'line-user-one',
-              identity_data: { name: 'LINE 會員一', picture: 'https://line.example/one.png' },
-            }],
-          },
-          {
-            id: USER_TWO,
-            user_metadata: {},
-            identities: [{
-              provider: 'google',
-              provider_id: 'google-user-two',
-              identity_data: { name: 'Google 會員二', picture: 'https://google.example/two.png' },
-            }],
-          },
-        ] });
-      }
-      if (url.includes('/rest/v1/member_push_subscriptions?')) {
-        return response([{ id: 'subscription-1', user_id: USER_ONE }]);
-      }
-      return response({}, 404);
+      const url = new URL(String(input));
+      if (url.pathname === '/rest/v1/members') return response([
+        { auth_user_id: USER_ONE, line_user_id: 'line-one', line_display_name: '持久化會員一' },
+        { auth_user_id: USER_TWO, line_display_name: ' ' },
+      ], 200, 2);
+      if (url.pathname === `/auth/v1/admin/users/${USER_ONE}`) return response({ id: USER_ONE, user_metadata: { picture: 'https://example.com/avatar.png' } });
+      if (url.pathname === `/auth/v1/admin/users/${USER_TWO}`) return response({ id: USER_TWO, user_metadata: { full_name: 'Google 會員二' }, identities: [{ provider: 'google', provider_id: 'google-two' }] });
+      if (url.pathname === '/rest/v1/member_push_subscriptions') return response(url.searchParams.get('user_id') === `eq.${USER_ONE}` ? [{ id: 'device' }] : []);
+      throw new Error(`Unexpected unbounded request: ${url}`);
     });
-    const api = createPushNotifications(config, fetcher);
-
-    await expect(api.listMemberPushStatus()).resolves.toEqual([
-      {
-        userId: USER_ONE,
-        identityLabel: 'LINE ID',
-        identityValue: 'line-user-one',
-        identityDisplay: 'LINE ID：line-user-one',
-        displayName: '持久化會員一',
-        pictureUrl: 'https://metadata.example/one.png',
-        pushEnabled: true,
-      },
-      {
-        userId: USER_TWO,
-        identityLabel: 'Google ID',
-        identityValue: 'google-user-two',
-        identityDisplay: 'Google ID：google-user-two',
-        displayName: '持久化會員二',
-        pictureUrl: null,
-        pushEnabled: false,
-      },
-    ]);
-
-    const urls = fetcher.mock.calls.map(([input]) => String(input));
-    expect(urls).toEqual(expect.arrayContaining([
-      expect.stringContaining('/rest/v1/members?select=auth_user_id%2Cline_user_id%2Cline_display_name'),
-      expect.stringContaining('/auth/v1/admin/users?page=1&per_page=1000'),
-      expect.stringContaining('/rest/v1/member_push_subscriptions?select=id%2Cuser_id&enabled=eq.true'),
-    ]));
+    const result = await createPushNotifications(config, fetcher).listMemberPushStatus();
+    expect(result).toEqual({
+      items: [
+        { userId: USER_ONE, identityLabel: 'LINE ID', identityValue: 'line-one', identityDisplay: 'LINE ID：line-one', displayName: '持久化會員一', pictureUrl: 'https://example.com/avatar.png', pushEnabled: true },
+        { userId: USER_TWO, identityLabel: 'Google ID', identityValue: 'google-two', identityDisplay: 'Google ID：google-two', displayName: 'Google 會員二', pictureUrl: null, pushEnabled: false },
+      ], total: 2, currentPage: 1, totalPages: 1,
+    });
+    const urls = fetcher.mock.calls.map(([input]) => new URL(String(input)));
+    expect(urls.find(url => url.pathname === '/rest/v1/members')?.searchParams.get('limit')).toBe('30');
+    expect(urls.filter(url => url.pathname === '/rest/v1/member_push_subscriptions').every(url => url.searchParams.get('limit') === '1')).toBe(true);
+    expect(urls.some(url => url.pathname === '/auth/v1/admin/users')).toBe(false);
   });
 
-  it('reads every member, Auth profile, and enabled subscription page beyond 1000 rows', async () => {
-    const memberPageOne = Array.from({ length: 1000 }, (_, index) => ({
-      auth_user_id: `${String(index).padStart(8, '0')}-1111-4111-8111-111111111111`,
-      line_display_name: `member-${index}`,
-    }));
-    const targetUserId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
-    const authPageOne = memberPageOne.map((member) => ({
-      id: member.auth_user_id,
-      user_metadata: { name: member.line_display_name },
-      identities: [],
-    }));
-    const subscriptionPageOne = Array.from({ length: 1000 }, (_, index) => ({
-      id: `subscription-${index}`,
-      user_id: memberPageOne[0].auth_user_id,
-    }));
+  it('keeps late pages discoverable while filling only 30 rows under a server cap', async () => {
+    const fetcher = vi.fn(async (input: string | URL | Request) => {
+      const url = new URL(String(input));
+      if (url.pathname === '/rest/v1/members') {
+        const offset = Number(url.searchParams.get('offset'));
+        const count = Math.min(7, Number(url.searchParams.get('limit')), 1105 - offset);
+        return response(Array.from({ length: count }, (_, index) => ({ auth_user_id: `0000${String(offset + index).padStart(4, '0')}-1111-4111-8111-111111111111` })), 200, 1105);
+      }
+      if (url.pathname.startsWith('/auth/v1/admin/users/')) return response({});
+      if (url.pathname === '/rest/v1/member_push_subscriptions') return response([]);
+      throw new Error('unbounded request');
+    });
+    const api = createPushNotifications(config, fetcher);
+    const result = await api.listMemberPushStatus({ page: 35 });
+    expect(result).toMatchObject({ total: 1105, currentPage: 35, totalPages: 37 });
+    expect(result.items).toHaveLength(30);
+    expect(result.items[0].userId).toBe('00001020-1111-4111-8111-111111111111');
+    expect(fetcher.mock.calls.filter(([input]) => new URL(String(input)).pathname === '/rest/v1/members').map(([input]) => new URL(String(input)).searchParams.get('offset'))).toEqual(['1020', '1027', '1034', '1041', '1048']);
+  });
+
+  it('uses the server paged search for names and identities and enriches only its result', async () => {
     const fetcher = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
-      const url = String(input);
-      const range = new Headers(init?.headers).get('Range');
-      if (url.includes('/rest/v1/members?')) {
-        return range === '0-999'
-          ? response(memberPageOne, 200, 1001)
-          : response([{ auth_user_id: targetUserId, line_display_name: 'stored target' }], 200, 1001);
+      const url = new URL(String(input));
+      if (url.pathname === '/rest/v1/rpc/admin_push_member_page') {
+        expect(JSON.parse(String(init?.body))).toEqual({ p_keyword: 'Google 會員', p_page: 4 });
+        return response({ items: [{ auth_user_id: USER_TWO }], total: 91, currentPage: 4, totalPages: 4 });
       }
-      if (url.includes('/auth/v1/admin/users?')) {
-        return url.includes('?page=1&')
-          ? response({ users: authPageOne })
-          : response({ users: [{
-            id: targetUserId,
-            user_metadata: { name: 'target metadata', picture: 'https://metadata.example/target.png' },
-            identities: [],
-          }] });
-      }
-      if (url.includes('/rest/v1/member_push_subscriptions?')) {
-        return range === '0-999'
-          ? response(subscriptionPageOne, 200, 1001)
-          : response([{ id: 'target-subscription', user_id: targetUserId }], 200, 1001);
-      }
-      return response({}, 404);
+      if (url.pathname === `/auth/v1/admin/users/${USER_TWO}`) return response({ user_metadata: { name: 'Google 會員' } });
+      if (url.pathname === '/rest/v1/member_push_subscriptions' && url.searchParams.get('user_id') === `eq.${USER_TWO}`) return response([]);
+      throw new Error('Unexpected full scan');
     });
-    const api = createPushNotifications(config, fetcher);
-
-    const members = await api.listMemberPushStatus();
-
-    expect(members).toHaveLength(1001);
-    expect(members.at(-1)).toEqual({
-      userId: targetUserId,
-      identityLabel: null,
-      identityValue: null,
-      identityDisplay: null,
-      displayName: 'stored target',
-      pictureUrl: 'https://metadata.example/target.png',
-      pushEnabled: true,
-    });
-    const calls = fetcher.mock.calls.map(([input, init]) => ({
-      url: String(input),
-      range: new Headers(init?.headers).get('Range'),
-    }));
-    expect(calls).toEqual(expect.arrayContaining([
-      expect.objectContaining({ url: expect.stringContaining('/rest/v1/members?'), range: '1000-1999' }),
-      expect.objectContaining({ url: expect.stringContaining('/auth/v1/admin/users?page=2&per_page=1000') }),
-      expect.objectContaining({ url: expect.stringContaining('/rest/v1/member_push_subscriptions?'), range: '1000-1999' }),
-    ]));
+    const result = await createPushNotifications(config, fetcher).listMemberPushStatus({ keyword: ' Google 會員 ', page: 4 });
+    expect(result).toMatchObject({ total: 91, currentPage: 4, totalPages: 4, items: [{ userId: USER_TWO, displayName: 'Google 會員' }] });
+    expect(fetcher).toHaveBeenCalledTimes(3);
   });
 
-  it('falls back to Auth metadata when a stored member name is blank', async () => {
+  it('restricts post-send revalidation to the selected member', async () => {
     const fetcher = vi.fn(async (input: string | URL | Request) => {
-      const url = String(input);
-      if (url.includes('/rest/v1/members?')) {
-        return response([{ auth_user_id: USER_TWO, line_display_name: '  ' }]);
-      }
-      if (url.includes('/auth/v1/admin/users?')) {
-        return response({ users: [{
-          id: USER_TWO,
-          user_metadata: { name: 'Google 會員二' },
-          identities: [{ provider: 'google', provider_id: 'google-user-two' }],
-        }] });
-      }
-      if (url.includes('/rest/v1/member_push_subscriptions?')) return response([]);
-      return response({}, 404);
+      const url = new URL(String(input));
+      expect(url.pathname).toBe('/rest/v1/members');
+      expect(url.searchParams.get('auth_user_id')).toBe(`eq.${USER_TWO}`);
+      return response([], 200, 0);
     });
+    await expect(createPushNotifications(config, fetcher).listMemberPushStatus({ userId: USER_TWO })).resolves.toMatchObject({ items: [], total: 0 });
+  });
 
-    await expect(createPushNotifications(config, fetcher).listMemberPushStatus()).resolves.toEqual([
-      {
-        userId: USER_TWO,
-        identityLabel: 'Google ID',
-        identityValue: 'google-user-two',
-        identityDisplay: 'Google ID：google-user-two',
-        displayName: 'Google 會員二',
-        pictureUrl: null,
-        pushEnabled: false,
-      },
-    ]);
+  it('does not fetch identities or devices for an empty page', async () => {
+    const fetcher = vi.fn(async () => response([], 200, 0));
+    await expect(createPushNotifications(config, fetcher).listMemberPushStatus()).resolves.toEqual({ items: [], total: 0, currentPage: 1, totalPages: 1 });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([0, -1, 1.5, 'oops', Number.MAX_SAFE_INTEGER])('rejects invalid page %s without reading data', async page => {
+    const fetcher = vi.fn<typeof fetch>();
+    await expect(createPushNotifications(config, fetcher).listMemberPushStatus({ page })).rejects.toMatchObject({ statusCode: 400 });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('resolves only the bounded log recipients including names outside the current member page', async () => {
+    const fetcher = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = new URL(String(input));
+      if (url.pathname === '/rest/v1/push_delivery_logs') return response([{ id: 'log', user_id: USER_TWO }]);
+      if (url.pathname === '/rest/v1/rpc/admin_push_log_member_names') {
+        expect(JSON.parse(String(init?.body))).toEqual({ p_auth_user_ids: [USER_TWO] });
+        return response([{ user_id: USER_TWO, display_name: 'Google 紀錄會員' }]);
+      }
+      throw new Error('unexpected identity scan');
+    });
+    expect(await createPushNotifications(config, fetcher).listPushDeliveryLogs()).toMatchObject([{ userId: USER_TWO, displayName: 'Google 紀錄會員' }]);
+    expect(fetcher).toHaveBeenCalledTimes(2);
   });
 
   it('maps delivery log columns and requests newest records first', async () => {
@@ -235,6 +168,7 @@ describe('createPushNotifications', () => {
     const api = createPushNotifications(config, fetcher);
 
     await expect(api.listPushDeliveryLogs()).resolves.toEqual([{
+      displayName: null,
       id: 'log-1',
       userId: 'user-1',
       subscriptionId: 'subscription-1',
@@ -305,39 +239,12 @@ describe('createPushNotifications', () => {
   });
 });
 
-it('includes every member and enabled device under a 137-row PostgREST cap', async () => {
-  const members = Array.from({ length: 1105 }, (_, index) => ({ auth_user_id: `user-${index}`, line_display_name: `會員 ${index}` }));
-  const subscriptions = members.map((member, index) => ({ id: `device-${index}`, user_id: member.auth_user_id }));
-  const fetcher = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+it('surfaces a later capped-page failure rather than presenting partial recipients', async () => {
+  const fetcher = vi.fn(async (input: string | URL | Request) => {
     const url = new URL(String(input));
-    if (url.pathname === '/auth/v1/admin/users') return response({ users: [] });
-    const rows = url.pathname === '/rest/v1/members' ? members : subscriptions;
-    const rangeStart = new Headers(init?.headers).get('Range')?.split('-')[0];
-    const start = Number(url.searchParams.get('offset') ?? rangeStart ?? 0);
-    const page = rows.slice(start, start + 137);
-    return new Response(JSON.stringify(page), { headers: { 'Content-Type': 'application/json', 'Content-Range': `${start}-${start + page.length - 1}/${rows.length}` } });
-  });
-  const result = await createPushNotifications(config, fetcher).listMemberPushStatus();
-  expect(result).toHaveLength(1105);
-  expect(result.every(member => member.pushEnabled)).toBe(true);
-  expect(result.at(-1)).toMatchObject({ userId: 'user-1104', displayName: '會員 1104', pushEnabled: true });
-  for (const table of ['members', 'member_push_subscriptions']) {
-    const offsets = fetcher.mock.calls.filter(([input]) => new URL(String(input)).pathname === `/rest/v1/${table}`).map(([input, init]) => {
-      const url = new URL(String(input));
-      return Number(url.searchParams.get('offset') ?? new Headers(init?.headers).get('Range')?.split('-')[0] ?? 0);
-    });
-    expect(offsets).toEqual([0, 137, 274, 411, 548, 685, 822, 959, 1096]);
-  }
-});
-
-it('surfaces a failure after a short capped member page instead of returning partial push status', async () => {
-  const fetcher = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
-    const url = new URL(String(input));
-    if (url.pathname === '/auth/v1/admin/users') return response({ users: [] });
-    if (url.pathname === '/rest/v1/member_push_subscriptions') return new Response('[]', { headers: { 'Content-Range': '*/0' } });
-    const offset = Number(url.searchParams.get('offset') ?? new Headers(init?.headers).get('Range')?.split('-')[0] ?? 0);
-    return offset === 0
-      ? new Response(JSON.stringify([{ auth_user_id: USER_ONE }]), { headers: { 'Content-Range': '0-0/2' } })
+    if (url.pathname !== '/rest/v1/members') return response({});
+    return Number(url.searchParams.get('offset')) === 0
+      ? response([{ auth_user_id: USER_ONE }], 200, 2)
       : response({ message: 'later page unavailable' }, 500);
   });
   await expect(createPushNotifications(config, fetcher).listMemberPushStatus()).rejects.toMatchObject({ code: 'UNAVAILABLE', statusCode: 503 });

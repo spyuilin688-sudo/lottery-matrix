@@ -125,11 +125,12 @@ def run_fantasy5_crawler(
     source_period: str | None = None
     written_period: str | None = None
 
+    started_at = datetime.now(UTC).isoformat()
     _best_effort_telemetry(
         lambda: repository.start_job(
             job_name,
             FANTASY5,
-            datetime.now(UTC).isoformat(),
+            started_at,
         )
     )
 
@@ -173,6 +174,7 @@ def run_fantasy5_crawler(
                 "failed",
                 datetime.now(UTC).isoformat(),
                 str(error)[:1000],
+                started_at=started_at,
             )
         )
         raise
@@ -183,6 +185,7 @@ def run_fantasy5_crawler(
             job_name,
             job_status,
             datetime.now(UTC).isoformat(),
+            started_at=started_at,
             source_period=acquisition["sourcePeriod"],
             database_period=acquisition["databasePeriod"],
             written_period=acquisition["writtenPeriod"],

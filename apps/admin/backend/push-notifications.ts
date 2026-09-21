@@ -19,9 +19,8 @@ type AuthUser = {
   identities?: AuthIdentity[] | null;
 };
 
-type AuthUsersResponse = {
-  users?: AuthUser[];
-};
+export type PushMemberQuery = { page?: unknown; keyword?: unknown; userId?: unknown };
+export type PushMemberPage = { items: MemberPushStatus[]; total: number; currentPage: number; totalPages: number };
 
 type EdgeBusinessErrorCode = 'INVALID_REQUEST' | 'NO_ACTIVE_SUBSCRIPTIONS';
 type EdgeBusinessEnvelope = {
@@ -43,6 +42,7 @@ export type MemberPushStatus = {
 
 export type PushDeliveryLog = {
   id: string;
+  displayName?: string | null;
   userId: string;
   subscriptionId: string | null;
   title: string;
@@ -65,7 +65,7 @@ export class PushNotificationsError extends Error {
   }
 }
 
-const PAGE_SIZE = 1000;
+const PAGE_SIZE = 30;
 const UUID_PATTERN = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 
 function optionalString(value: unknown) {
@@ -119,64 +119,72 @@ export function createPushNotifications(
   };
   const supabase = createSupabaseTransport(configOrLoader, transportFetcher);
 
-  async function listAllRows(path: string) {
-    const result: Row[] = [];
-    for (;;) {
-      const start = result.length;
-      const page = await supabase.request<{ items: Row[]; total: number }>(path, {
-        headers: {
-          Range: `${start}-${start + PAGE_SIZE - 1}`,
-          'Range-Unit': 'items',
-          Prefer: 'count=exact',
-        },
-      }, true);
-      result.push(...page.items);
-      // PostgREST may cap a range below PAGE_SIZE. Advance by actual rows and
-      // use its exact count (or an empty response) to detect the final page.
-      if (page.items.length === 0 || result.length >= page.total) return result;
-    }
-  }
-
-  async function listAllAuthUsers() {
-    const result: AuthUser[] = [];
-    for (let page = 1; ; page += 1) {
-      const response = await supabase.request<AuthUsersResponse>(
-        `/auth/v1/admin/users?page=${page}&per_page=${PAGE_SIZE}`,
-      );
-      const users = response.users ?? [];
-      result.push(...users);
-      if (users.length < PAGE_SIZE) return result;
-    }
+  async function enrichMember(row: Row): Promise<MemberPushStatus> {
+    const userId = String(row.auth_user_id ?? '');
+    const [authUser, subscriptions] = await Promise.all([
+      supabase.request<AuthUser>(`/auth/v1/admin/users/${encodeURIComponent(userId)}`),
+      // Existence, not a device scan: one recipient may have many devices.
+      supabase.request<Row[]>(`/rest/v1/member_push_subscriptions?select=id&enabled=eq.true&user_id=eq.${encodeURIComponent(userId)}&limit=1`),
+    ]);
+    const identity = lineIdentity(authUser);
+    const providerIdentity = providerIdentityFromAuthUser(row.line_user_id, authUser);
+    return {
+      userId,
+      identityLabel: providerIdentity?.label ?? null,
+      identityValue: providerIdentity?.value ?? null,
+      identityDisplay: providerIdentity ? `${providerIdentity.label}：${providerIdentity.value}` : null,
+      displayName: memberDisplayNameFromAuthUser(row.line_display_name, authUser),
+      pictureUrl: optionalString(authUser?.user_metadata?.picture) ?? optionalString(identity?.picture),
+      pushEnabled: subscriptions.length > 0,
+    };
   }
 
   return {
-    async listMemberPushStatus(): Promise<MemberPushStatus[]> {
-      const [members, authUsers, subscriptions] = await Promise.all([
-        listAllRows('/rest/v1/members?select=auth_user_id%2Cline_user_id%2Cline_display_name&order=auth_user_id.asc'),
-        listAllAuthUsers(),
-        listAllRows('/rest/v1/member_push_subscriptions?select=id%2Cuser_id&enabled=eq.true&order=id.asc'),
-      ]);
-      const users = new Map(
-        authUsers.map((user) => [String(user.id ?? ''), user]),
-      );
-      const enabledUsers = new Set(subscriptions.map((row) => String(row.user_id ?? '')));
-
-      return members.map((row) => {
-        const userId = String(row.auth_user_id ?? '');
-        const authUser = users.get(userId);
-        const identity = lineIdentity(authUser);
-        const providerIdentity = providerIdentityFromAuthUser(row.line_user_id, authUser);
-        return {
-          userId,
-          identityLabel: providerIdentity?.label ?? null,
-          identityValue: providerIdentity?.value ?? null,
-          identityDisplay: providerIdentity ? `${providerIdentity.label}：${providerIdentity.value}` : null,
-          displayName: memberDisplayNameFromAuthUser(row.line_display_name, authUser),
-          pictureUrl: optionalString(authUser?.user_metadata?.picture)
-            ?? optionalString(identity?.picture),
-          pushEnabled: enabledUsers.has(userId),
-        };
-      });
+    async listMemberPushStatus(query: PushMemberQuery = {}): Promise<PushMemberPage> {
+      const page = Number(query.page ?? 1);
+      const keyword = String(query.keyword ?? '').trim();
+      const offset = (page - 1) * PAGE_SIZE;
+      if (!Number.isSafeInteger(page) || page < 1 || !Number.isSafeInteger(offset + PAGE_SIZE - 1) || keyword.length > 200) {
+        throw new PushNotificationsError('INVALID_REQUEST');
+      }
+      if (keyword && query.userId === undefined) {
+        const result = await supabase.request<{ items: Row[]; total: number; currentPage: number; totalPages: number }>(
+          '/rest/v1/rpc/admin_push_member_page', {
+            method: 'POST', body: JSON.stringify({ p_keyword: keyword, p_page: page }),
+          },
+        );
+        const items: MemberPushStatus[] = [];
+        for (let start = 0; start < result.items.length; start += 5) {
+          items.push(...await Promise.all(result.items.slice(start, start + 5).map(enrichMember)));
+        }
+        return { ...result, items };
+      }
+      const url = new URL('/rest/v1/members?select=auth_user_id%2Cline_user_id%2Cline_display_name&order=auth_user_id.asc', 'https://supabase.invalid');
+      if (query.userId !== undefined) url.searchParams.set('auth_user_id', `eq.${requireMemberUuid(query.userId)}`);
+      const read = async (currentPage: number) => {
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const items: Row[] = [];
+        let total = 0;
+        do {
+          url.searchParams.set('limit', String(PAGE_SIZE - items.length));
+          url.searchParams.set('offset', String(start + items.length));
+          const result = await supabase.requestPage<Row>(url.pathname + url.search);
+          total = result.total;
+          if (!result.items.length) break;
+          items.push(...result.items);
+        } while (items.length < PAGE_SIZE && start + items.length < total);
+        return { items, total };
+      };
+      let result = await read(page);
+      const totalPages = Math.max(1, Math.ceil(result.total / PAGE_SIZE));
+      const currentPage = Math.min(page, totalPages);
+      if (currentPage !== page) result = await read(currentPage);
+      // Limit simultaneous Auth requests; every lookup belongs to this page.
+      const items: MemberPushStatus[] = [];
+      for (let start = 0; start < result.items.length; start += 5) {
+        items.push(...await Promise.all(result.items.slice(start, start + 5).map(enrichMember)));
+      }
+      return { items, total: result.total, currentPage, totalPages: Math.max(1, Math.ceil(result.total / PAGE_SIZE)) };
     },
 
     async sendMemberTestPush(
@@ -203,7 +211,13 @@ export function createPushNotifications(
       const rows = await supabase.request<Row[]>(
         '/rest/v1/push_delivery_logs?select=id%2Cuser_id%2Csubscription_id%2Ctitle%2Cbody%2Cstatus%2Cfailure_reason%2Cadmin_account%2Csent_at&order=sent_at.desc&limit=200',
       );
+      const userIds = [...new Set(rows.map(row => String(row.user_id ?? '')).filter(id => UUID_PATTERN.test(id)))];
+      const names = userIds.length ? await supabase.request<Row[]>('/rest/v1/rpc/admin_push_log_member_names', {
+        method: 'POST', body: JSON.stringify({ p_auth_user_ids: userIds }),
+      }) : [];
+      const namesById = new Map(names.map(row => [String(row.user_id), optionalString(row.display_name)]));
       return rows.map((row) => ({
+        displayName: namesById.get(String(row.user_id)) ?? null,
         id: String(row.id ?? ''),
         userId: String(row.user_id ?? ''),
         subscriptionId: optionalString(row.subscription_id),

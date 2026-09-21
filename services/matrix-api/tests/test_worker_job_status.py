@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from app.repositories.analysis_repository import InMemoryAnalysisRepository
-from app.worker import run_scheduled_worker
+from app.worker import _run_tracked_job, run_scheduled_worker
 
 
 TAIPEI = ZoneInfo("Asia/Taipei")
@@ -82,8 +82,8 @@ class TelemetryFailingRepository(JobTrackingRepository):
         if self.fail_on == "start":
             raise RuntimeError("start telemetry failed")
 
-    def finish_job(self, job_name: str, status: str, finished_at: str, error: str | None = None) -> None:
-        super().finish_job(job_name, status, finished_at, error)
+    def finish_job(self, job_name: str, status: str, finished_at: str, error: str | None = None, **periods: str | None) -> None:
+        super().finish_job(job_name, status, finished_at, error, **periods)
         if self.fail_on == "finish":
             raise RuntimeError("finish telemetry failed")
 
@@ -196,6 +196,7 @@ def test_stale_source_finishes_invocation_as_waiting_source_with_periods() -> No
         "status": "waiting_source",
         "finishedAt": repository.job_events[-1]["finishedAt"],
         "error": None,
+        "started_at": repository.job_events[0]["startedAt"],
         "source_period": "000000220",
         "database_period": "000000220",
         "written_period": None,
@@ -286,3 +287,46 @@ def test_out_of_schedule_call_does_not_overwrite_job_status() -> None:
     assert set(result["stageTimingsMs"]) == {"card", "notification"}
     assert all(value >= 0 for value in result["stageTimingsMs"].values())
     assert repository.job_events == []
+
+
+@pytest.mark.parametrize("older_fails", [False, True])
+def test_tracked_job_late_finish_preserves_newer_attempt(older_fails: bool) -> None:
+    repository = InMemoryAnalysisRepository()
+    newer: dict = {}
+
+    def execute() -> dict:
+        repository.start_job(JOB_NAME, "今彩539", "2099-01-01T00:00:00+00:00")
+        newer.update(repository.job_statuses[JOB_NAME])
+        if older_fails:
+            raise RuntimeError("old source failed")
+        return {"status": "acquired", "writtenPeriod": "old-period"}
+
+    if older_fails:
+        with pytest.raises(RuntimeError, match="old source failed"):
+            _run_tracked_job("今彩539", repository, execute)
+    else:
+        assert _run_tracked_job("今彩539", repository, execute)["status"] == "acquired"
+
+    assert repository.job_statuses[JOB_NAME] == newer
+
+
+@pytest.mark.parametrize("fails", [False, True])
+def test_tracked_job_finishes_its_own_attempt(fails: bool) -> None:
+    repository = InMemoryAnalysisRepository()
+
+    def execute() -> dict:
+        if fails:
+            raise RuntimeError("source failed")
+        return {"status": "acquired", "writtenPeriod": "new-period"}
+
+    if fails:
+        with pytest.raises(RuntimeError, match="source failed"):
+            _run_tracked_job("今彩539", repository, execute)
+    else:
+        _run_tracked_job("今彩539", repository, execute)
+
+    job = repository.job_statuses[JOB_NAME]
+    assert job["status"] == ("failed" if fails else "success")
+    assert job["error"] == ("source failed" if fails else None)
+    assert job["writtenPeriod"] == (None if fails else "new-period")
+    assert job["finishedAt"] is not None
