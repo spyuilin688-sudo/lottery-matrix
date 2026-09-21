@@ -5,6 +5,7 @@ import { getSupabaseClient } from './lib/supabase';
 import { readThroughCache, stableCacheKey } from './read-cache';
 import { readAlgorithmCacheScope } from './auth/algorithm-cache-scope';
 import { getMatrixDataRevision } from './matrix-data-revision';
+import { lotteryReadCacheTtlMs } from './lottery-cache-policy';
 
 export type MatrixNumberOrder = '依號碼由小到大排序' | '依實際開獎順序排序';
 export type MatrixAlgorithmType = '加減' | '合值' | '拖牌' | '加減版路' | '合值版路' | '拖牌版路';
@@ -383,8 +384,6 @@ export type TiangongValidationResponse = {
   analysisVersion: string; status: 'complete'; itemId: string; validation: TiangongValidation;
 };
 
-const MATRIX_READ_CACHE_MS = 60_000;
-
 function matrixRpcError(error: { code?: string; message?: string } | null): never {
   const message = String(error?.message ?? 'API_ERROR');
   if (message.includes('FORBIDDEN')) throw new MatrixApiError('FORBIDDEN', 403);
@@ -589,7 +588,8 @@ async function cachedMatrixResultRpc<T extends { lottery: NumberBallLottery; ana
     }
   };
   const key = stableCacheKey(`matrix-rpc:${name}`, { scope, permissionRevision: permissionSettings.revision, request });
-  const result = await readThroughCache(key, MATRIX_READ_CACHE_MS, async ({ isCurrent }) => {
+  const lottery = (request as { lottery: NumberBallLottery }).lottery;
+  const result = await readThroughCache(key, lotteryReadCacheTtlMs(lottery, 'standard'), async ({ isCurrent }) => {
     const value = await matrixResultRpc<T>(name, request);
     await assertCurrentSession();
     assertCurrentData();

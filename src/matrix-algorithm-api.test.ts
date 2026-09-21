@@ -265,3 +265,55 @@ describe('algorithm data revision', () => {
     expect(rpc).toHaveBeenCalledTimes(1);
   });
 });
+
+
+describe('time-window algorithm cache', () => {
+  it('keeps 今彩539 algorithm results until 20:00 during the stable window', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-22T10:00:00+08:00'));
+    rpc.mockResolvedValue({ data: { lottery: '今彩539', total: 1 }, error: null });
+
+    await fetchExploreList(accountRequest);
+    vi.setSystemTime(new Date('2026-09-22T19:59:59+08:00'));
+    await fetchExploreList(accountRequest);
+    expect(rpc).toHaveBeenCalledTimes(1);
+
+    vi.setSystemTime(new Date('2026-09-22T20:00:00+08:00'));
+    await fetchExploreList(accountRequest);
+    expect(rpc).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
+  it('keeps 天天樂 algorithm results through overnight until 09:00', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-22T23:00:00+08:00'));
+    const request = { ...accountRequest, lottery: '天天樂' as const };
+    rpc.mockResolvedValue({ data: { lottery: '天天樂', total: 1 }, error: null });
+
+    await fetchExploreList(request);
+    vi.setSystemTime(new Date('2026-09-23T08:59:59+08:00'));
+    await fetchExploreList(request);
+    expect(rpc).toHaveBeenCalledTimes(1);
+
+    vi.setSystemTime(new Date('2026-09-23T09:00:00+08:00'));
+    await fetchExploreList(request);
+    expect(rpc).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
+  it('uses five minutes outside the stable algorithm window', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-22T20:30:00+08:00'));
+    rpc.mockResolvedValue({ data: { lottery: '今彩539', total: 1 }, error: null });
+
+    await fetchExploreList(accountRequest);
+    vi.setSystemTime(new Date('2026-09-22T20:34:59+08:00'));
+    await fetchExploreList(accountRequest);
+    expect(rpc).toHaveBeenCalledTimes(1);
+
+    vi.setSystemTime(new Date('2026-09-22T20:35:00+08:00'));
+    await fetchExploreList(accountRequest);
+    expect(rpc).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+});

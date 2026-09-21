@@ -24,6 +24,7 @@ const flush = async () => act(async () => { await vi.advanceTimersByTimeAsync(1)
 
 test.each(['reference', 'tongxing'] as const)('%s refreshes a submitted actual-order query without applying edited settings', async page => {
   vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-09-22T20:30:00+08:00'));
   let current = { ...preliminary, numbers: sorted, sortedNumbers: sorted, drawOrderNumbers: [] as string[], resultStatus: 'preliminary' };
   const previous = { period: '115208', drawDate: '2026/09/11', numbers: sorted, sortedNumbers: sorted, drawOrderNumbers: actual };
   const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async url => {
@@ -105,6 +106,7 @@ test('new preliminary period removes the previous actual card and cancels its pe
 
 test.each(['依號碼由小到大排序', '依實際開獎順序排序'])('history advances to preliminary and replaces its corrected period in %s', async numberOrder => {
   vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-09-22T20:30:00+08:00'));
   const previous = { period: '115208', drawDate: '2026/09/11', numbers: sorted, sortedNumbers: sorted, drawOrderNumbers: actual };
   let records: Array<typeof previous> = [previous];
   vi.spyOn(globalThis, 'fetch').mockImplementation(async url => json(String(url).includes('/history-years/') ? { years: ['2026'] } : String(url).includes('/latest/') ? records[0] : { items: records }));
