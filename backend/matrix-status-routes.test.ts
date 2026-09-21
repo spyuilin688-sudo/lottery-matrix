@@ -156,7 +156,16 @@ describe('Matrix status route', () => {
   });
 
   it('does not disclose seven-period validation to an anonymous caller on Friday', async () => {
-    await expect(routes(member('free', false)).validation({
+    const api = createMatrixStatusRoutes({
+      requireMember: async () => member('free', false),
+      resolveEntitlements: async () => testMatrixEntitlements({ authUserId: '', memberId: '', plan: 'free', active: false, referralSuccessCount: 0, loginPerksEligible: false }, new Date('2026-08-21T00:00:00Z')),
+      readStatusSources: async () => ({
+        analysisVersion: 'v1', drawPeriod: artifact.drawPeriod, explore: artifact,
+        tianyan: { lottery: '今彩539', drawPeriod: artifact.drawPeriod, items: [], validationById: {} },
+      }),
+      readStatusValidation: async (_lottery, _drawPeriod, _analysisVersion, itemId) => ({ itemId, validation: { itemId, ruleSets: [] } }),
+    });
+    await expect(api.validation({
       body: {
         lottery: '今彩539', drawPeriod: artifact.drawPeriod,
         analysisVersion: 'v1', itemId: 'road-7',
