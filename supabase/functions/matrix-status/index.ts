@@ -3,6 +3,7 @@ import type { ExploreArtifact, TianyanArtifact } from '../../../backend/matrix-s
 import { createMatrixStatusEdgeHandler } from './handler.ts';
 import {
   createMatrixStatusCompactReader,
+  createMatrixStatusEntitlementReader,
   createMatrixStatusIdentityReader,
   createMatrixStatusSourceReader,
   createMatrixStatusValidationReader,
@@ -26,6 +27,7 @@ function loadConfig() {
 
 const memberAuth = createMemberAuth(loadConfig);
 const readCompactStatus = createMatrixStatusCompactReader(loadConfig);
+const readEntitlements = createMatrixStatusEntitlementReader(loadConfig);
 const readStatusSources = createMatrixStatusSourceReader(loadConfig);
 const readStatusValidation = createMatrixStatusValidationReader(loadConfig);
 
@@ -44,6 +46,7 @@ async function resolvedStatusSources(lottery: LotteryId, drawPeriod?: string) {
 }
 
 const handler = createMatrixStatusEdgeHandler({
+  resolveEntitlements: (authorization) => readEntitlements(authorization),
   readStatusIdentity: createMatrixStatusIdentityReader(loadConfig),
   requireMember: (authorization) => memberAuth.requireMember(authorization),
   async readCompactStatus(lottery: LotteryId, drawPeriod?: string, summaryOnly = false) {
