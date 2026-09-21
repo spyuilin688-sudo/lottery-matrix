@@ -9,6 +9,7 @@ const css = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "
 const ballCss = readFileSync(new URL("../src/number-ball.css", import.meta.url), "utf8");
 const matrixCss = readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8");
 const responsiveCss = readFileSync(new URL("../src/responsive-feature-pages.css", import.meta.url), "utf8");
+const historyReadabilityCss = readFileSync(new URL("../src/draw-history-readability.css", import.meta.url), "utf8");
 const source = readFeaturePagesSource();
 const prototypeSource = readFileSync(new URL("../src/Prototype.tsx", import.meta.url), "utf8");
 const prototypeCss = readFileSync(new URL("../src/prototype.css", import.meta.url), "utf8");
@@ -48,14 +49,14 @@ test("歷史今彩539只保留明確的 .2px 數字底線間距，不受 Matrix 
 
 test("歷史今彩539與天天樂增加呼吸空間且不影響六加一彩種", () => {
   const fiveBallPanel = ruleBodies(
-    responsiveCss,
+    historyReadabilityCss,
     /^\.draw-history-screen \.draw-history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\)$/,
   );
   assert.equal(fiveBallPanel.length, 1);
   assert.match(fiveBallPanel[0], /--mx-history-row-height:\s*59px;/);
 
   const fiveBallSpacing = ruleBodies(
-    responsiveCss,
+    historyReadabilityCss,
     /^\.draw-history-screen \.draw-history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.history-main-numbers$/,
   );
   assert.equal(fiveBallSpacing.length, 1);
