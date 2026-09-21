@@ -45,6 +45,8 @@ export async function signOutFromMatrix() {
   session = null;
   listeners.forEach(listener => listener("SIGNED_OUT", null));
 }
+export async function prepareLineLoginUrl() { throw new Error("此為本機預覽，未連接 LINE 登入。"); }
+export function shouldUseDirectLineBrowserLink() { return false; }
 export async function signInWithLine() { throw new Error("此為本機預覽，未連接 LINE 登入。"); }
 export function usePwaLifecycle() {
   return { showInstallAction: false, requestInstall: async () => "unavailable" };
