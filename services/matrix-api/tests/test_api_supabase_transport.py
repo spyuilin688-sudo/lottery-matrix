@@ -61,7 +61,8 @@ def test_api_parallel_tongxing_avoids_terminated_http2_connection(monkeypatch):
             results = list(pool.map(query, lotteries * 3))
         assert [status for status, _ in results] == [200] * 12
         query_kinds = [json.loads(request.content)["p_kind"] for request in requests]
-        assert query_kinds.count("latest") == 12
+        # Concurrent probes may share a flight; completed probes are never cached.
+        assert 4 <= query_kinds.count("latest") <= 12
         assert query_kinds.count("tongxing") == 4
         for _, payload in results:
             assert len(payload["groups"]) == 1

@@ -150,3 +150,56 @@ def test_public_pages_share_cache_but_corrected_revision_forces_reload():
     assert _draw_query(repository, '今彩539', 'history', p_limit=500)['revision'] == 'v2'
     with pytest.raises(HistoryChangedError):
         _draw_query(repository, '今彩539', 'history', p_limit=500, p_cursor={'offset': 1, 'revision': 'v1'})
+
+
+@pytest.mark.parametrize('fails', [False, True])
+def test_concurrent_history_requests_share_version_probe_and_retry_after_failure(monkeypatch, fails):
+    from concurrent.futures import Future, ThreadPoolExecutor
+    from threading import Event
+    import app.draw_read_cache as module
+    from app.api_server import _draw_query
+
+    joined, started, release = Event(), Event(), Event()
+
+    class ObservedFuture(Future):
+        def result(self, *args, **kwargs):
+            joined.set()
+            return super().result(*args, **kwargs)
+
+    monkeypatch.setattr(module, 'Future', ObservedFuture)
+
+    class Repository(QueryRepository):
+        revision = 'v1'
+        fail = fails
+
+        def rpc(self, name, params):
+            self.calls.append((name, params))
+            def execute():
+                if params['p_kind'] == 'latest':
+                    started.set()
+                    assert release.wait(2)
+                    if self.fail:
+                        raise TimeoutError('probe failed')
+                return SimpleNamespace(data={'items': [draw()], 'revision': self.revision})
+            return SimpleNamespace(execute=execute)
+
+    repository = Repository(None)
+    repository.draw_read_cache = module.DrawReadCache()
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(_draw_query, repository, '今彩539', 'history', p_limit=500)
+        try:
+            assert started.wait(2)
+            second = pool.submit(_draw_query, repository, '今彩539', 'history', p_limit=500)
+            assert joined.wait(2)
+        finally:
+            release.set()
+        for job in (first, second):
+            if fails:
+                with pytest.raises(TimeoutError):
+                    job.result()
+            else:
+                assert job.result()['revision'] == 'v1'
+    assert sum(p['p_kind'] == 'latest' for _, p in repository.calls) == 1
+    repository.fail, repository.revision = False, 'v2'
+    assert _draw_query(repository, '今彩539', 'history', p_limit=500)['revision'] == 'v2'
+    assert sum(p['p_kind'] == 'latest' for _, p in repository.calls) == 2

@@ -18,11 +18,11 @@ class DrawReadCache:
         self._ttl = ttl
         self._clock = clock
 
-    def read(self, key, load):
+    def read(self, key, load, *, cache_result=True):
         with self._lock:
             for expired in [k for k, (until, _) in self._values.items() if until <= self._clock()]:
                 self._bytes -= len(self._values.pop(expired)[1])
-            cached = self._values.get(key)
+            cached = self._values.get(key) if cache_result else None
             if cached is not None:
                 self._values.move_to_end(key)
                 return json.loads(cached[1])
@@ -37,7 +37,7 @@ class DrawReadCache:
             value = load()
             encoded = json.dumps(value, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
             with self._lock:
-                if 'error' not in value and len(encoded) <= self._max_bytes:
+                if cache_result and 'error' not in value and len(encoded) <= self._max_bytes:
                     while self._values and (len(self._values) >= self._max_entries
                                             or self._bytes + len(encoded) > self._max_bytes):
                         _, (_, evicted) = self._values.popitem(last=False)
