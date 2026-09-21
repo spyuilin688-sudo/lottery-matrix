@@ -23,6 +23,7 @@ test('engineering handoff describes the current production architecture instead 
   assert.match(handoff, /Supabase/);
   assert.match(handoff, /Railway/);
 
-  assert.doesNotMatch(handoff, /lottery-matrix-preview\.spyuilin688\.chatgpt\.site/);
+  assert.match(handoff, /舊的 `lottery-matrix-preview\.spyuilin688\.chatgpt\.site`/);
+  assert.doesNotMatch(handoff, /^線上預覽：/m);
   assert.doesNotMatch(handoff, /功能內頁、API、會員、訂閱、通知與實際開獎資料串接不在此線上預覽原始碼內/);
 });
