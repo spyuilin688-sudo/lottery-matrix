@@ -289,6 +289,8 @@ Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封
 
 探索、天衡、天衍、天工共用 `.matrix-explore-main-screen` 的頁面色彩變體，四彩種一致套用。`src/matrix-explore-spacing.css` 在既有根節點設定細框線 `--pwa-frame-divider` 為標準金的 28%，摘要分隔符 `--explore-validation-summary-border-color` 使用摘要外框的 `--pwa-frame-secondary`。`src/explore-result-preview.css` 的既有分隔符規則同時處理兩種摘要分隔符類別；其他頁面保留原分隔符預設色。重複號碼統計小卡的次數使用暖灰白 `#c6c0b8`，移除原 72% 透明度，沿用字級、字重、尺寸與篩選操作。
 
+2026-09-21：筆記編輯頁外框自動延伸至底部導覽列上方，內容輸入框同步自動撐高；原有標題、返回、按鈕、左右間距與功能不變。
+
 ## PWA frame hierarchy — 2026-09-15
 
 The approved homepage palette is the sole color source. Runtime ownership remains
