@@ -10,7 +10,7 @@ const target = new URL(
 const source = fs.readFileSync(target, 'utf8');
 
 test('Mark Six calendar checks run Tuesday Thursday Saturday plus Sunday safety', () => {
-  assert.match(source, /extract\(isodow from local_now\.value\)::integer in \(2,4,6,7\)/);
+  assert.match(source, /date_part\('isodow', local_now\.value\)::integer in \(2,4,6,7\)/);
   for (const schedule of [
     '0 4,6,8 * * 0,2,4,6',
     '45 8-12 * * 0,2,4,6',
