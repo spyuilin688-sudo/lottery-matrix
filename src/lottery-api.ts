@@ -3,6 +3,7 @@ import type { NumberBallLottery } from './NumberBall';
 import { fetchWithPolicy, withRequestId } from './lib/api-resilience';
 import { RAILWAY_API_BASE } from './runtime-api-config';
 import { clearReadCache, readThroughCache, stableCacheKey } from './read-cache';
+import { isLotteryReadCacheFresh, lotteryReadCacheExpiresAt, lotteryReadCacheTtlMs } from './lottery-cache-policy';
 import {
   getMatrixCurrentPeriod,
   clearMatrixLotteryData,
@@ -14,9 +15,6 @@ import {
 } from './matrix-result-cache';
 
 export const LOTTERY_API_BASE = RAILWAY_API_BASE;
-const LOTTERY_READ_CACHE_MS = 5 * 60 * 1_000;
-// Leave room for request latency so the next 60-second refresh cannot hit its prior snapshot.
-const LOTTERY_LATEST_CACHE_MS = 30_000;
 const latestRecords = new Map<NumberBallLottery, LotteryDrawRecord>();
 const historyRecords = new Map<string, LotteryDrawRecord[]>();
 const historyIdentities = new WeakMap<LotteryDrawRecord[], number>();
@@ -386,18 +384,20 @@ export async function fetchLatestLotteryDraw(lottery: NumberBallLottery): Promis
   let expiresAt = Infinity;
   return readThroughCache(
     stableCacheKey('lottery:latest', { lottery }),
-    LOTTERY_LATEST_CACHE_MS,
+    lotteryReadCacheTtlMs(lottery, 'latest'),
     async ({ isCurrent }) => {
       // Keep the expired snapshot only for correction detection, never as fresh data.
       const stored = readLotteryLatestCacheEntry<LotteryDrawRecord>(lottery, Infinity);
-      const cached = readLotteryLatestCacheEntry<LotteryDrawRecord>(lottery, LOTTERY_LATEST_CACHE_MS);
+      const cached = stored && isLotteryReadCacheFresh(lottery, 'latest', stored.savedAt)
+        ? stored
+        : null;
       if (cached && cached.value.resultStatus) {
         const record = normalizeRecord(lottery, cached.value);
         const previous = latestRecords.get(lottery);
         if (previous && drawFingerprint(previous) !== drawFingerprint(record)) invalidateLotteryData(lottery);
         if (record.period) setMatrixCurrentPeriod(lottery, record.period);
         latestRecords.set(lottery, record);
-        expiresAt = cached.savedAt + LOTTERY_LATEST_CACHE_MS;
+        expiresAt = lotteryReadCacheExpiresAt(lottery, 'latest', cached.savedAt);
         return record;
       }
       const data = await requestJson<LatestLotteryResponse>(
@@ -416,7 +416,7 @@ export async function fetchLatestLotteryDraw(lottery: NumberBallLottery): Promis
       if (record.period) setMatrixCurrentPeriod(lottery, record.period);
       latestRecords.set(lottery, record);
       writeLotteryLatestCache(lottery, record);
-      expiresAt = Date.now() + LOTTERY_LATEST_CACHE_MS;
+      expiresAt = lotteryReadCacheExpiresAt(lottery, 'latest');
       return record;
     },
     { expiresAt: () => expiresAt },
@@ -425,7 +425,7 @@ export async function fetchLatestLotteryDraw(lottery: NumberBallLottery): Promis
 
 export async function fetchLotteryHistoryYears(lottery: NumberBallLottery): Promise<string[]> {
   await fetchLatestLotteryDraw(lottery);
-  return readThroughCache(`lottery:years:${lottery}`, LOTTERY_READ_CACHE_MS, async () => {
+  return readThroughCache(`lottery:years:${lottery}`, lotteryReadCacheTtlMs(lottery, 'standard'), async () => {
     const data = await requestJson<{ years: unknown }>(`/api/matrix/history-years/${encodeURIComponent(lottery)}`);
     if (!Array.isArray(data.years) || data.years.some(year => typeof year !== 'string' || !/^\d{4}$/.test(year))) {
       throw new Error('歷史年份格式不正確');
@@ -445,7 +445,7 @@ export async function fetchLotteryHistoryPeriods(
   }
   await fetchLatestLotteryDraw(lottery);
   return readThroughCache(
-    stableCacheKey(`lottery:history:${lottery}:periods`, requested), LOTTERY_READ_CACHE_MS,
+    stableCacheKey(`lottery:history:${lottery}:periods`, requested), lotteryReadCacheTtlMs(lottery, 'standard'),
     async ({ isCurrent }) => {
       const query = new URLSearchParams({ periods: JSON.stringify(requested) });
       const data = await requestJson<{ items: LotteryDrawRecord[] }>(`/api/matrix/history/${encodeURIComponent(lottery)}?${query}`);
@@ -468,17 +468,20 @@ export async function fetchLotteryHistory(
   const historyKey = `${lottery}:${limit ?? 'all'}`;
   return readThroughCache(
     `lottery:history:${lottery}:${stableCacheKey('', { limit })}`,
-    LOTTERY_READ_CACHE_MS,
+    lotteryReadCacheTtlMs(lottery, 'standard'),
     async ({ isCurrent }) => {
       const stored = drawPeriod ? readLotteryHistoryCacheEntry<LotteryDrawRecord[]>(lottery, drawPeriod, limit, Infinity) : null;
       // A server revision covers corrections to every draw, not just the latest period.
       const revisionUnchanged = typeof latest?.sourceRevision === 'string'
         && latest.sourceRevision.length > 0 && stored?.revision === latest.sourceRevision;
-      const cached = revisionUnchanged ? stored
-        : drawPeriod ? readLotteryHistoryCacheEntry<LotteryDrawRecord[]>(lottery, drawPeriod, limit) : null;
+      const cached = revisionUnchanged
+        ? stored
+        : stored && isLotteryReadCacheFresh(lottery, 'standard', stored.savedAt)
+          ? stored
+          : null;
       // Older clients persisted fabricated draw-order fallbacks. Revalidate those snapshots.
       if (cached && cached.value.every(record => record.resultStatus)) {
-        expiresAt = (revisionUnchanged ? Date.now() : cached.savedAt) + LOTTERY_READ_CACHE_MS;
+        expiresAt = lotteryReadCacheExpiresAt(lottery, 'standard', revisionUnchanged ? Date.now() : cached.savedAt);
         historyRecords.set(historyKey, cached.value);
         return cached.value;
       }
@@ -504,7 +507,7 @@ export async function fetchLotteryHistory(
       const resultPeriod = drawPeriod ?? result[0]?.period;
       if (resultPeriod) writeLotteryHistoryCache(lottery, resultPeriod, limit, result, historyRevision);
       historyRecords.set(historyKey, result);
-      expiresAt = Date.now() + LOTTERY_READ_CACHE_MS;
+      expiresAt = lotteryReadCacheExpiresAt(lottery, 'standard');
       return result;
     },
     { expiresAt: () => expiresAt },
@@ -533,7 +536,7 @@ function projectHistoryRecord(
 
 export async function fetchTongXing(input: TongXingRequest): Promise<TongXingResponse> {
   await fetchLatestLotteryDraw(input.lottery);
-  return readThroughCache(stableCacheKey(`lottery:tongxing:${input.lottery}`, input), LOTTERY_READ_CACHE_MS, async ({ isCurrent }) => {
+  return readThroughCache(stableCacheKey(`lottery:tongxing:${input.lottery}`, input), lotteryReadCacheTtlMs(input.lottery, 'standard'), async ({ isCurrent }) => {
     const groups = await collectQueryPages<TongXingPair>(async (cursor, size) => {
       const data = await requestJson<TongXingResponse & { nextCursor?: QueryCursor | null }>('/api/matrix/tongxing', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -553,7 +556,7 @@ export async function fetchTongXing(input: TongXingRequest): Promise<TongXingRes
 
 export async function fetchNumberReference(input: NumberReferenceRequest) {
   const history = await fetchLotteryHistory(input.lottery, input.historyRange);
-  return readThroughCache(stableCacheKey(`lottery:number-reference:${input.lottery}`, { ...input, source: historyIdentity(history) }), LOTTERY_READ_CACHE_MS, async () => {
+  return readThroughCache(stableCacheKey(`lottery:number-reference:${input.lottery}`, { ...input, source: historyIdentity(history) }), lotteryReadCacheTtlMs(input.lottery, 'standard'), async () => {
     return {
       ...input,
       items: [...history].reverse().map((record) => {
