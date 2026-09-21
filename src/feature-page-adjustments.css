@@ -769,18 +769,6 @@
     0 0 12px rgba(215, 154, 28, .12);
 }
 
-.draw-history-screen .history-filter-start {
-  height: 26px;
-  padding: 0 4px;
-  border: 1px solid #c99a2e;
-  border-radius: 7px;
-  background: linear-gradient(135deg, #efbf4f, #c9800c);
-  color: #17120a;
-  font-size: clamp(9px, 2.8vw, 11px);
-  font-weight: 700;
-  white-space: nowrap;
-  box-shadow: none;
-}
 
 @media (prefers-reduced-motion: reduce) {
   .notifications-screen-v2 .notification-inline-settings {
