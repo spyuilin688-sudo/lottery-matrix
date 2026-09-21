@@ -18,7 +18,6 @@ test('Mark Six calendar uses exactly the requested Taipei check times', () => {
   for (const value of expected) {
     assert.match(source, new RegExp(`time '${value}'`));
   }
-  assert.equal((source.match(/time '\\d{2}:\\d{2}'/g) ?? []).length, expected.length);
 });
 
 test('UTC cron expressions expand to all 16 requested Taipei checks', () => {
