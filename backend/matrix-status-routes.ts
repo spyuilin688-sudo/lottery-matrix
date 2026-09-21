@@ -29,7 +29,7 @@ type Dependencies = {
   readStatusIdentity?(lottery: LotteryId, drawPeriod?: string): Promise<{ analysisVersion: string; drawPeriod: string } | null>;
   readStatusSources(lottery: LotteryId, drawPeriod?: string): Promise<StatusSources | null>;
   readCompactStatus?(lottery: LotteryId, drawPeriod?: string, summaryOnly?: boolean): Promise<CompactStatus | null>;
-  resolveEntitlements?(authorization?: string): Promise<MatrixEntitlements>;
+  resolveEntitlements(authorization?: string): Promise<MatrixEntitlements>;
   readStatusValidation?(
     lottery: LotteryId,
     drawPeriod: string,
@@ -147,10 +147,7 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
   const memberFor = (authorization?: string) => authorization
     ? dependencies.requireMember(authorization)
     : Promise.resolve(anonymousMatrixMember);
-  const entitlementsFor = (authorization: string | undefined) => {
-    if (!dependencies.resolveEntitlements) throw new Error('ENTITLEMENTS_RESOLVER_REQUIRED');
-    return dependencies.resolveEntitlements(authorization);
-  };
+  const entitlementsFor = (authorization: string | undefined) => dependencies.resolveEntitlements(authorization);
   return {
     async identity(input: RouteInput): Promise<RouteResult> {
       try {
