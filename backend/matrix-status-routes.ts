@@ -1,4 +1,4 @@
-import { anonymousMatrixMember, resolveMatrixEntitlements, type MatrixEntitlements, type MemberContext } from './matrix-entitlements.ts';
+import { anonymousMatrixMember, type MatrixEntitlements, type MemberContext } from './matrix-entitlements.ts';
 import { MatrixAccessError } from './matrix-member-auth.ts';
 import {
   buildMatrixStatusArtifact,
@@ -29,7 +29,7 @@ type Dependencies = {
   readStatusIdentity?(lottery: LotteryId, drawPeriod?: string): Promise<{ analysisVersion: string; drawPeriod: string } | null>;
   readStatusSources(lottery: LotteryId, drawPeriod?: string): Promise<StatusSources | null>;
   readCompactStatus?(lottery: LotteryId, drawPeriod?: string, summaryOnly?: boolean): Promise<CompactStatus | null>;
-  resolveEntitlements?(authorization?: string): Promise<MatrixEntitlements>;
+  resolveEntitlements(authorization?: string): Promise<MatrixEntitlements>;
   readStatusValidation?(
     lottery: LotteryId,
     drawPeriod: string,
@@ -144,13 +144,10 @@ function projectStatusSummary(
 }
 
 export function createMatrixStatusRoutes(dependencies: Dependencies) {
-  const now = dependencies.now ?? (() => new Date());
   const memberFor = (authorization?: string) => authorization
     ? dependencies.requireMember(authorization)
     : Promise.resolve(anonymousMatrixMember);
-  const entitlementsFor = async (authorization: string | undefined, member: MemberContext) => dependencies.resolveEntitlements
-    ? dependencies.resolveEntitlements(authorization)
-    : resolveMatrixEntitlements(member, now());
+  const entitlementsFor = (authorization: string | undefined) => dependencies.resolveEntitlements(authorization);
   return {
     async identity(input: RouteInput): Promise<RouteResult> {
       try {
@@ -163,7 +160,7 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
         if (!identity?.analysisVersion || !identity.drawPeriod) throw new Error('ANALYSIS_NOT_READY');
         return { status: 200, body: {
           kind: 'status-identity', lottery, ...identity,
-          entitlements: await entitlementsFor(input.authorization, member),
+          entitlements: await entitlementsFor(input.authorization),
         } };
       } catch (cause) { return failure(cause); }
     },
@@ -174,7 +171,7 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
         const lottery = String(body.lottery ?? '') as LotteryId;
         if (!lotteries.includes(lottery)) throw new Error('INVALID_REQUEST');
         const requestedPeriod = body.drawPeriod ? String(body.drawPeriod) : undefined;
-        const entitlements = await entitlementsFor(input.authorization, member);
+        const entitlements = await entitlementsFor(input.authorization);
 
         if (dependencies.readCompactStatus) {
           const compact = await dependencies.readCompactStatus(lottery, requestedPeriod, true);
@@ -233,7 +230,7 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
         const lottery = String(body.lottery ?? '') as LotteryId;
         if (!lotteries.includes(lottery)) throw new Error('INVALID_REQUEST');
         const requestedPeriod = body.drawPeriod ? String(body.drawPeriod) : undefined;
-        const entitlements = await entitlementsFor(input.authorization, member);
+        const entitlements = await entitlementsFor(input.authorization);
 
         if (dependencies.readCompactStatus) {
           const compact = await dependencies.readCompactStatus(lottery, requestedPeriod);
@@ -306,7 +303,7 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
         if (!lotteries.includes(lottery) || !drawPeriod || !analysisVersion || !itemId) {
           throw new Error('INVALID_REQUEST');
         }
-        const entitlements = await entitlementsFor(input.authorization, member);
+        const entitlements = await entitlementsFor(input.authorization);
         let visible = false;
 
         if (dependencies.readCompactStatus) {

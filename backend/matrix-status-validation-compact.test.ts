@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createMatrixStatusRoutes } from './matrix-status-routes';
 import type { MemberContext } from './matrix-entitlements';
+import { testMatrixEntitlements } from './test-matrix-entitlements';
 
 const drawPeriod = '114000123';
 
@@ -18,6 +19,7 @@ describe('Matrix status validation compact read path', () => {
     let validationReads = 0;
     const api = createMatrixStatusRoutes({
       requireMember: async () => freeMember,
+      resolveEntitlements: async () => testMatrixEntitlements(freeMember, new Date('2026-08-21T00:00:00Z')),
 
       readCompactStatus: async () => ({
         analysisVersion: 'v1',

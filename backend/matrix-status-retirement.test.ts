@@ -1,6 +1,7 @@
 import { expect, it, vi } from 'vitest';
 import { createMatrixStatusEdgeHandler } from '../supabase/functions/matrix-status/handler';
 import { createMatrixStatusRoutes } from './matrix-status-routes';
+import { testMatrixEntitlements } from './test-matrix-entitlements';
 
 const lottery = '今彩539' as const;
 const drawPeriod = '115000210';
@@ -16,6 +17,7 @@ const compact = {
 function dependencies() {
   return {
     requireMember: vi.fn(async () => ({ authUserId: 'user', memberId: 'member', plan: 'monthly' as const, active: true, referralSuccessCount: 0 })),
+    resolveEntitlements: vi.fn(async () => testMatrixEntitlements({ authUserId: 'user', memberId: 'member', plan: 'monthly', active: true, referralSuccessCount: 0 })),
     readCompactStatus: vi.fn(async () => compact),
     readStatusValidation: vi.fn(async () => ({ itemId: 'road', validation: { rows: [] } })),
     readStatusSources: vi.fn(async () => { throw new Error('raw source forbidden'); }),
