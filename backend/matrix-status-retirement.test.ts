@@ -16,8 +16,8 @@ const compact = {
 };
 function dependencies() {
   return {
-    requireMember: vi.fn(async () => ({ authUserId: 'user',
-    resolveEntitlements: async () => testMatrixEntitlements(member('monthly')), memberId: 'member', plan: 'monthly' as const, active: true, referralSuccessCount: 0 })),
+    requireMember: vi.fn(async () => ({ authUserId: 'user', memberId: 'member', plan: 'monthly' as const, active: true, referralSuccessCount: 0 })),
+    resolveEntitlements: vi.fn(async () => testMatrixEntitlements({ authUserId: 'user', memberId: 'member', plan: 'monthly', active: true, referralSuccessCount: 0 })),
     readCompactStatus: vi.fn(async () => compact),
     readStatusValidation: vi.fn(async () => ({ itemId: 'road', validation: { rows: [] } })),
     readStatusSources: vi.fn(async () => { throw new Error('raw source forbidden'); }),
