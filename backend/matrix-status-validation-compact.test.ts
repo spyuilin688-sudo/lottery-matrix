@@ -20,7 +20,6 @@ describe('Matrix status validation compact read path', () => {
     const api = createMatrixStatusRoutes({
       requireMember: async () => freeMember,
       resolveEntitlements: async () => testMatrixEntitlements(freeMember, new Date('2026-08-21T00:00:00Z')),
-    resolveEntitlements: async () => testMatrixEntitlements(member('monthly')),
 
       readCompactStatus: async () => ({
         analysisVersion: 'v1',
