@@ -1,3 +1,5 @@
+import { sanitizeChainReports } from './matrix-chain';
+import { inspectChain } from './matrix-inspector';
 import { buildWatchdogPhasePlan } from './watchdog';
 import { apiStatusInventory, type ApiCheckEvidence, type ApiStatusDefinition } from './api-status-inventory';
 import { matrixStorageStatusId, parseMatrixStorageHealth } from './matrix-storage-status';
@@ -17,6 +19,7 @@ type Dependencies = {
   getWorkerStatus: () => Promise<WorkerStatus>;
   loadWorkerUrl?: () => Promise<string | undefined>;
   loadWatchdogStatus?: () => Promise<WatchdogStatus | null>;
+  observeWatchdog?: () => Promise<unknown>;
   loadGithubToken?: () => Promise<string | null>;
   fetcher?: typeof fetch;
   now?: () => Date;
@@ -119,6 +122,7 @@ const safeWatchdogDetail = (status: WatchdogStatus) => ({
     lottery, target, reasons: [...reasons], outcome,
   })),
   ...(status.error ? { error: status.error } : {}),
+  ...(status.recoveryReports ? { recoveryReports: status.recoveryReports } : {}),
   ...(status.reports ? { reports: status.reports, diagnoses: status.diagnoses, railway: status.railway } : {}),
   ...(status.optimizer ? { optimizer: status.optimizer } : {}),
   ...watchdogScheduleDetail,
@@ -145,6 +149,16 @@ export function createConnectionStatus(dependencies: Dependencies) {
   const fetcher = dependencies.fetcher ?? fetch;
   const now = dependencies.now ?? (() => new Date());
   const requestTimeoutMs = dependencies.requestTimeoutMs ?? defaultRequestTimeoutMs;
+  // Concurrent status requests share this read, but settled evidence is never
+  // cached: a later request must see a newly failed or repaired data chain.
+  let pendingObservation: Promise<unknown> | undefined;
+  const observeWatchdog = () => {
+    if (!pendingObservation) {
+      pendingObservation = Promise.resolve().then(() => dependencies.observeWatchdog!())
+        .finally(() => { pendingObservation = undefined; });
+    }
+    return pendingObservation;
+  };
   const withDeadline = async <T>(operation: () => Promise<T>, onTimeout?: () => void): Promise<T> => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const timeout = new Promise<never>((_, reject) => {
@@ -255,6 +269,31 @@ export function createConnectionStatus(dependencies: Dependencies) {
           return finish(false, detail, '自動監控已超過 18 分鐘未完成更新');
         }
         if (heartbeat.status !== 'ok') {
+          // The dynamic scheduler stops after recovery is certified. Its last
+          // heartbeat still describes the pre-recovery failure; verify current
+          // chains without running recovery or replacing the historical report.
+          if (!heartbeat.error && heartbeat.recoveryReports?.length && dependencies.observeWatchdog) {
+            try {
+              const raw = await withDeadline(observeWatchdog);
+              const current = raw && typeof raw === 'object' ? raw as Row : {};
+              const observedAt = typeof current.checkedAt === 'string' ? current.checkedAt : '';
+              const observedTime = Date.parse(observedAt);
+              const age = now().getTime() - observedTime;
+              const reports = sanitizeChainReports(current.reports);
+              if (Number.isFinite(age) && age >= -120_000 && age <= 30_000
+                && observedTime >= Date.parse(heartbeat.completedAt) && reports.length === 4
+                && reports.every(report => Date.parse(report.checkedAt) === observedTime
+                  && report.stages.every(stage => Date.parse(stage.observedAt) === observedTime))) {
+                const ok = reports.every(report => report.state === 'PASS');
+                detail = { ...safeWatchdogDetail(heartbeat), reports,
+                  diagnoses: reports.map(report => inspectChain(report, [])),
+                  observation: { checkedAt: observedAt, status: ok ? 'ok' : 'degraded', source: 'read-only-chain' } };
+                return { ...finish(ok, detail, ok ? undefined : '資料鏈尚未全部驗證完成'),
+                  healthState: ok ? (observation === 'idle' || observation === 'pending' ? 'waiting' : 'healthy')
+                    : reports.some(r => r.state === 'FAIL') ? 'failed' : reports.some(r => r.state === 'UNKNOWN') ? 'unknown' : 'waiting' };
+              }
+            } catch { /* Missing current evidence cannot clear the recorded failure. */ }
+          }
           return { ...finish(false, detail, '資料鏈尚未全部驗證完成'), healthState: heartbeat.reports?.some(r => r.state === 'FAIL') ? 'failed' : heartbeat.reports?.some(r => r.state === 'UNKNOWN') ? 'unknown' : heartbeat.reports?.some(r => r.state === 'WAITING') ? 'waiting' : 'failed' };
         }
         if (observation === 'idle' || observation === 'pending') return { ...finish(true, detail), healthState: 'waiting' };

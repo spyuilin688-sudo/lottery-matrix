@@ -176,6 +176,69 @@ test("notification click opens a safe same-origin URL when no client exists", as
   assert.deepEqual(worker.openWindowCalls, ["/"]);
 });
 
+test("notification click navigates the PWA target before focusing and ignores admin windows", async () => {
+  const actions = [];
+  const worker = createWorker({ windowClients: [
+    { url: 'https://pwa.example/admin/', focus: async () => actions.push('admin-focus') },
+    {
+      url: 'https://pwa.example/',
+      navigate: async (url) => {
+        actions.push(['navigate', url]);
+        return { focus: async () => actions.push('pwa-focus') };
+      },
+      focus: async () => actions.push('old-focus'),
+    },
+  ] });
+  await worker.dispatch('notificationclick', {
+    notification: { data: { url: '/results?draw=1#latest' }, close() {} },
+  });
+  assert.deepEqual(actions, [['navigate', '/results?draw=1#latest'], 'pwa-focus']);
+  assert.deepEqual(worker.openWindowCalls, []);
+});
+
+test("notification click prefers an already matching target over navigating another window", async () => {
+  const actions = [];
+  const worker = createWorker({ windowClients: [
+    { url: 'https://pwa.example/', focus: async () => actions.push('wrong-focus') },
+    { url: 'https://pwa.example/results?draw=1#latest', focus: async () => actions.push('target-focus') },
+  ] });
+  await worker.dispatch('notificationclick', {
+    notification: { data: { url: '/results?draw=1#latest' }, close() {} },
+  });
+  assert.deepEqual(actions, ['target-focus']);
+  assert.deepEqual(worker.openWindowCalls, []);
+});
+
+test("notification click opens the target when only admin or invalid clients exist", async () => {
+  const actions = [];
+  const worker = createWorker({ windowClients: [
+    { url: 'https://pwa.example/admin', focus: async () => actions.push('admin-focus') },
+    { url: 'https://pwa.example/admin/users', focus: async () => actions.push('admin-focus') },
+    { url: 'bad-url', focus: async () => actions.push('invalid-focus') },
+  ] });
+  await worker.dispatch('notificationclick', {
+    notification: { data: { url: '/results' }, close() {} },
+  });
+  assert.deepEqual(actions, []);
+  assert.deepEqual(worker.openWindowCalls, ['/results']);
+});
+
+test("notification click opens the safe target when a PWA navigation or focus fails", async () => {
+  for (const navigate of [undefined, async () => null, async () => { throw new Error('closed'); },
+    async () => ({ focus: async () => { throw new Error('cannot focus'); } })]) {
+    let oldFocusCalls = 0;
+    const worker = createWorker({ windowClients: [{
+      url: 'https://pwa.example/previous', navigate,
+      focus: async () => { oldFocusCalls += 1; },
+    }] });
+    await worker.dispatch('notificationclick', {
+      notification: { data: { url: 'https://attacker.example/phish' }, close() {} },
+    });
+    assert.equal(oldFocusCalls, 0);
+    assert.deepEqual(worker.openWindowCalls, ['/']);
+  }
+});
+
 test("main starts the observable push service worker registration helper", () => {
   const source = readFileSync(mainPath, "utf8");
   assert.match(source, /if\s*\(\s*["']serviceWorker["']\s+in\s+navigator\s*\)/);

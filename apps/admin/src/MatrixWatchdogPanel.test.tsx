@@ -34,3 +34,26 @@ it('labels retained evidence as historical during a verified idle schedule',()=>
  expect(screen.getByText(/未到指定檢查時點/)).toBeTruthy();
  expect(screen.getByText('上次已驗證')).toBeTruthy();
 });
+
+const currentReports = ['今彩539','天天樂','六合彩','大樂透'].map(lottery=>({...passedReport,lottery,checkedAt:'2026-09-19T21:55:00Z',stages:passedReport.stages.map(stage=>({...stage,observedAt:'2026-09-19T21:55:00Z'}))}));
+it('shows current read-only evidence separately from the historical recovery heartbeat',()=>{
+ render(<MatrixWatchdogPanel detail={{status:'degraded',checkedAt:'2026-09-19T21:34:49Z',completedAt:'2026-09-19T21:34:50Z',
+  reports:currentReports,
+  actions:[{lottery:'今彩539',target:'railway',reasons:['analysis-missing'],outcome:'accepted'}],
+  observation:{checkedAt:'2026-09-19T21:55:00Z',status:'ok',source:'read-only-chain'},
+  schedule:{checkedAt:'2026-09-19T21:55:00Z',due:false,pendingSince:null}}} now={new Date('2026-09-19T21:56:00Z')}/>);
+ expect(screen.queryByText(/非本次重新驗證/)).toBeNull();
+ expect(screen.queryByText('上次已驗證')).toBeNull();
+ expect(screen.getByText(/本次為資料鏈唯讀檢查/)).toBeTruthy();
+ expect(screen.getByText(/上次恢復請求：已受理/)).toBeTruthy();
+ expect(document.querySelector('.matrixWatchdogPanel > header span')?.textContent).toContain('05:55');
+});
+
+it('does not promote expired read-only evidence or a stale scheduler to a current check',()=>{
+ render(<MatrixWatchdogPanel detail={{status:'degraded',checkedAt:'2026-09-19T21:34:49Z',completedAt:'2026-09-19T21:34:50Z',
+  reports:currentReports,observation:{checkedAt:'2026-09-19T21:55:00Z',status:'ok',source:'read-only-chain'},
+  schedule:{checkedAt:'2026-09-19T21:55:00Z',due:false,pendingSince:null}}} now={new Date('2026-09-19T23:00:00Z')}/>);
+ expect(screen.getByText(/觀察已過期/)).toBeTruthy();
+ expect(screen.queryByText(/本次為資料鏈唯讀檢查/)).toBeNull();
+ expect(screen.getAllByText('待重新確認')).toHaveLength(4);
+});

@@ -9,10 +9,13 @@ export function MatrixWatchdogPanel({detail,now=new Date()}:{detail:unknown;now?
  const status=sanitizeWatchdogStatus(detail);
  const observation=watchdogObservation(status,now);
  const stale=observation==='stale'||observation==='invalid';
- const retained=observation==='idle'||observation==='pending';
+ const readOnlyAge=status.observation ? now.getTime()-Date.parse(status.observation.checkedAt) : Number.NaN;
+ const reobserved=!stale&&readOnlyAge>=-120_000&&readOnlyAge<=18*60_000;
+ const retained=!reobserved&&(observation==='idle'||observation==='pending');
  return <section className="matrixWatchdogPanel" aria-label="Matrix 資料鏈監控">
-  <header className="statusGroupHeader"><h3>Matrix 資料鏈</h3><span>{formatAdminDateTime(status.checkedAt)}</span></header>
+  <header className="statusGroupHeader"><h3>Matrix 資料鏈</h3><span>{formatAdminDateTime(reobserved?status.observation?.checkedAt:status.checkedAt)}</span></header>
   {stale&&<p className="systemStatusNotice" role="status">觀察已過期或時間異常；以下為最近紀錄，請重新檢查。</p>}
+  {reobserved&&<p className="systemStatusNotice" role="status">本次為資料鏈唯讀檢查；上次自動監控時間：{formatAdminDateTime(status.checkedAt)}。</p>}
   {retained&&<p className="systemStatusNotice" role="status">{observation==='idle'?'排程待命：未到指定檢查時點。':'等待監控完成。'}以下為上次檢查紀錄，非本次重新驗證。</p>}
   {!status.reports?.length&&<p className="statusEmpty">尚無完整資料鏈紀錄。</p>}
   <div className="matrixChainGrid">
@@ -22,7 +25,7 @@ export function MatrixWatchdogPanel({detail,now=new Date()}:{detail:unknown;now?
     return <article className="statusRow" key={report.lottery} aria-label={`${report.lottery} ${report.drawPeriod??'期數未知'}`}>
      <header className="matrixChainHeader"><strong>{report.lottery}</strong><span>{report.drawPeriod??'期數未知'} 期</span><span className="statusState"><span className={`statusBadge ${tones[stale?'UNKNOWN':report.state]}`}>{stale?'待重新確認':`${retained?'上次':''}${stateNames[report.state]}`}</span></span></header>
      <dl className="statusFacts">{report.stages.map(stage=><div key={stage.stage}><dt>{stageNames[stage.stage]}</dt><dd>{stateNames[stage.state]}</dd></div>)}</dl>
-     {action&&<p className="statusScope">恢復：{outcomes[action.outcome]}</p>}
+     {action&&<p className="statusScope">{reobserved?'上次恢復請求':'恢復'}：{outcomes[action.outcome]}</p>}
      <p className="statusScope">{diagnosis?.faultLayer
       ? `故障層：${stageNames[diagnosis.faultLayer]}。${diagnosis.rootCause?.code??'根因尚未確認。'}`
       : report.state==='PASS' ? `此份紀錄的資料鏈未發現異常。${diagnosis?.checks.some(check=>check.state==='FAIL')?'診斷明細另有異常。':diagnosis?.checks.some(check=>check.state!=='PASS')?'部分診斷證據仍待確認。':''}`

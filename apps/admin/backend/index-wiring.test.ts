@@ -347,6 +347,16 @@ describe('independent watchdog cron wiring', () => {
     }
   });
 
+  it('wires current watchdog evidence to read-only snapshots without recovery or heartbeat writes', async () => {
+    const dependencies = wiring.createConnectionStatus.mock.calls[0][0];
+    wiring.loadWatchdogSnapshot.mockClear(); wiring.watchdogRun.mockClear(); wiring.watchdogStatusSave.mockClear();
+    const value = await dependencies.observeWatchdog();
+    expect(value).toMatchObject({ checkedAt: expect.any(String), reports: [] });
+    expect(wiring.loadWatchdogSnapshot).toHaveBeenCalledWith(expect.any(Date), false);
+    expect(wiring.watchdogRun).not.toHaveBeenCalled();
+    expect(wiring.watchdogStatusSave).not.toHaveBeenCalled();
+  });
+
   it('injects the typed heartbeat loader into connection status', async () => {
     const dependencies = wiring.createConnectionStatus.mock.calls[0][0];
     await expect(dependencies.loadWatchdogStatus()).resolves.toBeNull();

@@ -1,5 +1,5 @@
 import type { SupabaseConfig } from './supabase';
-export type SecurityContext = { event?: { requestContext?: { http?: { sourceIp?: string } }; headers?: Record<string,string|undefined> } };
+export type SecurityContext = { event?: { clientIp?: string; requestContext?: { http?: { sourceIp?: string } }; headers?: Record<string,string|undefined> } };
 type Category = 'admin_login' | 'unauthorized';
 type Decision = { allowed: boolean; retryAfter: number; mode: 'observe' | 'enforce' };
 const allow = (): Decision => ({ allowed: true, retryAfter: 0, mode: 'observe' });
@@ -28,8 +28,10 @@ export function createSecurityMonitor(loadConfig: () => Promise<SupabaseConfig>,
       try {
         const config = await loadConfig();
         if (controller.signal.aborted) return allow();
-        // Only platform-populated context is trusted. Never use forwarded/request headers.
-        const address = canonicalIp(ctx.event?.requestContext?.http?.sourceIp ?? '');
+        // clientIp is populated only after Edge proxy signature verification.
+        // Keep the trusted AWS transport compatible; never read request headers.
+        const address = canonicalIp(ctx.event?.clientIp ?? '')
+          ?? canonicalIp(ctx.event?.requestContext?.http?.sourceIp ?? '');
         const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(config.serviceRoleKey), {name:'HMAC',hash:'SHA-256'}, false, ['sign']);
         const digest = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(address ?? 'unattributed'));
         const source = [...new Uint8Array(digest)].map(n => n.toString(16).padStart(2,'0')).join('');

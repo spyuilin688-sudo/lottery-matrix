@@ -22,6 +22,7 @@ export type WatchdogStatusAction = {
 
 export type WatchdogStatus = {
   status: 'ok' | 'degraded';
+  observation?: { checkedAt: string; status: 'ok' | 'degraded'; source: 'read-only-chain' };
   reports?: ChainReport[];
   recoveryReports?: ChainReport[];
   diagnoses?: Diagnosis[];
@@ -141,8 +142,22 @@ export function sanitizeWatchdogStatus(value: unknown): WatchdogStatus {
     result.reports = sanitizeChainReports(source.reports);
     if (result.reports.length !== 4 || result.reports.some(r => r.state !== 'PASS')) result.status = 'degraded';
   }
+  if (isRow(source.observation) && source.observation.source === 'read-only-chain'
+    && typeof source.observation.checkedAt === 'string'
+    && ['ok', 'degraded'].includes(String(source.observation.status))) {
+    const observedTime = Date.parse(source.observation.checkedAt);
+    if (Number.isFinite(observedTime) && observedTime >= Date.parse(result.completedAt)
+      && result.reports?.length === 4 && result.reports.every(report =>
+        Date.parse(report.checkedAt) === observedTime
+        && report.stages.every(stage => Date.parse(stage.observedAt) === observedTime))) {
+      result.observation = { checkedAt: new Date(observedTime).toISOString(), source: 'read-only-chain',
+        status: source.observation.status === 'ok' && result.reports.every(report => report.state === 'PASS') ? 'ok' : 'degraded' };
+    }
+  }
   if (Array.isArray(source.railway)) result.railway = sanitizeRailwayEvidence(source.railway);
-  if (result.reports) result.diagnoses = result.reports.map(r => inspectChain(r,result.railway ?? []));
+  // A request observation refreshes database chains only. Retain the previous
+  // Railway evidence, but do not present it as part of the current diagnosis.
+  if (result.reports) result.diagnoses = result.reports.map(r => inspectChain(r,result.observation ? [] : result.railway ?? []));
   const optimizer = sanitizeOptimizer(source.optimizer);
   if (optimizer) result.optimizer = optimizer;
   if (status === 'degraded' && typeof source.error === 'string') {
@@ -166,6 +181,7 @@ export function createWatchdogStatusStore(database: WatchdogStatusDatabase) {
 
     async save(value: unknown): Promise<WatchdogStatus> {
       const status = sanitizeWatchdogStatus(value);
+      delete status.observation; // Request evidence must never become a scheduler heartbeat.
       delete status.optimizer;
       delete status.schedule; // Cron evidence is owned by the database, never by a report writer.
       try {

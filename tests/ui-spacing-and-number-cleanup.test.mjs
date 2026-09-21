@@ -25,17 +25,11 @@ test('notification controls use the approved compact spacing and larger option t
   assert.match(css, /\.notifications-screen-v2 \.notification-inline-option-row \.notification-choice\s*\{[^}]*padding:\s*6px 8px;[^}]*gap:\s*4px;/s);
 });
 
-test('Matrix status lottery labels have no checkbox and Matrix Pro uses one 3px overlap owner', () => {
+test('Matrix status lottery labels have no checkbox', () => {
   const source = read('src/NotificationsPagePatched.tsx');
   const statusLotteryRow = source.match(/<div className="notification-grid-row notification-grid-lottery-row">([\s\S]*?)<\/div>/)?.[1] ?? '';
   assert.doesNotMatch(statusLotteryRow, /<input/);
   assert.match(statusLotteryRow, /notification-status-lottery-label/);
 
-  const css = read('src/feature-page-adjustments.css');
-  assert.match(source, /className="notification-icon-stack"/);
-  assert.match(css, /\.notifications-screen-v2\s*\{[^}]*--notification-pro-badge-overlap:\s*3px;/s);
-  assert.doesNotMatch(css, /\.notifications-screen-v2 \.notification-heading:has\(\.notification-pro-badge\)\s*\{/s);
-  assert.match(css, /\.notifications-screen-v2 \.notification-icon-stack\s*\{[^}]*display:\s*grid;[^}]*justify-items:\s*center;[^}]*gap:\s*0;/s);
-  assert.match(css, /\.notifications-screen-v2 \.notification-pro-badge\s*\{[^}]*padding:\s*0 1\.4px;[^}]*border:\s*1px solid var\(--pwa-frame-tertiary\);[^}]*font-size:\s*4\.2px;[^}]*translate:\s*0 var\(--notification-pro-badge-overlap\);/s);
-  assert.doesNotMatch(css, /\.notifications-screen-v2 \.notification-pro-badge\s*\{[^}]*transform\s*:/s);
+  // Badge removal is covered by the rendered NotificationsPagePatched test.
 });
