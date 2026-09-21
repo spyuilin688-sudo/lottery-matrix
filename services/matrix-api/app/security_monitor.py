@@ -6,7 +6,7 @@ import ipaddress
 import json
 import logging
 import math
-from queue import Queue, Full, Empty
+from queue import Queue, Full
 from threading import Event, Lock, Thread
 from time import monotonic
 from urllib.parse import urlsplit
