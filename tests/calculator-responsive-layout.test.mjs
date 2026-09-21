@@ -63,8 +63,10 @@ test('calculator controls use the approved responsive touch sizes without changi
   assert.match(block(feature, '.panel'), /border:\s*1px solid var\(--pwa-frame-secondary\)/);
   assert.match(block(feature, '.calculator-screen > .feature-body'), /padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\)/);
   assert.equal(style('.calculator-screen .feature-body').getPropertyValue('--layout-page-inline'), '16px');
-  assert.equal(style('.column-panel').paddingTop, '13px');
+  assert.equal(style('.column-panel').paddingTop, '8px');
+  assert.equal(style('.column-panel').paddingRight, '6px');
   assert.equal(style('.column-panel').paddingBottom, '8px');
+  assert.equal(style('.column-panel').paddingLeft, '6px');
   assert.equal(style('.calculator-screen .section-title').fontSize, '16px');
   assert.match(block(feature, '.calculator-panel > header .calculator-heading > span'), /font-size:\s*clamp\(12px,\s*3\.3vw,\s*14px\)/);
 
@@ -127,6 +129,7 @@ test('calculator settings header separates copy and actions without overlap', ()
   assert.match(header, /display:\s*flex/);
   assert.match(header, /justify-content:\s*space-between/);
   assert.match(header, /align-items:\s*center/);
+  assert.match(header, /min-height:\s*var\(--calculator-action-height\)/);
 });
 
 test('49-number layout keeps seven columns with responsive controls and no horizontal overflow', () => {
