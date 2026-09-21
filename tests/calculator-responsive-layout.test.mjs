@@ -74,7 +74,7 @@ test('calculator controls use the approved responsive touch sizes without changi
   const quickButton = block(feature, '.quick-actions button');
   assert.match(quickButton, /height:\s*var\(--calculator-action-height\)/);
   assert.match(quickButton, /font-size:\s*clamp\(12px,\s*3\.3vw,\s*14px\)/);
-  assert.match(feature, /\.calculator-panel header button svg,\s*\.quick-actions \.clear-button svg\s*\{[^}]*width:\s*clamp\(10px,\s*2\.8vw,\s*12px\)[^}]*height:\s*clamp\(10px,\s*2\.8vw,\s*12px\)/s);
+  assert.match(feature, /\.calculator-panel header button svg,\s*\.quick-actions \.clear-button svg\s*\{[^}]*width:\s*10px;[^}]*height:\s*10px;/s);
 
   assert.equal(style('.calculation-results').paddingTop, '6px');
   assert.equal(style('.calculation-results').paddingRight, '4px');
