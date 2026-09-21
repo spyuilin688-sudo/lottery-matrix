@@ -47,7 +47,7 @@ test("referral and activation layout keeps the approved responsive measurements"
   assert.match(page, /className="referral-code-row"[\s\S]*className="gold-button referral-copy-button"/);
   assert.match(compactCss, /\.activation-code-screen \.referral-code-row\s*\{[^}]*gap:\s*8px;/s);
   assert.match(compactCss, /\.activation-code-screen \.referral-copy-button\s*\{[^}]*width:\s*max-content;[^}]*height:\s*auto;[^}]*padding:\s*4px;/s);
-  assert.match(css, /\.referral-input-card \.code-entry-block,\s*\.activation-card \.code-entry-block\s*\{[^}]*gap:\s*10px;/s);
+  assert.match(css, /\.referral-input-card \.code-entry-block,\s*\.activation-card \.code-entry-block\s*\{[^}]*gap:\s*12px;/s);
   assert.match(css, /\.referral-input-card input,\s*\.activation-card input\s*\{[^}]*height:\s*44px;[^}]*min-height:\s*44px;/s);
   assert.match(compactCss, /\.activation-code-screen \.referral-input-card \.primary-action,\s*\.activation-code-screen \.activation-card \.primary-action\s*\{[^}]*height:\s*34px;[^}]*min-height:\s*34px;/s);
   assert.match(css, /\.referral-rule-toggle\s*\{[^}]*min-height:\s*0;[^}]*padding:\s*4px 16px;[^}]*font-weight:\s*600;/s);
@@ -93,9 +93,10 @@ test("copy referral feedback is non-blocking and clears after 1.5 seconds", () =
   assert.doesNotMatch(page, /alertDialog[\s\S]*複製成功/);
 });
 
-test("both confirmation controls place a divider eight pixels below with eight pixels before following content", () => {
+test("both confirmation controls use the canonical 12px input-to-action gap without a compact override", () => {
+  assert.match(css, /\.referral-input-card \.code-entry-block,\s*\.activation-card \.code-entry-block\s*\{[^}]*gap:\s*12px;/s);
+  assert.doesNotMatch(compactCss, /\.activation-code-screen \.(?:referral-input-card|activation-card) \.code-entry-block\s*(?:,|\{)/s);
   assert.match(compactCss, /\.activation-code-screen \.code-entry-block::after\s*\{[^}]*margin-top:\s*0;[^}]*height:\s*1px;[^}]*background:/s);
-  assert.match(compactCss, /\.activation-code-screen \.referral-input-card \.code-entry-block,[\s\S]*\.activation-code-screen \.activation-card \.code-entry-block\s*\{[^}]*gap:\s*8px;/s);
 });
 
 test("copy referral control is visually scaled to ninety percent", () => {
