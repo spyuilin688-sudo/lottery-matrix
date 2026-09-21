@@ -1458,7 +1458,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   font-size: 15px;
 }
 .calculator-panel header button svg,
-.quick-actions .clear-button svg { width: clamp(10px, 2.8vw, 12px); height: clamp(10px, 2.8vw, 12px); }
+.quick-actions .clear-button svg { width: 10px; height: 10px; }
 .feature-bottom-nav { width: 100%; }
 .lottery-logo-tabs {
   display: grid;
