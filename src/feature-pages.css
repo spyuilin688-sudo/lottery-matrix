@@ -2744,7 +2744,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .payment-history-item time { color: #a9a39a; font-size: 11px; line-height: 1.35; }
 .referral-input-card .code-entry-block,
 .activation-card .code-entry-block {
-  gap: 10px;
+  gap: 12px;
 }
 .referral-input-card input,
 .activation-card input {
