@@ -55,8 +55,8 @@ test("所有頁面隱藏原生與自訂捲動條但不關閉 overflow", () => {
   assert.doesNotMatch(styles, /scrollbar-width:\s*thin/);
 });
 
-test("連碰與立柱清除圖示放大至 10px且不超過文字大小", () => {
+test("連碰與立柱清除圖示維持 10px且不超過響應式文字大小", () => {
   assert.match(feature, /\.calculator-panel header button svg,[\s\S]*?\.quick-actions \.clear-button svg\s*\{[^}]*width:\s*10px;[^}]*height:\s*10px;/s);
-  assert.match(feature, /\.calculator-panel header button\s*\{[^}]*font-size:\s*12px;/s);
-  assert.match(feature, /\.quick-actions button\s*\{[^}]*font-size:\s*12px;/s);
+  assert.match(feature, /\.calculator-panel header button\s*\{[^}]*font-size:\s*clamp\(12px,\s*3\.3vw,\s*14px\)/s);
+  assert.match(feature, /\.quick-actions button\s*\{[^}]*font-size:\s*clamp\(12px,\s*3\.3vw,\s*14px\)/s);
 });
