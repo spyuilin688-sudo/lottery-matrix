@@ -8,7 +8,7 @@ import {
 } from '../line-provider-token';
 
 import * as lineAuthModule from '../line-auth';
-import { revokeLineProviderToken, signInWithLine, signOutFromMatrix } from '../line-auth';
+import { prepareLineLoginUrl, revokeLineProviderToken, shouldUseDirectLineBrowserLink, signInWithLine, signOutFromMatrix } from '../line-auth';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { startMemberOnlineTracking } from '../../member-online';
 
@@ -64,6 +64,53 @@ afterEach(() => {
 });
 
 describe('LINE auth helper', () => {
+  it.each([
+    ['Android browser', 'Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 Chrome/140.0 Mobile Safari/537.36', 'Linux', 5, true],
+    ['iPhone browser', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile Safari/604.1', 'iPhone', 5, true],
+    ['desktop browser', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140.0 Safari/537.36', 'Linux', 0, false],
+  ])('uses a direct user-tapped LINE link only for a regular %s', (_name, userAgent, platform, maxTouchPoints, expected) => {
+    vi.stubGlobal('navigator', { userAgent, platform, maxTouchPoints });
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })));
+    try {
+      expect(shouldUseDirectLineBrowserLink()).toBe(expected);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('does not replace the installed PWA handoff with a browser link', () => {
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Linux; Android 16) Mobile', platform: 'Linux', maxTouchPoints: 5 });
+    vi.stubGlobal('matchMedia', vi.fn((query: string) => ({ matches: query === '(display-mode: fullscreen)' })));
+    try {
+      expect(shouldUseDirectLineBrowserLink()).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('prepares the LINE OAuth URL without JavaScript browser navigation or Supabase redirect-control leakage', async () => {
+    const generatedUrl = 'https://project.supabase.co/auth/v1/authorize?provider=custom%3Aline&redirect_to=https%3A%2F%2Fmatrix.example%2F&skip_http_redirect=true';
+    const signInWithOAuth = vi.fn().mockResolvedValue({ data: { url: generatedUrl }, error: null });
+
+    const prepared = await prepareLineLoginUrl(
+      undefined,
+      { auth: { signInWithOAuth } } as unknown as SupabaseClient,
+    );
+
+    const preparedUrl = new URL(prepared);
+    expect(preparedUrl.origin + preparedUrl.pathname).toBe('https://project.supabase.co/auth/v1/authorize');
+    expect(preparedUrl.searchParams.get('provider')).toBe('custom:line');
+    expect(preparedUrl.searchParams.get('redirect_to')).toBe('https://matrix.example/');
+    expect(preparedUrl.searchParams.has('skip_http_redirect')).toBe(false);
+    expect(signInWithOAuth).toHaveBeenCalledExactlyOnceWith({
+      provider: 'custom:line',
+      options: {
+        redirectTo: new URL('/', window.location.origin).href,
+        skipBrowserRedirect: true,
+      },
+    });
+  });
+
   it.each([
     ...['fullscreen', 'standalone', 'minimal-ui'].map((displayMode) => ({ name: `Android ${displayMode} PWA`, displayMode, userAgent: 'Mozilla/5.0 (Linux; Android 16) Chrome/140.0 Mobile Safari/537.36', standalone: false, platform: 'Linux', maxTouchPoints: 5 })),
     { name: 'iPhone home-screen PWA', displayMode: undefined, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)', standalone: true, platform: 'iPhone', maxTouchPoints: 5 },

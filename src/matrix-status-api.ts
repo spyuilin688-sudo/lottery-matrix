@@ -5,6 +5,11 @@ import type { ExploreValidationResponse } from './matrix-algorithm-api';
 import { readThroughCache, stableCacheKey } from './read-cache';
 import { readAlgorithmCacheScope } from './auth/algorithm-cache-scope';
 import { getMatrixDataRevision } from './matrix-data-revision';
+import { isLotteryReadCacheFresh, lotteryReadCacheTtlMs } from './lottery-cache-policy';
+import {
+  readMatrixStatusSummaryCacheEntry,
+  writeMatrixStatusSummaryCache,
+} from './matrix-result-cache';
 
 export type MatrixStatusCode = 'ACTIVE' | 'FOCUS' | 'RESONANCE' | 'CRITICAL' | 'DORMANT';
 export type MatrixTriggerStatusCode = Exclude<MatrixStatusCode, 'DORMANT'>;
@@ -119,8 +124,67 @@ export function fetchMatrixStatuses(lotteries: LotteryId[], signal?: AbortSignal
   return statusFunction<MatrixStatusBatchResponse>({ action: 'batch', lotteries }, signal);
 }
 
-export function fetchMatrixStatusSummaries(lotteries: LotteryId[], signal?: AbortSignal) {
-  return statusFunction<MatrixStatusSummaryBatchResponse>({ action: 'summary-batch', lotteries }, signal);
+function cacheableSummaryItem(
+  item: MatrixStatusSummaryBatchItem | undefined,
+  lottery: LotteryId,
+) {
+  if (!item || item.lottery !== lottery || item.status !== 200) return false;
+  const body = item.body as MatrixStatusSummaryResponse | { error?: { code?: string } };
+  return 'kind' in body
+    && body.kind === 'status-summary'
+    && body.lottery === lottery
+    && typeof body.drawPeriod === 'string'
+    && body.drawPeriod.length > 0
+    && typeof body.analysisVersion === 'string'
+    && body.analysisVersion.length > 0;
+}
+
+export async function fetchMatrixStatusSummaries(
+  lotteries: LotteryId[],
+  signal?: AbortSignal,
+): Promise<MatrixStatusSummaryBatchResponse> {
+  const dataRevision = getMatrixDataRevision();
+  const itemsByLottery = new Map<LotteryId, MatrixStatusSummaryBatchItem>();
+  const missing: LotteryId[] = [];
+
+  for (const lottery of lotteries) {
+    const stored = readMatrixStatusSummaryCacheEntry<MatrixStatusSummaryBatchItem>(lottery);
+    if (stored
+      && stored.dataRevision === dataRevision
+      && isLotteryReadCacheFresh(lottery, 'standard', stored.savedAt)
+      && cacheableSummaryItem(stored.value, lottery)) {
+      itemsByLottery.set(lottery, stored.value);
+    } else {
+      missing.push(lottery);
+    }
+  }
+
+  if (missing.length) {
+    const fresh = await statusFunction<MatrixStatusSummaryBatchResponse>({
+      action: 'summary-batch',
+      lotteries: missing,
+    }, signal);
+    if (fresh?.kind !== 'status-summary-batch' || !Array.isArray(fresh.items)) {
+      throw new MatrixApiError('API_ERROR', 500);
+    }
+    const freshByLottery = new Map(fresh.items.map((item) => [item.lottery, item] as const));
+    for (const lottery of missing) {
+      const item = freshByLottery.get(lottery);
+      if (!item) continue;
+      itemsByLottery.set(lottery, item);
+      if (cacheableSummaryItem(item, lottery)) {
+        writeMatrixStatusSummaryCache(lottery, item, dataRevision);
+      }
+    }
+  }
+
+  return {
+    kind: 'status-summary-batch',
+    items: lotteries.flatMap((lottery) => {
+      const item = itemsByLottery.get(lottery);
+      return item ? [item] : [];
+    }),
+  };
 }
 
 async function fetchMatrixStatusFromFunction(lottery: LotteryId, signal?: AbortSignal) {
@@ -160,7 +224,8 @@ async function cachedStatusFunction<T>(body: Record<string, unknown>): Promise<T
   }
   const cacheIdentity = { drawPeriod: identity.drawPeriod, analysisVersion: identity.analysisVersion, entitlements: identity.entitlements };
   const key = stableCacheKey('matrix-rpc:status', { scope, revision, cacheIdentity, body });
-  const result = await readThroughCache(key, 60_000, async ({ isCurrent }) => {
+  const lottery = body.lottery as LotteryId;
+  const result = await readThroughCache(key, lotteryReadCacheTtlMs(lottery, 'standard'), async ({ isCurrent }) => {
     const value = await statusFunction<T & { cacheIdentity?: unknown }>(body);
     await assertCurrent();
     if (stableCacheKey('', value?.cacheIdentity) !== stableCacheKey('', cacheIdentity)) {

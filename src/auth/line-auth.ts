@@ -73,6 +73,48 @@ function resolveApprovedRedirect(redirectTo: string, origin: string) {
   return approved;
 }
 
+type LineBrowserWindow = Pick<Window, 'navigator' | 'matchMedia'>;
+
+export function shouldUseDirectLineBrowserLink(browser: LineBrowserWindow = window) {
+  if (isPwaDisplayMode(browser)) return false;
+  const device = browser.navigator as Navigator & {
+    userAgentData?: { mobile?: boolean };
+  };
+  const userAgent = device.userAgent ?? '';
+  const isAndroid = /Android/i.test(userAgent);
+  const isIos = /iPhone|iPad|iPod/i.test(userAgent)
+    || (device.platform === 'MacIntel' && device.maxTouchPoints > 1);
+  return isAndroid || isIos;
+}
+
+/**
+ * Prepare the Supabase OAuth start URL without navigating. Regular mobile
+ * browsers can place this URL on a real link so the authorization navigation
+ * remains directly tied to the user's tap, which gives LINE auto login the
+ * best chance to hand off through Universal Links / App Links.
+ */
+export async function prepareLineLoginUrl(
+  redirectTo = new URL('/', window.location.origin).href,
+  client: SupabaseClient = getSupabaseClient(),
+) {
+  const approvedRedirect = resolveApprovedRedirect(redirectTo, window.location.origin);
+  const { data, error } = await client.auth.signInWithOAuth({
+    provider: 'custom:line',
+    options: {
+      redirectTo: approvedRedirect,
+      skipBrowserRedirect: true,
+    },
+  });
+  if (error) throw error;
+  if (!data?.url) throw new Error('LINE_LOGIN_URL_MISSING');
+  const loginUrl = new URL(data.url);
+  // auth-js adds this only to suppress its own browser navigation. Once the
+  // URL becomes a real user-clicked link, keep the normal /authorize redirect
+  // semantics and do not forward this client-control parameter to LINE.
+  loginUrl.searchParams.delete('skip_http_redirect');
+  return loginUrl.href;
+}
+
 export async function signInWithLine(
   redirectTo = new URL('/', window.location.origin).href,
   client: SupabaseClient = getSupabaseClient(),

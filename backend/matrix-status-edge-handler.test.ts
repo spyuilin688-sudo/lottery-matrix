@@ -111,6 +111,31 @@ describe('Matrix status Edge Function', () => {
     expect(deps.requireMember).not.toHaveBeenCalled();
   });
 
+  it('accepts a valid homepage summary subset without widening full batch requests', async () => {
+    const deps = dependencies();
+    const handler = createMatrixStatusEdgeHandler(deps);
+    const subset = ['天天樂'] as const;
+    const summaryResponse = await handler(new Request('https://example.test/functions/v1/matrix-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'summary-batch', lotteries: subset }),
+    }));
+
+    expect(summaryResponse.status).toBe(200);
+    await expect(summaryResponse.json()).resolves.toMatchObject({
+      kind: 'status-summary-batch',
+      items: [{ lottery: '天天樂', status: 200 }],
+    });
+    expect(deps.readStatusSources).toHaveBeenCalledTimes(1);
+
+    const fullBatchResponse = await handler(new Request('https://example.test/functions/v1/matrix-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'batch', lotteries: subset }),
+    }));
+    expect(fullBatchResponse.status).toBe(400);
+  });
+
   it('reads standard compact summaries for authenticated members', async () => {
     const lotteries = ['今彩539', '天天樂', '六合彩', '大樂透'] as const;
     const deps = dependencies();

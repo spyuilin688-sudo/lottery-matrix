@@ -4,7 +4,7 @@ import type { Session } from "@supabase/supabase-js";
 import { isActivationRedemptionError, redeemActivationCode, type ActivationRedemptionErrorCode } from "../activation/redeemActivationCode";
 import { bootstrapMember, fetchMemberProfile, fetchMemberReferralSummary, fetchPendingTransferRequest, submitMemberReferralCode, submitTransferRequest, type MemberProfileResponse, type MemberReferralSummary, type MemberTransferRequest, type ManualTransferPlanCode } from "../member-api";
 import { readManualTransferPlan, saveManualTransferPlan } from "../manual-transfer-selection";
-import { reconcilePendingLineLogoutPresence, signInWithLine, signOutFromMatrix } from "../auth/line-auth";
+import { prepareLineLoginUrl, reconcilePendingLineLogoutPresence, shouldUseDirectLineBrowserLink, signInWithLine, signOutFromMatrix } from "../auth/line-auth";
 import { EcpayReviewLogin } from "../auth/EcpayReviewLogin";
 import { usePermissionSettings } from "../permission-settings";
 import { signInWithGoogle } from "../auth/google-auth";
@@ -183,12 +183,29 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   const [authRetrying, setAuthRetrying] = useState(false);
   const [authCheckRevision, setAuthCheckRevision] = useState(0);
   const lineLoginInProgress = useRef(false);
+  const useDirectLineBrowserLink = useMemo(() => shouldUseDirectLineBrowserLink(), []);
+  const [lineBrowserLoginUrl, setLineBrowserLoginUrl] = useState<string | null>(null);
+  const [lineBrowserLoginUnavailable, setLineBrowserLoginUnavailable] = useState(false);
   const [signingInProvider, setSigningInProvider] = useState<"line" | "google" | null>(null);
   const [lineAvatarUrl, setLineAvatarUrl] = useState<string | null>(null);
   const [memberNickname, setMemberNickname] = useState<string | null>(null);
   const [memberUserId, setMemberUserId] = useState<string | null>(null);
   const memberUserIdRef = useRef<string | null>(null);
   const [memberProfile, setMemberProfile] = useState<MemberProfileResponse | null>(null);
+  useEffect(() => {
+    if (!useDirectLineBrowserLink) return;
+    let active = true;
+    void prepareLineLoginUrl().then((url) => {
+      if (!active) return;
+      setLineBrowserLoginUrl(url);
+      setLineBrowserLoginUnavailable(false);
+    }).catch(() => {
+      if (!active) return;
+      setLineBrowserLoginUrl(null);
+      setLineBrowserLoginUnavailable(true);
+    });
+    return () => { active = false; };
+  }, [useDirectLineBrowserLink]);
   useEffect(() => {
     let active = true;
     let authRevision = 0;
@@ -426,7 +443,24 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
           {authState !== "initializing" ? <div className="profile-auth-actions">
             {authState === "anonymous" || authState === "signing-in" ? <>
               {ecpayReviewLoginVisible && <EcpayReviewLogin disabled={authState === "signing-in"} />}
-              <button
+              {useDirectLineBrowserLink && !lineBrowserLoginUnavailable ? (
+                lineBrowserLoginUrl && authState === "anonymous" ? <a
+                  role="button"
+                  href={lineBrowserLoginUrl}
+                  className="profile-logout"
+                  data-auth-state={authState}
+                  data-login-provider="line"
+                  aria-label="LINE 登入"
+                  onClick={() => markLineLoginAttempt()}
+                ><span>LINE</span></a> : <button
+                  type="button"
+                  className="profile-logout"
+                  data-auth-state={authState}
+                  data-login-provider="line"
+                  aria-label="LINE 登入"
+                  disabled
+                ><span>LINE</span></button>
+              ) : <button
                 type="button"
                 className="profile-logout"
                 data-auth-state={authState}
@@ -435,7 +469,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
                 onClick={() => void handleAuthAction()}
                 disabled={authState === "signing-in"}
                 aria-busy={signingInProvider === "line"}
-              ><span>{signingInProvider === "line" ? "登入中…" : "LINE"}</span></button>
+              ><span>{signingInProvider === "line" ? "登入中…" : "LINE"}</span></button>}
               <button
                 type="button"
                 className="profile-logout"
