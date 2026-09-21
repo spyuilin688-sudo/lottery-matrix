@@ -237,7 +237,7 @@ describe('system status evidence presentation', () => {
 
   it('preserves limited evidence for registry and older backend payloads', () => {
     expect(getSystemStatusPresentation({ ...item, checkMode: 'registry' })).toMatchObject({ label: 'API 已確認', tone: 'limited' });
-    expect(getSystemStatusPresentation({ ...item, checkMode: 'openapi' })).toMatchObject({ label: 'API 已確認', tone: 'limited', scope: expect.stringContaining('自動檢查不會執行正式操作') });
+    expect(getSystemStatusPresentation({ ...item, checkMode: 'openapi' })).toMatchObject({ label: 'API 已確認', tone: 'limited', scope: expect.stringContaining('不自動執行寫入操作') });
     expect(getSystemStatusPresentation({ ...item, endpoint: '/functions/v1/notification-pilio' })).toMatchObject({ label: 'Endpoint 已驗證', tone: 'limited' });
     expect(getSystemStatusPresentation({ ...item, location: 'Railway', checkMode: 'service' })).toMatchObject({ label: '所屬服務已驗證', tone: 'limited' });
     expect(getSystemStatusPresentation({ ...item, id: 'supabase-watchdog-heartbeat', checkMode: 'service' })).toMatchObject({ label: '執行紀錄正常' });
@@ -249,7 +249,7 @@ describe('system status evidence presentation', () => {
     ['unknown', false, { status: 'unknown' }, '狀態待確認', 'limited'],
     ['unknown', false, null, '尚無執行紀錄', 'limited'],
     ['failed', false, { status: 'running' }, '異常', 'bad'],
-    ['healthy', true, { status: 'success' }, '執行正常', 'good'],
+    ['healthy', true, { status: 'success' }, '執行紀錄正常', 'good'],
   ] as const)('presents %s execution evidence without a false completion or failure', (healthState, ok, detail, label, tone) => {
     expect(getSystemStatusPresentation({ ...item, id: 'cron-matrix-fantasy5-refresh-v2', checkEvidence: 'reported', healthState, ok, detail })).toMatchObject({ label, tone });
   });
