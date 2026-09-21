@@ -33,17 +33,17 @@ Files: supabase/migrations/20260921003028_result_item_dedup.sql, tests/result-it
 
 Interfaces: private.matrix_result_item(row) returns original public jsonb; private.matrix_result_columns(row) returns typed JSON values; private.matrix_result_item_backfill(kind,limit) returns rows and item bytes before/after. mask=0 is legacy, bit18 marks processed; bits0..17 map a fixed key array.
 
-- [ ] Create realistic Explore/Tianheng schema fixture and load actual existing reader/write/restore/invalidation functions.
-- [ ] Add failing roundtrip, list parity, upsert presence, ownership/restore fencing and completion-invalidation tests; run `node --test tests/result-item-dedup.test.mjs`.
-- [ ] Implement typed reconstruction, normalizing trigger, bounded backfill and narrowly scoped function patches. Every new compact row must satisfy `matrix_result_item(new) = incoming_item` before persistence.
-- [ ] Verify all named tests plus existing `tests/worker-completion-cache.test.mjs`; compare sampled physical payload size and exact JSON equivalence before rollout.
-- [ ] Commit coherent migration and tests, review diff, then merge after related CI. Deploy migration, backfill bounded batches only after parity passes, record actual live payload reduction separately from allocated disk.
+- [x] Create realistic Explore/Tianheng schema fixture and load actual existing reader/write/restore/invalidation functions.
+- [x] Add failing roundtrip, list parity, upsert presence, ownership/restore fencing and completion-invalidation tests; run `node --test tests/result-item-dedup.test.mjs`.
+- [x] Implement typed reconstruction, normalizing trigger, bounded backfill and narrowly scoped function patches. Every new compact row must satisfy `matrix_result_item(new) = incoming_item` before persistence.
+- [x] Verify all named tests plus existing `tests/worker-completion-cache.test.mjs`; compare sampled physical payload size and exact JSON equivalence before rollout.
+- [x] Commit coherent migration and tests, review diff, then merge after related CI. Deploy migration, backfill bounded batches only after parity passes, record actual live payload reduction separately from allocated disk.
 
 ## Task 2: validation/artifact/index disposition
 
-- [ ] Confirm validation consumers and bounded distinct counts. Preserve full validation and chunks when no lossless alternative has been proven; record why generic deletion is invalid.
-- [ ] Inventory every zero-scan index and constraint/dependency purpose. Inspect plans for the two largest prediction-number GIN candidates; if evidence remains insufficient, retain and report it rather than pretending cleanup happened.
-- [ ] Preserve expiry indexes used by existing hourly retention cleanup. Record no new retention job.
+- [x] Confirm validation consumers and bounded distinct counts. Preserve full validation and chunks when no lossless alternative has been proven; record why generic deletion is invalid.
+- [x] Inventory every zero-scan index and constraint/dependency purpose. Inspect plans for the two largest prediction-number GIN candidates; if evidence remains insufficient, retain and report it rather than pretending cleanup happened.
+- [x] Preserve expiry indexes used by existing hourly retention cleanup. Record no new retention job.
 
 ## Task 3: old Railway services
 
@@ -54,3 +54,7 @@ Interfaces: private.matrix_result_item(row) returns original public jsonb; priva
 ## Initial evidence
 
 Explore575.06MiB/135294 estimated rows; Tianheng257.67MiB/55432; artifacts91.37MiB; chunks125.73MiB. Bounded sample: Explore1462 rows, item527B, validation1470B, sourceA1358 distinct; Tianheng1500, item595B, validation1622B, sourceA1486 distinct. Validation minus itemId has1461/1500 unique values respectively. No validation or chunk data has been deleted.
+
+## Completion ledger
+
+Implementation, independent review and 18 related tests passed. Applied production migrations20260921003028/20260921003045. All190726rows backfilled;96sample hash comparisons pass; zero legacy rows remain. Item+mask live payload reduced90512998bytes. Two GINs removed; allotherindexes/validation/chunks retained. PR712 integrates only seven new scoped files on currentmain, preservingPR710/711. Railway finaldeletion is the sole blocked step: mandatory dashboard2FA. See docs/audits/2026-09-21-storage-cleanup.md for measured outcomes and tradeoffs.

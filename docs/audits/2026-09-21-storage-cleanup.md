@@ -49,4 +49,20 @@ All three have no attached volumes/domains and no production dependencies:
 
 Named related tests: `node --test tests/result-item-dedup.test.mjs tests/worker-completion-cache.test.mjs` — 18/18 passed. Tests execute captured live reader/writer/restore/invalidation definitions against realistic typed PGlite tables, check roundtrip, mixed rows, ownership, restore-generation fencing, completion invalidation, privilege boundaries, concurrent predecessor drift and index definition drift. No full suite.
 
-Live application/backfill outcome will be appended after independent review and readback. Until then, savings above are estimates, not deployed results.
+## Applied outcome
+
+Applied migrations `20260921003028_result_item_dedup` and `20260921003045_retire_unused_result_prediction_indexes`; repository filenames match recorded production history.
+
+All 190,726 existing rows converted: Explore 135,294 and Tianheng 55,432. Zero legacy-mask rows remain. Exact measured item payload, including all 4-byte row masks:
+
+- Explore: 71,320,452 -> 9,786,242 bytes; reduced 61,534,210 bytes (58.68 MiB, 86.28%).
+- Tianheng: 32,987,460 -> 4,008,672 bytes; reduced 28,978,788 bytes (27.64 MiB, 87.85%).
+- Combined reduction: 90,512,998 bytes (86.32 MiB).
+
+The trigger asserted reconstruction equality for every converted row. Independent before/after hashes for 96 sampled rows across all four lotteries in both tables matched item JSON and every other field (including full validation, expiry and creation time). Existing counts stayed identical. After the first two canary batches, each bounded batch used a repeatable-read transaction and asserted that its completion-marker snapshot stayed identical; all passed. The canaries left their affected lottery's generation unchanged. An unrelated pre-existing Fantasy5 generation changed between wall-clock snapshots; no assertion about global background inactivity is made.
+
+Final readback confirms the two prediction GINs are absent and both expiry indexes remain. Allocated relation snapshots after backfill were Explore 432,357,376 and Tianheng 267,337,728 bytes, versus 602,996,736 and 270,188,544 before. Physical allocation is also influenced by ordinary cleanup/vacuum and is not attributed one-for-one to item normalization. No VACUUM FULL was used.
+
+Independent final reviewer found no material or minor findings and freshly passed all 18 named tests. After aligning migration filenames, the same 18 tests passed again. Initial PR CI passed; final commit CI and merge recorded in GitHub PR712.
+
+Operational decisions: accept measured JSON reconstruction overhead for lossless duplicate-storage reduction; keep complete validation and recovery chunks; use only the established owned-write/restoration RPCs for future result mutations (a privileged raw typed-column edit must deliberately rebuild the public item/mask); respect Railway's required dashboard two-factor verification. All three old Railway services remain staged, not deleted.
