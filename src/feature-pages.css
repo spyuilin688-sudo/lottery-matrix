@@ -1326,9 +1326,22 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .status-detail p > span:first-child { padding: 4px; border: 1px solid var(--pwa-frame-tertiary); border-radius: 999px; text-align: center; }
 .status-detail p strong { color: var(--tone); font-size: 14px; }
 .matrix-notebook-screen > .feature-body { padding-inline: var(--layout-page-inline); }
+.matrix-notebook-screen:has(.notebook-empty) {
+  --notebook-sheet-min-height: 0px;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--layout-safe-area-top, 0px));
+}
+.matrix-notebook-screen:has(.notebook-empty) > .feature-body,
+.notebook-sheet:has(.notebook-empty) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.notebook-entry-list:has(.notebook-empty) { flex: 1; }
 
 .notebook-heading { display: flex; min-width: 0; align-items: center; margin-bottom: 8px; gap: var(--layout-section-gap); }
-.notebook-sheet { position: relative; isolation: isolate; min-height: 65dvh; }
+.notebook-sheet { position: relative; isolation: isolate; min-height: var(--notebook-sheet-min-height, 65dvh); }
 .notebook-sheet::before { content: ""; position: absolute; z-index: -1; inset: 0 0 auto; height: 460px; max-height: 100%; background: url("/assets/quick/matrix-notebook.png") center 35% / 145% auto no-repeat; opacity: .12; mask-image: radial-gradient(ellipse at 50% 35%, #000 15%, transparent 70%); pointer-events: none; }
 .notebook-pagination { --lottery-tabs-height: 34px; --lottery-tabs-bottom-gap: 0px; --lottery-tabs-columns: none; flex: 1; min-width: 0; grid-auto-flow: column; grid-auto-columns: minmax(28px, 1fr); overflow-x: auto; scrollbar-width: thin; }
 .notebook-pagination button + button { border-inline-start: 1px solid var(--pwa-frame-tertiary); border-radius: 0; }
