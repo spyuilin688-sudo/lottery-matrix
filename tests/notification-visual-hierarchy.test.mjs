@@ -39,14 +39,8 @@ test("通知圖示降低亮度，讓名稱維持每列主閱讀點", () => {
   assert.ok(disabledIcon.some((body) => /filter:\s*brightness\(\.88\) saturate\(\.76\);/.test(body)));
 });
 
-test("Matrix Pro 保留精簡文字尺寸並採用共用框線", () => {
-  const badge = ruleBodies(css, /^\.notifications-screen-v2 \.notification-pro-badge$/);
-  assert.equal(badge.length, 1);
-  assert.match(badge[0], /padding:\s*0 1\.4px;/);
-  assert.match(badge[0], /border:\s*1px solid var\(--pwa-frame-tertiary\);/);
-  assert.match(badge[0], /border-radius:\s*var\(--pwa-frame-radius\);/);
-  assert.match(badge[0], /font-size:\s*4\.2px;/);
-  assert.match(badge[0], /line-height:\s*5\.6px;/);
+test("通知標籤與專用位移樣式已移除", () => {
+  assert.doesNotMatch(css, /notification-pro-badge|notification-icon-stack/);
 });
 
 test("通知批次按鈕列維持 18px、通知卡片維持 16px 左右外距", () => {
@@ -68,38 +62,19 @@ test("通知批次按鈕列維持 18px、通知卡片維持 16px 左右外距", 
   assert.match(list[0], /margin-inline:\s*0;/);
 });
 
-test("四個 Matrix Pro 標籤由單一 3px owner 往下重疊圖示", () => {
-  const screen = ruleBodies(css, /^\.notifications-screen-v2$/);
-  const matrixHeading = ruleBodies(css, /^\.notifications-screen-v2 \.notification-heading:has\(\.notification-pro-badge\)$/);
-  const badge = ruleBodies(css, /^\.notifications-screen-v2 \.notification-pro-badge$/);
-
-  assert.equal(screen.length, 1);
-  assert.equal(matrixHeading.length, 0);
-  assert.equal(badge.length, 1);
-
-  assert.match(screen[0], /--notification-pro-badge-overlap:\s*3px;/);
-  assert.match(badge[0], /translate:\s*0 var\(--notification-pro-badge-overlap\);/);
-  assert.doesNotMatch(badge[0], /transform\s*:/);
-  assert.doesNotMatch(badge[0], /(?:top|bottom|inset-block|margin-block-end)\s*:/);
-});
-
-
 test("通知批次按鈕區與通知列表維持 8px 間距", () => {
   const content = ruleBodies(css, /^\.notifications-screen-v2 \.notification-content$/);
   assert.equal(content.length, 1);
   assert.match(content[0], /row-gap:\s*8px;/);
 });
 
-test("Matrix 通知群組上框線與列分隔線由下移 3px 的偽元素繪製", () => {
-  const group = ruleBodies(css, /^\.notifications-screen-v2 \.notification-group$/);
-  const groupBefore = ruleBodies(css, /^\.notifications-screen-v2 \.notification-group::before$/);
-  const rowBefore = ruleBodies(css, /^\.notifications-screen-v2 \.notification-group \.notification-row \+ \.notification-row::before$/);
-
-  assert.equal(group.length, 1);
-  assert.equal(groupBefore.length, 1);
-  assert.equal(rowBefore.length, 1);
-  assert.match(group[0], /position:\s*relative;/);
-  assert.match(group[0], /border-top-color:\s*transparent;/);
-  assert.match(groupBefore[0], /top:\s*3px;/);
-  assert.match(rowBefore[0], /top:\s*3px;/);
+test("通知分隔線使用原始邊框，圖示上下保持 4px 留白", () => {
+  const heading = ruleBodies(css, /^\.notifications-screen-v2 \.notification-heading$/);
+  const divider = ruleBodies(css, /^\.notifications-screen-v2 \.notification-group \.notification-row \+ \.notification-row$/);
+  assert.equal(heading.length, 1);
+  assert.match(heading[0], /padding:\s*4px 8px 4px 4px;/);
+  assert.equal(divider.length, 1);
+  assert.match(divider[0], /border-top:\s*1px solid var\(--pwa-frame-divider\);/);
+  assert.equal(ruleBodies(css, /^\.notifications-screen-v2 \.notification-group::before$/).length, 0);
+  assert.equal(ruleBodies(css, /^\.notifications-screen-v2 \.notification-group \.notification-row \+ \.notification-row::before$/).length, 0);
 });
