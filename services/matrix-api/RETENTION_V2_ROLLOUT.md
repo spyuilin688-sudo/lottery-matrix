@@ -12,7 +12,7 @@ Do not change algorithm rules or split validation JSONB in this rollout.
    abort the entire migration. The current resolver and cleanup remain in place.
 3. Deploy ownership-controlled completion to all three production Railway
    services. Require SUCCESS for lottery-matrix, fantasy5-analysis, and
-   matrix-public-api before changing the resolver or retention.
+   heartfelt-generosity before changing the resolver or retention.
 4. Apply the manifest resolver and one bounded cleanup core. Check preview:
    recent active versions and running versions must have zero deletable rows.
 5. Run one batch and verify all five result RPCs and all three visible periods.
