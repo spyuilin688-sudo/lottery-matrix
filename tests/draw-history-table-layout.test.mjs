@@ -9,7 +9,9 @@ const css = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "
 const ballCss = readFileSync(new URL("../src/number-ball.css", import.meta.url), "utf8");
 const matrixCss = readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8");
 const responsiveCss = readFileSync(new URL("../src/responsive-feature-pages.css", import.meta.url), "utf8");
+const historyReadabilityCss = readFileSync(new URL("../src/draw-history-readability.css", import.meta.url), "utf8");
 const source = readFeaturePagesSource();
+const coreSource = readFileSync(new URL("../src/FeaturePagesCore.tsx", import.meta.url), "utf8");
 const prototypeSource = readFileSync(new URL("../src/Prototype.tsx", import.meta.url), "utf8");
 const prototypeCss = readFileSync(new URL("../src/prototype.css", import.meta.url), "utf8");
 
@@ -44,6 +46,46 @@ test("歷史今彩539只保留明確的 .2px 數字底線間距，不受 Matrix 
   assert.match(bodies[0], /--underline-y:\s*\.2px;/);
   assert.doesNotMatch(ballCss, /\.matrix-explore-main-screen \.history-panel/);
   assert.match(ballCss, /\.matrix-explore-main-screen \.matrix-explore-history-panel/);
+});
+
+test("歷史今彩539與天天樂增加呼吸空間且不影響六加一彩種", () => {
+  assert.match(coreSource, /import "\.\/draw-history-readability\.css";/);
+
+  const fiveBallPanel = ruleBodies(
+    historyReadabilityCss,
+    /^\.draw-history-screen \.draw-history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\)$/,
+  );
+  assert.equal(fiveBallPanel.length, 1);
+  assert.match(fiveBallPanel[0], /--mx-history-row-height:\s*59px;/);
+
+  const fiveBallSpacing = ruleBodies(
+    historyReadabilityCss,
+    /^\.draw-history-screen \.draw-history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.history-main-numbers$/,
+  );
+  assert.equal(fiveBallSpacing.length, 1);
+  assert.match(fiveBallSpacing[0], /gap:\s*clamp\(8px,\s*3vw,\s*12px\);/);
+
+  const fiveBallSize = ruleBodies(
+    ballCss,
+    /^\.draw-history-screen \.draw-history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.number-ball-component\.history-lottery-ball$/,
+  );
+  assert.equal(fiveBallSize.length, 1);
+  assert.match(fiveBallSize[0], /--number-ball-size:\s*clamp\(23px,\s*6\.8vw,\s*26px\);/);
+  assert.match(fiveBallSize[0], /--number-font-size:\s*clamp\(12px,\s*3\.4vw,\s*13\.5px\);/);
+
+  const markSixPanel = ruleBodies(
+    responsiveCss,
+    /^\.draw-history-screen \.draw-history-panel\[data-lottery="六合彩"\]$/,
+  );
+  assert.equal(markSixPanel.length, 1);
+  assert.match(markSixPanel[0], /--matrix-history-ball-size:\s*clamp\(18px,\s*5\.64vw,\s*22px\);/);
+
+  const grandLottoPanel = ruleBodies(
+    responsiveCss,
+    /^\.draw-history-screen \.draw-history-panel\[data-lottery="大樂透"\]$/,
+  );
+  assert.equal(grandLottoPanel.length, 1);
+  assert.match(grandLottoPanel[0], /--matrix-history-ball-size:\s*clamp\(20px,\s*6\.15vw,\s*24px\);/);
 });
 
 test("篩選條件由標題卡內容寬度與內容驅動的精簡控制器承接 [header migration]", () => {

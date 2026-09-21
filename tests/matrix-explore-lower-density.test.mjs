@@ -12,7 +12,7 @@ test('compact lower sections', () => {
   assert.match(layout, /\.result-summary > div,\s*\.matrix-explore-main-screen \.result-summary > button\s*\{[^}]*min-height:\s*clamp\(36px, 10vw, 40px\)/s);
   assert.match(layout, /\.road-results-head\s*\{[^}]*min-height:\s*32px/s);
   assert.match(layout, /\.road-result-row\s*\{[^}]*min-height:\s*0;[^}]*padding:\s*6px 0/s);
-  assert.match(layout, /\.repeat-stats-heading button\s*\{[^}]*border:\s*1px solid rgba\(117, 83, 41, \.62\);[^}]*background:\s*transparent/s);
+  assert.match(layout, /\.matrix-explore-main-screen \.consecutive-filter-button,\s*\.matrix-explore-main-screen \.repeat-stats-heading button\s*\{[^}]*border:\s*1px solid var\(--pwa-frame-tertiary\);[^}]*background:\s*var\(--pwa-control-surface\)/s);
   assert.match(balls, /--number-ball-size:\s*clamp\(24px, 7\.18vw, 28px\)/);
 });
 test('320 360 375 390 preserve 6+1 room', () => {
@@ -30,8 +30,6 @@ test('no hard overwrite hacks', () => {
     assert.match(remainingLayout, rule);
     remainingLayout = remainingLayout.replace(rule, '');
   }
-  const approvedTianhengArtworkScale = /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher \.matrix-page-switcher-image--tianheng\s*\{[^}]*transform:\s*scale\(1\.14\);[^}]*\}/s;
-  assert.match(remainingLayout, approvedTianhengArtworkScale);
-  remainingLayout = remainingLayout.replace(approvedTianhengArtworkScale, '');
+  assert.doesNotMatch(remainingLayout, /matrix-page-switcher-image--tianheng/);
   assert.doesNotMatch(remainingLayout, /!important|zoom\s*:|scale\s*\(|margin(?:-[a-z]+)?\s*:\s*-/);
 });

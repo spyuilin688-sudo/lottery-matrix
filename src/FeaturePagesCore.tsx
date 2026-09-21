@@ -1,3 +1,4 @@
+import "./draw-history-readability.css";
 import { DAILY_SORTED_ONLY_DESCRIPTION, supportsDrawOrder, useLotteryOrder, normalizeLotteryOrder } from "./use-lottery-order";
 import { subscribeLotteryRefresh } from "./lottery-data-refresh";
 import { BrandHeader, HeaderSettingsButton, type HeaderSettings } from "./features/BrandHeader";
