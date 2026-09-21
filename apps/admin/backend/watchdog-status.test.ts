@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createWatchdogStatusStore } from './watchdog-status';
+import { CHAIN_STAGES } from './matrix-chain';
+import { MATRIX_SERVICES } from './matrix-railway-evidence';
+import { createWatchdogStatusStore, sanitizeWatchdogStatus } from './watchdog-status';
 
 const heartbeat = {
   status: 'degraded',
@@ -143,5 +145,42 @@ describe('watchdog status store', () => {
 
     await expect(createWatchdogStatusStore(addFailure).save(heartbeat)).rejects.toThrow('WATCHDOG_STATUS_WRITE_FAILED');
     await expect(createWatchdogStatusStore(updateFailure).save(heartbeat)).rejects.toThrow('WATCHDOG_STATUS_WRITE_FAILED');
+  });
+});
+
+
+describe('read-only watchdog observations', () => {
+  const checkedAt = '2026-09-21T02:10:00.000Z';
+  const reports = ['今彩539','天天樂','六合彩','大樂透'].map(lottery => ({lottery,drawPeriod:'12006',checkedAt,
+    stages:CHAIN_STAGES.map(stage=>({stage,state:'PASS',source:'supabase',observedAt:checkedAt,period:'12006',code:'VERIFIED'}))}));
+  const detail = {status:'degraded',completedAt:'2026-09-21T02:00:00.000Z',reports,
+    observation:{checkedAt,status:'ok',source:'read-only-chain',token:'secret'}};
+  it('preserves the verified observation with its own time and only safe metadata', () => {
+    expect(sanitizeWatchdogStatus(detail).observation).toEqual({checkedAt,status:'ok',source:'read-only-chain'});
+    expect(sanitizeWatchdogStatus(detail).status).toBe('degraded');
+  });
+  it.each(['invalid','2026-09-20T00:00:00Z'])('rejects invalid or mismatched observation time %s', time => {
+    expect(sanitizeWatchdogStatus({...detail,observation:{...detail.observation,checkedAt:time}})).not.toHaveProperty('observation');
+  });
+  it('cannot claim success with partial or failing chains', () => {
+    expect(sanitizeWatchdogStatus({...detail,reports:reports.slice(0,3)})).not.toHaveProperty('observation');
+    const failed = reports.map(report=>({...report,stages:report.stages.map(stage=>({...stage,state:'FAIL'}))}));
+    expect(sanitizeWatchdogStatus({...detail,reports:failed}).observation).toMatchObject({status:'degraded'});
+  });
+  it('keeps historical Railway failures separate from current read-only diagnoses', () => {
+    const historicalRailway = [{service:'lottery-matrix',serviceId:MATRIX_SERVICES['lottery-matrix'],
+      observedAt:'2026-09-21T01:00:00.000Z',code:'OBSERVED',cronSchedule:'3 * * * *',
+      deployment:{id:'old',status:'FAILED',createdAt:'2026-09-21T01:00:00.000Z'},samples:[]}];
+    const current=sanitizeWatchdogStatus({...detail,railway:historicalRailway});
+    expect(current.railway?.[0].deployment?.status).toBe('FAILED');
+    expect(current.diagnoses?.[0].checks.find(check=>check.name==='lottery-matrix:deployment'))
+      .toMatchObject({state:'UNKNOWN',code:'DEPLOYMENT_UNAVAILABLE'});
+    const historical=sanitizeWatchdogStatus({...detail,observation:undefined,railway:historicalRailway});
+    expect(historical.diagnoses?.[0].checks.find(check=>check.name==='lottery-matrix:deployment'))
+      .toMatchObject({state:'FAIL',code:'FAILED'});
+  });
+  it('never stores a request observation as the scheduler heartbeat', async () => {
+    const database=createDatabase();await createWatchdogStatusStore(database).save(detail);
+    expect(database.add.mock.calls[0][1][0]).not.toHaveProperty('observation');
   });
 });

@@ -74,9 +74,10 @@ const optimizerRunner = createOptimizerRunner({
   collectRailway: railwayEvidence,
   rpc: (name, body) => supabase.supabaseRequest(`rpc/${name}`, {method:'POST', body:JSON.stringify(body), signal:AbortSignal.timeout(8000)}),
 });
+const loadWatchdogSnapshot = createSupabaseWatchdogSnapshotLoader(supabase);
 const independentWatchdog = createIndependentWatchdog({
   collectRailway: railwayEvidence,
-  loadSnapshot: createSupabaseWatchdogSnapshotLoader(supabase),
+  loadSnapshot: loadWatchdogSnapshot,
   claimLease: (key, owner) => watchdogLeases.claim(key, owner),
   releaseLease: (key, owner) => watchdogLeases.release(key, owner),
   recoverRailway: (lottery, owner, target) => workerApi.recoverLottery(lottery, owner, target),
@@ -93,6 +94,11 @@ const connectionStatus = createConnectionStatus({
   loadWatchdogStatus: async () => {
     const [heartbeat, optimizer] = await Promise.all([watchdogStatus.load(), optimizerRunner.latestReport().catch(() => undefined)]);
     return heartbeat ? {...heartbeat, optimizer} : null;
+  },
+  observeWatchdog: async () => {
+    const at = new Date();
+    const snapshots = await loadWatchdogSnapshot(at, false);
+    return { checkedAt: at.toISOString(), reports: snapshots.map(snapshot => snapshot.chain) };
   },
   loadGithubToken: () => getGithubActionsToken(secrets),
 });

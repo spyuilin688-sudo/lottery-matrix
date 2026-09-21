@@ -40,6 +40,21 @@ type NotificationSettingsLoadState = "loading" | "ready" | "failed" | "unauthent
 const SAVE_DEBOUNCE_MS = 25;
 const SAVE_RETRY_INITIAL_MS = 100;
 const SAVE_RETRY_MAX_MS = 4_000;
+const SAVE_AUTO_RETRIES = 3;
+
+function canSaveNotificationSettings() {
+  return navigator.onLine !== false && document.visibilityState !== "hidden";
+}
+
+function isPermanentSettingsSaveError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const { code, message, status } = error as { code?: string; message?: string; status?: number };
+  // PostgREST errors usually expose SQLSTATE rather than an HTTP status.
+  return (typeof status === "number" && status >= 400 && status < 500 && status !== 408 && status !== 429)
+    || /^(22|23|28|42)/.test(code ?? "")
+    || code === "PGRST301"
+    || /AUTH_REQUIRED|FORBIDDEN|MEMBER_REQUIRED|MEMBER_SESSION_(EXPIRED|CHANGED)|INVALID_NOTIFICATION_SETTINGS/.test(message ?? "");
+}
 
 const BET_TIME_OPTIONS = {
   [LOTTERIES[0]]: ["16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "19:45", "20:00", "20:10", "20:20", "20:25"],
@@ -140,6 +155,9 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveInFlight = useRef(false);
   const retryDelay = useRef(SAVE_RETRY_INITIAL_MS);
+  const saveFailures = useRef(0);
+  const saveStopped = useRef<"permanent" | "exhausted" | null>(null);
+  const saveAvailable = useRef(canSaveNotificationSettings());
   const componentActive = useRef(true);
   const flushAfterInFlightOnUnmount = useRef(false);
   const flushLatestSaveRef = useRef<(mode?: "normal" | "unmount") => void>(() => undefined);
@@ -160,6 +178,10 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     const snapshot = latestNotificationSettings.current;
     const serialized = JSON.stringify(snapshot);
     if (serialized === lastSavedSettings.current) return;
+    if (saveStopped.current || !canSaveNotificationSettings()) {
+      if (componentActive.current) setSaveFailed(true);
+      return;
+    }
 
     saveInFlight.current = true;
     if (componentActive.current) setSaveBusy(true);
@@ -169,10 +191,15 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
         if (scope !== getAlgorithmCacheScope()) return;
         lastSavedSettings.current = serialized;
         retryDelay.current = SAVE_RETRY_INITIAL_MS;
+        saveFailures.current = 0;
+        saveStopped.current = null;
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (scope !== getAlgorithmCacheScope()) return;
         failed = true;
+        saveFailures.current += 1;
+        if (isPermanentSettingsSaveError(error)) saveStopped.current = "permanent";
+        else if (saveFailures.current > SAVE_AUTO_RETRIES) saveStopped.current = "exhausted";
         // A lost response may still have committed. Reconfirm the latest draft,
         // even if the user has since restored the previously saved values.
         lastSavedSettings.current = "";
@@ -206,6 +233,10 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     if (saveTimer.current !== null) clearTimeout(saveTimer.current);
     saveTimer.current = null;
     if (!componentActive.current || notificationSettingsLoadState.current !== "ready") return;
+    if (saveStopped.current || !canSaveNotificationSettings()) {
+      if (JSON.stringify(latestNotificationSettings.current) !== lastSavedSettings.current) setSaveFailed(true);
+      return;
+    }
     saveTimer.current = setTimeout(() => {
       saveTimer.current = null;
       flushLatestSaveRef.current();
@@ -213,6 +244,35 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
   };
   flushLatestSaveRef.current = flushLatestSave;
   scheduleLatestSaveRef.current = scheduleLatestSave;
+
+  useEffect(() => {
+    const availabilityChanged = () => {
+      const available = canSaveNotificationSettings();
+      const wasAvailable = saveAvailable.current;
+      saveAvailable.current = available;
+      if (!available) {
+        if (saveTimer.current !== null) clearTimeout(saveTimer.current);
+        saveTimer.current = null;
+        if (notificationSettingsLoadState.current === "ready"
+          && JSON.stringify(latestNotificationSettings.current) !== lastSavedSettings.current) setSaveFailed(true);
+      } else if (!wasAvailable && saveStopped.current !== "permanent") {
+        // A genuine reconnect/return may try the retained draft again. Repeated
+        // online/visibility events must not replenish an exhausted retry budget.
+        saveFailures.current = 0;
+        retryDelay.current = SAVE_RETRY_INITIAL_MS;
+        saveStopped.current = null;
+        scheduleLatestSaveRef.current(SAVE_DEBOUNCE_MS);
+      }
+    };
+    window.addEventListener("online", availabilityChanged);
+    window.addEventListener("offline", availabilityChanged);
+    document.addEventListener("visibilitychange", availabilityChanged);
+    return () => {
+      window.removeEventListener("online", availabilityChanged);
+      window.removeEventListener("offline", availabilityChanged);
+      document.removeEventListener("visibilitychange", availabilityChanged);
+    };
+  }, []);
 
   useEffect(() => subscribeAlgorithmCacheScope(() => {
     // Auth changes invalidate ownership before queued promises or unmount flushes run.
@@ -225,6 +285,8 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     saveInFlight.current = false;
     flushAfterInFlightOnUnmount.current = false;
     retryDelay.current = SAVE_RETRY_INITIAL_MS;
+    saveFailures.current = 0;
+    saveStopped.current = null;
     const defaults = createDefaultNotificationSettings();
     latestNotificationSettings.current = defaults;
     setNotificationSettings(defaults);
@@ -519,6 +581,9 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
           {saveFailed ? <div className="notification-settings-save-error panel" role="status"><p>通知設定尚未儲存，請重試</p><button type="button" className="title-card-compact-action" aria-label="重試儲存通知設定" disabled={saveBusy} aria-busy={saveBusy} onClick={() => {
             if (saveTimer.current !== null) clearTimeout(saveTimer.current);
             saveTimer.current = null;
+            saveFailures.current = 0;
+            retryDelay.current = SAVE_RETRY_INITIAL_MS;
+            saveStopped.current = null;
             flushLatestSaveRef.current();
           }}>{saveBusy ? "儲存中…" : "重試儲存"}</button></div> : null}
           {notificationSettingsLoadUiState === "failed" ? <div className="notification-settings-load-error panel" role="alert"><span>通知設定載入失敗</span><button type="button" className="title-card-compact-action" aria-label="重新載入通知設定" onClick={() => { notificationSettingsLoadState.current = "loading"; setNotificationSettingsControlsBlocked(true); setNotificationSettingsLoadUiState("loading"); setNotificationSettingsReloadRevision((current) => current + 1); }}>重新載入</button></div> : null}

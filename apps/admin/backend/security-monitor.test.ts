@@ -9,6 +9,15 @@ describe('admin security observation',()=>{
   const body=JSON.parse(String(calls[0].body));expect(body.p_source).toMatch(/^[a-f0-9]{64}$/);expect(body.p_trusted).toBe(true);
   expect(String(calls[0].body)).not.toMatch(/203\.0\.113|forged|password|server-secret/);
  });
+ it('enforces requests attributed by the Edge runtime verified client IP',async()=>{
+  const calls:RequestInit[]=[];const monitor=createSecurityMonitor(config,async(_u,init)=>{calls.push(init!);return new Response(JSON.stringify({allowed:false,retryAfter:30,mode:'enforce'}));});
+  expect(await monitor.check({event:{clientIp:'203.0.113.8',headers:{'x-forwarded-for':'192.0.2.9','x-matrix-client-ip':'192.0.2.10'}}},'admin_login')).toEqual({allowed:false,retryAfter:30,mode:'enforce'});
+  expect(JSON.parse(String(calls[0].body)).p_trusted).toBe(true);
+ });
+ it('does not trust a signed-IP header or an invalid runtime IP',async()=>{
+  const monitor=createSecurityMonitor(config,async()=>new Response(JSON.stringify({allowed:false,retryAfter:30,mode:'enforce'})));
+  expect((await monitor.check({event:{clientIp:'invalid',headers:{'x-matrix-client-ip':'203.0.113.8'}}},'unauthorized')).allowed).toBe(true);
+ });
  it('ignores forwarded headers and never enforces unattributed requests',async()=>{
   const monitor=createSecurityMonitor(config,async()=>new Response(JSON.stringify({allowed:false,retryAfter:30,mode:'enforce'})));
   expect((await monitor.check({event:{headers:{'x-forwarded-for':'1.2.3.4'}}},'admin_login')).allowed).toBe(true);

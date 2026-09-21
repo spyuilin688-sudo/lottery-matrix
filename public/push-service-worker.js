@@ -590,17 +590,29 @@ self.addEventListener("notificationclick", (event) => {
   const url = safePwaPath(event.notification.data?.url);
 
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      const sameOriginClient = clientList.find((client) => {
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (clientList) => {
+      const target = new URL(url, self.location.origin).href;
+      const pwaClients = clientList.filter((client) => {
         try {
-          return new URL(client.url).origin === self.location.origin;
+          const parsed = new URL(client.url);
+          return parsed.origin === self.location.origin
+            && !/^\/admin(?:\/|$)/i.test(parsed.pathname);
         } catch {
           return false;
         }
       });
+      const client = pwaClients.find((candidate) => candidate.url === target) ?? pwaClients[0];
 
-      if (sameOriginClient && typeof sameOriginClient.focus === "function") {
-        return sameOriginClient.focus();
+      if (client) {
+        try {
+          // Focusing alone leaves an existing window on its previous screen.
+          const destination = client.url === target ? client : await client.navigate?.(url);
+          if (destination && typeof destination.focus === "function") {
+            return await destination.focus();
+          }
+        } catch {
+          // A window may close or become unnavigable between lookup and use.
+        }
       }
 
       return self.clients.openWindow(url);

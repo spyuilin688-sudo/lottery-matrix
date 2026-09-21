@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAdminApiProxy } from '../../../functions/admin/api/[[path]]';
+import { createSecurityMonitor } from './security-monitor';
 import { json, router } from '../../../supabase/functions/admin-api/runtime';
 
 const secret = 'test-only-admin-proxy-key-0123456789abcdef';
@@ -38,6 +39,28 @@ describe('admin IP across the Cloudflare to Supabase boundary', () => {
       expect(await response.json()).toEqual({ ip });
     },
   );
+
+  it.each([false, true])('enforces only an intact signed proxy identity (tampered=%s)', async tampered => {
+    const observations: Record<string, unknown>[] = [];
+    const monitor = createSecurityMonitor(async () => ({url:'https://db.test',serviceRoleKey:'test-secret'}),
+      async (_url, init) => {
+        observations.push(JSON.parse(String(init?.body)));
+        return new Response(JSON.stringify({allowed:false,retryAfter:30,mode:'enforce'}));
+      });
+    const handler = router({'POST /api/admin-login': [async ctx => {
+      const decision = await monitor.check(ctx, 'admin_login');
+      return json({allowed:decision.allowed}, decision.allowed ? 200 : 429);
+    }]});
+    const proxy = createAdminApiProxy(async (url, init) => {
+      const headers = new Headers(init?.headers);
+      if (tampered) headers.set('x-matrix-client-ip','192.0.2.99');
+      headers.set('x-forwarded-for','192.0.2.100');
+      return handler(new Request(String(url), {...init,headers}));
+    });
+    const result = await proxy(incoming(), env);
+    expect(result.status).toBe(tampered ? 200 : 429);
+    expect(observations[0].p_trusted).toBe(!tampered);
+  });
 
   it('accepts the verified IP when the gateway shortens the Edge Function URL prefix', async () => {
     const handler = router({ 'POST /api/admin-login': [readIp] });

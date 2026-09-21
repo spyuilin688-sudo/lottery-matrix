@@ -795,3 +795,148 @@ it("失敗後切回原設定仍確認儲存最新選擇，確認前保留提示"
     vi.useRealTimers();
   }
 });
+
+describe("notification settings save recovery", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(true);
+    vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
+  });
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+  const advance = async (milliseconds: number) => {
+    await act(async () => { await vi.advanceTimersByTimeAsync(milliseconds); });
+  };
+  const openAndEdit = async () => {
+    const view = render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    await act(async () => { await Promise.resolve(); });
+    fireEvent.click(screen.getByRole("button", { name: "全部關閉" }));
+    return view;
+  };
+
+  it("stops after a finite retry budget and manually saves the latest draft without another unmount retry", async () => {
+    memberApi.saveNotificationSettings.mockRejectedValue(new Error("network failed"));
+    const view = await openAndEdit();
+    await advance(60_000);
+    expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(4);
+    expect(screen.getByText("通知設定尚未儲存，請重試")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "開啟選號提醒" }));
+    await advance(60_000);
+    expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(4);
+    memberApi.saveNotificationSettings.mockImplementation(async (settings) => settings);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "重試儲存通知設定" })); });
+    expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(5);
+    expect(memberApi.saveNotificationSettings.mock.calls.at(-1)![0].settings).toMatchObject({ bet: true, result: false });
+    expect(screen.queryByText("通知設定尚未儲存，請重試")).toBeNull();
+    view.unmount();
+    expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(5);
+  });
+
+  it.each([
+    { code: "42501", message: "AUTH_REQUIRED" },
+    { code: "22023", message: "INVALID_NOTIFICATION_SETTINGS" },
+    { status: 403, message: "Forbidden" },
+    new Error("MEMBER_SESSION_EXPIRED"),
+  ])("does not automatically replay a permanent rejection %j", async (error) => {
+    memberApi.saveNotificationSettings.mockRejectedValue(error);
+    const view = await openAndEdit();
+    await advance(60_000);
+    expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(1);
+    vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+    fireEvent(document, new Event("visibilitychange"));
+    vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
+    fireEvent(document, new Event("visibilitychange"));
+    await advance(60_000);
+    view.unmount();
+    expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["offline", "hidden"] as const)("pauses queued saves while %s and resumes one latest draft on recovery", async (unavailable) => {
+    const view = await openAndEdit();
+    if (unavailable === "offline") {
+      vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+      fireEvent(window, new Event("offline"));
+    } else {
+      vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+      fireEvent(document, new Event("visibilitychange"));
+    }
+    fireEvent.click(screen.getByRole("button", { name: "開啟選號提醒" }));
+    await advance(60_000);
+    expect(memberApi.saveNotificationSettings).not.toHaveBeenCalled();
+    const pending = deferred<MemberNotificationSettings>();
+    memberApi.saveNotificationSettings.mockReturnValueOnce(pending.promise);
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(true);
+    vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
+    fireEvent(window, new Event("online"));
+    fireEvent(document, new Event("visibilitychange"));
+    await advance(1000);
+    expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(1);
+    const draft = memberApi.saveNotificationSettings.mock.calls[0][0];
+    expect(draft.settings).toMatchObject({ bet: true, result: false });
+    fireEvent(window, new Event("online"));
+    await advance(60_000);
+    expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(1);
+    await act(async () => pending.resolve(draft));
+    expect(screen.queryByText("通知設定尚未儲存，請重試")).toBeNull();
+    view.unmount();
+  });
+
+  it("only replenishes exhausted transient retries after a real reconnect, and never on unmount", async () => {
+    memberApi.saveNotificationSettings.mockRejectedValue({ status: 503, message: "Unavailable" });
+    const view = await openAndEdit();
+    await advance(60_000);
+    expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(4);
+    fireEvent(window, new Event("online"));
+    fireEvent(document, new Event("visibilitychange"));
+    await advance(60_000);
+    expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(4);
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    fireEvent(window, new Event("offline"));
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(true);
+    fireEvent(window, new Event("online"));
+    await advance(60_000);
+    expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(8);
+    view.unmount();
+    await advance(60_000);
+    expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(8);
+  });
+
+  it("keeps rate-limit failures recoverable with a bounded retry", async () => {
+    memberApi.saveNotificationSettings.mockRejectedValueOnce({ status: 429, message: "Rate limited" });
+    await openAndEdit();
+    await advance(1000);
+    expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(2);
+    expect(memberApi.saveNotificationSettings.mock.calls[1][0].settings).toMatchObject({ bet: false, result: false });
+    expect(screen.queryByText("通知設定尚未儲存，請重試")).toBeNull();
+  });
+
+  it("does not resume an offline draft for another account", async () => {
+    await openAndEdit();
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    fireEvent(window, new Event("offline"));
+    await advance(1000);
+    act(() => updateAlgorithmCacheSession({ access_token: 'member-b', user: { id: 'member-b' } } as Session));
+    await act(async () => { await Promise.resolve(); });
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(true);
+    fireEvent(window, new Event("online"));
+    await advance(1000);
+    expect(memberApi.saveNotificationSettings).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "關閉選號提醒" })).toHaveAttribute("data-checked", "true");
+  });
+
+  it("does not retry a late failed write while hidden or during unmount", async () => {
+    const pending = deferred<MemberNotificationSettings>();
+    memberApi.saveNotificationSettings.mockReturnValueOnce(pending.promise);
+    const view = await openAndEdit();
+    await advance(25);
+    vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+    fireEvent(document, new Event("visibilitychange"));
+    await act(async () => pending.reject(new Error("network failed")));
+    await advance(60_000);
+    view.unmount();
+    expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(1);
+  });
+});

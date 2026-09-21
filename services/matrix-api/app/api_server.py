@@ -255,7 +255,41 @@ def _execute_draw_query(repository: AnalysisRepository, lottery: str, kind: str,
     return data
 
 
+def _cached_legacy_draw_read(
+    repository: AnalysisRepository,
+    lottery: str,
+    query: list[Any],
+    load: Callable[[str | None], dict[str, Any]],
+) -> dict[str, Any]:
+    cache = getattr(repository, "draw_read_cache", None)
+    if cache is None:
+        return load(None)
+    revision = _draw_query(repository, lottery, "latest").get("revision")
+    if not isinstance(revision, str) or not revision:
+        return load(None)
+    key = json.dumps([lottery, revision, "legacy", query], sort_keys=True, ensure_ascii=False)
+    return cache.read(key, lambda: load(revision))
+
+
 def _history(repository: AnalysisRepository, lottery: str, limit: int | None) -> list[dict[str, Any]]:
+    if getattr(repository, "client", None) is None:
+        return _uncached_history(repository, lottery, limit)
+
+    def load(revision: str | None) -> dict[str, Any]:
+        items = _uncached_history(repository, lottery, limit)
+        # Legacy table pages have no revision cursor. Check the database again
+        # before publishing the complete response, so corrections cannot cache
+        # a mixed snapshot. Keep its existing ordering and alias reconciliation.
+        # This final fence must start after the pages, rather than join an older
+        # in-flight latest probe from another request.
+        if revision is not None and _execute_draw_query(repository, lottery, "latest").get("revision") != revision:
+            raise HistoryChangedError()
+        return {"items": items}
+
+    return _cached_legacy_draw_read(repository, lottery, ["history", limit], load)["items"]
+
+
+def _uncached_history(repository: AnalysisRepository, lottery: str, limit: int | None) -> list[dict[str, Any]]:
     items: list[dict[str, Any]] = []
     seen: dict[str, dict[str, Any]] = {}
 
@@ -349,34 +383,45 @@ def _tongxing(repository: AnalysisRepository, body: dict[str, Any]) -> dict[str,
     if getattr(repository, "client", None) is not None:
         explicit_page = "pageSize" in body
         page_size = _page_size(body.get("pageSize", 500))
-        cursor = body.get("cursor")
-        revision = None
-        while True:
-            data = _draw_query(repository, lottery, "tongxing",
-                p_limit=page_size, p_cursor=cursor,
-                p_numbers=numbers, p_order=number_order, p_future_offset=future_offset)
-            if revision is not None and data["revision"] != revision:
-                raise HistoryChangedError()
-            revision = data["revision"]
-            page_groups = data["groups"]
-            groups.extend({key: _project_draw(_normalize_supabase_draw(pair[key]), number_order)
-                           for key in ("lockedEntry", "predictedEntry")} for pair in page_groups)
-            next_cursor = data.get("nextCursor")
-            if explicit_page or next_cursor is None:
-                break
-            # Legacy callers expect every match. Read only filtered RPC pages,
-            # pinned to one revision, without accepting loops or skipped matches.
-            offset = cursor.get("offset", 0) if cursor is not None else 0
-            if (not page_groups or not isinstance(next_cursor, dict)
-                    or type(next_cursor.get("offset")) is not int
-                    or next_cursor["offset"] != offset + len(page_groups)):
-                raise RuntimeError("DRAW_QUERY_INVALID_CURSOR")
-            if next_cursor.get("revision") != revision:
-                raise HistoryChangedError()
-            cursor = next_cursor
-        return {"lottery": lottery, "numberOrder": number_order, "numbers": numbers,
-                "futureOffset": future_offset, "groups": groups,
-                "revision": data["revision"], "nextCursor": data.get("nextCursor")}
+        initial_cursor = body.get("cursor")
+        if initial_cursor is not None and not isinstance(initial_cursor, dict):
+            raise ValueError("INVALID_CURSOR")
+
+        def load(revision: str | None) -> dict[str, Any]:
+            cursor = initial_cursor
+            groups: list[dict[str, Any]] = []
+            # A legacy response is one cached query, including every filtered
+            # page. Its revision pins all pages without another probe per page.
+            query = _execute_draw_query if revision is not None else _draw_query
+            while True:
+                data = query(repository, lottery, "tongxing",
+                    p_limit=page_size, p_cursor=cursor,
+                    p_numbers=numbers, p_order=number_order, p_future_offset=future_offset)
+                if revision is not None and data["revision"] != revision:
+                    raise HistoryChangedError()
+                revision = data["revision"]
+                page_groups = data["groups"]
+                groups.extend({key: _project_draw(_normalize_supabase_draw(pair[key]), number_order)
+                               for key in ("lockedEntry", "predictedEntry")} for pair in page_groups)
+                next_cursor = data.get("nextCursor")
+                if explicit_page or next_cursor is None:
+                    break
+                offset = cursor.get("offset", 0) if cursor is not None else 0
+                if (not page_groups or not isinstance(next_cursor, dict)
+                        or type(next_cursor.get("offset")) is not int
+                        or next_cursor["offset"] != offset + len(page_groups)):
+                    raise RuntimeError("DRAW_QUERY_INVALID_CURSOR")
+                if next_cursor.get("revision") != revision:
+                    raise HistoryChangedError()
+                cursor = next_cursor
+            return {"lottery": lottery, "numberOrder": number_order, "numbers": numbers,
+                    "futureOffset": future_offset, "groups": groups,
+                    "revision": data["revision"], "nextCursor": data.get("nextCursor")}
+
+        if explicit_page:
+            return load(None)
+        return _cached_legacy_draw_read(repository, lottery,
+            ["tongxing", number_order, numbers, future_offset, initial_cursor], load)
     history = _history(repository, lottery, None)
     for locked_index in range(future_offset, len(history)):
         locked_entry = history[locked_index]
