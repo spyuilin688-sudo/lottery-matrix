@@ -31,7 +31,7 @@
 
 ## 六合彩官方日期自動同步
 
-Railway 的六合彩同步仍使用 `sync_marksix_calendar`；Supabase 只在固定台北時間派送日曆檢查，service-only acquire RPC 以 5 分鐘 lease 防止同一時段重複執行。原本掛在每 5 分鐘 Notification Recovery 的六合彩日曆判斷已移除，Recovery 只保留通知補救。
+Railway 的六合彩同步仍使用 `sync_marksix_calendar`；Supabase 只在固定台北時間派送日曆檢查，並走專用的 `marksix-calendar` 路徑，只同步香港賽馬會日曆，不啟動六合彩開獎爬蟲、Matrix 分析或 Worker job。service-only acquire RPC 以 5 分鐘 lease 防止同一時段重複執行。原本掛在每 5 分鐘 Notification Recovery 的六合彩日曆判斷已移除，Recovery 只保留通知補救。
 
 固定檢查以每週二、四、六為正常檢查日；週日保留同一組時段作為例外保險檢查，避免週六晚間才公告「六改日」或停開改期時漏掉。時間為：
 
@@ -40,7 +40,7 @@ Railway 的六合彩同步仍使用 `sync_marksix_calendar`；Supabase 只在固
 - 週二、週四、週六執行完整檢查；週日以相同時段執行例外保險檢查。
 - 週一、週三、週五不執行六合彩日曆自動檢查。
 - 每個固定時段都會重新向香港賽馬會確認官方日曆；同一時段成功後不會重複抓取。
-- 最後確認的日期最長有效 26 小時；涵蓋範圍外、資料過期或尚未公告的新月份一律待確認。
+- 每次確認成功後，有效期會延續到「下一個排定檢查時段＋5 分鐘」；因此週一、週三、週五不會因固定 26 小時到期而誤顯示待確認。涵蓋範圍外、錯過下一個排定檢查或尚未公告的新月份仍會待確認。
 
 來源是[香港賽馬會官方攪珠日期表](https://bet.hkjc.com/ch/marksix/fixtures)實際使用的公開 CMS 資料。程式從官網公開設定取得可輪換的 CMS 網站 key，不將它存入資料庫或前端；讀取 `NormalDrawDates` 與 `SnowballDrawDates`，不把預售日 `PresellDrawDates` 當成開獎日。
 
