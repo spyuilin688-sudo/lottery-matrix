@@ -1,16 +1,7 @@
 import { router, json, error, secrets } from '@appdeploy/sdk';
 
 import { notifySubscribers, realtimeSubscriptionRoutes } from './realtime-subscribers';
-import { analysisStore } from './matrix-analysis-store';
 import { createMemberAuth } from './matrix-member-auth';
-import { createMatrixTianyanRoutes } from './matrix-tianyan-routes';
-import type { TianyanArtifact } from './matrix-tianyan-service';
-import { createMatrixTiangongRoutes } from './matrix-tiangong-routes';
-import type { TiangongArtifact } from './matrix-tiangong-service';
-import { createMatrixStatusRoutes } from './matrix-status-routes';
-import type { ExploreArtifact, TianyanArtifact as StatusTianyanArtifact } from './matrix-status-service';
-import { readReadyAnalysis } from './matrix-ready-analysis';
-import { readStoredStatusExplore } from './matrix-status-analysis-reader';
 import { createMemberOnlineRpc, createMemberOnlineService } from './member-online';
 import { createMemberProfileStore } from './member-profile-store';
 import { createMemberProfileRoutes } from './member-profile-routes';
@@ -45,61 +36,6 @@ const memberBootstrap = createMemberBootstrap(loadMatrixSupabaseConfig);
 const memberBootstrapRoutes = createMemberBootstrapRoutes({
     bootstrap: authorization => memberBootstrap.bootstrap(authorization),
 });
-const readCompletedMatrixAnalysis = (
-    kind: 'tianyan'|'tiangong',
-    lottery: '今彩539'|'天天樂'|'六合彩'|'大樂透',
-    drawPeriod?: string,
-) => readReadyAnalysis(
-    (analysisKind,analysisLottery,analysisPeriod,analysisVersion) => analysisStore.readAnalysis(analysisKind,analysisLottery,analysisPeriod,analysisVersion),
-    kind,
-    lottery,
-    drawPeriod,
-);
-async function readStatusAnalysis(
-    kind: 'explore'|'tianyan'|'tiangong'|'status',
-    lottery: '今彩539'|'天天樂'|'六合彩'|'大樂透',
-    drawPeriod?: string,
-) {
-    if (kind === 'explore') {
-        return readStoredStatusExplore(
-            (analysisKind,analysisLottery,analysisPeriod) => analysisStore.readAnalysis(analysisKind,analysisLottery,analysisPeriod),
-            lottery,
-            drawPeriod,
-        );
-    }
-    return kind === 'tianyan'
-        ? readCompletedMatrixAnalysis(kind,lottery,drawPeriod)
-        : analysisStore.readAnalysis(kind,lottery,drawPeriod);
-}
-const matrixStatusRoutes = createMatrixStatusRoutes({
-    requireMember: authorization => matrixMemberAuth.requireMember(authorization),
-    readStatusSources: async (lottery,drawPeriod) => {
-        const explore=await readStatusAnalysis('explore',lottery,drawPeriod);
-        if (!explore) return null;
-        const tianyan=await readStatusAnalysis('tianyan',lottery,explore.drawPeriod);
-        if (!tianyan || tianyan.analysisVersion!==explore.analysisVersion || tianyan.drawPeriod!==explore.drawPeriod) return null;
-        return {
-            analysisVersion:explore.analysisVersion,
-            drawPeriod:explore.drawPeriod,
-            explore:explore.data as ExploreArtifact,
-            tianyan:tianyan.data as StatusTianyanArtifact,
-        };
-    },
-});
-const matrixTianyanRoutes = createMatrixTianyanRoutes({
-    requireMember: authorization => matrixMemberAuth.requireMember(authorization),
-    readAnalysis: async (kind,lottery,drawPeriod) => {
-        const artifact = await readCompletedMatrixAnalysis('tianyan',lottery,drawPeriod);
-        return artifact === null ? null : { ...artifact,data:artifact.data as TianyanArtifact };
-    },
-});
-const matrixTiangongRoutes = createMatrixTiangongRoutes({
-    requireMember: authorization => matrixMemberAuth.requireMember(authorization),
-    readAnalysis: async (kind,lottery,drawPeriod) => {
-        const artifact = await readCompletedMatrixAnalysis('tiangong',lottery,drawPeriod);
-        return artifact === null ? null : { ...artifact,data:artifact.data as TiangongArtifact };
-    },
-});
 function authorizationHeader(event: { headers?: Record<string,string|undefined> } | undefined) {
     return event?.headers?.authorization ?? event?.headers?.Authorization;
 }
@@ -113,26 +49,6 @@ const memberRouteHandlers = createMemberRouteHandlers({
 });
 export const handler = router({
     'GET /api/_healthcheck': [async () => json({ message: 'Success' })],
-    'POST /api/matrix/algorithm/tianyan': [async ({ body,event }) => {
-        const response = await matrixTianyanRoutes.list({ authorization:authorizationHeader(event),body });
-        return json(response.body,response.status);
-    }],
-    'POST /api/matrix/algorithm/tianyan/validation': [async ({ body,event }) => {
-        const response = await matrixTianyanRoutes.validation({ authorization:authorizationHeader(event),body });
-        return json(response.body,response.status);
-    }],
-    'POST /api/matrix/algorithm/tiangong': [async ({ body,event }) => {
-        const response = await matrixTiangongRoutes.list({ authorization:authorizationHeader(event),body });
-        return json(response.body,response.status);
-    }],
-    'POST /api/matrix/algorithm/tiangong/validation': [async ({ body,event }) => {
-        const response = await matrixTiangongRoutes.validation({ authorization:authorizationHeader(event),body });
-        return json(response.body,response.status);
-    }],
-    'POST /api/matrix/status': [async ({ body,event }) => {
-        const response = await matrixStatusRoutes.get({ authorization:authorizationHeader(event),body });
-        return json(response.body,response.status);
-    }],
     ...memberRouteHandlers,
     'POST /api/member-online/start': [async ({ event }) => {
         try {
