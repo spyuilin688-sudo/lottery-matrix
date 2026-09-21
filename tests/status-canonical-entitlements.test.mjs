@@ -8,7 +8,8 @@ const reader = fs.readFileSync(new URL('../supabase/functions/matrix-status/sour
 const migration = fs.readFileSync(new URL('../supabase/migrations/20260921172000_matrix_status_canonical_entitlements.sql', import.meta.url), 'utf8');
 
 test('production Matrix status injects canonical Supabase entitlements', () => {
-  assert.match(routes, /resolveEntitlements\?/);
+  assert.match(routes, /resolveEntitlements\(authorization\?: string\): Promise<MatrixEntitlements>/);
+  assert.doesNotMatch(routes, /resolveEntitlements\?\(/);
   assert.match(edge, /resolveEntitlements:/);
   assert.match(edge, /createMatrixStatusEntitlementReader/);
   assert.match(reader, /rpc\/matrix_status_entitlements/);
