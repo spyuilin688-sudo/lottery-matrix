@@ -1,5 +1,9 @@
 import {expect,it,vi} from 'vitest';
 import {createRailwayEvidenceCollector,runtimeSamples,MATRIX_SERVICES} from './matrix-railway-evidence';
+it('tracks the renamed Railway public API service by its current display name',()=>{
+ expect(MATRIX_SERVICES['matrix-public-api']).toBe('58a61045-f675-4862-9847-6f4f430f2050');
+ expect(MATRIX_SERVICES).not.toHaveProperty('heartfelt-generosity');
+});
 it('does not send a request without a platform token',async()=>{
  const fetcher=vi.fn();const r=await createRailwayEvidenceCollector(async()=>null,fetcher)();
  expect(fetcher).not.toHaveBeenCalled();expect(r).toHaveLength(5);expect(r.every(s=>s.code==='CONFIG_MISSING')).toBe(true);
