@@ -113,7 +113,8 @@ def evaluate_chapter15(source: dict) -> dict:
         for rule in RULES:
             if rule["hitType"] != group["hitType"]:
                 continue
-            witnesses = _matching_group(group["roads"], rule["rows"])
+            rows = rule.get("lotteryRows", {}).get(source["lottery"], rule["rows"])
+            witnesses = _matching_group(group["roads"], rows)
             if witnesses:
                 triggers.append({
                     "ruleId": rule["ruleId"], "status": rule["status"], "roads": witnesses,
