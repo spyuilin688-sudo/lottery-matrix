@@ -2,6 +2,14 @@ name: Matrix optimization candidates
 on:
   push:
     branches: [main]
+    paths:
+      - 'backend/**'
+      - 'services/matrix-api/**'
+      - 'supabase/**'
+      - 'apps/admin/backend/**'
+      - 'scripts/matrix-optimizer-code.mjs'
+      - 'tests/matrix-optimizer-code.test.mjs'
+      - '.github/workflows/matrix-optimizer.yml'
   workflow_dispatch:
 permissions:
   contents: read
