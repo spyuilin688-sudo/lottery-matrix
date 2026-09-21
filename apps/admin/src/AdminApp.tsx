@@ -1664,6 +1664,7 @@ export function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm
         <div><h2 id="system-status-title">服務檢查</h2><span>最後檢查時間：{checkedAt ? formatAdminDateTime(checkedAt) : "尚未檢查"}</span></div>
         <button className="compactButton" onClick={refresh} disabled={actionPending} aria-busy={checking}><RefreshCw size={15} />{checking ? "檢查中…" : "重新檢查"}</button>
       </header>
+      <p className="systemStatusLegend">驗證層級：綠色代表實際查詢或正式執行紀錄正常；藍色代表部分驗證（API、Endpoint、所屬服務或正式紀錄）。系統不會為健康檢查執行寫入、派送通知或啟動復原。</p>
       {statusError && <div className="error" role="alert">{statusError}</div>}
       {statusNotice && <div className="systemStatusNotice" role="status">{statusNotice}</div>}
       <RailwayOperations client={api} canEdit={canEdit} confirm={confirm} disabled={checking || Boolean(retryingId) || Boolean(refreshingId)} onBusyChange={value => { requestInFlight.current = value; setOperating(value); }} />
@@ -1680,7 +1681,7 @@ export function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm
             <section className="statusGroup" key={group.location} aria-labelledby={groupTitleId}>
               <header className="statusGroupHeader">
                 <h3 id={groupTitleId}>{group.location}</h3>
-                <span>正常 {normalCount}／{group.items.length} · {limitedCount} 項僅部分檢查 · {abnormalCount} 項異常{warningCount > 0 ? ` · ${warningCount} 項警告` : ""}</span>
+                <span>正常 {normalCount}／{group.items.length} · {limitedCount} 項部分驗證 · {abnormalCount} 項異常{warningCount > 0 ? ` · ${warningCount} 項警告` : ""}</span>
               </header>
               <div className="statusRows">
                 {group.items.map((item) => {
