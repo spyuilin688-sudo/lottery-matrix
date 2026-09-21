@@ -59,7 +59,7 @@ test('calculator controls use the approved responsive touch sizes without changi
   assert.match(panel, /--calculator-action-height:\s*clamp\(28px,\s*calc\(9\.3vw - 6px\),\s*34px\)/);
   assert.match(panel, /--calculator-column-control-size:\s*clamp\(28px,\s*8vw,\s*32px\)/);
   assert.match(panel, /--calculator-column-row-height:\s*clamp\(50px,\s*14vw,\s*60px\)/);
-  assert.match(panel, /padding:\s*8px clamp\(4px,\s*1\.3vw,\s*6px\) 12px/);
+  assert.match(panel, /padding:\s*8px clamp\(4px,\s*1\.3vw,\s*6px\) 12px 6px/);
   assert.match(block(feature, '.panel'), /border:\s*1px solid var\(--pwa-frame-secondary\)/);
   assert.match(block(feature, '.calculator-screen > .feature-body'), /padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\)/);
   assert.equal(style('.calculator-screen .feature-body').getPropertyValue('--layout-page-inline'), '16px');
