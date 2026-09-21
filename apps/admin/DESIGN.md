@@ -61,9 +61,11 @@ Runtime ownership（Model B）：src/admin.css 單獨擁有基本排版、共用
 
 ### 系統設定服務檢查
 
-狀態標籤由 src/system-status.css 的 .statusState .statusBadge 擁有：11px 字級、最小高度 20px、2px／6px 內距與 4px 圓角。藍色表示只確認 API 存在、連線或所屬主機；綠色表示該項檢查／最近執行正常；紅色表示檢查失敗。不得把部分檢查改成已驗證完整功能。
+狀態標籤由 src/system-status.css 的 .statusState .statusBadge 擁有：11px 字級、最小高度 20px、2px／6px 內距與 4px 圓角。綠色只用於本次實際查詢／唯讀檢查或正式執行紀錄正常；藍色表示部分驗證（API 註冊、Endpoint、所屬服務、會員流程未執行或正式歷史證據）；紅色表示實際檢查失敗。頁首以 11px 常駐說明驗證層級。不得為了讓狀態變綠而執行會寫入正式資料、派送通知、登出會員或啟動復原的操作。
 
-每項服務以獨立邊框分隔，間距 8px。名稱、用途、檢查範圍及錯誤訊息常駐；API 位址、時間、回應代碼及排程明細使用原生 details，預設收合，鍵盤可操作。文案由 src/system-status.ts 與 backend/api-status-inventory.ts 擁有，技術詞改成具體用途，既有功能與操作權限保持一致。
+每項服務以獨立邊框分隔，間距 8px。名稱、用途、檢查範圍及錯誤訊息常駐；API 位址、時間、回應代碼及排程明細使用原生 details，預設收合，鍵盤可操作。每列明細增加「驗證方式」，區分實際查詢、正式資料、Endpoint 連線、所屬服務、正式執行紀錄、會員流程未執行與寫入操作未執行。文案由 src/system-status.ts 與 backend/api-status-inventory.ts 擁有，技術詞改成具體用途，既有功能與操作權限保持一致。
+
+通知派送健康以事件式正式架構為準：驗證 notification_events 的事件觸發器、管理員轉帳觸發器、`matrix-notification-recovery-5m` 的每 5 分鐘 Recovery，以及 Web／Native／Admin 三類待處理、逾時與 24 小時正式派送結果。健康檢查本身不得送出測試通知；服務商接受紀錄不得描述成裝置一定顯示。
 
 Railway 操作由 src/RailwayOperations.tsx 與 src/system-status.css 擁有，使用既有原生彩種選單、compactButton 與 AdminApp 確認對話框。手動更新與復原沿用管理員 edit 權限，一次選定一個彩種，送出期間鎖定操作，失敗不自動重送。復原回應 accepted 只顯示已受理，不能描述成已完成；already-running 顯示未重複啟動。操作回饋使用持續可見的 status／alert 區域。
 
