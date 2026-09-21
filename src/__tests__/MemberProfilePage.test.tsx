@@ -15,6 +15,8 @@ vi.mock("../subscription-purchase-visibility", () => ({ useSubscriptionPurchaseV
 
 const memberApi = vi.hoisted(() => ({ bootstrapMember: vi.fn(), fetchMemberProfile: vi.fn(), fetchMemberPaymentHistory: vi.fn() }));
 const lineAuth = vi.hoisted(() => ({
+  prepareLineLoginUrl: vi.fn(),
+  shouldUseDirectLineBrowserLink: vi.fn(),
   signInWithLine: vi.fn(),
   signOutFromMatrix: vi.fn(),
   reconcilePendingLineLogoutPresence: vi.fn(),
@@ -47,6 +49,8 @@ vi.mock("../member-api", () => ({
   fetchMemberPaymentHistory: memberApi.fetchMemberPaymentHistory,
 }));
 vi.mock("../auth/line-auth", () => ({
+  prepareLineLoginUrl: lineAuth.prepareLineLoginUrl,
+  shouldUseDirectLineBrowserLink: lineAuth.shouldUseDirectLineBrowserLink,
   signInWithLine: lineAuth.signInWithLine,
   signOutFromMatrix: lineAuth.signOutFromMatrix,
   reconcilePendingLineLogoutPresence: lineAuth.reconcilePendingLineLogoutPresence,
@@ -81,6 +85,8 @@ beforeEach(() => {
   reviewSetting.visible = false;
   memberApi.fetchMemberPaymentHistory.mockReset().mockResolvedValue([]);
   window.sessionStorage.clear();
+  lineAuth.prepareLineLoginUrl.mockReset().mockResolvedValue("https://project.supabase.co/auth/v1/authorize?provider=custom%3Aline");
+  lineAuth.shouldUseDirectLineBrowserLink.mockReset().mockReturnValue(false);
   lineAuth.signInWithLine.mockReset().mockResolvedValue(undefined);
   lineAuth.signOutFromMatrix.mockReset().mockResolvedValue(undefined);
   lineAuth.reconcilePendingLineLogoutPresence.mockReset();
@@ -315,6 +321,26 @@ describe("ProfilePage member API", () => {
       tone: "danger",
     }));
     expect(screen.getByRole("button", { name: "Google 登入" })).toBeEnabled();
+  });
+
+  it("手機瀏覽器使用直接 LINE 登入連結，不由 JavaScript 啟動 OAuth 導向", async () => {
+    supabase.auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
+    lineAuth.shouldUseDirectLineBrowserLink.mockReturnValue(true);
+    const url = "https://project.supabase.co/auth/v1/authorize?provider=custom%3Aline";
+    lineAuth.prepareLineLoginUrl.mockResolvedValue(url);
+
+    render(<ProfilePage onNavigate={vi.fn()} />);
+
+    const login = await screen.findByRole("button", { name: "LINE 登入" });
+    await waitFor(() => expect(login).toHaveAttribute("href", url));
+    expect(login.tagName).toBe("A");
+    expect(lineAuth.prepareLineLoginUrl).toHaveBeenCalledTimes(1);
+
+    login.addEventListener("click", (event) => event.preventDefault(), { once: true, capture: true });
+    fireEvent.click(login);
+
+    expect(lineAuth.signInWithLine).not.toHaveBeenCalled();
+    expect(window.sessionStorage.getItem("matrix-line-login-pending")).not.toBeNull();
   });
 
   it("未登入時在既有會員卡顯示 LINE 登入並啟動登入流程", async () => {

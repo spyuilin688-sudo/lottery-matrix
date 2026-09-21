@@ -156,6 +156,14 @@ The production build stamps `push-service-worker.js` with a fingerprint derived 
 ## LINE login return — 2026-09-06
 
 - User request: opening LINE login from the installed PWA must return to the PWA.
+- Regular Android and iOS browser tabs use a pre-generated Supabase
+  `custom:line` authorize URL rendered as a real `href` on the existing LINE
+  login control. The user's tap, not a delayed JavaScript redirect, starts the
+  browser navigation. Keep `skipBrowserRedirect: true` only while asking auth-js
+  to build the URL, then remove its internal `skip_http_redirect` query before
+  rendering the link; preserve the approved origin-root return, and do not add
+  `disable_auto_login=true`. If URL preparation fails, the established OAuth
+  button flow remains the fallback. Desktop browser behavior is unchanged.
 - Mobile PWAs start OAuth in the original PWA navigation, including when Service
   Worker support is available. Do not select the desktop popup flow merely
   because a phone supports Service Workers. The mobile return URL is the

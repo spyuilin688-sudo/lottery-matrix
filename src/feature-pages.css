@@ -1108,6 +1108,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   color: #f1c66b;
   font-size: 3.5cqw;
   line-height: 1;
+  text-decoration: none;
   cursor: pointer;
 }
 .profile-card[data-auth-layout="multiple"] .profile-logout {
