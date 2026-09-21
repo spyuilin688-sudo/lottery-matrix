@@ -349,4 +349,4 @@ Matrix 天樞加入核心頁面切換列，順序為探索、天衡、天樞、�
 
 ### 歷史開獎五球彩種可讀性 — 2026-09-21
 
-歷史開獎頁的今彩539與天天樂維持既有曆週分卡、期數與「期數｜日期｜開獎號碼」三欄結構；僅在 `src/responsive-feature-pages.css` 將兩彩種資料列由 54px 提高至 59px，五球間距調整為 `clamp(8px, 3vw, 12px)`，並在 `src/number-ball.css` 將歷史頁五球尺寸調整為 `clamp(23px, 6.8vw, 26px)`、號碼字級為 `clamp(12px, 3.4vw, 13.5px)`。Matrix Explore、大樂透與六合彩維持既有尺寸與間距；資料、排序、日期、篩選、API 與互動不變。
+歷史開獎頁的今彩539與天天樂維持既有曆週分卡、期數與「期數｜日期｜開獎號碼」三欄結構；`src/draw-history-readability.css` 只負責這兩個五球彩種的歷史頁可讀性，將資料列由 54px 提高至 59px、五球間距調整為 `clamp(8px, 3vw, 12px)`；`src/number-ball.css` 將歷史頁五球尺寸調整為 `clamp(23px, 6.8vw, 26px)`、號碼字級為 `clamp(12px, 3.4vw, 13.5px)`。Matrix Explore、大樂透與六合彩維持既有尺寸與間距；資料、排序、日期、篩選、API 與互動不變。
