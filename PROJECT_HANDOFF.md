@@ -23,7 +23,7 @@
 
 API 執行方式見 [services/matrix-api/README.md](services/matrix-api/README.md)。Repository 中的 `railway*.json` 是否生效，須比對正式服務綁定。
 
-2026-09-22 讀回 AppDeploy 帳號清單時，既有樂彩／預覽 apps 均為 `deleted`。Repository 根目錄 `backend/` 仍有被 PWA 與 Supabase Edge Function 直接引用的共用 TypeScript 模組，因此不能整批視為 legacy；本次僅移除已無 production import 的 AppDeploy root entrypoint、舊 AppDeploy Matrix storage adapter、舊 realtime adapter 與空 `cron.json`。`apps/admin/backend/` 的 `@appdeploy/sdk` 介面由 Supabase `admin-api` import map 映射到 Edge runtime，不能依套件名稱誤判為舊 AppDeploy 部署。
+2026-09-22 讀回 AppDeploy 帳號清單時，既有樂彩／預覽 apps 均為 `deleted`。Repository 根目錄 `backend/` 仍有被 PWA 與 Supabase Edge Function 直接引用的共用 TypeScript 模組，因此不能整批視為 legacy；本次僅移除已無 production import 的 AppDeploy root entrypoint、舊 AppDeploy Matrix storage adapter、舊 realtime adapter 與空 `cron.json`。`apps/admin/backend/` 的 `@appdeploy/sdk` 介面由 Supabase `admin-api` import map 映射到 Edge runtime，不能依套件名稱誤判為舊 AppDeploy 部署。 PWA 的會員 bootstrap／profile／notification／online 已由 `src/member-api.ts` 與 `src/member-online-api.ts` 直接呼叫 Supabase RPC；舊 root AppDeploy member HTTP helper 同步退役。
 
 以下為 2026-09-21 核對並調整的主要 Railway production 服務：
 

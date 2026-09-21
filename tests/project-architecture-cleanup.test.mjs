@@ -36,6 +36,14 @@ test('dormant root AppDeploy entrypoints and adapters stay removed', () => {
     'backend/matrix-result-store.ts',
     'backend/realtime-subscribers.ts',
     'backend/realtime.ts',
+    'backend/member-online.ts',
+    'backend/member-profile-store.ts',
+    'backend/member-profile-routes.ts',
+    'backend/member-notification-store.ts',
+    'backend/member-notification-routes.ts',
+    'backend/member-bootstrap.ts',
+    'backend/member-bootstrap-routes.ts',
+    'backend/member-route-handlers.ts',
     'cron.json',
   ]) {
     assert.equal(exists(path), false, `retired AppDeploy source returned: ${path}`);
@@ -50,4 +58,17 @@ test('canonical handoff docs do not direct engineers back to a live legacy AppDe
   assert.match(projectHandoff, /既有樂彩／預覽 apps 均為 `deleted`/);
   assert.doesNotMatch(projectHandoff, /舊 AppDeploy `matrix-sanqwn` 網址仍可連線/);
   assert.doesNotMatch(railwayReadme, /old AppDeploy endpoint remains reachable/);
+});
+
+
+test('active shared backend owners remain after AppDeploy cleanup', () => {
+  for (const path of [
+    'backend/matrix-member-auth.ts',
+    'backend/matrix-status-routes.ts',
+    'backend/matrix-status-service.ts',
+    'backend/member-notification-settings.ts',
+    'backend/matrix-explore-service.ts',
+  ]) {
+    assert.equal(exists(path), true, `active shared backend owner missing: ${path}`);
+  }
 });
