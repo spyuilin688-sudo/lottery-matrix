@@ -526,3 +526,80 @@ describe('Taipei lottery cache windows', () => {
     expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/history-years/'))).toHaveLength(2);
   });
 });
+
+
+describe('persistent safe read caches', () => {
+  it('keeps history years across a PWA memory reset until the stable window ends', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-22T10:00:00+08:00'));
+    const draw = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
+    const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => (
+      String(url).includes('/history-years/')
+        ? jsonResponse({ years: ['2026', '2025'] })
+        : jsonResponse(draw)
+    ));
+
+    await expect(fetchLotteryHistoryYears('今彩539')).resolves.toEqual(['2026', '2025']);
+    resetReadCacheForTests();
+    vi.setSystemTime(new Date('2026-09-22T19:59:59+08:00'));
+    await expect(fetchLotteryHistoryYears('今彩539')).resolves.toEqual(['2026', '2025']);
+    expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/history-years/'))).toHaveLength(1);
+
+    resetReadCacheForTests();
+    vi.setSystemTime(new Date('2026-09-22T20:00:00+08:00'));
+    await fetchLotteryHistoryYears('今彩539');
+    expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/history-years/'))).toHaveLength(2);
+  });
+
+  it('keeps the same TongXing query across a PWA memory reset inside the stable window', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-22T10:00:00+08:00'));
+    const draw = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
+    const request = {
+      lottery: '今彩539' as const,
+      numberOrder: '依號碼由小到大排序' as const,
+      numbers: ['01', '02'],
+      futureOffset: 1,
+    };
+    const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => (
+      String(url).includes('/latest/')
+        ? jsonResponse(draw)
+        : jsonResponse({ ...request, groups: [{ lockedEntry: draw, predictedEntry: draw }], nextCursor: null })
+    ));
+
+    await fetchTongXing(request);
+    resetReadCacheForTests();
+    vi.setSystemTime(new Date('2026-09-22T19:59:59+08:00'));
+    await fetchTongXing(request);
+
+    expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/tongxing'))).toHaveLength(1);
+  });
+
+  it('expires persisted TongXing after five minutes outside the stable window', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-22T20:30:00+08:00'));
+    const draw = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
+    const request = {
+      lottery: '今彩539' as const,
+      numberOrder: '依號碼由小到大排序' as const,
+      numbers: ['01'],
+      futureOffset: 1,
+    };
+    const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => (
+      String(url).includes('/latest/')
+        ? jsonResponse(draw)
+        : jsonResponse({ ...request, groups: [{ lockedEntry: draw, predictedEntry: draw }], nextCursor: null })
+    ));
+
+    await fetchTongXing(request);
+    resetReadCacheForTests();
+    vi.setSystemTime(new Date('2026-09-22T20:34:59+08:00'));
+    await fetchTongXing(request);
+    expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/tongxing'))).toHaveLength(1);
+
+    resetReadCacheForTests();
+    vi.setSystemTime(new Date('2026-09-22T20:35:00+08:00'));
+    await fetchTongXing(request);
+    expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/tongxing'))).toHaveLength(2);
+  });
+});

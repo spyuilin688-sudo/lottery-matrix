@@ -55,9 +55,11 @@ export function createMatrixStatusEdgeHandler(dependencies: MatrixStatusDependen
         ? value.lotteries.map((item) => String(item))
         : [];
       if (
-        requested.length !== lotteries.length
+        requested.length === 0
+        || requested.length > lotteries.length
         || new Set(requested).size !== requested.length
         || requested.some((item) => !lotteries.includes(item as MatrixLottery))
+        || (action === 'batch' && requested.length !== lotteries.length)
       ) {
         return json({ error: { code: 'INVALID_REQUEST' } }, 400);
       }

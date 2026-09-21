@@ -9,9 +9,11 @@ import {
   clearMatrixLotteryData,
   readLotteryHistoryCacheEntry,
   readLotteryLatestCacheEntry,
+  readLotteryQueryCacheEntry,
   setMatrixCurrentPeriod,
   writeLotteryHistoryCache,
   writeLotteryLatestCache,
+  writeLotteryQueryCache,
 } from './matrix-result-cache';
 
 export const LOTTERY_API_BASE = RAILWAY_API_BASE;
@@ -424,14 +426,34 @@ export async function fetchLatestLotteryDraw(lottery: NumberBallLottery): Promis
 }
 
 export async function fetchLotteryHistoryYears(lottery: NumberBallLottery): Promise<string[]> {
-  await fetchLatestLotteryDraw(lottery);
-  return readThroughCache(`lottery:years:${lottery}`, lotteryReadCacheTtlMs(lottery, 'standard'), async () => {
-    const data = await requestJson<{ years: unknown }>(`/api/matrix/history-years/${encodeURIComponent(lottery)}`);
-    if (!Array.isArray(data.years) || data.years.some(year => typeof year !== 'string' || !/^\d{4}$/.test(year))) {
-      throw new Error('歷史年份格式不正確');
-    }
-    return [...new Set(data.years as string[])].sort().reverse();
-  });
+  const latest = await fetchLatestLotteryDraw(lottery);
+  const drawPeriod = latestRecords.get(lottery)?.period ?? latest?.period ?? getMatrixCurrentPeriod(lottery);
+  const persistentKey = { kind: 'history-years-v1' };
+  let expiresAt = Infinity;
+  return readThroughCache(
+    `lottery:years:${lottery}`,
+    lotteryReadCacheTtlMs(lottery, 'standard'),
+    async () => {
+      const stored = drawPeriod
+        ? readLotteryQueryCacheEntry<string[]>(lottery, drawPeriod, persistentKey, Infinity)
+        : null;
+      if (stored && isLotteryReadCacheFresh(lottery, 'standard', stored.savedAt)
+        && Array.isArray(stored.value)
+        && stored.value.every(year => typeof year === 'string' && /^\d{4}$/.test(year))) {
+        expiresAt = lotteryReadCacheExpiresAt(lottery, 'standard', stored.savedAt);
+        return stored.value;
+      }
+      const data = await requestJson<{ years: unknown }>(`/api/matrix/history-years/${encodeURIComponent(lottery)}`);
+      if (!Array.isArray(data.years) || data.years.some(year => typeof year !== 'string' || !/^\d{4}$/.test(year))) {
+        throw new Error('歷史年份格式不正確');
+      }
+      const years = [...new Set(data.years as string[])].sort().reverse();
+      if (drawPeriod) writeLotteryQueryCache(lottery, drawPeriod, persistentKey, years);
+      expiresAt = lotteryReadCacheExpiresAt(lottery, 'standard');
+      return years;
+    },
+    { expiresAt: () => expiresAt },
+  );
 }
 
 /** Bounded period lookup for validation evidence; does not scan history pages. */
@@ -535,23 +557,47 @@ function projectHistoryRecord(
 }
 
 export async function fetchTongXing(input: TongXingRequest): Promise<TongXingResponse> {
-  await fetchLatestLotteryDraw(input.lottery);
-  return readThroughCache(stableCacheKey(`lottery:tongxing:${input.lottery}`, input), lotteryReadCacheTtlMs(input.lottery, 'standard'), async ({ isCurrent }) => {
-    const groups = await collectQueryPages<TongXingPair>(async (cursor, size) => {
-      const data = await requestJson<TongXingResponse & { nextCursor?: QueryCursor | null }>('/api/matrix/tongxing', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...input, pageSize: size, cursor }),
+  const latest = await fetchLatestLotteryDraw(input.lottery);
+  const drawPeriod = latestRecords.get(input.lottery)?.period ?? latest?.period ?? getMatrixCurrentPeriod(input.lottery);
+  const persistentKey = { kind: 'tongxing-v1', input };
+  let expiresAt = Infinity;
+  return readThroughCache(
+    stableCacheKey(`lottery:tongxing:${input.lottery}`, input),
+    lotteryReadCacheTtlMs(input.lottery, 'standard'),
+    async ({ isCurrent }) => {
+      const stored = drawPeriod
+        ? readLotteryQueryCacheEntry<TongXingResponse>(input.lottery, drawPeriod, persistentKey, Infinity)
+        : null;
+      if (stored && isLotteryReadCacheFresh(input.lottery, 'standard', stored.savedAt)
+        && Array.isArray(stored.value?.groups)) {
+        try {
+          stored.value.groups.forEach(assertTongXingGroup);
+          expiresAt = lotteryReadCacheExpiresAt(input.lottery, 'standard', stored.savedAt);
+          return stored.value;
+        } catch {
+          // Treat malformed persisted data as a miss and refresh it below.
+        }
+      }
+      const groups = await collectQueryPages<TongXingPair>(async (cursor, size) => {
+        const data = await requestJson<TongXingResponse & { nextCursor?: QueryCursor | null }>('/api/matrix/tongxing', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...input, pageSize: size, cursor }),
+        });
+        assertArrayField(data.groups, 'groups');
+        data.groups.forEach(assertTongXingGroup);
+        return { items: data.groups, nextCursor: data.nextCursor };
       });
-      assertArrayField(data.groups, 'groups');
-      data.groups.forEach(assertTongXingGroup);
-      return { items: data.groups, nextCursor: data.nextCursor };
-    });
-    if (!isCurrent()) return fetchTongXing(input);
-    return { ...input, groups: groups.map(pair => ({
-      lockedEntry: normalizeProjectedRecord(input.lottery, pair.lockedEntry),
-      predictedEntry: normalizeProjectedRecord(input.lottery, pair.predictedEntry),
-    })) };
-  });
+      if (!isCurrent()) return fetchTongXing(input);
+      const result = { ...input, groups: groups.map(pair => ({
+        lockedEntry: normalizeProjectedRecord(input.lottery, pair.lockedEntry),
+        predictedEntry: normalizeProjectedRecord(input.lottery, pair.predictedEntry),
+      })) };
+      if (drawPeriod) writeLotteryQueryCache(input.lottery, drawPeriod, persistentKey, result);
+      expiresAt = lotteryReadCacheExpiresAt(input.lottery, 'standard');
+      return result;
+    },
+    { expiresAt: () => expiresAt },
+  );
 }
 
 export async function fetchNumberReference(input: NumberReferenceRequest) {
