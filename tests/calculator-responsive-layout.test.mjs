@@ -42,7 +42,7 @@ function calculatorStyles() {
   return { dom, style };
 }
 
-test('calculator compact styles render at the approved sizes without shrinking number controls', () => {
+test('calculator controls use the approved responsive touch sizes without changing the layout', () => {
   const { dom, style } = calculatorStyles();
   const tabs = style('.mode-tabs');
   const firstTab = style('.mode-tabs button');
@@ -54,24 +54,27 @@ test('calculator compact styles render at the approved sizes without shrinking n
   // Internal separators are intentionally quieter than the outer frame.
   assert.match(block(feature, '.calculator-screen .mode-tabs button'), /border-right:\s*1px solid var\(--pwa-frame-divider\)/);
 
-  assert.equal(style('.calculator-panel').paddingTop, '8px');
-  assert.equal(style('.calculator-panel').paddingRight, '4px');
+  const panel = block(feature, '.calculator-panel');
+  assert.match(panel, /--calculator-number-size:\s*clamp\(36px,\s*calc\(\(100vw - 74px\) \/ 7\),\s*48px\)/);
+  assert.match(panel, /--calculator-action-height:\s*clamp\(34px,\s*9\.3vw,\s*40px\)/);
+  assert.match(panel, /--calculator-column-control-size:\s*clamp\(30px,\s*9\.3vw,\s*40px\)/);
+  assert.match(panel, /--calculator-column-row-height:\s*clamp\(50px,\s*14vw,\s*60px\)/);
+  assert.match(panel, /padding:\s*8px clamp\(4px,\s*1\.3vw,\s*6px\) 12px/);
   assert.match(block(feature, '.panel'), /border:\s*1px solid var\(--pwa-frame-secondary\)/);
   assert.match(block(feature, '.calculator-screen > .feature-body'), /padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\)/);
   assert.equal(style('.calculator-screen .feature-body').getPropertyValue('--layout-page-inline'), '16px');
   assert.equal(style('.column-panel').paddingBottom, '4px');
   assert.equal(style('.calculator-screen .section-title').fontSize, '16px');
-  assert.equal(style('.calculator-summary').fontSize, '12px');
-  assert.equal(style('.calculator-summary').fontWeight, '700');
+  assert.match(block(feature, '.calculator-panel > header .calculator-heading > span'), /font-size:\s*clamp\(12px,\s*3\.3vw,\s*14px\)/);
 
-  assert.equal(style('.calculator-panel header button').height, '28px');
-  assert.equal(style('.calculator-panel header button').fontSize, '12px');
-  assert.equal(style('.calculator-panel header button svg').width, '10px');
-  assert.equal(style('.calculator-panel header button svg').height, '10px');
-  assert.equal(style('.quick-actions button').height, '28px');
-  assert.equal(style('.quick-actions button').fontSize, '12px');
-  assert.equal(style('.quick-actions .clear-button svg').width, '10px');
-  assert.equal(style('.quick-actions .clear-button svg').height, '10px');
+  const headerButton = block(feature, '.calculator-panel header button');
+  assert.match(headerButton, /height:\s*var\(--calculator-action-height\)/);
+  assert.match(headerButton, /min-height:\s*var\(--calculator-action-height\)/);
+  assert.match(headerButton, /font-size:\s*clamp\(12px,\s*3\.3vw,\s*14px\)/);
+  const quickButton = block(feature, '.quick-actions button');
+  assert.match(quickButton, /height:\s*var\(--calculator-action-height\)/);
+  assert.match(quickButton, /font-size:\s*clamp\(12px,\s*3\.3vw,\s*14px\)/);
+  assert.match(feature, /\.calculator-panel header button svg,\s*\.quick-actions \.clear-button svg\s*\{[^}]*width:\s*clamp\(10px,\s*2\.8vw,\s*12px\)[^}]*height:\s*clamp\(10px,\s*2\.8vw,\s*12px\)/s);
 
   assert.equal(style('.calculation-results').paddingTop, '6px');
   assert.equal(style('.calculation-results').paddingRight, '4px');
@@ -84,11 +87,14 @@ test('calculator compact styles render at the approved sizes without shrinking n
   assert.equal(style('.calculation-results article span').fontSize, '16px');
   assert.equal(style('.calculation-results article strong').fontSize, '14px');
 
-  assert.equal(style('.number-grid button').height, '38px');
-  assert.equal(style('.number-grid button').width, '38px');
-  assert.equal(style('.column-grid button').height, '28px');
-  assert.equal(style('.column-grid button').width, '28px');
-  assert.equal(style('.column-grid button').fontSize, '18px');
+  const numberButton = block(feature, '.number-grid button');
+  assert.match(numberButton, /width:\s*var\(--calculator-number-size\)/);
+  assert.match(numberButton, /height:\s*var\(--calculator-number-size\)/);
+  assert.match(numberButton, /font-size:\s*clamp\(14px,\s*4vw,\s*16px\)/);
+  const columnButton = block(feature, '.column-grid button');
+  assert.match(columnButton, /width:\s*var\(--calculator-column-control-size\)/);
+  assert.match(columnButton, /height:\s*var\(--calculator-column-control-size\)/);
+  assert.match(columnButton, /font-size:\s*clamp\(18px,\s*5vw,\s*22px\)/);
   dom.window.close();
 });
 
@@ -121,21 +127,23 @@ test('calculator settings header separates copy and actions without overlap', ()
   assert.match(header, /align-items:\s*center/);
 });
 
-test('49-number layout keeps seven columns without horizontal overflow', () => {
+test('49-number layout keeps seven columns with responsive controls and no horizontal overflow', () => {
   const grid = block(feature, '.number-grid');
   assert.match(grid, /grid-template-columns:\s*repeat\(7, minmax\(0, 1fr\)\)/);
-  assert.match(grid, /gap:\s*6px/);
+  assert.match(grid, /gap:\s*var\(--calculator-grid-gap\)/);
 
   const button = block(feature, '.number-grid button');
-  assert.match(button, /width:\s*38px/);
-  assert.match(button, /height:\s*38px/);
+  assert.match(button, /width:\s*var\(--calculator-number-size\)/);
+  assert.match(button, /height:\s*var\(--calculator-number-size\)/);
 });
 
-test('12-column controls and four result cards shrink inside the available width', () => {
+test('12-column controls grow responsively while four result cards keep the available width', () => {
   const row = block(feature, '.column-grid > div');
-  assert.match(row, /height:\s*44px/);
-  assert.match(row, /padding:\s*4px 8px/);
-  assert.match(row, /grid-template-columns:\s*minmax\(0, 1fr\)/);
+  assert.match(row, /height:\s*var\(--calculator-column-row-height\)/);
+  assert.match(row, /min-height:\s*var\(--calculator-column-row-height\)/);
+  assert.match(row, /padding:\s*4px var\(--calculator-column-inline-padding\)/);
+  assert.match(row, /grid-template-columns:\s*minmax\(0, 1fr\) var\(--calculator-column-control-size\)/);
+  assert.match(row, /column-gap:\s*var\(--calculator-column-gap\)/);
   assert.match(block(feature, '.calculation-results > div'), /grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\)/);
   assert.match(block(feature, '.calculation-results > div'), /gap:\s*8px/);
   const cards = block(feature, '.calculation-results article');
@@ -155,21 +163,28 @@ test('temporary global debug outlines are absent', () => {
   assert.doesNotMatch(prototype, /#root\s+:where\([^)]*\)\s*\{\s*outline:/s);
 });
 
-test('calculator geometry remains inside 390px, 375px and 360px viewports', () => {
-  for (const viewport of [390, 375, 360]) {
-    const bodyWidth = viewport - 24;
-    const panelInnerWidth = bodyWidth - 10;
+test('calculator responsive geometry remains inside 430px, 390px, 375px and 360px viewports', () => {
+  const clamp = (min, preferred, max) => Math.max(min, Math.min(preferred, max));
+
+  for (const viewport of [430, 390, 375, 360]) {
+    const bodyWidth = viewport - 32;
+    const panelInlinePadding = clamp(4, viewport * 0.013, 6);
+    const panelInnerWidth = bodyWidth - 2 - (2 * panelInlinePadding);
     const resultInnerWidth = bodyWidth - 10;
-    const numberGridWidth = (7 * 38) + (6 * 6);
+    const gridGap = clamp(4, viewport * 0.012, 6);
+    const numberSize = clamp(36, (viewport - 74) / 7, 48);
+    const numberGridWidth = (7 * numberSize) + (6 * gridGap);
     const resultCardWidth = (resultInnerWidth - (3 * 8)) / 4;
     const columnCellWidth = panelInnerWidth / 2;
-    const controlWidth = 28;
-    const valueWidth = 18;
-    const columnGap = 3;
-    const columnPadding = 8;
+    const controlWidth = clamp(30, viewport * 0.093, 40);
+    const valueWidth = clamp(18, viewport * 0.048, 22);
+    const columnGap = clamp(2, viewport * 0.006, 3);
+    const columnPadding = clamp(4, viewport * 0.015, 7);
     const columnLabelWidth = columnCellWidth - (2 * columnPadding) - (2 * controlWidth) - valueWidth - (3 * columnGap);
 
-    assert.ok(numberGridWidth <= panelInnerWidth, `${viewport}px calculator grid must keep seven 38px controls on one row`);
+    assert.ok(numberGridWidth <= panelInnerWidth, `${viewport}px calculator grid must keep seven responsive controls on one row`);
+    assert.ok(numberSize > 38, `${viewport}px number controls must be larger than the previous 38px size`);
+    assert.ok(controlWidth > 28, `${viewport}px column controls must be larger than the previous 28px size`);
     assert.ok(resultCardWidth >= 71, `${viewport}px result cards must remain readable`);
     assert.ok(columnLabelWidth >= 47, `${viewport}px column labels must remain visible`);
   }
