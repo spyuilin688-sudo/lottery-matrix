@@ -282,7 +282,7 @@
 }
 
 .draw-history-screen .draw-history-panel[data-lottery="六合彩"] { --matrix-history-ball-size: clamp(18px, 5.64vw, 22px); }
-.draw-history-screen .draw-history-panel[data-lottery="大樂透"] { --matrix-history-ball-size: clamp(20px, 6.15vw, 24px); }
+.draw-history-screen .draw-history-panel[data-lottery="大樂透"] { --matrix-history-ball-size: clamp(21px, 6.4vw, 25px); }
 
 .draw-history-screen .draw-history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-numbers[data-has-special="true"],
 .draw-history-screen .draw-history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-main-numbers { gap: clamp(4px, 1.5vw, 7px); }
