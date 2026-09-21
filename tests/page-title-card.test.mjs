@@ -104,10 +104,10 @@ test("history filter keeps lottery date order range submit and the reset in its 
 test("calculator keeps the approved compact responsive layout source", () => {
   assert.match(styles, /\.calculator-screen\s*\{[^}]*display:\s*flex[^}]*height:\s*100vh[^}]*flex-direction:\s*column[^}]*overflow:\s*hidden/s);
   assert.match(styles, /\.calculator-screen\s*>\s*\.feature-body\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\);[^}]*overflow-y:\s*auto/s);
-  assert.match(styles, /\.number-grid\s*\{[^}]*grid-template-columns:\s*repeat\(7,\s*minmax\(0,\s*1fr\)\)[^}]*gap:\s*6px/s);
+  assert.match(styles, /\.number-grid\s*\{[^}]*grid-template-columns:\s*repeat\(7,\s*minmax\(0,\s*1fr\)\)[^}]*gap:\s*var\(--calculator-grid-gap\)/s);
   assert.match(styles, /\.column-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
   assert.match(styles, /\.calculation-results\s*>\s*div\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)[^}]*gap:\s*8px/s);
-  for (const selector of [".calculator-panel > header > div", ".calculator-panel > header .calculator-actions", ".calculator-panel header strong"]) {
+  for (const selector of [".calculator-panel > header > div", ".calculator-panel > header .calculator-actions", ".calculator-panel header strong", ".number-grid", ".number-grid button", ".quick-actions", ".quick-actions button", ".column-grid > div", ".column-grid button"]) {
     const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     assert.equal((styles.match(new RegExp(`(^|\\n)\\s*${escaped}\\s*\\{`, "g")) ?? []).length, 1, `${selector} must have one source`);
   }
