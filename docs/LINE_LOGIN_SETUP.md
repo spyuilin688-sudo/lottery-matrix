@@ -106,8 +106,9 @@ actual production callback and PWA origin settings.
 ## Installed PWA return behavior
 
 Regular Android and iOS browser tabs prepare the Supabase `custom:line` OAuth
-start URL with `skipBrowserRedirect: true` and render that URL as the actual
-`href` of the existing LINE login control. The browser therefore starts the
+start URL with `skipBrowserRedirect: true`, remove auth-js's internal
+`skip_http_redirect` client-control query, and render the resulting normal
+`/authorize` URL as the actual `href` of the existing LINE login control. The browser therefore starts the
 authorization navigation from the user's real tap instead of a later
 `window.location.assign()` call. This preserves native LINE auto login and
 does not add `disable_auto_login=true`. If URL preparation fails, the existing
