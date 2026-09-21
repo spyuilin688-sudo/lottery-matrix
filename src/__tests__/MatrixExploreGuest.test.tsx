@@ -11,7 +11,7 @@ const sdk = vi.hoisted(() => ({ rpc: vi.fn(), getSession: vi.fn(), profile: vi.f
 vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ rpc: sdk.rpc, auth: { getSession: sdk.getSession } }) }));
 vi.mock('../member-api', () => ({ bootstrapMember: async () => {}, fetchMemberProfile: sdk.profile }));
 vi.mock('../permission-settings', () => ({
-  refreshPermissionSettings: vi.fn().mockResolvedValue({
+  readPermissionSettings: vi.fn().mockResolvedValue({
     subscriptionPurchaseVisible: false,
     registeredMemberFreeAccess: false,
     revision: 1,

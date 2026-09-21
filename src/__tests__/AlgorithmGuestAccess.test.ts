@@ -21,7 +21,7 @@ vi.mock('../lib/supabase', () => ({
 }));
 
 vi.mock('../permission-settings', () => ({
-  refreshPermissionSettings: vi.fn().mockResolvedValue({
+  readPermissionSettings: vi.fn().mockResolvedValue({
     subscriptionPurchaseVisible: false,
     registeredMemberFreeAccess: true,
     revision: 1,
