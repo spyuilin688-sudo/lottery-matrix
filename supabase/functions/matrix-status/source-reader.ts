@@ -117,3 +117,32 @@ export function createMatrixStatusIdentityReader(loadConfig: () => Config, fetch
     return readAnalysisResponse<{ analysisVersion: string; drawPeriod: string }>(response, 'SUPABASE_ANALYSIS_READ_FAILED');
   };
 }
+
+
+export function createMatrixStatusEntitlementReader(
+  loadConfig: () => Config & { anonKey: string },
+  fetcher: typeof fetch = fetch,
+) {
+  return async (authorization?: string) => {
+    const config = loadConfig();
+    const token = authorization?.replace(/^Bearer\s+/i, '').trim() || config.anonKey;
+    const response = await fetcher(`${config.url}/rest/v1/rpc/matrix_status_entitlements`, {
+      method: 'POST',
+      headers: {
+        apikey: config.anonKey,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: '{}',
+    });
+    if (!response.ok) throw new Error('SUPABASE_ENTITLEMENTS_READ_FAILED');
+    return response.json() as Promise<{
+      canUseSeven: boolean;
+      canUseThirteen: boolean;
+      canUseFullRange: boolean;
+      canUseTianyan: boolean;
+      canUseTiangong: boolean;
+      canViewFullStatus: boolean;
+    }>;
+  };
+}
