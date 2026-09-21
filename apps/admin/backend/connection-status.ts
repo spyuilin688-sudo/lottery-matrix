@@ -301,7 +301,7 @@ export function createConnectionStatus(dependencies: Dependencies) {
         const health = parseNativeNotificationHealth(await shared.readRpc('admin_notification_delivery_health'), now());
         if (!health) throw new Error('NATIVE_NOTIFICATION_HEALTH_INVALID');
         const warning = nativeNotificationWarning(health, now());
-        return { ...finish(!warning, health, warning), healthState: warning ? 'failed' : health.enabled_devices === 0 ? 'waiting' : 'healthy' };
+        return { ...finish(!warning, health, warning), healthState: warning ? 'failed' : 'healthy' };
       } else if (definition.id === notificationCalendarStatusId) {
         const current = await shared.config();
         const response = await fetchWithDeadline(`${current.url}${definition.endpoint}`, {
