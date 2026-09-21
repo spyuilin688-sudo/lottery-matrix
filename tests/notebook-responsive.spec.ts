@@ -84,6 +84,18 @@ for (const width of [320, 360, 390, 430]) {
     await expect(save).toHaveCSS('height', '36px');
     await expect(save).toHaveCSS('font-size', '14px');
     await expect(save).toHaveClass(/branded-explore-action/);
+    const editorFit = await editor.evaluate((element) => {
+      const frame = element.getBoundingClientRect();
+      const content = element.querySelector('textarea')!.getBoundingClientRect();
+      const navigation = document.querySelector<HTMLElement>('[data-testid="bottom-navigation"]')!.getBoundingClientRect();
+      return {
+        editorBottomGap: Math.round(navigation.top - frame.bottom),
+        contentHeight: Math.round(content.height),
+      };
+    });
+    expect(editorFit.editorBottomGap).toBeGreaterThanOrEqual(7);
+    expect(editorFit.editorBottomGap).toBeLessThanOrEqual(9);
+    expect(editorFit.contentHeight).toBeGreaterThan(330);
     await page.screenshot({ path: testInfo.outputPath(`notebook-editor-${width}.png`), fullPage: true });
 
     await page.getByRole('button', { name: '返回列表' }).click();
