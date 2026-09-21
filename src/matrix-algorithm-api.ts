@@ -1,4 +1,4 @@
-import { refreshPermissionSettings } from './permission-settings';
+import { readPermissionSettings } from './permission-settings';
 import type { NumberBallLottery } from './NumberBall';
 import { MatrixApiError } from './matrix-api-client';
 import { getSupabaseClient } from './lib/supabase';
@@ -576,7 +576,7 @@ async function cachedMatrixResultRpc<T extends { lottery: NumberBallLottery; ana
       && (request as { explorePeriods?: number }).explorePeriods === 2,
   };
   const scope = await readAlgorithmCacheScope(client, sessionOptions);
-  const permissionSettings = await refreshPermissionSettings();
+  const permissionSettings = await readPermissionSettings();
   const assertCurrentSession = async () => {
     if (await readAlgorithmCacheScope(client, sessionOptions) !== scope) {
       throw new MatrixApiError('AUTH_REQUIRED', 401);

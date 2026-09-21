@@ -16,6 +16,7 @@ let lastSettledRequest = 0;
 const refreshIntervalMs = 30_000;
 let lastRefreshStartedAt = -Infinity;
 let activeRequests = 0;
+let sharedRead: Promise<PermissionSettings> | null = null;
 const listeners = new Set<() => void>();
 const notify = () => listeners.forEach(listener => listener());
 const subscribe = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; };
@@ -61,6 +62,19 @@ export async function refreshPermissionSettings(): Promise<PermissionSettings> {
   } finally {
     activeRequests--;
   }
+}
+
+/**
+ * Coalesce only concurrent permission reads. A later protected query still
+ * performs a fresh settings RPC so permission changes invalidate cached
+ * results on the very next request.
+ */
+export function readPermissionSettings(): Promise<PermissionSettings> {
+  if (sharedRead) return sharedRead;
+  sharedRead = refreshPermissionSettings().finally(() => {
+    sharedRead = null;
+  });
+  return sharedRead;
 }
 
 export function installPermissionSettingsRefresh() {

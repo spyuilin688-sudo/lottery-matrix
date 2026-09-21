@@ -11,7 +11,7 @@ vi.mock('./auth/algorithm-cache-scope', () => ({
   readAlgorithmCacheScope: dependencies.readAlgorithmCacheScope,
 }));
 vi.mock('./permission-settings', () => ({
-  refreshPermissionSettings: vi.fn().mockResolvedValue({ revision: 1 }),
+  readPermissionSettings: vi.fn().mockResolvedValue({ revision: 1 }),
 }));
 vi.mock('./matrix-data-revision', () => ({ getMatrixDataRevision: () => 1 }));
 vi.mock('./read-cache', () => ({

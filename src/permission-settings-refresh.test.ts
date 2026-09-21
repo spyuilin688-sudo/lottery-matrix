@@ -74,3 +74,12 @@ test('hidden tabs skip polling and returning after the window refreshes once', a
   await vi.advanceTimersByTimeAsync(0);
   expect(rpc).toHaveBeenCalledTimes(2);
 });
+
+
+test('result-cache permission reads coalesce only concurrent RPCs', async () => {
+  const { readPermissionSettings } = await import('./permission-settings');
+  await Promise.all([readPermissionSettings(), readPermissionSettings(), readPermissionSettings()]);
+  expect(rpc).toHaveBeenCalledTimes(1);
+  await readPermissionSettings();
+  expect(rpc).toHaveBeenCalledTimes(2);
+});
