@@ -83,6 +83,9 @@ export function MatrixExplorePage({
   };
   const defaultFiltersFor = (hitValue: string, roadValue: string): ConsecutiveOption[] => {
     if (isLockedAlgorithm) {
+      if (isTianheng && period === "十三期" && hitValue === "準6+（鎖定2碼）") {
+        return ["準9進10", "準11進12"];
+      }
       return hitValue.includes("鎖定2碼")
         ? ["準7進8", "準9進10", "準11進12"]
         : filterOptions[hitValue];

@@ -256,6 +256,34 @@ it.each([
   expect(matrixApi.fetchTianhengList).toHaveBeenLastCalledWith(expect.objectContaining({ selectedStreaks: toggled }));
 });
 
+it.each(['加減版路', '合值版路', '拖牌版路'])('十三期鎖定2碼的%s預設排除準7進8但保留手動勾選', async (road) => {
+  await openPage();
+  fireEvent.click(screen.getByRole('button', { name: '十三期' }));
+  fireEvent.click(screen.getByRole('button', { name: road }));
+  fireEvent.click(screen.getByRole('button', { name: '準6+ (鎖定2碼)' }));
+  await search();
+  fireEvent.click(screen.getByRole('button', { name: '連準篩選' }));
+  expect(screen.getByRole('button', { name: '準7進8' })).toHaveAttribute('aria-pressed', 'false');
+  expect(screen.getByRole('button', { name: '準6進7' })).toHaveAttribute('aria-pressed', 'false');
+  expect(screen.getByRole('button', { name: '準9進10' })).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByRole('button', { name: '準11進12' })).toHaveAttribute('aria-pressed', 'true');
+  expect(matrixApi.fetchTianhengList).toHaveBeenLastCalledWith(expect.objectContaining({
+    explorePeriods: 13, ruleCount: 2, selectedStreaks: ['準9進10', '準11進12'],
+  }));
+  fireEvent.click(screen.getByRole('button', { name: '準7進8' }));
+  await act(async () => {});
+  expect(matrixApi.fetchTianhengList).toHaveBeenLastCalledWith(expect.objectContaining({
+    selectedStreaks: ['準9進10', '準11進12', '準7進8'],
+  }));
+  await search();
+  expect(matrixApi.fetchTianhengList).toHaveBeenLastCalledWith(expect.objectContaining({ selectedStreaks: ['準9進10', '準11進12'] }));
+  fireEvent.click(screen.getByRole('button', { name: '三期' }));
+  await search();
+  expect(matrixApi.fetchTianhengList).toHaveBeenLastCalledWith(expect.objectContaining({
+    explorePeriods: 3, selectedStreaks: ['準7進8', '準9進10', '準11進12'],
+  }));
+});
+
 it('submits advanced settings without rendering near-10 history', async () => {
   render(<MatrixExplorePage title="Matrix 天衡" onNavigate={vi.fn()} />);
   await act(async () => {});
