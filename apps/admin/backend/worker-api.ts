@@ -303,7 +303,7 @@ function parsePrimary(
 function parseMarkSixCalendar(value: unknown): WorkerMarkSixCalendar | null {
   if (!isRecord(value) || value.lottery !== '六合彩') return null;
   if (!includes(['synced', 'not-due'] as const, value.status)) return null;
-  if (value.days !== undefined && (!Number.isInteger(value.days) || (value.days as number) < 0)) return null;
+  if (value.days !== undefined && (typeof value.days !== 'number' || !Number.isInteger(value.days) || value.days < 0)) return null;
   return value.days === undefined
     ? { lottery: '六合彩', status: value.status }
     : { lottery: '六合彩', status: value.status, days: value.days as number };
