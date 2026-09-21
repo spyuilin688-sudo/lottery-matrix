@@ -1326,17 +1326,20 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .status-detail p > span:first-child { padding: 4px; border: 1px solid var(--pwa-frame-tertiary); border-radius: 999px; text-align: center; }
 .status-detail p strong { color: var(--tone); font-size: 14px; }
 .matrix-notebook-screen > .feature-body { padding-inline: var(--layout-page-inline); }
-.matrix-notebook-screen:has(.notebook-empty) {
+.matrix-notebook-screen:has(.notebook-empty),
+.matrix-notebook-screen:has(.matrix-notebook-editor) {
   --notebook-sheet-min-height: 0px;
   display: flex;
   flex-direction: column;
   min-height: calc(100dvh - var(--layout-safe-area-top, 0px));
 }
 .matrix-notebook-screen:has(.notebook-empty) > .feature-body,
+.matrix-notebook-screen:has(.matrix-notebook-editor) > .feature-body,
 .notebook-sheet:has(.notebook-empty) {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-height: 0;
 }
 .notebook-entry-list:has(.notebook-empty) { flex: 1; }
 
@@ -1367,7 +1370,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .notebook-entry-open strong { overflow: hidden; color: #e9e2d7; font-size: 14px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .notebook-entry-open small { color: var(--lottery-text-secondary); font-size: 10px; }
 .notebook-entry-open > svg { width: 16px; flex-shrink: 0; color: #b9a46d; }
-.matrix-notebook-editor { min-width: 0; padding: 8px 12px 12px;  }
+.matrix-notebook-editor { display: flex; min-width: 0; min-height: 0; padding: 8px 12px 12px; flex: 1 1 auto; flex-direction: column; }
 .matrix-notebook-editor > header { display: flex; margin-bottom: 8px; align-items: center; justify-content: space-between; }
 .matrix-notebook-editor > header button { display: flex; padding: 0; align-items: center; gap: 3px; border: 0; color: #d8bd74; background: transparent; min-height: 36px; font-size: 13px; font-weight: 600; }
 .matrix-notebook-editor > input {
@@ -1390,6 +1393,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   width: 100%;
   min-height: 330px;
   min-width: 0;
+  flex: 1 1 330px;
   padding: 5px 5px 14px;
   border: 1px solid var(--pwa-frame-tertiary);
   border-radius: var(--pwa-frame-radius);
