@@ -63,7 +63,32 @@ test("歷史今彩539與天天樂增加呼吸空間且不影響六加一彩種",
     /^\.draw-history-screen \.draw-history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.history-main-numbers$/,
   );
   assert.equal(fiveBallSpacing.length, 1);
-  assert.match(fiveBallSpacing[0], /gap:\s*clamp\(8px,\s*3vw,\s*12px\);/);
+  assert.match(fiveBallSpacing[0], /gap:\s*clamp\(6px,\s*2\.4vw,\s*10px\);/);
+
+  const fiveBallHeadDivider = ruleBodies(
+    historyReadabilityCss,
+    /^\.draw-history-screen \.draw-history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.history-row\.history-head$/,
+  );
+  assert.equal(fiveBallHeadDivider.length, 1);
+  assert.match(fiveBallHeadDivider[0], /border-bottom:\s*1px solid rgba\(212,\s*169,\s*83,\s*\.48\);/);
+
+  const fiveBallRowDivider = ruleBodies(
+    historyReadabilityCss,
+    /^\.draw-history-screen \.draw-history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.history-row:not\(\.history-head\)$/,
+  );
+  assert.equal(fiveBallRowDivider.length, 1);
+  assert.match(fiveBallRowDivider[0], /border-bottom:\s*1px solid rgba\(212,\s*169,\s*83,\s*\.36\);/);
+
+  const fiveBallColumnDividers = ruleBodies(
+    historyReadabilityCss,
+    /^\.draw-history-screen \.draw-history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.history-row > :nth-child\([12]\)$/,
+  );
+  assert.equal(fiveBallColumnDividers.length, 1);
+  assert.match(
+    historyReadabilityCss,
+    /\.draw-history-screen \.draw-history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.history-row > :nth-child\(1\),\s*\.draw-history-screen \.draw-history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.history-row > :nth-child\(2\)/s,
+  );
+  assert.match(fiveBallColumnDividers[0], /border-right:\s*1px solid rgba\(212,\s*169,\s*83,\s*\.32\);/);
 
   const fiveBallSize = ruleBodies(
     ballCss,

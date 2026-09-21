@@ -4,5 +4,18 @@
 }
 
 .draw-history-screen .draw-history-panel:is([data-lottery="今彩539"], [data-lottery="天天樂"]) .history-main-numbers {
-  gap: clamp(8px, 3vw, 12px);
+  gap: clamp(6px, 2.4vw, 10px);
+}
+
+.draw-history-screen .draw-history-panel:is([data-lottery="今彩539"], [data-lottery="天天樂"]) .history-row.history-head {
+  border-bottom: 1px solid rgba(212, 169, 83, .48);
+}
+
+.draw-history-screen .draw-history-panel:is([data-lottery="今彩539"], [data-lottery="天天樂"]) .history-row:not(.history-head) {
+  border-bottom: 1px solid rgba(212, 169, 83, .36);
+}
+
+.draw-history-screen .draw-history-panel:is([data-lottery="今彩539"], [data-lottery="天天樂"]) .history-row > :nth-child(1),
+.draw-history-screen .draw-history-panel:is([data-lottery="今彩539"], [data-lottery="天天樂"]) .history-row > :nth-child(2) {
+  border-right: 1px solid rgba(212, 169, 83, .32);
 }
