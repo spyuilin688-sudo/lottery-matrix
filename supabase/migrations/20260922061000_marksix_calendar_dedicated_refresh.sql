@@ -239,7 +239,7 @@ begin
       'x-matrix-watchdog-token',v_token
     ),
     body := '{}'::jsonb,
-    timeout_milliseconds := 30000
+    timeout_milliseconds := 40000
   ) into v_request;
 
   return v_request;
