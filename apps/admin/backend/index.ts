@@ -23,7 +23,7 @@ import { createNotificationEvents, getNotificationEventConfig } from './notifica
 import { createPermissionSettings, isPermissionSettingKey } from './permission-settings';
 import { createPushNotifications, requireMemberUuid } from './push-notifications';
 import { createSupabaseTransport, getSupabaseConfig } from './supabase';
-import { createWorkerApi, getWorkerConfig, PRODUCTION_RAILWAY_API_BASE, type CrawlerLottery } from './worker-api';
+import { createWorkerApi, getWorkerConfig, PRODUCTION_RAILWAY_API_BASE, type CrawlerLottery, type PrimaryWorkerGroup } from './worker-api';
 import {
   createFantasy5GithubDispatcher,
   createIndependentWatchdog,
@@ -488,6 +488,34 @@ const routes: Record<string, unknown> = {
     return result.statusCode === 200
       ? json({ message: 'Success' })
       : error('WATCHDOG_DEGRADED', 503);
+  }],
+
+  'POST /api/internal/matrix-primary': [watchdogCronGuard, async (ctx: Context) => {
+    const body = bodyOf(ctx);
+    const group = body.group;
+    const cycleDate = body.cycleDate;
+    const lotteries = body.lotteries;
+    const allowed = group === 'evening'
+      ? new Set<CrawlerLottery>(['今彩539', '大樂透', '六合彩'])
+      : group === 'fantasy5' ? new Set<CrawlerLottery>(['天天樂']) : null;
+    if (!allowed
+      || typeof cycleDate !== 'string'
+      || !/^\d{4}-\d{2}-\d{2}$/.test(cycleDate)
+      || !Array.isArray(lotteries)
+      || lotteries.length === 0
+      || new Set(lotteries).size !== lotteries.length
+      || lotteries.some(lottery => typeof lottery !== 'string' || !allowed.has(lottery as CrawlerLottery))) {
+      return error('PRIMARY_REQUEST_INVALID', 400);
+    }
+    try {
+      return json({ primary: await workerApi.runPrimary(
+        group as PrimaryWorkerGroup,
+        cycleDate,
+        lotteries as CrawlerLottery[],
+      ) });
+    } catch (cause) {
+      return fail(cause);
+    }
   }],
 
   'POST /api/system-status/:id/retry': [sessionGuard, moduleGuard('systemSettings', 'view'), async (ctx: Context) => {

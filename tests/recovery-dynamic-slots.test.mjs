@@ -46,15 +46,15 @@ test('old poller is removed and the two daily starts remain',async t=>{
 });
 test('completion cancels the matching cycle and no new check is dispatched',async t=>{
  const db=await fixture();t.after(()=>db.close());
- await db.query("select private.matrix_recovery_tick('fantasy5','2026-09-21T09:30:00+08')");
+ await db.query("select private.matrix_recovery_tick('fantasy5','2030-09-21T09:30:00+08')");
  assert.equal(await scalar(db,'select count(*) from net.requests'),1);
- await db.exec("insert into lottery_draws values('天天樂','42','2026-09-21','confirmed');insert into private.test_chain values('天天樂','42',true)");
+ await db.exec("insert into lottery_draws values('天天樂','42','2030-09-21','confirmed');insert into private.test_chain values('天天樂','42',true)");
  assert.equal(await scalar(db,"select public.matrix_recovery_complete('天天樂','42')"),true);
  assert.equal(await scalar(db,"select count(*) from cron.job where jobname='matrix-recovery-next-fantasy5'"),0);
- await db.query("select private.matrix_recovery_tick('fantasy5','2026-09-22T00:00:00+08')");
+ await db.query("select private.matrix_recovery_tick('fantasy5','2030-09-22T00:00:00+08')");
  assert.equal(await scalar(db,'select count(*) from net.requests'),1);
- assert.deepEqual(await scalar(db,"select public.matrix_recovery_pending('2026-09-22T00:00:00+08')"),[]);
- await db.query("select private.matrix_recovery_tick('fantasy5','2026-09-22T09:30:00+08')");
+ assert.deepEqual(await scalar(db,"select public.matrix_recovery_pending('2030-09-22T00:00:00+08')"),[]);
+ await db.query("select private.matrix_recovery_tick('fantasy5','2030-09-22T09:30:00+08')");
  assert.equal(await scalar(db,'select count(*) from net.requests'),2);
 });
 test('previous-period and preliminary data cannot cancel pending work',async t=>{
@@ -107,8 +107,8 @@ test('one completed lottery is excluded while the other evening lotteries contin
 });
 test('a late tick skips missed slots instead of starting recovery outside its window',async t=>{
  const db=await fixture();t.after(()=>db.close());
- await db.query("select private.matrix_recovery_tick('fantasy5','2026-09-21T09:30:00+08')");
- await db.query("select private.matrix_recovery_tick('fantasy5','2026-09-21T18:00:00+08')");
+ await db.query("select private.matrix_recovery_tick('fantasy5','2030-09-21T09:30:00+08')");
+ await db.query("select private.matrix_recovery_tick('fantasy5','2030-09-21T18:00:00+08')");
  assert.equal(await scalar(db,'select count(*) from net.requests'),1);
  assert.equal(await scalar(db,"select schedule from cron.job where jobname='matrix-recovery-next-fantasy5'"),'00 16 * * *');
 });

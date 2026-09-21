@@ -12,6 +12,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from os import environ
 from secrets import compare_digest
 from collections.abc import Callable
+from datetime import date
 from typing import Any
 from threading import BoundedSemaphore
 from uuid import UUID
@@ -541,6 +542,7 @@ def handle_api_request(
     request_monitor_token: str | None = None,
     refresh_lottery: Callable[[str, AnalysisRepository], dict[str, Any]] | None = None,
     recover_lottery: Callable[[str, str], str] | None = None,
+    run_primary: Callable[[str, date, tuple[str, ...]], str] | None = None,
     request_notification_token: str | None = None,
 ) -> tuple[int, dict[str, Any]]:
     parsed = urlsplit(target)
@@ -602,7 +604,6 @@ def handle_api_request(
                 if stage != "crawler" and (not isinstance(period, str) or not period.isascii() or not period.isdigit() or len(period) > 20):
                     raise ValueError("RECOVERY_PERIOD_REQUIRED")
                 if stage == "crawler":
-                    from datetime import date
                     if not isinstance(minimum_date, str):
                         raise ValueError("RECOVERY_DRAW_DATE_REQUIRED")
                     date.fromisoformat(minimum_date)
@@ -614,6 +615,38 @@ def handle_api_request(
                 return 202, {"lottery": lottery, "status": recovery_status}
             except Exception:
                 return 503, {"error": "RECOVERY_UNAVAILABLE"}
+        if method == "POST" and path == "/jobs/primary":
+            if not _status_token_authorized(request_monitor_token):
+                return 403, {"error": "FORBIDDEN"}
+            primary_request = _decode_body(body)
+            group = primary_request.get("group")
+            if group not in {"evening", "fantasy5"}:
+                raise ValueError("PRIMARY_GROUP_INVALID")
+            try:
+                cycle_date = date.fromisoformat(primary_request.get("cycleDate"))
+            except (TypeError, ValueError) as error:
+                raise ValueError("PRIMARY_CYCLE_DATE_INVALID") from error
+            lotteries_value = primary_request.get("lotteries")
+            if not isinstance(lotteries_value, list) or any(
+                not isinstance(lottery, str) for lottery in lotteries_value
+            ):
+                raise ValueError("PRIMARY_LOTTERIES_INVALID")
+            lotteries = tuple(lotteries_value)
+            allowed = (
+                {"今彩539", "大樂透", "六合彩"}
+                if group == "evening" else {"天天樂"}
+            )
+            if not lotteries or len(set(lotteries)) != len(lotteries) or any(
+                lottery not in allowed for lottery in lotteries
+            ):
+                raise ValueError("PRIMARY_LOTTERIES_INVALID")
+            if run_primary is None:
+                return 503, {"error": "PRIMARY_UNAVAILABLE"}
+            try:
+                primary_status = run_primary(group, cycle_date, lotteries)
+                return 202, {"group": group, "status": primary_status}
+            except Exception:
+                return 503, {"error": "PRIMARY_UNAVAILABLE"}
         if method == "POST" and path == "/jobs/result-ready":
             expected = environ.get("MATRIX_NOTIFICATION_INGEST_TOKEN", "").strip()
             supplied = request_notification_token or ""
@@ -805,6 +838,7 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
             "/jobs/refresh",
             "/jobs/refresh/status",
             "/jobs/recover",
+            "/jobs/primary",
             "/jobs/result-ready",
         }
 

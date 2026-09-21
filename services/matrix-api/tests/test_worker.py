@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from types import SimpleNamespace
 from zoneinfo import ZoneInfo
 
@@ -591,6 +591,40 @@ def test_primary_scheduler_does_not_retry_source_five_minutes_later(
         repository,
         source,
         _builders([]),
+    )
+
+    assert result["status"] == "not-due"
+    assert source.events == []
+
+
+def test_dynamic_primary_slot_can_retry_after_the_original_call_minute() -> None:
+    repository = InMemoryAnalysisRepository()
+    source = ScheduledSource()
+
+    result = run_scheduled_worker(
+        "今彩539",
+        datetime(2026, 8, 28, 20, 40, tzinfo=TAIPEI),
+        repository,
+        source,
+        _builders([]),
+        primary_cycle_date=date(2026, 8, 28),
+    )
+
+    assert result["status"] == "complete"
+    assert source.events == ["history-all", "latest"]
+
+
+def test_dynamic_primary_slot_does_not_crawl_before_lottery_call_time() -> None:
+    repository = InMemoryAnalysisRepository()
+    source = ScheduledSource()
+
+    result = run_scheduled_worker(
+        "今彩539",
+        datetime(2026, 8, 28, 20, 30, tzinfo=TAIPEI),
+        repository,
+        source,
+        _builders([]),
+        primary_cycle_date=date(2026, 8, 28),
     )
 
     assert result["status"] == "not-due"

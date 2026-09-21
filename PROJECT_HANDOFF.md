@@ -23,12 +23,12 @@
 
 API 執行方式見 [services/matrix-api/README.md](services/matrix-api/README.md)。Repository 中的 `railway*.json` 是否生效，須比對正式服務綁定。
 
-以下為 2026-09-21 核對的主要 Railway production 服務；本次修復未更動正式排程：
+以下為 2026-09-21 核對並調整的主要 Railway production 服務：
 
 | 服務 | 實際啟動命令 | 正式設定 |
 | --- | --- | --- |
-| `lottery-matrix` | `uv run python -u -m app.worker_all` | 綁定 `/services/matrix-api/railway.json`，cron 為 `3/10 * * * *`（每小時 03、13、23、33、43、53 分） |
-| `fantasy5-analysis` | `uv run python -u -m app.analysis_worker --lottery 天天樂` | cron `3/10 * * * *`，全天每 10 分鐘 |
+| `lottery-matrix` | `uv run python -u -m app.primary_worker --group evening` | cron `10 22 * * *` UTC，僅作隔日 06:10 台北時間每日備援；動態主排程由 Supabase 保存下一時段並派送 |
+| `fantasy5-analysis` | `uv run python -u -m app.analysis_worker --lottery 天天樂` | cron `10 10 * * *` UTC，僅作 18:10 台北時間每日備援；動態主排程由 Supabase 保存下一時段並派送 |
 | `fantasy5-crawler` | `uv run python -u -m app.fantasy5_railway_job` | cron `33 1,2 * * *` UTC；DST gate 選擇一個有效開始時間 |
 | `heartfelt-generosity` | `uv run python -u -m app.api_server` | 常駐 API，沒有 cron，healthcheck 為 `/health` |
 | recovery server | `uv run python -u -m app.recovery_server` | 常駐補救服務，沒有 cron |

@@ -20,6 +20,7 @@ def test_request_categories_separate_public_costs_and_exempt_protected_services(
     assert request_category('/api/matrix/tongxing', 'POST') == 'public_compute'
     assert request_category('/jobs/result-ready', 'POST') is None
     assert request_category('/jobs/status', 'GET') is None
+    assert request_category('/jobs/primary', 'POST') is None
     assert request_category('/not-an-api', 'GET') == 'unauthorized'
 
 

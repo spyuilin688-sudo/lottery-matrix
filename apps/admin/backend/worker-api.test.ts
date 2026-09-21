@@ -530,3 +530,32 @@ describe('Railway recovery adapter', () => {
     });
   });
 });
+
+describe('Railway primary scheduler adapter', () => {
+  it('forwards one authenticated primary group request to the recovery runtime', async () => {
+    const fetcher = vi.fn(async () => jsonResponse({
+      group: 'evening',
+      status: 'accepted',
+    }, 202));
+    const api = createWorkerApi(
+      async () => ({ baseUrl: 'https://railway.example/', statusToken: 'server-token' }),
+      fetcher,
+    );
+
+    await expect(api.runPrimary('evening', '2026-09-21', ['今彩539', '六合彩']))
+      .resolves.toEqual({ group: 'evening', status: 'accepted' });
+    expect(fetcher).toHaveBeenCalledWith(
+      'https://railway.example/jobs/primary',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Matrix-Admin-Token': 'server-token',
+        },
+        body: JSON.stringify({
+          group: 'evening', cycleDate: '2026-09-21', lotteries: ['今彩539', '六合彩'],
+        }),
+      }),
+    );
+  });
+});

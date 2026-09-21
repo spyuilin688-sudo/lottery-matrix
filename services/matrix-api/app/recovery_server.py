@@ -18,6 +18,7 @@ from app.api_server import (
 )
 from app.fantasy5_crawler import run_fantasy5_crawler_once
 from app.recovery import RecoveryCoordinator
+from app.primary_worker import PrimaryCoordinator, run_primary_group
 from app.repositories.analysis_repository import AnalysisRepository
 from app.security_monitor import SecurityMonitor
 from app.settings import load_settings
@@ -31,7 +32,7 @@ from app.watchdog_lease import (
 
 SERVICE_NAME = "matrix-railway-recovery"
 GET_PATHS = {"/health", "/jobs/status", "/jobs/refresh/status"}
-POST_PATHS = {"/jobs/refresh", "/jobs/recover", "/jobs/result-ready"}
+POST_PATHS = {"/jobs/refresh", "/jobs/recover", "/jobs/primary", "/jobs/result-ready"}
 
 
 def _service_version() -> str:
@@ -85,6 +86,7 @@ _RECOVERY_COORDINATOR = RecoveryCoordinator(
     release_lease=release_recovery_lease,
     on_lease_lost=terminate_on_lease_loss,
 )
+_PRIMARY_COORDINATOR = PrimaryCoordinator(run_primary_group)
 
 
 def handle_recovery_request(
@@ -95,6 +97,7 @@ def handle_recovery_request(
     request_monitor_token: str | None = None,
     refresh_lottery: Callable[[str, AnalysisRepository], dict[str, Any]] | None = None,
     recover_lottery: Callable[[str, str], str] | None = None,
+    run_primary: Callable[..., str] | None = None,
     request_notification_token: str | None = None,
 ) -> tuple[int, dict[str, Any]]:
     path = urlsplit(target).path
@@ -114,6 +117,7 @@ def handle_recovery_request(
         request_monitor_token=request_monitor_token,
         refresh_lottery=refresh_lottery,
         recover_lottery=recover_lottery or _RECOVERY_COORDINATOR.enqueue,
+        run_primary=run_primary or _PRIMARY_COORDINATOR.enqueue,
         request_notification_token=request_notification_token,
     )
 

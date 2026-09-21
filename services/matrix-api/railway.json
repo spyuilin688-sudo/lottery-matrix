@@ -4,8 +4,8 @@
     "builder": "RAILPACK"
   },
   "deploy": {
-    "startCommand": "uv run python -u -m app.worker_all",
+    "startCommand": "uv run python -u -m app.primary_worker --group evening",
     "restartPolicyType": "NEVER",
-    "cronSchedule": "3/10 * * * *"
+    "cronSchedule": "10 22 * * *"
   }
 }
