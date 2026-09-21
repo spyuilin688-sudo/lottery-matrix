@@ -5,6 +5,7 @@ import type { ExploreValidationResponse } from './matrix-algorithm-api';
 import { readThroughCache, stableCacheKey } from './read-cache';
 import { readAlgorithmCacheScope } from './auth/algorithm-cache-scope';
 import { getMatrixDataRevision } from './matrix-data-revision';
+import { lotteryReadCacheTtlMs } from './lottery-cache-policy';
 
 export type MatrixStatusCode = 'ACTIVE' | 'FOCUS' | 'RESONANCE' | 'CRITICAL' | 'DORMANT';
 export type MatrixTriggerStatusCode = Exclude<MatrixStatusCode, 'DORMANT'>;
@@ -160,7 +161,8 @@ async function cachedStatusFunction<T>(body: Record<string, unknown>): Promise<T
   }
   const cacheIdentity = { drawPeriod: identity.drawPeriod, analysisVersion: identity.analysisVersion, entitlements: identity.entitlements };
   const key = stableCacheKey('matrix-rpc:status', { scope, revision, cacheIdentity, body });
-  const result = await readThroughCache(key, 60_000, async ({ isCurrent }) => {
+  const lottery = body.lottery as LotteryId;
+  const result = await readThroughCache(key, lotteryReadCacheTtlMs(lottery, 'standard'), async ({ isCurrent }) => {
     const value = await statusFunction<T & { cacheIdentity?: unknown }>(body);
     await assertCurrent();
     if (stableCacheKey('', value?.cacheIdentity) !== stableCacheKey('', cacheIdentity)) {
