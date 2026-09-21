@@ -53,7 +53,7 @@ describe("notification visual refinement", () => {
       <main class="notifications-screen-v2">
         <article class="notification-row" data-notification-key="collision">
           <div class="notification-heading">
-            <div class="notification-icon-stack"><em class="notification-pro-badge">Matrix Pro</em><div class="notification-icon"><img alt="" /></div></div>
+            <div class="notification-icon"><img alt="" /></div>
             <div class="notification-title"><h2><span>Matrix 摘星</span></h2></div>
             <div class="notification-actions"><button class="notification-settings-toggle" disabled>設定選項</button><button class="toggle" disabled><span></span></button></div>
           </div>
@@ -61,12 +61,10 @@ describe("notification visual refinement", () => {
       </main>`;
 
     const title = getComputedStyle(document.querySelector("[data-notification-key=collision] h2 span")!);
-    const badge = getComputedStyle(document.querySelector("[data-notification-key=collision] .notification-pro-badge")!);
     const icon = getComputedStyle(document.querySelector("[data-notification-key=collision] .notification-icon img")!);
     const disabledControl = document.querySelector("[data-notification-key=collision] .toggle")! as HTMLButtonElement;
 
     expect(title.color).toBe("rgba(242, 242, 242, 0.82)");
-    expect(badge.opacity).toBe("0.72");
     expect(icon.filter).toBe("brightness(.88) saturate(.76)");
     expect(disabledControl.disabled).toBe(true);
   });
@@ -98,7 +96,7 @@ describe("notification visual refinement", () => {
     const systemSetting = getComputedStyle(document.querySelector("[data-notification-key=system] .notification-settings-toggle")!);
     const systemTitle = getComputedStyle(document.querySelector("[data-notification-key=system] .notification-title")!);
 
-    expect(groupDivider.borderTopStyle).toBe("none");
+    expect(groupDivider.borderTopStyle).toBe("solid");
     expect(inlineDivider.borderTopColor).toBe("rgba(170, 119, 46, 0.24)");
     expect(normalActions.gridTemplateColumns).toBe("56px 38px");
     expect(normalActions.gap).toBe("8px");
@@ -108,24 +106,16 @@ describe("notification visual refinement", () => {
     expect(systemTitle.gap).toBe("0px");
   });
 
-  it("uses shared notification spacing and token-controlled Matrix badge overlap", () => {
-    const css = notificationCss();
-    mountStyles(css);
-    document.body.innerHTML = `
-      <main class="notifications-screen-v2">
-        <article class="notification-row" data-notification-key="bet"><div class="notification-heading"><div class="notification-icon-stack"><div class="notification-icon"></div></div></div></article>
-        <article class="notification-row" data-notification-key="status"><div class="notification-heading"><div class="notification-icon-stack"><em class="notification-pro-badge">Matrix Pro</em><div class="notification-icon"></div></div></div></article>
-      </main>`;
-    const generalHeading = getComputedStyle(document.querySelector('[data-notification-key="bet"] .notification-heading')!);
-    const matrixHeading = getComputedStyle(document.querySelector('[data-notification-key="status"] .notification-heading')!);
-    const matrixStack = getComputedStyle(document.querySelector('[data-notification-key="status"] .notification-icon-stack')!);
-    const matrixBadge = getComputedStyle(document.querySelector('[data-notification-key="status"] .notification-pro-badge')!);
-    expect(generalHeading.paddingTop).toBe("4px");
-    expect(matrixHeading.paddingTop).toBe("4px");
-    expect(matrixStack.gap).toBe("0px");
-    expect(css).toMatch(/--notification-pro-badge-overlap:\s*3px/);
-    expect(css).toMatch(/\.notification-pro-badge\s*\{[^}]*translate:\s*0 var\(--notification-pro-badge-overlap\)/s);
-    expect(matrixBadge.zIndex).toBe("1");
+  it("keeps all notification icons within balanced 4px row padding", () => {
+    mountStyles(notificationCss());
+    for (const key of ["bet", "result", "status", "card", "collision", "expiry", "system"]) {
+      document.body.innerHTML = `<main class="notifications-screen-v2"><section class="notification-group"><article class="notification-row" data-notification-key="${key}"><div class="notification-heading"><div class="notification-icon"></div></div></article><article class="notification-row"></article></section></main>`;
+      const heading = getComputedStyle(document.querySelector(".notification-heading")!);
+      expect(heading.paddingTop).toBe("4px");
+      expect(heading.paddingBottom).toBe("4px");
+    }
+    expect(notificationCss()).not.toContain("notification-pro-badge");
+    expect(notificationCss()).not.toContain("notification-icon-stack");
   });
 
   it("uses lighter title weight and more compact bulk actions", () => {

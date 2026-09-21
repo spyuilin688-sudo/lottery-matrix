@@ -472,7 +472,6 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     const disabled = !settings[key] || key === "collision" || notificationSettingsLoadUiState === "unauthenticated" || (!isSystemRow && notificationSettingsControlsBlocked);
     const expanded = expandedKey === key && !disabled;
     const settingsPanelId = `notification-settings-${key}`;
-    const isMatrixProRow = key === "status" || key === "card" || key === "collision" || key === "expiry";
     const pushToggleUnavailable = pushNotice === "checking" || pushNotice === "status-failed" || pushAuthenticated !== true || !pushStatus.supported || pushStatus.permission === "denied";
     const pushToggleLabel = pushBusy
       ? `手機通知${pushStatus.enabled ? "關閉" : "開啟"}中`
@@ -483,10 +482,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
           : pushStatus.enabled ? "關閉手機通知" : "開啟手機通知";
     return <article className="notification-row" data-notification-key={key} key={key}>
       <div className="notification-heading">
-        <div className="notification-icon-stack">
-          {isMatrixProRow ? <em className="notification-pro-badge">Matrix Pro</em> : null}
-          <div className="notification-icon"><img src={icon} alt="" /></div>
-        </div>
+        <div className="notification-icon"><img src={icon} alt="" /></div>
         <div className="notification-title"><h2><span>{title}</span></h2>{isSystemRow ? <p className="notification-push-status" role={pushNotice === "enable-failed" || pushNotice === "disable-failed" ? "alert" : "status"} aria-live="polite" aria-atomic="true"><span>{pushStatusMessage}</span>{pushNotice === "denied" ? <span className="notification-push-status-detail">通知權限已拒絕</span> : null}{pushNotice === "status-failed" ? <button type="button" className="notification-settings-toggle" aria-label="重新檢查手機通知" onClick={() => {
           setPushNotice("checking");
           setPushCheckRevision((current) => current + 1);

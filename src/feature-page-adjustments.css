@@ -3,7 +3,6 @@
 .notifications-screen-v2 {
   --notification-bulk-inline: 18px;
   --notification-list-inline: 16px;
-  --notification-pro-badge-overlap: 3px;
 }
 
 .notifications-screen-v2 .feature-body {
@@ -90,38 +89,8 @@
   box-shadow: none;
 }
 
-.notifications-screen-v2 .notification-group {
-  position: relative;
-  border-top-color: transparent;
-}
-
-.notifications-screen-v2 .notification-group::before {
-  position: absolute;
-  z-index: 1;
-  top: 3px;
-  right: 0;
-  left: 0;
-  height: 1px;
-  background: var(--pwa-frame-secondary);
-  pointer-events: none;
-  content: "";
-}
-
 .notifications-screen-v2 .notification-group .notification-row + .notification-row {
-  position: relative;
-  border-top: 0;
-}
-
-.notifications-screen-v2 .notification-group .notification-row + .notification-row::before {
-  position: absolute;
-  z-index: 1;
-  top: 3px;
-  right: 0;
-  left: 0;
-  height: 1px;
-  background: var(--pwa-frame-divider);
-  pointer-events: none;
-  content: "";
+  border-top: 1px solid var(--pwa-frame-divider);
 }
 
 .notifications-screen-v2 .notification-heading {
@@ -131,11 +100,6 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   column-gap: 6px;
-}
-
-/* The next row divider starts 3px lower; leave 4px of visible clearance. */
-.notifications-screen-v2 .notification-group > .notification-row:not(:last-child):not(:has(.notification-inline-settings[data-expanded="true"])) > .notification-heading {
-  padding-block-end: 1px;
 }
 
 .notifications-screen-v2 .notification-icon,
@@ -148,11 +112,6 @@
   display: grid;
   place-items: center;
   justify-self: start;
-}
-
-/* Reserve top spacing in layout so the 4px bottom padding is preserved. */
-.notifications-screen-v2 .notification-row:is([data-notification-key="bet"], [data-notification-key="result"]) .notification-icon {
-  margin-block-start: 4px;
 }
 
 .notifications-screen-v2 .notification-icon img {
@@ -214,35 +173,8 @@
   color: var(--lottery-label);
 }
 
-.notifications-screen-v2 .notification-icon-stack {
-  display: grid;
-  min-width: 0;
-  justify-items: center;
-  align-self: end;
-  gap: 0;
-}
-
-.notifications-screen-v2 .notification-pro-badge {
-  box-sizing: border-box;
-  z-index: 1;
-  padding: 0 1.4px;
-  border: 1px solid var(--pwa-frame-tertiary);
-  border-radius: var(--pwa-frame-radius);
-  color: #f6c95f;
-  font-size: 4.2px;
-  font-weight: 600;
-  font-style: normal;
-  line-height: 5.6px;
-  white-space: nowrap;
-  translate: 0 var(--notification-pro-badge-overlap);
-}
-
 .notifications-screen-v2 .notification-row:has(.toggle:disabled) h2 span {
   color: rgba(242, 242, 242, .82);
-}
-
-.notifications-screen-v2 .notification-row:has(.toggle:disabled) .notification-pro-badge {
-  opacity: .72;
 }
 
 .notifications-screen-v2 .notification-row:has(.toggle:disabled) .notification-icon img {

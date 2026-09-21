@@ -151,6 +151,8 @@ describe("NotificationsPagePatched", () => {
   it("removes the retired winning notification and uses the settings title", async () => {
     render(<NotificationsPagePatched onNavigate={vi.fn()} />);
     expect(screen.queryByText("中獎通知")).toBeNull();
+    expect(document.querySelectorAll(".notification-pro-badge")).toHaveLength(0);
+    expect(screen.getByRole("heading", { level: 2, name: "Matrix Pro" })).toBeVisible();
     expect(screen.getByRole("heading", { level: 1, name: "通知設定" })).toBeVisible();
   });
 
@@ -461,12 +463,15 @@ describe("NotificationsPagePatched", () => {
     expect(within(screen.getByRole("region", { name: "系統通知" })).getAllByRole("article")).toHaveLength(1);
   });
 
-  it("在 Matrix Pro 通知名稱上方顯示相同標籤", () => {
+  it("移除四個 Matrix Pro 標籤並保留通知名稱", () => {
     render(<NotificationsPagePatched onNavigate={vi.fn()} />);
     const expiryRow = document.querySelector<HTMLElement>('[data-notification-key="expiry"]');
 
     expect(expiryRow).not.toBeNull();
-    expect(within(expiryRow!).getByText("Matrix Pro", { selector: "em" })).toBeVisible();
+    expect(document.querySelectorAll(".notification-pro-badge")).toHaveLength(0);
+    for (const key of ["status", "card", "collision", "expiry"]) {
+      expect(document.querySelector(`[data-notification-key="${key}"] .notification-heading > .notification-icon`)).not.toBeNull();
+    }
     expect(within(expiryRow!).getByText("Matrix Pro", { selector: "h2 > span" })).toBeVisible();
   });
 
