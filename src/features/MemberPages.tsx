@@ -629,7 +629,6 @@ export function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
 
 export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
   const appDialog = useAppDialog();
-  const registeredMemberFreeAccess = usePermissionSettings()?.registeredMemberFreeAccess === true;
   const { profile: renewalProfile, error: renewalProfileError } = useSubscriptionProfile();
   const plans = [
     { code: "month", name: "月費方案", price: "$2,880", days: 30, icons: [], features: [...MATRIX_PRO_COMMON_FEATURES] },
@@ -689,7 +688,6 @@ export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
   };
   return (
     <ProfileDetailShell title="訂閱方案與收費標準" onNavigate={onNavigate} className="pro-plans-screen">
-      {registeredMemberFreeAccess && <p className="auto-renew-note">目前免費開放期間，登入的有效會員可使用 Matrix 探索十三期與完整範圍、天衡、天樞、天衍及天工；Matrix 狀態進階資訊仍依訂閱權限開放。</p>}
       <div className="plan-carousel" aria-label="Matrix Pro 會員方案" ref={carouselRef} onScroll={handleCarouselScroll}>
         {carouselPlans.map((plan, position) => {
           const planIndex = position === 0 ? plans.length - 1 : position === plans.length + 1 ? 0 : position - 1;

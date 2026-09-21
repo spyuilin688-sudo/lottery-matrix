@@ -59,8 +59,9 @@ test('registered-member free mode explains actual temporary access without promi
 
   const plans = render(<AppDialogProvider><ProPlansPage onNavigate={vi.fn()} /></AppDialogProvider>);
   await act(async () => {});
-  expect(plans.container).toHaveTextContent('目前免費開放期間');
-  expect(plans.container).toHaveTextContent('Matrix 狀態進階資訊仍依訂閱權限開放');
+  expect(plans.container).not.toHaveTextContent('目前免費開放期間');
+  expect(plans.container).not.toHaveTextContent('Matrix 狀態進階資訊仍依訂閱權限開放');
+  expect(plans.container.querySelectorAll('.plan-card')).toHaveLength(5);
 });
 
 test.each([
