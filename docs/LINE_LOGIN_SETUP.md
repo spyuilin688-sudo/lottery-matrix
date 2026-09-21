@@ -105,6 +105,14 @@ actual production callback and PWA origin settings.
 
 ## Installed PWA return behavior
 
+Regular Android and iOS browser tabs prepare the Supabase `custom:line` OAuth
+start URL with `skipBrowserRedirect: true` and render that URL as the actual
+`href` of the existing LINE login control. The browser therefore starts the
+authorization navigation from the user's real tap instead of a later
+`window.location.assign()` call. This preserves native LINE auto login and
+does not add `disable_auto_login=true`. If URL preparation fails, the existing
+OAuth button flow remains the fallback. Desktop browser behavior is unchanged.
+
 Mobile PWAs start OAuth in their original navigation, including phones with
 Service Worker support. Do not use worker availability to opt a phone into the
 desktop popup flow. Commit `cedd29d` reintroduced that route after PR #361;
