@@ -559,3 +559,50 @@ describe('Railway primary scheduler adapter', () => {
     );
   });
 });
+
+
+describe('Railway Mark Six calendar adapter', () => {
+  it('calls only the protected calendar endpoint', async () => {
+    const fetcher = vi.fn(async () => jsonResponse({
+      lottery: '六合彩',
+      status: 'synced',
+      days: 61,
+    }));
+    const api = createWorkerApi(
+      async () => ({ baseUrl: 'https://railway.example/', statusToken: 'server-token' }),
+      fetcher,
+    );
+
+    await expect(api.refreshMarkSixCalendar()).resolves.toEqual({
+      lottery: '六合彩',
+      status: 'synced',
+      days: 61,
+    });
+    expect(fetcher).toHaveBeenCalledWith(
+      'https://railway.example/jobs/calendar/marksix',
+      expect.objectContaining({
+        method: 'POST',
+        cache: 'no-store',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Matrix-Admin-Token': 'server-token',
+        },
+        body: JSON.stringify({}),
+      }),
+    );
+  });
+
+  it('rejects malformed or unavailable calendar responses', async () => {
+    const malformed = createWorkerApi(
+      async () => ({ baseUrl: 'https://railway.example', statusToken: 'server-token' }),
+      vi.fn(async () => jsonResponse({ lottery: '六合彩', status: 'accepted' })),
+    );
+    await expect(malformed.refreshMarkSixCalendar()).rejects.toThrow('無法確認六合彩官方日曆');
+
+    const unavailable = createWorkerApi(
+      async () => ({ baseUrl: 'https://railway.example', statusToken: 'server-token' }),
+      vi.fn(async () => jsonResponse({ error: 'private-upstream-detail' }, 503)),
+    );
+    await expect(unavailable.refreshMarkSixCalendar()).rejects.toThrow('無法確認六合彩官方日曆');
+  });
+});
