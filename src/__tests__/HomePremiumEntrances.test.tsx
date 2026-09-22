@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import '@testing-library/jest-dom/vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
 import { HomeAnnouncement, HomeShortcutRow, MatrixCoreBanner } from '../Prototype';
 import { BottomNavigation } from '../BottomNavigation';
@@ -40,8 +40,8 @@ test('Core 保持獨立入口與可讀說明，計算機仍可從底部導覽開
 });
 
 
-test('首頁公告列保留新會員文案並列出最新日期已完整更新的彩種', () => {
-  render(<HomeAnnouncement {...({
+test('首頁公告逐段播放新會員文案與最新日期已完整更新的彩種', () => {
+  const { container } = render(<HomeAnnouncement {...({
     latestResults: [
       { lottery: '今彩539' },
       { lottery: '大樂透' },
@@ -50,17 +50,39 @@ test('首頁公告列保留新會員文案並列出最新日期已完整更新�
   const announcement = screen.getByTestId('home-announcement');
   expect(announcement).toHaveAccessibleName('公告');
   expect(announcement).toHaveTextContent('【新會員限時體驗】立即使用 LINE 註冊登入，即可免費體驗 Matrix 探索、天衡、天樞十三期及完整範圍，體驗期限 2 天。');
+  expect(announcement).not.toHaveTextContent('【今彩539】最新一期開獎資料、Matrix 分析結果已更新。');
+
+  fireEvent.animationEnd(container.querySelector('.home-announcement-track')!);
   expect(announcement).toHaveTextContent('【今彩539】最新一期開獎資料、Matrix 分析結果已更新。');
+  expect(screen.getByTestId('home-announcement-lottery-今彩539')).toHaveClass('home-announcement-lottery-name');
+
+  fireEvent.animationEnd(container.querySelector('.home-announcement-track')!);
   expect(announcement).toHaveTextContent('【大樂透】最新一期開獎資料、Matrix 分析結果已更新。');
+  expect(screen.getByTestId('home-announcement-lottery-大樂透')).toHaveClass('home-announcement-lottery-name');
+
+  fireEvent.animationEnd(container.querySelector('.home-announcement-track')!);
+  expect(announcement).toHaveTextContent('【新會員限時體驗】立即使用 LINE 註冊登入，即可免費體驗 Matrix 探索、天衡、天樞十三期及完整範圍，體驗期限 2 天。');
   expect(announcement).not.toHaveTextContent('09/23');
   expect(announcement).not.toHaveTextContent('02 34 35');
-  expect(screen.getByTestId('home-announcement-lottery-今彩539')).toHaveClass('home-announcement-lottery-name');
-  expect(screen.getByTestId('home-announcement-lottery-大樂透')).toHaveClass('home-announcement-lottery-name');
   expect(within(announcement).queryByRole('button')).not.toBeInTheDocument();
   expect(within(announcement).queryByRole('link')).not.toBeInTheDocument();
 });
 
-test('首頁公告在非同步彩種結果載入後重建 track 並重新開始完整跑馬燈', () => {
+test('首頁公告依實際移動距離維持固定每秒速度', async () => {
+  const { container } = render(<HomeAnnouncement latestResults={[]} />);
+  const announcement = screen.getByTestId('home-announcement');
+  Object.defineProperty(announcement, 'clientWidth', { configurable: true, value: 360 });
+
+  const track = container.querySelector('.home-announcement-track') as HTMLDivElement;
+  Object.defineProperty(track, 'scrollWidth', { configurable: true, value: 360 });
+  fireEvent(window, new Event('resize'));
+
+  await waitFor(() => {
+    expect(container.querySelector('.home-announcement-track')).toHaveStyle('--home-announcement-duration: 12000ms');
+  });
+});
+
+test('首頁公告在非同步彩種結果載入後重建第一段並維持逐段播放', () => {
   const { container, rerender } = render(<HomeAnnouncement latestResults={[]} />);
   const initialTrack = container.querySelector('.home-announcement-track');
   expect(initialTrack).not.toBeNull();
@@ -76,8 +98,8 @@ test('首頁公告在非同步彩種結果載入後重建 track 並重新開始�
 
   const loadedTrack = container.querySelector('.home-announcement-track');
   expect(loadedTrack).not.toBe(initialTrack);
-  expect(loadedTrack).toHaveTextContent('【今彩539】最新一期開獎資料、Matrix 分析結果已更新。');
-  expect(loadedTrack).toHaveTextContent('【天天樂】最新一期開獎資料、Matrix 分析結果已更新。');
-  expect(loadedTrack).toHaveTextContent('【大樂透】最新一期開獎資料、Matrix 分析結果已更新。');
-  expect(loadedTrack).toHaveTextContent('【六合彩】最新一期開獎資料、Matrix 分析結果已更新。');
+  expect(loadedTrack).toHaveTextContent('【新會員限時體驗】立即使用 LINE 註冊登入，即可免費體驗 Matrix 探索、天衡、天樞十三期及完整範圍，體驗期限 2 天。');
+
+  fireEvent.animationEnd(container.querySelector('.home-announcement-track')!);
+  expect(container.querySelector('.home-announcement-track')).toHaveTextContent('【今彩539】最新一期開獎資料、Matrix 分析結果已更新。');
 });

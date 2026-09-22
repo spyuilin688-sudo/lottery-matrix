@@ -1,5 +1,5 @@
 import { DAILY_SORTED_ONLY_DESCRIPTION, supportsDrawOrder, useLotteryOrder } from "./use-lottery-order";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import "./feature-pages.css";
 import {
@@ -412,18 +412,93 @@ export function MatrixCoreBanner({ onOpen }: { onOpen?: () => void }) {
   );
 }
 
+const HOME_ANNOUNCEMENT_SPEED_PX_PER_SECOND = 60;
+
 export function HomeAnnouncement({ latestResults = [] }: { latestResults?: LatestLotteryResult[] } = {}) {
-  const marqueeContentKey = latestResults.map((result) => result.lottery).join("|") || "initial";
+  const marqueeItems = [
+    { key: "new-member", text: HOME_ANNOUNCEMENT_TEXT, lottery: null as string | null },
+    ...latestResults.map((result) => ({
+      key: `lottery-${result.lottery}`,
+      text: "最新一期開獎資料、Matrix 分析結果已更新。",
+      lottery: result.lottery,
+    })),
+  ];
+  const marqueeContentKey = marqueeItems.map((item) => item.key).join("|");
+  const [marqueeState, setMarqueeState] = useState(() => ({
+    contentKey: marqueeContentKey,
+    index: 0,
+    cycle: 0,
+  }));
+  const [marqueeTiming, setMarqueeTiming] = useState<{ itemKey: string; durationMs: number } | null>(null);
+  const announcementRef = useRef<HTMLElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const contentChanged = marqueeState.contentKey !== marqueeContentKey;
+  const activeIndex = contentChanged ? 0 : marqueeState.index % marqueeItems.length;
+  const activeItem = marqueeItems[activeIndex];
+  const activeItemKey = `${marqueeContentKey}:${activeItem.key}:${marqueeState.cycle}`;
+  const activeDurationMs = marqueeTiming?.itemKey === activeItemKey ? marqueeTiming.durationMs : null;
+  const marqueeStyle = activeDurationMs === null
+    ? undefined
+    : ({ "--home-announcement-duration": `${activeDurationMs}ms` } as CSSProperties);
+
+  useEffect(() => {
+    if (!contentChanged) return;
+    setMarqueeState((current) => ({
+      contentKey: marqueeContentKey,
+      index: 0,
+      cycle: current.cycle + 1,
+    }));
+  }, [contentChanged, marqueeContentKey]);
+
+  useEffect(() => {
+    const announcement = announcementRef.current;
+    const track = trackRef.current;
+    if (!announcement || !track) return undefined;
+
+    const updateTiming = () => {
+      const viewportWidth = announcement.clientWidth;
+      const contentWidth = track.scrollWidth;
+      if (viewportWidth <= 0 || contentWidth <= 0) return;
+
+      setMarqueeTiming({
+        itemKey: activeItemKey,
+        durationMs: Math.round(((viewportWidth + contentWidth) / HOME_ANNOUNCEMENT_SPEED_PX_PER_SECOND) * 1000),
+      });
+    };
+
+    const advanceMarquee = (event: AnimationEvent) => {
+      if (event.target !== track) return;
+      setMarqueeState((current) => ({
+        contentKey: marqueeContentKey,
+        index: (current.index + 1) % marqueeItems.length,
+        cycle: current.cycle + 1,
+      }));
+    };
+
+    updateTiming();
+    track.addEventListener("animationend", advanceMarquee);
+    window.addEventListener("resize", updateTiming);
+    return () => {
+      track.removeEventListener("animationend", advanceMarquee);
+      window.removeEventListener("resize", updateTiming);
+    };
+  }, [activeItemKey, marqueeContentKey, marqueeItems.length]);
+
   return (
-    <section className="home-announcement" aria-label="公告" data-testid="home-announcement">
-      <div className="home-announcement-track" key={marqueeContentKey}>
+    <section ref={announcementRef} className="home-announcement" aria-label="公告" data-testid="home-announcement">
+      <div
+        ref={trackRef}
+        className="home-announcement-track"
+        key={activeItemKey}
+        data-marquee-ready={activeDurationMs === null ? "false" : "true"}
+        style={marqueeStyle}
+      >
         <span className="home-announcement-text">
-          {HOME_ANNOUNCEMENT_TEXT}
-          {latestResults.map((result) => (
-            <span className="home-announcement-update" key={result.lottery}>
-              {"　【"}<span className="home-announcement-lottery-name" data-testid={`home-announcement-lottery-${result.lottery}`}>{result.lottery}</span>】最新一期開獎資料、Matrix 分析結果已更新。
-            </span>
-          ))}
+          {activeItem.lottery === null ? (
+            activeItem.text
+          ) : (
+            <>【<span className="home-announcement-lottery-name" data-testid={`home-announcement-lottery-${activeItem.lottery}`}>{activeItem.lottery}</span>】{activeItem.text}</>
+          )}
         </span>
       </div>
     </section>

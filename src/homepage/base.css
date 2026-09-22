@@ -623,8 +623,11 @@
   width: max-content;
   min-width: 100%;
   white-space: nowrap;
-  animation: home-announcement-marquee 18s linear infinite;
   will-change: transform;
+}
+
+.home-screen .home-announcement-track[data-marquee-ready="true"] {
+  animation: home-announcement-marquee var(--home-announcement-duration) linear 1;
 }
 
 .home-screen .home-announcement-text {
