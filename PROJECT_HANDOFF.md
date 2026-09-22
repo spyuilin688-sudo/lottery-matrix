@@ -57,7 +57,7 @@ Railway 樣本中至少兩筆不同時間的不同執行均為 `already-acquired
 - 快捷設定入口為首頁左下角設定按鈕連續點擊兩下，判定間隔為 `800ms`；點擊底部「快捷」開啟已設定功能。
 - 共用 Logo 為 `public/assets/lottery/brand-logo-transparent.png`；樣式與行為依 `DESIGN.md`、`UX-CONTRACT.md` 及對應原始碼核對。
 - 首次首頁引導位於 `src/onboarding/FirstVisitGuide.tsx`，說明免費 LINE 註冊與 Matrix Core 探索入口。
-- 新建且具有已驗證 LINE 身分的會員，依伺服器註冊時間取得天衍 48 小時、天工 24 小時；重複登入不重新計時，既有會員不回填。
+- 新建且具有已驗證 LINE 身分的會員，依伺服器註冊時間取得 Matrix 探索、天衡、天樞十三期與完整範圍 48 小時；不開放天衍／天工註冊試用，重複登入不重新計時，既有會員不回填。
 
 ## PWA
 
