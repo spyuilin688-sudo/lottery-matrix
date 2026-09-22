@@ -9,6 +9,13 @@ import { postMemberOnline } from '../member-online-api';
 import { logicalSessionIdentity } from './session-identity';
 import { isLineProviderSession } from './session-provider';
 import { updateAlgorithmCacheSession } from './algorithm-cache-scope';
+import {
+  getMemberSessionSnapshot,
+  installMemberSessionRefresh,
+  publishMemberSessionChecking,
+  publishMemberSessionError,
+  publishMemberSessionReady,
+} from './member-session-store';
 
 type Props = {
   client?: SupabaseClient;
@@ -25,7 +32,7 @@ export function MemberSessionBridge({
 }: Props) {
   useEffect(() => {
     let active = true;
-    let authEventObserved = false;
+    let authRevision = 0;
     let currentSessionIdentity: string | null = null;
     let sessionGeneration = 0;
     let bootstrappedGeneration: number | null = null;
@@ -97,13 +104,34 @@ export function MemberSessionBridge({
       else void bootstrapSession(identity, sessionGeneration);
     };
 
-    void client.auth.getSession().then(({ data, error }) => {
-      if (!active || authEventObserved || error) return;
-      updateSession(data.session, false);
-    }).catch(() => undefined);
+    publishMemberSessionChecking();
+
+    const readCurrentSession = async () => {
+      const startedRevision = authRevision;
+      try {
+        const { data, error } = await client.auth.getSession();
+        if (error) throw error;
+        if (!active) return data.session;
+        if (authRevision !== startedRevision) {
+          const current = getMemberSessionSnapshot();
+          return current.status === 'ready' ? current.session : null;
+        }
+        publishMemberSessionReady(data.session);
+        updateSession(data.session, false);
+        return data.session;
+      } catch (error) {
+        if (active && authRevision === startedRevision) publishMemberSessionError();
+        throw error;
+      }
+    };
+
+    const uninstallRefresh = installMemberSessionRefresh(readCurrentSession);
+    void readCurrentSession().catch(() => undefined);
 
     const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
-      authEventObserved = true;
+      authRevision += 1;
+      const currentSession = event === 'SIGNED_OUT' ? null : session;
+      publishMemberSessionReady(currentSession);
       if (event === 'SIGNED_OUT') {
         clearLineAuthEphemeralState();
         void cleanupPush().catch(() => undefined);
@@ -123,6 +151,7 @@ export function MemberSessionBridge({
       pendingTimers.forEach((timer) => clearTimeout(timer));
       pendingTimers.clear();
       stopMemberOnlineTracking();
+      uninstallRefresh();
       subscription.unsubscribe();
     };
   }, [bootstrap, cleanupPush, client, startTracking]);
