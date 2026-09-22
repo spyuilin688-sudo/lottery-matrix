@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const workflow = readFileSync('.github/workflows/ci.yml', 'utf8');
+const notebookWorkflow = readFileSync('.github/workflows/notebook-ui-check.yml', 'utf8');
+const tiangongWorkflow = readFileSync('.github/workflows/tiangong-sorted-refresh.yml', 'utf8');
+const packageJson = JSON.parse(readFileSync('package.json', 'utf8'));
 
 function job(name) {
   const match = workflow.match(new RegExp('\\n  ' + name + ':\\n[\\s\\S]*?(?=\\n  [a-z][a-z0-9-]*:\\n|$)'));
@@ -34,22 +37,27 @@ test('CI has no whole-project test command or wildcard test invocation', () => {
   }
 });
 
-test('runtime commit atomicity, protected file integrity, and production build remain required', () => {
+test('runtime commit atomicity, protected file integrity, and production build remain required once', () => {
   const runtime = job('runtime-integrity');
   assert.match(runtime, /needs: scope/);
   assert.doesNotMatch(runtime, /\n    if:/);
   assert.match(runtime, /fetch-depth: 0/);
   assert.match(runtime, /run: node scripts\/check-runtime-commit-integrity\.mjs "\$SCOPE_BASE_SHA" "\$SCOPE_HEAD_SHA"/);
-  assert.match(runtime, /run: npm run check:runtime/);
+  assert.equal(packageJson.scripts?.prebuild, 'npm run check:runtime');
   assert.match(runtime, /run: npm run build/);
+  assert.equal([...workflow.matchAll(/^\s*run:\s*npm run build\s*$/gm)].length, 1);
+  assert.doesNotMatch(runtime, /^\s*run:\s*npm run check:runtime\s*$/m);
 });
 
-test('CI builds before the selected packaging tests', () => {
-  const root = job('test-and-build');
-  const buildIndex = root.indexOf('run: npm run build');
-  const nodeIndex = root.indexOf('--run node');
+test('the single production build runs before selected packaging tests', () => {
+  const runtime = job('runtime-integrity');
+  const buildIndex = runtime.indexOf('run: npm run build');
+  const nodeIndex = runtime.indexOf('--run node');
   assert.ok(buildIndex >= 0);
   assert.ok(nodeIndex > buildIndex, 'Packaging tests need the production artifact');
+  const related = job('test-and-build');
+  assert.doesNotMatch(related, /--run node/);
+  assert.doesNotMatch(related, /^\s*run:\s*npm run build\s*$/m);
 });
 
 test('browser jobs install Chromium dependencies and run each configuration only with selected files', () => {
@@ -61,17 +69,25 @@ test('browser jobs install Chromium dependencies and run each configuration only
   assert.match(runtime, /if: needs\.scope\.outputs\.playwright == 'true' \|\| needs\.scope\.outputs\.membership == 'true'/);
 });
 
-test('admin builds remain required and Python uses the selected plan', () => {
+test('admin build modes are not repeated and Python uses the selected plan', () => {
   const admin = job('admin');
   assert.doesNotMatch(admin, /\n    if:/);
   assert.match(admin, /working-directory: apps\/admin/);
   assert.match(admin, /run: APPDEPLOY_CI_EXTERNALS=true npm run build/);
-  assert.match(admin, /run: npm run build:pages/);
+  assert.doesNotMatch(admin, /run: npm run build:pages/);
+  assert.match(packageJson.scripts?.build ?? '', /npm run build:admin:pages/);
   assert.match(admin, /--run admin/);
   const python = job('matrix-api');
   assert.match(python, /working-directory: services\/matrix-api/);
   assert.match(python, /run: uv sync --frozen/);
   assert.match(python, /--run python/);
+});
+
+test('specialized Notebook and Tiangong workflows do not duplicate Project CI PR or main checks', () => {
+  assert.doesNotMatch(notebookWorkflow, /^\s*pull_request:/m);
+  assert.match(notebookWorkflow, /^\s*push:/m);
+  assert.match(tiangongWorkflow, /^\s*workflow_dispatch:/m);
+  assert.doesNotMatch(tiangongWorkflow, /^\s*(?:push|pull_request):/m);
 });
 
 test('selected test jobs fail the workflow when their tests fail', () => {
