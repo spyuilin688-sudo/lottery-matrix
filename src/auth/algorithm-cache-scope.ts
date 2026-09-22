@@ -7,6 +7,21 @@ let identity: string | null | undefined;
 let generation = 0;
 const listeners = new Set<() => void>();
 const initializationListeners = new Set<() => void>();
+let sessionReadInFlight: {
+  client: SupabaseClient;
+  promise: ReturnType<SupabaseClient['auth']['getSession']>;
+} | null = null;
+
+function readSession(client: SupabaseClient) {
+  if (sessionReadInFlight?.client === client) return sessionReadInFlight.promise;
+  const promise = client.auth.getSession();
+  sessionReadInFlight = { client, promise };
+  const clear = () => {
+    if (sessionReadInFlight?.promise === promise) sessionReadInFlight = null;
+  };
+  void promise.then(clear, clear);
+  return promise;
+}
 
 export function getAlgorithmCacheScope() {
   return generation;
@@ -43,7 +58,7 @@ export async function readAlgorithmCacheScope(
 ): Promise<number> {
   const startedGeneration = generation;
   const startedIdentity = identity;
-  const { data, error } = await client.auth.getSession();
+  const { data, error } = await readSession(client);
   const returnedSession = data?.session ?? null;
   // An auth event supersedes a session lookup that was already in flight.
   const returnedIdentity = sessionIdentity(returnedSession);
