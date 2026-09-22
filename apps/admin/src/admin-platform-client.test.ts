@@ -36,6 +36,42 @@ describe('Cloudflare admin API client', () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
+  it('shares only the in-flight owner session read across concurrent admin API requests', async () => {
+    const getSession = vi.fn().mockResolvedValue({
+      data: { session: { access_token: 'owner-token' } },
+      error: null,
+    });
+    vi.doMock('@supabase/supabase-js', () => ({ createClient: () => ({ auth: {
+      getSession,
+      getUser: vi.fn().mockResolvedValue({ data: { user: { email: 'owner@example.com', email_confirmed_at: '2026-09-01T00:00:00Z', is_anonymous: false } }, error: null }),
+    } }) }));
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => new Response(JSON.stringify(
+      String(input) === '/admin/api/owner-auth-config'
+        ? { url: 'https://project.supabase.co', publicKey: 'public-test-key' }
+        : { ok: true },
+    ), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    vi.stubGlobal('fetch', fetcher);
+    vi.resetModules();
+    const platform = await import('./admin-platform-client');
+    await platform.auth.signIn();
+    fetcher.mockClear();
+
+    await Promise.all([
+      platform.api.get('/api/bootstrap'),
+      platform.api.get('/api/dashboard'),
+      platform.api.get('/api/system-status'),
+    ]);
+
+    expect(getSession).toHaveBeenCalledTimes(1);
+    expect(fetcher).toHaveBeenCalledTimes(3);
+    for (const [, init] of fetcher.mock.calls) {
+      expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer owner-token');
+    }
+
+    await platform.api.get('/api/bootstrap');
+    expect(getSession).toHaveBeenCalledTimes(2);
+  });
+
   it.each(['token', 'fetch', 'body'] as const)('bounds the whole request when %s ignores abort', async (stage) => {
     vi.useFakeTimers();
     let resolveToken!: (token: string) => void;
