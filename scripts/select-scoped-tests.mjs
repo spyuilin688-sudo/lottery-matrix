@@ -30,6 +30,8 @@ const BROWSER_OWNERS = {
 const CONFIG_OWNERS = {
   '.github/workflows/matrix-optimizer.yml': ['tests/matrix-optimizer-code.test.mjs'],
   '.github/workflows/ci.yml': ['tests/scoped-ci.test.mjs', 'tests/ci-workflow-coverage.test.mjs'],
+  '.github/workflows/notebook-ui-check.yml': ['tests/ci-workflow-coverage.test.mjs'],
+  '.github/workflows/tiangong-sorted-refresh.yml': ['tests/ci-workflow-coverage.test.mjs'],
   'scripts/select-scoped-tests.mjs': ['tests/scoped-ci.test.mjs', 'tests/ci-workflow-coverage.test.mjs'],
   'vitest.edge-functions.config.ts': ['tests/edge-functions-config.test.mjs'],
   'mobile-runtime.lock.json': ['tests/runtime-integrity-atomic-commit.test.mjs', 'tests/runtime-integrity-scope.test.mjs'],
