@@ -107,7 +107,7 @@ components:
 
 標準卡片以 10px 圓角為基準，Matrix 狀態卡使用既有 8px 圓角；彩球、頭像、狀態點與少數標章可使用圓形或 pill。表單與動作控制沿用各 canonical component 的既有半徑，不把所有元件統一成 pill，也不改動正式素材比例。首頁品牌、彩種切換、開獎資訊卡、Matrix Core 與四大功能沿用單層細金框及 8px 圓角；開獎卡底部兩格時間資訊同樣使用獨立的細金框及 8px 圓角，狀態區不新增共同容器外框。
 
-2026-09-14 開獎資訊卡：`src/homepage/base.css` 單獨擁有主卡細金框、深色背景與低亮度金色弧線，移除 `visual-language.css` 的主卡切角與多層裝飾。1px 內描邊不佔內容空間，卡片寬高、網格、內距、彩球素材、彩球與數字尺寸及定位全部沿用現況。下次開獎／剩餘時間依後續確認也改為相同 1px 細金框與 8px 圓角，由 `base.css` 原有時間格規則單獨繪製；移除舊切角、多層裝飾及重複覆寫。保留兩格各 24px 高、原背景、圖示、文字色彩及資料更新；下次開獎內容位置維持，剩餘時間內容水平置中；原開獎背景圖保留於素材庫但不再用於主卡。
+2026-09-14 開獎資訊卡：`src/homepage/base.css` 單獨擁有主卡細金框、深色背景與低亮度金色弧線，移除 `visual-language.css` 的主卡切角與多層裝飾。1px 內描邊不佔內容空間，卡片寬高、網格、內距、彩球素材、彩球與數字尺寸及定位全部沿用現況。下次開獎／剩餘時間依後續確認也改為相同 1px 細金框與 8px 圓角，由 `base.css` 原有時間格規則單獨繪製；移除舊切角、多層裝飾及重複覆寫。保留兩格各 24px 高、原背景、圖示、文字色彩及資料更新；下次開獎／剩餘時間寬度改為 60%／40%，下次開獎內容位置維持，剩餘時間內容水平置中；原開獎背景圖保留於素材庫但不再用於主卡。
 
 ## Components
 
@@ -156,7 +156,7 @@ components:
 2026-09-14 首頁 Logo、彩種切換、Matrix Core 與四大功能外框統一為 1px 細金線、8px 圓角，直接修改既有樣式來源，不新增疊框、遮罩或覆寫層。Logo、Core 與功能列對齊 16px 左右邊界；Core 維持 654:181 比例、功能列上方間距沿用後續響應式規格。四張卡單列等寬、間距 6px，高度由 90px 降到 76px，圖片在剩餘空間以 contain 等比例顯示，名稱字級不變。功能列本身保持 0 內距、0 外框。`src/homepage/base.css` 擁有 Core 與功能卡，`logo-spacing.css` 擁有 Logo，`lottery-switcher.css` 單獨擁有彩種切換；移除舊九宮格金框及彩種切角多色描邊。彩種選中項以圖片亮度區分（詳見下方三層金框規格），維持原有 radio 操作與 sprite。所有圖片檔不變；啟動／聚合／共振卡的霓虹邊框已嵌入原圖，本輪保留原圖，不加金色覆蓋層。四大功能仍依序為 Matrix 同星、Matrix 對照、Matrix 牌單、Matrix 指南；Core 說明與箭頭為真實 UI。
 
 
-2026-09-15 首頁三層金框與彩種亮度：開獎資訊卡（含底部兩格時間）與 Matrix Core 使用 1px 明亮金框 `--home-frame-bright: #f0d58c`；四個 Matrix 狀態維持 1px 標準金框 `--home-frame-gold: #d6b66f`；四大功能使用 1px 低亮度金框 `--home-frame-muted: #8a713f`；彩種改依下述選取狀態使用標準金色透明框。框色由 `src/design-tokens.css` 唯一提供，`base.css` 與 `lottery-switcher.css` 的原有元件規則直接取用。Logo 與主次金框保留；彩種 Selector 及底部導覽依下述更新規格。
+2026-09-15 首頁三層金框與彩種亮度：開獎資訊卡（含底部兩格時間）與 Matrix Core 使用 1px 明亮金框 `--home-frame-bright: #f0d58c`；四個 Matrix 狀態與四大功能皆使用 1px 標準金框 `--home-frame-gold: #d6b66f`，並由 8px 圓角搭配 1px inset 描邊呈現；彩種改依下述選取狀態使用標準金色透明框。框色由 `src/design-tokens.css` 唯一提供，`base.css` 與 `lottery-switcher.css` 的原有元件規則直接取用。Logo 與主次金框保留；彩種 Selector 及底部導覽依下述更新規格。
 
 共用彩種 Selector（首頁、Matrix 狀態與自訂狀態）由 `lottery-switcher.css` 單獨擁有：四格間距 8px，原流動高度減 10px，390px 畫布由 50px 縮為 40px，最窄畫面保留 36px 點擊高度（本次緊湊 Selector 例外）。使用既有四個獨立 Logo，SVG viewBox 依原檔 alpha 邊界排除透明留白；不改圖檔、不加補償位移。移除含背景與內建框線的 Matrixbba sprite 渲染。未選中：標準金框透明度 22%、內容透明度 60%、應用主背景；選中：框 45%、內容 100%、6% 淡金底。原有 1px 框、8px 圓角不變；180ms 過渡只改框、底色、內容透明度與按壓亮度，無發光。reduced-motion 由 `base.css` 既有區段停用。按鈕維持 radio 語意，單一 Tab 入口，方向鍵循環選中並移動焦點，Home／End 跳到首尾。
 
