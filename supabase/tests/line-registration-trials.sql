@@ -1,6 +1,10 @@
 -- Transactional fixture; no real member or provider account is modified.
 begin;
-do $$
+update private.matrix_permission_settings
+set registered_member_free_access = false
+where singleton;
+
+do $trial$
 declare
   v_new uuid := extensions.gen_random_uuid();
   v_old uuid := extensions.gen_random_uuid();
@@ -47,43 +51,56 @@ begin
   end if;
 
   v_profile := public.member_profile()->'exploreEntitlements';
-  if (v_profile->>'canUseTianyan')::boolean is not true or (v_profile->>'canUseTiangong')::boolean is not true
-    or (v_profile->>'canUseThirteen')::boolean is not false or (v_profile->>'canCustomizeStatus')::boolean is not false then
-    raise exception 'Registration trial changed unrelated subscription entitlements';
+  if (v_profile->>'canUseThirteen')::boolean is not true
+    or (v_profile->>'canUseFullRange')::boolean is not true
+    or (v_profile->>'canUseTianyan')::boolean is not false
+    or (v_profile->>'canUseTiangong')::boolean is not false
+    or (v_profile->>'canViewFullStatus')::boolean is not false then
+    raise exception 'Registration trial entitlement matrix is incorrect';
   end if;
-  v_result := public.matrix_tianyan_list('{"lottery":"今彩539","explorePeriods":13,"exploreRange":"完整範圍","selectedStreaks":[]}'::jsonb);
-  if v_result->>'kind' <> 'tianyan' then raise exception 'Tianyan trial did not read the stored result'; end if;
-  v_result := public.matrix_tiangong_list('{"lottery":"今彩539","periodRange":50,"mode":"two-stage","hitCondition":"準2進3","exploreDirections":["固定"],"firstStageDirections":["固定"],"firstRoadTypes":["加減"],"secondStageDirections":["固定"],"secondRoadTypes":["合值"]}'::jsonb);
-  if v_result->>'kind' <> 'tiangong' then raise exception 'Tiangong trial did not read the stored result'; end if;
 
-  -- Boundary is exclusive: Tianyan remains open at 24h, Tiangong closes.
-  update public.members set line_trial_started_at=pg_catalog.now()-interval '24 hours' where id=v_member;
-  v_profile := public.member_profile()->'exploreEntitlements';
-  if (v_profile->>'canUseTianyan')::boolean is not true or (v_profile->>'canUseTiangong')::boolean is not false then
-    raise exception '24-hour boundary is incorrect';
-  end if;
+  -- Tianyan and Tiangong registration trials are retired.
+  v_denied := false;
+  begin
+    perform public.matrix_tianyan_list('{"lottery":"今彩539","explorePeriods":13,"exploreRange":"完整範圍","selectedStreaks":[]}'::jsonb);
+  exception when insufficient_privilege then v_denied := true;
+  end;
+  if not v_denied then raise exception 'LINE registration trial still granted Tianyan'; end if;
+
   v_denied := false;
   begin
     perform public.matrix_tiangong_list('{"lottery":"今彩539","periodRange":50,"mode":"two-stage","hitCondition":"準2進3"}'::jsonb);
   exception when insufficient_privilege then v_denied := true;
   end;
-  if not v_denied then raise exception 'Expired Tiangong trial was allowed'; end if;
+  if not v_denied then raise exception 'LINE registration trial still granted Tiangong'; end if;
+
+  -- The replacement benefit remains open until the exclusive 48-hour boundary.
+  update public.members set line_trial_started_at=pg_catalog.now()-interval '24 hours' where id=v_member;
+  v_profile := public.member_profile()->'exploreEntitlements';
+  if (v_profile->>'canUseThirteen')::boolean is not true
+    or (v_profile->>'canUseFullRange')::boolean is not true
+    or (v_profile->>'canUseTianyan')::boolean is not false
+    or (v_profile->>'canUseTiangong')::boolean is not false then
+    raise exception '24-hour replacement benefit is incorrect';
+  end if;
 
   update public.members set line_trial_started_at=pg_catalog.now()-interval '48 hours' where id=v_member;
   v_profile := public.member_profile()->'exploreEntitlements';
-  if (v_profile->>'canUseTianyan')::boolean is not false or (v_profile->>'canUseTiangong')::boolean is not false then
+  if (v_profile->>'canUseThirteen')::boolean is not false
+    or (v_profile->>'canUseFullRange')::boolean is not false
+    or (v_profile->>'canUseTianyan')::boolean is not false
+    or (v_profile->>'canUseTiangong')::boolean is not false then
     raise exception '48-hour boundary is incorrect';
   end if;
-  v_denied := false;
-  begin
-    perform public.matrix_tianyan_list('{"lottery":"今彩539","selectedStreaks":[]}'::jsonb);
-  exception when insufficient_privilege then v_denied := true;
-  end;
-  if not v_denied then raise exception 'Expired Tianyan trial was allowed'; end if;
 
   update public.members set line_trial_started_at=pg_catalog.now()+interval '1 hour' where id=v_member;
   v_profile := public.member_profile()->'exploreEntitlements';
-  if (v_profile->>'canUseTianyan')::boolean is not false then raise exception 'Future trial timestamp was accepted'; end if;
+  if (v_profile->>'canUseThirteen')::boolean is not false
+    or (v_profile->>'canUseFullRange')::boolean is not false
+    or (v_profile->>'canUseTianyan')::boolean is not false
+    or (v_profile->>'canUseTiangong')::boolean is not false then
+    raise exception 'Future trial timestamp was accepted';
+  end if;
 
   update public.members set line_trial_started_at=pg_catalog.now(),status='停用' where id=v_member;
   v_denied := false;
@@ -99,6 +116,6 @@ begin
     raise exception 'Registration trigger is publicly executable';
   end if;
 end;
-$$;
+$trial$;
 select 'LINE registration trial fixture passed' as result;
 rollback;

@@ -212,11 +212,12 @@ The production build stamps `push-service-worker.js` with a fingerprint derived 
   the same browser. Storage failure falls back to the current mount's memory;
   React StrictMode must not enqueue duplicate dialogs. OAuth callbacks and
   non-root pages do not open this guide.
-- A new member with a verified LINE identity receives Tianyan for 48 elapsed
-  hours and Tiangong for 24 elapsed hours, starting at server-side member
-  creation. Repeated login does not restart the period. Existing members are
-  not backfilled. Disabled members cannot use either trial.
-- These trials grant those two algorithms only. Existing subscription,
+- A new member with a verified LINE identity receives Matrix Explore,
+  Tianheng and Tianshu thirteen-period plus full-range access for 48 elapsed
+  hours, starting at server-side member creation. Repeated login does not
+  restart the period. Existing members are not backfilled. Disabled members
+  cannot use the registration benefit.
+- This registration benefit does not grant Tianyan or Tiangong. Existing subscription,
   referral, status and separate exploration entitlements keep their rules.
 
 ## Referral page login state — 2026-09-06

@@ -14,7 +14,7 @@ afterEach(() => {
   window.history.replaceState({}, '', '/');
 });
 
-test('免費模式教學區分訪客基本查詢、登入功能與 LINE 專屬試用', async () => {
+test('免費模式教學區分訪客基本查詢與 LINE 新會員 48 小時權限', async () => {
   window.localStorage.removeItem(FIRST_VISIT_GUIDE_SEEN_KEY);
   window.history.replaceState({}, '', '/');
   const onNavigate = vi.fn();
@@ -23,8 +23,9 @@ test('免費模式教學區分訪客基本查詢、登入功能與 LINE 專屬�
 
   const dialog = await screen.findByRole('dialog', { name: '使用教學' });
   expect(dialog.textContent).toContain('探索二期、天衡三期基本查詢可直接使用');
-  expect(dialog.textContent).toContain('較高期數、完整範圍、天衍與天工請先使用 LINE 或 Google 登入');
-  expect(dialog.textContent).toContain('新註冊 LINE 會員');
+  expect(dialog.textContent).toContain('新註冊 LINE 會員可於註冊後 48 小時內使用 Matrix 探索、天衡、天樞十三期及完整範圍');
+  expect(dialog.textContent).not.toContain('天衍 2 天');
+  expect(dialog.textContent).not.toContain('天工 1 天');
   const start = screen.getByRole('button', { name: '開始使用' });
   fireEvent.click(start);
   expect(onNavigate).not.toHaveBeenCalled();
