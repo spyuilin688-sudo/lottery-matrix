@@ -86,9 +86,10 @@ test('admin build modes are not repeated and Python uses the selected plan', () 
   assert.match(python, /--run python/);
 });
 
-test('specialized Notebook workflow does not duplicate Project CI pull-request checks', () => {
+test('specialized Notebook workflow is manual-only and cannot duplicate Project CI', () => {
   assert.doesNotMatch(notebookWorkflow, /^\s*pull_request:/m);
-  assert.match(notebookWorkflow, /^\s*push:/m);
+  assert.doesNotMatch(notebookWorkflow, /^\s*push:/m);
+  assert.match(notebookWorkflow, /^\s*workflow_dispatch:/m);
 });
 
 test('specialized Tianshu workflow no longer duplicates Project CI pull-request checks', () => {
