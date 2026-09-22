@@ -5,16 +5,20 @@ import test from 'node:test';
 const prototypeSource = readFileSync(new URL('../src/Prototype.tsx', import.meta.url), 'utf8');
 const statusApiSource = readFileSync(new URL('../src/matrix-status-api.ts', import.meta.url), 'utf8');
 
-test('homepage reads summary-only status data in one hourly batched request', () => {
+test('homepage uses one windowed coordinator and keeps summary status reads batched', () => {
   assert.match(
     prototypeSource,
-    /withDeadline\(\(requestSignal\) => fetchMatrixStatusSummaries\(LOTTERIES\.map\(\(\{ id \}\) => id\), requestSignal\), \{ signal \}\)/,
+    /fetchLatestLotteryResultState\(cycle\?\.cycleDate, signal\)/,
+  );
+  assert.match(
+    prototypeSource,
+    /fetchMatrixStatusSummaries\(lotteries, requestSignal\)/,
+  );
+  assert.match(
+    prototypeSource,
+    /HOME_REFRESH_INTERVAL_MS/,
   );
   assert.doesNotMatch(
-    prototypeSource,
-    /fetchMatrixStatuses\(LOTTERIES\.map\(\(\{ id \}\) => id\), requestSignal\)/,
-  );
-  assert.match(
     prototypeSource,
     /setInterval\(refresh, 3_600_000\)/,
   );
