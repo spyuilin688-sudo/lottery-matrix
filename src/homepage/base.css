@@ -343,8 +343,7 @@
   grid-column: 1 / -1;
   grid-row: 3;
   position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  display: flex;
   box-sizing: border-box;
   width: 100%;
   height: 24px;
@@ -361,6 +360,8 @@
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
   display: grid;
+  grid-template-columns: 12px auto auto;
+  flex: 1 1 auto;
   gap: 4px;
   min-width: 0;
   padding-inline: clamp(6px, 2vw, 10px);
@@ -373,13 +374,6 @@
   overflow: hidden;
 }
 
-.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item:first-child {
-  grid-template-columns: 12px auto minmax(0, 1fr);
-}
-
-.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item:last-child {
-  grid-template-columns: 12px auto auto;
-}
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon {
   width: 12px;

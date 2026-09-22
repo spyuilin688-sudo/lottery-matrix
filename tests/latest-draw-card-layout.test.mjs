@@ -65,14 +65,14 @@ test("期數日期與查看更多紀錄維持既有定位，順落球由格線�
 test("特別號標籤右移、分隔線縮短且底部圖示維持 12px", () => {
   assert.match(css, /\.home-screen \.latest-draw-card \.special-label\s*\{[^}]*right:\s*calc\(50% - 1px\);/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.special-ball-separator\s*\{[^}]*height:\s*calc\(var\(--draw-special-ball-size\) \+ 4px\);/s);
-  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item:first-child\s*\{[^}]*grid-template-columns:\s*12px auto minmax\(0, 1fr\);/s);
-  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item:last-child\s*\{[^}]*grid-template-columns:\s*12px auto auto;/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item\s*\{[^}]*grid-template-columns:\s*12px auto auto;/s);
+  assert.doesNotMatch(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item:(?:first|last)-child\s*\{[^}]*grid-template-columns:/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-icon\s*\{[^}]*width:\s*12px;[^}]*height:\s*12px;/s);
 });
 
-test("底部兩格時間資訊沿用主卡的單層細金框與圓角", () => {
-  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*grid-template-columns:\s*minmax\(0, 3fr\) minmax\(0, 2fr\)[^}]*width:\s*100%[^}]*padding:\s*0;[^}]*gap:\s*0;[^}]*border:\s*0;[^}]*background:\s*transparent/s);
-  assert.ok(hasRuleProperty(css, ".home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item", /gap:\s*4px;[^}]*padding-inline:\s*clamp\(6px, 2vw, 10px\);[^}]*align-items:\s*center[^}]*justify-content:\s*center/));
+test("底部兩格時間資訊依內容自動分配寬度並沿用單層細金框與圓角", () => {
+  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*display:\s*flex;[^}]*width:\s*100%[^}]*padding:\s*0;[^}]*gap:\s*0;[^}]*border:\s*0;[^}]*background:\s*transparent/s);
+  assert.ok(hasRuleProperty(css, ".home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item", /grid-template-columns:\s*12px auto auto;[^}]*flex:\s*1 1 auto;[^}]*gap:\s*4px;[^}]*padding-inline:\s*clamp\(6px, 2vw, 10px\);[^}]*align-items:\s*center[^}]*justify-content:\s*center/));
   const itemSelector = ".home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item";
   const itemRules = ruleBodies(css, itemSelector);
   assert.equal(itemRules.length, 1);
