@@ -5,6 +5,10 @@ import {
 } from '../backend/member-notification-settings';
 import { getSupabaseClient } from './lib/supabase';
 import { getAlgorithmCacheScope } from './auth/algorithm-cache-scope';
+import {
+  getMemberSessionSnapshot,
+  requestMemberSessionRefresh,
+} from './auth/member-session-store';
 
 export type MemberBootstrapResponse = {
   memberId: string;
@@ -211,32 +215,17 @@ export function fetchPushSubscriptionStatus(endpoint: string) {
   return memberRpc<{ enabled: boolean }>('member_push_subscription_status', { p_endpoint: endpoint });
 }
 
-let authenticatedSessionScope: number | null = null;
-let authenticatedSessionInFlight: Promise<boolean> | null = null;
-let authenticatedSessionResult: boolean | null = null;
+export async function hasAuthenticatedMemberSession() {
+  const snapshot = getMemberSessionSnapshot();
+  if (snapshot.status === 'ready') return Boolean(snapshot.session);
 
-export function hasAuthenticatedMemberSession() {
-  const scope = getAlgorithmCacheScope();
-  if (authenticatedSessionScope !== scope) {
-    authenticatedSessionScope = scope;
-    authenticatedSessionInFlight = null;
-    authenticatedSessionResult = null;
+  const startedScope = getAlgorithmCacheScope();
+  const session = await requestMemberSessionRefresh();
+  if (startedScope !== getAlgorithmCacheScope()) {
+    const current = getMemberSessionSnapshot();
+    return current.status === 'ready' && Boolean(current.session);
   }
-  if (authenticatedSessionResult !== null) return Promise.resolve(authenticatedSessionResult);
-  if (authenticatedSessionInFlight) return authenticatedSessionInFlight;
-
-  const request = getSupabaseClient().auth.getSession().then(({ data, error }) => {
-    if (error) throw error;
-    const authenticated = Boolean(data.session);
-    if (authenticatedSessionScope === scope && getAlgorithmCacheScope() === scope) {
-      authenticatedSessionResult = authenticated;
-    }
-    return authenticated;
-  }).finally(() => {
-    if (authenticatedSessionScope === scope) authenticatedSessionInFlight = null;
-  });
-  authenticatedSessionInFlight = request;
-  return request;
+  return Boolean(session);
 }
 
 export function savePushSubscription(input: MemberPushSubscriptionInput) {
