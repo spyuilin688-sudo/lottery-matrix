@@ -34,7 +34,7 @@
   --home-feature-gap: 6px;
   --home-gap-status-core: clamp(9px, 1.35dvh, 12px);
   --home-gap-core-features: var(--home-gap-status-core);
-  --home-gap-features-nav: clamp(8px, 1.15dvh, 12px);
+  --home-gap-features-nav: clamp(4px, 0.7dvh, 8px);
   box-sizing: border-box;
   display: grid;
   width: min(100%, 390px);
