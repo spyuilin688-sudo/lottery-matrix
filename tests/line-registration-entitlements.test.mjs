@@ -4,19 +4,24 @@ import test from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
 
 const migrationsUrl = new URL('../supabase/migrations/', import.meta.url);
-const entitlementMigration = readdirSync(migrationsUrl)
+const migrations = readdirSync(migrationsUrl)
   .filter(name => name.endsWith('.sql'))
   .sort()
   .reverse()
-  .map(name => ({ name, sql: readFileSync(new URL(name, migrationsUrl), 'utf8') }))
+  .map(name => ({ name, sql: readFileSync(new URL(name, migrationsUrl), 'utf8') }));
+
+const entitlementMigration = migrations
   .find(({ sql }) => /create or replace function private\.matrix_result_entitlements_for_member\(/i.test(sql));
+const wrapperMigration = migrations
+  .find(({ sql }) => /create or replace function private\.matrix_result_entitlements\(\)/i.test(sql));
 
-assert.ok(entitlementMigration, 'expected a matrix entitlement migration');
+assert.ok(entitlementMigration, 'expected a matrix entitlement helper migration');
+assert.ok(wrapperMigration, 'expected a matrix entitlement wrapper migration');
 
-const functionSql = (sql, name) => {
+const functionSql = (sql, name, sourceName) => {
   const escaped = name.replaceAll('.', '\\.');
   const match = sql.match(new RegExp(`create(?: or replace)? function ${escaped}\\([\\s\\S]*?\\$function\\$;`, 'i'));
-  assert.ok(match, `missing function ${name} in ${entitlementMigration.name}`);
+  assert.ok(match, `missing function ${name} in ${sourceName}`);
   return match[0];
 };
 
@@ -56,8 +61,16 @@ test('LINE registration grants 48h thirteen/full-range access without Tianyan or
     returns boolean language sql stable as $$ select false $$;
   `);
 
-  await db.exec(functionSql(entitlementMigration.sql, 'private.matrix_result_entitlements_for_member'));
-  await db.exec(functionSql(entitlementMigration.sql, 'private.matrix_result_entitlements'));
+  await db.exec(functionSql(
+    entitlementMigration.sql,
+    'private.matrix_result_entitlements_for_member',
+    entitlementMigration.name,
+  ));
+  await db.exec(functionSql(
+    wrapperMigration.sql,
+    'private.matrix_result_entitlements',
+    wrapperMigration.name,
+  ));
 
   const member = '11111111-1111-1111-1111-111111111111';
   await db.query(`
