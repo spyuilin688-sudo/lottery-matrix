@@ -5,7 +5,7 @@ import {PGlite} from '@electric-sql/pglite';
 const sql=readFileSync(new URL('../supabase/migrations/20260920233444_recovery_dynamic_slots.sql',import.meta.url),'utf8');
 const primarySql=readFileSync(new URL('../supabase/migrations/20260921072423_dynamic_primary_worker_schedule.sql',import.meta.url),'utf8');
 const refreshSql=readFileSync(new URL('../supabase/migrations/20260921075225_refresh_watchdog_after_recovery.sql',import.meta.url),'utf8');
-const dedupeSql=readFileSync(new URL('../supabase/migrations/20260922190000_dedupe_primary_recovery_dispatch.sql',import.meta.url),'utf8');
+const dedupeSql=readFileSync(new URL('../supabase/migrations/20260922112435_dedupe_primary_recovery_dispatch.sql',import.meta.url),'utf8');
 async function fixture(){
  const db=new PGlite();
  await db.exec(`create role anon; create role authenticated; create role service_role;
