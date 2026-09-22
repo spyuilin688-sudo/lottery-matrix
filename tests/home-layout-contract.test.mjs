@@ -5,6 +5,7 @@ import { readLocalCss } from './helpers/read-local-css.mjs';
 
 const css = readLocalCss('src/homepage-repair.css');
 const tokens = fs.readFileSync('src/design-tokens.css', 'utf8');
+const prototype = fs.readFileSync('src/Prototype.tsx', 'utf8');
 
 function blocks(source, selector) {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -52,6 +53,19 @@ test('homepage announcement sits below the logo as a compact non-interactive mar
   assertBlock(css, '.home-screen .lottery-switcher', /margin-block-start:\s*var\(--home-gap-announcement-switcher\);/);
   assert.match(css, /@keyframes\s+home-announcement-marquee\s*\{[\s\S]*?translateX\(100%\)[\s\S]*?translateX\(-100%\)[\s\S]*?\}/);
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.home-screen \.home-announcement-track\s*\{[^}]*animation:\s*none;/);
+});
+
+test('homepage requested responsive vertical gaps are owned by the existing canonical rules', () => {
+  assertBlock(css, '.home-screen .lottery-screen', /--home-gap-draw-status:\s*clamp\(7px,\s*calc\(1\.15dvh\s*\+\s*1px\),\s*10px\);/);
+  assertBlock(css, '.home-screen .home-layout', /--home-gap-status-core:\s*clamp\(7px,\s*1\.35dvh,\s*10px\);/);
+  assertBlock(css, '.home-screen .home-layout', /--home-gap-core-features:\s*var\(--home-gap-status-core\);/);
+});
+
+test('homepage free statement is completely removed from the current product source', () => {
+  assert.doesNotMatch(prototype, /HomeFreeStatement/);
+  assert.equal(fs.existsSync('src/homepage/HomeFreeStatement.tsx'), false);
+  assert.equal(fs.existsSync('src/homepage/free-statement.css'), false);
+  assert.equal(fs.existsSync('src/__tests__/HomeFreeStatement.test.tsx'), false);
 });
 
 test('homepage reserves a logo row above the existing native content scroller', () => {
