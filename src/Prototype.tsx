@@ -424,11 +424,17 @@ export function HomeAnnouncement({ latestResults = [] }: { latestResults?: Lates
     })),
   ];
   const marqueeContentKey = marqueeItems.map((item) => item.key).join("|");
-  const [marqueeState, setMarqueeState] = useState({ index: 0, cycle: 0 });
+  const [marqueeState, setMarqueeState] = useState(() => ({
+    contentKey: marqueeContentKey,
+    index: 0,
+    cycle: 0,
+  }));
   const [marqueeTiming, setMarqueeTiming] = useState<{ itemKey: string; durationMs: number } | null>(null);
   const announcementRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  const activeItem = marqueeItems[marqueeState.index % marqueeItems.length];
+  const contentChanged = marqueeState.contentKey !== marqueeContentKey;
+  const activeIndex = contentChanged ? 0 : marqueeState.index % marqueeItems.length;
+  const activeItem = marqueeItems[activeIndex];
   const activeItemKey = `${marqueeContentKey}:${activeItem.key}:${marqueeState.cycle}`;
   const activeDurationMs = marqueeTiming?.itemKey === activeItemKey ? marqueeTiming.durationMs : null;
   const marqueeStyle = activeDurationMs === null
@@ -436,8 +442,13 @@ export function HomeAnnouncement({ latestResults = [] }: { latestResults?: Lates
     : ({ "--home-announcement-duration": `${activeDurationMs}ms` } as CSSProperties);
 
   useEffect(() => {
-    setMarqueeState((current) => ({ index: 0, cycle: current.cycle + 1 }));
-  }, [marqueeContentKey]);
+    if (!contentChanged) return;
+    setMarqueeState((current) => ({
+      contentKey: marqueeContentKey,
+      index: 0,
+      cycle: current.cycle + 1,
+    }));
+  }, [contentChanged, marqueeContentKey]);
 
   useEffect(() => {
     const announcement = announcementRef.current;
@@ -470,6 +481,7 @@ export function HomeAnnouncement({ latestResults = [] }: { latestResults?: Lates
         style={marqueeStyle}
         onAnimationEnd={() => {
           setMarqueeState((current) => ({
+            contentKey: marqueeContentKey,
             index: (current.index + 1) % marqueeItems.length,
             cycle: current.cycle + 1,
           }));
