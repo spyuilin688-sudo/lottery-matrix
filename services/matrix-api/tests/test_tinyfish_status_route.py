@@ -5,13 +5,13 @@ from http.server import ThreadingHTTPServer
 from threading import Thread
 from typing import Iterator
 
-from app.api_server import RailwayApiHandler
+from app.recovery_server import RecoveryApiHandler
 from app.repositories.analysis_repository import InMemoryAnalysisRepository
 
 
 @contextmanager
 def running_server(repository: InMemoryAnalysisRepository) -> Iterator[tuple[str, int]]:
-    class TestHandler(RailwayApiHandler):
+    class TestHandler(RecoveryApiHandler):
         pass
 
     TestHandler.repository = repository
