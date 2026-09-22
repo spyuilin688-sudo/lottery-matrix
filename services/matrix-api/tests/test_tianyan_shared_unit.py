@@ -70,6 +70,27 @@ def _prepared() -> dict:
     }
 
 
+
+def _prepared_for_streak(streak: int) -> dict:
+    first_hits = [index % 2 == 0 for index in range(streak)] + [False]
+    second_hits = [not hit for hit in first_hits[:streak]] + [False]
+    prepared = _prepared()
+    prepared["coordinates"] = [
+        _coordinate(
+            position=1,
+            value=0,
+            a_base=3,
+            hits=first_hits,
+        ),
+        _coordinate(
+            position=2,
+            value=5,
+            a_base=10,
+            hits=second_hits,
+        ),
+    ]
+    return prepared
+
 def test_shared_unit_builds_final_tianyan_without_persisting_candidate_sources() -> None:
     artifact = build_tianyan_unit_artifact(_prepared())
 
@@ -106,3 +127,15 @@ def test_shared_unit_saves_expandable_validation_instead_of_requiring_recalculat
     assert first["rule1"]["ruleValue"] == 0
     assert "calculationResult" in first["rule1"]
     assert "hit" in first["rule1"]
+
+
+def test_selected_tianyan_filter_boundaries_never_truncate_a_longer_streak() -> None:
+    for selected in (11, 13, 15, 17, 19):
+        exact = build_tianyan_unit_artifact(_prepared_for_streak(selected))
+        longer = build_tianyan_unit_artifact(_prepared_for_streak(selected + 1))
+
+        assert exact["items"][0]["highestStreak"] == selected
+        assert exact["items"][0]["consecutive"] == f"準{selected}進{selected + 1}"
+        assert longer["items"][0]["highestStreak"] == selected + 1
+        assert longer["items"][0]["consecutive"] == f"準{selected + 1}進{selected + 2}"
+        assert longer["items"][0]["consecutive"] != exact["items"][0]["consecutive"]
