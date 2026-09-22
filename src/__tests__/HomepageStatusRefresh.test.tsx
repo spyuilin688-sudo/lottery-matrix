@@ -94,6 +94,38 @@ test('首頁在開獎時段且本期未完成時以十分鐘 fallback 更新，�
   expect(screen.getByRole('button', { name: '今彩539 聚合' })).toBeInTheDocument();
 });
 
+test('快速 preliminary 只更新畫面不會誤判完成，正式 confirmed 後停止本期 fallback', async () => {
+  api.refreshLatestDraw
+    .mockResolvedValueOnce({
+      period: '115000231',
+      drawDate: '2026/09/23',
+      numbers: ['01', '02', '03', '04', '05'],
+      resultStatus: 'preliminary',
+    })
+    .mockResolvedValueOnce({
+      period: '115000231',
+      drawDate: '2026/09/23',
+      numbers: ['01', '02', '03', '04', '05'],
+      resultStatus: 'confirmed',
+    });
+
+  mount();
+  await flush();
+  api.fetchLatestLotteryResultState.mockClear();
+  api.fetchMatrixStatusSummaries.mockClear();
+
+  await act(async () => { await vi.advanceTimersByTimeAsync(10 * 60_000); });
+  expect(api.fetchLatestLotteryResultState).toHaveBeenCalledTimes(1);
+  expect(api.fetchMatrixStatusSummaries).toHaveBeenCalledTimes(1);
+
+  api.fetchLatestLotteryResultState.mockClear();
+  api.fetchMatrixStatusSummaries.mockClear();
+  await act(async () => { await vi.advanceTimersByTimeAsync(10 * 60_000); });
+
+  expect(api.fetchLatestLotteryResultState).not.toHaveBeenCalled();
+  expect(api.fetchMatrixStatusSummaries).not.toHaveBeenCalled();
+});
+
 test('批次中的單一彩種失敗不影響其他彩種', async () => {
   const batch = response();
   batch.items[0].status = 504;
