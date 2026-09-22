@@ -78,6 +78,8 @@ it('renders event-driven notification health without sending a notification from
     expect(row.querySelector('.statusBadge.good')?.textContent).toBe('正常');
     expect(row.querySelector('.statusScope')?.textContent).toContain('目前運作正常');
     expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('正常 1 · 等待 0 · 無需處理 0 · 需處理 0');
+    expect(container.querySelector('.systemStatusOverview')?.textContent).toContain('目前沒有需要處理的異常');
+    expect(container.querySelector('.systemStatusAttention')?.textContent).toContain('目前沒有需要處理的項目');
     await act(async () => row.querySelector('summary')?.click());
     expect(row.querySelector('details')?.textContent).toContain('派送模式事件觸發');
     expect(row.querySelector('details')?.textContent).toContain('Recovery 頻率每 5 分鐘');
@@ -133,8 +135,8 @@ it('keeps purpose, evidence and errors visible while technical details collapse 
     const rows = container.querySelectorAll('.statusRow');
     expect(rows).toHaveLength(2);
     expect(container.querySelector('.systemStatusLegend')?.textContent).toContain('主狀態只表示是否需要處理');
-    expect(container.querySelector('.systemStatusOverview')?.textContent).toContain('目前沒有需要處理的異常');
-    expect(container.querySelector('.systemStatusAttention')?.textContent).toContain('目前沒有需要處理的項目');
+    expect(container.querySelector('.systemStatusOverview')?.textContent).toContain('有 1 項需要處理');
+    expect(container.querySelector('.systemStatusAttention')?.textContent).toContain('Pilio 開獎通知');
     expect(rows[0].querySelector('.statusBadge')?.textContent).toBe('無需處理');
     expect(rows[0].querySelector('.statusDescription')?.closest('details')).toBeNull();
     expect(rows[0].querySelector('.statusScope')?.textContent).toContain('目前無需處理');
