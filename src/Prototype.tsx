@@ -1,5 +1,5 @@
 import { DAILY_SORTED_ONLY_DESCRIPTION, supportsDrawOrder, useLotteryOrder } from "./use-lottery-order";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import "./feature-pages.css";
 import {
@@ -20,12 +20,13 @@ import { BottomNavigation, HomeQuickSettingsButton } from "./BottomNavigation";
 import { FeaturePageLoadBoundary } from "./FeaturePageLoadBoundary";
 import { useLatestLotteryDraw } from "./useLatestLotteryDraw";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
-import { fetchLatestLotteryResult, type LatestLotteryResult, type LotteryDrawRecord } from "./lottery-api";
+import { fetchLatestLotteryResultState, type LatestLotteryResult, type LotteryDrawRecord } from "./lottery-api";
 import { formatCountdown, formatNextDrawAt, nextCountdownSeconds, parseCountdown, secondsUntil } from "./countdown.mjs";
 import { fetchMatrixStatusSummaries, type MatrixStatusSummary } from "./matrix-status-api";
 import { subscribeMatrixDataRevision } from "./matrix-data-revision";
 import { subscribeAlgorithmCacheScope } from "./auth/algorithm-cache-scope";
 import { withDeadline } from "./lib/api-resilience";
+import { HOME_REFRESH_INTERVAL_MS, homepageRefreshCycleAt, homepageRefreshCycleKey, millisecondsUntilNextHomepageRefreshWindow } from "./homepage-refresh-policy";
 import { FirstVisitGuide } from "./onboarding/FirstVisitGuide";
 import { useLinePageEntry } from "./auth/LinePageGuard";
 
@@ -471,11 +472,21 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     }
   });
   const { deviceId, setDeviceId } = useMobileDevice();
-  const { data: latestDraw } = useLatestLotteryDraw(selected);
+  const { data: latestDraw, refresh: refreshLatestDraw } = useLatestLotteryDraw(selected, {
+    subscribeToRefresh: false,
+    initialFetch: false,
+  });
   const [latestAnnouncementResults, setLatestAnnouncementResults] = useState<LatestLotteryResult[]>([]);
   const [matrixStatuses, setMatrixStatuses] = useState<MatrixStatusMap>(MATRIX_STATUS_BY_LOTTERY);
   const [matrixStatusLoads, setMatrixStatusLoads] = useState<StatusLoadStates>(loadingStatusStates);
   const [statusLottery, setStatusLottery] = useState<LotteryId>("今彩539");
+  const selectedRef = useRef<LotteryId>(selected);
+  const latestDrawRefreshRef = useRef(refreshLatestDraw);
+  const selectedRefreshMounted = useRef(false);
+  const completedHomeRefreshCycles = useRef(new Set<string>());
+  selectedRef.current = selected;
+  latestDrawRefreshRef.current = refreshLatestDraw;
+
   const nextDrawInfo: NextDrawInfoData = latestDraw?.nextDrawAt
     ? {
         nextDraw: formatNextDrawAt(latestDraw.nextDrawAt),
@@ -487,108 +498,192 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
 
   useEffect(() => { setDeviceId("pixel-10"); }, [setDeviceId]);
   useEffect(() => {
-    if (screen !== "home") return;
-    let active = true;
-    let generation = 0;
-    let request: AbortController | undefined;
-    let queued: ReturnType<typeof setTimeout> | undefined;
-    const refresh = () => {
-      if (!active || document.visibilityState === "hidden") return;
-      const current = ++generation;
-      request?.abort();
-      request = new AbortController();
-      void fetchLatestLotteryResult(request.signal)
-        .then((result) => {
-          if (active && current === generation) setLatestAnnouncementResults(result);
-        })
-        .catch(() => undefined);
-    };
-    const queueRefresh = () => {
-      if (queued !== undefined) return;
-      queued = setTimeout(() => { queued = undefined; refresh(); }, 0);
-    };
-    refresh();
-    const timer = setInterval(refresh, 3_600_000);
-    const unsubscribe = subscribeMatrixDataRevision(queueRefresh);
-    document.addEventListener("visibilitychange", queueRefresh);
-    window.addEventListener("online", queueRefresh);
-    return () => {
-      active = false;
-      generation += 1;
-      request?.abort();
-      clearInterval(timer);
-      if (queued !== undefined) clearTimeout(queued);
-      unsubscribe();
-      document.removeEventListener("visibilitychange", queueRefresh);
-      window.removeEventListener("online", queueRefresh);
-    };
-  }, [screen]);
-  useEffect(() => subscribeAlgorithmCacheScope(() => {
-    setMatrixStatuses(MATRIX_STATUS_BY_LOTTERY);
-    setMatrixStatusLoads(loadingStatusStates());
-  }, { notifyOnInitialize: true }), []);
+    if (!selectedRefreshMounted.current) {
+      selectedRefreshMounted.current = true;
+      return;
+    }
+    void refreshLatestDraw();
+  }, [refreshLatestDraw, selected]);
+
   useEffect(() => {
     if (screen !== "home") return;
     let active = true;
     let generation = 0;
     let request: AbortController | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     let queued: ReturnType<typeof setTimeout> | undefined;
-    const refresh = () => {
-      if (!active || document.visibilityState === "hidden") return;
+    let firstRefresh = true;
+    const allLotteries = LOTTERIES.map(({ id }) => id);
+
+    const clearTimer = () => {
+      if (timer !== undefined) {
+        clearTimeout(timer);
+        timer = undefined;
+      }
+    };
+
+    const drawMatchesCycle = (record: LotteryDrawRecord | null | undefined, cycleDate: string) => {
+      const rawDate = String(record?.drawDate ?? record?.date ?? "").slice(0, 10).replaceAll("/", "-");
+      return record?.resultStatus === "confirmed" && rawDate === cycleDate;
+    };
+
+    const scheduleNext = () => {
+      if (!active) return;
+      clearTimer();
+      const now = new Date();
+      const cycle = homepageRefreshCycleAt(now);
+      const pending = cycle
+        ? !completedHomeRefreshCycles.current.has(homepageRefreshCycleKey(cycle))
+        : false;
+      const delay = pending
+        ? HOME_REFRESH_INTERVAL_MS
+        : millisecondsUntilNextHomepageRefreshWindow(now);
+      timer = setTimeout(() => {
+        timer = undefined;
+        if (!active) return;
+        const currentCycle = homepageRefreshCycleAt(new Date());
+        if (currentCycle
+          && !completedHomeRefreshCycles.current.has(homepageRefreshCycleKey(currentCycle))) {
+          void refresh(false);
+        } else {
+          scheduleNext();
+        }
+      }, delay);
+    };
+
+    const applyStatusBatch = async (
+      lotteries: LotteryId[],
+      signal: AbortSignal,
+      current: number,
+    ): Promise<Set<LotteryId>> => {
+      if (!lotteries.length) return new Set();
+      const result = await withDeadline(
+        (requestSignal) => fetchMatrixStatusSummaries(lotteries, requestSignal),
+        { signal },
+      );
+      if (!active || current !== generation) return new Set();
+      const items = new Map(result.items.map((item) => [item.lottery, item] as const));
+      const ready = new Set<LotteryId>();
+      for (const lottery of lotteries) {
+        const item = items.get(lottery);
+        if (!item || item.status !== 200 || !("kind" in item.body) || item.body.kind !== "status-summary") {
+          setMatrixStatusLoads((previous) => ({ ...previous, [lottery]: "error" }));
+          continue;
+        }
+        ready.add(lottery);
+        setMatrixStatuses((previous) => ({
+          ...previous,
+          [lottery]: toHomepageMatrixStatus(item.body.summary),
+        }));
+        setMatrixStatusLoads((previous) => ({ ...previous, [lottery]: "ready" }));
+      }
+      return ready;
+    };
+
+    const refresh = async (forceAll: boolean) => {
+      if (!active || document.visibilityState === "hidden") {
+        scheduleNext();
+        return;
+      }
       const current = ++generation;
       request?.abort();
       request = new AbortController();
       const signal = request.signal;
-      void withDeadline((requestSignal) => fetchMatrixStatusSummaries(LOTTERIES.map(({ id }) => id), requestSignal), { signal })
-        .then((result) => {
-          if (!active || current !== generation) return;
-          const items = new Map(result.items.map((item) => [item.lottery, item] as const));
-          for (const { id } of LOTTERIES) {
-            const item = items.get(id);
-            if (!item || item.status !== 200 || !('kind' in item.body) || item.body.kind !== 'status-summary') {
-              setMatrixStatusLoads((previous) => ({ ...previous, [id]: "error" }));
-              continue;
-            }
-            const status = toHomepageMatrixStatus(item.body.summary);
-            setMatrixStatuses((previous) => ({ ...previous, [id]: status }));
-            setMatrixStatusLoads((previous) => ({ ...previous, [id]: "ready" }));
+      const cycle = homepageRefreshCycleAt(new Date());
+
+      try {
+        const state = await fetchLatestLotteryResultState(cycle?.cycleDate, signal);
+        if (!active || current !== generation) return;
+        setLatestAnnouncementResults(state.items);
+
+        const dueLotteries = cycle
+          ? state.dueLotteries.filter((lottery): lottery is LotteryId => (
+              cycle.lotteries.includes(lottery)
+            ))
+          : [];
+        const statusTargets = forceAll || firstRefresh
+          ? allLotteries
+          : dueLotteries;
+        const readyStatuses = await applyStatusBatch(statusTargets, signal, current);
+        if (!active || current !== generation) return;
+
+        const selectedIsDue = cycle ? dueLotteries.includes(selectedRef.current) : false;
+        const shouldRefreshDraw = forceAll || firstRefresh || selectedIsDue;
+        const refreshedDraw = shouldRefreshDraw
+          ? await latestDrawRefreshRef.current()
+          : undefined;
+        if (!active || current !== generation) return;
+
+        if (cycle) {
+          const key = homepageRefreshCycleKey(cycle);
+          const completedLotteries = state.drawDate === cycle.cycleDate
+            ? new Set(state.items.map(({ lottery }) => lottery))
+            : new Set<LotteryId>();
+          const backendComplete = dueLotteries.length === 0
+            || dueLotteries.every((lottery) => completedLotteries.has(lottery));
+          const statusComplete = dueLotteries.length === 0
+            || dueLotteries.every((lottery) => readyStatuses.has(lottery));
+          const drawComplete = !selectedIsDue
+            || drawMatchesCycle(refreshedDraw, cycle.cycleDate);
+
+          if (backendComplete && statusComplete && drawComplete) {
+            completedHomeRefreshCycles.current.add(key);
+          } else {
+            completedHomeRefreshCycles.current.delete(key);
           }
-        })
-        .catch(() => {
-          if (!active || current !== generation) return;
-          for (const { id } of LOTTERIES) {
-            setMatrixStatusLoads((previous) => ({ ...previous, [id]: "error" }));
-          }
-        });
+        }
+
+        firstRefresh = false;
+      } catch {
+        // Keep the current UI snapshot. A pending active window will retry at
+        // the shared fallback slot; outside the window no periodic read runs.
+      } finally {
+        if (active && current === generation) scheduleNext();
+      }
     };
-    const queueRefresh = () => {
+
+    const queueRefresh = (forceAll = false) => {
+      if (!active || document.visibilityState === "hidden") return;
+      if (!forceAll) {
+        const cycle = homepageRefreshCycleAt(new Date());
+        if (!cycle || completedHomeRefreshCycles.current.has(homepageRefreshCycleKey(cycle))) {
+          return;
+        }
+      }
       if (queued !== undefined) return;
-      queued = setTimeout(() => { queued = undefined; refresh(); }, 0);
+      queued = setTimeout(() => {
+        queued = undefined;
+        void refresh(forceAll);
+      }, 0);
     };
+
     const invalidate = () => {
+      const cycle = homepageRefreshCycleAt(new Date());
+      if (cycle) completedHomeRefreshCycles.current.delete(homepageRefreshCycleKey(cycle));
       generation += 1;
       request?.abort();
       setMatrixStatuses(MATRIX_STATUS_BY_LOTTERY);
       setMatrixStatusLoads(loadingStatusStates());
-      queueRefresh();
+      queueRefresh(true);
     };
-    refresh();
-    // Homepage status is precomputed data; periodic polling only needs an hourly fallback.
-    const timer = setInterval(refresh, 3_600_000);
+
+    void refresh(true);
     const unsubscribe = subscribeMatrixDataRevision(invalidate);
-    const unsubscribeSession = subscribeAlgorithmCacheScope(invalidate, { notifyOnInitialize: true });
-    document.addEventListener("visibilitychange", queueRefresh);
-    window.addEventListener("online", queueRefresh);
+    const unsubscribeSession = subscribeAlgorithmCacheScope(invalidate);
+    const wake = () => queueRefresh(false);
+    document.addEventListener("visibilitychange", wake);
+    window.addEventListener("online", wake);
+
     return () => {
       active = false;
       generation += 1;
       request?.abort();
-      clearInterval(timer);
+      clearTimer();
       if (queued !== undefined) clearTimeout(queued);
       unsubscribe();
       unsubscribeSession();
-      document.removeEventListener("visibilitychange", queueRefresh);
-      window.removeEventListener("online", queueRefresh);
+      document.removeEventListener("visibilitychange", wake);
+      window.removeEventListener("online", wake);
     };
   }, [screen]);
   useEffect(() => { if (!startupVisible) return; const fallback = window.setTimeout(() => setStartupVisible(false), 6500); return () => window.clearTimeout(fallback); }, [startupVisible]);
