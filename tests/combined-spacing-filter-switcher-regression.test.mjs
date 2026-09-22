@@ -22,7 +22,7 @@ test("homepage owns the approved matching 9–12px Core gaps and responsive navi
 
   assert.match(homeLayout, /--home-gap-status-core:\s*clamp\(9px,\s*1\.35dvh,\s*12px\)/);
   assert.match(homeLayout, /--home-gap-core-features:\s*var\(--home-gap-status-core\)/);
-  assert.match(homeLayout, /--home-gap-features-nav:\s*clamp\(8px,\s*1\.15dvh,\s*12px\)/);
+  assert.match(homeLayout, /--home-gap-features-nav:\s*clamp\(4px,\s*0\.7dvh,\s*8px\)/);
   assert.match(homeLayout, /padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ var\(--home-gap-features-nav\)\)/);
   assert.doesNotMatch(lotteryScreen, /--home-gap-(?:status-core|core-features)/);
   assert.doesNotMatch(bottomGroup, /padding-bottom:\s*8px|--home-gap-core-features\s*:/);
