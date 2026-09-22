@@ -88,6 +88,7 @@ describe("homepage requested spacing and selection", () => {
     expect(lotteryScreen.getPropertyValue("--home-gap-draw-status").replaceAll(" ", "")).toBe("clamp(7px,calc(1.15dvh+1px),10px)");
     expect(bottomGroup.getPropertyValue("--home-core-width").trim()).toContain("- 32px");
     expect(getComputedStyle(document.querySelector(".matrix-status-section")!).paddingInline).toBe("0px");
+    expect(getComputedStyle(document.querySelector(".matrix-status-section")!).paddingBlockStart).toBe("0px");
     const shortcutImage = getComputedStyle(document.querySelector(".home-shortcut img")!);
     expect(shortcutImage.width).toBe("100%");
     expect(shortcutImage.height).toBe("100%");
