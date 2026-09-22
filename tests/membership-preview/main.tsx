@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ProfilePage, ProPlansPage } from "../../src/features/MemberPages";
 import { AppDialogProvider } from "../../src/dialog/AppDialog";
+import { MemberSessionBridge } from "../../src/auth/MemberSessionBridge";
 import type { ScreenId } from "../../src/features/navigation";
 import { MobileScroll } from "../../src/mobile/MobileScroll";
 import { MobileDeviceProvider } from "../../src/mobile/Device";
@@ -39,7 +40,7 @@ function Preview() {
 
 function Inner() {
   const [route, setRoute] = useState<ScreenId>("profile");
-  return <AppDialogProvider><MobileDeviceProvider><KeyboardProvider><div className="app-mobile-canvas"><MobileScroll>
+  return <AppDialogProvider><MemberSessionBridge startTracking={() => () => undefined} cleanupPush={async () => undefined} /><MobileDeviceProvider><KeyboardProvider><div className="app-mobile-canvas"><MobileScroll>
     {route === "pro-plans" ? <ProPlansPage onNavigate={setRoute} /> : <ProfilePage onNavigate={setRoute} />}
   </MobileScroll></div></KeyboardProvider></MobileDeviceProvider></AppDialogProvider>;
 }
