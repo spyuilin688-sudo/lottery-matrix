@@ -34,6 +34,17 @@ it('allows concurrent initial lookups of the same session', async () => {
     readAlgorithmCacheScope(client as never), readAlgorithmCacheScope(client as never),
   ]);
   expect(first).toBe(second);
+  expect(client.auth.getSession).toHaveBeenCalledTimes(1);
+});
+
+it('performs a fresh session lookup after the shared concurrent read settles', async () => {
+  const { readAlgorithmCacheScope } = await import('../algorithm-cache-scope');
+  const client = { auth: { getSession: vi.fn().mockResolvedValue({ data: { session }, error: null }) } };
+
+  await readAlgorithmCacheScope(client as never);
+  await readAlgorithmCacheScope(client as never);
+
+  expect(client.auth.getSession).toHaveBeenCalledTimes(2);
 });
 
 it('allows concurrent lookups to discover the same new account', async () => {
@@ -45,4 +56,5 @@ it('allows concurrent lookups to discover the same new account', async () => {
     readAlgorithmCacheScope(client as never), readAlgorithmCacheScope(client as never),
   ]);
   expect(first).toBe(second);
+  expect(client.auth.getSession).toHaveBeenCalledTimes(1);
 });
