@@ -107,11 +107,6 @@ const HOME_ASSETS = {
 
 const HOME_ANNOUNCEMENT_TEXT = "【新會員限時體驗】立即使用 LINE 註冊登入，即可免費體驗 Matrix 探索、天衡、天樞十三期及完整範圍，體驗期限 2 天。";
 
-function formatHomeAnnouncementResult(result: LatestLotteryResult) {
-  const monthDay = result.drawDate.slice(5).replace("-", "/");
-  return `【${result.lottery}】${monthDay}、${result.numbers.join(" ")}`;
-}
-
 const HOME_SHORTCUTS = [
   { label: "Matrix 同星", screen: "tongxing", image: HOME_ASSETS.tongxing },
   { label: "Matrix 對照", screen: "reference", image: HOME_ASSETS.reference },
@@ -416,12 +411,18 @@ export function MatrixCoreBanner({ onOpen }: { onOpen?: () => void }) {
   );
 }
 
-export function HomeAnnouncement({ latestResult }: { latestResult?: LatestLotteryResult | null } = {}) {
-  const latestText = latestResult ? formatHomeAnnouncementResult(latestResult) : "";
+export function HomeAnnouncement({ latestResults = [] }: { latestResults?: LatestLotteryResult[] } = {}) {
   return (
     <section className="home-announcement" aria-label="公告" data-testid="home-announcement">
       <div className="home-announcement-track">
-        <span className="home-announcement-text">{HOME_ANNOUNCEMENT_TEXT}{latestText ? `　${latestText}` : ""}</span>
+        <span className="home-announcement-text">
+          {HOME_ANNOUNCEMENT_TEXT}
+          {latestResults.map((result) => (
+            <span className="home-announcement-update" key={result.lottery}>
+              {"　【"}<span className="home-announcement-lottery-name" data-testid={`home-announcement-lottery-${result.lottery}`}>{result.lottery}</span>】最新一期開獎資料、Matrix 分析結果已更新。
+            </span>
+          ))}
+        </span>
       </div>
     </section>
   );
@@ -470,7 +471,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   });
   const { deviceId, setDeviceId } = useMobileDevice();
   const { data: latestDraw } = useLatestLotteryDraw(selected);
-  const [latestAnnouncementResult, setLatestAnnouncementResult] = useState<LatestLotteryResult | null>(null);
+  const [latestAnnouncementResults, setLatestAnnouncementResults] = useState<LatestLotteryResult[]>([]);
   const [matrixStatuses, setMatrixStatuses] = useState<MatrixStatusMap>(MATRIX_STATUS_BY_LOTTERY);
   const [matrixStatusLoads, setMatrixStatusLoads] = useState<StatusLoadStates>(loadingStatusStates);
   const [statusLottery, setStatusLottery] = useState<LotteryId>("今彩539");
@@ -497,7 +498,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       request = new AbortController();
       void fetchLatestLotteryResult(request.signal)
         .then((result) => {
-          if (active && current === generation) setLatestAnnouncementResult(result);
+          if (active && current === generation) setLatestAnnouncementResults(result);
         })
         .catch(() => undefined);
     };
@@ -634,7 +635,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       <MobileScroll className="app-screen home-content">
         <div className="home-layout">
           <main className="screen-content lottery-screen" data-testid="lottery-screen" aria-label="首頁彩種切換元件預覽">
-            <HomeAnnouncement latestResult={latestAnnouncementResult} />
+            <HomeAnnouncement latestResults={latestAnnouncementResults} />
             <LotterySwitcher selected={selected} onChange={setSelected} className="lottery-switcher--home-style home-switcher-box" />
             <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} className="home-draw-box" />
             <MatrixStatusSection statuses={matrixStatuses} loadStates={matrixStatusLoads} onOpen={(lottery) => { setStatusLottery(lottery); navigate("status"); }} />
