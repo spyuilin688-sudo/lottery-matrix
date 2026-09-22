@@ -20,7 +20,7 @@ import { BottomNavigation, HomeQuickSettingsButton } from "./BottomNavigation";
 import { FeaturePageLoadBoundary } from "./FeaturePageLoadBoundary";
 import { useLatestLotteryDraw } from "./useLatestLotteryDraw";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
-import type { LotteryDrawRecord } from "./lottery-api";
+import { fetchLatestLotteryResult, type LatestLotteryResult, type LotteryDrawRecord } from "./lottery-api";
 import { formatCountdown, formatNextDrawAt, nextCountdownSeconds, parseCountdown, secondsUntil } from "./countdown.mjs";
 import { fetchMatrixStatusSummaries, type MatrixStatusSummary } from "./matrix-status-api";
 import { subscribeMatrixDataRevision } from "./matrix-data-revision";
@@ -106,6 +106,11 @@ const HOME_ASSETS = {
 } as const;
 
 const HOME_ANNOUNCEMENT_TEXT = "【新會員限時體驗】立即使用 LINE 註冊登入，即可免費體驗 Matrix 探索、天衡、天樞十三期及完整範圍，體驗期限 2 天。";
+
+function formatHomeAnnouncementResult(result: LatestLotteryResult) {
+  const monthDay = result.drawDate.slice(5).replace("-", "/");
+  return `【${result.lottery}】${monthDay}、${result.numbers.join(" ")}`;
+}
 
 const HOME_SHORTCUTS = [
   { label: "Matrix 同星", screen: "tongxing", image: HOME_ASSETS.tongxing },
@@ -411,11 +416,12 @@ export function MatrixCoreBanner({ onOpen }: { onOpen?: () => void }) {
   );
 }
 
-export function HomeAnnouncement() {
+export function HomeAnnouncement({ latestResult }: { latestResult?: LatestLotteryResult | null } = {}) {
+  const latestText = latestResult ? formatHomeAnnouncementResult(latestResult) : "";
   return (
     <section className="home-announcement" aria-label="公告" data-testid="home-announcement">
       <div className="home-announcement-track">
-        <span className="home-announcement-text">{HOME_ANNOUNCEMENT_TEXT}</span>
+        <span className="home-announcement-text">{HOME_ANNOUNCEMENT_TEXT}{latestText ? `　${latestText}` : ""}</span>
       </div>
     </section>
   );
@@ -464,6 +470,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   });
   const { deviceId, setDeviceId } = useMobileDevice();
   const { data: latestDraw } = useLatestLotteryDraw(selected);
+  const [latestAnnouncementResult, setLatestAnnouncementResult] = useState<LatestLotteryResult | null>(null);
   const [matrixStatuses, setMatrixStatuses] = useState<MatrixStatusMap>(MATRIX_STATUS_BY_LOTTERY);
   const [matrixStatusLoads, setMatrixStatusLoads] = useState<StatusLoadStates>(loadingStatusStates);
   const [statusLottery, setStatusLottery] = useState<LotteryId>("今彩539");
@@ -477,6 +484,43 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   const drawResult: DrawResultData = latestDraw ? toDrawResult(selected, latestDraw) : DRAW_RESULTS[selected];
 
   useEffect(() => { setDeviceId("pixel-10"); }, [setDeviceId]);
+  useEffect(() => {
+    if (screen !== "home") return;
+    let active = true;
+    let generation = 0;
+    let request: AbortController | undefined;
+    let queued: ReturnType<typeof setTimeout> | undefined;
+    const refresh = () => {
+      if (!active || document.visibilityState === "hidden") return;
+      const current = ++generation;
+      request?.abort();
+      request = new AbortController();
+      void fetchLatestLotteryResult(request.signal)
+        .then((result) => {
+          if (active && current === generation) setLatestAnnouncementResult(result);
+        })
+        .catch(() => undefined);
+    };
+    const queueRefresh = () => {
+      if (queued !== undefined) return;
+      queued = setTimeout(() => { queued = undefined; refresh(); }, 0);
+    };
+    refresh();
+    const timer = setInterval(refresh, 3_600_000);
+    const unsubscribe = subscribeMatrixDataRevision(queueRefresh);
+    document.addEventListener("visibilitychange", queueRefresh);
+    window.addEventListener("online", queueRefresh);
+    return () => {
+      active = false;
+      generation += 1;
+      request?.abort();
+      clearInterval(timer);
+      if (queued !== undefined) clearTimeout(queued);
+      unsubscribe();
+      document.removeEventListener("visibilitychange", queueRefresh);
+      window.removeEventListener("online", queueRefresh);
+    };
+  }, [screen]);
   useEffect(() => subscribeAlgorithmCacheScope(() => {
     setMatrixStatuses(MATRIX_STATUS_BY_LOTTERY);
     setMatrixStatusLoads(loadingStatusStates());
@@ -590,7 +634,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       <MobileScroll className="app-screen home-content">
         <div className="home-layout">
           <main className="screen-content lottery-screen" data-testid="lottery-screen" aria-label="首頁彩種切換元件預覽">
-            <HomeAnnouncement />
+            <HomeAnnouncement latestResult={latestAnnouncementResult} />
             <LotterySwitcher selected={selected} onChange={setSelected} className="lottery-switcher--home-style home-switcher-box" />
             <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} className="home-draw-box" />
             <MatrixStatusSection statuses={matrixStatuses} loadStates={matrixStatusLoads} onOpen={(lottery) => { setStatusLottery(lottery); navigate("status"); }} />

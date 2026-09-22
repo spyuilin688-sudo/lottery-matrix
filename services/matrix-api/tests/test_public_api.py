@@ -461,6 +461,67 @@ def test_public_latest_supabase_uses_latest_rpc_and_preserves_empty_revision() -
     }
 
 
+
+class LatestResultEventQuery:
+    def __init__(self) -> None:
+        self.filters: list[tuple[str, str]] = []
+
+    def select(self, _columns: str):
+        return self
+
+    def eq(self, column: str, value: str):
+        self.filters.append((column, value))
+        return self
+
+    def order(self, _column: str, *, desc: bool = False):
+        assert desc is True
+        return self
+
+    def limit(self, count: int):
+        assert count == 1
+        return self
+
+    def execute(self):
+        return type("Result", (), {"data": [{
+            "payload": {
+                "lottery": "六合彩",
+                "drawDate": "2026-09-22",
+                "numbers": ["02", "34", "35", "43", "45", "46", "41"],
+            },
+        }]})()
+
+
+class LatestResultEventClient:
+    def __init__(self) -> None:
+        self.query = LatestResultEventQuery()
+
+    def table(self, name: str):
+        assert name == "notification_events"
+        return self.query
+
+
+def test_latest_result_event_returns_only_sorted_main_numbers() -> None:
+    repository = InMemoryAnalysisRepository()
+    repository.client = LatestResultEventClient()
+
+    status, payload = handle_api_request(
+        "GET",
+        "/api/matrix/latest-result",
+        None,
+        repository,
+    )
+
+    assert status == 200
+    assert payload == {
+        "item": {
+            "lottery": "六合彩",
+            "drawDate": "2026-09-22",
+            "numbers": ["02", "34", "35", "43", "45", "46"],
+        },
+    }
+    assert repository.client.query.filters == [("event_type", "lottery_result")]
+
+
 def test_history_without_limit_returns_all_rows() -> None:
     repository = _repository()
     status, history = handle_api_request("GET", f"/api/matrix/history/{quote('今彩539')}", None, repository)

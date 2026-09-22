@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { API_REQUEST_TIMEOUT_MS } from '../lib/api-resilience';
-import { LOTTERY_API_BASE, fetchLatestLotteryDraw, fetchLotteryHistory, fetchLotteryHistoryYears, fetchNumberReference, fetchTongXing, normalizePeriod } from '../lottery-api';
+import { LOTTERY_API_BASE, fetchLatestLotteryDraw, fetchLatestLotteryResult, fetchLotteryHistory, fetchLotteryHistoryYears, fetchNumberReference, fetchTongXing, normalizePeriod } from '../lottery-api';
 import { clearReadCache, readThroughCache, resetReadCacheForTests } from '../read-cache';
 
 afterEach(() => {
@@ -113,6 +113,26 @@ describe('lottery-api response validation', () => {
   it('最新開獎缺少 numbers 時拒絕異常格式', async () => {
     mockJsonResponse({ period: '5899', drawDate: '2026/08/14' });
     await expect(fetchLatestLotteryDraw('今彩539')).rejects.toThrow('Lottery API invalid response: item');
+  });
+
+  it('首頁跑馬燈最新結果只保留順球主號碼', async () => {
+    const fetcher = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(jsonResponse({
+      item: {
+        lottery: '六合彩',
+        drawDate: '2026-09-22',
+        numbers: ['02', '34', '35', '43', '45', '46', '41'],
+      },
+    }));
+
+    await expect(fetchLatestLotteryResult()).resolves.toEqual({
+      lottery: '六合彩',
+      drawDate: '2026-09-22',
+      numbers: ['02', '34', '35', '43', '45', '46'],
+    });
+    expect(fetcher).toHaveBeenCalledWith(
+      `${LOTTERY_API_BASE}/api/matrix/latest-result`,
+      expect.objectContaining({ headers: expect.any(Headers) }),
+    );
   });
 
   it('歷史開獎 items 內缺少 numbers 時拒絕異常格式', async () => {

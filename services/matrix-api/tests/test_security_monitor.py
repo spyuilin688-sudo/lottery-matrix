@@ -39,6 +39,7 @@ def test_source_requires_explicit_direct_trust():
 
 def test_request_categories_separate_public_costs_and_exempt_protected_services():
     assert request_category('/api/matrix/latest/%E4%BB%8A%E5%BD%A9539', 'GET') == 'public_read'
+    assert request_category('/api/matrix/latest-result', 'GET') == 'public_read'
     assert request_category('/api/matrix/cards/%E4%BB%8A%E5%BD%A9539', 'GET') == 'public_read'
     assert request_category('/api/matrix/history/%E4%BB%8A%E5%BD%A9539', 'GET') == 'public_compute'
     assert request_category('/api/matrix/tongxing', 'POST') == 'public_compute'

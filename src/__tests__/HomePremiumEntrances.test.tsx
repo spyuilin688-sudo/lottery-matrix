@@ -40,11 +40,16 @@ test('Core 保持獨立入口與可讀說明，計算機仍可從底部導覽開
 });
 
 
-test('首頁 Logo 下方顯示公告列且不增加操作行為', () => {
-  render(<HomeAnnouncement />);
+test('首頁 Logo 下方公告列保留新會員文案並增加最新彩種順球資訊', () => {
+  render(<HomeAnnouncement latestResult={{
+    lottery: '六合彩',
+    drawDate: '2026-09-22',
+    numbers: ['02', '34', '35', '43', '45', '46'],
+  }} />);
   const announcement = screen.getByTestId('home-announcement');
   expect(announcement).toHaveAccessibleName('公告');
   expect(announcement).toHaveTextContent('【新會員限時體驗】立即使用 LINE 註冊登入，即可免費體驗 Matrix 探索、天衡、天樞十三期及完整範圍，體驗期限 2 天。');
+  expect(announcement).toHaveTextContent('【六合彩】09/22、02 34 35 43 45 46');
   expect(within(announcement).queryByRole('button')).not.toBeInTheDocument();
   expect(within(announcement).queryByRole('link')).not.toBeInTheDocument();
 });
