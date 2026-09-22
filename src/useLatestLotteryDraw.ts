@@ -5,6 +5,7 @@ import { fetchLatestLotteryDraw, type LotteryDrawRecord } from './lottery-api';
 
 type LatestDrawOptions = {
   subscribeToRefresh?: boolean;
+  initialFetch?: boolean;
 };
 
 export function useLatestLotteryDraw(
@@ -12,6 +13,7 @@ export function useLatestLotteryDraw(
   options: LatestDrawOptions = {},
 ) {
   const subscribeToRefresh = options.subscribeToRefresh ?? true;
+  const initialFetch = options.initialFetch ?? true;
   const [dataLottery, setDataLottery] = useState(lottery);
   const [data, setData] = useState<LotteryDrawRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,7 +51,7 @@ export function useLatestLotteryDraw(
     setLoading(true);
     setError(null);
 
-    void refresh();
+    if (initialFetch) void refresh();
     const unsubscribe = subscribeToRefresh
       ? subscribeLotteryRefresh(lottery, () => { void refresh(); })
       : () => {};
@@ -59,7 +61,7 @@ export function useLatestLotteryDraw(
       revision.current += 1;
       unsubscribe();
     };
-  }, [lottery, refresh, subscribeToRefresh]);
+  }, [initialFetch, lottery, refresh, subscribeToRefresh]);
 
   // Effects run after render: never pair the newly selected lottery with the
   // previous lottery's result, even during that first render before cleanup.
