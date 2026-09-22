@@ -11,7 +11,6 @@ import {
   type MemberNotificationSettings,
 } from "./member-api";
 import {
-  disablePushNotifications,
   enablePushNotifications,
   getPushStatus,
   PushSubscriptionError,
@@ -402,35 +401,32 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     setPushNotice(status.enabled ? "enabled" : !status.supported ? "unsupported" : status.permission === "denied" ? "denied" : "idle");
   };
 
-  const togglePushNotifications = async () => {
-    if (pushBusy || pushNotice === "checking" || pushNotice === "status-failed" || !pushStatus.supported) return;
-    const isDisabling = pushStatus.enabled;
+  const enablePushForSystemNotifications = async () => {
+    if (
+      pushBusy
+      || pushNotice === "checking"
+      || pushNotice === "status-failed"
+      || !pushStatus.supported
+      || pushStatus.enabled
+    ) return;
     const operationRevision = pushOperationRevision.current + 1;
     pushOperationRevision.current = operationRevision;
     setPushBusy(true);
     try {
-      const status = isDisabling
-        ? await disablePushNotifications()
-        : await enablePushNotifications(
-          resolveWebPushPublicKey(import.meta.env.VITE_WEB_PUSH_PUBLIC_KEY),
-          pushAuthenticated === true,
-        );
+      const status = await enablePushNotifications(
+        resolveWebPushPublicKey(import.meta.env.VITE_WEB_PUSH_PUBLIC_KEY),
+        pushAuthenticated === true,
+      );
       if (!pushScreenActive.current || operationRevision !== pushOperationRevision.current) return;
       updatePushNotice(status);
     } catch (error: unknown) {
       if (!pushScreenActive.current || operationRevision !== pushOperationRevision.current) return;
-      if (error instanceof PushSubscriptionError) {
-        // Worker lookup failed before any unsubscribe operation could run.
-        setPushStatus(isDisabling && error.stage === "service-worker-registration"
-          ? { ...error.status, enabled: pushStatus.enabled }
-          : error.status);
-      } else setPushStatus((current) => ({ ...current, enabled: false }));
+      if (error instanceof PushSubscriptionError) setPushStatus(error.status);
+      else setPushStatus((current) => ({ ...current, enabled: false }));
       setPushNotice(
-        isDisabling
-          ? "disable-failed"
-          : error instanceof PushSubscriptionError && error.stage
-            ? error.stage
-            : "enable-failed",
+        error instanceof PushSubscriptionError && error.stage
+          ? error.stage
+          : "enable-failed",
       );
     } finally {
       if (pushScreenActive.current && operationRevision === pushOperationRevision.current) setPushBusy(false);
@@ -535,13 +531,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     const expanded = expandedKey === key && !disabled;
     const settingsPanelId = `notification-settings-${key}`;
     const pushToggleUnavailable = pushNotice === "checking" || pushNotice === "status-failed" || pushAuthenticated !== true || !pushStatus.supported || pushStatus.permission === "denied";
-    const pushToggleLabel = pushBusy
-      ? `手機通知${pushStatus.enabled ? "關閉" : "開啟"}中`
-      : pushNotice === "checking" ? "正在檢查手機通知"
-      : !pushStatus.supported ? "此手機不支援通知"
-        : pushAuthenticated !== true ? "請先使用 LINE 或 Google 登入"
-        : pushStatus.permission === "denied" ? "通知權限已拒絕"
-          : pushStatus.enabled ? "關閉手機通知" : "開啟手機通知";
+    const systemToggleLabel = `${settings.system ? "關閉" : "開啟"}系統通知`;
     return <article className="notification-row" data-notification-key={key} key={key}>
       <div className="notification-heading">
         <div className="notification-icon"><img src={icon} alt="" /></div>
@@ -551,9 +541,14 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
         }}>重新檢查</button> : null}</p> : null}</div>
         <div className="notification-actions">
           <button type="button" className="notification-settings-toggle" disabled={disabled} aria-controls={settingsPanelId} aria-expanded={expanded} onClick={() => setExpandedKey((current) => current === key ? null : key)}><span>設定選項</span><ChevronDownIcon aria-hidden="true" /></button>
-          <Toggle checked={isSystemRow ? pushStatus.enabled : settings[key]} disabled={isSystemRow ? pushBusy || pushToggleUnavailable : key === "collision" || notificationSettingsControlsBlocked} label={isSystemRow ? pushToggleLabel : `${settings[key] ? "關閉" : "開啟"}${title}`} busy={isSystemRow && pushBusy} onChange={() => {
+          <Toggle checked={settings[key]} disabled={isSystemRow ? pushBusy || pushToggleUnavailable || notificationSettingsControlsBlocked : key === "collision" || notificationSettingsControlsBlocked} label={isSystemRow ? systemToggleLabel : `${settings[key] ? "關閉" : "開啟"}${title}`} busy={isSystemRow && pushBusy} onChange={() => {
             if (isSystemRow) {
-              void togglePushNotifications();
+              const nextSystemEnabled = !settings.system;
+              applyNotificationSettingsEdit((current) => ({
+                ...current,
+                settings: { ...current.settings, system: nextSystemEnabled },
+              }));
+              if (nextSystemEnabled && !pushStatus.enabled) void enablePushForSystemNotifications();
               return;
             }
             applyNotificationSettingsEdit((current) => ({
