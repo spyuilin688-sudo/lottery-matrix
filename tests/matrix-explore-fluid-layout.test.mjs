@@ -30,7 +30,7 @@ test("Matrix Explore control rows match the compact mobile reference density", (
 
   const stack = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-panel");
   assert.match(stack, /row-gap:\s*7px/);
-  assert.match(css, /\.explore-settings \.setting-grid\s*\{[^}]*margin-top:\s*8px/s);
+  assert.match(css, /\.explore-settings \.setting-grid\s*\{[^}]*margin-top:\s*16px/s);
 
   const row = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-panel label");
   assert.match(row, /display:\s*flex/);
@@ -122,7 +122,7 @@ test("Matrix Explore statistics and results use compact target density", () => {
   const statsHeading = ruleBlock(css, "\\.matrix-explore-main-screen \\.repeat-stats-heading");
   assert.match(statsHeading, /display:\s*flex/);
   assert.match(statsHeading, /gap:\s*\.375rem/);
-  assert.match(statsHeading, /margin-bottom:\s*8px/);
+  assert.match(statsHeading, /margin-bottom:\s*16px/);
 
   const summary = ruleBlock(css, "\\.matrix-explore-main-screen \\.result-summary");
   assert.match(summary, /grid-template-columns:\s*repeat\(6, minmax\(0, 1fr\)\)/);
