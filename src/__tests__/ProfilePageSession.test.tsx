@@ -2,7 +2,7 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import type { Session } from '@supabase/supabase-js';
-import { render } from '../../test/render-with-dialog';
+import { render } from '../../test/render-with-member-session-and-dialog';
 import { ProfilePage } from '../features/MemberPages';
 
 const auth = vi.hoisted(() => ({ getSession: vi.fn(), onAuthStateChange: vi.fn() }));
