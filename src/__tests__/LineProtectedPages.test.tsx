@@ -10,6 +10,7 @@ vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ auth }) }));
 
 import { FeaturePageRouter } from '../features/router';
 import { LinePageGuard, useLinePageEntry } from '../auth/LinePageGuard';
+import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
 
 const lineSession = { access_token: 'test-session', user: { id: 'line-user', app_metadata: { provider: 'custom:line' }, identities: [] } };
 const authListeners = new Set<(event: string, session: unknown) => void>();
@@ -52,6 +53,30 @@ test('entry verification is handed to the notebook guard without a second sessio
   expect(await screen.findByText('notebook-ready')).toBeVisible();
   expect(auth.getSession).toHaveBeenCalledTimes(1);
   await waitFor(() => expect(authListeners.size).toBe(1));
+});
+
+test('a session change between entry verification and guard mount rejects the stale handoff', async () => {
+  updateAlgorithmCacheSession(lineSession as never);
+  auth.getSession
+    .mockResolvedValueOnce({ data: { session: lineSession }, error: null })
+    .mockResolvedValueOnce({ data: { session: null }, error: null });
+
+  function EntryHarness() {
+    const [entered, setEntered] = useState(false);
+    const enterPage = useLinePageEntry();
+    return entered
+      ? <LinePageGuard title="Matrix 筆記本" onNavigate={vi.fn()}><div>stale-notebook</div></LinePageGuard>
+      : <button type="button" onClick={() => enterPage('notebook', () => {
+          updateAlgorithmCacheSession(null);
+          setEntered(true);
+        })}>open-stale-notebook</button>;
+  }
+
+  render(<EntryHarness />);
+  fireEvent.click(screen.getByRole('button', { name: 'open-stale-notebook' }));
+  expect(await screen.findByRole('dialog', { name: '請先登入' })).toBeVisible();
+  expect(screen.queryByText('stale-notebook')).toBeNull();
+  expect(auth.getSession).toHaveBeenCalledTimes(2);
 });
 
 test('a LINE member can enter the notebook without a Pro condition', async () => {
