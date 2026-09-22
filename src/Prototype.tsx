@@ -412,9 +412,10 @@ export function MatrixCoreBanner({ onOpen }: { onOpen?: () => void }) {
 }
 
 export function HomeAnnouncement({ latestResults = [] }: { latestResults?: LatestLotteryResult[] } = {}) {
+  const marqueeContentKey = latestResults.map((result) => result.lottery).join("|") || "initial";
   return (
     <section className="home-announcement" aria-label="公告" data-testid="home-announcement">
-      <div className="home-announcement-track">
+      <div className="home-announcement-track" key={marqueeContentKey}>
         <span className="home-announcement-text">
           {HOME_ANNOUNCEMENT_TEXT}
           {latestResults.map((result) => (
