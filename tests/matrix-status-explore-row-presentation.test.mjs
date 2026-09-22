@@ -57,7 +57,7 @@ test('Matrix 狀態驗證摘要不受 status-detail 六欄段落規則影響', (
 
 test('Matrix 狀態版路摘要公式沿用探索金色', () => {
   const formulaRule = rule(statusCss, '.matrix-status-screen .status-detail .explore-validation-summary .validation-summary-formula');
-  assert.match(formulaRule, /color:\\s*#f6c95f;/);
+  assert.match(formulaRule, /color:\s*#f6c95f;/);
 });
 
 test('Matrix 狀態版路列比照探索結果區使用連續列與分隔線', () => {
