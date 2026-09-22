@@ -40,6 +40,31 @@ test('a LINE member can enter the notebook without a Pro condition', async () =>
   render(<FeaturePageRouter screen="notebook" onNavigate={vi.fn()} />);
   expect(await screen.findByRole('button', { name: '新增筆記' })).toBeVisible();
   expect(screen.queryByRole('dialog')).toBeNull();
+  expect(auth.getSession).toHaveBeenCalledTimes(1);
+  expect(auth.onAuthStateChange).toHaveBeenCalledTimes(1);
+});
+
+test('the router-owned notebook session switches local ownership without a second auth chain', async () => {
+  const nextSession = { access_token: 'next-session', user: { id: 'next-user', app_metadata: { provider: 'google' }, identities: [] } };
+  window.localStorage.setItem('matrix-notebook:v2:line-user', JSON.stringify({ notes: [
+    { id: 'line-note', title: 'LINE 帳號筆記', content: 'A', updatedAt: '2026-09-22T00:00:00Z' },
+  ] }));
+  window.localStorage.setItem('matrix-notebook:v2:next-user', JSON.stringify({ notes: [
+    { id: 'next-note', title: 'Google 帳號筆記', content: 'B', updatedAt: '2026-09-22T00:00:00Z' },
+  ] }));
+  auth.getSession.mockResolvedValue({ data: { session: lineSession }, error: null });
+
+  render(<FeaturePageRouter screen="notebook" onNavigate={vi.fn()} />);
+  expect(await screen.findByText('LINE 帳號筆記')).toBeVisible();
+  expect(auth.getSession).toHaveBeenCalledTimes(1);
+  expect(auth.onAuthStateChange).toHaveBeenCalledTimes(1);
+
+  act(() => emitAuth('SIGNED_IN', nextSession));
+
+  expect(await screen.findByText('Google 帳號筆記')).toBeVisible();
+  await waitFor(() => expect(screen.queryByText('LINE 帳號筆記')).toBeNull());
+  expect(auth.getSession).toHaveBeenCalledTimes(1);
+  expect(auth.onAuthStateChange).toHaveBeenCalledTimes(1);
 });
 
 test('a Google member can enter the notebook without a Pro condition', async () => {
