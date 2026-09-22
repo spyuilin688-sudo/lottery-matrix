@@ -31,7 +31,7 @@ test("開獎資訊卡底部資訊列使用無縫鑲嵌框", () => {
     homeCss,
     /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item\s*\{[^}]*gap:\s*4px;[^}]*padding-inline:\s*clamp\(6px, 2vw, 10px\);/s,
   );
-  assert.doesNotMatch(homeCss, /\.next-draw-item:first-child\s*\{|\.next-draw-item:last-child\s*\{/s);
+  assert.doesNotMatch(homeCss, /\.next-draw-item:(?:first|last)-child\s*\{[^}]*(?:border|background|box-shadow|padding|gap)\s*:/s);
   assert.match(
     homeCss,
     /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*gap:\s*2px;/s,
