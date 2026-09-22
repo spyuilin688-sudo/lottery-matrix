@@ -47,7 +47,7 @@ const definitions: Array<{
   {
     key: 'registeredMemberFreeAccess',
     label: '註冊會員免費使用',
-    description: '讓所有有效註冊會員使用天衍、天工、探索七期／十三期／完整範圍；探索二期與天衡三期可直接使用，不受此開關影響。',
+    description: '讓所有有效註冊會員使用天衍、天工、探索七期／十三期／完整範圍；新註冊 LINE 會員註冊後 48 小時的探索、天衡、天樞十三期及完整範圍不受此開關影響；探索二期與天衡三期可直接使用。',
     consequence: '所有有效註冊會員的 Matrix 免費使用權限',
   },
 ];
