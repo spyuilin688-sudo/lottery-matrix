@@ -105,7 +105,7 @@ const HOME_ASSETS = {
   guide: `${HOME_PREMIUM_ASSET_BASE}/guide.webp`,
 } as const;
 
-const HOME_ANNOUNCEMENT_TEXT = "公告";
+const HOME_ANNOUNCEMENT_TEXT = "【新會員限時體驗】立即使用 LINE 註冊登入，即可免費體驗 Matrix 探索、天衡、天樞十三期及完整範圍，體驗期限 2 天。";
 
 const HOME_SHORTCUTS = [
   { label: "Matrix 同星", screen: "tongxing", image: HOME_ASSETS.tongxing },
