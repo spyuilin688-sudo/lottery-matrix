@@ -462,9 +462,12 @@ def test_public_latest_supabase_uses_latest_rpc_and_preserves_empty_revision() -
 
 
 
-class LatestResultEventQuery:
-    def __init__(self) -> None:
+class LatestCompletedDrawQuery:
+    def __init__(self, rows: list[dict], calls: list[list[tuple[str, str]]]) -> None:
+        self.rows = rows
+        self.calls = calls
         self.filters: list[tuple[str, str]] = []
+        self.limit_count: int | None = None
 
     def select(self, _columns: str):
         return self
@@ -473,36 +476,66 @@ class LatestResultEventQuery:
         self.filters.append((column, value))
         return self
 
-    def order(self, _column: str, *, desc: bool = False):
+    def order(self, _column: str, *, desc: bool = False, **_kwargs):
         assert desc is True
         return self
 
     def limit(self, count: int):
-        assert count == 1
+        self.limit_count = count
         return self
 
     def execute(self):
-        return type("Result", (), {"data": [{
-            "payload": {
-                "lottery": "六合彩",
-                "drawDate": "2026-09-22",
-                "numbers": ["02", "34", "35", "43", "45", "46", "41"],
-            },
-        }]})()
+        rows = list(self.rows)
+        for column, value in self.filters:
+            rows = [row for row in rows if str(row.get(column)) == value]
+        rows.sort(key=lambda row: (str(row.get("draw_date") or ""), str(row.get("period") or "")), reverse=True)
+        if self.limit_count is not None:
+            rows = rows[:self.limit_count]
+        self.calls.append(list(self.filters))
+        return type("Result", (), {"data": rows})()
 
 
-class LatestResultEventClient:
+class LatestCompletedRpc:
+    def __init__(self, data: dict) -> None:
+        self.data = data
+
+    def execute(self):
+        return type("Result", (), {"data": self.data})()
+
+
+class LatestCompletedResultClient:
     def __init__(self) -> None:
-        self.query = LatestResultEventQuery()
+        self.rows = [
+            {"lottery": "今彩539", "period": "115000231", "draw_date": "2026-09-23", "result_status": "confirmed"},
+            {"lottery": "天天樂", "period": "12008", "draw_date": "2026-09-23", "result_status": "confirmed"},
+            {"lottery": "大樂透", "period": "115000091", "draw_date": "2026-09-23", "result_status": "confirmed"},
+            {"lottery": "六合彩", "period": "026104", "draw_date": "2026-09-23", "result_status": "confirmed"},
+            {"lottery": "六合彩", "period": "026103", "draw_date": "2026-09-22", "result_status": "confirmed"},
+        ]
+        self.table_calls: list[list[tuple[str, str]]] = []
+        self.rpc_calls: list[tuple[str, dict]] = []
+        self.chain = {
+            ("今彩539", "115000231"): {"latestPeriod": "115000231", "analysisComplete": True, "matrixStatusComplete": True},
+            ("天天樂", "12008"): {"latestPeriod": "12008", "analysisComplete": False, "matrixStatusComplete": False},
+            ("大樂透", "115000091"): {"latestPeriod": "115000091", "analysisComplete": True, "matrixStatusComplete": True},
+            ("六合彩", "026104"): {"latestPeriod": "026104", "analysisComplete": True, "matrixStatusComplete": False},
+            ("六合彩", "026103"): {"latestPeriod": "026103", "analysisComplete": True, "matrixStatusComplete": True},
+        }
 
     def table(self, name: str):
-        assert name == "notification_events"
-        return self.query
+        assert name == "lottery_draws"
+        return LatestCompletedDrawQuery(self.rows, self.table_calls)
+
+    def rpc(self, name: str, args: dict):
+        assert name == "matrix_watchdog_chain_state"
+        self.rpc_calls.append((name, dict(args)))
+        key = (str(args["p_lottery"]), str(args["p_draw_period"]))
+        return LatestCompletedRpc(self.chain[key])
 
 
-def test_latest_result_event_returns_only_sorted_main_numbers() -> None:
+def test_latest_result_returns_only_completed_lotteries_from_latest_draw_date() -> None:
     repository = InMemoryAnalysisRepository()
-    repository.client = LatestResultEventClient()
+    repository.client = LatestCompletedResultClient()
 
     status, payload = handle_api_request(
         "GET",
@@ -513,13 +546,19 @@ def test_latest_result_event_returns_only_sorted_main_numbers() -> None:
 
     assert status == 200
     assert payload == {
-        "item": {
-            "lottery": "六合彩",
-            "drawDate": "2026-09-22",
-            "numbers": ["02", "34", "35", "43", "45", "46"],
-        },
+        "drawDate": "2026-09-23",
+        "items": [
+            {"lottery": "今彩539"},
+            {"lottery": "大樂透"},
+        ],
     }
-    assert repository.client.query.filters == [("event_type", "lottery_result")]
+    assert repository.client.rpc_calls == [
+        ("matrix_watchdog_chain_state", {"p_lottery": "今彩539", "p_draw_period": "115000231"}),
+        ("matrix_watchdog_chain_state", {"p_lottery": "天天樂", "p_draw_period": "12008"}),
+        ("matrix_watchdog_chain_state", {"p_lottery": "大樂透", "p_draw_period": "115000091"}),
+        ("matrix_watchdog_chain_state", {"p_lottery": "六合彩", "p_draw_period": "026104"}),
+    ]
+    assert all(call[1]["p_draw_period"] != "026103" for call in repository.client.rpc_calls)
 
 
 def test_history_without_limit_returns_all_rows() -> None:
