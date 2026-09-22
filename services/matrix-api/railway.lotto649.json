@@ -4,7 +4,7 @@
     "builder": "RAILPACK"
   },
   "deploy": {
-    "startCommand": "uv run python -u -m app.worker --lottery 大樂透 --scheduled",
+    "startCommand": "uv run --no-dev --no-sync python -u -m app.worker --lottery 大樂透 --scheduled",
     "restartPolicyType": "NEVER"
   }
 }
