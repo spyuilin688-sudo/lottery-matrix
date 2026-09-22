@@ -4,7 +4,6 @@ import { readFileSync } from 'node:fs';
 
 const workflow = readFileSync('.github/workflows/ci.yml', 'utf8');
 const notebookWorkflow = readFileSync('.github/workflows/notebook-ui-check.yml', 'utf8');
-const tiangongWorkflow = readFileSync('.github/workflows/tiangong-sorted-refresh.yml', 'utf8');
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'));
 
 function job(name) {
@@ -83,11 +82,9 @@ test('admin build modes are not repeated and Python uses the selected plan', () 
   assert.match(python, /--run python/);
 });
 
-test('specialized Notebook and Tiangong workflows do not duplicate Project CI PR or main checks', () => {
+test('specialized Notebook workflow does not duplicate Project CI pull-request checks', () => {
   assert.doesNotMatch(notebookWorkflow, /^\s*pull_request:/m);
   assert.match(notebookWorkflow, /^\s*push:/m);
-  assert.match(tiangongWorkflow, /^\s*workflow_dispatch:/m);
-  assert.doesNotMatch(tiangongWorkflow, /^\s*(?:push|pull_request):/m);
 });
 
 test('selected test jobs fail the workflow when their tests fail', () => {
