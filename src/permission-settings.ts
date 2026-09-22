@@ -27,7 +27,7 @@ export function usePermissionSettings() {
   return useSyncExternalStore(subscribe, snapshot, serverSnapshot);
 }
 
-async function performPermissionSettingsRefresh(): Promise<PermissionSettings> {
+export async function refreshPermissionSettings(): Promise<PermissionSettings> {
   const sequence = ++requestSequence;
   lastRefreshStartedAt = Date.now();
   activeRequests++;
@@ -64,21 +64,17 @@ async function performPermissionSettingsRefresh(): Promise<PermissionSettings> {
   }
 }
 
-export function refreshPermissionSettings(): Promise<PermissionSettings> {
+/**
+ * Protected and automatic callers share only the current in-flight read.
+ * Explicit refreshPermissionSettings() remains a force-refresh primitive so
+ * revision ordering can still be verified with overlapping explicit refreshes.
+ */
+export function readPermissionSettings(): Promise<PermissionSettings> {
   if (sharedRead) return sharedRead;
-  sharedRead = performPermissionSettingsRefresh().finally(() => {
+  sharedRead = refreshPermissionSettings().finally(() => {
     sharedRead = null;
   });
   return sharedRead;
-}
-
-/**
- * Coalesce concurrent permission reads across both protected requests and the
- * automatic refresh. After the shared read settles, the next protected request
- * still performs a fresh RPC.
- */
-export function readPermissionSettings(): Promise<PermissionSettings> {
-  return refreshPermissionSettings();
 }
 
 export function installPermissionSettingsRefresh() {
@@ -88,7 +84,7 @@ export function installPermissionSettingsRefresh() {
     // Explicit permission checks also satisfy the automatic refresh window.
     // Keep their fresh reads and fail-closed behavior; coalesce only background events.
     if (!document.hidden && activeRequests === 0 && Date.now() - lastRefreshStartedAt >= refreshIntervalMs) {
-      void refreshPermissionSettings().catch(() => {});
+      void readPermissionSettings().catch(() => {});
     }
     const remaining = refreshIntervalMs - (Date.now() - lastRefreshStartedAt);
     timer = window.setTimeout(refresh, remaining > 0 ? remaining : refreshIntervalMs);
