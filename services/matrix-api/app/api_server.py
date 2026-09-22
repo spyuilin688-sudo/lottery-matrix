@@ -92,6 +92,42 @@ def _parse_lottery(value: Any) -> str:
     return lottery
 
 
+def _latest_result_event(repository: AnalysisRepository) -> dict[str, Any] | None:
+    client = getattr(repository, "client", None)
+    if client is None:
+        return None
+    response = (
+        client.table("notification_events")
+        .select("payload")
+        .eq("event_type", "lottery_result")
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+    rows = response.data if isinstance(response.data, list) else []
+    if not rows:
+        return None
+    row = rows[0]
+    payload = row.get("payload") if isinstance(row, dict) else None
+    try:
+        if not isinstance(payload, dict):
+            raise ValueError("payload")
+        lottery = _parse_lottery(payload.get("lottery"))
+        draw_date = str(payload.get("drawDate") or "")
+        if date.fromisoformat(draw_date).isoformat() != draw_date:
+            raise ValueError("drawDate")
+        raw_numbers = payload.get("numbers")
+        main_count = 5 if lottery in {"今彩539", "天天樂"} else 6
+        if not isinstance(raw_numbers, list) or len(raw_numbers) < main_count:
+            raise ValueError("numbers")
+        numbers = [_normalize_number(value) for value in raw_numbers[:main_count]]
+        if len(set(numbers)) != main_count:
+            raise ValueError("numbers")
+    except (TypeError, ValueError) as error:
+        raise RuntimeError("LATEST_RESULT_EVENT_INVALID") from error
+    return {"lottery": lottery, "drawDate": draw_date, "numbers": numbers}
+
+
 def _parse_recovery_lease_owner(value: Any) -> str:
     owner = str(value or "").strip()
     if not owner or len(owner) > 200:
@@ -689,6 +725,8 @@ def handle_api_request(
                     }
                 # Keep the pre-PNG manifest for installed PWA clients.
                 return 200, _card_manifest(lottery, repository)
+        if method == "GET" and path == "/api/matrix/latest-result":
+            return 200, {"item": _latest_result_event(repository)}
         latest_prefix = "/api/matrix/latest/"
         years_prefix = "/api/matrix/history-years/"
         if method == "GET" and path.startswith(years_prefix):
