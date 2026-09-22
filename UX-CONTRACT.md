@@ -128,7 +128,7 @@ The dialog preserves the existing navy, gold, danger-red and success-green visua
 
 2026-09-11：探索、天衡、天衍、天工四頁共用 `MatrixPageSwitcher`，位於第一張「探索設定」卡片標題同列右側。四頁固定依探索、天衡、天衍、天工排列並共用完整外框；點擊呼叫既有頁面導覽，不依上下捲動切換。探索、天衍、天工結果共用 `MatrixResultsPagination`，每頁 15 筆。天工點擊「重複號碼統計」的號碼小卡後，先依預測位置、再依間距升冪排序完整篩選結果，再分頁；切換篩選或重新探索回到第一頁。依據為本次使用者要求。
 
-2026-09-14：依使用者要求，天衡「準6+ (鎖定2碼)」的連準篩選預設勾選「準7進8、準9進10、準11進12」；「準6進7」仍可手動選取。此預設由 `MatrixExplorePage` 的天衡分支統一擁有，選取條件、切換版路或重新開始天衡時沿用同一份預設，勾選結果透過既有 `selectedStreaks` 送入查詢，使用者仍可手動取消各項。
+2026-09-14：依使用者要求，天衡「準6+ (鎖定2碼)」的連準篩選預設勾選「準7進8、準9進10、準11進12」；「準6進7」仍可手動選取。此預設由 `MatrixExplorePage` 的天衡分支統一擁有，選取條件、切換版路或重新開始天衡時沿用同一份預設，勾選結果透過既有 `selectedStreaks` 送入查詢，使用者仍可手動取消各項。\n\n2026-09-23：依使用者要求，天衍連準篩選固定為「準11進12、準13進14、準15進16、準17進18、準19進20」，五項預設全部勾選並透過既有 `selectedStreaks` 精確篩選已完成結果。連準標籤必須保留實際最高連準；實際 12／14／16／18／20 組不得截短或降級包裝為 11／13／15／17／19。移除舊「準14進15、準16進17」篩選與「準17進18+」合併標籤；不改天衍其他計算流程、版路條件、版面或響應式樣式。
 
 2026-09-06: The user explicitly rejected loading feature-page code only when navigating. `Prototype` and `features/router` therefore import feature pages statically so their code loads at application startup. This supersedes the page-lazy-loading choice in the earlier P3 performance plan. The production import-graph test must keep every routed page in the startup graph; the earlier deferred-page and 500 KB chunk assertions no longer define this loading contract. The card exporter still loads only after download confirmation. Data requests, page markup, CSS, authentication and navigation targets retain their existing behavior. The shared `FeaturePageLoadBoundary` remains available for page render errors with user-initiated `重新載入` and `返回首頁`; navigation clears failure state without remounting a healthy shared page.
 
