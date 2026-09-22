@@ -135,8 +135,19 @@ async function memberSessionStableRpc<T>(name: string) {
   }
 }
 
+let sharedBootstrap: { scope: number; promise: Promise<MemberBootstrapResponse> } | null = null;
+
 export function bootstrapMember() {
-  return memberSessionStableRpc<MemberBootstrapResponse>('member_bootstrap');
+  const scope = getAlgorithmCacheScope();
+  if (sharedBootstrap?.scope === scope) return sharedBootstrap.promise;
+
+  let promise = memberSessionStableRpc<MemberBootstrapResponse>('member_bootstrap');
+  promise = promise.catch((error) => {
+    if (sharedBootstrap?.promise === promise) sharedBootstrap = null;
+    throw error;
+  });
+  sharedBootstrap = { scope, promise };
+  return promise;
 }
 
 export function fetchMemberProfile() {
