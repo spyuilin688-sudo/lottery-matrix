@@ -5,6 +5,7 @@ import test from 'node:test';
 const bridge = readFileSync(new URL('../src/auth/MemberSessionBridge.tsx', import.meta.url), 'utf8');
 const memberPages = readFileSync(new URL('../src/features/MemberPages.tsx', import.meta.url), 'utf8');
 const paymentHistory = readFileSync(new URL('../src/features/use-payment-history.ts', import.meta.url), 'utf8');
+const memberApi = readFileSync(new URL('../src/member-api.ts', import.meta.url), 'utf8');
 
 test('MemberSessionBridge is the sole persistent member-page Supabase session owner', () => {
   assert.match(bridge, /auth\.getSession\(\)/);
@@ -13,4 +14,7 @@ test('MemberSessionBridge is the sole persistent member-page Supabase session ow
     assert.doesNotMatch(source, /\.auth\.getSession\(/, name + ' must consume the shared member session snapshot');
     assert.doesNotMatch(source, /\.auth\.onAuthStateChange\(/, name + ' must not install a second auth listener');
   }
+  assert.doesNotMatch(memberApi, /\.auth\.getSession\(/, 'member helpers must reuse the shared member session owner');
+  assert.match(memberApi, /getMemberSessionSnapshot/);
+  assert.match(memberApi, /requestMemberSessionRefresh/);
 });
