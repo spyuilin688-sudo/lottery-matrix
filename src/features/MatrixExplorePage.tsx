@@ -78,7 +78,7 @@ export function MatrixExplorePage({
     "準6+（鎖定2碼）": ["準6進7", "準7進8", "準9進10", "準11進12"],
     "準4+（鎖定1碼）": ["準4進5", "準5進6", "準6進7", "準7進8"],
     "準5+（鎖定2碼）": title === "Matrix 天衍"
-      ? ["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"]
+      ? ["準11進12", "準13進14", "準15進16", "準17進18", "準19進20"]
       : ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12"],
   };
   const defaultFiltersFor = (hitValue: string, roadValue: string): ConsecutiveOption[] => {
@@ -91,7 +91,7 @@ export function MatrixExplorePage({
         : filterOptions[hitValue];
     }
     if (title === "Matrix 天衍") {
-      return ["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"];
+      return ["準11進12", "準13進14", "準15進16", "準17進18", "準19進20"];
     }
     const isTrailer = roadValue === "拖牌版路";
     if (hitValue === "準4+（鎖定1碼）") {
