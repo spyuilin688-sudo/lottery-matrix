@@ -3,9 +3,19 @@ import '@testing-library/jest-dom/vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { Session } from '@supabase/supabase-js';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
-const api = vi.hoisted(() => ({ fetchMatrixStatusSummaries: vi.fn() }));
-vi.mock('../matrix-status-api', () => api);
-vi.mock('../useLatestLotteryDraw', () => ({ useLatestLotteryDraw: () => ({ data: null }) }));
+const api = vi.hoisted(() => ({
+  fetchMatrixStatusSummaries: vi.fn(),
+  fetchLatestLotteryResultState: vi.fn(),
+  refreshLatestDraw: vi.fn(),
+}));
+vi.mock('../matrix-status-api', () => ({ fetchMatrixStatusSummaries: api.fetchMatrixStatusSummaries }));
+vi.mock('../lottery-api', async (original) => ({
+  ...await original<typeof import('../lottery-api')>(),
+  fetchLatestLotteryResultState: api.fetchLatestLotteryResultState,
+}));
+vi.mock('../useLatestLotteryDraw', () => ({
+  useLatestLotteryDraw: () => ({ data: null, loading: false, error: null, refresh: api.refreshLatestDraw }),
+}));
 import Prototype, { type LotteryId } from '../Prototype';
 import { MobileDeviceProvider } from '../mobile/Device';
 import { KeyboardProvider } from '../mobile/Keyboard';
@@ -24,7 +34,24 @@ const session = (memberId: string, tokenVersion = 1) => ({
 }) as Session;
 const mount = () => render(<AppDialogProvider><MobileDeviceProvider><KeyboardProvider><Prototype /></KeyboardProvider></MobileDeviceProvider></AppDialogProvider>);
 const flush = () => act(async () => { await vi.advanceTimersByTimeAsync(0); });
-beforeEach(() => { window.localStorage.setItem(FIRST_VISIT_GUIDE_SEEN_KEY, '1'); updateAlgorithmCacheSession(session('member-a')); vi.useFakeTimers(); api.fetchMatrixStatusSummaries.mockReset().mockImplementation(async () => response()); });
+beforeEach(() => {
+  window.localStorage.setItem(FIRST_VISIT_GUIDE_SEEN_KEY, '1');
+  updateAlgorithmCacheSession(session('member-a'));
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-09-23T12:30:00Z'));
+  api.fetchMatrixStatusSummaries.mockReset().mockImplementation(async () => response());
+  api.fetchLatestLotteryResultState.mockReset().mockResolvedValue({
+    drawDate: '2026-09-23',
+    dueLotteries: ['今彩539'],
+    items: [{ lottery: '今彩539' }],
+  });
+  api.refreshLatestDraw.mockReset().mockResolvedValue({
+    period: '115000231',
+    drawDate: '2026/09/23',
+    numbers: ['01', '02', '03', '04', '05'],
+    resultStatus: 'confirmed',
+  });
+});
 afterEach(() => { vi.useRealTimers(); });
 
 test('讀取失敗不可顯示成沉寂；下一次更新可恢復', async () => {
@@ -34,7 +61,7 @@ test('讀取失敗不可顯示成沉寂；下一次更新可恢復', async () =>
   expect(screen.queryByRole('button', { name: '今彩539 沉寂' })).toBeNull();
   expect(screen.getByRole('button', { name: '今彩539 讀取失敗' })).toHaveAttribute('data-load-state', 'error');
   api.fetchMatrixStatusSummaries.mockImplementation(async () => response());
-  await act(async () => { await vi.advanceTimersByTimeAsync(3_600_000); });
+  await act(async () => { await vi.advanceTimersByTimeAsync(10 * 60_000); });
   expect(screen.getByRole('button', { name: '今彩539 啟動' })).toBeInTheDocument();
 });
 
@@ -47,10 +74,22 @@ test('開獎資料失效時重新讀取四彩種，連續失效通知合併處�
   expect(screen.getByRole('button', { name: '今彩539 臨界' })).toBeInTheDocument();
 });
 
-test('首頁持續開啟時更新狀態，不必重開 PWA', async () => {
+test('首頁在開獎時段且本期未完成時以十分鐘 fallback 更新，不必重開 PWA', async () => {
+  api.fetchLatestLotteryResultState.mockResolvedValue({
+    drawDate: '2026-09-23',
+    dueLotteries: ['今彩539'],
+    items: [],
+  });
   mount(); await flush();
-  api.fetchMatrixStatusSummaries.mockClear().mockImplementation(async () => response('FOCUS'));
-  await act(async () => { await vi.advanceTimersByTimeAsync(3_600_000); });
+  api.fetchMatrixStatusSummaries.mockClear().mockImplementation(async (requested: LotteryId[]) => ({
+    kind: 'status-summary-batch',
+    items: requested.map(lottery => ({
+      lottery,
+      status: 200,
+      body: { kind: 'status-summary', lottery, summary: { status: 'FOCUS', count: 1, message: '' } },
+    })),
+  }));
+  await act(async () => { await vi.advanceTimersByTimeAsync(10 * 60_000); });
   expect(api.fetchMatrixStatusSummaries).toHaveBeenCalledTimes(1);
   expect(screen.getByRole('button', { name: '今彩539 聚合' })).toBeInTheDocument();
 });
@@ -85,7 +124,7 @@ test('舊請求晚回應不可覆蓋新一期狀態，卸載後停止刷新', as
   expect(screen.getByRole('button', { name: '今彩539 臨界' })).toBeInTheDocument();
   view.unmount(); api.fetchMatrixStatusSummaries.mockClear();
   act(() => { invalidateMatrixData(); window.dispatchEvent(new Event('online')); });
-  await act(async () => { await vi.advanceTimersByTimeAsync(3_600_000); });
+  await act(async () => { await vi.advanceTimersByTimeAsync(10 * 60_000); });
   expect(api.fetchMatrixStatusSummaries).not.toHaveBeenCalled();
 });
 
