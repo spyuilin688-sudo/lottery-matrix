@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { useAppDialog } from '../dialog/AppDialog';
 import { withDeadline } from '../lib/api-resilience';
@@ -6,6 +6,12 @@ import { getSupabaseClient } from '../lib/supabase';
 import type { Navigate, ScreenId } from '../features/navigation';
 import { FeaturePageLoadState } from '../FeaturePageLoadBoundary';
 import { FeatureShell } from '../features/shared';
+
+const GuardedMemberSessionContext = createContext<Session | undefined>(undefined);
+
+export function useGuardedMemberSession() {
+  return useContext(GuardedMemberSessionContext);
+}
 
 export function hasLineSession(session: Session | null) {
   return Boolean(session?.access_token && session.user && (
@@ -61,6 +67,7 @@ export function LinePageGuard({ title, onNavigate, children }: {
 }) {
   const { alert } = useAppDialog();
   const [access, setAccess] = useState<'checking' | 'allowed' | 'denied'>('checking');
+  const [memberSession, setMemberSession] = useState<Session | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -72,6 +79,7 @@ export function LinePageGuard({ title, onNavigate, children }: {
     const deny = (failed = false) => {
       if (!active || denied) return;
       denied = true;
+      setMemberSession(null);
       setAccess('denied');
       void alert(failed ? {
         title: '登入狀態確認失敗',
@@ -83,8 +91,10 @@ export function LinePageGuard({ title, onNavigate, children }: {
     };
     const acceptSession = (session: Session | null) => {
       if (!active || denied) return;
-      if (hasMemberSession(session)) setAccess('allowed');
-      else deny();
+      if (hasMemberSession(session)) {
+        setMemberSession(session);
+        setAccess('allowed');
+      } else deny();
     };
 
     const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
@@ -106,7 +116,9 @@ export function LinePageGuard({ title, onNavigate, children }: {
     };
   }, [alert, title]);
 
-  if (access === 'allowed') return children;
+  if (access === 'allowed' && memberSession) {
+    return <GuardedMemberSessionContext.Provider value={memberSession}>{children}</GuardedMemberSessionContext.Provider>;
+  }
   if (access === 'checking') return <FeaturePageLoadState onHome={() => onNavigate('home')} />;
   return <FeatureShell title={title} onNavigate={onNavigate} active={title === 'Matrix 筆記本' ? '快捷' : '首頁'}>
     <p className="empty-result">請先登入後再使用 {title}</p>
