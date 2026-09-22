@@ -6,6 +6,13 @@ import { expect, test, vi } from 'vitest';
 import { HomeAnnouncement, HomeShortcutRow, MatrixCoreBanner } from '../Prototype';
 import { BottomNavigation } from '../BottomNavigation';
 
+function finishMarqueeSegment(track: HTMLElement) {
+  fireEvent.animationEnd(track, { animationName: 'home-announcement-marquee' });
+  if (track.isConnected) {
+    fireEvent(track, new Event('webkitAnimationEnd', { bubbles: true }));
+  }
+}
+
 test('首頁四大功能顯示可讀名稱，且分別開啟既有功能', () => {
   const navigate = vi.fn();
   render(<HomeShortcutRow onNavigate={navigate} />);
@@ -40,8 +47,8 @@ test('Core 保持獨立入口與可讀說明，計算機仍可從底部導覽開
 });
 
 
-test('首頁公告列保留新會員文案並列出最新日期已完整更新的彩種', () => {
-  render(<HomeAnnouncement {...({
+test('首頁公告逐段播放新會員與最新彩種更新，不把所有文案串成同一條', () => {
+  const { container } = render(<HomeAnnouncement {...({
     latestResults: [
       { lottery: '今彩539' },
       { lottery: '大樂透' },
@@ -49,18 +56,27 @@ test('首頁公告列保留新會員文案並列出最新日期已完整更新�
   } as any)} />);
   const announcement = screen.getByTestId('home-announcement');
   expect(announcement).toHaveAccessibleName('公告');
-  expect(announcement).toHaveTextContent('【新會員限時體驗】立即使用 LINE 註冊登入，即可免費體驗 Matrix 探索、天衡、天樞十三期及完整範圍，體驗期限 2 天。');
-  expect(announcement).toHaveTextContent('【今彩539】最新一期開獎資料、Matrix 分析結果已更新。');
-  expect(announcement).toHaveTextContent('【大樂透】最新一期開獎資料、Matrix 分析結果已更新。');
-  expect(announcement).not.toHaveTextContent('09/23');
-  expect(announcement).not.toHaveTextContent('02 34 35');
+
+  let track = container.querySelector<HTMLElement>('.home-announcement-track')!;
+  expect(track).toHaveTextContent('【新會員限時體驗】立即使用 LINE 註冊登入，即可免費體驗 Matrix 探索、天衡、天樞十三期及完整範圍，體驗期限 2 天。');
+  expect(track).not.toHaveTextContent('【今彩539】最新一期開獎資料、Matrix 分析結果已更新。');
+
+  finishMarqueeSegment(track);
+  track = container.querySelector<HTMLElement>('.home-announcement-track')!;
+  expect(track).toHaveTextContent('【今彩539】最新一期開獎資料、Matrix 分析結果已更新。');
+  expect(track).not.toHaveTextContent('【大樂透】最新一期開獎資料、Matrix 分析結果已更新。');
   expect(screen.getByTestId('home-announcement-lottery-今彩539')).toHaveClass('home-announcement-lottery-name');
-  expect(screen.getByTestId('home-announcement-lottery-大樂透')).toHaveClass('home-announcement-lottery-name');
+
+  finishMarqueeSegment(track);
+  track = container.querySelector<HTMLElement>('.home-announcement-track')!;
+  expect(track).toHaveTextContent('【大樂透】最新一期開獎資料、Matrix 分析結果已更新。');
+  expect(track).not.toHaveTextContent('09/23');
+  expect(track).not.toHaveTextContent('02 34 35');
   expect(within(announcement).queryByRole('button')).not.toBeInTheDocument();
   expect(within(announcement).queryByRole('link')).not.toBeInTheDocument();
 });
 
-test('首頁公告在非同步彩種結果載入後重建 track 並重新開始完整跑馬燈', () => {
+test('首頁公告在非同步彩種結果載入後從第一段重新開始，再逐段播放更新', () => {
   const { container, rerender } = render(<HomeAnnouncement latestResults={[]} />);
   const initialTrack = container.querySelector('.home-announcement-track');
   expect(initialTrack).not.toBeNull();
@@ -74,10 +90,46 @@ test('首頁公告在非同步彩種結果載入後重建 track 並重新開始�
     ],
   } as any)} />);
 
-  const loadedTrack = container.querySelector('.home-announcement-track');
+  let loadedTrack = container.querySelector<HTMLElement>('.home-announcement-track')!;
   expect(loadedTrack).not.toBe(initialTrack);
+  expect(loadedTrack).toHaveTextContent('【新會員限時體驗】');
+  expect(loadedTrack).not.toHaveTextContent('【今彩539】最新一期開獎資料、Matrix 分析結果已更新。');
+
+  finishMarqueeSegment(loadedTrack);
+  loadedTrack = container.querySelector<HTMLElement>('.home-announcement-track')!;
   expect(loadedTrack).toHaveTextContent('【今彩539】最新一期開獎資料、Matrix 分析結果已更新。');
-  expect(loadedTrack).toHaveTextContent('【天天樂】最新一期開獎資料、Matrix 分析結果已更新。');
-  expect(loadedTrack).toHaveTextContent('【大樂透】最新一期開獎資料、Matrix 分析結果已更新。');
-  expect(loadedTrack).toHaveTextContent('【六合彩】最新一期開獎資料、Matrix 分析結果已更新。');
+  expect(loadedTrack).not.toHaveTextContent('【天天樂】最新一期開獎資料、Matrix 分析結果已更新。');
+});
+
+test('首頁公告以原 18 秒首段校準速度，後續文案依距離調整時間而維持相同 px/s', () => {
+  const rect = (width: number): DOMRect => ({
+    x: 0, y: 0, width, height: 26,
+    top: 0, right: width, bottom: 26, left: 0,
+    toJSON: () => ({}),
+  });
+  const geometry = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+    if (this.classList.contains('home-announcement')) return rect(358);
+    if (this.classList.contains('home-announcement-track')) {
+      return rect(this.textContent?.includes('新會員限時體驗') ? 700 : 420);
+    }
+    return rect(0);
+  });
+
+  try {
+    const { container } = render(<HomeAnnouncement {...({
+      latestResults: [{ lottery: '今彩539' }],
+    } as any)} />);
+
+    let track = container.querySelector<HTMLElement>('.home-announcement-track')!;
+    expect(track.style.animationDuration).toBe('18s');
+    const baselinePixelsPerSecond = (358 + 700) / 18;
+
+    finishMarqueeSegment(track);
+    track = container.querySelector<HTMLElement>('.home-announcement-track')!;
+    const nextSeconds = Number.parseFloat(track.style.animationDuration);
+    expect(nextSeconds).toBeGreaterThan(0);
+    expect((358 + 420) / nextSeconds).toBeCloseTo(baselinePixelsPerSecond, 5);
+  } finally {
+    geometry.mockRestore();
+  }
 });
