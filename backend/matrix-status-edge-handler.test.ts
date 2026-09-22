@@ -109,6 +109,7 @@ describe('Matrix status Edge Function', () => {
     }
     expect(deps.readStatusSources).toHaveBeenCalledTimes(4);
     expect(deps.requireMember).not.toHaveBeenCalled();
+    expect(deps.resolveEntitlements).toHaveBeenCalledTimes(1);
   });
 
   it('accepts a valid homepage summary subset without widening full batch requests', async () => {
@@ -177,7 +178,8 @@ describe('Matrix status Edge Function', () => {
     expect(body.items.find((item: { lottery: MatrixLottery }) => item.lottery === '大樂透')?.body)
       .toMatchObject({ kind: 'status-summary', summary: { status: 'RESONANCE' } });
     expect(readCompactStatus).toHaveBeenCalledTimes(4);
-    expect(deps.requireMember).toHaveBeenCalledTimes(1);
+    expect(deps.requireMember).not.toHaveBeenCalled();
+    expect(deps.resolveEntitlements).not.toHaveBeenCalled();
     expect(readCompactStatus).toHaveBeenCalledWith('今彩539', undefined, true);
     expect(deps.readStatusSources).not.toHaveBeenCalled();
 
@@ -187,8 +189,24 @@ describe('Matrix status Edge Function', () => {
       headers: { Authorization: 'Bearer another-member' },
       body: JSON.stringify({ action: 'summary-batch', lotteries }),
     }));
-    expect(deps.requireMember).toHaveBeenCalledTimes(2);
-    expect(deps.requireMember).toHaveBeenLastCalledWith('Bearer another-member');
+    expect(deps.requireMember).not.toHaveBeenCalled();
+    expect(deps.resolveEntitlements).not.toHaveBeenCalled();
+  });
+
+  it('shares one entitlement resolution across a full four-lottery batch', async () => {
+    const lotteries = ['今彩539', '天天樂', '六合彩', '大樂透'] as const;
+    const deps = dependencies();
+    const handler = createMatrixStatusEdgeHandler(deps);
+    const response = await handler(new Request('https://example.test/functions/v1/matrix-status', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer member-token', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'batch', lotteries }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(deps.resolveEntitlements).toHaveBeenCalledTimes(1);
+    expect(deps.requireMember).not.toHaveBeenCalled();
+    expect(deps.readStatusSources).toHaveBeenCalledTimes(4);
   });
 
   it('rejects unsupported methods without reading analysis data', async () => {
@@ -238,7 +256,8 @@ it('rechecks current entitlements through lightweight identity without reading r
   deps.requireMember.mockResolvedValue({ authUserId: 'user-1', memberId: 'member-1', plan: 'free', active: false, referralSuccessCount: 0 });
   deps.resolveEntitlements.mockResolvedValue(testMatrixEntitlements({ authUserId: 'user-1', memberId: 'member-1', plan: 'free', active: false, referralSuccessCount: 0 }, new Date('2026-08-29T00:00:00Z')));
   expect(await read()).toMatchObject({ kind: 'status-identity', entitlements: { canUseThirteen: false } });
-  expect(deps.requireMember).toHaveBeenCalledTimes(2);
+  expect(deps.requireMember).not.toHaveBeenCalled();
+  expect(deps.resolveEntitlements).toHaveBeenCalledTimes(2);
   expect(deps.readStatusSources).not.toHaveBeenCalled();
   expect(readStatusIdentity).toHaveBeenCalledTimes(2);
 });
