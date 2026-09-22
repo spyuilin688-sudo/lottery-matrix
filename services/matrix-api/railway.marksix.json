@@ -4,7 +4,7 @@
     "builder": "RAILPACK"
   },
   "deploy": {
-    "startCommand": "uv run python -u -m app.worker --lottery 六合彩 --scheduled",
+    "startCommand": "uv run --no-dev --no-sync python -u -m app.worker --lottery 六合彩 --scheduled",
     "restartPolicyType": "NEVER"
   }
 }
