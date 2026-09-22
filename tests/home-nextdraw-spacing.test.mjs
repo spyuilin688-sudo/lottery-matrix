@@ -12,9 +12,9 @@ function lastRuleBody(source, selector) {
   return [...source.matchAll(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`, 'gs'))].at(-1)?.[1] ?? '';
 }
 
-test('next draw row uses 60/40 rounded bright-gold containers with no parent divider', () => {
-  assert.match(css, /\.next-draw-info--embedded\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 3fr\) minmax\(0, 2fr\);[\s\S]*?padding:\s*0;[\s\S]*?gap:\s*0;[\s\S]*?border:\s*0;[\s\S]*?background:\s*transparent;/);
-  assert.match(css, /\.next-draw-item\s*\{[\s\S]*?gap:\s*4px;[\s\S]*?padding-inline:\s*clamp\(6px, 2vw, 10px\);[\s\S]*?border:\s*0;[\s\S]*?border-radius:\s*var\(--home-frame-radius\);[\s\S]*?box-shadow:\s*inset 0 0 0 1px var\(--home-frame-bright\);/);
+test('next draw row auto-balances content widths with rounded bright-gold containers and no parent divider', () => {
+  assert.match(css, /\.next-draw-info--embedded\s*\{[\s\S]*?display:\s*flex;[\s\S]*?padding:\s*0;[\s\S]*?gap:\s*0;[\s\S]*?border:\s*0;[\s\S]*?background:\s*transparent;/);
+  assert.match(css, /\.next-draw-item\s*\{[\s\S]*?grid-template-columns:\s*12px auto auto;[\s\S]*?flex:\s*1 1 auto;[\s\S]*?gap:\s*4px;[\s\S]*?padding-inline:\s*clamp\(6px, 2vw, 10px\);[\s\S]*?border:\s*0;[\s\S]*?border-radius:\s*var\(--home-frame-radius\);[\s\S]*?box-shadow:\s*inset 0 0 0 1px var\(--home-frame-bright\);/);
   assert.doesNotMatch(css, /\.next-draw-item::before\s*\{/s);
   assert.doesNotMatch(css, /\.next-draw-info--embedded\s*\{[^}]*border-top\s*:/s);
   assert.doesNotMatch(css, /\.next-draw-item:last-child\s*\{[^}]*border-inline-start\s*:/s);
