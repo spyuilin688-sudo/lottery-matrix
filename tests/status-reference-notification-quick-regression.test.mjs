@@ -73,3 +73,9 @@ test("首頁只有正式首頁樣式表擁有首頁版面規則", () => {
     assert.doesNotMatch(css, /\.home-screen\s+\.(?:lottery-screen|latest-draw-card|matrix-status-section|home-bottom-group|home-shortcut-row)/);
   }
 });
+
+
+test("系統通知不再保留已退役的手機 Push 關閉流程", () => {
+  assert.doesNotMatch(notifications, /disable-failed|手機通知關閉失敗/);
+  assert.doesNotMatch(notifications, /pushStatus\.enabled\s*\?\s*"關閉"\s*:\s*"開啟"/);
+});

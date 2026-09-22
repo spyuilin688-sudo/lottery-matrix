@@ -133,7 +133,6 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     | "unsupported"
     | "unauthenticated"
     | "enable-failed"
-    | "disable-failed"
     | "service-worker-registration"
     | "browser-subscription"
     | "supabase-save"
@@ -434,7 +433,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
   };
 
   const pushStatusMessage = pushBusy
-    ? `手機通知${pushStatus.enabled ? "關閉" : "開啟"}中`
+    ? "手機通知開啟中"
     : pushNotice === "checking" ? "正在檢查手機通知"
     : pushNotice === "status-failed" ? "手機通知暫時無法確認，請重新檢查"
     : pushNotice === "enabled" ? "手機通知已開啟"
@@ -444,7 +443,6 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
           : pushNotice === "browser-subscription" ? "手機瀏覽器建立訂閱失敗"
             : pushNotice === "supabase-save" ? "Supabase 儲存失敗"
         : pushNotice === "enable-failed" ? "手機通知開啟失敗，請稍後再試"
-          : pushNotice === "disable-failed" ? "手機通知關閉失敗，請稍後再試"
           : "手機通知未開啟";
 
   const toggleOption = (key: SettingKey, option: string) => {
@@ -535,7 +533,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     return <article className="notification-row" data-notification-key={key} key={key}>
       <div className="notification-heading">
         <div className="notification-icon"><img src={icon} alt="" /></div>
-        <div className="notification-title"><h2><span>{title}</span></h2>{isSystemRow ? <p className="notification-push-status" role={pushNotice === "enable-failed" || pushNotice === "disable-failed" ? "alert" : "status"} aria-live="polite" aria-atomic="true"><span>{pushStatusMessage}</span>{pushNotice === "denied" ? <span className="notification-push-status-detail">通知權限已拒絕</span> : null}{pushNotice === "status-failed" ? <button type="button" className="notification-settings-toggle" aria-label="重新檢查手機通知" onClick={() => {
+        <div className="notification-title"><h2><span>{title}</span></h2>{isSystemRow ? <p className="notification-push-status" role={pushNotice === "enable-failed" ? "alert" : "status"} aria-live="polite" aria-atomic="true"><span>{pushStatusMessage}</span>{pushNotice === "denied" ? <span className="notification-push-status-detail">通知權限已拒絕</span> : null}{pushNotice === "status-failed" ? <button type="button" className="notification-settings-toggle" aria-label="重新檢查手機通知" onClick={() => {
           setPushNotice("checking");
           setPushCheckRevision((current) => current + 1);
         }}>重新檢查</button> : null}</p> : null}</div>
