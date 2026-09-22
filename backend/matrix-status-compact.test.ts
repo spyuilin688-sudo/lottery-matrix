@@ -90,3 +90,38 @@ it.each(lotteries)('uses ordinary precomputed status for %s', async (lottery) =>
   expect(readCompactStatus).toHaveBeenCalledWith(lottery, undefined);
   expect(readStatusSources).not.toHaveBeenCalled();
 });
+
+
+it('uses canonical entitlements without a second member resolver for compact status', async () => {
+  const requireMember = vi.fn(async () => { throw new Error('redundant member resolver'); });
+  const resolveEntitlements = vi.fn(async () => testMatrixEntitlements(member('monthly')));
+  const routes = createMatrixStatusRoutes({
+    requireMember,
+    resolveEntitlements,
+    readCompactStatus: async () => compact,
+    readStatusSources: async () => { throw new Error('raw source should not be read'); },
+  });
+
+  const response = await routes.get({ authorization: 'Bearer token', body: { lottery: '今彩539' } });
+
+  expect(response.status).toBe(200);
+  expect(requireMember).not.toHaveBeenCalled();
+  expect(resolveEntitlements).toHaveBeenCalledTimes(1);
+});
+
+it('does not resolve member access at all for a compact homepage summary', async () => {
+  const requireMember = vi.fn(async () => { throw new Error('summary should not authenticate'); });
+  const resolveEntitlements = vi.fn(async () => { throw new Error('summary should not resolve entitlements'); });
+  const routes = createMatrixStatusRoutes({
+    requireMember,
+    resolveEntitlements,
+    readCompactStatus: async () => compact,
+    readStatusSources: async () => { throw new Error('raw source should not be read'); },
+  });
+
+  const response = await routes.summary({ authorization: 'Bearer token', body: { lottery: '今彩539' } });
+
+  expect(response.status).toBe(200);
+  expect(requireMember).not.toHaveBeenCalled();
+  expect(resolveEntitlements).not.toHaveBeenCalled();
+});
