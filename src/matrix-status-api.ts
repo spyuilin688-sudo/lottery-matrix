@@ -238,6 +238,20 @@ async function cachedStatusFunction<T>(body: Record<string, unknown>): Promise<T
   return result;
 }
 
+async function directStatusValidationFunction<T>(body: Record<string, unknown>): Promise<T> {
+  const client = getSupabaseClient();
+  const scope = await readAlgorithmCacheScope(client, { allowGuest: true });
+  const revision = getMatrixDataRevision();
+  const value = await statusFunction<T>(body);
+  if (await readAlgorithmCacheScope(client, { allowGuest: true }) !== scope) {
+    throw new MatrixApiError('AUTH_REQUIRED', 401);
+  }
+  if (getMatrixDataRevision() !== revision) {
+    throw new MatrixApiError('ANALYSIS_VERSION_MISMATCH', 409);
+  }
+  return value;
+}
+
 async function statusFunction<T>(body: Record<string, unknown>, signal?: AbortSignal) {
   const client = getSupabaseClient();
   const { data, error } = await client.functions.invoke('matrix-status', {
@@ -264,7 +278,7 @@ export function fetchMatrixStatusValidation(
   meta: { lottery: LotteryId; drawPeriod: string; analysisVersion: string },
   itemId: string,
 ) {
-  return cachedStatusFunction<MatrixStatusValidationResponse>({
+  return directStatusValidationFunction<MatrixStatusValidationResponse>({
     action: 'validation',
     ...meta,
     itemId,

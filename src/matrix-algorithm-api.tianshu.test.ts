@@ -3,6 +3,7 @@ import { beforeEach, expect, it, vi } from 'vitest';
 const dependencies = vi.hoisted(() => ({
   rpc: vi.fn(),
   readAlgorithmCacheScope: vi.fn().mockResolvedValue('member:tianshu'),
+  readPermissionSettings: vi.fn().mockResolvedValue({ revision: 1 }),
 }));
 vi.mock('./lib/supabase', () => ({
   getSupabaseClient: () => ({ rpc: dependencies.rpc }),
@@ -11,7 +12,7 @@ vi.mock('./auth/algorithm-cache-scope', () => ({
   readAlgorithmCacheScope: dependencies.readAlgorithmCacheScope,
 }));
 vi.mock('./permission-settings', () => ({
-  readPermissionSettings: vi.fn().mockResolvedValue({ revision: 1 }),
+  readPermissionSettings: dependencies.readPermissionSettings,
 }));
 vi.mock('./matrix-data-revision', () => ({ getMatrixDataRevision: () => 1 }));
 vi.mock('./read-cache', () => ({
@@ -34,6 +35,7 @@ beforeEach(() => {
   rpc.mockReset();
   rpc.mockResolvedValue({ data: null, error: null });
   readAlgorithmCacheScope.mockClear();
+  dependencies.readPermissionSettings.mockClear();
 });
 
 const threePeriodRequest = {
@@ -154,6 +156,7 @@ it('uses the independent validation RPC and normalizes exact three-item tuples',
   expect(response.validation.ruleSets[0]?.historicalValidation[0]?.lockedPositions).toEqual([1, 2, 5]);
   expect(response.validation.ruleSets[0]?.historicalValidation[0]?.lockedNumbers).toEqual([3, 8, 30]);
   expect(readAlgorithmCacheScope).toHaveBeenCalledWith(expect.anything(), { allowGuest: false });
+  expect(dependencies.readPermissionSettings).not.toHaveBeenCalled();
 });
 
 it.each([

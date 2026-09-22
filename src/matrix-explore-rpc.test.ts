@@ -1,5 +1,9 @@
-vi.mock('./permission-settings', () => ({ readPermissionSettings: vi.fn(async () => ({ revision: 0 })) }));
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const permissionMocks = vi.hoisted(() => ({
+  readPermissionSettings: vi.fn(async () => ({ revision: 0 })),
+}));
+vi.mock('./permission-settings', () => ({ readPermissionSettings: permissionMocks.readPermissionSettings }));
 
 const rpc = vi.fn();
 const getSession = vi.fn();
@@ -25,6 +29,7 @@ describe('Matrix exploration Supabase RPC', () => {
     resetReadCacheForTests();
     updateAlgorithmCacheSession(null);
     rpc.mockReset();
+    permissionMocks.readPermissionSettings.mockClear();
     getSession.mockReset();
     getSession.mockResolvedValue({
       data: { session: { user: { id: 'rpc-test-user' }, access_token: 'rpc-test-session' } },
@@ -90,6 +95,7 @@ describe('Matrix exploration Supabase RPC', () => {
         ...meta, itemId: 'row-1', explorePeriods: 7, exploreRange: '完整範圍',
       },
     });
+    expect(permissionMocks.readPermissionSettings).not.toHaveBeenCalled();
   });
 
   it('maps a denied RPC to the existing frontend error', async () => {
@@ -151,6 +157,7 @@ describe('Matrix exploration Supabase RPC', () => {
         lottery: '今彩539', drawPeriod: '115000207', analysisVersion: 'v3', itemId: 'tianyan-1',
       } }],
     ]);
+    expect(permissionMocks.readPermissionSettings).toHaveBeenCalledTimes(1);
   });
 
   it('reads Tiangong results and validation from Supabase artifacts', async () => {
@@ -176,5 +183,6 @@ describe('Matrix exploration Supabase RPC', () => {
         lottery: '今彩539', drawPeriod: '115000207', analysisVersion: 'v3', itemId: 'tiangong-1',
       } }],
     ]);
+    expect(permissionMocks.readPermissionSettings).toHaveBeenCalledTimes(1);
   });
 });

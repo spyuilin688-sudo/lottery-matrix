@@ -71,12 +71,14 @@ describe('Matrix status Edge Function', () => {
     await fetchMatrixStatusValidation({
       lottery: '今彩539', drawPeriod: '115000210', analysisVersion: 'v1',
     }, 'road-2');
+    expect(invoke).toHaveBeenCalledTimes(1);
     expect(invoke).toHaveBeenCalledWith('matrix-status', {
       body: {
         action: 'validation', lottery: '今彩539', drawPeriod: '115000210',
         analysisVersion: 'v1', itemId: 'road-2',
       },
     });
+    expect(access).not.toHaveBeenCalled();
   });
 
 });
