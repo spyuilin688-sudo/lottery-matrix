@@ -28,7 +28,7 @@ test("號碼對照單整列與單格標記彼此獨立且分隔線清楚", () =>
 test("首頁使用 16px 功能內距與響應式導覽淨空及更新後區段間距", () => {
   assert.match(home, /--home-feature-inline:\s*16px/);
   assert.match(home, /--home-gap-features-nav:\s*clamp\(4px,\s*0\.7dvh,\s*8px\)/);
-  assert.match(home, /--home-gap-switcher-draw:\s*clamp\(7px,\s*calc\(0\.9dvh\s*\+\s*1px\),\s*9px\)/);
+  assert.match(home, /--home-gap-switcher-draw:\s*clamp\(4px,\s*calc\(0\.9dvh\s*\+\s*1px\),\s*7px\)/);
   assert.match(home, /--home-content-width:\s*calc\(min\(100vw, 390px\) - 32px\)/);
   assert.match(home, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*calc\(100% - 32px\)/s);
   assert.match(home, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\)/s);

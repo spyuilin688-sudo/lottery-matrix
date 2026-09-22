@@ -53,7 +53,7 @@
   --home-content-width: calc(min(100vw, 390px) - 32px);
   --home-gap-logo-announcement: clamp(5px, 0.8dvh, 8px);
   --home-gap-announcement-switcher: clamp(6px, 0.9dvh, 8px);
-  --home-gap-switcher-draw: clamp(7px, calc(0.9dvh + 1px), 9px);
+  --home-gap-switcher-draw: clamp(4px, calc(0.9dvh + 1px), 7px);
   --home-gap-draw-status: clamp(7px, calc(1.15dvh + 1px), 10px);
   box-sizing: border-box;
   display: flex;

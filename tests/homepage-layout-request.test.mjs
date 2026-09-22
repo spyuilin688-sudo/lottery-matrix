@@ -65,7 +65,7 @@ test("homepage reserves the logo above its scroller and preserves the requested 
   assert.equal(lotteryScreen.getPropertyValue("--home-gap-logo-announcement").replaceAll(" ", ""), "clamp(5px,0.8dvh,8px)");
   assert.equal(lotteryScreen.getPropertyValue("--home-gap-announcement-switcher").replaceAll(" ", ""), "clamp(6px,0.9dvh,8px)");
   assert.equal(style(".home-announcement").height, "26px");
-  assert.equal(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").replaceAll(" ", ""), "clamp(7px,calc(0.9dvh+1px),9px)");
+  assert.equal(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").replaceAll(" ", ""), "clamp(4px,calc(0.9dvh+1px),7px)");
   assert.equal(lotteryScreen.getPropertyValue("--home-gap-draw-status").replaceAll(" ", ""), "clamp(7px,calc(1.15dvh+1px),10px)");
   assert.match(bottomGroup.getPropertyValue("--home-core-width"), /- 32px/);
   assert.equal(style(".matrix-status-section").paddingInline, "0px");

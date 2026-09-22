@@ -7,7 +7,7 @@ const css = readLocalCss("src/homepage-repair.css");
 const tokens = readFileSync(new URL("../src/design-tokens.css", import.meta.url), "utf8");
 
 test("approved homepage uses independent component insets and canonical rhythm", () => {
-  assert.match(css, /\.home-screen \.lottery-screen\s*\{[^}]*--layout-page-inline:\s*16px;[^}]*--home-gap-logo-announcement:\s*clamp\(5px,\s*0\.8dvh,\s*8px\);[^}]*--home-gap-announcement-switcher:\s*clamp\(6px,\s*0\.9dvh,\s*8px\);[^}]*--home-gap-switcher-draw:\s*clamp\(7px,\s*calc\(0\.9dvh\s*\+\s*1px\),\s*9px\);[^}]*--home-gap-draw-status:\s*clamp\(7px,\s*calc\(1\.15dvh\s*\+\s*1px\),\s*10px\);/s);
+  assert.match(css, /\.home-screen \.lottery-screen\s*\{[^}]*--layout-page-inline:\s*16px;[^}]*--home-gap-logo-announcement:\s*clamp\(5px,\s*0\.8dvh,\s*8px\);[^}]*--home-gap-announcement-switcher:\s*clamp\(6px,\s*0\.9dvh,\s*8px\);[^}]*--home-gap-switcher-draw:\s*clamp\(4px,\s*calc\(0\.9dvh\s*\+\s*1px\),\s*7px\);[^}]*--home-gap-draw-status:\s*clamp\(7px,\s*calc\(1\.15dvh\s*\+\s*1px\),\s*10px\);/s);
   assert.match(css, /\.home-screen \.home-layout\s*\{[^}]*--home-gap-status-core:\s*clamp\(7px,\s*1\.35dvh,\s*10px\);[^}]*--home-gap-core-features:\s*var\(--home-gap-status-core\);[^}]*--home-gap-features-nav:\s*clamp\(4px,\s*0\.7dvh,\s*8px\);/s);
   assert.match(css, /--home-content-width:\s*calc\(min\(100vw, 390px\) - 32px\);/);
   assert.match(css, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\);/s);
