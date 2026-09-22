@@ -75,7 +75,6 @@ def test_health_checks_database_and_reports_service_metadata(monkeypatch) -> Non
         "service": "matrix-railway-api",
         "version": "test-version",
         "database": {"status": "ok"},
-        "adminApi": {"status": "ok"},
     }
 
 
@@ -110,7 +109,6 @@ def test_health_returns_503_when_database_probe_fails(monkeypatch) -> None:
         "service": "matrix-railway-api",
         "version": "test-version",
         "database": {"status": "error"},
-        "adminApi": {"status": "ok"},
     }
 
 
