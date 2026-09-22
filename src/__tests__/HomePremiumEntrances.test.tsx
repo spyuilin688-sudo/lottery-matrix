@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import '@testing-library/jest-dom/vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
 import { HomeAnnouncement, HomeShortcutRow, MatrixCoreBanner } from '../Prototype';
 import { BottomNavigation } from '../BottomNavigation';
@@ -66,6 +66,20 @@ test('首頁公告逐段播放新會員文案與最新日期已完整更新的�
   expect(announcement).not.toHaveTextContent('02 34 35');
   expect(within(announcement).queryByRole('button')).not.toBeInTheDocument();
   expect(within(announcement).queryByRole('link')).not.toBeInTheDocument();
+});
+
+test('首頁公告依實際移動距離維持固定每秒速度', async () => {
+  const { container } = render(<HomeAnnouncement latestResults={[]} />);
+  const announcement = screen.getByTestId('home-announcement');
+  Object.defineProperty(announcement, 'clientWidth', { configurable: true, value: 360 });
+
+  const track = container.querySelector('.home-announcement-track') as HTMLDivElement;
+  Object.defineProperty(track, 'scrollWidth', { configurable: true, value: 360 });
+  fireEvent(window, new Event('resize'));
+
+  await waitFor(() => {
+    expect(container.querySelector('.home-announcement-track')).toHaveStyle('--home-announcement-duration: 12000ms');
+  });
 });
 
 test('首頁公告在非同步彩種結果載入後重建第一段並維持逐段播放', () => {
