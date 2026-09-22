@@ -6,11 +6,13 @@ import { clearLineAuthEphemeralState, rememberLineProviderToken } from './line-p
 import { cleanupBrowserPushSubscription } from '../push-subscription';
 import { startMemberOnlineTracking } from '../member-online';
 import { postMemberOnline } from '../member-online-api';
+import { withDeadline } from '../lib/api-resilience';
 import { logicalSessionIdentity } from './session-identity';
 import { isLineProviderSession } from './session-provider';
 import { updateAlgorithmCacheSession } from './algorithm-cache-scope';
 import {
   getMemberSessionSnapshot,
+  MEMBER_SESSION_READ_TIMEOUT_MS,
   installMemberSessionRefresh,
   publishMemberSessionChecking,
   publishMemberSessionError,
@@ -109,7 +111,7 @@ export function MemberSessionBridge({
     const readCurrentSession = async () => {
       const startedRevision = authRevision;
       try {
-        const { data, error } = await client.auth.getSession();
+        const { data, error } = await withDeadline(() => client.auth.getSession(), { timeoutMs: MEMBER_SESSION_READ_TIMEOUT_MS });
         if (error) throw error;
         if (!active) return data.session;
         if (authRevision !== startedRevision) {
