@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 import json
+from contextlib import contextmanager
+from http.client import HTTPConnection
+from http.server import ThreadingHTTPServer
+from threading import Thread
+from typing import Iterator
 
 from app.repositories.analysis_repository import InMemoryAnalysisRepository
-from app.recovery_server import handle_recovery_request
+from app.recovery_server import RecoveryApiHandler, handle_recovery_request
 
 
 class OperationalRepository(InMemoryAnalysisRepository):
@@ -17,6 +22,34 @@ class OperationalRepository(InMemoryAnalysisRepository):
 
     def list_job_statuses(self) -> list[dict]:
         return list(self.status_rows)
+
+
+@contextmanager
+def running_recovery_server(repository: OperationalRepository) -> Iterator[tuple[str, int]]:
+    class TestHandler(RecoveryApiHandler):
+        pass
+
+    TestHandler.repository = repository
+    TestHandler.security_monitor = None
+    server = ThreadingHTTPServer(("127.0.0.1", 0), TestHandler)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        host, port = server.server_address
+        yield str(host), int(port)
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+
+def request(address: tuple[str, int], path: str, headers: dict[str, str] | None = None):
+    connection = HTTPConnection(*address, timeout=2)
+    connection.request("GET", path, headers=headers or {})
+    response = connection.getresponse()
+    body = response.read()
+    connection.close()
+    return response, body
 
 
 def test_recovery_health_identifies_the_isolated_runtime(monkeypatch) -> None:
@@ -38,6 +71,30 @@ def test_recovery_health_identifies_the_isolated_runtime(monkeypatch) -> None:
         "version": "recovery-test",
         "database": {"status": "ok"},
     }
+
+
+def test_recovery_http_runtime_remains_the_job_route_owner(monkeypatch) -> None:
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
+    repository = OperationalRepository()
+    repository.status_rows = [{
+        "lottery": "今彩539",
+        "jobName": "matrix-539-refresh-v2",
+        "job": None,
+        "latestDraw": None,
+        "latestAnalysis": None,
+    }]
+
+    with running_recovery_server(repository) as address:
+        response, body = request(
+            address,
+            "/jobs/status",
+            {"X-Matrix-Admin-Token": "expected-token"},
+        )
+
+    assert response.status == 200
+    assert response.getheader("Cache-Control") == "no-store"
+    assert response.getheader("Access-Control-Allow-Origin") is None
+    assert json.loads(body)["items"][0]["jobName"] == "matrix-539-refresh-v2"
 
 
 def test_recovery_runtime_does_not_serve_public_matrix_routes() -> None:

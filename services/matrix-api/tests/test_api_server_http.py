@@ -104,19 +104,21 @@ def request(
     return response, body
 
 
-def test_lowercase_admin_header_can_read_protected_status(monkeypatch) -> None:
+def test_public_api_never_serves_job_status_even_with_valid_admin_token(monkeypatch) -> None:
     monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
-    with running_server(HttpOperationalRepository()) as address:
+    repository = HttpOperationalRepository()
+    with running_server(repository) as address:
         response, body = request(
             address,
             "GET",
             "/jobs/status",
             {"x-matrix-admin-token": "expected-token"},
         )
-        assert response.status == 200
+        assert response.status == 404
         assert response.getheader("Cache-Control") == "no-store"
         assert response.getheader("Access-Control-Allow-Origin") is None
-        assert b'"items"' in body
+        assert json.loads(body) == {"error": "NOT_FOUND"}
+    assert repository.list_job_statuses() != []
 
 
 @pytest.mark.parametrize("path", ["/api/matrix/tongxing", "/jobs/status"])
@@ -135,13 +137,14 @@ def test_204_has_no_payload_or_representation_headers(path) -> None:
         assert b"content-length:" not in headers.lower()
 
 
-def test_protected_status_errors_have_no_store_and_no_cors(monkeypatch) -> None:
+def test_public_job_routes_are_hidden_without_credentials(monkeypatch) -> None:
     monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
     with running_server(HttpOperationalRepository()) as address:
-        response, _ = request(address, "GET", "/jobs/status")
-        assert response.status == 403
+        response, body = request(address, "GET", "/jobs/status")
+        assert response.status == 404
         assert response.getheader("Cache-Control") == "no-store"
         assert response.getheader("Access-Control-Allow-Origin") is None
+        assert json.loads(body) == {"error": "NOT_FOUND"}
 
 
 @pytest.mark.parametrize("path", ["/jobs/status", "/jobs/refresh", "/jobs/refresh/status", "/jobs/recover"])
@@ -227,16 +230,17 @@ def test_non_get_protected_status_response_has_no_store_and_no_cors(monkeypatch)
         assert response.getheader("Access-Control-Allow-Origin") is None
 
 
-def test_manual_refresh_is_protected_and_not_cors_accessible(monkeypatch) -> None:
+def test_public_api_does_not_expose_manual_refresh(monkeypatch) -> None:
     monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
     with running_server(HttpOperationalRepository()) as address:
-        response, _ = request(address, "POST", "/jobs/refresh")
-        assert response.status == 403
+        response, body = request(address, "POST", "/jobs/refresh")
+        assert response.status == 404
         assert response.getheader("Cache-Control") == "no-store"
         assert response.getheader("Access-Control-Allow-Origin") is None
+        assert json.loads(body) == {"error": "NOT_FOUND"}
 
 
-def test_manual_refresh_returns_only_the_latest_draw(monkeypatch) -> None:
+def test_public_api_valid_admin_token_cannot_start_refresh_work(monkeypatch) -> None:
     monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
     repository = HttpOperationalRepository()
     calls: list[tuple[str, InMemoryAnalysisRepository]] = []
@@ -262,18 +266,9 @@ def test_manual_refresh_returns_only_the_latest_draw(monkeypatch) -> None:
             },
             json.dumps({"lottery": "今彩539"}).encode("utf-8"),
         )
-        assert response.status == 202
-        assert response.getheader("Cache-Control") == "no-store"
-        assert response.getheader("Access-Control-Allow-Origin") is None
-        task = json.loads(body)
-        assert task["status"] == "accepted"
-        from urllib.parse import urlencode
-        response, body = request(address, "GET", "/jobs/refresh/status?" + urlencode({"lottery": "今彩539", "requestId": task["requestId"]}), {"X-Matrix-Admin-Token": "expected-token"})
-        assert response.status == 200
-        assert response.getheader("Cache-Control") == "no-store"
-        assert response.getheader("Access-Control-Allow-Origin") is None
-        assert "numbers" not in json.loads(body)
-    assert calls == [("今彩539", repository)]
+        assert response.status == 404
+        assert json.loads(body) == {"error": "NOT_FOUND"}
+    assert calls == []
 
 
 def test_public_health_keeps_cors(monkeypatch) -> None:
@@ -292,11 +287,11 @@ def test_query_token_is_not_written_to_access_log(monkeypatch, capsys) -> None:
             "GET",
             "/jobs/status?token=fake-log-secret",
         )
-        assert response.status == 403
+        assert response.status == 404
     assert "fake-log-secret" not in capsys.readouterr().out
 
 
-def test_protected_status_503_is_safe_and_not_cacheable(monkeypatch) -> None:
+def test_public_job_route_does_not_touch_status_repository(monkeypatch) -> None:
     monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
     with running_server(ExplodingStatusRepository()) as address:
         response, body = request(
@@ -305,11 +300,10 @@ def test_protected_status_503_is_safe_and_not_cacheable(monkeypatch) -> None:
             "/jobs/status",
             {"X-Matrix-Admin-Token": "expected-token"},
         )
-        assert response.status == 503
+        assert response.status == 404
         assert response.getheader("Cache-Control") == "no-store"
         assert response.getheader("Access-Control-Allow-Origin") is None
-        assert body == b'{"error":"STATUS_UNAVAILABLE"}'
-        assert b"fake-database-secret" not in body
+        assert body == b'{"error":"NOT_FOUND"}'
 
 
 def test_post_rejects_request_body_larger_than_64_kib() -> None:
@@ -398,10 +392,12 @@ def test_history_http_revalidation_omits_unchanged_body_and_sends_corrections(mo
         assert failed.getheader('Cache-Control') == 'no-store'
 
 
-def test_conditional_headers_do_not_cache_jobs_or_post(monkeypatch):
+def test_conditional_headers_do_not_cache_hidden_jobs_or_post(monkeypatch):
     monkeypatch.setattr(api_server, 'handle_api_request', lambda *a, **k: (200, {'items': []}))
     with running_server(HttpOperationalRepository()) as address:
-        for method, path in [('GET', '/jobs/status'), ('POST', '/api/matrix/tongxing')]:
-            response, body = request(address, method, path, {'If-None-Match': '*'}, b'{}' if method == 'POST' else None)
-            assert response.status == 200 and body
-            assert response.getheader('ETag') is None
+        job, body = request(address, 'GET', '/jobs/status', {'If-None-Match': '*'})
+        assert job.status == 404 and body
+        assert job.getheader('ETag') is None
+        post, body = request(address, 'POST', '/api/matrix/tongxing', {'If-None-Match': '*'}, b'{}')
+        assert post.status == 200 and body
+        assert post.getheader('ETag') is None

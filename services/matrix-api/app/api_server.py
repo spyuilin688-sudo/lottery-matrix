@@ -67,17 +67,11 @@ def _service_version() -> str:
 
 
 def _health_payload(status: str) -> dict[str, Any]:
-    admin_api_status = (
-        "ok"
-        if environ.get("MATRIX_ADMIN_STATUS_TOKEN", "").strip()
-        else "misconfigured"
-    )
     return {
         "status": status,
         "service": SERVICE_NAME,
         "version": _service_version(),
         "database": {"status": status},
-        "adminApi": {"status": admin_api_status},
     }
 
 
@@ -884,9 +878,15 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
         self._send(204, {}, allow_cors=not protected, no_store=protected)
 
     def do_GET(self) -> None:
+        # Job control belongs exclusively to the isolated recovery service.
+        # Keep the shared dispatcher for recovery_server.py, but never expose it
+        # through the public Matrix API process even when a valid admin token is supplied.
+        if self._is_protected_job_path():
+            self._send(404, {"error": "NOT_FOUND"}, allow_cors=False, no_store=True)
+            return
         if not self._security_before("GET"):
             return
-        protected = self._is_protected_job_path()
+        protected = False
         if self._is_matrix_card_path() and urlsplit(self.path).path.endswith(".svg"):
             try:
                 card_response = handle_matrix_card_request(self.path, self.repository)
@@ -921,13 +921,16 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
         )
 
     def do_POST(self) -> None:
+        if self._is_protected_job_path():
+            self._send(404, {"error": "NOT_FOUND"}, allow_cors=False, no_store=True)
+            return
         if not self._security_before("POST"):
             return
         try:
             length = int(self.headers.get("Content-Length", "0"))
         except ValueError:
             length = 0
-        protected = self._is_protected_job_path()
+        protected = False
         if length > MAX_REQUEST_BODY_BYTES:
             self._send(
                 413,

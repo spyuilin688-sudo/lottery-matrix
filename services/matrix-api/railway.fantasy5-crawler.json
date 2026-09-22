@@ -4,8 +4,8 @@
     "builder": "RAILPACK"
   },
   "deploy": {
-    "startCommand": "uv run --no-dev --no-sync python -u -m app.primary_worker --group evening",
+    "startCommand": "uv run --no-dev --no-sync python -u -m app.fantasy5_railway_job",
     "restartPolicyType": "NEVER",
-    "cronSchedule": "10 22 * * *"
+    "cronSchedule": "33 1,2 * * *"
   }
 }

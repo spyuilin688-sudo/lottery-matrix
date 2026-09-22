@@ -63,7 +63,7 @@ def test_fantasy5_railway_service_is_analysis_only() -> None:
     config = (SERVICE_ROOT / "railway.fantasy5.json").read_text(encoding="utf-8")
     entrypoint = (SERVICE_ROOT / "app" / "analysis_worker.py").read_text(encoding="utf-8")
 
-    assert '"startCommand": "uv run python -u -m app.analysis_worker --lottery 天天樂"' in config
+    assert '"startCommand": "uv run --no-dev --no-sync python -u -m app.analysis_worker --lottery 天天樂"' in config
     assert "app.worker --lottery 天天樂" not in config
     assert "LatestDrawSource" not in entrypoint
     assert "DrawRefreshService" not in entrypoint

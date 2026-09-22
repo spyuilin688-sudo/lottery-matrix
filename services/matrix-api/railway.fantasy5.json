@@ -4,7 +4,7 @@
     "builder": "RAILPACK"
   },
   "deploy": {
-    "startCommand": "uv run python -u -m app.analysis_worker --lottery 天天樂",
+    "startCommand": "uv run --no-dev --no-sync python -u -m app.analysis_worker --lottery 天天樂",
     "restartPolicyType": "NEVER",
     "cronSchedule": "10 10 * * *"
   }
