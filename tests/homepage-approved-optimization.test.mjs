@@ -28,7 +28,7 @@ test("approved homepage fills the canonical logo frame while keeping the respons
   assert.doesNotMatch(css, /\.home-screen \.lottery-screen\s*\{[^}]*transform:/s);
 });
 
-test("draw information remains a responsive three-zone layout with equal footer columns", () => {
+test("draw information remains a responsive three-zone layout with 60/40 footer columns", () => {
   assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(104px, 30%\) minmax\(0, 1fr\)/s);
-  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*grid-template-columns:\s*minmax\(0, 3fr\) minmax\(0, 2fr\)/s);
 });
