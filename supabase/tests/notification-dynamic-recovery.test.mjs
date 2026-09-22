@@ -71,13 +71,13 @@ test('notification recovery uses demand-driven scheduling with an hourly fallbac
       create function private.native_push_eligible(uuid, uuid, uuid)
       returns boolean language sql stable as $$ select true $$;
       create function private.notification_fanout_drain(integer, timestamptz)
-      returns jsonb language sql as $ select '{}'::jsonb $;
+      returns jsonb language sql as $stub$ select '{}'::jsonb $stub$;
       create function private.notification_dispatch_http_tick()
-      returns bigint language sql as $ select null::bigint $;
+      returns bigint language sql as $stub$ select null::bigint $stub$;
       create function private.native_notification_dispatch_http_tick()
-      returns bigint language sql as $ select null::bigint $;
+      returns bigint language sql as $stub$ select null::bigint $stub$;
       create function private.admin_transfer_push_tick()
-      returns bigint language sql as $ select null::bigint $;
+      returns bigint language sql as $stub$ select null::bigint $stub$;
 
       create function public.test_notification_trigger()
       returns trigger language plpgsql as $$ begin return new; end $$;
