@@ -85,9 +85,13 @@ function isDefinitivelyInvalidMemberSession(error: unknown) {
   ].includes(code);
 }
 
-async function memberRpc<T>(name: string, args?: Record<string, unknown>) {
+async function memberRpc<T>(
+  name: string,
+  args?: Record<string, unknown>,
+  expectedScope = getAlgorithmCacheScope(),
+) {
   const client = getSupabaseClient();
-  const scope = getAlgorithmCacheScope();
+  const scope = expectedScope;
   const assertCurrentMember = () => {
     if (scope !== getAlgorithmCacheScope()) throw new Error('MEMBER_SESSION_CHANGED');
   };
@@ -124,9 +128,9 @@ function isMemberSessionChanged(error: unknown) {
   return error instanceof Error && error.message === 'MEMBER_SESSION_CHANGED';
 }
 
-async function memberSessionStableRpc<T>(name: string) {
+async function memberSessionStableRpc<T>(name: string, expectedScope?: number) {
   try {
-    return await memberRpc<T>(name);
+    return await memberRpc<T>(name, undefined, expectedScope ?? getAlgorithmCacheScope());
   } catch (error) {
     if (!isMemberSessionChanged(error)) throw error;
     // Only the no-argument bootstrap/profile calls use this retry path. Bootstrap is
@@ -141,7 +145,7 @@ export function bootstrapMember() {
   const scope = getAlgorithmCacheScope();
   if (sharedBootstrap?.scope === scope) return sharedBootstrap.promise;
 
-  let promise = memberSessionStableRpc<MemberBootstrapResponse>('member_bootstrap');
+  let promise = memberSessionStableRpc<MemberBootstrapResponse>('member_bootstrap', scope);
   promise = promise.catch((error) => {
     if (sharedBootstrap?.promise === promise) sharedBootstrap = null;
     throw error;
