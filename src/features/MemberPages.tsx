@@ -9,6 +9,7 @@ import { EcpayReviewLogin } from "../auth/EcpayReviewLogin";
 import { usePermissionSettings } from "../permission-settings";
 import { signInWithGoogle } from "../auth/google-auth";
 import { clearLineLoginAttempt, consumeLineLoginAttempt, markLineLoginAttempt } from "../auth/line-login-attempt";
+import { logicalSessionIdentity } from "../auth/session-identity";
 import { getAlgorithmCacheScope, subscribeAlgorithmCacheScope } from "../auth/algorithm-cache-scope";
 import {
   MEMBER_SESSION_READ_TIMEOUT_MS,
@@ -884,6 +885,10 @@ export function referralErrorCode(error: unknown): ReferralSubmissionErrorCode {
 
 export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   const subscriptionPurchaseVisible = useSubscriptionPurchaseVisible();
+  const memberSession = useMemberSessionSnapshot();
+  const memberSessionKey = memberSession.status === "ready"
+    ? `ready:${logicalSessionIdentity(memberSession.session) ?? "guest"}`
+    : memberSession.status;
   const { confirm: confirmDialog } = useAppDialog();
   const [referralCode, setReferralCode] = useState("");
   const [activationCode, setActivationCode] = useState("");
@@ -930,60 +935,51 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
 
   useEffect(() => {
     let active = true;
-    let authRevision = 0;
     let loadTimer: ReturnType<typeof setTimeout> | undefined;
-    let currentIdentity: string | null | undefined;
-    const client = getSupabaseClient();
-    const applySession = (session: Session | null) => {
-      const identity = logicalSessionIdentity(session);
-      if (currentIdentity === identity) return;
-      currentIdentity = identity;
-      const revision = ++authRevision;
-      clearTimeout(loadTimer);
-      referralRequestRevision.current += 1;
-      activationRequestRevision.current += 1;
-      setActivationCode("");
-      setSubmitting(false);
-      setResultState("idle");
-      setReferralSummary(null);
-      setReferralCode("");
-      setReferralSubmitting(false);
-      setReferralResultState("idle");
+    const revision = referralRequestRevision.current + 1;
+    referralRequestRevision.current = revision;
+    activationRequestRevision.current += 1;
+    setActivationCode("");
+    setSubmitting(false);
+    setResultState("idle");
+    setReferralSummary(null);
+    setReferralCode("");
+    setReferralSubmitting(false);
+    setReferralResultState("idle");
+
+    if (memberSession.status === "checking") {
+      setReferralLoginRequired(false);
+      setReferralLoading(true);
+    } else if (memberSession.status === "error") {
+      setReferralLoginRequired(false);
+      setReferralLoading(false);
+    } else {
+      const session = memberSession.session;
       setReferralLoginRequired(!session);
       setReferralLoading(Boolean(session));
-      if (!session) return;
-      // Defer API work until Supabase releases its auth-event lock.
-      loadTimer = setTimeout(() => {
-        void fetchMemberReferralSummary().then((summary) => {
-          if (active && authRevision === revision) setReferralSummary(summary);
-        }).catch((error: unknown) => {
-          if (!active || authRevision !== revision) return;
-          const message = error && typeof error === "object" && "message" in error ? String(error.message) : "";
-          setReferralLoginRequired(["MEMBER_SESSION_EXPIRED", "AUTH_REQUIRED", "LINE_IDENTITY_REQUIRED"].includes(message));
-        }).finally(() => {
-          if (active && authRevision === revision) setReferralLoading(false);
-        });
-      }, 0);
-    };
-    const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
-      if (!active || event === "INITIAL_SESSION") return;
-      applySession(event === "SIGNED_OUT" ? null : session);
-    });
-    const initialRevision = authRevision;
-    void withDeadline(() => client.auth.getSession(), { timeoutMs: PROFILE_SESSION_TIMEOUT_MS }).then(({ data, error }) => {
-      if (!active || authRevision !== initialRevision) return;
-      if (error) throw error;
-      applySession(data.session);
-    }).catch(() => {
-      if (active && authRevision === initialRevision) setReferralLoading(false);
-    });
+      if (session) {
+        // Keep member API work outside the Supabase auth callback; the bridge has
+        // already published this stable session snapshot.
+        loadTimer = setTimeout(() => {
+          void fetchMemberReferralSummary().then((summary) => {
+            if (active && referralRequestRevision.current === revision) setReferralSummary(summary);
+          }).catch((error: unknown) => {
+            if (!active || referralRequestRevision.current !== revision) return;
+            const message = error && typeof error === "object" && "message" in error ? String(error.message) : "";
+            setReferralLoginRequired(["MEMBER_SESSION_EXPIRED", "AUTH_REQUIRED", "LINE_IDENTITY_REQUIRED"].includes(message));
+          }).finally(() => {
+            if (active && referralRequestRevision.current === revision) setReferralLoading(false);
+          });
+        }, 0);
+      }
+    }
+
     return () => {
       active = false;
       clearTimeout(loadTimer);
-      subscription.unsubscribe();
-      referralRequestRevision.current += 1;
+      if (referralRequestRevision.current === revision) referralRequestRevision.current += 1;
     };
-  }, []);
+  }, [memberSessionKey]);
 
   async function handleReferralSubmit() {
     if (referralSubmitting || !referralSummary?.canSubmitReferralCode || !referralCode.trim()) return;
