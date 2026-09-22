@@ -19,7 +19,9 @@ const BROWSER_OWNERS = {
   'tests/home-pro-plans-layout-runtime.spec.ts': ['src/Prototype.tsx', 'src/features/MemberPages.tsx', 'src/pro-plans-layout.css', 'src/pro-plans-carousel-peek.css'],
   'tests/tongxing-reference-responsive.spec.ts': ['src/features/LegacyTongXingPage.tsx', 'src/features/NumberReferencePage.tsx', 'src/tongxing-compact.css', 'src/number-reference-visual-refinement.css'],
   'tests/notebook-reliability.spec.ts': ['src/features/NotebookPages.tsx', 'src/features/notebook-owner.ts', 'src/features/notebook-storage.ts'],
+  'tests/notebook-responsive.spec.ts': ['src/features/NotebookPages.tsx', 'src/features/notebook-owner.ts', 'src/features/notebook-storage.ts', 'src/auth/LinePageGuard.tsx'],
   'tests/mobile-runtime.spec.ts': ['src/mobile/MobileRuntime.tsx', 'src/mobile/MobileScroll.tsx', 'src/mobile/Keyboard.tsx', 'src/input-behavior.ts'],
+  'tests/tiangong-layout-browser.mjs': ['src/features/MatrixTiangongPage.tsx', 'src/matrix-tiangong-results.css'],
   'tests/membership-preview/responsive.spec.ts': ['tests/membership-preview/main.tsx', 'tests/membership-preview/preview.css', 'tests/membership-preview/state.ts', 'src/features/MemberPages.tsx'],
 };
 
