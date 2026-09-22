@@ -35,6 +35,8 @@ export function MemberSessionBridge({
   useEffect(() => {
     let active = true;
     let authRevision = 0;
+    let initialReadSettled = false;
+    let initialReadFailed = false;
     let currentSessionIdentity: string | null = null;
     let sessionGeneration = 0;
     let bootstrappedGeneration: number | null = null;
@@ -111,8 +113,13 @@ export function MemberSessionBridge({
     const readCurrentSession = async () => {
       const startedRevision = authRevision;
       try {
-        const { data, error } = await withDeadline(() => client.auth.getSession(), { timeoutMs: MEMBER_SESSION_READ_TIMEOUT_MS });
+        const { data, error } = await withDeadline(
+          () => client.auth.getSession(),
+          { timeoutMs: MEMBER_SESSION_READ_TIMEOUT_MS },
+        );
         if (error) throw error;
+        initialReadSettled = true;
+        initialReadFailed = false;
         if (!active) return data.session;
         if (authRevision !== startedRevision) {
           const current = getMemberSessionSnapshot();
@@ -122,7 +129,14 @@ export function MemberSessionBridge({
         updateSession(data.session, false);
         return data.session;
       } catch (error) {
-        if (active && authRevision === startedRevision) publishMemberSessionError();
+        const superseded = authRevision !== startedRevision;
+        initialReadSettled = true;
+        if (superseded) {
+          const current = getMemberSessionSnapshot();
+          if (current.status === 'ready') return current.session;
+        }
+        initialReadFailed = true;
+        if (active) publishMemberSessionError();
         throw error;
       }
     };
@@ -131,6 +145,15 @@ export function MemberSessionBridge({
     void readCurrentSession().catch(() => undefined);
 
     const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
+      if (event === 'INITIAL_SESSION' && !session && (!initialReadSettled || initialReadFailed)) return;
+
+      const current = getMemberSessionSnapshot();
+      if ((event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') && current.status === 'ready') {
+        const currentUserId = current.session?.user?.id ?? null;
+        const nextUserId = session?.user?.id ?? null;
+        if (currentUserId !== nextUserId) return;
+      }
+
       authRevision += 1;
       const currentSession = event === 'SIGNED_OUT' ? null : session;
       publishMemberSessionReady(currentSession);
