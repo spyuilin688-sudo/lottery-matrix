@@ -16,58 +16,75 @@ beforeEach(() => {
 });
 afterEach(() => { dispose?.(); dispose = undefined; vi.useRealTimers(); vi.restoreAllMocks(); });
 
-test('focus and visibility bursts share the current 30-second refresh window', async () => {
+test('foreground events share a 30-second burst window and do not restore 30-second polling', async () => {
   const { installPermissionSettingsRefresh } = await import('./permission-settings');
   dispose = installPermissionSettingsRefresh();
   await vi.advanceTimersByTimeAsync(0);
   window.dispatchEvent(new Event('focus'));
+  window.dispatchEvent(new Event('online'));
   document.dispatchEvent(new Event('visibilitychange'));
   await vi.advanceTimersByTimeAsync(29_999);
+  expect(rpc).toHaveBeenCalledTimes(1);
+
+  await vi.advanceTimersByTimeAsync(1);
+  expect(rpc).toHaveBeenCalledTimes(1);
+  window.dispatchEvent(new Event('focus'));
+  await vi.advanceTimersByTimeAsync(0);
+  expect(rpc).toHaveBeenCalledTimes(2);
+});
+
+test('visible idle fallback refreshes every five minutes instead of every 30 seconds', async () => {
+  const { installPermissionSettingsRefresh } = await import('./permission-settings');
+  dispose = installPermissionSettingsRefresh();
+  await vi.advanceTimersByTimeAsync(0);
+  await vi.advanceTimersByTimeAsync(4 * 60_000 + 59_999);
   expect(rpc).toHaveBeenCalledTimes(1);
   await vi.advanceTimersByTimeAsync(1);
   expect(rpc).toHaveBeenCalledTimes(2);
 });
 
-test('slow requests do not overlap automatic refreshes and refresh resumes after settlement', async () => {
+test('slow requests never overlap and an elapsed fallback resumes after settlement', async () => {
   let resolve!: (value: typeof response) => void;
   rpc.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
   const { installPermissionSettingsRefresh } = await import('./permission-settings');
   dispose = installPermissionSettingsRefresh();
-  await vi.advanceTimersByTimeAsync(60_000);
+  await vi.advanceTimersByTimeAsync(5 * 60_000);
   expect(rpc).toHaveBeenCalledTimes(1);
   resolve(response);
-  await vi.advanceTimersByTimeAsync(30_000);
+  await vi.advanceTimersByTimeAsync(0);
   expect(rpc).toHaveBeenCalledTimes(2);
 });
 
-test('explicit permission checks remain fresh while background events reuse their refresh window', async () => {
+test('explicit permission checks remain fresh while foreground events reuse their burst window', async () => {
   const { installPermissionSettingsRefresh, refreshPermissionSettings } = await import('./permission-settings');
   dispose = installPermissionSettingsRefresh();
   await vi.advanceTimersByTimeAsync(0);
   await refreshPermissionSettings();
   window.dispatchEvent(new Event('focus'));
+  window.dispatchEvent(new Event('online'));
   await vi.advanceTimersByTimeAsync(0);
   expect(rpc).toHaveBeenCalledTimes(2);
 });
 
-test('a recent explicit check moves the next background read to its 30-second deadline', async () => {
+test('a recent explicit check moves the next idle fallback to its five-minute deadline', async () => {
   const { installPermissionSettingsRefresh, refreshPermissionSettings } = await import('./permission-settings');
   dispose = installPermissionSettingsRefresh();
-  await vi.advanceTimersByTimeAsync(29_000);
+  await vi.advanceTimersByTimeAsync(4 * 60_000);
   await refreshPermissionSettings();
-  await vi.advanceTimersByTimeAsync(29_999);
+  await vi.advanceTimersByTimeAsync(4 * 60_000 + 59_999);
   expect(rpc).toHaveBeenCalledTimes(2);
   await vi.advanceTimersByTimeAsync(1);
   expect(rpc).toHaveBeenCalledTimes(3);
 });
 
-test('hidden tabs skip polling and returning after the window refreshes once', async () => {
+test('hidden tabs skip fallback polling and returning to foreground refreshes once', async () => {
   const { installPermissionSettingsRefresh } = await import('./permission-settings');
   dispose = installPermissionSettingsRefresh();
   await vi.advanceTimersByTimeAsync(0);
   vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
-  await vi.advanceTimersByTimeAsync(60_000);
+  await vi.advanceTimersByTimeAsync(10 * 60_000);
   expect(rpc).toHaveBeenCalledTimes(1);
+
   vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
   document.dispatchEvent(new Event('visibilitychange'));
   window.dispatchEvent(new Event('focus'));
@@ -75,6 +92,26 @@ test('hidden tabs skip polling and returning after the window refreshes once', a
   expect(rpc).toHaveBeenCalledTimes(2);
 });
 
+test('settling an in-flight automatic read after disposal cannot re-arm timers or event refreshes', async () => {
+  let resolve!: (value: typeof response) => void;
+  rpc.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
+  const { installPermissionSettingsRefresh } = await import('./permission-settings');
+  dispose = installPermissionSettingsRefresh();
+  await vi.advanceTimersByTimeAsync(0);
+  expect(rpc).toHaveBeenCalledTimes(1);
+
+  dispose();
+  dispose = undefined;
+  resolve(response);
+  await vi.advanceTimersByTimeAsync(0);
+  await vi.advanceTimersByTimeAsync(10 * 60_000);
+  window.dispatchEvent(new Event('focus'));
+  window.dispatchEvent(new Event('online'));
+  document.dispatchEvent(new Event('visibilitychange'));
+  await vi.advanceTimersByTimeAsync(0);
+
+  expect(rpc).toHaveBeenCalledTimes(1);
+});
 
 test('foreground permission read joins an automatic refresh already in flight', async () => {
   let resolve!: (value: typeof response) => void;

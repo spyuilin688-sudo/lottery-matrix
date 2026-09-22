@@ -65,7 +65,7 @@ Runtime ownership（Model B）：src/admin.css 單獨擁有基本排版、共用
 
 每項服務以獨立邊框分隔，間距 8px。名稱、用途、營運狀態與是否需要處理的原因常駐；API 位址、時間、回應代碼、技術驗證結果、驗證方式及排程明細全部收在「查看技術明細」原生 details，預設收合且鍵盤可操作。技術證據仍完整保留，區分實際查詢、正式資料、Endpoint 連線、所屬服務、正式執行紀錄、會員流程未執行與寫入操作未執行。文案由 src/system-status.ts 與 backend/api-status-inventory.ts 擁有，既有檢查、功能、操作權限與安全限制保持一致；不得為了讓狀態變成正常而執行會寫入正式資料、派送通知、登出會員或啟動復原的操作。
 
-通知派送健康以事件式正式架構為準：驗證 notification_events 的事件觸發器、管理員轉帳觸發器、`matrix-notification-recovery-5m` 的每 5 分鐘 Recovery，以及 Web／Native／Admin 三類待處理、逾時與 24 小時正式派送結果。健康檢查本身不得送出測試通知；服務商接受紀錄不得描述成裝置一定顯示。
+通知派送健康以事件式正式架構為準：驗證 notification_events 的事件觸發器、管理員轉帳觸發器、通知 queue 的動態 Recovery replan triggers、依最早 retry／lease 時間建立的 `matrix-notification-recovery-next`，以及每小時一次的 `matrix-notification-recovery-fallback` 保底。沒有待補救工作時不保留動態 job；Web／Native／Admin 三類待處理、逾時與 24 小時正式派送結果仍分開顯示。健康檢查本身不得送出測試通知；服務商接受紀錄不得描述成裝置一定顯示。
 
 Railway 操作由 src/RailwayOperations.tsx 與 src/system-status.css 擁有，使用既有原生彩種選單、compactButton 與 AdminApp 確認對話框。手動更新與復原沿用管理員 edit 權限，一次選定一個彩種，送出期間鎖定操作，失敗不自動重送。復原回應 accepted 只顯示已受理，不能描述成已完成；already-running 顯示未重複啟動。操作回饋使用持續可見的 status／alert 區域。
 

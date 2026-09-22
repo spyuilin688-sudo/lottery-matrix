@@ -61,7 +61,7 @@ it('renders event-driven notification health without sending a notification from
     checkMode: 'service', checkEvidence: 'reported', healthState: 'healthy', ok: true, checkedAt, responseMs: 1,
     detail: {
       checked_at: checkedAt, mode: 'event-driven', event_trigger_enabled: true, admin_transfer_trigger_enabled: true,
-      recovery: { enabled: true, schedule: '*/5 * * * *', last_started_at: '2026-09-13T11:55:00Z', last_finished_at: '2026-09-13T11:55:01Z', last_status: 'succeeded' },
+      recovery: { enabled: true, strategy: 'dynamic-with-hourly-fallback', schedule: '7 * * * *', queue_trigger_enabled: true, dynamic_enabled: false, next_due_at: null, last_started_at: '2026-09-13T11:07:00Z', last_finished_at: '2026-09-13T11:07:01Z', last_status: 'succeeded' },
       web: { pending: 0, processing: 0, overdue: 0, sent_24h: 2, failed_24h: 0, skipped_24h: 0, last_sent_at: '2026-09-13T11:40:00Z', last_failed_at: null },
       native: { enabled_devices: 0, pending: 0, processing: 0, overdue: 0, sent_24h: 0, failed_24h: 0, canceled_24h: 0, last_sent_at: '2026-09-09T21:30:00Z', last_failed_at: '2026-09-10T00:30:00Z' },
       admin: { enabled_subscriptions: 0, pending: 0, sending: 0, overdue: 0, sent_24h: 0, failed_24h: 0, skipped_24h: 0, last_sent_at: null, last_failed_at: null },
@@ -82,7 +82,10 @@ it('renders event-driven notification health without sending a notification from
     expect(container.querySelector('.systemStatusAttention')?.textContent).toContain('目前沒有需要處理的項目');
     await act(async () => row.querySelector('summary')?.click());
     expect(row.querySelector('details')?.textContent).toContain('派送模式事件觸發');
-    expect(row.querySelector('details')?.textContent).toContain('Recovery 頻率每 5 分鐘');
+    expect(row.querySelector('details')?.textContent).toContain('Recovery 模式依待處理時間動態排程');
+    expect(row.querySelector('details')?.textContent).toContain('Recovery 保底每小時');
+    expect(row.querySelector('details')?.textContent).toContain('動態 Recovery目前無排程');
+    expect(row.querySelector('details')?.textContent).toContain('下次 Recovery目前無待處理工作');
     expect(row.querySelector('details')?.textContent).toContain('Web 待處理0');
     expect(row.querySelector('details')?.textContent).toContain('Native 待處理0');
     expect(row.querySelector('details')?.textContent).toContain('Admin 待處理0');

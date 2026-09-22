@@ -57,7 +57,7 @@ export function getSystemStatusPresentation(item: SystemStatusItem) {
   if (item.id === nativeNotificationStatusId) {
     const health = parseNativeNotificationHealth(item.detail, new Date(item.checkedAt));
     if (!health) return { label: '狀態待確認', tone: 'limited' as const, scope: '目前無法取得完整通知派送健康資料，請重新檢查。' };
-    const scope = '已讀取事件觸發、5 分鐘 Recovery 與 Web／Native／管理員通知佇列；健康檢查不發送測試通知，裝置實際顯示仍需正式派送紀錄確認。';
+    const scope = '已讀取事件觸發、動態 Recovery、每小時保底與 Web／Native／管理員通知佇列；健康檢查不發送測試通知，裝置實際顯示仍需正式派送紀錄確認。';
     if (!item.ok) return { label: '需查看紀錄', tone: 'warning' as const, scope };
     return { label: '事件派送正常', tone: 'limited' as const, scope };
   }
@@ -166,7 +166,7 @@ export function getSystemStatusOperationalPresentation(item: SystemStatusItem): 
   if (item.id === nativeNotificationStatusId) {
     const health = parseNativeNotificationHealth(item.detail, new Date(item.checkedAt));
     if (!health || !item.ok) return needsAction('通知派送健康資料不完整或有異常，請查看下方原因。');
-    return normal('目前運作正常。通知事件、Recovery 與派送佇列沒有需要處理的異常。');
+    return normal('目前運作正常。通知事件、動態 Recovery 與派送佇列沒有需要處理的異常。');
   }
 
   if (item.id === matrixStorageStatusId) {
@@ -248,7 +248,11 @@ export function getServiceEvidenceFacts(item: SystemStatusItem): SystemStatusFac
       { label: '事件觸發', value: health.event_trigger_enabled ? '已啟用' : '已停用' },
       { label: '管理員轉帳觸發', value: health.admin_transfer_trigger_enabled ? '已啟用' : '已停用' },
       { label: 'Recovery 開關', value: health.recovery.enabled ? '已啟用' : '已停用' },
-      { label: 'Recovery 頻率', value: health.recovery.schedule === '*/5 * * * *' ? '每 5 分鐘' : (health.recovery.schedule ?? '未設定') },
+      { label: 'Recovery 模式', value: health.recovery.strategy === 'dynamic-with-hourly-fallback' ? '依待處理時間動態排程' : health.recovery.strategy },
+      { label: '動態排程觸發器', value: health.recovery.queue_trigger_enabled ? '已啟用' : '未完整啟用' },
+      { label: 'Recovery 保底', value: health.recovery.schedule === '7 * * * *' ? '每小時' : (health.recovery.schedule ?? '未設定') },
+      { label: '動態 Recovery', value: health.recovery.dynamic_enabled ? '已排程' : '目前無排程' },
+      health.recovery.next_due_at ? time('下次 Recovery', health.recovery.next_due_at) : { label: '下次 Recovery', value: '目前無待處理工作' },
       time('最近 Recovery 開始', health.recovery.last_started_at),
       time('最近 Recovery 結束', health.recovery.last_finished_at),
       { label: '最近 Recovery 結果', value: formatSystemStatusValue(health.recovery.last_status) },
@@ -275,7 +279,7 @@ export function getServiceEvidenceFacts(item: SystemStatusItem): SystemStatusFac
       time('最近 Native 派送失敗', health.native.last_failed_at),
       time('最近 Admin 派送成功', health.admin.last_sent_at),
       time('最近 Admin 派送失敗', health.admin.last_failed_at),
-      { label: '驗證範圍', value: '健康檢查不發送測試通知；事件觸發、Recovery、佇列與正式派送紀錄可驗證，服務商接受不等於裝置一定顯示。' },
+      { label: '驗證範圍', value: '健康檢查不發送測試通知；事件觸發、動態 Recovery、每小時保底、佇列與正式派送紀錄可驗證，服務商接受不等於裝置一定顯示。' },
     ];
   }
   const evidence = item.checkEvidence ?? (

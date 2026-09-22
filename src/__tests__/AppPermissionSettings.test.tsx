@@ -23,7 +23,7 @@ import { useSubscriptionPurchaseVisible } from '../subscription-purchase-visibil
 import App from '../App';
 afterEach(() => vi.useRealTimers());
 
-test('App reads permission settings on mount, updates the purchase entry and stops polling on unmount', async () => {
+test('App reads permission settings on mount, uses the five-minute idle fallback and stops refreshes on unmount', async () => {
   vi.useFakeTimers();
   let visible = true;
   let revision = 100;
@@ -36,9 +36,16 @@ test('App reads permission settings on mount, updates the purchase entry and sto
   expect(screen.queryByRole('button', { name: '訂閱方案／收費標準' })).not.toBeNull();
   visible = false; revision++;
   await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
+  expect(screen.queryByRole('button', { name: '訂閱方案／收費標準' })).not.toBeNull();
+  await act(async () => { await vi.advanceTimersByTimeAsync(4 * 60_000 + 30_000); });
   expect(screen.queryByRole('button', { name: '訂閱方案／收費標準' })).toBeNull();
   view.unmount();
   const previousRequests = rpc.mock.calls.length;
-  await act(async () => { await vi.advanceTimersByTimeAsync(30_000); window.dispatchEvent(new Event('focus')); });
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(5 * 60_000);
+    window.dispatchEvent(new Event('focus'));
+    window.dispatchEvent(new Event('online'));
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
   expect(rpc.mock.calls.length).toBe(previousRequests);
 });
