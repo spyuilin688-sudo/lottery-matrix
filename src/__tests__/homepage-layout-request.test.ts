@@ -25,6 +25,7 @@ function mountHomepage() {
       <section class="app-screen home-content"><div class="mobile-scroll"><div class="mobile-scroll-content">
       <div class="home-layout">
         <main class="lottery-screen">
+          <section class="home-announcement"><div class="home-announcement-track"><span class="home-announcement-text">公告</span></div></section>
           <div class="lottery-switcher lottery-switcher--home-style">
             <div class="lottery-switcher-hit-grid">
               <button class="lottery-card" data-selected="true" data-lottery="今彩539"></button>
@@ -80,7 +81,9 @@ describe("homepage requested spacing and selection", () => {
     expect(layout.getPropertyValue("--home-feature-gap").trim()).toBe("6px");
     expect(layout.getPropertyValue("--home-gap-status-core").replaceAll(" ", "")).toBe("clamp(9px,1.35dvh,12px)");
     expect(layout.getPropertyValue("--home-gap-core-features").replaceAll(" ", "")).toBe("var(--home-gap-status-core)");
-    expect(lotteryScreen.getPropertyValue("--home-gap-logo-switcher").replaceAll(" ", "")).toBe("clamp(13px,calc(1.15dvh+5px),16px)");
+    expect(lotteryScreen.getPropertyValue("--home-gap-logo-announcement").replaceAll(" ", "")).toBe("8px");
+    expect(lotteryScreen.getPropertyValue("--home-gap-announcement-switcher").replaceAll(" ", "")).toBe("8px");
+    expect(getComputedStyle(document.querySelector(".home-announcement")!).height).toBe("26px");
     expect(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").replaceAll(" ", "")).toBe("clamp(7px,calc(0.9dvh+1px),9px)");
     expect(lotteryScreen.getPropertyValue("--home-gap-draw-status").replaceAll(" ", "")).toBe("clamp(9px,calc(1.15dvh+1px),12px)");
     expect(bottomGroup.getPropertyValue("--home-core-width").trim()).toContain("- 32px");
