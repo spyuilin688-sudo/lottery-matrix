@@ -27,7 +27,7 @@ export function usePermissionSettings() {
   return useSyncExternalStore(subscribe, snapshot, serverSnapshot);
 }
 
-export async function refreshPermissionSettings(): Promise<PermissionSettings> {
+async function performPermissionSettingsRefresh(): Promise<PermissionSettings> {
   const sequence = ++requestSequence;
   lastRefreshStartedAt = Date.now();
   activeRequests++;
@@ -64,17 +64,21 @@ export async function refreshPermissionSettings(): Promise<PermissionSettings> {
   }
 }
 
-/**
- * Coalesce only concurrent permission reads. A later protected query still
- * performs a fresh settings RPC so permission changes invalidate cached
- * results on the very next request.
- */
-export function readPermissionSettings(): Promise<PermissionSettings> {
+export function refreshPermissionSettings(): Promise<PermissionSettings> {
   if (sharedRead) return sharedRead;
-  sharedRead = refreshPermissionSettings().finally(() => {
+  sharedRead = performPermissionSettingsRefresh().finally(() => {
     sharedRead = null;
   });
   return sharedRead;
+}
+
+/**
+ * Coalesce concurrent permission reads across both protected requests and the
+ * automatic refresh. After the shared read settles, the next protected request
+ * still performs a fresh RPC.
+ */
+export function readPermissionSettings(): Promise<PermissionSettings> {
+  return refreshPermissionSettings();
 }
 
 export function installPermissionSettingsRefresh() {
