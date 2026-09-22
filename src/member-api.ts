@@ -139,19 +139,26 @@ async function memberSessionStableRpc<T>(name: string, expectedScope?: number) {
   }
 }
 
-let sharedBootstrap: { scope: number; promise: Promise<MemberBootstrapResponse> } | null = null;
+type SharedBootstrap = { scope: number; promise: Promise<MemberBootstrapResponse> };
+let sharedBootstrap: SharedBootstrap | null = null;
 
 export function bootstrapMember() {
   const scope = getAlgorithmCacheScope();
   if (sharedBootstrap?.scope === scope) return sharedBootstrap.promise;
 
-  let promise = memberSessionStableRpc<MemberBootstrapResponse>('member_bootstrap', scope);
-  promise = promise.catch((error) => {
-    if (sharedBootstrap?.promise === promise) sharedBootstrap = null;
-    throw error;
-  });
-  sharedBootstrap = { scope, promise };
-  return promise;
+  const entry = { scope, promise: Promise.resolve(null as never) } as SharedBootstrap;
+  entry.promise = memberSessionStableRpc<MemberBootstrapResponse>('member_bootstrap', scope)
+    .then((value) => {
+      // A legitimate one-generation retry belongs to the new session, not the stale one.
+      if (sharedBootstrap === entry) entry.scope = getAlgorithmCacheScope();
+      return value;
+    })
+    .catch((error) => {
+      if (sharedBootstrap === entry) sharedBootstrap = null;
+      throw error;
+    });
+  sharedBootstrap = entry;
+  return entry.promise;
 }
 
 export function fetchMemberProfile() {
