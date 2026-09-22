@@ -66,7 +66,7 @@ describe("homepage requested spacing and selection", () => {
     expect(brandHeader.height).toBe("auto");
     expect(getComputedStyle(document.querySelector(".home-logo-image")!).height).toBe("auto");
     expect(getComputedStyle(document.querySelector(".home-logo-image")!).objectPosition).toBe("center bottom");
-    expect(getComputedStyle(document.querySelector(".home-layout")!).getPropertyValue("--home-gap-features-nav").replaceAll(" ", "")).toBe("clamp(8px,1.15dvh,12px)");
+    expect(getComputedStyle(document.querySelector(".home-layout")!).getPropertyValue("--home-gap-features-nav").replaceAll(" ", "")).toBe("clamp(4px,0.7dvh,8px)");
   });
 
   it("uses the requested independent homepage spacing values", () => {
@@ -79,7 +79,7 @@ describe("homepage requested spacing and selection", () => {
     expect(layout.getPropertyValue("--home-feature-inline").trim()).toBe("16px");
     expect(layout.getPropertyValue("--home-feature-gap").trim()).toBe("6px");
     expect(layout.getPropertyValue("--home-gap-status-core").replaceAll(" ", "")).toBe("clamp(9px,1.35dvh,12px)");
-    expect(layout.getPropertyValue("--home-gap-core-features").replaceAll(" ", "")).toBe("8px");
+    expect(layout.getPropertyValue("--home-gap-core-features").replaceAll(" ", "")).toBe("var(--home-gap-status-core)");
     expect(lotteryScreen.getPropertyValue("--home-gap-logo-switcher").replaceAll(" ", "")).toBe("clamp(13px,calc(1.15dvh+5px),16px)");
     expect(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").replaceAll(" ", "")).toBe("clamp(7px,calc(0.9dvh+1px),9px)");
     expect(lotteryScreen.getPropertyValue("--home-gap-draw-status").replaceAll(" ", "")).toBe("clamp(9px,calc(1.15dvh+1px),12px)");
@@ -90,16 +90,8 @@ describe("homepage requested spacing and selection", () => {
     expect(shortcutImage.height).toBe("100%");
   });
 
-  it.each([
-    ["今彩539", "linear-gradient(90deg, #34c759, #ffd640, #3484ff, #ff3b30)"],
-    ["天天樂", "linear-gradient(90deg, #1e76ff, #ffffff, #1e76ff)"],
-    ["六合彩", "linear-gradient(90deg, #ff3b30, #1e76ff, #34c759)"],
-    ["大樂透", "linear-gradient(90deg, #ffd640, #1e76ff, #ffd640)"],
-  ])("restores the original %s selected palette", (lottery, palette) => {
-    mountHomepage();
-    const card = document.querySelector(`.lottery-card[data-lottery="${lottery}"]`)!;
-
-    expect(getComputedStyle(card).getPropertyValue("--lottery-selected-horizontal-gradient").replaceAll(" ", "")).toBe(palette.replaceAll(" ", ""));
-    expect(getComputedStyle(card).filter).toBe("none");
+  it("uses the current single-frame selected lottery styling", () => {
+    expect(css).toMatch(/\.lottery-card\[data-selected="true"\]\s*\{[^}]*border-color:\s*color-mix\(in srgb, var\(--home-frame-bright\) 55%, transparent\);[^}]*background:\s*color-mix\(in srgb, var\(--home-frame-gold\) 6%, var\(--lottery-neutral-950\)\);/s);
+    expect(css).not.toContain("--lottery-selected-horizontal-gradient");
   });
 });
