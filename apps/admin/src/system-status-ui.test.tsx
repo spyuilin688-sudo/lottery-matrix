@@ -209,7 +209,7 @@ it('keeps storage size visible, separates Warning counts, and preserves details 
     expect(row.querySelector('.statusBadge')?.textContent).toBe('需處理');
     expect(row.querySelector('.statusBadge')?.classList.contains('good')).toBe(false);
     expect(row.querySelector('.statusRowMain > .statusFacts')?.textContent).toContain('資料庫大小2.50 GB');
-    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('1 項警告');
+    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('正常 0 · 等待 0 · 無需處理 0 · 需處理 1');
     expect(row.textContent).not.toContain('%');
     expect(row.querySelector('.statusRowActions')).toBeNull();
     const details = row.querySelector('details')!;
@@ -224,7 +224,7 @@ it('keeps storage size visible, separates Warning counts, and preserves details 
     expect(container.querySelector('[role=alert]')?.textContent).toContain('狀態重新檢查失敗');
     expect(details.open).toBe(true);
     expect(row.textContent).toContain('2.50 GB');
-    expect(row.querySelector('.statusBadge')?.textContent).toBe('Warning');
+    expect(row.querySelector('.statusBadge')?.textContent).toBe('需處理');
     fail = false; malformed = true;
     await act(async () => [...container.querySelectorAll('button')].find(button => button.textContent === '重新檢查')?.click());
     expect(row.querySelector('.statusBadge')?.textContent).toBe('需處理');
