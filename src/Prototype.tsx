@@ -466,10 +466,23 @@ export function HomeAnnouncement({ latestResults = [] }: { latestResults?: Lates
       });
     };
 
+    const advanceMarquee = (event: AnimationEvent) => {
+      if (event.target !== track) return;
+      setMarqueeState((current) => ({
+        contentKey: marqueeContentKey,
+        index: (current.index + 1) % marqueeItems.length,
+        cycle: current.cycle + 1,
+      }));
+    };
+
     updateTiming();
+    track.addEventListener("animationend", advanceMarquee);
     window.addEventListener("resize", updateTiming);
-    return () => window.removeEventListener("resize", updateTiming);
-  }, [activeItemKey]);
+    return () => {
+      track.removeEventListener("animationend", advanceMarquee);
+      window.removeEventListener("resize", updateTiming);
+    };
+  }, [activeItemKey, marqueeContentKey, marqueeItems.length]);
 
   return (
     <section ref={announcementRef} className="home-announcement" aria-label="公告" data-testid="home-announcement">
@@ -479,13 +492,6 @@ export function HomeAnnouncement({ latestResults = [] }: { latestResults?: Lates
         key={activeItemKey}
         data-marquee-ready={activeDurationMs === null ? "false" : "true"}
         style={marqueeStyle}
-        onAnimationEnd={() => {
-          setMarqueeState((current) => ({
-            contentKey: marqueeContentKey,
-            index: (current.index + 1) % marqueeItems.length,
-            cycle: current.cycle + 1,
-          }));
-        }}
       >
         <span className="home-announcement-text">
           {activeItem.lottery === null ? (
