@@ -1625,6 +1625,9 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   margin: 0;
 }
 .matrix-status-screen .road-results-head,
+.matrix-status-screen .status-detail .explore-validation-summary .validation-summary-formula {
+  color: #f6c95f;
+}
 .matrix-status-screen .road-result-row {
   display: grid;
   box-sizing: border-box;
