@@ -100,7 +100,7 @@ test('首頁公告以原 18 秒首段校準速度，後續文案依距離調整�
     top: 0, right: width, bottom: 26, left: 0,
     toJSON: () => ({}),
   });
-  const geometry = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
+  const geometry = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
     if (this.classList.contains('home-announcement')) return rect(358);
     if (this.classList.contains('home-announcement-track')) {
       return rect(this.textContent?.includes('新會員限時體驗') ? 700 : 420);
