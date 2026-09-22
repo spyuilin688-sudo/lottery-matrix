@@ -7,7 +7,7 @@ import { HomeAnnouncement, HomeShortcutRow, MatrixCoreBanner } from '../Prototyp
 import { BottomNavigation } from '../BottomNavigation';
 
 function finishMarqueeSegment(track: HTMLElement) {
-  finishMarqueeSegment(track);
+  fireEvent.animationEnd(track, { animationName: 'home-announcement-marquee' });
   if (track.isConnected) {
     fireEvent(track, new Event('webkitAnimationEnd', { bubbles: true }));
   }
