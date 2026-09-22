@@ -43,7 +43,7 @@ test("Matrix switcher exposes all five pages in one compact horizontal control",
     Promise.all([read("src/features/shared.tsx"), read("src/features/MatrixExplorePage.tsx"), read("src/features/MatrixTiangongPage.tsx")]).then(parts => parts.join("\n")),
     read("src/feature-pages.css"),
   ]);
-  const switcher = source.slice(source.indexOf("function MatrixPageSwitcher"), source.indexOf("const ROAD_VALIDATION_SAMPLE_HISTORY"));
+  const switcher = source.slice(source.indexOf("function MatrixPageSwitcher"), source.indexOf("export function FeatureBottomNavigationPortal"));
   const items = source.match(/export const MATRIX_PAGE_ITEMS = \[([\s\S]*?)\] as const;/)?.[1] ?? "";
   assert.deepEqual([...items.matchAll(/screen: "([^"]+)"/g)].map(match => match[1]), ["explore", "tianheng", "tianshu", "tianyan", "tiangong"]);
   assert.match(switcher, /MATRIX_PAGE_ITEMS\.map/);
