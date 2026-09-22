@@ -66,6 +66,23 @@ function sourceArtifact(): ExploreArtifact {
   };
 }
 
+
+function sourceArtifactWithGroupCount(groupCount: number): ExploreArtifact {
+  const firstHits = Array.from({ length: groupCount }, (_, index) => index % 2 === 0);
+  const secondHits = firstHits.map((hit) => !hit);
+  const first = exploreRow('long-a', '03', 1, '加減');
+  const second = exploreRow('long-b', '15', 2, '合值');
+  return {
+    lottery: '今彩539',
+    drawPeriod: '114000123',
+    items: [first, second],
+    validationById: {
+      [first.id]: validation(first.id, 1, '加減', firstHits),
+      [second.id]: validation(second.id, 2, '合值', secondHits),
+    },
+  };
+}
+
 describe('Tianyan artifact service', () => {
   it('builds fixed composite/two-code rows, deduplicates identical pairs, and detaches validation', () => {
     const artifact = buildTianyanArtifact('今彩539', '114000123', sourceArtifact());
@@ -81,6 +98,32 @@ describe('Tianyan artifact service', () => {
       exploreDateOffset: 0,
     });
     expect(JSON.stringify(filtered.items)).not.toContain('historicalValidation');
+  });
+
+
+  it.each([
+    [11, '準11進12'],
+    [12, null],
+    [13, '準13進14'],
+    [14, null],
+    [15, '準15進16'],
+    [16, null],
+    [17, '準17進18'],
+    [18, null],
+    [19, '準19進20'],
+    [20, null],
+  ] as const)('keeps exact Tianyan streak boundaries without truncating %i groups', (groupCount, expected) => {
+    const artifact = buildTianyanArtifact('今彩539', '114000123', sourceArtifactWithGroupCount(groupCount));
+
+    if (expected === null) {
+      expect(artifact.items).toEqual([]);
+      return;
+    }
+    expect(artifact.items).toHaveLength(1);
+    expect(artifact.items[0]).toMatchObject({
+      highestStreak: groupCount,
+      consecutive: expected,
+    });
   });
 
   it('preserves different rule identities even when the final prediction numbers match', () => {
