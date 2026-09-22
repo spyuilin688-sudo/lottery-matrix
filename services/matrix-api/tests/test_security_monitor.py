@@ -1,10 +1,34 @@
 import json
 import logging
 import threading
+from contextlib import contextmanager
+from http.server import ThreadingHTTPServer
+
 import httpx
 from app.security_monitor import EndpointRateLimiter, SecurityMonitor, request_category, source_identity
+from app.recovery_server import RecoveryApiHandler
 from test_api_server_http import running_server, request, HttpOperationalRepository
 import app.api_server as api_server
+import app.recovery_server as recovery_server
+
+@contextmanager
+def running_recovery_server(repository, monitor):
+    class TestHandler(RecoveryApiHandler):
+        pass
+
+    TestHandler.repository = repository
+    TestHandler.security_monitor = monitor
+    server = ThreadingHTTPServer(("127.0.0.1", 0), TestHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        host, port = server.server_address
+        yield str(host), int(port)
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
 
 def test_source_requires_explicit_direct_trust():
     value, trusted = source_identity('127.0.0.1', 'secret', False)
@@ -122,9 +146,8 @@ def test_protected_success_is_not_counted_as_unauthorized(monkeypatch):
         def identity(self,peer): return 'a'*64,False
         def observe(self,*args): self.events.append(args)
     monitor=Monitor()
-    monkeypatch.setattr(api_server.RailwayApiHandler,'security_monitor',monitor)
     monkeypatch.setenv('MATRIX_ADMIN_STATUS_TOKEN','expected-token')
-    with running_server(HttpOperationalRepository()) as address:
+    with running_recovery_server(HttpOperationalRepository(), monitor) as address:
         response,_=request(address,'GET','/jobs/status',{'X-Matrix-Admin-Token':'expected-token'})
         assert response.status == 200 and monitor.events == []
         response,_=request(address,'GET','/jobs/status')
@@ -137,12 +160,15 @@ def test_valid_result_ready_is_not_preclassified_as_unauthorized(monkeypatch):
         def __init__(self): self.events=[]
         def identity(self,peer): return 'a'*64,False
         def observe(self,*args): self.events.append(args)
+    class Coordinator:
+        @staticmethod
+        def enqueue(*_args, **_kwargs): return 'accepted'
     monitor=Monitor()
-    monkeypatch.setattr(api_server.RailwayApiHandler,'security_monitor',monitor)
+    monkeypatch.setattr(recovery_server,'_RECOVERY_COORDINATOR',Coordinator())
     monkeypatch.setenv('MATRIX_NOTIFICATION_INGEST_TOKEN','expected-token')
     repository = HttpOperationalRepository()
     repository.upsert_draw({'lottery':'今彩539','period':'115000215','drawDate':'2026-09-05','numbers':['01','02','03','04','05'],'sortedNumbers':['01','02','03','04','05']})
-    with running_server(repository) as address:
+    with running_recovery_server(repository, monitor) as address:
         response,_=request(address,'POST','/jobs/result-ready',{
             'Content-Type':'application/json',
             'X-Matrix-Notification-Token':'expected-token',
