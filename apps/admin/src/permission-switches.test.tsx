@@ -49,7 +49,8 @@ describe('permission switch workspace', () => {
     expect(switches().purchase?.disabled).toBe(true);
     expect(switches().free?.disabled).toBe(true);
     expect(container.textContent).toContain('僅超級管理員可修改');
-    expect(container.textContent).toContain('探索二期與天衡三期可直接使用，不受此開關影響');
+    expect(container.textContent).toContain('新註冊 LINE 會員註冊後 48 小時的探索、天衡、天樞十三期及完整範圍不受此開關影響');
+    expect(container.textContent).toContain('探索二期與天衡三期可直接使用');
   });
 
   it('changes review button visibility independently of member access', async () => {
