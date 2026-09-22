@@ -80,8 +80,10 @@ export function readPermissionSettings(): Promise<PermissionSettings> {
 
 export function installPermissionSettingsRefresh() {
   let timer: number;
+  let disposed = false;
 
   const scheduleFallback = () => {
+    if (disposed) return;
     window.clearTimeout(timer);
     const elapsed = Date.now() - lastRefreshStartedAt;
     const remaining = fallbackRefreshIntervalMs - elapsed;
@@ -96,12 +98,14 @@ export function installPermissionSettingsRefresh() {
   };
 
   const startBackgroundRead = () => {
+    if (disposed) return;
     void readPermissionSettings()
       .catch(() => {})
-      .finally(scheduleFallback);
+      .finally(() => { if (!disposed) scheduleFallback(); });
   };
 
   const runFallback = () => {
+    if (disposed) return;
     if (
       !document.hidden
       && activeRequests === 0
@@ -114,6 +118,7 @@ export function installPermissionSettingsRefresh() {
   };
 
   const refreshOnForegroundEvent = () => {
+    if (disposed) return;
     if (
       !document.hidden
       && activeRequests === 0
@@ -130,6 +135,7 @@ export function installPermissionSettingsRefresh() {
   window.addEventListener('online', refreshOnForegroundEvent);
   document.addEventListener('visibilitychange', refreshOnForegroundEvent);
   return () => {
+    disposed = true;
     window.clearTimeout(timer);
     window.removeEventListener('focus', refreshOnForegroundEvent);
     window.removeEventListener('online', refreshOnForegroundEvent);
