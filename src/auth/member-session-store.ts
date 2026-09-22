@@ -1,6 +1,8 @@
 import { useSyncExternalStore } from 'react';
 import type { Session } from '@supabase/supabase-js';
 
+export const MEMBER_SESSION_READ_TIMEOUT_MS = 2_500;
+
 export type MemberSessionSnapshot =
   | { status: 'checking'; session: null; revision: number }
   | { status: 'ready'; session: Session | null; revision: number }
