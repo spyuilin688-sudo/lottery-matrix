@@ -3,7 +3,7 @@ import { getSupabaseClient } from './lib/supabase';
 import { MatrixApiError } from './matrix-api-client';
 import type { ExploreValidationResponse } from './matrix-algorithm-api';
 import { readThroughCache, stableCacheKey } from './read-cache';
-import { readAlgorithmCacheScope } from './auth/algorithm-cache-scope';
+import { getAlgorithmCacheScope, readAlgorithmCacheScope } from './auth/algorithm-cache-scope';
 import { getMatrixDataRevision } from './matrix-data-revision';
 import { isLotteryReadCacheFresh, lotteryReadCacheTtlMs } from './lottery-cache-policy';
 import {
@@ -197,8 +197,8 @@ async function cachedStatusFunction<T>(body: Record<string, unknown>): Promise<T
   const client = getSupabaseClient();
   const scope = await readAlgorithmCacheScope(client, { allowGuest: true });
   const revision = getMatrixDataRevision();
-  const assertCurrent = async () => {
-    if (await readAlgorithmCacheScope(client, { allowGuest: true }) !== scope) {
+  const assertCurrent = () => {
+    if (getAlgorithmCacheScope() !== scope) {
       throw new MatrixApiError('AUTH_REQUIRED', 401);
     }
     if (getMatrixDataRevision() !== revision) {
@@ -212,13 +212,13 @@ async function cachedStatusFunction<T>(body: Record<string, unknown>): Promise<T
   const identityKey = stableCacheKey('matrix-rpc:status-access', { scope, revision, identityBody });
   const identity = await readThroughCache(identityKey, 0, async () => {
     const value = await statusFunction<{ kind: string; drawPeriod: string; analysisVersion: string; entitlements: Record<string, boolean> }>(identityBody);
-    await assertCurrent();
+    assertCurrent();
     if (value?.kind !== 'status-identity' || !value.drawPeriod || !value.analysisVersion || !value.entitlements) {
       throw new MatrixApiError('API_ERROR', 500);
     }
     return value;
   });
-  await assertCurrent();
+  assertCurrent();
   if (body.analysisVersion && body.analysisVersion !== identity.analysisVersion) {
     throw new MatrixApiError('ANALYSIS_VERSION_MISMATCH', 409);
   }
@@ -227,14 +227,14 @@ async function cachedStatusFunction<T>(body: Record<string, unknown>): Promise<T
   const lottery = body.lottery as LotteryId;
   const result = await readThroughCache(key, lotteryReadCacheTtlMs(lottery, 'standard'), async ({ isCurrent }) => {
     const value = await statusFunction<T & { cacheIdentity?: unknown }>(body);
-    await assertCurrent();
+    assertCurrent();
     if (stableCacheKey('', value?.cacheIdentity) !== stableCacheKey('', cacheIdentity)) {
       throw new MatrixApiError('ANALYSIS_VERSION_MISMATCH', 409);
     }
     if (!isCurrent()) throw new MatrixApiError('ANALYSIS_VERSION_MISMATCH', 409);
     return value;
   });
-  await assertCurrent();
+  assertCurrent();
   return result;
 }
 
@@ -243,7 +243,7 @@ async function directStatusValidationFunction<T>(body: Record<string, unknown>):
   const scope = await readAlgorithmCacheScope(client, { allowGuest: true });
   const revision = getMatrixDataRevision();
   const value = await statusFunction<T>(body);
-  if (await readAlgorithmCacheScope(client, { allowGuest: true }) !== scope) {
+  if (getAlgorithmCacheScope() !== scope) {
     throw new MatrixApiError('AUTH_REQUIRED', 401);
   }
   if (getMatrixDataRevision() !== revision) {
