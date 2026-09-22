@@ -9,6 +9,7 @@ import { MobileDeviceProvider } from '../mobile/Device';
 import { KeyboardProvider } from '../mobile/Keyboard';
 import type { ScreenId } from '../features/navigation';
 import { FirstVisitGuide } from './FirstVisitGuide';
+import { publishMemberSessionReady } from '../auth/member-session-store';
 
 vi.mock('../useLatestLotteryDraw', () => ({ useLatestLotteryDraw: () => ({ data: null }) }));
 vi.mock('../matrix-status-api', () => ({ fetchMatrixStatus: async () => { throw new Error('offline status'); } }));
@@ -21,6 +22,7 @@ vi.stubGlobal('ResizeObserver', class {
 });
 
 beforeEach(() => {
+  publishMemberSessionReady(null);
   window.localStorage.clear();
   window.history.replaceState({}, '', '/');
   vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Test network unavailable')));
