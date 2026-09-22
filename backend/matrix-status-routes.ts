@@ -1,4 +1,4 @@
-import { anonymousMatrixMember, type MatrixEntitlements, type MemberContext } from './matrix-entitlements.ts';
+import type { MatrixEntitlements, MemberContext } from './matrix-entitlements.ts';
 import { MatrixAccessError } from './matrix-member-auth.ts';
 import {
   buildMatrixStatusArtifact,
@@ -25,7 +25,8 @@ type StatusValidationSource = {
 type RouteInput = { authorization?: string; body: unknown };
 type RouteResult = { status: number; body: Record<string, unknown> };
 type Dependencies = {
-  requireMember(authorization?: string): Promise<MemberContext>;
+  /** Legacy compatibility injection; status authorization is owned by resolveEntitlements. */
+  requireMember?(authorization?: string): Promise<MemberContext>;
   readStatusIdentity?(lottery: LotteryId, drawPeriod?: string): Promise<{ analysisVersion: string; drawPeriod: string } | null>;
   readStatusSources(lottery: LotteryId, drawPeriod?: string): Promise<StatusSources | null>;
   readCompactStatus?(lottery: LotteryId, drawPeriod?: string, summaryOnly?: boolean): Promise<CompactStatus | null>;
@@ -144,14 +145,10 @@ function projectStatusSummary(
 }
 
 export function createMatrixStatusRoutes(dependencies: Dependencies) {
-  const memberFor = (authorization?: string) => authorization
-    ? dependencies.requireMember(authorization)
-    : Promise.resolve(anonymousMatrixMember);
   const entitlementsFor = (authorization: string | undefined) => dependencies.resolveEntitlements(authorization);
   return {
     async identity(input: RouteInput): Promise<RouteResult> {
       try {
-        const member = await memberFor(input.authorization);
         const body = record(input.body);
         const lottery = String(body.lottery ?? '') as LotteryId;
         if (!lotteries.includes(lottery)) throw new Error('INVALID_REQUEST');
@@ -166,12 +163,10 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
     },
     async summary(input: RouteInput): Promise<RouteResult> {
       try {
-        const member = await memberFor(input.authorization);
         const body = record(input.body);
         const lottery = String(body.lottery ?? '') as LotteryId;
         if (!lotteries.includes(lottery)) throw new Error('INVALID_REQUEST');
         const requestedPeriod = body.drawPeriod ? String(body.drawPeriod) : undefined;
-        const entitlements = await entitlementsFor(input.authorization);
 
         if (dependencies.readCompactStatus) {
           const compact = await dependencies.readCompactStatus(lottery, requestedPeriod, true);
@@ -195,6 +190,7 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
           };
         }
 
+        const entitlements = await entitlementsFor(input.authorization);
         const sources = await dependencies.readStatusSources(lottery, requestedPeriod);
         if (!sources?.explore || !sources.tianyan
           || sources.explore.drawPeriod !== sources.drawPeriod
@@ -225,7 +221,6 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
 
     async get(input: RouteInput): Promise<RouteResult> {
       try {
-        const member = await memberFor(input.authorization);
         const body = record(input.body);
         const lottery = String(body.lottery ?? '') as LotteryId;
         if (!lotteries.includes(lottery)) throw new Error('INVALID_REQUEST');
@@ -294,7 +289,6 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
     },
     async validation(input: RouteInput): Promise<RouteResult> {
       try {
-        const member = await memberFor(input.authorization);
         const body = record(input.body);
         const lottery = String(body.lottery ?? '') as LotteryId;
         const drawPeriod = String(body.drawPeriod ?? '').trim();
