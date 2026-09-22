@@ -14,13 +14,13 @@ test("history search uses the last edited date-or-range control as the active mo
   assert.match(source, /range: dateIsPrimary \? "所有期數" : range/);
 });
 
-test("homepage owns the approved matching 9–12px Core gaps and responsive navigation rhythm from one parent", async () => {
+test("homepage owns the approved matching 7–10px Core gaps and responsive navigation rhythm from one parent", async () => {
   const css = await read("src/homepage/base.css");
   const homeLayout = css.match(/\.home-screen \.home-layout \{([\s\S]*?)\n\}/)?.[1] ?? "";
   const lotteryScreen = css.match(/\.home-screen \.lottery-screen \{([\s\S]*?)\n\}/)?.[1] ?? "";
   const bottomGroup = css.match(/\.home-screen \.home-bottom-group \{([\s\S]*?)\n\}/)?.[1] ?? "";
 
-  assert.match(homeLayout, /--home-gap-status-core:\s*clamp\(9px,\s*1\.35dvh,\s*12px\)/);
+  assert.match(homeLayout, /--home-gap-status-core:\s*clamp\(7px,\s*1\.35dvh,\s*10px\)/);
   assert.match(homeLayout, /--home-gap-core-features:\s*var\(--home-gap-status-core\)/);
   assert.match(homeLayout, /--home-gap-features-nav:\s*clamp\(4px,\s*0\.7dvh,\s*8px\)/);
   assert.match(homeLayout, /padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ var\(--home-gap-features-nav\)\)/);

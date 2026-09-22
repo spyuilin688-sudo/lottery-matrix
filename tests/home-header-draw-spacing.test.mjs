@@ -36,9 +36,9 @@ test("首頁設定齒輪為 18px，視覺圖示距標題卡上方與右側各 4p
   assert.match(position, /place-items:\s*start end;/);
 });
 
-test("Matrix Core 上下間距共用同一個 9 至 12px 響應式規則", () => {
+test("Matrix Core 上下間距共用同一個 7 至 10px 響應式規則", () => {
   const layout = ruleBody(base, ".home-screen .home-layout");
-  assert.match(layout, /--home-gap-status-core:\s*clamp\(9px,\s*1\.35dvh,\s*12px\);/);
+  assert.match(layout, /--home-gap-status-core:\s*clamp\(7px,\s*1\.35dvh,\s*10px\);/);
   assert.match(layout, /--home-gap-core-features:\s*var\(--home-gap-status-core\);/);
 });
 

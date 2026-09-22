@@ -4,11 +4,12 @@ import { readLocalCss } from "./helpers/read-local-css.mjs";
 
 const css = readLocalCss("src/homepage-repair.css");
 
-test("狀態區隱藏共同外框並保留 16px 外距、1.5px 內距與 4px 水平與垂直卡片間距", () => {
+test("狀態區隱藏共同外框並保留 16px 外距、0 頂部內距與 4px 水平與垂直卡片間距", () => {
   assert.match(
     css,
-    /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\);[^}]*padding-block-start:\s*1\.5px;[^}]*padding-inline:\s*0;/s,
+    /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\);[^}]*padding-inline:\s*0;/s,
   );
+  assert.doesNotMatch(css, /\.home-screen \.matrix-status-section\s*\{[^}]*padding-block-start:\s*1\.5px;/s);
   assert.match(
     css,
     /\.home-screen \.matrix-status-section\s*\{[^}]*border:\s*0;[^}]*border-radius:\s*0;[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;/s,

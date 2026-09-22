@@ -41,11 +41,11 @@ for (const width of MOBILE_WIDTHS) {
       drawStatus: homepageTokens.drawStatus,
       featuresNav: homepageTokens.featuresNav,
     }).toEqual({
-      logoAnnouncement: "8px",
-      announcementSwitcher: "8px",
+      logoAnnouncement: "clamp(5px,0.8dvh,8px)",
+      announcementSwitcher: "clamp(6px,0.9dvh,8px)",
       announcementHeight: "26px",
       switcherDraw: "clamp(7px,calc(0.9dvh+1px),9px)",
-      drawStatus: "clamp(9px,calc(1.15dvh+1px),12px)",
+      drawStatus: "clamp(7px,calc(1.15dvh+1px),10px)",
       featuresNav: "clamp(4px,0.7dvh,8px)",
     });
     expect(Number.parseFloat(homepageTokens.headerTop)).toBeGreaterThanOrEqual(8);
