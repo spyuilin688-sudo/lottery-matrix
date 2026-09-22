@@ -402,7 +402,7 @@ export async function fetchLatestLotteryResult(signal?: AbortSignal): Promise<La
   if (lottery !== '今彩539' && lottery !== '天天樂' && lottery !== '六合彩' && lottery !== '大樂透') {
     throw new Error('Lottery API invalid response: item.lottery');
   }
-  if (typeof item.drawDate !== 'string' || !/^\\d{4}-\\d{2}-\\d{2}$/.test(item.drawDate)) {
+  if (typeof item.drawDate !== 'string' || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(item.drawDate)) {
     throw new Error('Lottery API invalid response: item.drawDate');
   }
   if (!Array.isArray(item.numbers)) {
