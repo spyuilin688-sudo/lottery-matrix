@@ -71,7 +71,7 @@ test("特別號標籤右移、分隔線縮短且底部圖示維持 12px", () => 
 });
 
 test("底部兩格時間資訊沿用主卡的單層細金框與圓角", () => {
-  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)[^}]*width:\s*100%[^}]*padding:\s*0;[^}]*gap:\s*0;[^}]*border:\s*0;[^}]*background:\s*transparent/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*grid-template-columns:\s*minmax\(0, 3fr\) minmax\(0, 2fr\)[^}]*width:\s*100%[^}]*padding:\s*0;[^}]*gap:\s*0;[^}]*border:\s*0;[^}]*background:\s*transparent/s);
   assert.ok(hasRuleProperty(css, ".home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item", /gap:\s*4px;[^}]*padding-inline:\s*clamp\(6px, 2vw, 10px\);[^}]*align-items:\s*center[^}]*justify-content:\s*center/));
   const itemSelector = ".home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item";
   const itemRules = ruleBodies(css, itemSelector);
