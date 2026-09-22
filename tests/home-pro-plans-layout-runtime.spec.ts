@@ -44,7 +44,7 @@ for (const width of MOBILE_WIDTHS) {
       logoAnnouncement: "clamp(5px,0.8dvh,8px)",
       announcementSwitcher: "clamp(6px,0.9dvh,8px)",
       announcementHeight: "26px",
-      switcherDraw: "clamp(7px,calc(0.9dvh+1px),9px)",
+      switcherDraw: "clamp(4px,calc(0.9dvh+1px),7px)",
       drawStatus: "clamp(7px,calc(1.15dvh+1px),10px)",
       featuresNav: "clamp(4px,0.7dvh,8px)",
     });
