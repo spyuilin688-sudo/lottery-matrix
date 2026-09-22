@@ -12,7 +12,7 @@ test("首頁卡片各自使用單層圓角框", () => {
   assert.match(base, /\.home-screen \.latest-draw-card\s*\{[^}]*border:\s*0;[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*box-shadow:\s*inset 0 0 0 1px var\(--home-frame-bright\);/s);
   assert.match(switcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid color-mix\(in srgb, var\(--home-frame-gold\) 22%, transparent\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
   assert.match(base, /\.home-screen \.matrix-core-banner\s*\{[^}]*border:\s*1px solid var\(--home-frame-bright\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
-  assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*border:\s*1px solid var\(--home-frame-muted\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
+  assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*border:\s*0;[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*box-shadow:\s*inset 0 0 0 1px var\(--home-frame-gold\);/s);
   assert.doesNotMatch(`${base}\n${switcher}`, /(?:latest-draw-card|lottery-card|matrix-core-banner|home-shortcut)[^{}]*\{[^}]*clip-path:\s*polygon\(/s);
 });
 
@@ -35,7 +35,7 @@ test("下次開獎與剩餘時間鑲嵌在卡內並各自保留完整圓角框",
 });
 
 test("四大功能直接使用正式圓角框且沒有遮罩覆寫", () => {
-  assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*border:\s*1px solid var\(--home-frame-muted\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
+  assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*border:\s*0;[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*box-shadow:\s*inset 0 0 0 1px var\(--home-frame-gold\);/s);
   assert.doesNotMatch(base, /\.home-shortcut::(?:before|after)\s*\{/);
   assert.doesNotMatch(base, /\.home-shortcut\s*\{[^}]*(?:mask|clip-path):/s);
   assert.doesNotMatch(base, /\.home-shortcut:(?:first-child|nth-child)/);

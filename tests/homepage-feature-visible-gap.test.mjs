@@ -23,8 +23,9 @@ test("four homepage feature cards share the Core inset and retain visible gaps",
   assert.match(button, /(?:^|\n)\s*height:\s*76px;/);
   assert.doesNotMatch(button, /aspect-ratio:/);
   assert.doesNotMatch(css, /--home-feature-card-aspect/);
-  assert.match(button, /border:\s*1px solid var\(--home-frame-muted\);/);
+  assert.match(button, /border:\s*0;/);
   assert.match(button, /border-radius:\s*var\(--home-frame-radius\);/);
+  assert.match(button, /box-shadow:\s*inset 0 0 0 1px var\(--home-frame-gold\);/);
   assert.match(button, /min-height:\s*76px;/);
   assert.match(image, /width:\s*100%;/);
   assert.match(image, /height:\s*100%;/);
