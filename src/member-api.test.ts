@@ -128,6 +128,31 @@ describe('member Supabase RPC', () => {
     ]);
   });
 
+  it('shares and reuses member bootstrap within the same session scope', async () => {
+    const pending = deferred<unknown>();
+    supabase.rpc.mockReturnValueOnce(pending.promise);
+
+    const first = bootstrapMember();
+    const second = bootstrapMember();
+    expect(supabase.rpc).toHaveBeenCalledTimes(1);
+
+    const bootstrap = { memberId: 'member-a', lineUserId: 'line-a' };
+    pending.resolve({ data: bootstrap, error: null });
+    await expect(Promise.all([first, second])).resolves.toEqual([bootstrap, bootstrap]);
+
+    await expect(bootstrapMember()).resolves.toEqual(bootstrap);
+    expect(supabase.rpc).toHaveBeenCalledTimes(1);
+
+    switchMember('member-b');
+    supabase.rpc.mockResolvedValueOnce({
+      data: { memberId: 'member-b', lineUserId: 'line-b' },
+      error: null,
+    });
+    await expect(bootstrapMember()).resolves.toMatchObject({ memberId: 'member-b' });
+    expect(supabase.rpc).toHaveBeenCalledTimes(2);
+  });
+
+
   it('loads the current member referral summary and submits a referral through member-only RPCs', async () => {
     const expectedSummary = {
       referralCode: 'MATRIX-7H4K9P',
