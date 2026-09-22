@@ -33,7 +33,6 @@ vi.mock('../features/MatrixValidation', () => ({
   ExploreValidationProcess: () => null,
   TianhengValidationProcess: () => null,
   TianyanValidationProcess: () => null,
-  RoadValidationProcess: () => null,
 }));
 
 const guestProfile = {
