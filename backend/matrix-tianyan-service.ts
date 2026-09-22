@@ -8,8 +8,7 @@ import {
 } from './matrix-tianyan';
 
 export const TIANYAN_STREAKS = [
-  '準5進6', '準6進7', '準7進8', '準9進10',
-  '準11進12', '準13進14', '準15進16', '準17進18+',
+  '準11進12', '準13進14', '準15進16', '準17進18', '準19進20',
 ] as const;
 
 export type TianyanStreak = typeof TIANYAN_STREAKS[number];
@@ -167,8 +166,9 @@ function stableId(value: string) {
 }
 
 function streakFor(groupCount: number): TianyanStreak | null {
-  if (groupCount >= 17) return '準17進18+';
-  if ([5, 6, 7, 9, 11, 13, 15].includes(groupCount)) return `準${groupCount}進${groupCount + 1}` as TianyanStreak;
+  if ([11, 13, 15, 17, 19].includes(groupCount)) {
+    return `準${groupCount}進${groupCount + 1}` as TianyanStreak;
+  }
   return null;
 }
 
