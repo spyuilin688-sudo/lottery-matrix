@@ -95,10 +95,10 @@ def test_primary_railway_config_matches_deployed_worker_cadence() -> None:
     ]
 
     assert [config["deploy"]["startCommand"] for config in configs] == [
-        "uv run python -u -m app.primary_worker --group evening",
-        "uv run python -u -m app.analysis_worker --lottery 天天樂",
-        "uv run python -u -m app.worker --lottery " + "六合彩 --scheduled",
-        "uv run python -u -m app.worker --lottery 大樂透 --scheduled",
+        "uv run --no-dev --no-sync python -u -m app.primary_worker --group evening",
+        "uv run --no-dev --no-sync python -u -m app.analysis_worker --lottery 天天樂",
+        "uv run --no-dev --no-sync python -u -m app.worker --lottery " + "六合彩 --scheduled",
+        "uv run --no-dev --no-sync python -u -m app.worker --lottery 大樂透 --scheduled",
     ]
     assert [config["deploy"].get("cronSchedule") for config in configs] == [
         "10 22 * * *",
