@@ -13,7 +13,8 @@ let settings: PermissionSettings | null = null;
 let highestRevision = -1;
 let requestSequence = 0;
 let lastSettledRequest = 0;
-const refreshIntervalMs = 30_000;
+const foregroundRefreshMinIntervalMs = 30_000;
+const fallbackRefreshIntervalMs = 5 * 60_000;
 let lastRefreshStartedAt = -Infinity;
 let activeRequests = 0;
 let sharedRead: Promise<PermissionSettings> | null = null;
@@ -79,22 +80,59 @@ export function readPermissionSettings(): Promise<PermissionSettings> {
 
 export function installPermissionSettingsRefresh() {
   let timer: number;
-  const refresh = () => {
+
+  const scheduleFallback = () => {
     window.clearTimeout(timer);
-    // Explicit permission checks also satisfy the automatic refresh window.
-    // Keep their fresh reads and fail-closed behavior; coalesce only background events.
-    if (!document.hidden && activeRequests === 0 && Date.now() - lastRefreshStartedAt >= refreshIntervalMs) {
-      void readPermissionSettings().catch(() => {});
-    }
-    const remaining = refreshIntervalMs - (Date.now() - lastRefreshStartedAt);
-    timer = window.setTimeout(refresh, remaining > 0 ? remaining : refreshIntervalMs);
+    const elapsed = Date.now() - lastRefreshStartedAt;
+    const remaining = fallbackRefreshIntervalMs - elapsed;
+    const delay = Number.isFinite(remaining) && remaining > 0
+      ? remaining
+      : document.hidden
+        ? fallbackRefreshIntervalMs
+        : activeRequests > 0
+          ? 1_000
+          : 0;
+    timer = window.setTimeout(runFallback, delay);
   };
-  refresh();
-  window.addEventListener('focus', refresh);
-  document.addEventListener('visibilitychange', refresh);
+
+  const startBackgroundRead = () => {
+    void readPermissionSettings()
+      .catch(() => {})
+      .finally(scheduleFallback);
+  };
+
+  const runFallback = () => {
+    if (
+      !document.hidden
+      && activeRequests === 0
+      && Date.now() - lastRefreshStartedAt >= fallbackRefreshIntervalMs
+    ) {
+      startBackgroundRead();
+      return;
+    }
+    scheduleFallback();
+  };
+
+  const refreshOnForegroundEvent = () => {
+    if (
+      !document.hidden
+      && activeRequests === 0
+      && Date.now() - lastRefreshStartedAt >= foregroundRefreshMinIntervalMs
+    ) {
+      startBackgroundRead();
+      return;
+    }
+    scheduleFallback();
+  };
+
+  runFallback();
+  window.addEventListener('focus', refreshOnForegroundEvent);
+  window.addEventListener('online', refreshOnForegroundEvent);
+  document.addEventListener('visibilitychange', refreshOnForegroundEvent);
   return () => {
     window.clearTimeout(timer);
-    window.removeEventListener('focus', refresh);
-    document.removeEventListener('visibilitychange', refresh);
+    window.removeEventListener('focus', refreshOnForegroundEvent);
+    window.removeEventListener('online', refreshOnForegroundEvent);
+    document.removeEventListener('visibilitychange', refreshOnForegroundEvent);
   };
 }
