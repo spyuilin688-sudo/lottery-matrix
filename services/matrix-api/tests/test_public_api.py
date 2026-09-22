@@ -78,7 +78,7 @@ def test_health_checks_database_and_reports_service_metadata(monkeypatch) -> Non
     }
 
 
-def test_health_reports_missing_admin_api_configuration(monkeypatch) -> None:
+def test_public_health_is_independent_of_admin_job_credentials(monkeypatch) -> None:
     monkeypatch.setenv("MATRIX_SERVICE_VERSION", "test-version")
     monkeypatch.delenv("MATRIX_ADMIN_STATUS_TOKEN", raising=False)
     repository = OperationalRepository()
@@ -91,7 +91,6 @@ def test_health_reports_missing_admin_api_configuration(monkeypatch) -> None:
         "service": "matrix-railway-api",
         "version": "test-version",
         "database": {"status": "ok"},
-        "adminApi": {"status": "misconfigured"},
     }
 
 
