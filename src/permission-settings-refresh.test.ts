@@ -76,6 +76,23 @@ test('hidden tabs skip polling and returning after the window refreshes once', a
 });
 
 
+test('foreground permission read joins an automatic refresh already in flight', async () => {
+  let resolve!: (value: typeof response) => void;
+  rpc.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
+  const { installPermissionSettingsRefresh, readPermissionSettings } = await import('./permission-settings');
+  dispose = installPermissionSettingsRefresh();
+  expect(rpc).toHaveBeenCalledTimes(1);
+
+  const foreground = readPermissionSettings();
+  expect(rpc).toHaveBeenCalledTimes(1);
+  resolve(response);
+  await expect(foreground).resolves.toEqual(response.data);
+  expect(rpc).toHaveBeenCalledTimes(1);
+
+  await readPermissionSettings();
+  expect(rpc).toHaveBeenCalledTimes(2);
+});
+
 test('result-cache permission reads coalesce only concurrent RPCs', async () => {
   const { readPermissionSettings } = await import('./permission-settings');
   await Promise.all([readPermissionSettings(), readPermissionSettings(), readPermissionSettings()]);

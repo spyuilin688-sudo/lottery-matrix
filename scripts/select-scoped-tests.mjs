@@ -19,6 +19,7 @@ const BROWSER_OWNERS = {
   'tests/home-pro-plans-layout-runtime.spec.ts': ['src/Prototype.tsx', 'src/features/MemberPages.tsx', 'src/pro-plans-layout.css', 'src/pro-plans-carousel-peek.css'],
   'tests/tongxing-reference-responsive.spec.ts': ['src/features/LegacyTongXingPage.tsx', 'src/features/NumberReferencePage.tsx', 'src/tongxing-compact.css', 'src/number-reference-visual-refinement.css'],
   'tests/notebook-reliability.spec.ts': ['src/features/NotebookPages.tsx', 'src/features/notebook-owner.ts', 'src/features/notebook-storage.ts'],
+  'tests/notebook-responsive.spec.ts': ['src/features/NotebookPages.tsx', 'src/features/notebook-owner.ts', 'src/features/notebook-storage.ts', 'src/auth/LinePageGuard.tsx'],
   'tests/mobile-runtime.spec.ts': ['src/mobile/MobileRuntime.tsx', 'src/mobile/MobileScroll.tsx', 'src/mobile/Keyboard.tsx', 'src/input-behavior.ts'],
   'tests/membership-preview/responsive.spec.ts': ['tests/membership-preview/main.tsx', 'tests/membership-preview/preview.css', 'tests/membership-preview/state.ts', 'src/features/MemberPages.tsx'],
 };
@@ -28,6 +29,7 @@ const BROWSER_OWNERS = {
 const CONFIG_OWNERS = {
   '.github/workflows/matrix-optimizer.yml': ['tests/matrix-optimizer-code.test.mjs'],
   '.github/workflows/ci.yml': ['tests/scoped-ci.test.mjs', 'tests/ci-workflow-coverage.test.mjs'],
+  '.github/workflows/notebook-ui-check.yml': ['tests/ci-workflow-coverage.test.mjs'],
   'scripts/select-scoped-tests.mjs': ['tests/scoped-ci.test.mjs', 'tests/ci-workflow-coverage.test.mjs'],
   'vitest.edge-functions.config.ts': ['tests/edge-functions-config.test.mjs'],
   'mobile-runtime.lock.json': ['tests/runtime-integrity-atomic-commit.test.mjs', 'tests/runtime-integrity-scope.test.mjs'],

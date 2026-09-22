@@ -65,9 +65,9 @@ export async function refreshPermissionSettings(): Promise<PermissionSettings> {
 }
 
 /**
- * Coalesce only concurrent permission reads. A later protected query still
- * performs a fresh settings RPC so permission changes invalidate cached
- * results on the very next request.
+ * Protected and automatic callers share only the current in-flight read.
+ * Explicit refreshPermissionSettings() remains a force-refresh primitive so
+ * revision ordering can still be verified with overlapping explicit refreshes.
  */
 export function readPermissionSettings(): Promise<PermissionSettings> {
   if (sharedRead) return sharedRead;
@@ -84,7 +84,7 @@ export function installPermissionSettingsRefresh() {
     // Explicit permission checks also satisfy the automatic refresh window.
     // Keep their fresh reads and fail-closed behavior; coalesce only background events.
     if (!document.hidden && activeRequests === 0 && Date.now() - lastRefreshStartedAt >= refreshIntervalMs) {
-      void refreshPermissionSettings().catch(() => {});
+      void readPermissionSettings().catch(() => {});
     }
     const remaining = refreshIntervalMs - (Date.now() - lastRefreshStartedAt);
     timer = window.setTimeout(refresh, remaining > 0 ? remaining : refreshIntervalMs);

@@ -30,6 +30,7 @@ const files = new Map(Object.entries({
   'services/matrix-api/railway.recovery.json': '{"deploy":{}}',
   'services/matrix-api/tests/test_railway_recovery_contract.py': 'def test_recovery_service_is_http_only_and_health_checked(): pass',
   'tests/mobile-runtime.spec.ts': "import { test } from '@playwright/test';",
+  'tests/notebook-responsive.spec.ts': "import { test } from '@playwright/test';",
   'tests/membership-preview/responsive.spec.ts': "import { test } from '@playwright/test';",
 }));
 
@@ -112,6 +113,11 @@ test('edge and directly changed browser tests use their own configurations', () 
   assert.deepEqual(plan.groups.edge, ['supabase/functions/example/handler.test.ts']);
   assert.deepEqual(plan.groups.playwright, ['tests/mobile-runtime.spec.ts']);
   assert.deepEqual(plan.groups.membership, ['tests/membership-preview/responsive.spec.ts']);
+});
+
+test('specialized notebook responsive checks are selected by Project CI owners', () => {
+  const notebook = selectTests(files, ['src/auth/LinePageGuard.tsx']);
+  assert.ok(notebook.groups.playwright.includes('tests/notebook-responsive.spec.ts'));
 });
 
 test('every runner receives explicit absolute test paths; empty or unsafe scope never invokes it', () => {

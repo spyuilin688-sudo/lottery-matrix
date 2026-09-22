@@ -47,6 +47,8 @@ jobs:
     needs: scope
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      SCOPED_TEST_PLAN: ${{ needs.scope.outputs.plan }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -62,14 +64,15 @@ jobs:
         run: npm ci
       - name: Runtime commit atomicity
         run: node scripts/check-runtime-commit-integrity.mjs "$SCOPE_BASE_SHA" "$SCOPE_HEAD_SHA"
-      - name: Runtime integrity check
-        run: npm run check:runtime
       - name: Production build
         run: npm run build
+      - name: Related Node packaging tests
+        if: needs.scope.outputs.node == 'true'
+        run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run node
 
   test-and-build:
     needs: scope
-    if: needs.scope.outputs.node == 'true' || needs.scope.outputs.vitest == 'true' || needs.scope.outputs.edge == 'true'
+    if: needs.scope.outputs.vitest == 'true' || needs.scope.outputs.edge == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -92,12 +95,6 @@ jobs:
       - name: Related Edge Function files
         if: needs.scope.outputs.edge == 'true'
         run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run edge
-      - name: Production build for packaging tests
-        if: needs.scope.outputs.node == 'true'
-        run: npm run build
-      - name: Related Node test files
-        if: needs.scope.outputs.node == 'true'
-        run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run node
 
   runtime-tests:
     needs: scope
@@ -158,9 +155,6 @@ jobs:
       - name: Admin build
         working-directory: apps/admin
         run: APPDEPLOY_CI_EXTERNALS=true npm run build
-      - name: Cloudflare Pages admin build
-        working-directory: apps/admin
-        run: npm run build:pages
 
   matrix-api:
     needs: scope

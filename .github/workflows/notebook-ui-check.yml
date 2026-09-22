@@ -2,12 +2,6 @@ name: Notebook UI checks
 on:
   push:
     branches: ['work/notebook-line-access-*']
-  pull_request:
-    paths:
-      - src/features/NotebookPages.tsx
-      - src/auth/LinePageGuard.tsx
-      - tests/notebook-responsive*
-      - .github/workflows/notebook-ui-check.yml
 permissions:
   contents: read
 jobs:
