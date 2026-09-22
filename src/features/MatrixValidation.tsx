@@ -4,55 +4,6 @@ import { type LotteryId } from "../Prototype";
 import { ExploreValidationSummary } from "../ExploreValidationSummary";
 import { TianyanExpandedValidationGroups, TianyanPatchedSummary } from "../TianyanExpandedValidation";
 import { type ExploreValidation, type TianhengApiRow, type TianhengValidation, type TianyanValidation, type TianshuApiRow, type TianshuValidation } from "../matrix-algorithm-api";
-import { ROAD_VALIDATION_SAMPLE_HISTORY } from "./shared";
-
-export function RoadValidationProcess({
-  number,
-  position,
-  predictionPeriod,
-  consecutive,
-  prediction,
-  roadType,
-}: {
-  number: string;
-  position: number;
-  predictionPeriod: number;
-  consecutive: string;
-  prediction: string;
-  roadType?: string;
-}) {
-  const sourceGroups = [ROAD_VALIDATION_SAMPLE_HISTORY.slice(0, 3), ROAD_VALIDATION_SAMPLE_HISTORY.slice(3, 6)];
-  const validationGroups = Array.from({ length: 8 }, (_, index) => sourceGroups[index % sourceGroups.length]);
-  return (
-    <section className="road-validation-process" aria-label="驗證過程">
-      <header className="validation-summary-card">
-        <span>
-          開 <i className="validation-summary-primary">{number}</i>
-          第 <i className="validation-summary-position">{position}</i> 顆｜上 <i className="validation-summary-lookback">2</i> 期｜
-          第 <i className="validation-summary-position">3</i> 顆｜<i className="validation-summary-formula">{roadType === "合值版路" ? "合值14.24" : "+14.24"}</i>｜
-          下 <i className="validation-summary-future">{predictionPeriod}</i> 期開
-        </span>
-        <em>{consecutive}</em>
-      </header>
-      {validationGroups.map((group, groupIndex) => (
-        <div className="validation-period-block" key={groupIndex}>
-          {group.map(([issue, , numbers], rowIndex) => {
-            const lockRow = groupIndex % 2 === 0 ? 1 : 0;
-            return (
-              <div className="validation-period-row" key={issue}>
-                <span className="validation-issue">{issue}</span>
-                <span className="validation-full-numbers">{numbers.map((value) => <i key={value}>{value}</i>)}</span>
-                <span className="validation-formula">
-                  {rowIndex < 2 ? <><b>{number} +14.24</b>{rowIndex === lockRow ? <small>鎖定條件</small> : null}</> : <><b>結果期</b><strong>版路結果 {prediction.replace(".", "、")}</strong></>}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      ))}
-    </section>
-  );
-}
 
 export function useExploreValidationProtection() {
   const [contentProtected, setContentProtected] = useState(() => (

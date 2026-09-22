@@ -37,7 +37,7 @@ test('Tianheng position labels use a 1.5px vertical gap', () => {
 
 test('Matrix switcher is text-only and has no retired artwork rule', () => {
   const start = sharedSource.indexOf('export function MatrixPageSwitcher');
-  const end = sharedSource.indexOf('export const ROAD_VALIDATION_SAMPLE_HISTORY', start);
+  const end = sharedSource.indexOf('export function FeatureBottomNavigationPortal', start);
   assert.ok(start >= 0 && end > start, 'expected MatrixPageSwitcher source');
   const switcherSource = sharedSource.slice(start, end);
   assert.doesNotMatch(switcherSource, /<img|clip-path/);

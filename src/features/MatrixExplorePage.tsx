@@ -14,7 +14,7 @@ import { getExploreEntryDefaults } from "../explore-defaults";
 import { useAppDialog } from "../dialog/AppDialog";
 import { Navigate } from "./navigation";
 import { FeatureShell, MatrixPageSwitcher, SectionTitle, SettingLabelIcon, LotteryTabs } from "./shared";
-import { ExploreValidationProcess, TianhengValidationProcess, TianyanValidationProcess, RoadValidationProcess } from "./MatrixValidation";
+import { ExploreValidationProcess, TianhengValidationProcess, TianyanValidationProcess } from "./MatrixValidation";
 
 export function MatrixExplorePage({
   onNavigate,
@@ -22,7 +22,7 @@ export function MatrixExplorePage({
   roadTypes = ["加減版路", "合值版路", "拖牌版路"],
 }: {
   onNavigate: Navigate;
-  title?: "Matrix 探索" | "Matrix 天衡" | "Matrix 天樞" | "Matrix 天衍" | "Matrix 天工";
+  title?: "Matrix 探索" | "Matrix 天衡" | "Matrix 天樞" | "Matrix 天衍";
   roadTypes?: string[];
 }) {
   const appDialog = useAppDialog();
@@ -782,7 +782,7 @@ export function MatrixExplorePage({
                             validation={tianyanValidationById[`${tianyanResponse.analysisVersion}:${item.id}`]}
                             loading={validationLoadingId === `${tianyanResponse.analysisVersion}:${item.id}`}
                           />
-                        : <RoadValidationProcess number={item.number} position={item.position} predictionPeriod={item.predictionPeriod} consecutive={item.consecutive} prediction={item.prediction} roadType={road} />
+                        : null
                   ) : null}
                 </article>
               ))}

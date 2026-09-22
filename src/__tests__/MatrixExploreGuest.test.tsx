@@ -25,7 +25,7 @@ vi.mock('../features/shared', () => ({
   SettingLabelIcon: () => null, MatrixPageSwitcher: () => null, LotteryTabs: () => null, HistoryList: () => null,
   LOTTERIES: ['今彩539', '天天樂', '六合彩', '大樂透'],
 }));
-vi.mock('../features/MatrixValidation', () => ({ ExploreValidationProcess: () => null, TianyanValidationProcess: () => null, RoadValidationProcess: () => null }));
+vi.mock('../features/MatrixValidation', () => ({ ExploreValidationProcess: () => null, TianyanValidationProcess: () => null }));
 
 const response = { kind: 'explore', lottery: '今彩539', drawPeriod: '115000210', analysisVersion: '115000210:matrix-python-v13', status: 'complete', total: 1, duplicateStats: [], items: [{ id: 'guest-row', lockedPosition: 1, number: '03', predictionDistance: 2, consecutive: '準7進8', predictionNumbers: ['22', '26'], algorithmType: '加減', numberOrder: '依號碼由小到大排序' }] };
 

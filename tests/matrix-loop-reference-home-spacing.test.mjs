@@ -9,7 +9,7 @@ const reference = readFileSync(new URL("../src/number-reference-visual-refinemen
 const home = readFileSync(new URL("../src/homepage/base.css", import.meta.url), "utf8");
 
 test("Matrix 切換器固定顯示五頁並標示目前頁面，移除循環複本與捲動切換", () => {
-  const switcher = pages.slice(pages.indexOf("function MatrixPageSwitcher"), pages.indexOf("const ROAD_VALIDATION_SAMPLE_HISTORY"));
+  const switcher = pages.slice(pages.indexOf("function MatrixPageSwitcher"), pages.indexOf("export function FeatureBottomNavigationPortal"));
   assert.match(switcher, /MATRIX_PAGE_ITEMS\.map/);
   assert.match(switcher, /aria-current=\{item\.screen === current \? "page" : undefined\}/);
   assert.doesNotMatch(switcher, /MATRIX_LOOP_ITEMS|data-loop-clone|onScroll|scrollTo/);

@@ -7,7 +7,7 @@ const css = readFileSync("src/feature-pages.css", "utf8");
 const spacingCss = readFileSync("src/matrix-explore-spacing.css", "utf8");
 
 test("Matrix settings switcher exposes readable labels and preserves page navigation", () => {
-  const switcher = shared.slice(shared.indexOf("export function MatrixPageSwitcher"), shared.indexOf("export const ROAD_VALIDATION_SAMPLE_HISTORY"));
+  const switcher = shared.slice(shared.indexOf("export function MatrixPageSwitcher"), shared.indexOf("export function FeatureBottomNavigationPortal"));
   for (const label of ["探索", "天衡", "天衍", "天工"]) {
     assert.ok(shared.includes('shortLabel: "' + label + '"'));
   }

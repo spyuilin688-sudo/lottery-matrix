@@ -29,7 +29,7 @@ test("integrated title artwork uses current sixteen-pixel side margins and propo
 
 test("Matrix settings heading owns the fixed five-page control", () => {
   const start = featurePages.indexOf("function MatrixPageSwitcher");
-  const end = featurePages.indexOf("const ROAD_VALIDATION_SAMPLE_HISTORY", start);
+  const end = featurePages.indexOf("export function FeatureBottomNavigationPortal", start);
   const switcher = featurePages.slice(start, end);
   for (const name of ["探索", "天衍", "天工"]) assert.ok(switcher.length > 0 && featurePages.includes(`Matrix${name}-icon.png`));
   assert.match(switcher, /MATRIX_PAGE_ITEMS\.map/);
