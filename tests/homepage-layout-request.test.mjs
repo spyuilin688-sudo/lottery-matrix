@@ -55,7 +55,7 @@ test("homepage reserves the logo above its scroller and preserves the requested 
   assert.equal(style(".home-content").minHeight, "0px");
   assert.equal(style(".mobile-scroll").overflowY, "auto");
   assert.equal(brandHeader.alignItems, "flex-start");
-  assert.ok(normalizedCss.includes("padding-top:clamp(8px,1dvh,12px);"));
+  assert.equal(brandHeader.paddingTop, "8px");
   assert.equal(style(".home-logo-image").height, "auto");
   assert.equal(style(".home-logo-image").objectPosition, "center bottom");
   assert.equal(layout.getPropertyValue("--home-feature-inline").trim(), "16px");
