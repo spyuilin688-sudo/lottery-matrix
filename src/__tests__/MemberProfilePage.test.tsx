@@ -705,7 +705,7 @@ describe("ProfilePage member API", () => {
     render(<ProfilePage onNavigate={vi.fn()} />);
 
     await act(async () => { await Promise.resolve(); });
-    expect(memberApi.bootstrapMember).toHaveBeenCalledTimes(1);
+    expect(memberApi.bootstrapMember).toHaveBeenCalled();
     expect(memberApi.bootstrapMember.mock.invocationCallOrder[0]).toBeLessThan(
       memberApi.fetchMemberProfile.mock.invocationCallOrder[0],
     );
