@@ -115,20 +115,19 @@ describe('lottery-api response validation', () => {
     await expect(fetchLatestLotteryDraw('今彩539')).rejects.toThrow('Lottery API invalid response: item');
   });
 
-  it('首頁跑馬燈最新結果只保留順球主號碼', async () => {
+  it('首頁跑馬燈只接收最新正式開獎日已完整分析的彩種', async () => {
     const fetcher = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(jsonResponse({
-      item: {
-        lottery: '六合彩',
-        drawDate: '2026-09-22',
-        numbers: ['02', '34', '35', '43', '45', '46', '41'],
-      },
+      drawDate: '2026-09-23',
+      items: [
+        { lottery: '今彩539' },
+        { lottery: '大樂透' },
+      ],
     }));
 
-    await expect(fetchLatestLotteryResult()).resolves.toEqual({
-      lottery: '六合彩',
-      drawDate: '2026-09-22',
-      numbers: ['02', '34', '35', '43', '45', '46'],
-    });
+    await expect(fetchLatestLotteryResult()).resolves.toEqual([
+      { lottery: '今彩539' },
+      { lottery: '大樂透' },
+    ]);
     expect(fetcher).toHaveBeenCalledWith(
       `${LOTTERY_API_BASE}/api/matrix/latest-result`,
       expect.objectContaining({ headers: expect.any(Headers) }),
