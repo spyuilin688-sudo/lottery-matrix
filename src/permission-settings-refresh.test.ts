@@ -92,6 +92,27 @@ test('hidden tabs skip fallback polling and returning to foreground refreshes on
   expect(rpc).toHaveBeenCalledTimes(2);
 });
 
+test('settling an in-flight automatic read after disposal cannot re-arm timers or event refreshes', async () => {
+  let resolve!: (value: typeof response) => void;
+  rpc.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
+  const { installPermissionSettingsRefresh } = await import('./permission-settings');
+  dispose = installPermissionSettingsRefresh();
+  await vi.advanceTimersByTimeAsync(0);
+  expect(rpc).toHaveBeenCalledTimes(1);
+
+  dispose();
+  dispose = undefined;
+  resolve(response);
+  await vi.advanceTimersByTimeAsync(0);
+  await vi.advanceTimersByTimeAsync(10 * 60_000);
+  window.dispatchEvent(new Event('focus'));
+  window.dispatchEvent(new Event('online'));
+  document.dispatchEvent(new Event('visibilitychange'));
+  await vi.advanceTimersByTimeAsync(0);
+
+  expect(rpc).toHaveBeenCalledTimes(1);
+});
+
 test('foreground permission read joins an automatic refresh already in flight', async () => {
   let resolve!: (value: typeof response) => void;
   rpc.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
