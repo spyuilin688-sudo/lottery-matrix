@@ -12,8 +12,8 @@ test("四大功能的外距、間距與高度只由 base.css 的共用變數控�
   assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*height:\s*76px;[^}]*min-height:\s*76px;/s);
 });
 
-test("四大功能的低亮度細金框與互動狀態只由 base.css 擁有", () => {
-  assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*border:\s*1px solid var\(--home-frame-muted\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
+test("四大功能外框與狀態卡一致且互動狀態只由 base.css 擁有", () => {
+  assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*border:\s*0;[^}]*border-radius:\s*var\(--home-frame-radius\);[^}]*box-shadow:\s*inset 0 0 0 1px var\(--home-frame-gold\);/s);
   assert.doesNotMatch(base, /\.home-screen \.home-shortcut::(?:before|after)\s*\{/);
   assert.match(base, /\.home-screen \.home-shortcut:active\s*\{/);
   assert.match(base, /\.home-screen \.home-shortcut:focus-visible\s*\{/);
