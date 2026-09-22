@@ -56,6 +56,12 @@ function invalidateLotteryData(lottery: NumberBallLottery) {
   }
 }
 
+export type LatestLotteryResult = {
+  lottery: NumberBallLottery;
+  drawDate: string;
+  numbers: string[];
+};
+
 export type LotteryDrawRecord = {
   period?: string;
   issue?: string;
@@ -380,6 +386,34 @@ function assertNumberReferenceItem(value: unknown, index: number): asserts value
   if (!isLotteryDrawRecord(value)) {
     throw new Error(`Lottery API invalid response: items[${index}]`);
   }
+}
+
+export async function fetchLatestLotteryResult(signal?: AbortSignal): Promise<LatestLotteryResult | null> {
+  const data = await requestJson<{ item?: unknown }>('/api/matrix/latest-result', signal ? { signal } : undefined);
+  if (!Object.prototype.hasOwnProperty.call(data, 'item')) {
+    throw new Error('Lottery API invalid response: item');
+  }
+  if (data.item === null) return null;
+  if (data.item === undefined || typeof data.item !== 'object' || Array.isArray(data.item)) {
+    throw new Error('Lottery API invalid response: item');
+  }
+  const item = data.item as { lottery?: unknown; drawDate?: unknown; numbers?: unknown };
+  const lottery = item.lottery;
+  if (lottery !== '今彩539' && lottery !== '天天樂' && lottery !== '六合彩' && lottery !== '大樂透') {
+    throw new Error('Lottery API invalid response: item.lottery');
+  }
+  if (typeof item.drawDate !== 'string' || !/^\\d{4}-\\d{2}-\\d{2}$/.test(item.drawDate)) {
+    throw new Error('Lottery API invalid response: item.drawDate');
+  }
+  if (!Array.isArray(item.numbers)) {
+    throw new Error('Lottery API invalid response: item.numbers');
+  }
+  const mainCount = lottery === '今彩539' || lottery === '天天樂' ? 5 : 6;
+  const numbers = normalizeNumberList(item.numbers.slice(0, mainCount));
+  if (item.numbers.length < mainCount || numbers.length !== mainCount || new Set(numbers).size !== mainCount) {
+    throw new Error('Lottery API invalid response: item.numbers');
+  }
+  return { lottery, drawDate: item.drawDate, numbers };
 }
 
 export async function fetchLatestLotteryDraw(lottery: NumberBallLottery): Promise<LotteryDrawRecord | null> {
