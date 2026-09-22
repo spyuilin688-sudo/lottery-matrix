@@ -25,9 +25,9 @@ vi.mock('../dialog/AppDialog', () => ({
 
 import { ManualTransferPage, PaymentHistoryPage, ProPlansPage } from '../FeaturePages';
 import { SubscriptionManagementPage } from '../features/MemberPages';
-import { getSupabaseClient } from '../lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
+import { publishMemberSessionReady } from '../auth/member-session-store';
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -41,14 +41,7 @@ const pendingTransfer = { id: 'pending-1', planName: '月費方案', amount: 288
 const switchMember = (member: string) => updateAlgorithmCacheSession({ access_token: member, user: { id: member } } as Session);
 
 function authenticatePaymentHistory() {
-  const auth = getSupabaseClient().auth;
-  vi.spyOn(auth, 'getSession').mockResolvedValue({
-    data: { session: { access_token: 'payment-member', user: { id: 'payment-member' } } as Session },
-    error: null,
-  });
-  vi.spyOn(auth, 'onAuthStateChange').mockReturnValue({
-    data: { subscription: { id: 'payment-fixture', callback: () => undefined, unsubscribe: vi.fn() } },
-  });
+  publishMemberSessionReady({ access_token: 'payment-member', user: { id: 'payment-member' } } as Session);
 }
 
 describe('Matrix Pro manual bank transfer', () => {
