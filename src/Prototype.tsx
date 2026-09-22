@@ -1,5 +1,5 @@
 import { DAILY_SORTED_ONLY_DESCRIPTION, supportsDrawOrder, useLotteryOrder } from "./use-lottery-order";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import "./feature-pages.css";
 import {
@@ -412,18 +412,91 @@ export function MatrixCoreBanner({ onOpen }: { onOpen?: () => void }) {
   );
 }
 
+const HOME_ANNOUNCEMENT_BASE_SECONDS = 18;
+
 export function HomeAnnouncement({ latestResults = [] }: { latestResults?: LatestLotteryResult[] } = {}) {
-  const marqueeContentKey = latestResults.map((result) => result.lottery).join("|") || "initial";
+  const announcements = [
+    { key: "member", lottery: null as LatestLotteryResult["lottery"] | null },
+    ...latestResults.map((result) => ({ key: `lottery:${result.lottery}`, lottery: result.lottery })),
+  ];
+  const queueKey = announcements.map((announcement) => announcement.key).join("|");
+  const [playback, setPlayback] = useState({ queueKey: "", index: 0, cycle: 0 });
+  const activeIndex = playback.queueKey === queueKey
+    ? Math.min(playback.index, announcements.length - 1)
+    : 0;
+  const activeAnnouncement = announcements[activeIndex];
+  const activeCycle = playback.queueKey === queueKey ? playback.cycle : 0;
+  const animationKey = `${queueKey}:${activeAnnouncement.key}:${activeCycle}`;
+  const hostRef = useRef<HTMLElement | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const speedRef = useRef<{ queueKey: string; pixelsPerSecond: number } | null>(null);
+  const [timing, setTiming] = useState<{ animationKey: string; seconds: number } | null>(null);
+  const durationSeconds = timing?.animationKey === animationKey ? timing.seconds : null;
+
+  useLayoutEffect(() => {
+    const host = hostRef.current;
+    const track = trackRef.current;
+    if (!host || !track) return;
+
+    const measure = () => {
+      const viewportWidth = host.getBoundingClientRect().width;
+      const trackWidth = track.getBoundingClientRect().width;
+      if (!(viewportWidth > 0) || !(trackWidth > 0)) {
+        setTiming({ animationKey, seconds: HOME_ANNOUNCEMENT_BASE_SECONDS });
+        return;
+      }
+
+      const travelDistance = viewportWidth + trackWidth;
+      if (activeIndex === 0 || speedRef.current?.queueKey !== queueKey) {
+        const pixelsPerSecond = travelDistance / HOME_ANNOUNCEMENT_BASE_SECONDS;
+        speedRef.current = { queueKey, pixelsPerSecond };
+        setTiming({ animationKey, seconds: HOME_ANNOUNCEMENT_BASE_SECONDS });
+        return;
+      }
+
+      setTiming({
+        animationKey,
+        seconds: travelDistance / speedRef.current.pixelsPerSecond,
+      });
+    };
+
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(host);
+    observer.observe(track);
+    return () => observer.disconnect();
+  }, [activeIndex, animationKey, queueKey]);
+
+  const advance = () => {
+    setPlayback((current) => ({
+      queueKey,
+      index: (activeIndex + 1) % announcements.length,
+      cycle: current.queueKey === queueKey ? current.cycle + 1 : 1,
+    }));
+  };
+
   return (
-    <section className="home-announcement" aria-label="公告" data-testid="home-announcement">
-      <div className="home-announcement-track" key={marqueeContentKey}>
+    <section ref={hostRef} className="home-announcement" aria-label="公告" data-testid="home-announcement">
+      <div
+        ref={trackRef}
+        className="home-announcement-track"
+        key={animationKey}
+        style={{
+          animationDuration: `${durationSeconds ?? HOME_ANNOUNCEMENT_BASE_SECONDS}s`,
+          animationPlayState: durationSeconds === null ? "paused" : "running",
+        }}
+        onAnimationEnd={advance}
+      >
         <span className="home-announcement-text">
-          {HOME_ANNOUNCEMENT_TEXT}
-          {latestResults.map((result) => (
-            <span className="home-announcement-update" key={result.lottery}>
-              {"　【"}<span className="home-announcement-lottery-name" data-testid={`home-announcement-lottery-${result.lottery}`}>{result.lottery}</span>】最新一期開獎資料、Matrix 分析結果已更新。
-            </span>
-          ))}
+          {activeAnnouncement.lottery === null ? HOME_ANNOUNCEMENT_TEXT : (
+            <>
+              【<span
+                className="home-announcement-lottery-name"
+                data-testid={`home-announcement-lottery-${activeAnnouncement.lottery}`}
+              >{activeAnnouncement.lottery}</span>】最新一期開獎資料、Matrix 分析結果已更新。
+            </>
+          )}
         </span>
       </div>
     </section>
