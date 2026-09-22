@@ -42,6 +42,7 @@ it('coalesces concurrent page refresh requests through the installed session own
   await expect(first).resolves.toBe(session);
   await expect(second).resolves.toBe(session);
 
+  refresh.mockResolvedValueOnce(session);
   await requestMemberSessionRefresh();
   expect(refresh).toHaveBeenCalledTimes(2);
   uninstall();
