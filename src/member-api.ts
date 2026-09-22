@@ -211,10 +211,32 @@ export function fetchPushSubscriptionStatus(endpoint: string) {
   return memberRpc<{ enabled: boolean }>('member_push_subscription_status', { p_endpoint: endpoint });
 }
 
-export async function hasAuthenticatedMemberSession() {
-  const { data, error } = await getSupabaseClient().auth.getSession();
-  if (error) throw error;
-  return Boolean(data.session);
+let authenticatedSessionScope: number | null = null;
+let authenticatedSessionInFlight: Promise<boolean> | null = null;
+let authenticatedSessionResult: boolean | null = null;
+
+export function hasAuthenticatedMemberSession() {
+  const scope = getAlgorithmCacheScope();
+  if (authenticatedSessionScope !== scope) {
+    authenticatedSessionScope = scope;
+    authenticatedSessionInFlight = null;
+    authenticatedSessionResult = null;
+  }
+  if (authenticatedSessionResult !== null) return Promise.resolve(authenticatedSessionResult);
+  if (authenticatedSessionInFlight) return authenticatedSessionInFlight;
+
+  const request = getSupabaseClient().auth.getSession().then(({ data, error }) => {
+    if (error) throw error;
+    const authenticated = Boolean(data.session);
+    if (authenticatedSessionScope === scope && getAlgorithmCacheScope() === scope) {
+      authenticatedSessionResult = authenticated;
+    }
+    return authenticated;
+  }).finally(() => {
+    if (authenticatedSessionScope === scope) authenticatedSessionInFlight = null;
+  });
+  authenticatedSessionInFlight = request;
+  return request;
 }
 
 export function savePushSubscription(input: MemberPushSubscriptionInput) {

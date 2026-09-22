@@ -250,18 +250,14 @@ describe('algorithm data revision', () => {
     expect((await fetchExploreList(accountRequest)).total).toBe(2);
   });
 
-  it('rejects a cache hit invalidated during the final session verification', async () => {
-    const auth = { data: { session: { user: { id: 'account-a' }, access_token: 'session-a' } }, error: null };
+  it('uses one session lookup per cached list request', async () => {
     rpc.mockResolvedValue({ data: { lottery: '今彩539', total: 1 }, error: null });
     await fetchExploreList(accountRequest);
-    let finish!: (value: unknown) => void;
-    getSession.mockResolvedValueOnce(auth)
-      .mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
-    const cached = fetchExploreList(accountRequest);
-    await vi.waitFor(() => expect(finish).toBeDefined());
-    invalidateMatrixData();
-    finish(auth);
-    await expect(cached).rejects.toMatchObject({ code: 'ANALYSIS_VERSION_MISMATCH' });
+    getSession.mockClear();
+
+    await fetchExploreList(accountRequest);
+
+    expect(getSession).toHaveBeenCalledTimes(1);
     expect(rpc).toHaveBeenCalledTimes(1);
   });
 });

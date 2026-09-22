@@ -92,6 +92,13 @@ it('does not expose custom status client operations', async () => {
 
 
 describe('status read reuse', () => {
+  it('uses one session lookup for each detailed status request', async () => {
+    await fetchMatrixStatus('今彩539');
+    expect(getSession).toHaveBeenCalledTimes(1);
+    expect(access).toHaveBeenCalledTimes(1);
+    expect(statusRead).toHaveBeenCalledTimes(1);
+  });
+
   it('shares concurrent requests and reuses the same member and data snapshot', async () => {
     await Promise.all([fetchMatrixStatus('六合彩'), fetchMatrixStatus('六合彩')]);
     await fetchMatrixStatus('六合彩');

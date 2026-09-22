@@ -114,10 +114,17 @@ describe('member Supabase RPC', () => {
     expect(supabase.auth.signOut).not.toHaveBeenCalled();
   });
 
-  it('reports whether a current authenticated member session exists', async () => {
+  it('shares the authenticated session read within one member scope and invalidates it on account change', async () => {
+    const first = hasAuthenticatedMemberSession();
+    const second = hasAuthenticatedMemberSession();
+    await expect(Promise.all([first, second])).resolves.toEqual([true, true]);
     await expect(hasAuthenticatedMemberSession()).resolves.toBe(true);
+    expect(supabase.auth.getSession).toHaveBeenCalledTimes(1);
+
+    switchMember('member-b');
     supabase.auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
     await expect(hasAuthenticatedMemberSession()).resolves.toBe(false);
+    expect(supabase.auth.getSession).toHaveBeenCalledTimes(2);
   });
   it('bootstraps and loads only the authenticated member', async () => {
     await bootstrapMember();

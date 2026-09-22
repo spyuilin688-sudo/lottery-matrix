@@ -3,7 +3,7 @@ import type { NumberBallLottery } from './NumberBall';
 import { MatrixApiError } from './matrix-api-client';
 import { getSupabaseClient } from './lib/supabase';
 import { readThroughCache, stableCacheKey } from './read-cache';
-import { readAlgorithmCacheScope } from './auth/algorithm-cache-scope';
+import { getAlgorithmCacheScope, readAlgorithmCacheScope } from './auth/algorithm-cache-scope';
 import { getMatrixDataRevision } from './matrix-data-revision';
 import { lotteryReadCacheTtlMs } from './lottery-cache-policy';
 
@@ -579,8 +579,8 @@ async function cachedMatrixResultRpc<T extends { lottery: NumberBallLottery; ana
   };
   const scope = await readAlgorithmCacheScope(client, sessionOptions);
   const permissionSettings = await readPermissionSettings();
-  const assertCurrentSession = async () => {
-    if (await readAlgorithmCacheScope(client, sessionOptions) !== scope) {
+  const assertCurrentSession = () => {
+    if (getAlgorithmCacheScope() !== scope) {
       throw new MatrixApiError('AUTH_REQUIRED', 401);
     }
   };
@@ -594,13 +594,13 @@ async function cachedMatrixResultRpc<T extends { lottery: NumberBallLottery; ana
   const lottery = (request as { lottery: NumberBallLottery }).lottery;
   const result = await readThroughCache(key, lotteryReadCacheTtlMs(lottery, 'standard'), async ({ isCurrent }) => {
     const value = await matrixResultRpc<T>(name, request);
-    await assertCurrentSession();
+    assertCurrentSession();
     assertCurrentData();
     if (!isCurrent()) throw new MatrixApiError('ANALYSIS_VERSION_MISMATCH', 409);
     return value;
   });
   // Cache hits must also verify the session before reaching a caller.
-  await assertCurrentSession();
+  assertCurrentSession();
   assertCurrentData();
   return result;
 }
@@ -615,7 +615,7 @@ async function directMatrixValidationRpc<T>(
   const scope = await readAlgorithmCacheScope(client, sessionOptions);
   const revision = getMatrixDataRevision();
   const value = await matrixResultRpc<T>(name, request);
-  if (await readAlgorithmCacheScope(client, sessionOptions) !== scope) {
+  if (getAlgorithmCacheScope() !== scope) {
     throw new MatrixApiError('AUTH_REQUIRED', 401);
   }
   if (getMatrixDataRevision() !== revision) {
