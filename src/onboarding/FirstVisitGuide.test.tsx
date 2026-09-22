@@ -13,7 +13,8 @@ import { publishMemberSessionReady } from '../auth/member-session-store';
 
 vi.mock('../useLatestLotteryDraw', () => ({ useLatestLotteryDraw: () => ({ data: null }) }));
 vi.mock('../matrix-status-api', () => ({ fetchMatrixStatus: async () => { throw new Error('offline status'); } }));
-vi.mock('../subscription-purchase-visibility', () => ({ useSubscriptionPurchaseVisible: () => true }));
+const subscriptionPurchaseVisibleMock = vi.hoisted(() => vi.fn(() => true));
+vi.mock('../subscription-purchase-visibility', () => ({ useSubscriptionPurchaseVisible: subscriptionPurchaseVisibleMock }));
 
 vi.stubGlobal('ResizeObserver', class {
   observe() {}
@@ -22,6 +23,7 @@ vi.stubGlobal('ResizeObserver', class {
 });
 
 beforeEach(() => {
+  subscriptionPurchaseVisibleMock.mockReturnValue(true);
   publishMemberSessionReady(null);
   window.localStorage.clear();
   window.history.replaceState({}, '', '/');
@@ -68,6 +70,16 @@ describe('首次進站引導', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(await screen.findByRole('button', { name: 'LINE 登入' })).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: 'Google 登入' })).toBeInTheDocument();
+  });
+
+  it('替代文案只說明 LINE 新會員 48 小時探索、天衡、天樞十三期與完整範圍', async () => {
+    subscriptionPurchaseVisibleMock.mockReturnValue(false);
+    render(<AppDialogProvider><GuideHarness /></AppDialogProvider>);
+
+    const guide = await screen.findByRole('dialog', { name: '使用教學' });
+    expect(guide).toHaveTextContent('新註冊 LINE 會員可於註冊後 48 小時內使用 Matrix 探索、天衡、天樞十三期及完整範圍。');
+    expect(guide).not.toHaveTextContent('天衍 2 天');
+    expect(guide).not.toHaveTextContent('天工 1 天');
   });
 
   it('知道了僅關閉視窗，首頁 Matrix Core 仍可進入探索', async () => {
