@@ -26,6 +26,10 @@ import {
   submitTransferRequest,
 } from './member-api';
 import { updateAlgorithmCacheSession } from './auth/algorithm-cache-scope';
+import {
+  publishMemberSessionReady,
+  resetMemberSessionStoreForTests,
+} from './auth/member-session-store';
 
 function switchMember(id: string) {
   updateAlgorithmCacheSession({ user: { id }, access_token: id } as never);
@@ -48,6 +52,8 @@ const settings = {
 beforeEach(() => {
   switchMember('test-reset');
   switchMember('member-a');
+  resetMemberSessionStoreForTests();
+  publishMemberSessionReady({ user: { id: 'member-a' }, access_token: 'member-a' } as never);
   supabase.rpc.mockReset().mockResolvedValue({ data: {}, error: null });
   supabase.auth.getSession.mockReset().mockResolvedValue({ data: { session: { access_token: 'token' } }, error: null });
   supabase.auth.getUser.mockReset().mockResolvedValue({ data: { user: { id: 'current-user' } }, error: null });
@@ -114,17 +120,17 @@ describe('member Supabase RPC', () => {
     expect(supabase.auth.signOut).not.toHaveBeenCalled();
   });
 
-  it('shares the authenticated session read within one member scope and invalidates it on account change', async () => {
+  it('reuses the shared member session snapshot without a second Supabase session read', async () => {
     const first = hasAuthenticatedMemberSession();
     const second = hasAuthenticatedMemberSession();
     await expect(Promise.all([first, second])).resolves.toEqual([true, true]);
     await expect(hasAuthenticatedMemberSession()).resolves.toBe(true);
-    expect(supabase.auth.getSession).toHaveBeenCalledTimes(1);
+    expect(supabase.auth.getSession).not.toHaveBeenCalled();
 
     switchMember('member-b');
-    supabase.auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
+    publishMemberSessionReady(null);
     await expect(hasAuthenticatedMemberSession()).resolves.toBe(false);
-    expect(supabase.auth.getSession).toHaveBeenCalledTimes(2);
+    expect(supabase.auth.getSession).not.toHaveBeenCalled();
   });
   it('bootstraps and loads only the authenticated member', async () => {
     await bootstrapMember();
