@@ -9,8 +9,8 @@ describe("homepage layout rules", () => {
     expect(css).not.toMatch(/\.home-screen \.lottery-switcher > \.lottery-switcher-hit-grid > \.lottery-card > img\s*\{/);
   });
 
-  it("places the announcement between the logo and lottery switcher with one 8px gap on each side", () => {
-    expect(css).toMatch(/\.home-screen \.lottery-screen\s*\{[^}]*--home-gap-logo-announcement:\s*8px;[^}]*--home-gap-announcement-switcher:\s*8px;/s);
+  it("places the announcement between the logo and lottery switcher with the requested responsive gaps", () => {
+    expect(css).toMatch(/\.home-screen \.lottery-screen\s*\{[^}]*--home-gap-logo-announcement:\s*clamp\(5px,\s*0\.8dvh,\s*8px\);[^}]*--home-gap-announcement-switcher:\s*clamp\(6px,\s*0\.9dvh,\s*8px\);/s);
     expect(css).toMatch(/\.home-screen \.home-announcement\s*\{[^}]*margin-block-start:\s*var\(--home-gap-logo-announcement\);/s);
     expect(css).toMatch(/\.home-screen \.lottery-switcher\s*\{[^}]*margin-block-start:\s*var\(--home-gap-announcement-switcher\);/s);
   });
