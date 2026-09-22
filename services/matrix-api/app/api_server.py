@@ -92,10 +92,42 @@ def _parse_lottery(value: Any) -> str:
     return lottery
 
 
-def _latest_completed_results(repository: AnalysisRepository) -> dict[str, Any]:
+def _scheduled_lotteries_for_date(client: Any, cycle_date: date) -> list[str]:
+    payload = client.rpc("matrix_watchdog_draw_days", {
+        "p_start_date": cycle_date.isoformat(),
+        "p_end_date": cycle_date.isoformat(),
+    }).execute().data
+    if not isinstance(payload, dict):
+        raise RuntimeError("LATEST_RESULT_DRAW_DAYS_INVALID")
+    scheduled: list[str] = []
+    for lottery in ("今彩539", "天天樂", "大樂透", "六合彩"):
+        days = payload.get(lottery)
+        if not isinstance(days, list) or any(not isinstance(day, str) for day in days):
+            raise RuntimeError("LATEST_RESULT_DRAW_DAYS_INVALID")
+        if cycle_date.isoformat() in days:
+            scheduled.append(lottery)
+    return scheduled
+
+
+def _latest_completed_results(
+    repository: AnalysisRepository,
+    cycle_date: date | None = None,
+) -> dict[str, Any]:
     client = getattr(repository, "client", None)
     if client is None:
-        return {"drawDate": None, "items": []}
+        payload: dict[str, Any] = {"drawDate": None, "items": []}
+        if cycle_date is not None:
+            payload["dueLotteries"] = []
+        return payload
+
+    due_lotteries = (
+        _scheduled_lotteries_for_date(client, cycle_date)
+        if cycle_date is not None
+        else None
+    )
+    empty_payload: dict[str, Any] = {"drawDate": None, "items": []}
+    if due_lotteries is not None:
+        empty_payload["dueLotteries"] = due_lotteries
 
     latest_response = (
         client.table("lottery_draws")
@@ -108,7 +140,7 @@ def _latest_completed_results(repository: AnalysisRepository) -> dict[str, Any]:
     )
     latest_rows = latest_response.data if isinstance(latest_response.data, list) else []
     if not latest_rows:
-        return {"drawDate": None, "items": []}
+        return empty_payload
 
     latest_date = str(latest_rows[0].get("draw_date") or "") if isinstance(latest_rows[0], dict) else ""
     try:
@@ -156,7 +188,10 @@ def _latest_completed_results(repository: AnalysisRepository) -> dict[str, Any]:
         ):
             items.append({"lottery": lottery})
 
-    return {"drawDate": latest_date, "items": items}
+    payload: dict[str, Any] = {"drawDate": latest_date, "items": items}
+    if due_lotteries is not None:
+        payload["dueLotteries"] = due_lotteries
+    return payload
 
 
 def _parse_recovery_lease_owner(value: Any) -> str:
@@ -757,7 +792,19 @@ def handle_api_request(
                 # Keep the pre-PNG manifest for installed PWA clients.
                 return 200, _card_manifest(lottery, repository)
         if method == "GET" and path == "/api/matrix/latest-result":
-            return 200, _latest_completed_results(repository)
+            query = parse_qs(parsed.query)
+            cycle_values = query.get("cycleDate", [])
+            if len(cycle_values) > 1:
+                raise ValueError("INVALID_CYCLE_DATE")
+            cycle_date = None
+            if cycle_values:
+                try:
+                    cycle_date = date.fromisoformat(cycle_values[0])
+                except ValueError as error:
+                    raise ValueError("INVALID_CYCLE_DATE") from error
+                if cycle_date.isoformat() != cycle_values[0]:
+                    raise ValueError("INVALID_CYCLE_DATE")
+            return 200, _latest_completed_results(repository, cycle_date)
         latest_prefix = "/api/matrix/latest/"
         years_prefix = "/api/matrix/history-years/"
         if method == "GET" and path.startswith(years_prefix):

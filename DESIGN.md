@@ -153,6 +153,8 @@ components:
 
 2026-09-23 首頁跑馬燈沿用既有 `.home-announcement-text` 單一樣式 owner：`Noto Sans TC`／system-ui、11px、600、`--home-frame-gold`（#d6b66f）、字距 `.02em`；原新會員公告保留。彩種更新只取最近正式開獎日中 `result_status=confirmed`，且同一期 `analysisComplete=true`、`matrixStatusComplete=true` 的彩種，不以前一日資料補位；固定文案為「【 彩種 】最新一期開獎資料、Matrix 分析結果已更新。」。`【`／`】` 與彩種文字的視覺間距由 `.home-announcement-lottery-name` 唯一設定 `margin-inline: 1px`；不以一般空白字元模擬。跑馬燈高度、18s 速度與互動不變；track 禁止 flex shrink，起點使用既有 `--home-content-width`、終點移至完整內容寬度的 `-100%`。由於彩種更新資料為首頁載入後非同步取得，當 `latestResults` 從空陣列更新為實際彩種清單時重建既有 track，使 CSS 動畫以完整內容寬度重新起跑，避免動畫沿用初始只有新會員文案時的寬度；不新增覆寫。
 
+2026-09-23 首頁資料刷新收斂為單一 coordinator：首頁首次進入仍讀取一次目前資料；之後僅在台北時間天天樂 09:30–13:00、今彩539／大樂透／六合彩 20:30–隔日 01:00 的視窗內保留 10 分鐘 fallback。`/api/matrix/latest-result?cycleDate=YYYY-MM-DD` 以既有 `matrix_watchdog_draw_days` 判定該日實際開獎彩種，包含六合彩日曆／人工 override；已知無開獎日不持續輪詢。快速結果 `preliminary` 只允許更新最新開獎顯示，不可標記完成；只有 `confirmed` 且同一期 `analysisComplete=true`、`matrixStatusComplete=true`，首頁狀態摘要也讀取成功，且目前顯示中的開獎卡已取得同開獎日 confirmed 資料後，才停止該期剩餘 fallback。資料 revision 事件可解除該期完成鎖並立即重讀一次，以承接正式更正；一般回前景／恢復連線不會讓已完成週期重新空轉。首頁不再各自維護跑馬燈、最新開獎卡、狀態卡三套 hourly timer／visibility／online／revision 監聽。
+
 2026-09-14 首頁 Logo、彩種切換、Matrix Core 與四大功能外框統一為 1px 細金線、8px 圓角，直接修改既有樣式來源，不新增疊框、遮罩或覆寫層。Logo、Core 與功能列對齊 16px 左右邊界；Core 維持 654:181 比例、功能列上方間距沿用後續響應式規格。四張卡單列等寬、間距 6px，高度由 90px 降到 76px，圖片在剩餘空間以 contain 等比例顯示，名稱字級不變。功能列本身保持 0 內距、0 外框。`src/homepage/base.css` 擁有 Core 與功能卡，`logo-spacing.css` 擁有 Logo，`lottery-switcher.css` 單獨擁有彩種切換；移除舊九宮格金框及彩種切角多色描邊。彩種選中項以圖片亮度區分（詳見下方三層金框規格），維持原有 radio 操作與 sprite。所有圖片檔不變；啟動／聚合／共振卡的霓虹邊框已嵌入原圖，本輪保留原圖，不加金色覆蓋層。四大功能仍依序為 Matrix 同星、Matrix 對照、Matrix 牌單、Matrix 指南；Core 說明與箭頭為真實 UI。
 
 
