@@ -60,6 +60,12 @@ export type LatestLotteryResult = {
   lottery: NumberBallLottery;
 };
 
+export type LatestLotteryResultState = {
+  drawDate: string | null;
+  dueLotteries: NumberBallLottery[];
+  items: LatestLotteryResult[];
+};
+
 export type LotteryDrawRecord = {
   period?: string;
   issue?: string;
@@ -386,29 +392,59 @@ function assertNumberReferenceItem(value: unknown, index: number): asserts value
   }
 }
 
-export async function fetchLatestLotteryResult(signal?: AbortSignal): Promise<LatestLotteryResult[]> {
-  const data = await requestJson<{ drawDate?: unknown; items?: unknown }>('/api/matrix/latest-result', signal ? { signal } : undefined);
-  if (data.drawDate !== null && (typeof data.drawDate !== 'string' || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(data.drawDate))) {
-    throw new Error('Lottery API invalid response: drawDate');
-  }
-  if (!Array.isArray(data.items)) {
-    throw new Error('Lottery API invalid response: items');
+function parseLatestLotteryList(values: unknown, field: string): LatestLotteryResult[] {
+  if (!Array.isArray(values)) {
+    throw new Error(`Lottery API invalid response: ${field}`);
   }
   const seen = new Set<NumberBallLottery>();
-  return data.items.map((value, index) => {
+  return values.map((value, index) => {
     if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-      throw new Error(`Lottery API invalid response: items[${index}]`);
+      throw new Error(`Lottery API invalid response: ${field}[${index}]`);
     }
     const lottery = (value as { lottery?: unknown }).lottery;
     if (lottery !== '今彩539' && lottery !== '天天樂' && lottery !== '六合彩' && lottery !== '大樂透') {
-      throw new Error(`Lottery API invalid response: items[${index}].lottery`);
+      throw new Error(`Lottery API invalid response: ${field}[${index}].lottery`);
     }
     if (seen.has(lottery)) {
-      throw new Error('Lottery API invalid response: duplicate lottery');
+      throw new Error(`Lottery API invalid response: duplicate ${field}`);
     }
     seen.add(lottery);
     return { lottery };
   });
+}
+
+function parseDueLotteries(values: unknown): NumberBallLottery[] {
+  if (values === undefined) return [];
+  return parseLatestLotteryList(
+    Array.isArray(values) ? values.map((lottery) => ({ lottery })) : values,
+    'dueLotteries',
+  ).map(({ lottery }) => lottery);
+}
+
+export async function fetchLatestLotteryResultState(
+  cycleDate?: string,
+  signal?: AbortSignal,
+): Promise<LatestLotteryResultState> {
+  if (cycleDate !== undefined && !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(cycleDate)) {
+    throw new Error('Lottery API invalid cycle date');
+  }
+  const query = cycleDate ? `?cycleDate=${encodeURIComponent(cycleDate)}` : '';
+  const data = await requestJson<{ drawDate?: unknown; items?: unknown; dueLotteries?: unknown }>(
+    `/api/matrix/latest-result${query}`,
+    signal ? { signal } : undefined,
+  );
+  if (data.drawDate !== null && (typeof data.drawDate !== 'string' || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(data.drawDate))) {
+    throw new Error('Lottery API invalid response: drawDate');
+  }
+  return {
+    drawDate: data.drawDate === null ? null : data.drawDate as string,
+    dueLotteries: parseDueLotteries(data.dueLotteries),
+    items: parseLatestLotteryList(data.items, 'items'),
+  };
+}
+
+export async function fetchLatestLotteryResult(signal?: AbortSignal): Promise<LatestLotteryResult[]> {
+  return (await fetchLatestLotteryResultState(undefined, signal)).items;
 }
 
 export async function fetchLatestLotteryDraw(lottery: NumberBallLottery): Promise<LotteryDrawRecord | null> {

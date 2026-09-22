@@ -4,10 +4,24 @@ import '@testing-library/jest-dom/vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 
-const statusApi = vi.hoisted(() => ({ fetchMatrixStatus: vi.fn(), fetchMatrixStatusSummaries: vi.fn() }));
+const statusApi = vi.hoisted(() => ({
+  fetchMatrixStatus: vi.fn(),
+  fetchMatrixStatusSummaries: vi.fn(),
+  fetchLatestLotteryResultState: vi.fn(),
+  refreshLatestDraw: vi.fn(),
+}));
 
-vi.mock('../matrix-status-api', () => statusApi);
-vi.mock('../useLatestLotteryDraw', () => ({ useLatestLotteryDraw: () => ({ data: null }) }));
+vi.mock('../matrix-status-api', () => ({
+  fetchMatrixStatus: statusApi.fetchMatrixStatus,
+  fetchMatrixStatusSummaries: statusApi.fetchMatrixStatusSummaries,
+}));
+vi.mock('../lottery-api', async (original) => ({
+  ...await original<typeof import('../lottery-api')>(),
+  fetchLatestLotteryResultState: statusApi.fetchLatestLotteryResultState,
+}));
+vi.mock('../useLatestLotteryDraw', () => ({
+  useLatestLotteryDraw: () => ({ data: null, loading: false, error: null, refresh: statusApi.refreshLatestDraw }),
+}));
 
 import Prototype, { type LotteryId } from '../Prototype';
 import { MobileDeviceProvider } from '../mobile/Device';
@@ -30,6 +44,12 @@ const statusByLottery: Record<LotteryId, 'ACTIVE' | 'FOCUS' | 'RESONANCE' | 'CRI
 
 beforeEach(() => {
   window.localStorage.setItem(FIRST_VISIT_GUIDE_SEEN_KEY, '1');
+  statusApi.fetchLatestLotteryResultState.mockReset().mockResolvedValue({
+    drawDate: '2026-09-23',
+    dueLotteries: [],
+    items: [],
+  });
+  statusApi.refreshLatestDraw.mockReset().mockResolvedValue(null);
   statusApi.fetchMatrixStatusSummaries.mockReset().mockImplementation(async (lotteries: LotteryId[]) => ({
     kind: 'status-summary-batch',
     items: lotteries.map(lottery => ({ lottery, status: 200, body: { kind: 'status-summary', lottery, summary: { status: statusByLottery[lottery], count: 0, message: '' } } })),

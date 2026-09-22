@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-test('latest draw refreshes immediately and subscribes to the shared lottery cadence', () => {
+test('latest draw keeps shared cadence by default but allows homepage external coordination', () => {
   const source = readFileSync(new URL('../src/useLatestLotteryDraw.ts', import.meta.url), 'utf8');
-  assert.match(source, /const refreshLatestDraw\s*=\s*\(\)\s*=>/);
-  assert.match(source, /refreshLatestDraw\(\);/);
-  assert.match(source, /const unsubscribe = subscribeLotteryRefresh\(lottery, refreshLatestDraw\)/);
-  assert.match(source, /active = false;\s*unsubscribe\(\)/);
+  assert.match(source, /const refresh = useCallback\(async/);
+  assert.match(source, /if \(initialFetch\) void refresh\(\);/);
+  assert.match(source, /subscribeToRefresh[\s\S]*?subscribeLotteryRefresh\(lottery, \(\) => \{ void refresh\(\); \}\)/);
+  assert.match(source, /active\.current = false;[\s\S]*?unsubscribe\(\)/);
   assert.doesNotMatch(source, /setInterval\(/);
 });
 

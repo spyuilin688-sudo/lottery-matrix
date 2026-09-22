@@ -527,8 +527,17 @@ class LatestCompletedResultClient:
         return LatestCompletedDrawQuery(self.rows, self.table_calls)
 
     def rpc(self, name: str, args: dict):
-        assert name == "matrix_watchdog_chain_state"
         self.rpc_calls.append((name, dict(args)))
+        if name == "matrix_watchdog_draw_days":
+            day = str(args["p_start_date"])
+            assert args == {"p_start_date": day, "p_end_date": day}
+            return LatestCompletedRpc({
+                "今彩539": [day],
+                "天天樂": [day],
+                "大樂透": [],
+                "六合彩": [day],
+            })
+        assert name == "matrix_watchdog_chain_state"
         key = (str(args["p_lottery"]), str(args["p_draw_period"]))
         return LatestCompletedRpc(self.chain[key])
 
@@ -558,7 +567,42 @@ def test_latest_result_returns_only_completed_lotteries_from_latest_draw_date() 
         ("matrix_watchdog_chain_state", {"p_lottery": "大樂透", "p_draw_period": "115000091"}),
         ("matrix_watchdog_chain_state", {"p_lottery": "六合彩", "p_draw_period": "026104"}),
     ]
-    assert all(call[1]["p_draw_period"] != "026103" for call in repository.client.rpc_calls)
+    assert all(
+        call[1].get("p_draw_period") != "026103"
+        for call in repository.client.rpc_calls
+        if call[0] == "matrix_watchdog_chain_state"
+    )
+
+
+def test_latest_result_cycle_date_returns_canonical_due_lotteries() -> None:
+    repository = InMemoryAnalysisRepository()
+    repository.client = LatestCompletedResultClient()
+
+    status, payload = handle_api_request(
+        "GET",
+        "/api/matrix/latest-result?cycleDate=2026-09-23",
+        None,
+        repository,
+    )
+
+    assert status == 200
+    assert payload["drawDate"] == "2026-09-23"
+    assert payload["dueLotteries"] == ["今彩539", "天天樂", "六合彩"]
+    assert ("matrix_watchdog_draw_days", {
+        "p_start_date": "2026-09-23",
+        "p_end_date": "2026-09-23",
+    }) in repository.client.rpc_calls
+
+
+def test_latest_result_rejects_invalid_cycle_date() -> None:
+    status, payload = handle_api_request(
+        "GET",
+        "/api/matrix/latest-result?cycleDate=2026-9-23",
+        None,
+        InMemoryAnalysisRepository(),
+    )
+    assert status == 400
+    assert payload == {"error": "INVALID_CYCLE_DATE"}
 
 
 def test_history_without_limit_returns_all_rows() -> None:
