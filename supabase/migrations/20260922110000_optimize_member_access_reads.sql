@@ -376,7 +376,7 @@ begin
   v_online_seconds := pg_catalog.greatest(
     0,
     pg_catalog.floor(
-      pg_catalog.extract(epoch from v_now - v_started_at)
+      extract(epoch from v_now - v_started_at)
     )::integer
   );
 
