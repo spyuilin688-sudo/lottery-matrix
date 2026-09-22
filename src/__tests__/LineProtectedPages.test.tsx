@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { render } from '../../test/render-with-dialog';
 
@@ -8,6 +9,7 @@ const auth = vi.hoisted(() => ({ getSession: vi.fn(), onAuthStateChange: vi.fn()
 vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ auth }) }));
 
 import { FeaturePageRouter } from '../features/router';
+import { LinePageGuard, useLinePageEntry } from '../auth/LinePageGuard';
 
 const lineSession = { access_token: 'test-session', user: { id: 'line-user', app_metadata: { provider: 'custom:line' }, identities: [] } };
 const authListeners = new Set<(event: string, session: unknown) => void>();
@@ -33,6 +35,23 @@ test.each([['notebook', 'Matrix 筆記本']] as const)('guest cannot mount %s an
   expect(await screen.findByRole('dialog', { name: '請先登入' })).toHaveTextContent(`請先登入後再使用 ${title}`);
   expect(navigate).not.toHaveBeenCalled();
   expect(window.localStorage.getItem('matrix-notebook-entries')).toBeNull();
+});
+
+test('entry verification is handed to the notebook guard without a second session read', async () => {
+  auth.getSession.mockResolvedValue({ data: { session: lineSession }, error: null });
+  function EntryHarness() {
+    const [entered, setEntered] = useState(false);
+    const enterPage = useLinePageEntry();
+    return entered
+      ? <LinePageGuard title="Matrix 筆記本" onNavigate={vi.fn()}><div>notebook-ready</div></LinePageGuard>
+      : <button type="button" onClick={() => enterPage('notebook', () => setEntered(true))}>open-notebook</button>;
+  }
+
+  render(<EntryHarness />);
+  fireEvent.click(screen.getByRole('button', { name: 'open-notebook' }));
+  expect(await screen.findByText('notebook-ready')).toBeVisible();
+  expect(auth.getSession).toHaveBeenCalledTimes(1);
+  await waitFor(() => expect(authListeners.size).toBe(1));
 });
 
 test('a LINE member can enter the notebook without a Pro condition', async () => {
