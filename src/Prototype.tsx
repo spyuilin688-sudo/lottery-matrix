@@ -598,7 +598,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
 
         const dueLotteries = cycle
           ? state.dueLotteries.filter((lottery): lottery is LotteryId => (
-              cycle.lotteries.includes(lottery)
+              cycle.lotteries.some((candidate) => candidate === lottery)
             ))
           : [];
         const statusTargets = forceAll || firstRefresh
