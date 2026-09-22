@@ -69,6 +69,7 @@ test("homepage reserves the logo above its scroller and preserves the requested 
   assert.equal(lotteryScreen.getPropertyValue("--home-gap-draw-status").replaceAll(" ", ""), "clamp(7px,calc(1.15dvh+1px),10px)");
   assert.match(bottomGroup.getPropertyValue("--home-core-width"), /- 32px/);
   assert.equal(style(".matrix-status-section").paddingInline, "0px");
+  assert.equal(style(".matrix-status-section").paddingBlockStart, "0px");
 });
 
 test("homepage selected lottery cards use the current single-frame selected styling", () => {
