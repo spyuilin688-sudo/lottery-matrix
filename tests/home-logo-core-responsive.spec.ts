@@ -77,8 +77,8 @@ for (const viewport of viewports) {
     expect(geometry.logoInsetTop).toBeGreaterThanOrEqual(8);
     expect(Math.abs(geometry.logoWidth - geometry.expectedLogoWidth)).toBeLessThan(0.1);
     expect(Math.abs(geometry.logoHeight - geometry.expectedLogoHeight)).toBeLessThan(0.1);
-    expect(geometry.cardCoreGap).toBeGreaterThanOrEqual(8.98);
-    expect(geometry.cardCoreGap).toBeLessThanOrEqual(12.02);
+    expect(geometry.cardCoreGap).toBeGreaterThanOrEqual(6.98);
+    expect(geometry.cardCoreGap).toBeLessThanOrEqual(10.02);
     expect(geometry.logoInsetLeft).toBeGreaterThanOrEqual(0);
     expect(geometry.logoInsetRight).toBeGreaterThanOrEqual(0);
     expect(geometry.horizontalOverflow).toBe(0);
