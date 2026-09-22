@@ -4,7 +4,7 @@ update private.matrix_permission_settings
 set registered_member_free_access = false
 where singleton;
 
-do $
+do $trial$
 declare
   v_new uuid := extensions.gen_random_uuid();
   v_old uuid := extensions.gen_random_uuid();
@@ -116,6 +116,6 @@ begin
     raise exception 'Registration trigger is publicly executable';
   end if;
 end;
-$$;
+$trial$;
 select 'LINE registration trial fixture passed' as result;
 rollback;
