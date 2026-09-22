@@ -9,8 +9,6 @@ const css = await Promise.all([
   "src/homepage/visual-language.css",
   "src/homepage/logo-spacing.css",
 ].map((path) => readFile(new URL(`../${path}`, import.meta.url), "utf8"))).then((parts) => parts.join("\n"));
-const normalizedCss = css.replaceAll(" ", "").replaceAll("\n", "");
-
 function renderHomepageStyles() {
   const dom = new JSDOM(`<!doctype html><style>${css}</style>
     <div class="home-screen">
