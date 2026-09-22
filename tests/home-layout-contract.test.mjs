@@ -103,8 +103,10 @@ test('wide viewport homepage keeps content in normal top flow instead of stretch
   assert.match(css, /@media\s*\(min-width:\s*768px\)\s*\{[\s\S]*?\.home-screen \.home-layout\s*\{[\s\S]*?height:\s*auto;[\s\S]*?\}[\s\S]*?\.home-screen \.lottery-screen\s*\{[\s\S]*?height:\s*auto;[\s\S]*?\}[\s\S]*?\.home-screen \.home-bottom-group\s*\{[\s\S]*?align-self:\s*start;[\s\S]*?\}[\s\S]*?\}/);
 });
 
-test('embedded next draw info uses 60/40 independent rounded bright-gold containers', () => {
-  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /grid-template-columns:\s*minmax\(0, 3fr\) minmax\(0, 2fr\);/);
+test('embedded next draw info uses content-aware independent rounded bright-gold containers', () => {
+  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /display:\s*flex;/);
+  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item', /flex:\s*1 1 auto;/);
+  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item', /grid-template-columns:\s*12px auto auto;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /padding:\s*0;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /gap:\s*0;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /border:\s*0;/);
