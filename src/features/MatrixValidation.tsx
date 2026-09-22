@@ -277,7 +277,7 @@ export function ExploreValidationProcess({
               <strong className="explore-validation-consecutive-tag">{item.consecutive}</strong>
             </header>
             <div className="explore-validation-groups">
-              {ruleSet.historicalValidation.map((row) => {
+              {[...ruleSet.historicalValidation].reverse().map((row) => {
                 const source: ValidationDisplayRow = {
                   key: `source-${row.group}`,
                   period: row.sourcePeriod,
@@ -639,7 +639,7 @@ export function TianhengValidationProcess({
               <strong className="explore-validation-consecutive-tag">{item.consecutive}</strong>
             </header>
             <div className="explore-validation-groups">
-              {ruleSet.historicalValidation.map((row) => {
+              {[...ruleSet.historicalValidation].reverse().map((row) => {
                 const source: TianhengDisplayRow = {
                   key: `source-${row.group}`,
                   period: row.sourcePeriod,
