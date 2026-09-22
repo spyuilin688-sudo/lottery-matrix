@@ -4,6 +4,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { NumberBallLottery } from "../NumberBall";
 import { useLatestLotteryDraw } from "../useLatestLotteryDraw";
 import { fetchLatestLotteryDraw, type LotteryDrawRecord } from "../lottery-api";
+import { subscribeLotteryRefresh } from "../lottery-data-refresh";
+
+vi.mock("../lottery-data-refresh", () => ({
+  subscribeLotteryRefresh: vi.fn(() => () => {}),
+}));
 
 vi.mock("../lottery-api", () => ({
   fetchLatestLotteryDraw: vi.fn(),
