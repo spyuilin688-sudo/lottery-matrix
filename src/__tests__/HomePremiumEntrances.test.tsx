@@ -59,3 +59,25 @@ test('首頁公告列保留新會員文案並列出最新日期已完整更新�
   expect(within(announcement).queryByRole('button')).not.toBeInTheDocument();
   expect(within(announcement).queryByRole('link')).not.toBeInTheDocument();
 });
+
+test('首頁公告在非同步彩種結果載入後重建 track 並重新開始完整跑馬燈', () => {
+  const { container, rerender } = render(<HomeAnnouncement latestResults={[]} />);
+  const initialTrack = container.querySelector('.home-announcement-track');
+  expect(initialTrack).not.toBeNull();
+
+  rerender(<HomeAnnouncement {...({
+    latestResults: [
+      { lottery: '今彩539' },
+      { lottery: '天天樂' },
+      { lottery: '大樂透' },
+      { lottery: '六合彩' },
+    ],
+  } as any)} />);
+
+  const loadedTrack = container.querySelector('.home-announcement-track');
+  expect(loadedTrack).not.toBe(initialTrack);
+  expect(loadedTrack).toHaveTextContent('【今彩539】最新一期開獎資料、Matrix 分析結果已更新。');
+  expect(loadedTrack).toHaveTextContent('【天天樂】最新一期開獎資料、Matrix 分析結果已更新。');
+  expect(loadedTrack).toHaveTextContent('【大樂透】最新一期開獎資料、Matrix 分析結果已更新。');
+  expect(loadedTrack).toHaveTextContent('【六合彩】最新一期開獎資料、Matrix 分析結果已更新。');
+});
