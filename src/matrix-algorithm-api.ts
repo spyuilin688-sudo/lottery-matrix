@@ -568,7 +568,7 @@ async function cachedMatrixResultRpc<T extends { lottery: NumberBallLottery; ana
 ): Promise<T> {
   const client = getSupabaseClient();
   // Matrix Explore two-period and Tianheng three-period reads are public.
-  // Higher periods, full range, Tianyan and Tiangong still require a member session;
+  // Higher periods, full range, Tianyan and Tiangong remain entitlement-gated;
   // the database remains authoritative for period/range entitlement checks.
   const explorePeriods = (request as { explorePeriods?: number }).explorePeriods;
   const sessionOptions = {
