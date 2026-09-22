@@ -6,18 +6,21 @@ import { getSupabaseClient } from '../lib/supabase';
 import type { Navigate, ScreenId } from '../features/navigation';
 import { FeaturePageLoadState } from '../FeaturePageLoadBoundary';
 import { FeatureShell } from '../features/shared';
+import { getAlgorithmCacheScope } from './algorithm-cache-scope';
 
 const GuardedMemberSessionContext = createContext<Session | undefined>(undefined);
-let guardedEntrySession: Session | null = null;
+let guardedEntrySession: { session: Session; scope: number } | null = null;
 
 function rememberGuardedEntrySession(session: Session | null) {
-  guardedEntrySession = session && hasMemberSession(session) ? session : null;
+  guardedEntrySession = session && hasMemberSession(session)
+    ? { session, scope: getAlgorithmCacheScope() }
+    : null;
 }
 
 function consumeGuardedEntrySession() {
-  const session = guardedEntrySession;
+  const handoff = guardedEntrySession;
   guardedEntrySession = null;
-  return session;
+  return handoff;
 }
 
 export function useGuardedMemberSession() {
@@ -85,7 +88,7 @@ export function LinePageGuard({ title, onNavigate, children }: {
   children: ReactNode;
 }) {
   const { alert } = useAppDialog();
-  const [entrySession] = useState(() => consumeGuardedEntrySession());
+  const [entryHandoff] = useState(() => consumeGuardedEntrySession());
   const [access, setAccess] = useState<'checking' | 'allowed' | 'denied'>('checking');
   const [memberSession, setMemberSession] = useState<Session | null>(null);
 
@@ -121,9 +124,9 @@ export function LinePageGuard({ title, onNavigate, children }: {
       authEventObserved = true;
       acceptSession(event === 'SIGNED_OUT' ? null : session);
     });
-    if (entrySession && !authEventObserved) {
-      acceptSession(entrySession);
-    } else if (!entrySession) {
+    if (entryHandoff && entryHandoff.scope === getAlgorithmCacheScope() && !authEventObserved) {
+      acceptSession(entryHandoff.session);
+    } else if (!authEventObserved) {
       void withDeadline(() => client.auth.getSession(), { signal: controller.signal }).then(({ data, error }) => {
         if (!active || authEventObserved) return;
         if (error) deny(true);
@@ -138,7 +141,7 @@ export function LinePageGuard({ title, onNavigate, children }: {
       controller.abort();
       subscription.unsubscribe();
     };
-  }, [alert, entrySession, title]);
+  }, [alert, entryHandoff, title]);
 
   if (access === 'allowed' && memberSession) {
     return <GuardedMemberSessionContext.Provider value={memberSession}>{children}</GuardedMemberSessionContext.Provider>;
