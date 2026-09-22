@@ -145,14 +145,20 @@ describe('admin interface styles', () => {
     expect(appSource).not.toContain('retryGithub');
   });
 
-  it('renders limited evidence neutrally and includes the check scope in each row', () => {
-    expect(appSource).toContain('const presentation = getSystemStatusPresentation(item)');
-    expect(appSource).toContain('className={`statusBadge ${presentation.tone}`}');
-    expect(appSource).toContain('className="statusScope">{presentation.scope}');
-    expect(appSource).toContain('項部分驗證');
+  it('renders four operator-facing states while keeping technical evidence inside details', () => {
+    expect(appSource).toContain('const operational = getSystemStatusOperationalPresentation(item)');
+    expect(appSource).toContain('const technical = getSystemStatusPresentation(item)');
+    expect(appSource).toContain('className={`statusBadge ${operational.tone}`}');
+    expect(appSource).toContain('className="statusScope">{operational.summary}');
+    expect(appSource).toContain('正常 {normalCount} · 等待 {waitingCount} · 無需處理 {noActionCount} · 需處理 {needsActionCount}');
+    expect(appSource).toContain('className="systemStatusOverview"');
+    expect(appSource).toContain('className="systemStatusAttention"');
+    expect(appSource).toContain('查看技術明細');
+    expect(appSource).toContain('<dt>技術驗證</dt><dd>{technical.label}</dd>');
     expect(appSource).toContain('className="systemStatusLegend"');
     expect(rule(statusCss, '.systemStatusLegend')).toContain('font-size: 11px;');
-    expect(rule(statusCss, '.statusState .statusBadge.limited')).toContain('color: #9dcfff;');
+    expect(rule(statusCss, '.statusState .statusBadge.neutral')).not.toBe('');
+    expect(rule(statusCss, '.statusState .statusBadge.waiting')).not.toBe('');
     expect(rule(statusCss, '.statusRowTitle')).toContain('grid-template-columns: minmax(0, 1fr) auto;');
     expect(rule(statusCss, '.statusState .statusBadge')).toContain('font-size: 11px;');
     expect(rule(statusCss, '.statusState .statusBadge')).toContain('padding: 2px 6px;');
