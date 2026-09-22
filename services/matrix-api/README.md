@@ -14,61 +14,41 @@ MATRIX_ADMIN_STATUS_TOKEN=<shared-admin-status-token>
 
 ### Public lottery API
 
-Use `railway.api.json`.
+Use `railway.public-api.json`.
 
 Start command:
 
 ```text
-uv run python -u -m app.api_server
+uv run --no-dev --no-sync python -u -m app.api_server
 ```
 
-Endpoints:
+Public endpoints:
 
 ```text
 GET  /health
-GET  /jobs/status
-POST /jobs/refresh
-POST /jobs/recover
 GET  /api/matrix/latest/{lottery}
 GET  /api/matrix/history/{lottery}
+GET  /api/matrix/history-years/{lottery}
+GET  /api/matrix/cards/{lottery}
 POST /api/matrix/tongxing
 POST /api/matrix/number-reference
 ```
 
-The PWA reads this service through `VITE_RAILWAY_API_BASE`.
+The PWA reads this service through `VITE_RAILWAY_API_BASE`. The public process
+does not serve `/jobs/*` control routes, even when a caller supplies the
+administrator token. Job status, manual refresh, primary dispatch, calendar
+refresh, result-ready handling, and recovery are owned by the isolated
+`matrix-recovery` service.
 
-`GET /health` is public. `GET /jobs/status`, `POST /jobs/refresh`, and
-`POST /jobs/recover` are for the Supabase `admin-api` Edge Function only and require the
-`X-Matrix-Admin-Token` request
-header. Railway and the Supabase Edge Function must store the same server-only secret under
-`MATRIX_ADMIN_STATUS_TOKEN`. Never expose that value through a `VITE_` variable
-or other browser configuration.
+`GET /health` reports only the public API process/database health and source
+revision. It no longer interprets the presence of an administrator job token,
+because that token is not part of the public API responsibility.
 
-The health payload reports `adminApi.status` as `ok` or `misconfigured` without
-exposing the secret. Supabase `admin-api` is the administrator-backend consumer.
-The current administrator UI is `https://matrixlottery.idv.tw/admin/`. Its
-canonical backend is the Supabase `admin-api` Edge Function. The 2026-09-22
-AppDeploy account readback showed the owned legacy lottery/preview apps as
-`deleted`; they are not production administrator endpoints.
-
-`POST /jobs/refresh` accepts `{"lottery":"今彩539"}` for 今彩539、六合彩、or
-大樂透, then fetches and upserts only its latest draw. It does not backfill
-history, run Matrix analysis, or update scheduled-job status records. Requests
-for 天天樂 return `409 FANTASY5_CRAWLER_GITHUB_ONLY`; this public API does not
-ingest 天天樂. The scheduled Railway crawler and the
-manual GitHub fallback use the dedicated crawler entrypoint. The existing error
-code is a legacy name, not a description of current deployment ownership.
-
-`POST /jobs/recover` starts one deduplicated background recovery for the selected
-lottery and returns `202` immediately. For 天天樂 it invokes only
-`app.analysis_worker`; it never constructs or calls a draw source. For the
-three Railway-owned lotteries it invokes the tracked scheduled pipeline. The
-pipeline refreshes only inside a due stale-draw window and otherwise resumes
-stored analysis. Concurrent requests in the Railway API process for the same lottery return
-`already-running`; recovery threads are non-daemon. The API atomically consumes the Supabase watchdog claim with a unique runner fence,
-renews its durable Supabase lease every minute while work runs, and releases it
-only after completion. If a live runner loses ownership, that Railway replica
-terminates before a replacement may continue.
+The shared Python dispatcher remains in `api_server.py` because
+`recovery_server.py` reuses its validated job handlers internally. That code
+sharing is not a second network owner: `RailwayApiHandler` rejects every
+protected `/jobs/*` request before dispatch, while `RecoveryApiHandler`
+exposes the job contract on the dedicated recovery host.
 
 ### Independent watchdog
 
@@ -86,8 +66,8 @@ dispatch. Its schedule is independent of the primary workers.
 
 The watchdog dispatches targeted crawler, analysis, or Matrix-status work to the
 independent Railway recovery service (`app.recovery_server`, configured by
-`railway.recovery.json`). Unlike the public API's analysis-only 天天樂 recovery
-entry, this service can invoke the dedicated 天天樂 crawler and then resume
+`railway.recovery.json`). It is the sole Railway network owner for `/jobs/*`
+control routes and can invoke the dedicated 天天樂 crawler before resuming
 analysis. The GitHub `fantasy5-crawler.yml` workflow remains a dispatch-only
 fallback; it does not own recurring acquisition or current scheduled recovery.
 
