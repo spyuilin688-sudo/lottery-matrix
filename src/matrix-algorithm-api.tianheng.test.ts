@@ -100,9 +100,9 @@ it('calls the Tianheng list RPC with three periods', async () => {
   }));
 });
 
-it('keeps Tianheng three-period list requests authenticated', async () => {
+it('allows Tianheng three-period list requests for guests', async () => {
   await fetchTianhengList(threePeriodRequest);
-  expect(readAlgorithmCacheScope).toHaveBeenCalledWith(expect.anything(), { allowGuest: false });
+  expect(readAlgorithmCacheScope).toHaveBeenCalledWith(expect.anything(), { allowGuest: true });
 });
 
 it('normalizes the Tianheng list envelope like Explore', async () => {
@@ -145,7 +145,7 @@ it('calls and normalizes Tianheng validation with both lock tuples', async () =>
   }));
   expect(response.validation.sourceA?.lockedNumbers).toEqual([5, 18]);
   expect(response.validation.ruleSets[0]?.historicalValidation[0]?.lockedNumbers).toEqual([8, 30]);
-  expect(readAlgorithmCacheScope).toHaveBeenCalledWith(expect.anything(), { allowGuest: false });
+  expect(readAlgorithmCacheScope).toHaveBeenCalledWith(expect.anything(), { allowGuest: true });
   expect(dependencies.readPermissionSettings).not.toHaveBeenCalled();
 });
 
