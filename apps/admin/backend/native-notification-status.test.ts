@@ -10,9 +10,13 @@ const fixture = () => ({
   admin_transfer_trigger_enabled: true,
   recovery: {
     enabled: true,
-    schedule: '*/5 * * * *',
-    last_started_at: '2026-09-13T11:55:00Z',
-    last_finished_at: '2026-09-13T11:55:01Z',
+    strategy: 'dynamic-with-hourly-fallback',
+    schedule: '7 * * * *',
+    queue_trigger_enabled: true,
+    dynamic_enabled: false,
+    next_due_at: null,
+    last_started_at: '2026-09-13T11:07:00Z',
+    last_finished_at: '2026-09-13T11:07:01Z',
     last_status: 'succeeded',
   },
   web: {
@@ -51,7 +55,7 @@ const check = async (body: unknown, httpStatus = 200) => {
 };
 
 describe('event-driven notification delivery monitoring', () => {
-  it('verifies event triggers, five-minute recovery and all three queues without sending notifications', async () => {
+  it('verifies event triggers, dynamic recovery and all three queues without sending notifications', async () => {
     const { item, fetcher } = await check({
       ...fixture(),
       token: 'must-not-leak',
@@ -78,13 +82,14 @@ describe('event-driven notification delivery monitoring', () => {
     expect(getSystemStatusPresentation(item)).toMatchObject({
       label: '事件派送正常',
       tone: 'limited',
-      scope: expect.stringContaining('5 分鐘 Recovery'),
+      scope: expect.stringContaining('動態 Recovery'),
     });
     expect(getServiceEvidenceFacts(item)).toEqual(expect.arrayContaining([
       { label: '派送模式', value: '事件觸發' },
       { label: '事件觸發', value: '已啟用' },
       { label: '管理員轉帳觸發', value: '已啟用' },
-      { label: 'Recovery 頻率', value: '每 5 分鐘' },
+      { label: 'Recovery 模式', value: '依待處理時間動態排程' },
+      { label: 'Recovery 保底', value: '每小時' },
       { label: 'Web 待處理', value: '0' },
       { label: 'Native 待處理', value: '0' },
       { label: 'Admin 待處理', value: '0' },
@@ -97,9 +102,13 @@ describe('event-driven notification delivery monitoring', () => {
     ['event trigger disabled', { event_trigger_enabled: false }],
     ['admin trigger disabled', { admin_transfer_trigger_enabled: false }],
     ['recovery disabled', { recovery: { ...fixture().recovery, enabled: false } }],
+    ['wrong recovery strategy', { recovery: { ...fixture().recovery, strategy: 'fixed-polling' } }],
     ['wrong recovery schedule', { recovery: { ...fixture().recovery, schedule: '* * * * *' } }],
+    ['dynamic replan trigger disabled', { recovery: { ...fixture().recovery, queue_trigger_enabled: false } }],
+    ['due recovery not scheduled', { recovery: { ...fixture().recovery, next_due_at: '2026-09-13T12:05:00Z', dynamic_enabled: false } }],
+    ['stale dynamic job', { recovery: { ...fixture().recovery, next_due_at: null, dynamic_enabled: true } }],
     ['failed recovery', { recovery: { ...fixture().recovery, last_status: 'failed' } }],
-    ['stale recovery', { recovery: { ...fixture().recovery, last_started_at: '2026-09-13T11:45:00Z', last_finished_at: '2026-09-13T11:45:01Z' } }],
+    ['stale recovery', { recovery: { ...fixture().recovery, last_started_at: '2026-09-13T10:40:00Z', last_finished_at: '2026-09-13T10:40:01Z' } }],
     ['web overdue', { web: { ...fixture().web, pending: 1, overdue: 1 } }],
     ['native overdue', { native: { ...fixture().native, pending: 1, overdue: 1 } }],
     ['admin overdue', { admin: { ...fixture().admin, pending: 1, overdue: 1 } }],
