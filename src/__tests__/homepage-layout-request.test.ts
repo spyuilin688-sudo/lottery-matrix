@@ -66,7 +66,7 @@ describe("homepage requested spacing and selection", () => {
     expect(brandHeader.height).toBe("auto");
     expect(getComputedStyle(document.querySelector(".home-logo-image")!).height).toBe("auto");
     expect(getComputedStyle(document.querySelector(".home-logo-image")!).objectPosition).toBe("center bottom");
-    expect(getComputedStyle(document.querySelector(".home-layout")!).getPropertyValue("--home-gap-features-nav").replaceAll(" ", "")).toBe("clamp(8px,1.15dvh,12px)");
+    expect(getComputedStyle(document.querySelector(".home-layout")!).getPropertyValue("--home-gap-features-nav").replaceAll(" ", "")).toBe("clamp(4px,0.7dvh,8px)");
   });
 
   it("uses the requested independent homepage spacing values", () => {
