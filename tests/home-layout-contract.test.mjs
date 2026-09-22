@@ -49,7 +49,7 @@ test('homepage announcement sits below the logo as a compact non-interactive mar
   assertBlock(css, '.home-screen .home-announcement', /margin-block-start:\s*var\(--home-gap-logo-announcement\);/);
   assertBlock(css, '.home-screen .home-announcement', /border:\s*1px solid var\(--home-frame-muted\);/);
   assertBlock(css, '.home-screen .home-announcement', /overflow:\s*hidden;/);
-  assertBlock(css, '.home-screen .home-announcement-track', /animation:\s*home-announcement-marquee 12s linear infinite;/);
+  assertBlock(css, '.home-screen .home-announcement-track', /animation:\s*home-announcement-marquee 18s linear infinite;/);
   assertBlock(css, '.home-screen .home-announcement-text', /color:\s*var\(--home-frame-gold\);/);
   assertBlock(css, '.home-screen .home-announcement-text', /font-family:\s*"Noto Sans TC",\s*system-ui,\s*sans-serif;/);
   assertBlock(css, '.home-screen .home-announcement-text', /font-size:\s*11px;/);
