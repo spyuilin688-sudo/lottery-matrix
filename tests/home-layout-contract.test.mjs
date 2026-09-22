@@ -31,12 +31,27 @@ test('homepage surfaces keep their independent responsive inline insets', () => 
   assert.match(tokens, /--layout-page-inline:\s*16px;/);
   assertBlock(css, '.home-screen .lottery-screen', /--layout-page-inline:\s*16px;/);
   assertBlock(css, '.home-screen .lottery-screen', /padding:\s*0;/);
+  assertBlock(css, '.home-screen .home-announcement', /width:\s*calc\(100% - 32px\);/);
   assertBlock(css, '.lottery-switcher--home-style', /width:\s*calc\(100% - 32px\);/);
   assertBlock(css, '.home-screen .latest-draw-card', /width:\s*calc\(100% - 32px\);/);
   assertBlock(css, '.home-screen .lottery-screen', /--home-gap-switcher-draw:\s*clamp\(7px,\s*calc\(0\.9dvh\s*\+\s*1px\),\s*9px\);/);
   assertLastBlock(css, '.lottery-switcher--home-style', /padding:\s*0;/);
   assertLastBlock(css, '.lottery-switcher--home-style .lottery-switcher-hit-grid', /gap:\s*8px;/);
   assertBlock(css, '.home-screen .matrix-status-section', /width:\s*calc\(100% - 32px\);/);
+});
+
+test('homepage announcement sits below the logo as a compact non-interactive marquee', () => {
+  assertBlock(css, '.home-screen .lottery-screen', /--home-gap-logo-announcement:\s*8px;/);
+  assertBlock(css, '.home-screen .lottery-screen', /--home-gap-announcement-switcher:\s*8px;/);
+  assertBlock(css, '.home-screen .home-announcement', /height:\s*26px;/);
+  assertBlock(css, '.home-screen .home-announcement', /min-height:\s*26px;/);
+  assertBlock(css, '.home-screen .home-announcement', /margin-block-start:\s*var\(--home-gap-logo-announcement\);/);
+  assertBlock(css, '.home-screen .home-announcement', /border:\s*1px solid var\(--home-frame-muted\);/);
+  assertBlock(css, '.home-screen .home-announcement', /overflow:\s*hidden;/);
+  assertBlock(css, '.home-screen .home-announcement-track', /animation:\s*home-announcement-marquee 12s linear infinite;/);
+  assertBlock(css, '.home-screen .lottery-switcher', /margin-block-start:\s*var\(--home-gap-announcement-switcher\);/);
+  assert.match(css, /@keyframes\s+home-announcement-marquee\s*\{[\s\S]*?translateX\(100%\)[\s\S]*?translateX\(-100%\)[\s\S]*?\}/);
+  assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.home-screen \.home-announcement-track\s*\{[^}]*animation:\s*none;/);
 });
 
 test('homepage reserves a logo row above the existing native content scroller', () => {
