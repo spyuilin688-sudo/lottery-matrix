@@ -1,4 +1,4 @@
-/* Clean rebuilt homepage layout. No absolute coordinate layer. Test-scope trigger only. */
+/* Clean rebuilt homepage layout. No absolute coordinate layer. */
 
 .home-screen {
   position: absolute;
@@ -620,7 +620,7 @@
   width: max-content;
   min-width: 100%;
   white-space: nowrap;
-  animation: home-announcement-marquee 12s linear infinite;
+  animation: home-announcement-marquee 18s linear infinite;
   will-change: transform;
 }
 
