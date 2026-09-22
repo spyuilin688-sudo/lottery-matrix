@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { API_REQUEST_TIMEOUT_MS } from '../lib/api-resilience';
-import { LOTTERY_API_BASE, fetchLatestLotteryDraw, fetchLatestLotteryResult, fetchLotteryHistory, fetchLotteryHistoryYears, fetchNumberReference, fetchTongXing, normalizePeriod } from '../lottery-api';
+import { LOTTERY_API_BASE, fetchLatestLotteryDraw, fetchLatestLotteryResult, fetchLatestLotteryResultState, fetchLotteryHistory, fetchLotteryHistoryYears, fetchNumberReference, fetchTongXing, normalizePeriod } from '../lottery-api';
 import { clearReadCache, readThroughCache, resetReadCacheForTests } from '../read-cache';
 
 afterEach(() => {
@@ -130,6 +130,26 @@ describe('lottery-api response validation', () => {
     ]);
     expect(fetcher).toHaveBeenCalledWith(
       `${LOTTERY_API_BASE}/api/matrix/latest-result`,
+      expect.objectContaining({ headers: expect.any(Headers) }),
+    );
+  });
+
+  it('首頁時段狀態同一次讀取取得正式完成彩種與官方開獎日清單', async () => {
+    const fetcher = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(jsonResponse({
+      drawDate: '2026-09-23',
+      dueLotteries: ['今彩539', '六合彩'],
+      items: [
+        { lottery: '今彩539' },
+      ],
+    }));
+
+    await expect(fetchLatestLotteryResultState('2026-09-23')).resolves.toEqual({
+      drawDate: '2026-09-23',
+      dueLotteries: ['今彩539', '六合彩'],
+      items: [{ lottery: '今彩539' }],
+    });
+    expect(fetcher).toHaveBeenCalledWith(
+      `${LOTTERY_API_BASE}/api/matrix/latest-result?cycleDate=2026-09-23`,
       expect.objectContaining({ headers: expect.any(Headers) }),
     );
   });
