@@ -46,8 +46,8 @@ function validation(id: string, position: number, algorithmType: '加減' | '合
 }
 
 function sourceArtifact(): ExploreArtifact {
-  const firstHits = [true, true, true, false, false, false, true, true, true];
-  const secondHits = [false, false, false, true, true, true, true, true, true];
+  const firstHits = [true, true, true, false, false, false, true, true, true, true, false];
+  const secondHits = [false, false, false, true, true, true, true, true, true, false, true];
   return {
     lottery: '今彩539',
     drawPeriod: '114000123',
@@ -86,13 +86,13 @@ function sourceArtifactWithGroupCount(groupCount: number): ExploreArtifact {
 describe('Tianyan artifact service', () => {
   it('builds fixed composite/two-code rows, deduplicates identical pairs, and detaches validation', () => {
     const artifact = buildTianyanArtifact('今彩539', '114000123', sourceArtifact());
-    const filtered = filterTianyanArtifact(artifact, ['準9進10']);
+    const filtered = filterTianyanArtifact(artifact, ['準11進12']);
 
     expect(filtered.items).toHaveLength(2);
     expect(filtered.items[0]).toMatchObject({
       roadType: '複合',
       hitCondition: '準5+（鎖定2碼）',
-      consecutive: '準9進10',
+      consecutive: '準11進12',
       numberOrder: '依號碼由小到大排序',
       explorePeriods: 13,
       exploreDateOffset: 0,
