@@ -55,6 +55,7 @@ test('homepage announcement sits below the logo as a compact non-interactive mar
   assertBlock(css, '.home-screen .home-announcement-text', /font-size:\s*11px;/);
   assertBlock(css, '.home-screen .home-announcement-text', /font-weight:\s*600;/);
   assertBlock(css, '.home-screen .home-announcement-text', /letter-spacing:\s*\.02em;/);
+  assertBlock(css, '.home-screen .home-announcement-lottery-name', /margin-inline:\s*1px;/);
   assertBlock(css, '.home-screen .lottery-switcher', /margin-block-start:\s*var\(--home-gap-announcement-switcher\);/);
   assert.match(css, /@keyframes\s+home-announcement-marquee\s*\{[\s\S]*?translateX\(100%\)[\s\S]*?translateX\(-100%\)[\s\S]*?\}/);
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.home-screen \.home-announcement-track\s*\{[^}]*animation:\s*none;/);
