@@ -26,7 +26,6 @@ import { fetchMatrixStatusSummaries, type MatrixStatusSummary } from "./matrix-s
 import { subscribeMatrixDataRevision } from "./matrix-data-revision";
 import { subscribeAlgorithmCacheScope } from "./auth/algorithm-cache-scope";
 import { withDeadline } from "./lib/api-resilience";
-import { HomeFreeStatement } from "./homepage/HomeFreeStatement";
 import { FirstVisitGuide } from "./onboarding/FirstVisitGuide";
 import { useLinePageEntry } from "./auth/LinePageGuard";
 
@@ -600,7 +599,6 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
             <MatrixCoreBanner onOpen={() => navigate("explore")} />
             <HomeShortcutRow onNavigate={navigate} />
           </div>
-          <HomeFreeStatement />
           <BottomNavigation active="首頁" onNavigate={navigate} onQuickOpen={openQuick} />
         </div>
         {quickSettings}
