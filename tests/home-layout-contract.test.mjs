@@ -50,6 +50,11 @@ test('homepage announcement sits below the logo as a compact non-interactive mar
   assertBlock(css, '.home-screen .home-announcement', /border:\s*1px solid var\(--home-frame-muted\);/);
   assertBlock(css, '.home-screen .home-announcement', /overflow:\s*hidden;/);
   assertBlock(css, '.home-screen .home-announcement-track', /animation:\s*home-announcement-marquee 12s linear infinite;/);
+  assertBlock(css, '.home-screen .home-announcement-text', /color:\s*var\(--home-frame-gold\);/);
+  assertBlock(css, '.home-screen .home-announcement-text', /font-family:\s*"Noto Sans TC",\s*system-ui,\s*sans-serif;/);
+  assertBlock(css, '.home-screen .home-announcement-text', /font-size:\s*11px;/);
+  assertBlock(css, '.home-screen .home-announcement-text', /font-weight:\s*600;/);
+  assertBlock(css, '.home-screen .home-announcement-text', /letter-spacing:\s*\.02em;/);
   assertBlock(css, '.home-screen .lottery-switcher', /margin-block-start:\s*var\(--home-gap-announcement-switcher\);/);
   assert.match(css, /@keyframes\s+home-announcement-marquee\s*\{[\s\S]*?translateX\(100%\)[\s\S]*?translateX\(-100%\)[\s\S]*?\}/);
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.home-screen \.home-announcement-track\s*\{[^}]*animation:\s*none;/);
