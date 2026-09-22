@@ -7,7 +7,11 @@ export type NativeNotificationHealth = {
   admin_transfer_trigger_enabled: boolean;
   recovery: {
     enabled: boolean;
+    strategy: string;
     schedule: string | null;
+    queue_trigger_enabled: boolean;
+    dynamic_enabled: boolean;
+    next_due_at: string | null;
     last_started_at: string | null;
     last_finished_at: string | null;
     last_status: 'succeeded' | 'failed' | 'running' | 'unknown' | null;
@@ -57,8 +61,9 @@ const timestamp = (value: unknown): value is string =>
   && new Date(`${value.slice(0, 10)}T00:00:00Z`).toISOString().slice(0, 10) === value.slice(0, 10);
 
 const snapshotFreshnessMs = 5 * 60_000;
-const recoveryFreshnessMs = 11 * 60_000;
-const recoverySchedule = '*/5 * * * *';
+const recoveryFreshnessMs = 75 * 60_000;
+const recoveryStrategy = 'dynamic-with-hourly-fallback';
+const recoveryFallbackSchedule = '7 * * * *';
 const recoveryStatuses = ['succeeded', 'failed', 'running', 'unknown'] as const;
 
 const validQueue = (
@@ -90,9 +95,14 @@ export function parseNativeNotificationHealth(value: unknown, now: Date): Native
   if (now.getTime() - checked > snapshotFreshnessMs || checked - now.getTime() > 60_000) return null;
   const nullableTime = (time: unknown) =>
     time === null || (timestamp(time) && Date.parse(time) <= checked + 60_000);
+  const nullableTimestamp = (time: unknown) => time === null || timestamp(time);
   const recovery = value.recovery;
   if (typeof recovery.enabled !== 'boolean'
+    || typeof recovery.strategy !== 'string'
     || !(recovery.schedule === null || typeof recovery.schedule === 'string')
+    || typeof recovery.queue_trigger_enabled !== 'boolean'
+    || typeof recovery.dynamic_enabled !== 'boolean'
+    || !nullableTimestamp(recovery.next_due_at)
     || !nullableTime(recovery.last_started_at)
     || !nullableTime(recovery.last_finished_at)
     || !(recovery.last_status === null
@@ -113,7 +123,11 @@ export function parseNativeNotificationHealth(value: unknown, now: Date): Native
     admin_transfer_trigger_enabled: value.admin_transfer_trigger_enabled,
     recovery: {
       enabled: recovery.enabled,
+      strategy: recovery.strategy,
       schedule: recovery.schedule as string | null,
+      queue_trigger_enabled: recovery.queue_trigger_enabled,
+      dynamic_enabled: recovery.dynamic_enabled,
+      next_due_at: recovery.next_due_at as string | null,
       last_started_at: recovery.last_started_at as string | null,
       last_finished_at: recovery.last_finished_at as string | null,
       last_status: recovery.last_status as NativeNotificationHealth['recovery']['last_status'],
@@ -156,14 +170,19 @@ export function parseNativeNotificationHealth(value: unknown, now: Date): Native
 export function nativeNotificationWarning(health: NativeNotificationHealth, now: Date): string | undefined {
   if (!health.event_trigger_enabled) return '通知事件觸發器未啟用。';
   if (!health.admin_transfer_trigger_enabled) return '管理員轉帳通知觸發器未啟用。';
-  if (!health.recovery.enabled) return '通知 Recovery 排程已停用。';
-  if (health.recovery.schedule !== recoverySchedule) return '通知 Recovery 排程不是每 5 分鐘執行。';
-  if (health.recovery.last_status === 'failed') return '最近一次通知 Recovery 回報失敗。';
-  if (!health.recovery.last_started_at) return '通知 Recovery 尚無執行紀錄。';
-  if (now.getTime() - Date.parse(health.recovery.last_started_at) > recoveryFreshnessMs) {
-    return '通知 Recovery 超過 11 分鐘沒有執行紀錄。';
+  if (!health.recovery.enabled) return '通知 Recovery 保底排程已停用。';
+  if (health.recovery.strategy !== recoveryStrategy) return '通知 Recovery 不是動態排程模式。';
+  if (health.recovery.schedule !== recoveryFallbackSchedule) return '通知 Recovery 每小時保底排程設定不正確。';
+  if (!health.recovery.queue_trigger_enabled) return '通知 Recovery 動態排程觸發器未完整啟用。';
+  if (health.recovery.next_due_at && !health.recovery.dynamic_enabled) return '通知有待補救工作，但動態 Recovery 尚未排程。';
+  if (!health.recovery.next_due_at && health.recovery.dynamic_enabled) return '通知沒有待補救工作，但仍殘留動態 Recovery 排程。';
+  if (health.recovery.last_status === 'failed') return '最近一次通知 Recovery 保底執行失敗。';
+  if (health.recovery.last_started_at
+    && now.getTime() - Date.parse(health.recovery.last_started_at) > recoveryFreshnessMs) {
+    return '通知 Recovery 每小時保底超過 75 分鐘沒有執行紀錄。';
   }
-  if (!['succeeded', 'running'].includes(health.recovery.last_status ?? '')) {
+  if (health.recovery.last_status !== null
+    && !['succeeded', 'running'].includes(health.recovery.last_status)) {
     return '通知 Recovery 的最近狀態待確認。';
   }
   if (health.recovery.last_status === 'succeeded' && !health.recovery.last_finished_at) {
