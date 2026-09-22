@@ -39,7 +39,7 @@ for (const width of MOBILE_WIDTHS) {
       logoSwitcher: "clamp(13px,calc(1.15dvh+5px),16px)",
       switcherDraw: "clamp(7px,calc(0.9dvh+1px),9px)",
       drawStatus: "clamp(9px,calc(1.15dvh+1px),12px)",
-      featuresNav: "clamp(8px,1.15dvh,12px)",
+      featuresNav: "clamp(4px,0.7dvh,8px)",
     });
     expect(Number.parseFloat(homepageTokens.headerTop)).toBeGreaterThanOrEqual(8);
     expect(Number.parseFloat(homepageTokens.headerTop)).toBeLessThanOrEqual(12);
