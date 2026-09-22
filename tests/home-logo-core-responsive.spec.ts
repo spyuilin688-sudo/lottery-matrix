@@ -33,6 +33,11 @@ for (const viewport of viewports) {
       const canvas = root.getBoundingClientRect();
       const appCanvas = root.closest(".app-mobile-canvas")!.getBoundingClientRect();
       const scroller = root.querySelector(".mobile-scroll")!.getBoundingClientRect();
+      const remainingItem = root.querySelectorAll<HTMLElement>(".next-draw-item")[1]!;
+      const remainingRect = remainingItem.getBoundingClientRect();
+      const remainingChildren = Array.from(remainingItem.children).map((child) => child.getBoundingClientRect());
+      const remainingContentLeft = Math.min(...remainingChildren.map((rect) => rect.left));
+      const remainingContentRight = Math.max(...remainingChildren.map((rect) => rect.right));
       const safeAreaTop = parseFloat(getComputedStyle(root).paddingTop);
       const transform = getComputedStyle(logo).transform;
       return {
@@ -58,6 +63,7 @@ for (const viewport of viewports) {
         logoInsetLeft: logoRect.left - canvas.left,
         logoInsetRight: canvas.right - logoRect.right,
         horizontalOverflow: document.documentElement.scrollWidth - innerWidth,
+        remainingCenterDelta: Math.abs((remainingContentLeft + remainingContentRight) / 2 - (remainingRect.left + remainingRect.right) / 2),
       };
     });
     console.log(JSON.stringify({ viewport, ...geometry }));
@@ -82,6 +88,7 @@ for (const viewport of viewports) {
     expect(geometry.logoInsetLeft).toBeGreaterThanOrEqual(0);
     expect(geometry.logoInsetRight).toBeGreaterThanOrEqual(0);
     expect(geometry.horizontalOverflow).toBe(0);
+    expect(geometry.remainingCenterDelta).toBeLessThan(0.6);
 
     for (const [lottery, weight, size] of [["今彩539", "800", "20px"], ["天天樂", "800", "20px"], ["六合彩", "800", "13.5px"], ["大樂透", "700", "15px"]]) {
       await home.locator(`.lottery-switcher .lottery-card[data-lottery="${lottery}"]`).click();

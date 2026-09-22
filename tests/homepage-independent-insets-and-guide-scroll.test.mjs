@@ -23,7 +23,7 @@ test("首頁各區塊獨立擁有指定左右外距", () => {
 test("開獎資訊卡底列使用無縫鑲嵌排版", () => {
   assert.match(homeCss, /\.next-draw-info--embedded\s*\{[^}]*gap:\s*0;/s);
   assert.match(homeCss, /\.next-draw-item\s*\{[^}]*gap:\s*4px;[^}]*padding-inline:\s*clamp\(6px, 2vw, 10px\);/s);
-  assert.doesNotMatch(homeCss, /\.next-draw-item:first-child\s*\{|\.next-draw-item:last-child\s*\{/s);
+  assert.doesNotMatch(homeCss, /\.next-draw-item:(?:first|last)-child\s*\{[^}]*(?:border|background|box-shadow|padding|gap)\s*:/s);
 });
 
 test("Matrix 指南不在原生慣性滑動期間改寫 scrollLeft", () => {
