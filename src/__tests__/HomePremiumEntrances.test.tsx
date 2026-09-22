@@ -40,16 +40,22 @@ test('Core 保持獨立入口與可讀說明，計算機仍可從底部導覽開
 });
 
 
-test('首頁 Logo 下方公告列保留新會員文案並增加最新彩種順球資訊', () => {
-  render(<HomeAnnouncement latestResult={{
-    lottery: '六合彩',
-    drawDate: '2026-09-22',
-    numbers: ['02', '34', '35', '43', '45', '46'],
-  }} />);
+test('首頁公告列保留新會員文案並列出最新日期已完整更新的彩種', () => {
+  render(<HomeAnnouncement {...({
+    latestResults: [
+      { lottery: '今彩539' },
+      { lottery: '大樂透' },
+    ],
+  } as any)} />);
   const announcement = screen.getByTestId('home-announcement');
   expect(announcement).toHaveAccessibleName('公告');
   expect(announcement).toHaveTextContent('【新會員限時體驗】立即使用 LINE 註冊登入，即可免費體驗 Matrix 探索、天衡、天樞十三期及完整範圍，體驗期限 2 天。');
-  expect(announcement).toHaveTextContent('【六合彩】09/22、02 34 35 43 45 46');
+  expect(announcement).toHaveTextContent('【今彩539】最新一期開獎資料、Matrix 分析結果已更新。');
+  expect(announcement).toHaveTextContent('【大樂透】最新一期開獎資料、Matrix 分析結果已更新。');
+  expect(announcement).not.toHaveTextContent('09/23');
+  expect(announcement).not.toHaveTextContent('02 34 35');
+  expect(screen.getByTestId('home-announcement-lottery-今彩539')).toHaveClass('home-announcement-lottery-name');
+  expect(screen.getByTestId('home-announcement-lottery-大樂透')).toHaveClass('home-announcement-lottery-name');
   expect(within(announcement).queryByRole('button')).not.toBeInTheDocument();
   expect(within(announcement).queryByRole('link')).not.toBeInTheDocument();
 });
