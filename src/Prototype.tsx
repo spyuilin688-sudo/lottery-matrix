@@ -484,6 +484,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   const latestDrawRefreshRef = useRef(refreshLatestDraw);
   const selectedRefreshMounted = useRef(false);
   const completedHomeRefreshCycles = useRef(new Set<string>());
+  const homepageSessionInvalidator = useRef<(() => void) | null>(null);
   selectedRef.current = selected;
   latestDrawRefreshRef.current = refreshLatestDraw;
 
@@ -497,6 +498,11 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   const drawResult: DrawResultData = latestDraw ? toDrawResult(selected, latestDraw) : DRAW_RESULTS[selected];
 
   useEffect(() => { setDeviceId("pixel-10"); }, [setDeviceId]);
+  useEffect(() => subscribeAlgorithmCacheScope(() => {
+    setMatrixStatuses(MATRIX_STATUS_BY_LOTTERY);
+    setMatrixStatusLoads(loadingStatusStates());
+    homepageSessionInvalidator.current?.();
+  }, { notifyOnInitialize: true }), []);
   useEffect(() => {
     if (!selectedRefreshMounted.current) {
       selectedRefreshMounted.current = true;
@@ -668,6 +674,9 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
         }
 
         firstRefresh = false;
+      } catch {
+        // Keep the last valid UI snapshot. Active pending windows retry on the
+        // shared ten-minute fallback; outside a window no network poll runs.
       } finally {
         if (active && current === generation) scheduleNext();
       }
@@ -698,9 +707,9 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       queueRefresh(true);
     };
 
+    homepageSessionInvalidator.current = invalidate;
     void refresh(true);
     const unsubscribe = subscribeMatrixDataRevision(invalidate);
-    const unsubscribeSession = subscribeAlgorithmCacheScope(invalidate);
     const wake = () => queueRefresh(false);
     document.addEventListener("visibilitychange", wake);
     window.addEventListener("online", wake);
@@ -712,7 +721,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       clearTimer();
       if (queued !== undefined) clearTimeout(queued);
       unsubscribe();
-      unsubscribeSession();
+      if (homepageSessionInvalidator.current === invalidate) homepageSessionInvalidator.current = null;
       document.removeEventListener("visibilitychange", wake);
       window.removeEventListener("online", wake);
     };
