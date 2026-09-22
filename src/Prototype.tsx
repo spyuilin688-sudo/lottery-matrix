@@ -581,6 +581,23 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       return ready;
     };
 
+    const readStatuses = async (
+      lotteries: LotteryId[],
+      signal: AbortSignal,
+      current: number,
+    ): Promise<Set<LotteryId>> => {
+      try {
+        return await applyStatusBatch(lotteries, signal, current);
+      } catch {
+        if (active && current === generation) {
+          for (const lottery of lotteries) {
+            setMatrixStatusLoads((previous) => ({ ...previous, [lottery]: "error" }));
+          }
+        }
+        return new Set();
+      }
+    };
+
     const refresh = async (forceAll: boolean) => {
       if (!active || document.visibilityState === "hidden") {
         scheduleNext();
@@ -591,31 +608,46 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       request = new AbortController();
       const signal = request.signal;
       const cycle = homepageRefreshCycleAt(new Date());
+      const hydrateAll = forceAll || firstRefresh;
 
       try {
-        const state = await fetchLatestLotteryResultState(cycle?.cycleDate, signal);
-        if (!active || current !== generation) return;
-        setLatestAnnouncementResults(state.items);
+        let state: Awaited<ReturnType<typeof fetchLatestLotteryResultState>> | null = null;
+        let readyStatuses = new Set<LotteryId>();
+        let refreshedDraw: LotteryDrawRecord | null | undefined;
 
-        const dueLotteries = cycle
+        if (hydrateAll) {
+          const [stateResult, statusResult, drawResult] = await Promise.all([
+            fetchLatestLotteryResultState(cycle?.cycleDate, signal).catch(() => null),
+            readStatuses(allLotteries, signal, current),
+            latestDrawRefreshRef.current(),
+          ]);
+          if (!active || current !== generation) return;
+          state = stateResult;
+          readyStatuses = statusResult;
+          refreshedDraw = drawResult;
+        } else {
+          state = await fetchLatestLotteryResultState(cycle?.cycleDate, signal);
+          if (!active || current !== generation) return;
+        }
+
+        if (state) setLatestAnnouncementResults(state.items);
+
+        const dueLotteries = cycle && state
           ? state.dueLotteries.filter((lottery): lottery is LotteryId => (
               cycle.lotteries.some((candidate) => candidate === lottery)
             ))
           : [];
-        const statusTargets = forceAll || firstRefresh
-          ? allLotteries
-          : dueLotteries;
-        const readyStatuses = await applyStatusBatch(statusTargets, signal, current);
-        if (!active || current !== generation) return;
 
-        const selectedIsDue = cycle ? dueLotteries.includes(selectedRef.current) : false;
-        const shouldRefreshDraw = forceAll || firstRefresh || selectedIsDue;
-        const refreshedDraw = shouldRefreshDraw
-          ? await latestDrawRefreshRef.current()
-          : undefined;
-        if (!active || current !== generation) return;
+        if (!hydrateAll) {
+          readyStatuses = await readStatuses(dueLotteries, signal, current);
+          if (!active || current !== generation) return;
+          if (dueLotteries.includes(selectedRef.current)) {
+            refreshedDraw = await latestDrawRefreshRef.current();
+            if (!active || current !== generation) return;
+          }
+        }
 
-        if (cycle) {
+        if (cycle && state) {
           const key = homepageRefreshCycleKey(cycle);
           const completedLotteries = state.drawDate === cycle.cycleDate
             ? new Set(state.items.map(({ lottery }) => lottery))
@@ -624,6 +656,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
             || dueLotteries.every((lottery) => completedLotteries.has(lottery));
           const statusComplete = dueLotteries.length === 0
             || dueLotteries.every((lottery) => readyStatuses.has(lottery));
+          const selectedIsDue = dueLotteries.includes(selectedRef.current);
           const drawComplete = !selectedIsDue
             || drawMatchesCycle(refreshedDraw, cycle.cycleDate);
 
@@ -635,9 +668,6 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
         }
 
         firstRefresh = false;
-      } catch {
-        // Keep the current UI snapshot. A pending active window will retry at
-        // the shared fallback slot; outside the window no periodic read runs.
       } finally {
         if (active && current === generation) scheduleNext();
       }
