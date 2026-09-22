@@ -86,7 +86,7 @@ test("home and Matrix status share independent original lottery logos", () => {
   assert.match(homepageStyles, /\.lottery-selector-logo\s*\{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*opacity:\s*\.6;/s);
   assert.match(homepageStyles, /\.lottery-card\[data-selected="true"\] \.lottery-selector-logo\s*\{[^}]*opacity:\s*1;/s);
   const homeFlowBodies = ruleBodies(homepageStyles, /^\.home-screen \.lottery-switcher$/);
-  assert.ok(homeFlowBodies.some((body) => /margin-block-start:\s*var\(--home-gap-logo-switcher\);/.test(body)));
+  assert.ok(homeFlowBodies.some((body) => /margin-block-start:\s*var\(--home-gap-announcement-switcher\);/.test(body)));
   assert.match(homepageStyles, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid color-mix\(in srgb, var\(--home-frame-gold\) 22%, transparent\);[^}]*border-radius:\s*var\(--home-frame-radius\);/s);
   assert.match(homepageStyles, /\.lottery-card\[data-selected="true"\]\s*\{[^}]*border-color:\s*color-mix\(in srgb, var\(--home-frame-bright\) 55%, transparent\);[^}]*background:\s*color-mix\(in srgb, var\(--home-frame-gold\) 6%, var\(--lottery-neutral-950\)\);/s);
   assert.doesNotMatch(homepageStyles, /\.lottery-card\[data-selected="true"\]::before\s*\{/);

@@ -106,6 +106,8 @@ const HOME_ASSETS = {
   guide: `${HOME_PREMIUM_ASSET_BASE}/guide.webp`,
 } as const;
 
+const HOME_ANNOUNCEMENT_TEXT = "公告";
+
 const HOME_SHORTCUTS = [
   { label: "Matrix 同星", screen: "tongxing", image: HOME_ASSETS.tongxing },
   { label: "Matrix 對照", screen: "reference", image: HOME_ASSETS.reference },
@@ -410,6 +412,16 @@ export function MatrixCoreBanner({ onOpen }: { onOpen?: () => void }) {
   );
 }
 
+export function HomeAnnouncement() {
+  return (
+    <section className="home-announcement" aria-label="公告" data-testid="home-announcement">
+      <div className="home-announcement-track">
+        <span className="home-announcement-text">{HOME_ANNOUNCEMENT_TEXT}</span>
+      </div>
+    </section>
+  );
+}
+
 export function HomeShortcutRow({ onNavigate }: { onNavigate?: (screen: ScreenId) => void }) {
   return (
     <nav className="home-shortcut-row home-features-box" aria-label="四大功能" data-testid="home-shortcut-row">
@@ -579,6 +591,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       <MobileScroll className="app-screen home-content">
         <div className="home-layout">
           <main className="screen-content lottery-screen" data-testid="lottery-screen" aria-label="首頁彩種切換元件預覽">
+            <HomeAnnouncement />
             <LotterySwitcher selected={selected} onChange={setSelected} className="lottery-switcher--home-style home-switcher-box" />
             <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} className="home-draw-box" />
             <MatrixStatusSection statuses={matrixStatuses} loadStates={matrixStatusLoads} onOpen={(lottery) => { setStatusLottery(lottery); navigate("status"); }} />
