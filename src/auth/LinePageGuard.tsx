@@ -8,6 +8,17 @@ import { FeaturePageLoadState } from '../FeaturePageLoadBoundary';
 import { FeatureShell } from '../features/shared';
 
 const GuardedMemberSessionContext = createContext<Session | undefined>(undefined);
+let guardedEntrySession: Session | null = null;
+
+function rememberGuardedEntrySession(session: Session | null) {
+  guardedEntrySession = session && hasMemberSession(session) ? session : null;
+}
+
+function consumeGuardedEntrySession() {
+  const session = guardedEntrySession;
+  guardedEntrySession = null;
+  return session;
+}
 
 export function useGuardedMemberSession() {
   return useContext(GuardedMemberSessionContext);
@@ -33,6 +44,7 @@ export function useLinePageEntry() {
   return (next: ScreenId, enter: () => void) => {
     pending.current?.abort();
     pending.current = null;
+    rememberGuardedEntrySession(null);
     const title = next === 'notebook' ? 'Matrix 筆記本' : null;
     if (!title) { enter(); return; }
 
@@ -48,9 +60,16 @@ export function useLinePageEntry() {
     void withDeadline(() => client.auth.getSession(), { signal: controller.signal }).then(({ data, error }) => {
       if (controller.signal.aborted) return;
       if (error && !authEventObserved) throw error;
-      if (hasMemberSession(authEventObserved ? latestSession : data.session)) enter();
-      else void alert({ title: '請先登入', description: `請先登入後再使用 ${title}` });
+      const session = authEventObserved ? latestSession : data.session;
+      if (hasMemberSession(session)) {
+        rememberGuardedEntrySession(session);
+        enter();
+      } else {
+        rememberGuardedEntrySession(null);
+        void alert({ title: '請先登入', description: `請先登入後再使用 ${title}` });
+      }
     }).catch(() => {
+      rememberGuardedEntrySession(null);
       if (!controller.signal.aborted) void alert({ title: '登入狀態確認失敗', description: '請稍後再試一次。' });
     }).finally(() => {
       subscription.unsubscribe();
@@ -66,6 +85,7 @@ export function LinePageGuard({ title, onNavigate, children }: {
   children: ReactNode;
 }) {
   const { alert } = useAppDialog();
+  const [entrySession] = useState(() => consumeGuardedEntrySession());
   const [access, setAccess] = useState<'checking' | 'allowed' | 'denied'>('checking');
   const [memberSession, setMemberSession] = useState<Session | null>(null);
 
@@ -101,20 +121,24 @@ export function LinePageGuard({ title, onNavigate, children }: {
       authEventObserved = true;
       acceptSession(event === 'SIGNED_OUT' ? null : session);
     });
-    void withDeadline(() => client.auth.getSession(), { signal: controller.signal }).then(({ data, error }) => {
-      if (!active || authEventObserved) return;
-      if (error) deny(true);
-      else acceptSession(data.session);
-    }).catch(() => {
-      if (active && !authEventObserved) deny(true);
-    });
+    if (entrySession && !authEventObserved) {
+      acceptSession(entrySession);
+    } else if (!entrySession) {
+      void withDeadline(() => client.auth.getSession(), { signal: controller.signal }).then(({ data, error }) => {
+        if (!active || authEventObserved) return;
+        if (error) deny(true);
+        else acceptSession(data.session);
+      }).catch(() => {
+        if (active && !authEventObserved) deny(true);
+      });
+    }
 
     return () => {
       active = false;
       controller.abort();
       subscription.unsubscribe();
     };
-  }, [alert, title]);
+  }, [alert, entrySession, title]);
 
   if (access === 'allowed' && memberSession) {
     return <GuardedMemberSessionContext.Provider value={memberSession}>{children}</GuardedMemberSessionContext.Provider>;
