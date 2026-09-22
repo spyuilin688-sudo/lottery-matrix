@@ -155,7 +155,7 @@ test('first visit dialog changes live and keeps free usage and once-only behavio
   expect(await screen.findByRole('heading', { name: '真正的「版路分析」工具' })).toBeInTheDocument();
   toggle(false);
   expect(screen.getByRole('heading', { name: '使用教學' })).toBeInTheDocument();
-  expect(screen.getByText('Matrix 探索二期基本查詢可直接使用；天衡、較高期數、完整範圍、天衍與天工請先使用 LINE 或 Google 登入。新註冊 LINE 會員另有天衍 2 天、天工 1 天試用。')).toBeInTheDocument();
+  expect(screen.getByText('Matrix 探索二期、天衡三期基本查詢可直接使用；較高期數、完整範圍、天衍與天工請先使用 LINE 或 Google 登入。新註冊 LINE 會員另有天衍 2 天、天工 1 天試用。')).toBeInTheDocument();
   expect(screen.getByText(/新註冊 LINE 會員另有天衍 2 天、天工 1 天試用/)).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '開始使用' })).toBeInTheDocument();
   toggle(true);
@@ -221,7 +221,7 @@ test.each([true, false])('天衡指南與服務說明在購買顯示 %s 下提�
   const guide = render(<MatrixGuidePage onNavigate={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: '05Matrix 天衡' }));
   const preview = guide.container.querySelector('.guide-preview')!;
-  for (const text of ['同一期兩個球位', '三期、十三期', '準5+ (鎖定1碼)、準6+ (鎖定2碼)', '進階天衡設定', '結果期', '版路結果', '依目前帳號權限開放']) {
+  for (const text of ['同一期兩個球位', '三期、十三期', '準5+ (鎖定1碼)、準6+ (鎖定2碼)', '進階天衡設定', '結果期', '版路結果', '三期基本查詢可直接使用', '十三期與完整範圍依目前帳號權限開放']) {
     expect(preview.textContent).toContain(text);
   }
   expect(preview.textContent).not.toMatch(/預測|查詢期/);
