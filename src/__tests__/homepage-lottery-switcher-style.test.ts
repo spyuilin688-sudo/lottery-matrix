@@ -9,9 +9,10 @@ describe("homepage layout rules", () => {
     expect(css).not.toMatch(/\.home-screen \.lottery-switcher > \.lottery-switcher-hit-grid > \.lottery-card > img\s*\{/);
   });
 
-  it("uses the requested responsive logo-to-switcher gap", () => {
-    expect(css).toMatch(/\.home-screen \.lottery-screen\s*\{[^}]*--home-gap-logo-switcher:\s*clamp\(13px,\s*calc\(1\.15dvh \+ 5px\),\s*16px\);/s);
-    expect(css).toMatch(/\/\* Canonical homepage flow gaps[\s\S]*?\.home-screen \.lottery-switcher\s*\{[^}]*margin-block-start:\s*var\(--home-gap-logo-switcher\);/s);
+  it("places the announcement between the logo and lottery switcher with one 8px gap on each side", () => {
+    expect(css).toMatch(/\.home-screen \.lottery-screen\s*\{[^}]*--home-gap-logo-announcement:\s*8px;[^}]*--home-gap-announcement-switcher:\s*8px;/s);
+    expect(css).toMatch(/\.home-screen \.home-announcement\s*\{[^}]*margin-block-start:\s*var\(--home-gap-logo-announcement\);/s);
+    expect(css).toMatch(/\.home-screen \.lottery-switcher\s*\{[^}]*margin-block-start:\s*var\(--home-gap-announcement-switcher\);/s);
   });
 
   it("uses only the draw card margin for the switcher-to-draw gap", () => {
