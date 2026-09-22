@@ -99,10 +99,26 @@ export function createAdminApiClient(options: AdminApiClientOptions = {}) {
 }
 
 let ownerClient: SupabaseClient | null = null;
+let ownerSessionReadInFlight: {
+  client: SupabaseClient;
+  promise: ReturnType<SupabaseClient['auth']['getSession']>;
+} | null = null;
+
+function readOwnerSession(client: SupabaseClient) {
+  if (ownerSessionReadInFlight?.client === client) return ownerSessionReadInFlight.promise;
+  const promise = client.auth.getSession();
+  ownerSessionReadInFlight = { client, promise };
+  const clear = () => {
+    if (ownerSessionReadInFlight?.promise === promise) ownerSessionReadInFlight = null;
+  };
+  void promise.then(clear, clear);
+  return promise;
+}
 
 async function ownerBearerToken() {
-  if (!ownerClient) return null;
-  const { data, error } = await ownerClient.auth.getSession().catch(() => {
+  const client = ownerClient;
+  if (!client) return null;
+  const { data, error } = await readOwnerSession(client).catch(() => {
     throw new AdminApiError('ADMIN_AUTH_SESSION_UNAVAILABLE', 503);
   });
   if (error) throw new AdminApiError('ADMIN_AUTH_SESSION_UNAVAILABLE', 503);
@@ -140,12 +156,14 @@ export const auth = {
     if (!existing.error && existing.data.user) return { user: verifiedUser(existing.data.user) };
     const email = input.email?.trim();
     if (!email || !input.password) throw new AdminApiError('OWNER_CREDENTIALS_REQUIRED', 401);
+    ownerSessionReadInFlight = null;
     const { data, error } = await client.auth.signInWithPassword({ email, password: input.password });
     if (error || !data.user) throw new AdminApiError('OWNER_AUTHENTICATION_FAILED', 401);
     return { user: verifiedUser(data.user) };
   },
   async signOut() {
     if (!ownerClient) return;
+    ownerSessionReadInFlight = null;
     const { error } = await ownerClient.auth.signOut({ scope: 'local' });
     if (error) throw new AdminApiError('OWNER_SIGN_OUT_FAILED', 503);
   },
