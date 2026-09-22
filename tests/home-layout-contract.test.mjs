@@ -42,8 +42,8 @@ test('homepage surfaces keep their independent responsive inline insets', () => 
 });
 
 test('homepage announcement sits below the logo as a compact non-interactive marquee', () => {
-  assertBlock(css, '.home-screen .lottery-screen', /--home-gap-logo-announcement:\s*8px;/);
-  assertBlock(css, '.home-screen .lottery-screen', /--home-gap-announcement-switcher:\s*8px;/);
+  assertBlock(css, '.home-screen .lottery-screen', /--home-gap-logo-announcement:\s*clamp\(5px,\s*0\.8dvh,\s*8px\);/);
+  assertBlock(css, '.home-screen .lottery-screen', /--home-gap-announcement-switcher:\s*clamp\(6px,\s*0\.9dvh,\s*8px\);/);
   assertBlock(css, '.home-screen .home-announcement', /height:\s*26px;/);
   assertBlock(css, '.home-screen .home-announcement', /min-height:\s*26px;/);
   assertBlock(css, '.home-screen .home-announcement', /margin-block-start:\s*var\(--home-gap-logo-announcement\);/);
@@ -59,6 +59,7 @@ test('homepage requested responsive vertical gaps are owned by the existing cano
   assertBlock(css, '.home-screen .lottery-screen', /--home-gap-draw-status:\s*clamp\(7px,\s*calc\(1\.15dvh\s*\+\s*1px\),\s*10px\);/);
   assertBlock(css, '.home-screen .home-layout', /--home-gap-status-core:\s*clamp\(7px,\s*1\.35dvh,\s*10px\);/);
   assertBlock(css, '.home-screen .home-layout', /--home-gap-core-features:\s*var\(--home-gap-status-core\);/);
+  assert.ok(!blocks(css, '.home-screen .matrix-status-section').some((body) => /padding-block-start:\s*1\.5px;/.test(body)));
 });
 
 test('homepage free statement is completely removed from the current product source', () => {
