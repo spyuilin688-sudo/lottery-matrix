@@ -70,6 +70,7 @@ describe('Matrix status Edge Function', () => {
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(deps.requireMember).not.toHaveBeenCalled();
+    expect(deps.resolveEntitlements).toHaveBeenCalledTimes(1);
     expect(deps.readStatusSources).toHaveBeenCalledTimes(1);
     expect(body.detailLocked).toBe(true);
     const roads = body.cards.flatMap((card: { roads: Array<Record<string, unknown>> }) => card.roads);
@@ -177,7 +178,8 @@ describe('Matrix status Edge Function', () => {
     expect(body.items.find((item: { lottery: MatrixLottery }) => item.lottery === '大樂透')?.body)
       .toMatchObject({ kind: 'status-summary', summary: { status: 'RESONANCE' } });
     expect(readCompactStatus).toHaveBeenCalledTimes(4);
-    expect(deps.requireMember).toHaveBeenCalledTimes(1);
+    expect(deps.requireMember).not.toHaveBeenCalled();
+    expect(deps.resolveEntitlements).not.toHaveBeenCalled();
     expect(readCompactStatus).toHaveBeenCalledWith('今彩539', undefined, true);
     expect(deps.readStatusSources).not.toHaveBeenCalled();
 
@@ -187,8 +189,8 @@ describe('Matrix status Edge Function', () => {
       headers: { Authorization: 'Bearer another-member' },
       body: JSON.stringify({ action: 'summary-batch', lotteries }),
     }));
-    expect(deps.requireMember).toHaveBeenCalledTimes(2);
-    expect(deps.requireMember).toHaveBeenLastCalledWith('Bearer another-member');
+    expect(deps.requireMember).not.toHaveBeenCalled();
+    expect(deps.resolveEntitlements).not.toHaveBeenCalled();
   });
 
   it('rejects unsupported methods without reading analysis data', async () => {
@@ -238,7 +240,8 @@ it('rechecks current entitlements through lightweight identity without reading r
   deps.requireMember.mockResolvedValue({ authUserId: 'user-1', memberId: 'member-1', plan: 'free', active: false, referralSuccessCount: 0 });
   deps.resolveEntitlements.mockResolvedValue(testMatrixEntitlements({ authUserId: 'user-1', memberId: 'member-1', plan: 'free', active: false, referralSuccessCount: 0 }, new Date('2026-08-29T00:00:00Z')));
   expect(await read()).toMatchObject({ kind: 'status-identity', entitlements: { canUseThirteen: false } });
-  expect(deps.requireMember).toHaveBeenCalledTimes(2);
+  expect(deps.requireMember).not.toHaveBeenCalled();
+  expect(deps.resolveEntitlements).toHaveBeenCalledTimes(2);
   expect(deps.readStatusSources).not.toHaveBeenCalled();
   expect(readStatusIdentity).toHaveBeenCalledTimes(2);
 });
