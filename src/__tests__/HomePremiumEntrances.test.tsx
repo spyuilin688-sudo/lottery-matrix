@@ -6,6 +6,13 @@ import { expect, test, vi } from 'vitest';
 import { HomeAnnouncement, HomeShortcutRow, MatrixCoreBanner } from '../Prototype';
 import { BottomNavigation } from '../BottomNavigation';
 
+function finishMarqueeSegment(track: HTMLElement) {
+  finishMarqueeSegment(track);
+  if (track.isConnected) {
+    fireEvent(track, new Event('webkitAnimationEnd', { bubbles: true }));
+  }
+}
+
 test('首頁四大功能顯示可讀名稱，且分別開啟既有功能', () => {
   const navigate = vi.fn();
   render(<HomeShortcutRow onNavigate={navigate} />);
@@ -54,13 +61,13 @@ test('首頁公告逐段播放新會員與最新彩種更新，不把所有文�
   expect(track).toHaveTextContent('【新會員限時體驗】立即使用 LINE 註冊登入，即可免費體驗 Matrix 探索、天衡、天樞十三期及完整範圍，體驗期限 2 天。');
   expect(track).not.toHaveTextContent('【今彩539】最新一期開獎資料、Matrix 分析結果已更新。');
 
-  fireEvent.animationEnd(track, { animationName: 'home-announcement-marquee' });
+  finishMarqueeSegment(track);
   track = container.querySelector<HTMLElement>('.home-announcement-track')!;
   expect(track).toHaveTextContent('【今彩539】最新一期開獎資料、Matrix 分析結果已更新。');
   expect(track).not.toHaveTextContent('【大樂透】最新一期開獎資料、Matrix 分析結果已更新。');
   expect(screen.getByTestId('home-announcement-lottery-今彩539')).toHaveClass('home-announcement-lottery-name');
 
-  fireEvent.animationEnd(track, { animationName: 'home-announcement-marquee' });
+  finishMarqueeSegment(track);
   track = container.querySelector<HTMLElement>('.home-announcement-track')!;
   expect(track).toHaveTextContent('【大樂透】最新一期開獎資料、Matrix 分析結果已更新。');
   expect(track).not.toHaveTextContent('09/23');
@@ -88,7 +95,7 @@ test('首頁公告在非同步彩種結果載入後從第一段重新開始，�
   expect(loadedTrack).toHaveTextContent('【新會員限時體驗】');
   expect(loadedTrack).not.toHaveTextContent('【今彩539】最新一期開獎資料、Matrix 分析結果已更新。');
 
-  fireEvent.animationEnd(loadedTrack, { animationName: 'home-announcement-marquee' });
+  finishMarqueeSegment(loadedTrack);
   loadedTrack = container.querySelector<HTMLElement>('.home-announcement-track')!;
   expect(loadedTrack).toHaveTextContent('【今彩539】最新一期開獎資料、Matrix 分析結果已更新。');
   expect(loadedTrack).not.toHaveTextContent('【天天樂】最新一期開獎資料、Matrix 分析結果已更新。');
@@ -117,7 +124,7 @@ test('首頁公告以原 18 秒首段校準速度，後續文案依距離調整�
     expect(track.style.animationDuration).toBe('18s');
     const baselinePixelsPerSecond = (358 + 700) / 18;
 
-    fireEvent.animationEnd(track, { animationName: 'home-announcement-marquee' });
+    finishMarqueeSegment(track);
     track = container.querySelector<HTMLElement>('.home-announcement-track')!;
     const nextSeconds = Number.parseFloat(track.style.animationDuration);
     expect(nextSeconds).toBeGreaterThan(0);
