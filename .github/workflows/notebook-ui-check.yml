@@ -1,7 +1,6 @@
 name: Notebook UI checks
 on:
-  push:
-    branches: ['work/notebook-line-access-*']
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
