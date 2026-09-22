@@ -3,12 +3,14 @@ import { beforeEach, expect, it, vi } from 'vitest';
 const dependencies = vi.hoisted(() => ({
   rpc: vi.fn(),
   readAlgorithmCacheScope: vi.fn().mockResolvedValue('member:tianshu'),
+  getAlgorithmCacheScope: vi.fn().mockReturnValue('member:tianshu'),
   readPermissionSettings: vi.fn().mockResolvedValue({ revision: 1 }),
 }));
 vi.mock('./lib/supabase', () => ({
   getSupabaseClient: () => ({ rpc: dependencies.rpc }),
 }));
 vi.mock('./auth/algorithm-cache-scope', () => ({
+  getAlgorithmCacheScope: dependencies.getAlgorithmCacheScope,
   readAlgorithmCacheScope: dependencies.readAlgorithmCacheScope,
 }));
 vi.mock('./permission-settings', () => ({
@@ -35,6 +37,7 @@ beforeEach(() => {
   rpc.mockReset();
   rpc.mockResolvedValue({ data: null, error: null });
   readAlgorithmCacheScope.mockClear();
+  dependencies.getAlgorithmCacheScope.mockClear();
   dependencies.readPermissionSettings.mockClear();
 });
 
