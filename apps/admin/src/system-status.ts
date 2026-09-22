@@ -166,7 +166,7 @@ export function getSystemStatusOperationalPresentation(item: SystemStatusItem): 
   if (item.id === nativeNotificationStatusId) {
     const health = parseNativeNotificationHealth(item.detail, new Date(item.checkedAt));
     if (!health || !item.ok) return needsAction('通知派送健康資料不完整或有異常，請查看下方原因。');
-    return normal('通知事件、Recovery 與派送佇列目前沒有需要處理的異常。');
+    return normal('目前運作正常。通知事件、Recovery 與派送佇列沒有需要處理的異常。');
   }
 
   if (item.id === matrixStorageStatusId) {
