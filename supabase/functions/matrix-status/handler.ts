@@ -36,11 +36,14 @@ export function createMatrixStatusEdgeHandler(dependencies: MatrixStatusDependen
     } catch {
       return json({ error: { code: 'INVALID_REQUEST' } }, 400);
     }
-    // Share authentication only inside this HTTP request, never across members.
-    let member: ReturnType<MatrixStatusDependencies['requireMember']> | undefined;
+    // Share the authoritative entitlement snapshot only inside this HTTP request.
+    // Different requests still revalidate independently, so account/plan changes cannot bleed across callers.
+    let entitlements: ReturnType<MatrixStatusDependencies['resolveEntitlements']> | undefined;
     const routes = createMatrixStatusRoutes({
       ...dependencies,
-      requireMember: (authorization) => member ??= dependencies.requireMember(authorization),
+      resolveEntitlements: (authorization) => (
+        entitlements ??= dependencies.resolveEntitlements(authorization)
+      ),
     });
     const value = record(body);
     const action = value ? String(value.action ?? '') : '';
