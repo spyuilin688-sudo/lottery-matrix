@@ -564,7 +564,7 @@ function TianyanFallbackGroups({
   ));
   return (
     <div className="explore-validation-groups">
-      {validation.historicalValidation.map((row) => {
+      {[...validation.historicalValidation].reverse().map((row) => {
         const matchedRules = [row.rule1, row.rule2].filter((rule) => rule.hit);
         if (!matchedRules.length) return null;
         return (
@@ -644,7 +644,8 @@ export function TianyanExpandedValidationGroups({
     return <TianyanFallbackGroups lottery={lottery} validation={validation} />;
   }
 
-  const historicalGroups = validation.historicalValidation
+  const historicalGroups = [...validation.historicalValidation]
+    .reverse()
     .map((group) => ({
       key: group.group,
       rows: buildTianyanHistoricalRows(lottery, group, historyNumbers),
