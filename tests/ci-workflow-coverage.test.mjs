@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const workflow = readFileSync('.github/workflows/ci.yml', 'utf8');
 const notebookWorkflow = readFileSync('.github/workflows/notebook-ui-check.yml', 'utf8');
+const tianshuWorkflow = readFileSync('.github/workflows/tianshu-layout.yml', 'utf8');
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'));
 
 function job(name) {
@@ -30,7 +31,7 @@ test('CI has no whole-project test command or wildcard test invocation', () => {
     assert.doesNotMatch(command, /(?:node --test|vitest run|uv run pytest|playwright test)/,
       'Test runners must receive validated explicit files through the selector');
   }
-  for (const group of ['node', 'vitest', 'edge', 'admin', 'python', 'playwright', 'membership']) {
+  for (const group of ['node', 'vitest', 'edge', 'admin', 'python', 'playwright', 'tianshu', 'membership']) {
     assert.equal(commands.filter(command => command === `node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run ${group}`).length, 1);
     assert.match(workflow, new RegExp(`if: needs\\.scope\\.outputs\\.${group} == 'true'`));
   }
@@ -65,7 +66,10 @@ test('browser jobs install Chromium dependencies and run each configuration only
   assert.match(runtime, /PLAYWRIGHT_BROWSERS_PATH: \.sites-runtime\/playwright/);
   assert.match(runtime, /--run playwright/);
   assert.match(runtime, /--run membership/);
-  assert.match(runtime, /if: needs\.scope\.outputs\.playwright == 'true' \|\| needs\.scope\.outputs\.membership == 'true'/);
+  assert.match(runtime, /--run tianshu/);
+  assert.match(runtime, /if: needs\.scope\.outputs\.playwright == 'true' \|\| needs\.scope\.outputs\.tianshu == 'true' \|\| needs\.scope\.outputs\.membership == 'true'/);
+  assert.match(runtime, /name: Keep Matrix Tianshu screenshots and traces/);
+  assert.match(runtime, /path: test-results\/matrix-tianshu-layout\//);
 });
 
 test('admin build modes are not repeated and Python uses the selected plan', () => {
@@ -85,6 +89,11 @@ test('admin build modes are not repeated and Python uses the selected plan', () 
 test('specialized Notebook workflow does not duplicate Project CI pull-request checks', () => {
   assert.doesNotMatch(notebookWorkflow, /^\s*pull_request:/m);
   assert.match(notebookWorkflow, /^\s*push:/m);
+});
+
+test('specialized Tianshu workflow no longer duplicates Project CI pull-request checks', () => {
+  assert.doesNotMatch(tianshuWorkflow, /^\s*pull_request:/m);
+  assert.match(tianshuWorkflow, /^\s*workflow_dispatch:/m);
 });
 
 test('selected test jobs fail the workflow when their tests fail', () => {
