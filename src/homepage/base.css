@@ -623,7 +623,7 @@
   width: max-content;
   min-width: 100%;
   white-space: nowrap;
-  animation: home-announcement-marquee 18s linear infinite;
+  animation: home-announcement-marquee 18s linear 1 both;
   will-change: transform;
 }
 
