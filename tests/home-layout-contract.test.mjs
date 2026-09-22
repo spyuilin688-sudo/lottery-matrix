@@ -49,6 +49,9 @@ test('homepage announcement sits below the logo as a compact non-interactive mar
   assertBlock(css, '.home-screen .home-announcement', /margin-block-start:\s*var\(--home-gap-logo-announcement\);/);
   assertBlock(css, '.home-screen .home-announcement', /border:\s*1px solid var\(--home-frame-muted\);/);
   assertBlock(css, '.home-screen .home-announcement', /overflow:\s*hidden;/);
+  assertBlock(css, '.home-screen .home-announcement-track', /flex:\s*0 0 auto;/);
+  assertBlock(css, '.home-screen .home-announcement-track', /width:\s*max-content;/);
+  assertBlock(css, '.home-screen .home-announcement-track', /min-width:\s*100%;/);
   assertBlock(css, '.home-screen .home-announcement-track', /animation:\s*home-announcement-marquee 18s linear infinite;/);
   assertBlock(css, '.home-screen .home-announcement-text', /color:\s*var\(--home-frame-gold\);/);
   assertBlock(css, '.home-screen .home-announcement-text', /font-family:\s*"Noto Sans TC",\s*system-ui,\s*sans-serif;/);
@@ -57,7 +60,7 @@ test('homepage announcement sits below the logo as a compact non-interactive mar
   assertBlock(css, '.home-screen .home-announcement-text', /letter-spacing:\s*\.02em;/);
   assertBlock(css, '.home-screen .home-announcement-lottery-name', /margin-inline:\s*1px;/);
   assertBlock(css, '.home-screen .lottery-switcher', /margin-block-start:\s*var\(--home-gap-announcement-switcher\);/);
-  assert.match(css, /@keyframes\s+home-announcement-marquee\s*\{[\s\S]*?translateX\(100%\)[\s\S]*?translateX\(-100%\)[\s\S]*?\}/);
+  assert.match(css, /@keyframes\s+home-announcement-marquee\s*\{[\s\S]*?translateX\(var\(--home-content-width\)\)[\s\S]*?translateX\(-100%\)[\s\S]*?\}/);
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.home-screen \.home-announcement-track\s*\{[^}]*animation:\s*none;/);
 });
 
