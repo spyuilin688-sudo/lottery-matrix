@@ -28,6 +28,7 @@ jobs:
       admin: ${{ steps.select.outputs.admin }}
       python: ${{ steps.select.outputs.python }}
       playwright: ${{ steps.select.outputs.playwright }}
+      tianshu: ${{ steps.select.outputs.tianshu }}
       membership: ${{ steps.select.outputs.membership }}
     steps:
       - name: Checkout tested head with comparison history
@@ -98,7 +99,7 @@ jobs:
 
   runtime-tests:
     needs: scope
-    if: needs.scope.outputs.playwright == 'true' || needs.scope.outputs.membership == 'true'
+    if: needs.scope.outputs.playwright == 'true' || needs.scope.outputs.tianshu == 'true' || needs.scope.outputs.membership == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -121,6 +122,16 @@ jobs:
       - name: Related runtime browser files
         if: needs.scope.outputs.playwright == 'true'
         run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run playwright
+      - name: Related Matrix Tianshu layout files
+        if: needs.scope.outputs.tianshu == 'true'
+        run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run tianshu
+      - name: Keep Matrix Tianshu screenshots and traces
+        if: always() && needs.scope.outputs.tianshu == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: matrix-tianshu-layout
+          path: test-results/matrix-tianshu-layout/
+          retention-days: 7
       - name: Related membership preview files
         if: needs.scope.outputs.membership == 'true'
         run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run membership

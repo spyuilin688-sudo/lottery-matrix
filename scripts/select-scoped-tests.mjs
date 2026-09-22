@@ -4,7 +4,7 @@ import { appendFileSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const GROUPS = ['node', 'vitest', 'edge', 'admin', 'python', 'playwright', 'membership'];
+const GROUPS = ['node', 'vitest', 'edge', 'admin', 'python', 'playwright', 'tianshu', 'membership'];
 const EXTENSIONS = ['', '.ts', '.tsx', '.mjs', '.js', '.jsx', '.json', '.py', '/index.ts', '/index.tsx', '/index.js', '/__init__.py'];
 const PYTHON_ROOT = 'services/matrix-api';
 const SOURCE = /\.(?:[cm]?[jt]sx?|css|html|py|json|ya?ml)$/;
@@ -20,6 +20,21 @@ const BROWSER_OWNERS = {
   'tests/tongxing-reference-responsive.spec.ts': ['src/features/LegacyTongXingPage.tsx', 'src/features/NumberReferencePage.tsx', 'src/tongxing-compact.css', 'src/number-reference-visual-refinement.css'],
   'tests/notebook-reliability.spec.ts': ['src/features/NotebookPages.tsx', 'src/features/notebook-owner.ts', 'src/features/notebook-storage.ts'],
   'tests/notebook-responsive.spec.ts': ['src/features/NotebookPages.tsx', 'src/features/notebook-owner.ts', 'src/features/notebook-storage.ts', 'src/auth/LinePageGuard.tsx'],
+  'tests/matrix-tianshu-layout.spec.ts': [
+    'src/ExploreValidationSummary.tsx',
+    'src/explore-result-preview.css',
+    'src/feature-pages.css',
+    'src/features/BrandHeader.tsx',
+    'src/features/MatrixExplorePage.tsx',
+    'src/features/MatrixValidation.tsx',
+    'src/features/navigation.tsx',
+    'src/features/router.tsx',
+    'src/features/shared.tsx',
+    'src/matrix-algorithm-api.ts',
+    'src/matrix-explore-result-refinements.css',
+    'src/matrix-explore-spacing.css',
+    'src/matrix-tianheng.css',
+  ],
   'tests/mobile-runtime.spec.ts': ['src/mobile/MobileRuntime.tsx', 'src/mobile/MobileScroll.tsx', 'src/mobile/Keyboard.tsx', 'src/input-behavior.ts'],
   'tests/membership-preview/responsive.spec.ts': ['tests/membership-preview/main.tsx', 'tests/membership-preview/preview.css', 'tests/membership-preview/state.ts', 'src/features/MemberPages.tsx'],
 };
@@ -30,10 +45,12 @@ const CONFIG_OWNERS = {
   '.github/workflows/matrix-optimizer.yml': ['tests/matrix-optimizer-code.test.mjs'],
   '.github/workflows/ci.yml': ['tests/scoped-ci.test.mjs', 'tests/ci-workflow-coverage.test.mjs'],
   '.github/workflows/notebook-ui-check.yml': ['tests/ci-workflow-coverage.test.mjs'],
+  '.github/workflows/tianshu-layout.yml': ['tests/ci-workflow-coverage.test.mjs', 'tests/matrix-tianshu-layout.spec.ts'],
   'scripts/select-scoped-tests.mjs': ['tests/scoped-ci.test.mjs', 'tests/ci-workflow-coverage.test.mjs'],
   'vitest.edge-functions.config.ts': ['tests/edge-functions-config.test.mjs'],
   'mobile-runtime.lock.json': ['tests/runtime-integrity-atomic-commit.test.mjs', 'tests/runtime-integrity-scope.test.mjs'],
   'playwright.config.ts': ['tests/mobile-runtime.spec.ts'],
+  'playwright.matrix-tianshu.config.ts': ['tests/matrix-tianshu-layout.spec.ts'],
   'services/matrix-api/railway.recovery.json': ['services/matrix-api/tests/test_railway_recovery_contract.py'],
   'vite.runtime-tests.config.ts': ['tests/mobile-runtime.spec.ts'],
   'playwright.membership-preview.config.ts': ['tests/membership-preview/responsive.spec.ts'],
@@ -42,6 +59,7 @@ const CONFIG_OWNERS = {
 function groupFor(file, source = '') {
   if (!TEST.test(file)) return null;
   if (file.endsWith('.py')) return file.startsWith(`${PYTHON_ROOT}/tests/`) ? 'python' : null;
+  if (file === 'tests/matrix-tianshu-layout.spec.ts') return 'tianshu';
   if (/\.spec\.tsx?$/.test(file)) return file.startsWith('tests/membership-preview/') ? 'membership' : 'playwright';
   if (file.endsWith('.mjs') || /['"]node:test['"]/.test(source)) return 'node';
   if (file.startsWith('supabase/functions/')) return 'edge';
@@ -177,9 +195,14 @@ export function commandFor(group, files, root) {
   const absolute = [...new Set(files)].map(file => path.resolve(root, file));
   if (group === 'node') return { bin: process.execPath, args: ['--experimental-transform-types', '--test', ...absolute], cwd: root };
   if (group === 'python') return { bin: 'uv', args: ['run', 'pytest', '-q', ...absolute], cwd: path.join(root, PYTHON_ROOT) };
-  if (['playwright', 'membership'].includes(group)) return {
+  if (['playwright', 'tianshu', 'membership'].includes(group)) return {
     bin: path.join(root, 'node_modules/.bin/playwright'),
-    args: ['test', '--config', group === 'membership' ? 'playwright.membership-preview.config.ts' : 'playwright.config.ts', ...absolute], cwd: root,
+    args: ['test', '--config',
+      group === 'membership' ? 'playwright.membership-preview.config.ts'
+        : group === 'tianshu' ? 'playwright.matrix-tianshu.config.ts'
+          : 'playwright.config.ts',
+      ...absolute],
+    cwd: root,
   };
   return {
     bin: path.join(root, group === 'admin' ? 'apps/admin/node_modules/.bin/vitest' : 'node_modules/.bin/vitest'),

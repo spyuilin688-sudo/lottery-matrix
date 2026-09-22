@@ -20,6 +20,7 @@ vi.mock('../member-api', async (importOriginal) => ({
 import { FeaturePageRouter } from '../FeaturePagesPatched';
 import { AppDialogProvider } from '../dialog/AppDialog';
 import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
+import { publishMemberSessionReady } from '../auth/member-session-store';
 
 const summary = {
   referralCode: 'MATRIX-7H4K9P',
@@ -32,6 +33,7 @@ describe('invite friends referral summary', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     updateAlgorithmCacheSession({ access_token: 'member-a', user: { id: 'member-a' } } as never);
+    publishMemberSessionReady({ access_token: 'member-a', user: { id: 'member-a' } } as never);
     memberApi.fetchMemberReferralSummary.mockResolvedValue(summary);
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,

@@ -9,10 +9,13 @@ import { EcpayReviewLogin } from "../auth/EcpayReviewLogin";
 import { usePermissionSettings } from "../permission-settings";
 import { signInWithGoogle } from "../auth/google-auth";
 import { clearLineLoginAttempt, consumeLineLoginAttempt, markLineLoginAttempt } from "../auth/line-login-attempt";
-import { withDeadline } from "../lib/api-resilience";
-import { getSupabaseClient } from "../lib/supabase";
 import { logicalSessionIdentity } from "../auth/session-identity";
 import { getAlgorithmCacheScope, subscribeAlgorithmCacheScope } from "../auth/algorithm-cache-scope";
+import {
+  MEMBER_SESSION_READ_TIMEOUT_MS,
+  requestMemberSessionRefresh,
+  useMemberSessionSnapshot,
+} from "../auth/member-session-store";
 import { useAppDialog } from "../dialog/AppDialog";
 import { usePwaLifecycle } from "../pwa-lifecycle";
 import { useSubscriptionPurchaseVisible } from "../subscription-purchase-visibility";
@@ -172,7 +175,7 @@ export type ProfileAuthState =
   | "signing-out"
   | "degraded";
 
-export const PROFILE_SESSION_TIMEOUT_MS = 2_500;
+export const PROFILE_SESSION_TIMEOUT_MS = MEMBER_SESSION_READ_TIMEOUT_MS;
 
 export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   const ecpayReviewLoginVisible = usePermissionSettings()?.ecpayReviewLoginVisible === true;
@@ -181,7 +184,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   const { showInstallAction, requestInstall } = usePwaLifecycle();
   const [authState, setAuthState] = useState<ProfileAuthState>("initializing");
   const [authRetrying, setAuthRetrying] = useState(false);
-  const [authCheckRevision, setAuthCheckRevision] = useState(0);
+  const memberSession = useMemberSessionSnapshot();
   const lineLoginInProgress = useRef(false);
   const useDirectLineBrowserLink = useMemo(() => shouldUseDirectLineBrowserLink(), []);
   const [lineBrowserLoginUrl, setLineBrowserLoginUrl] = useState<string | null>(null);
@@ -207,71 +210,39 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
     return () => { active = false; };
   }, [useDirectLineBrowserLink]);
   useEffect(() => {
-    let active = true;
-    let authRevision = 0;
-    let initialReadSettled = false;
-    let initialReadFailed = false;
-    const client = getSupabaseClient();
-    const applySession = (session: unknown) => {
-      if (!active) return;
-      // Supabase can broadcast the callback session before the PWA handoff is
-      // acknowledged. Keep the login button pending until this attempt settles.
-      if (session && lineLoginInProgress.current) return;
-      const userId = (session as Session | null)?.user?.id ?? null;
-      if (memberUserIdRef.current !== userId) {
-        memberUserIdRef.current = userId;
-        setMemberUserId(userId);
-        setMemberProfile(null);
-      }
+    if (memberSession.status === "checking") {
+      setAuthState((current) => current === "signing-in" || current === "signing-out" ? current : "initializing");
+      return;
+    }
+    if (memberSession.status === "error") {
+      reconcilePendingLineLogoutPresence(undefined);
       setAuthRetrying(false);
-      setSigningInProvider(null);
-      setAuthState(session ? "authenticated" : "anonymous");
-      setLineAvatarUrl(lineAvatarFromSession(session));
-      setMemberNickname(lineNicknameFromSession(session));
-      if (consumeLineLoginAttempt({ hasSession: Boolean(session) })) {
-        void alertDialog({ title: "登入成功", tone: "success" });
-      }
-    };
-    const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
-      if (event === "INITIAL_SESSION" && !session && (!initialReadSettled || initialReadFailed)) return;
-      authRevision += 1;
-      if (event === "SIGNED_OUT") {
-        reconcilePendingLineLogoutPresence(null);
-        applySession(null);
-        return;
-      }
-      reconcilePendingLineLogoutPresence(session);
-      applySession(session);
-    });
-    const initialRevision = authRevision;
-    void withDeadline(() => client.auth.getSession(), { timeoutMs: PROFILE_SESSION_TIMEOUT_MS }).then(({ data, error }) => {
-      initialReadSettled = true;
-      if (!active || authRevision !== initialRevision) return;
-      if (error) {
-        reconcilePendingLineLogoutPresence(undefined);
-        setAuthRetrying(false);
-        initialReadFailed = true;
-        consumeLineLoginAttempt({ hasSession: false });
-        setAuthState("degraded");
-        return;
-      }
-      reconcilePendingLineLogoutPresence(data.session);
-      applySession(data.session);
-    }).catch(() => {
-      initialReadSettled = true;
-      if (active && authRevision === initialRevision) {
-        initialReadFailed = true;
-        consumeLineLoginAttempt({ hasSession: false });
-        reconcilePendingLineLogoutPresence(undefined);
-        setAuthRetrying(false);
-        setAuthState("degraded");
-      }
-    });
-    return () => {
-      active = false;
-      subscription.unsubscribe();
-    };
-  }, [alertDialog, authCheckRevision]);
+      consumeLineLoginAttempt({ hasSession: false });
+      setAuthState("degraded");
+      setMemberProfile(null);
+      return;
+    }
+
+    const session = memberSession.session;
+    // Supabase can broadcast the callback session before the PWA handoff is
+    // acknowledged. Keep the login button pending until this attempt settles.
+    if (session && lineLoginInProgress.current) return;
+    reconcilePendingLineLogoutPresence(session);
+    const userId = session?.user?.id ?? null;
+    if (memberUserIdRef.current !== userId) {
+      memberUserIdRef.current = userId;
+      setMemberUserId(userId);
+      setMemberProfile(null);
+    }
+    setAuthRetrying(false);
+    setSigningInProvider(null);
+    setAuthState(session ? "authenticated" : "anonymous");
+    setLineAvatarUrl(lineAvatarFromSession(session));
+    setMemberNickname(lineNicknameFromSession(session));
+    if (consumeLineLoginAttempt({ hasSession: Boolean(session) })) {
+      void alertDialog({ title: "登入成功", tone: "success" });
+    }
+  }, [alertDialog, memberSession]);
   useEffect(() => {
     if (authState !== "authenticated") {
       if (authState === "anonymous" || authState === "degraded") setMemberProfile(null);
@@ -296,7 +267,13 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
     if (authRetrying || authState === "initializing" || authState === "signing-in" || authState === "signing-out") return;
     if (authState === "degraded") {
       setAuthRetrying(true);
-      setAuthCheckRevision((revision) => revision + 1);
+      try {
+        await requestMemberSessionRefresh();
+      } catch {
+        setAuthState("degraded");
+      } finally {
+        setAuthRetrying(false);
+      }
       return;
     }
     const action = authState === "authenticated" ? "logout" : "login";
@@ -345,17 +322,14 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
         // The callback may already have signed in through Supabase's cross-tab
         // broadcast even if the native app/browser lost the popup connection.
         try {
-          const { data, error: sessionError } = await withDeadline(
-            () => getSupabaseClient().auth.getSession(), { timeoutMs: PROFILE_SESSION_TIMEOUT_MS },
-          );
-          if (sessionError) throw sessionError;
-          if (data.session) {
-            memberUserIdRef.current = data.session.user.id;
-            setMemberUserId(data.session.user.id);
+          const session = await requestMemberSessionRefresh();
+          if (session) {
+            memberUserIdRef.current = session.user.id;
+            setMemberUserId(session.user.id);
             setMemberProfile(null);
             setAuthState('authenticated');
-            setLineAvatarUrl(lineAvatarFromSession(data.session));
-            setMemberNickname(lineNicknameFromSession(data.session));
+            setLineAvatarUrl(lineAvatarFromSession(session));
+            setMemberNickname(lineNicknameFromSession(session));
             await alertDialog({ title: '登入成功', tone: 'success' });
             onNavigate('home');
             return;
@@ -911,6 +885,10 @@ export function referralErrorCode(error: unknown): ReferralSubmissionErrorCode {
 
 export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   const subscriptionPurchaseVisible = useSubscriptionPurchaseVisible();
+  const memberSession = useMemberSessionSnapshot();
+  const memberSessionKey = memberSession.status === "ready"
+    ? `ready:${logicalSessionIdentity(memberSession.session) ?? "guest"}`
+    : memberSession.status;
   const { confirm: confirmDialog } = useAppDialog();
   const [referralCode, setReferralCode] = useState("");
   const [activationCode, setActivationCode] = useState("");
@@ -957,60 +935,51 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
 
   useEffect(() => {
     let active = true;
-    let authRevision = 0;
     let loadTimer: ReturnType<typeof setTimeout> | undefined;
-    let currentIdentity: string | null | undefined;
-    const client = getSupabaseClient();
-    const applySession = (session: Session | null) => {
-      const identity = logicalSessionIdentity(session);
-      if (currentIdentity === identity) return;
-      currentIdentity = identity;
-      const revision = ++authRevision;
-      clearTimeout(loadTimer);
-      referralRequestRevision.current += 1;
-      activationRequestRevision.current += 1;
-      setActivationCode("");
-      setSubmitting(false);
-      setResultState("idle");
-      setReferralSummary(null);
-      setReferralCode("");
-      setReferralSubmitting(false);
-      setReferralResultState("idle");
+    const revision = referralRequestRevision.current + 1;
+    referralRequestRevision.current = revision;
+    activationRequestRevision.current += 1;
+    setActivationCode("");
+    setSubmitting(false);
+    setResultState("idle");
+    setReferralSummary(null);
+    setReferralCode("");
+    setReferralSubmitting(false);
+    setReferralResultState("idle");
+
+    if (memberSession.status === "checking") {
+      setReferralLoginRequired(false);
+      setReferralLoading(true);
+    } else if (memberSession.status === "error") {
+      setReferralLoginRequired(false);
+      setReferralLoading(false);
+    } else {
+      const session = memberSession.session;
       setReferralLoginRequired(!session);
       setReferralLoading(Boolean(session));
-      if (!session) return;
-      // Defer API work until Supabase releases its auth-event lock.
-      loadTimer = setTimeout(() => {
-        void fetchMemberReferralSummary().then((summary) => {
-          if (active && authRevision === revision) setReferralSummary(summary);
-        }).catch((error: unknown) => {
-          if (!active || authRevision !== revision) return;
-          const message = error && typeof error === "object" && "message" in error ? String(error.message) : "";
-          setReferralLoginRequired(["MEMBER_SESSION_EXPIRED", "AUTH_REQUIRED", "LINE_IDENTITY_REQUIRED"].includes(message));
-        }).finally(() => {
-          if (active && authRevision === revision) setReferralLoading(false);
-        });
-      }, 0);
-    };
-    const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
-      if (!active || event === "INITIAL_SESSION") return;
-      applySession(event === "SIGNED_OUT" ? null : session);
-    });
-    const initialRevision = authRevision;
-    void withDeadline(() => client.auth.getSession(), { timeoutMs: PROFILE_SESSION_TIMEOUT_MS }).then(({ data, error }) => {
-      if (!active || authRevision !== initialRevision) return;
-      if (error) throw error;
-      applySession(data.session);
-    }).catch(() => {
-      if (active && authRevision === initialRevision) setReferralLoading(false);
-    });
+      if (session) {
+        // Keep member API work outside the Supabase auth callback; the bridge has
+        // already published this stable session snapshot.
+        loadTimer = setTimeout(() => {
+          void fetchMemberReferralSummary().then((summary) => {
+            if (active && referralRequestRevision.current === revision) setReferralSummary(summary);
+          }).catch((error: unknown) => {
+            if (!active || referralRequestRevision.current !== revision) return;
+            const message = error && typeof error === "object" && "message" in error ? String(error.message) : "";
+            setReferralLoginRequired(["MEMBER_SESSION_EXPIRED", "AUTH_REQUIRED", "LINE_IDENTITY_REQUIRED"].includes(message));
+          }).finally(() => {
+            if (active && referralRequestRevision.current === revision) setReferralLoading(false);
+          });
+        }, 0);
+      }
+    }
+
     return () => {
       active = false;
       clearTimeout(loadTimer);
-      subscription.unsubscribe();
-      referralRequestRevision.current += 1;
+      if (referralRequestRevision.current === revision) referralRequestRevision.current += 1;
     };
-  }, []);
+  }, [memberSessionKey]);
 
   async function handleReferralSubmit() {
     if (referralSubmitting || !referralSummary?.canSubmitReferralCode || !referralCode.trim()) return;

@@ -6,9 +6,18 @@ import { clearLineAuthEphemeralState, rememberLineProviderToken } from './line-p
 import { cleanupBrowserPushSubscription } from '../push-subscription';
 import { startMemberOnlineTracking } from '../member-online';
 import { postMemberOnline } from '../member-online-api';
+import { withDeadline } from '../lib/api-resilience';
 import { logicalSessionIdentity } from './session-identity';
 import { isLineProviderSession } from './session-provider';
 import { updateAlgorithmCacheSession } from './algorithm-cache-scope';
+import {
+  getMemberSessionSnapshot,
+  MEMBER_SESSION_READ_TIMEOUT_MS,
+  installMemberSessionRefresh,
+  publishMemberSessionChecking,
+  publishMemberSessionError,
+  publishMemberSessionReady,
+} from './member-session-store';
 
 type Props = {
   client?: SupabaseClient;
@@ -25,7 +34,9 @@ export function MemberSessionBridge({
 }: Props) {
   useEffect(() => {
     let active = true;
-    let authEventObserved = false;
+    let authRevision = 0;
+    let initialReadSettled = false;
+    let initialReadFailed = false;
     let currentSessionIdentity: string | null = null;
     let sessionGeneration = 0;
     let bootstrappedGeneration: number | null = null;
@@ -97,13 +108,55 @@ export function MemberSessionBridge({
       else void bootstrapSession(identity, sessionGeneration);
     };
 
-    void client.auth.getSession().then(({ data, error }) => {
-      if (!active || authEventObserved || error) return;
-      updateSession(data.session, false);
-    }).catch(() => undefined);
+    publishMemberSessionChecking();
+
+    const readCurrentSession = async () => {
+      const startedRevision = authRevision;
+      try {
+        const { data, error } = await withDeadline(
+          () => client.auth.getSession(),
+          { timeoutMs: MEMBER_SESSION_READ_TIMEOUT_MS },
+        );
+        if (error) throw error;
+        initialReadSettled = true;
+        initialReadFailed = false;
+        if (!active) return data.session;
+        if (authRevision !== startedRevision) {
+          const current = getMemberSessionSnapshot();
+          return current.status === 'ready' ? current.session : null;
+        }
+        publishMemberSessionReady(data.session);
+        updateSession(data.session, false);
+        return data.session;
+      } catch (error) {
+        const superseded = authRevision !== startedRevision;
+        initialReadSettled = true;
+        if (superseded) {
+          const current = getMemberSessionSnapshot();
+          if (current.status === 'ready') return current.session;
+        }
+        initialReadFailed = true;
+        if (active) publishMemberSessionError();
+        throw error;
+      }
+    };
+
+    const uninstallRefresh = installMemberSessionRefresh(readCurrentSession);
+    void readCurrentSession().catch(() => undefined);
 
     const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
-      authEventObserved = true;
+      if (event === 'INITIAL_SESSION' && !session && (!initialReadSettled || initialReadFailed)) return;
+
+      const current = getMemberSessionSnapshot();
+      if ((event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') && current.status === 'ready') {
+        const currentUserId = current.session?.user?.id ?? null;
+        const nextUserId = session?.user?.id ?? null;
+        if (currentUserId !== nextUserId) return;
+      }
+
+      authRevision += 1;
+      const currentSession = event === 'SIGNED_OUT' ? null : session;
+      publishMemberSessionReady(currentSession);
       if (event === 'SIGNED_OUT') {
         clearLineAuthEphemeralState();
         void cleanupPush().catch(() => undefined);
@@ -123,6 +176,7 @@ export function MemberSessionBridge({
       pendingTimers.forEach((timer) => clearTimeout(timer));
       pendingTimers.clear();
       stopMemberOnlineTracking();
+      uninstallRefresh();
       subscription.unsubscribe();
     };
   }, [bootstrap, cleanupPush, client, startTracking]);

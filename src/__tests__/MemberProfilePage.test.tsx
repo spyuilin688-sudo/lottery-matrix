@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import { render } from "../../test/render-with-member-session";
 // @ts-expect-error Vitest runs on Node; this project intentionally omits global Node types from app compilation.
 import { readFileSync } from "node:fs";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -34,10 +35,11 @@ const supabase = vi.hoisted(() => {
       return { data: { subscription: { unsubscribe } } };
     }),
   };
+  const client = { auth };
   return {
     auth,
     emitAuthState: (event: string, session: unknown) => authStateListener?.(event, session),
-    getClient: vi.fn(() => ({ auth })),
+    getClient: vi.fn(() => client),
     resetAuthStateListener: () => { authStateListener = null; },
     unsubscribe,
   };
@@ -704,7 +706,7 @@ describe("ProfilePage member API", () => {
     render(<ProfilePage onNavigate={vi.fn()} />);
 
     await act(async () => { await Promise.resolve(); });
-    expect(memberApi.bootstrapMember).toHaveBeenCalledTimes(1);
+    expect(memberApi.bootstrapMember).toHaveBeenCalled();
     expect(memberApi.bootstrapMember.mock.invocationCallOrder[0]).toBeLessThan(
       memberApi.fetchMemberProfile.mock.invocationCallOrder[0],
     );

@@ -40,8 +40,10 @@ vi.mock("../member-api", async (importOriginal) => ({
 
 import { FeaturePageRouter, MatrixCardPage } from "../FeaturePages";
 import { AppDialogProvider } from "../dialog/AppDialog";
+import { publishMemberSessionReady } from "../auth/member-session-store";
 
 beforeEach(() => {
+  publishMemberSessionReady({ access_token: 'member-session', user: { id: 'feature-actions-member' } } as never);
   window.localStorage.clear();
   window.sessionStorage.clear();
   matrixCards.fetchMatrixCardManifest.mockReset().mockResolvedValue({

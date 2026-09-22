@@ -3,7 +3,7 @@ import '@testing-library/jest-dom/vitest';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
-import { render } from '../../test/render-with-dialog';
+import { render } from '../../test/render-with-member-session-and-dialog';
 import type { MemberPaymentHistoryItem } from '../member-api';
 
 const auth = vi.hoisted(() => ({

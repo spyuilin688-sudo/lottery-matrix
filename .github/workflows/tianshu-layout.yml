@@ -1,28 +1,7 @@
 name: Matrix Tianshu layout
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - '.github/workflows/tianshu-layout.yml'
-      - 'playwright.matrix-tianshu.config.ts'
-      - 'src/ExploreValidationSummary.tsx'
-      - 'src/explore-result-preview.css'
-      - 'src/feature-pages.css'
-      - 'src/features/BrandHeader.tsx'
-      - 'src/features/MatrixExplorePage.tsx'
-      - 'src/features/MatrixValidation.tsx'
-      - 'src/features/navigation.tsx'
-      - 'src/features/router.tsx'
-      - 'src/features/shared.tsx'
-      - 'src/matrix-algorithm-api.ts'
-      - 'src/matrix-explore-result-refinements.css'
-      - 'src/matrix-explore-spacing.css'
-      - 'src/matrix-tianheng.css'
-      - 'tests/helpers/product-runtime.ts'
-      - 'tests/matrix-tianshu-layout-fixture.html'
-      - 'tests/matrix-tianshu-layout-fixture.tsx'
-      - 'tests/matrix-tianshu-layout.spec.ts'
+  workflow_dispatch:
 
 permissions:
   contents: read
