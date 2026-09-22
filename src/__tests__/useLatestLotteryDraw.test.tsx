@@ -84,4 +84,12 @@ describe("useLatestLotteryDraw", () => {
 
     expect(result.current.data?.period).toBe("current");
   });
+
+  it("can disable the shared hourly subscription when a parent coordinator owns refresh timing", async () => {
+    const { result } = renderHook(() => useLatestLotteryDraw("今彩539", { subscribeToRefresh: false }));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(subscribeLotteryRefresh).not.toHaveBeenCalled();
+    await act(async () => { await result.current.refresh(); });
+    expect(fetchLatestLotteryDraw).toHaveBeenCalledTimes(2);
+  });
 });
