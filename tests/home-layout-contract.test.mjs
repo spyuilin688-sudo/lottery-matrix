@@ -52,7 +52,7 @@ test('homepage announcement sits below the logo as a compact non-interactive mar
   assertBlock(css, '.home-screen .home-announcement-track', /flex:\s*0 0 auto;/);
   assertBlock(css, '.home-screen .home-announcement-track', /width:\s*max-content;/);
   assertBlock(css, '.home-screen .home-announcement-track', /min-width:\s*100%;/);
-  assertBlock(css, '.home-screen .home-announcement-track', /animation:\s*home-announcement-marquee 18s linear infinite;/);
+  assertBlock(css, '.home-screen .home-announcement-track', /animation:\s*home-announcement-marquee 18s linear 1 both;/);
   assertBlock(css, '.home-screen .home-announcement-text', /color:\s*var\(--home-frame-gold\);/);
   assertBlock(css, '.home-screen .home-announcement-text', /font-family:\s*"Noto Sans TC",\s*system-ui,\s*sans-serif;/);
   assertBlock(css, '.home-screen .home-announcement-text', /font-size:\s*11px;/);
