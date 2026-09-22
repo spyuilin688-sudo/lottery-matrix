@@ -31,7 +31,9 @@ const files = new Map(Object.entries({
   'services/matrix-api/tests/test_railway_recovery_contract.py': 'def test_recovery_service_is_http_only_and_health_checked(): pass',
   'tests/mobile-runtime.spec.ts': "import { test } from '@playwright/test';",
   'tests/notebook-responsive.spec.ts': "import { test } from '@playwright/test';",
+  'tests/matrix-tianshu-layout.spec.ts': "import { test } from '@playwright/test';",
   'tests/membership-preview/responsive.spec.ts': "import { test } from '@playwright/test';",
+  'src/features/MatrixValidation.tsx': 'export const MatrixValidation = 1;',
 }));
 
 test('empty and documentation-only changes select no runners', () => {
@@ -120,12 +122,19 @@ test('specialized notebook responsive checks are selected by Project CI owners',
   assert.ok(notebook.groups.playwright.includes('tests/notebook-responsive.spec.ts'));
 });
 
+test('Matrix Tianshu layout uses one scoped Project CI runner with its dedicated config', () => {
+  const plan = selectTests(files, ['src/features/MatrixValidation.tsx']);
+  assert.deepEqual(plan.groups.tianshu, ['tests/matrix-tianshu-layout.spec.ts']);
+  const command = commandFor('tianshu', plan.groups.tianshu, '/repo');
+  assert.ok(command.args.includes('playwright.matrix-tianshu.config.ts'));
+});
+
 test('every runner receives explicit absolute test paths; empty or unsafe scope never invokes it', () => {
   const examples = {
     node: 'tests/worker.test.mjs', vitest: 'src/client.test.ts',
     edge: 'supabase/functions/example/handler.test.ts', admin: 'apps/admin/src/admin-platform-client.test.ts',
     python: 'services/matrix-api/tests/test_schedule.py', playwright: 'tests/mobile-runtime.spec.ts',
-    membership: 'tests/membership-preview/responsive.spec.ts',
+    tianshu: 'tests/matrix-tianshu-layout.spec.ts', membership: 'tests/membership-preview/responsive.spec.ts',
   };
   for (const [group, file] of Object.entries(examples)) {
     const command = commandFor(group, [file], '/repo');
@@ -137,6 +146,7 @@ test('every runner receives explicit absolute test paths; empty or unsafe scope 
   assert.ok(commandFor('edge', [examples.edge], '/repo').args.includes('vitest.edge-functions.config.ts'));
   assert.ok(commandFor('admin', [examples.admin], '/repo').args.includes('apps/admin/vite.config.ts'));
   assert.ok(commandFor('membership', [examples.membership], '/repo').args.includes('playwright.membership-preview.config.ts'));
+  assert.ok(commandFor('tianshu', [examples.tianshu], '/repo').args.includes('playwright.matrix-tianshu.config.ts'));
   assert.deepEqual(commandFor('python', [examples.python], '/repo').args.slice(0, -1), ['run', 'pytest', '-q']);
   for (const file of ['tests/*.test.mjs', '../outside.test.mjs', '--help', 'src/client.ts']) {
     assert.throws(() => commandFor('node', [file], '/repo'), /explicit test file/);
