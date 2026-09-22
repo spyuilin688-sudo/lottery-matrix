@@ -35,9 +35,11 @@ vi.mock('../lib/supabase', () => ({
 
 import { FeaturePageRouter } from '../FeaturePagesPatched';
 import { HistoryList } from '../features/shared';
+import { publishMemberSessionReady } from '../auth/member-session-store';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  publishMemberSessionReady({ access_token: 'member-token', user: { id: 'member' } } as never);
   window.localStorage.clear();
   window.sessionStorage.clear();
   lotteryApi.fetchLotteryHistory.mockResolvedValue([]);
