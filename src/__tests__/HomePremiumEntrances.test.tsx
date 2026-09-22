@@ -44,7 +44,7 @@ test('首頁 Logo 下方顯示公告列且不增加操作行為', () => {
   render(<HomeAnnouncement />);
   const announcement = screen.getByTestId('home-announcement');
   expect(announcement).toHaveAccessibleName('公告');
-  expect(announcement).toHaveTextContent('公告');
+  expect(announcement).toHaveTextContent('【新會員限時體驗】立即使用 LINE 註冊登入，即可免費體驗 Matrix 探索、天衡、天樞十三期及完整範圍，體驗期限 2 天。');
   expect(within(announcement).queryByRole('button')).not.toBeInTheDocument();
   expect(within(announcement).queryByRole('link')).not.toBeInTheDocument();
 });
