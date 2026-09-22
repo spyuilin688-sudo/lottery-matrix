@@ -643,6 +643,10 @@
   white-space: nowrap;
 }
 
+.home-screen .home-announcement-lottery-name {
+  margin-inline: 1px;
+}
+
 .home-screen .lottery-switcher {
   margin-block-start: var(--home-gap-announcement-switcher);
 }
