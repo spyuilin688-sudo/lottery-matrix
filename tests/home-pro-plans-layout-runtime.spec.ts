@@ -21,8 +21,11 @@ for (const width of MOBILE_WIDTHS) {
       const layout = getComputedStyle(screen.querySelector<HTMLElement>(".home-layout")!);
       const lotteryScreen = getComputedStyle(screen.querySelector<HTMLElement>(".lottery-screen")!);
       const brandHeader = getComputedStyle(screen.querySelector<HTMLElement>(".brand-header")!);
+      const announcement = getComputedStyle(screen.querySelector<HTMLElement>(".home-announcement")!);
       return {
-        logoSwitcher: lotteryScreen.getPropertyValue("--home-gap-logo-switcher").replaceAll(" ", ""),
+        logoAnnouncement: lotteryScreen.getPropertyValue("--home-gap-logo-announcement").replaceAll(" ", ""),
+        announcementSwitcher: lotteryScreen.getPropertyValue("--home-gap-announcement-switcher").replaceAll(" ", ""),
+        announcementHeight: announcement.height,
         switcherDraw: lotteryScreen.getPropertyValue("--home-gap-switcher-draw").replaceAll(" ", ""),
         drawStatus: lotteryScreen.getPropertyValue("--home-gap-draw-status").replaceAll(" ", ""),
         featuresNav: layout.getPropertyValue("--home-gap-features-nav").replaceAll(" ", ""),
@@ -31,12 +34,16 @@ for (const width of MOBILE_WIDTHS) {
     });
 
     expect({
-      logoSwitcher: homepageTokens.logoSwitcher,
+      logoAnnouncement: homepageTokens.logoAnnouncement,
+      announcementSwitcher: homepageTokens.announcementSwitcher,
+      announcementHeight: homepageTokens.announcementHeight,
       switcherDraw: homepageTokens.switcherDraw,
       drawStatus: homepageTokens.drawStatus,
       featuresNav: homepageTokens.featuresNav,
     }).toEqual({
-      logoSwitcher: "clamp(13px,calc(1.15dvh+5px),16px)",
+      logoAnnouncement: "8px",
+      announcementSwitcher: "8px",
+      announcementHeight: "26px",
       switcherDraw: "clamp(7px,calc(0.9dvh+1px),9px)",
       drawStatus: "clamp(9px,calc(1.15dvh+1px),12px)",
       featuresNav: "clamp(4px,0.7dvh,8px)",
