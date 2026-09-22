@@ -10,11 +10,23 @@
 .systemStatusHeader button:disabled,
 .statusRowActions button:disabled { cursor: not-allowed; opacity: .55; }
 .systemStatusLegend { margin: -2px 0 8px; color: #888d96; font-size: 11px; line-height: 1.55; overflow-wrap: anywhere; }
+.systemStatusOverview { display: grid; gap: 8px; margin: 0 0 8px; padding: 10px; border: 1px solid #343943; border-radius: 8px; background: #111419; }
+.systemStatusOverview > strong { color: #ece7d8; font-size: 13px; line-height: 1.45; }
+.systemStatusOverviewCounts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.systemStatusOverviewCounts span { min-width: 0; padding: 6px; border-radius: 6px; background: #191d23; color: #999fa9; font-size: 11px; line-height: 1.35; text-align: center; }
+.systemStatusOverviewCounts b { display: block; margin-top: 2px; color: #ece7d8; font-size: 13px; }
+.systemStatusAttention { margin: 0 0 8px; padding: 8px 10px; border: 1px solid #343943; border-radius: 8px; background: #111419; }
+.systemStatusAttention h3 { margin: 0 0 4px; color: #e1c170; font-size: 12px; line-height: 1.4; }
+.systemStatusAttention p { margin: 0; color: #a3dfb5; font-size: 12px; line-height: 1.5; }
+.systemStatusAttention ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.systemStatusAttention li { display: grid; gap: 2px; padding-top: 6px; border-top: 1px solid #292e36; }
+.systemStatusAttention li b { color: #ffb4b4; font-size: 12px; line-height: 1.4; }
+.systemStatusAttention li span { color: #c4c6cc; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
 .statusGroups { display: grid; gap: 8px; }
 .statusGroup { min-width: 0; }
-.statusGroupHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; margin-bottom: 4px; border-bottom: 1px solid #343943; }
+.statusGroupHeader { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 10px; padding: 6px 0; margin-bottom: 4px; border-bottom: 1px solid #343943; }
 .statusGroupHeader h3 { margin: 0; color: #e1c170; font-size: 13px; line-height: 1.4; }
-.statusGroupHeader span { color: #888d96; font-size: 11px; }
+.statusGroupHeader span { color: #888d96; font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
 .statusRows { display: grid; gap: 8px; background: transparent; }
 .statusRow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 8px 10px; border: 1px solid #343943; border-radius: 8px; background: #111419; }
 .statusRowMain { min-width: 0; }
@@ -26,6 +38,8 @@
 .statusState { display: flex; flex: 0 0 auto; align-items: center; gap: 6px; }
 .statusState .statusBadge { display: inline-flex; align-items: center; min-height: 20px; padding: 2px 6px; border-radius: 4px; font-size: 11px; line-height: 1.2; font-weight: 600; white-space: nowrap; }
 .statusState .statusBadge.limited { color: #9dcfff; background: #142b40; }
+.statusState .statusBadge.waiting { color: #e1c170; background: #352e1d; }
+.statusState .statusBadge.neutral { color: #b7bdc8; background: #252a31; }
 .statusFacts { display: grid; margin: 6px 0 0; }
 .statusFacts > div { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 8px; padding: 4px 0; border-top: 1px solid #24272d; }
 .statusFacts dt { color: #888d96; font-size: 11px; line-height: 1.45; }
@@ -77,6 +91,8 @@
 .railwayOperationFeedback { min-height: 18px; color: #c4c6cc; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
 .railwayOperationFeedback p { margin: 4px 0 0; }
 @media (max-width: 480px) {
+  .systemStatusOverviewCounts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .statusGroupHeader span { width: 100%; }
   .railwayOperationHeader { gap: 6px; }
   .railwayOperationRow { gap: 8px; }
 }

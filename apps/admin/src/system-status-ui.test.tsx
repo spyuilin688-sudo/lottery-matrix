@@ -41,9 +41,11 @@ it('renders a failed TinyFish check and its evidence without issuing write reque
     await act(async () => [...container.querySelectorAll('button')].find(button => button.textContent?.includes('系統設定'))?.click());
     const row = container.querySelector('[data-status-id="tinyfish-fallback"]');
     expect(row).not.toBeNull();
-    expect(row?.querySelector('.statusBadge.bad')?.textContent).toBe('異常');
+    expect(row?.querySelector('.statusBadge.bad')?.textContent).toBe('需處理');
     expect(row?.querySelector('[role="alert"]')?.textContent).toBe('最近備援抓取失敗。');
-    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('TinyFish正常 0／1 · 0 項部分驗證 · 1 項異常');
+    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('TinyFish正常 0 · 等待 0 · 無需處理 0 · 需處理 1');
+    expect(container.querySelector('.systemStatusOverview')?.textContent).toContain('有 1 項需要處理');
+    expect(container.querySelector('.systemStatusAttention')?.textContent).toContain('TinyFish 備援抓取');
     expect(mocks.post).not.toHaveBeenCalled();
     expect(mocks.put).not.toHaveBeenCalled();
     expect(mocks.delete).not.toHaveBeenCalled();
@@ -73,9 +75,11 @@ it('renders event-driven notification health without sending a notification from
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
     await act(async () => [...container.querySelectorAll('button')].find(button => button.textContent?.includes('系統設定'))?.click());
     const row = container.querySelector('[data-status-id="native-notification-dispatch"]')!;
-    expect(row.querySelector('.statusBadge.limited')?.textContent).toBe('事件派送正常');
-    expect(row.querySelector('.statusScope')?.textContent).toContain('5 分鐘 Recovery');
-    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('正常 0／1 · 1 項部分驗證 · 0 項異常');
+    expect(row.querySelector('.statusBadge.good')?.textContent).toBe('正常');
+    expect(row.querySelector('.statusScope')?.textContent).toContain('目前運作正常');
+    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('正常 1 · 等待 0 · 無需處理 0 · 需處理 0');
+    expect(container.querySelector('.systemStatusOverview')?.textContent).toContain('目前沒有需要處理的異常');
+    expect(container.querySelector('.systemStatusAttention')?.textContent).toContain('目前沒有需要處理的項目');
     await act(async () => row.querySelector('summary')?.click());
     expect(row.querySelector('details')?.textContent).toContain('派送模式事件觸發');
     expect(row.querySelector('details')?.textContent).toContain('Recovery 頻率每 5 分鐘');
@@ -105,10 +109,10 @@ it('renders query samples and related operation dates with limited evidence visi
     await act(async () => [...container.querySelectorAll('button')].find(button => button.textContent?.includes('系統設定'))?.click());
     const rows = container.querySelectorAll('.statusRow');
     expect(rows).toHaveLength(3);
-    expect(rows[0].querySelector('.statusBadge.good')?.textContent).toBe('實際查詢已驗證');
-    expect(rows[1].querySelector('.statusBadge.limited')?.textContent).toBe('正式資料已驗證');
-    expect(rows[1].querySelector('.statusScope')?.textContent).toContain('會員');
-    expect(rows[2].querySelector('.statusBadge.limited')?.textContent).toBe('正式執行紀錄');
+    expect(rows[0].querySelector('.statusBadge.good')?.textContent).toBe('正常');
+    expect(rows[1].querySelector('.statusBadge.neutral')?.textContent).toBe('無需處理');
+    expect(rows[1].querySelector('.statusScope')?.textContent).toContain('無需處理');
+    expect(rows[2].querySelector('.statusBadge.good')?.textContent).toBe('正常');
     await act(async () => rows[0].querySelector('summary')?.click());
     expect(rows[0].querySelector('details')?.textContent).toContain('123 期 · 測試條件 2筆 · 通過');
     await act(async () => rows[2].querySelector('summary')?.click());
@@ -130,16 +134,20 @@ it('keeps purpose, evidence and errors visible while technical details collapse 
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
     const rows = container.querySelectorAll('.statusRow');
     expect(rows).toHaveLength(2);
-    expect(container.querySelector('.systemStatusLegend')?.textContent).toContain('系統不會為健康檢查執行寫入、派送通知或啟動復原');
-    expect(rows[0].querySelector('.statusBadge')?.textContent).toBe('API 已確認');
+    expect(container.querySelector('.systemStatusLegend')?.textContent).toContain('主狀態只表示是否需要處理');
+    expect(container.querySelector('.systemStatusOverview')?.textContent).toContain('有 1 項需要處理');
+    expect(container.querySelector('.systemStatusAttention')?.textContent).toContain('Pilio 開獎通知');
+    expect(rows[0].querySelector('.statusBadge')?.textContent).toBe('無需處理');
     expect(rows[0].querySelector('.statusDescription')?.closest('details')).toBeNull();
-    expect(rows[0].querySelector('.statusScope')?.textContent).toContain('不自動執行寫入操作');
+    expect(rows[0].querySelector('.statusScope')?.textContent).toContain('目前無需處理');
     expect(rows[1].querySelector('[role=alert]')?.closest('details')).toBeNull();
     expect(rows[1].querySelector('[role=alert]')?.textContent).toContain('HTTP 502');
     const details = rows[0].querySelector('details')!;
     expect(details.open).toBe(false);
     await act(async () => details.querySelector('summary')?.click());
     expect(details.open).toBe(true);
+    expect(details.querySelector('summary')?.textContent).toBe('查看技術明細');
+    expect(details.textContent).toContain('技術驗證API 已確認');
     expect(details.textContent).toContain('/rest/v1/rpc/redeem_activation_code');
     await act(async () => details.querySelector('summary')?.click());
     expect(details.open).toBe(false);
@@ -167,9 +175,9 @@ it('counts only actual failures as abnormal while running, waiting and unknown j
     await act(async () => [...container.querySelectorAll('button')].find(button => button.textContent?.includes('系統設定'))?.click());
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
     expect([...container.querySelectorAll('.statusBadge')].map(badge => [badge.textContent, badge.classList.contains('bad')])).toEqual([
-      ['執行中', false], ['等待開獎來源更新', false], ['狀態待確認', false], ['異常', true],
+      ['等待', false], ['等待', false], ['需處理', true], ['需處理', true],
     ]);
-    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('正常 0／4 · 3 項部分驗證 · 1 項異常');
+    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('正常 0 · 等待 2 · 無需處理 0 · 需處理 2');
     expect(container.querySelectorAll('.statusRow [role=alert]')).toHaveLength(1);
   } finally {
     await act(async () => root.unmount()); container.remove();
@@ -198,10 +206,10 @@ it('keeps storage size visible, separates Warning counts, and preserves details 
     await act(async () => [...container.querySelectorAll('button')].find(button => button.textContent?.includes('系統設定'))?.click());
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
     const row = container.querySelector('[data-status-id="matrix-storage"]')!;
-    expect(row.querySelector('.statusBadge')?.textContent).toBe('Warning');
+    expect(row.querySelector('.statusBadge')?.textContent).toBe('需處理');
     expect(row.querySelector('.statusBadge')?.classList.contains('good')).toBe(false);
     expect(row.querySelector('.statusRowMain > .statusFacts')?.textContent).toContain('資料庫大小2.50 GB');
-    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('1 項警告');
+    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('正常 0 · 等待 0 · 無需處理 0 · 需處理 1');
     expect(row.textContent).not.toContain('%');
     expect(row.querySelector('.statusRowActions')).toBeNull();
     const details = row.querySelector('details')!;
@@ -216,10 +224,10 @@ it('keeps storage size visible, separates Warning counts, and preserves details 
     expect(container.querySelector('[role=alert]')?.textContent).toContain('狀態重新檢查失敗');
     expect(details.open).toBe(true);
     expect(row.textContent).toContain('2.50 GB');
-    expect(row.querySelector('.statusBadge')?.textContent).toBe('Warning');
+    expect(row.querySelector('.statusBadge')?.textContent).toBe('需處理');
     fail = false; malformed = true;
     await act(async () => [...container.querySelectorAll('button')].find(button => button.textContent === '重新檢查')?.click());
-    expect(row.querySelector('.statusBadge')?.textContent).toBe('狀態待確認');
+    expect(row.querySelector('.statusBadge')?.textContent).toBe('需處理');
     expect(row.textContent).not.toContain('Healthy');
     expect(row.querySelector('.statusRowMain > .statusFacts')?.textContent).toContain('資料庫大小無法取得');
   } finally { await act(async () => root.unmount()); container.remove(); mocks.get.mockImplementation(originalGet); }

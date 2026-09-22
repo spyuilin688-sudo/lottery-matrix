@@ -5,6 +5,7 @@ import {
   canRefreshCrawler,
   canRetrySystemStatus,
   getGithubStatusFacts,
+  getSystemStatusOperationalPresentation,
   getSystemStatusPresentation,
   groupSystemStatusItems,
   loadSystemStatus,
@@ -13,6 +14,20 @@ import {
 } from './system-status';
 
 describe('system status client', () => {
+  it('maps technical verification into four operator-facing states without changing the underlying evidence', () => {
+    const base: SystemStatusItem = { id: 'supabase-rpc-member_profile', name: '會員資料', description: '', group: '會員', location: 'Supabase', endpoint: '/rest/v1/rpc/member_profile', checkMode: 'registry', checkEvidence: 'registered', rpcAccess: 'member-read', ok: true, checkedAt: '2026-09-23T00:00:00Z', responseMs: 1 };
+    expect(getSystemStatusOperationalPresentation(base)).toMatchObject({ state: 'no-action', label: '無需處理', tone: 'neutral', summary: expect.stringContaining('會員登入流程') });
+    expect(getSystemStatusPresentation(base)).toMatchObject({ label: '需會員流程驗證', tone: 'limited' });
+
+    expect(getSystemStatusOperationalPresentation({ ...base, id: 'edge', endpoint: '/functions/v1/example', checkEvidence: 'options' })).toMatchObject({ state: 'normal', label: '正常' });
+    expect(getSystemStatusOperationalPresentation({ ...base, id: 'railway', location: 'Railway', checkMode: 'service', checkEvidence: 'inherited' })).toMatchObject({ state: 'normal', label: '正常' });
+    expect(getSystemStatusOperationalPresentation({ ...base, id: 'data', checkEvidence: 'data' })).toMatchObject({ state: 'no-action', label: '無需處理' });
+    expect(getSystemStatusOperationalPresentation({ ...base, id: 'sample', checkEvidence: 'no-sample' })).toMatchObject({ state: 'waiting', label: '等待' });
+    expect(getSystemStatusOperationalPresentation({ ...base, id: 'running', healthState: 'running', checkEvidence: 'reported' })).toMatchObject({ state: 'waiting', label: '等待' });
+    expect(getSystemStatusOperationalPresentation({ ...base, id: 'none', healthState: 'unknown', detail: null, ok: false })).toMatchObject({ state: 'no-action', label: '無需處理' });
+    expect(getSystemStatusOperationalPresentation({ ...base, id: 'unknown', healthState: 'unknown', detail: { status: 'unknown' }, ok: false })).toMatchObject({ state: 'needs-action', label: '需處理', tone: 'bad' });
+    expect(getSystemStatusOperationalPresentation({ ...base, id: 'failed', ok: false, error: '失敗' })).toMatchObject({ state: 'needs-action', label: '需處理', tone: 'bad' });
+  });
   it('separates member access, historical activity and data reads from successful functional queries', () => {
     const base: SystemStatusItem = { id: 'supabase-rpc-member_profile', name: '會員資料', description: '', group: '會員', location: 'Supabase', endpoint: '/rest/v1/rpc/member_profile', checkMode: 'registry', checkEvidence: 'registered', ok: true, checkedAt: '2026-09-13T10:00:00Z', responseMs: 1 };
     expect(getSystemStatusPresentation(base)).toMatchObject({ label: '需會員流程驗證', tone: 'limited' });

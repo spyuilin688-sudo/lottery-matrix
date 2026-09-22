@@ -423,7 +423,7 @@ describe('administrator operation permission editing', () => {
     await act(async () => buttonWithText(container, '系統設定')?.click());
     await settle();
 
-    expect(container.textContent).toContain('正常 1／1');
+    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('正常 1 · 等待 0 · 無需處理 0 · 需處理 0');
     expect(container.querySelector<HTMLSelectElement>('#railway-operation-lottery')?.disabled).toBe(true);
     expect(buttonWithText(container, '手動更新')?.disabled).toBe(true);
     expect(buttonWithText(container, '復原')?.disabled).toBe(true);

@@ -139,6 +139,103 @@ export function getSystemStatusPresentation(item: SystemStatusItem) {
   return item.ok ? presentation : { ...presentation, label: '異常', tone: 'bad' as const, scope: failedScopes[evidence] };
 }
 
+
+export type SystemStatusOperationalState = 'normal' | 'waiting' | 'no-action' | 'needs-action';
+
+export type SystemStatusOperationalPresentation = {
+  state: SystemStatusOperationalState;
+  label: '正常' | '等待' | '無需處理' | '需處理';
+  tone: 'good' | 'waiting' | 'neutral' | 'bad';
+  summary: string;
+};
+
+export function getSystemStatusOperationalPresentation(item: SystemStatusItem): SystemStatusOperationalPresentation {
+  const normal = (summary = '目前運作正常，無需處理。'): SystemStatusOperationalPresentation => ({
+    state: 'normal', label: '正常', tone: 'good', summary,
+  });
+  const waiting = (summary: string): SystemStatusOperationalPresentation => ({
+    state: 'waiting', label: '等待', tone: 'waiting', summary,
+  });
+  const noAction = (summary: string): SystemStatusOperationalPresentation => ({
+    state: 'no-action', label: '無需處理', tone: 'neutral', summary,
+  });
+  const needsAction = (summary = '檢查結果有異常，請查看下方原因與技術明細。'): SystemStatusOperationalPresentation => ({
+    state: 'needs-action', label: '需處理', tone: 'bad', summary,
+  });
+
+  if (item.id === nativeNotificationStatusId) {
+    const health = parseNativeNotificationHealth(item.detail, new Date(item.checkedAt));
+    if (!health || !item.ok) return needsAction('通知派送健康資料不完整或有異常，請查看下方原因。');
+    return normal('目前運作正常。通知事件、Recovery 與派送佇列沒有需要處理的異常。');
+  }
+
+  if (item.id === matrixStorageStatusId) {
+    const storage = parseMatrixStorageHealth(item.detail);
+    if (!storage) return needsAction('目前無法取得完整儲存健康資料，請重新檢查。');
+    if (storage.status !== 'Healthy') return needsAction(`儲存健康狀態為 ${storage.status}，請查看技術明細。`);
+    return normal('Matrix 儲存與清理狀態目前正常。');
+  }
+
+  if (item.healthState === 'unknown') {
+    if (item.detail === null && !item.error) {
+      return noAction('目前尚未產生相關執行紀錄，不代表功能異常。');
+    }
+    return needsAction('目前資料不足以確認工作狀態，請重新檢查或查看紀錄。');
+  }
+
+  if (item.ok && item.healthState === 'running') {
+    return waiting('工作正在執行，等待完成即可，目前不需要人工處理。');
+  }
+
+  if (item.ok && item.healthState === 'waiting') {
+    return waiting('目前為正常等待狀態，待開獎來源、排程或資料產生後系統會再更新。');
+  }
+
+  if (!item.ok) return needsAction();
+
+  const evidence = item.checkEvidence ?? (
+    item.endpoint.startsWith('/functions/v1/') ? 'options'
+      : item.checkMode === 'openapi' || item.checkMode === 'registry' ? 'registered'
+        : item.location === 'Railway' && item.checkMode === 'service' ? 'inherited'
+          : item.id === 'supabase-watchdog-heartbeat' || item.id.startsWith('cron-') ? 'reported' : 'live'
+  );
+  const access = item.rpcAccess ?? (apiStatusInventory.find(definition => definition.id === item.id)
+    ?? apiStatusInventory.find(definition => definition.endpoint === item.endpoint))?.rpcAccess;
+  const activity = isRecord(item.detail) && isRecord(item.detail.activity) ? item.detail.activity : null;
+
+  if (evidence === 'no-sample') {
+    return waiting('目前沒有可驗證樣本，待有符合條件的資料後系統再確認。');
+  }
+  if (evidence === 'query' || evidence === 'live' || evidence === 'reported') {
+    return normal();
+  }
+  if (evidence === 'options') {
+    return normal('Endpoint 連線正常；健康檢查不會為驗證而執行正式操作。');
+  }
+  if (evidence === 'inherited') {
+    return normal('所屬 Railway 服務與排程目前正常；健康檢查不會另外啟動工作。');
+  }
+  if (evidence === 'data') {
+    return noAction('目前無需處理。正式資料可讀；完整會員身分流程不由健康檢查自動執行。');
+  }
+  if (access === 'member-read') {
+    return noAction('目前無需處理。API 已確認；完整會員登入流程不由健康檢查自動執行。');
+  }
+  if (activity?.state === 'recorded') {
+    return normal('已找到近期正式執行紀錄，目前沒有異常。');
+  }
+  if (activity?.state === 'none' || activity?.state === 'not-recorded') {
+    return noAction('目前無需處理。尚未產生相關操作紀錄，不代表功能異常。');
+  }
+  if (activity?.state === 'unavailable') {
+    return noAction('目前無需處理。API 已確認；本次沒有可用的正式執行紀錄。');
+  }
+  if (access === 'operation') {
+    return noAction('目前無需處理。API 已確認；健康檢查不會主動執行寫入操作。');
+  }
+  return noAction('目前無需處理。API 已確認，目前沒有異常證據。');
+}
+
 export function getServiceEvidenceFacts(item: SystemStatusItem): SystemStatusFact[] {
   if (item.id === nativeNotificationStatusId) {
     const health = parseNativeNotificationHealth(item.detail, new Date(item.checkedAt));

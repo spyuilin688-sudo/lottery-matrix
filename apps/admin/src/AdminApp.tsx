@@ -44,6 +44,7 @@ import {
   getGithubStatusFacts,
   getServiceEvidenceFacts,
   getMatrixStorageFacts,
+  getSystemStatusOperationalPresentation,
   getSystemStatusPresentation,
   formatSystemStatusValue,
   groupSystemStatusItems,
@@ -1658,13 +1659,40 @@ export function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm
     setFocusRequest(null);
   }, [focusRequest, items]);
   const actionPending = operating || checking || Boolean(retryingId) || Boolean(refreshingId);
+  const operationalItems = items.map((item) => ({ item, operational: getSystemStatusOperationalPresentation(item) }));
+  const operationalCounts = operationalItems.reduce((counts, entry) => {
+    counts[entry.operational.state] += 1;
+    return counts;
+  }, { normal: 0, waiting: 0, 'no-action': 0, 'needs-action': 0 });
+  const needsAttention = operationalItems.filter((entry) => entry.operational.state === 'needs-action');
   return (
     <section ref={statusSectionRef} className="systemStatusSection" aria-labelledby="system-status-title" tabIndex={-1}>
       <header className="systemStatusHeader">
         <div><h2 id="system-status-title">服務檢查</h2><span>最後檢查時間：{checkedAt ? formatAdminDateTime(checkedAt) : "尚未檢查"}</span></div>
         <button className="compactButton" onClick={refresh} disabled={actionPending} aria-busy={checking}><RefreshCw size={15} />{checking ? "檢查中…" : "重新檢查"}</button>
       </header>
-      <p className="systemStatusLegend">驗證層級：綠色代表實際查詢或正式執行紀錄正常；藍色代表部分驗證（API、Endpoint、所屬服務或正式紀錄）。系統不會為健康檢查執行寫入、派送通知或啟動復原。</p>
+      <div className="systemStatusOverview" role="status" aria-live="polite">
+        <strong>{needsAttention.length === 0 ? "目前沒有需要處理的異常" : `有 ${needsAttention.length} 項需要處理`}</strong>
+        <div className="systemStatusOverviewCounts">
+          <span>正常 <b>{operationalCounts.normal}</b></span>
+          <span>等待 <b>{operationalCounts.waiting}</b></span>
+          <span>無需處理 <b>{operationalCounts["no-action"]}</b></span>
+          <span>需處理 <b>{operationalCounts["needs-action"]}</b></span>
+        </div>
+      </div>
+      <section className="systemStatusAttention" aria-labelledby="system-status-attention-title">
+        <h3 id="system-status-attention-title">需要處理</h3>
+        {needsAttention.length === 0 ? (
+          <p>目前沒有需要處理的項目</p>
+        ) : (
+          <ul>
+            {needsAttention.map(({ item, operational }) => (
+              <li key={item.id}><b>{item.name}</b><span>{item.error || operational.summary}</span></li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <p className="systemStatusLegend">主狀態只表示是否需要處理；技術驗證方式、Endpoint、時間與正式紀錄收在「查看技術明細」。健康檢查不會執行寫入、派送通知或啟動復原。</p>
       {statusError && <div className="error" role="alert">{statusError}</div>}
       {statusNotice && <div className="systemStatusNotice" role="status">{statusNotice}</div>}
       <RailwayOperations client={api} canEdit={canEdit} confirm={confirm} disabled={checking || Boolean(retryingId) || Boolean(refreshingId)} onBusyChange={value => { requestInFlight.current = value; setOperating(value); }} />
@@ -1672,16 +1700,16 @@ export function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm
       {items.some(item => item.id === "supabase-watchdog-heartbeat") && <MatrixWatchdogPanel detail={items.find(item => item.id === "supabase-watchdog-heartbeat")?.detail} />}
       <div className="statusGroups">
         {groupSystemStatusItems(items).map((group) => {
-          const normalCount = group.items.filter((item) => getSystemStatusPresentation(item).tone === "good").length;
-          const abnormalCount = group.items.filter((item) => getSystemStatusPresentation(item).tone === "bad").length;
-          const limitedCount = group.items.filter((item) => getSystemStatusPresentation(item).tone === "limited").length;
-          const warningCount = group.items.filter((item) => getSystemStatusPresentation(item).tone === "warning").length;
+          const normalCount = group.items.filter((item) => getSystemStatusOperationalPresentation(item).state === "normal").length;
+          const waitingCount = group.items.filter((item) => getSystemStatusOperationalPresentation(item).state === "waiting").length;
+          const noActionCount = group.items.filter((item) => getSystemStatusOperationalPresentation(item).state === "no-action").length;
+          const needsActionCount = group.items.filter((item) => getSystemStatusOperationalPresentation(item).state === "needs-action").length;
           const groupTitleId = `status-group-${group.location.toLowerCase()}`;
           return (
             <section className="statusGroup" key={group.location} aria-labelledby={groupTitleId}>
               <header className="statusGroupHeader">
                 <h3 id={groupTitleId}>{group.location}</h3>
-                <span>正常 {normalCount}／{group.items.length} · {limitedCount} 項部分驗證 · {abnormalCount} 項異常{warningCount > 0 ? ` · ${warningCount} 項警告` : ""}</span>
+                <span>正常 {normalCount} · 等待 {waitingCount} · 無需處理 {noActionCount} · 需處理 {needsActionCount}</span>
               </header>
               <div className="statusRows">
                 {group.items.map((item) => {
@@ -1689,24 +1717,27 @@ export function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm
                     ? item.detail as Record<string, unknown>
                     : null;
                   const finishedAt = detail?.finishedAt ?? detail?.finished_at;
-                  const presentation = getSystemStatusPresentation(item);
+                  const operational = getSystemStatusOperationalPresentation(item);
+                  const technical = getSystemStatusPresentation(item);
                   const storageSummary = getMatrixStorageFacts(item, "summary");
                   return (
-                    <article className="statusRow" key={item.id} data-status-id={item.id} tabIndex={-1} aria-label={`${item.name}：${presentation.label}`}>
+                    <article className="statusRow" key={item.id} data-status-id={item.id} tabIndex={-1} aria-label={`${item.name}：${operational.label}`}>
                       <div className="statusRowMain">
                         <div className="statusRowTitle">
                           <div className="statusIdentity"><b>{item.name}</b><span>{item.group}</span></div>
-                          <div className="statusState"><b className={`statusBadge ${presentation.tone}`}>{presentation.label}</b></div>
+                          <div className="statusState"><b className={`statusBadge ${operational.tone}`}>{operational.label}</b></div>
                         </div>
                         <p className="statusDescription">{item.description}</p>
-                        <p className="statusScope">{presentation.scope}</p>
+                        <p className="statusScope">{operational.summary}</p>
                         {item.error && <div className="statusErrorText" role="alert">{item.error}</div>}
                         {storageSummary.length > 0 && <dl className="statusFacts">
                           {storageSummary.map((fact) => <div key={fact.label}><dt>{fact.label}</dt><dd>{text(fact.value)}</dd></div>)}
                         </dl>}
                         <details className="statusDetails">
-                          <summary>檢查明細</summary>
+                          <summary>查看技術明細</summary>
                         <dl className="statusFacts">
+                          <div><dt>技術驗證</dt><dd>{technical.label}</dd></div>
+                          <div><dt>技術範圍</dt><dd>{technical.scope}</dd></div>
                           <div><dt>API 位址</dt><dd className="statusEndpoint">{item.endpoint}</dd></div>
                           <div><dt>檢查時間</dt><dd>{formatAdminDateTime(item.checkedAt)}</dd></div>
                           <div><dt>回應時間</dt><dd>{item.responseMs} ms</dd></div>
