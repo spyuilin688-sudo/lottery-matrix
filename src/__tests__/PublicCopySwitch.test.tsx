@@ -155,8 +155,8 @@ test('first visit dialog changes live and keeps free usage and once-only behavio
   expect(await screen.findByRole('heading', { name: '真正的「版路分析」工具' })).toBeInTheDocument();
   toggle(false);
   expect(screen.getByRole('heading', { name: '使用教學' })).toBeInTheDocument();
-  expect(screen.getByText('Matrix 探索二期、天衡三期基本查詢可直接使用；較高期數、完整範圍、天衍與天工請先使用 LINE 或 Google 登入。新註冊 LINE 會員另有天衍 2 天、天工 1 天試用。')).toBeInTheDocument();
-  expect(screen.getByText(/新註冊 LINE 會員另有天衍 2 天、天工 1 天試用/)).toBeInTheDocument();
+  expect(screen.getByText('Matrix 探索二期、天衡三期基本查詢可直接使用；新註冊 LINE 會員可於註冊後 48 小時內使用 Matrix 探索、天衡、天樞十三期及完整範圍。')).toBeInTheDocument();
+  expect(screen.getByText(/新註冊 LINE 會員可於註冊後 48 小時內使用 Matrix 探索、天衡、天樞十三期及完整範圍/)).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '開始使用' })).toBeInTheDocument();
   toggle(true);
   expect(screen.getByRole('heading', { name: '真正的「版路分析」工具' })).toBeInTheDocument();
