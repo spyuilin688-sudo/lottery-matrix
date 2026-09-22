@@ -66,8 +66,8 @@ describe('首次進站引導', () => {
 
     expect(await screen.findByRole('heading', { name: '會員相關' })).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(screen.getByRole('button', { name: 'LINE 登入' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Google 登入' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'LINE 登入' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Google 登入' })).toBeInTheDocument();
   });
 
   it('知道了僅關閉視窗，首頁 Matrix Core 仍可進入探索', async () => {
