@@ -411,7 +411,6 @@
   box-shadow: none;
   box-sizing: border-box;
   width: calc(100% - 32px);
-  padding-block-start: 1.5px;
   padding-inline: 0;
   justify-content: center;
   margin-block-start: var(--home-gap-draw-status);
