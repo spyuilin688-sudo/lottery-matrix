@@ -79,13 +79,13 @@ describe("homepage requested spacing and selection", () => {
 
     expect(layout.getPropertyValue("--home-feature-inline").trim()).toBe("16px");
     expect(layout.getPropertyValue("--home-feature-gap").trim()).toBe("6px");
-    expect(layout.getPropertyValue("--home-gap-status-core").replaceAll(" ", "")).toBe("clamp(9px,1.35dvh,12px)");
+    expect(layout.getPropertyValue("--home-gap-status-core").replaceAll(" ", "")).toBe("clamp(7px,1.35dvh,10px)");
     expect(layout.getPropertyValue("--home-gap-core-features").replaceAll(" ", "")).toBe("var(--home-gap-status-core)");
-    expect(lotteryScreen.getPropertyValue("--home-gap-logo-announcement").replaceAll(" ", "")).toBe("8px");
-    expect(lotteryScreen.getPropertyValue("--home-gap-announcement-switcher").replaceAll(" ", "")).toBe("8px");
+    expect(lotteryScreen.getPropertyValue("--home-gap-logo-announcement").replaceAll(" ", "")).toBe("clamp(5px,0.8dvh,8px)");
+    expect(lotteryScreen.getPropertyValue("--home-gap-announcement-switcher").replaceAll(" ", "")).toBe("clamp(6px,0.9dvh,8px)");
     expect(getComputedStyle(document.querySelector(".home-announcement")!).height).toBe("26px");
     expect(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").replaceAll(" ", "")).toBe("clamp(7px,calc(0.9dvh+1px),9px)");
-    expect(lotteryScreen.getPropertyValue("--home-gap-draw-status").replaceAll(" ", "")).toBe("clamp(9px,calc(1.15dvh+1px),12px)");
+    expect(lotteryScreen.getPropertyValue("--home-gap-draw-status").replaceAll(" ", "")).toBe("clamp(7px,calc(1.15dvh+1px),10px)");
     expect(bottomGroup.getPropertyValue("--home-core-width").trim()).toContain("- 32px");
     expect(getComputedStyle(document.querySelector(".matrix-status-section")!).paddingInline).toBe("0px");
     const shortcutImage = getComputedStyle(document.querySelector(".home-shortcut img")!);
