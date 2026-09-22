@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {PGlite} from '@electric-sql/pglite';
 const sql=readFileSync(new URL('../supabase/migrations/20260920233444_recovery_dynamic_slots.sql',import.meta.url),'utf8');
+const primarySql=readFileSync(new URL('../supabase/migrations/20260921072423_dynamic_primary_worker_schedule.sql',import.meta.url),'utf8');
 const refreshSql=readFileSync(new URL('../supabase/migrations/20260921075225_refresh_watchdog_after_recovery.sql',import.meta.url),'utf8');
+const dedupeSql=readFileSync(new URL('../supabase/migrations/20260922190000_dedupe_primary_recovery_dispatch.sql',import.meta.url),'utf8');
 async function fixture(){
  const db=new PGlite();
  await db.exec(`create role anon; create role authenticated; create role service_role;
@@ -27,7 +29,9 @@ async function fixture(){
  create function net.http_post(url text,headers jsonb,body jsonb,timeout_milliseconds int) returns bigint language plpgsql as $$begin insert into net.requests values(url,body);return 1;end$$;
  select cron.schedule('matrix-admin-watchdog-v1','3-59/10 * * * *','old');`);
  await db.exec(sql);
+ await db.exec(primarySql);
  await db.exec(refreshSql);
+ await db.exec(dedupeSql);
  return db;
 }
 const scalar=async(db,q,p=[])=>Object.values((await db.query(q,p)).rows[0])[0];
@@ -41,6 +45,25 @@ test('exact fifty-minute slots and extra checks retain their original cycle',asy
  assert.deepEqual(f.slice(27),['2026-09-21 14:00','2026-09-21 14:50','2026-09-21 15:40','2026-09-21 16:30','2026-09-21 17:20','2026-09-22 00:00','2026-09-22 06:00']);
  assert.ok(!e.includes('2026-09-22 06:00'));assert.ok(!f.includes('2026-09-21 18:00'));
 });
+test('recovery dispatch clocks exclude every primary clock but retain recovery-only checkpoints',async t=>{
+ const db=await fixture();t.after(()=>db.close());
+ const read=async group=>(await db.query(`select to_char(slot at time zone 'Asia/Taipei','YYYY-MM-DD HH24:MI') t from private.matrix_recovery_dispatch_slots($1,'2026-09-21') slot`,[group])).rows.map(r=>r.t);
+ assert.deepEqual(await read('evening'),[
+  '2026-09-22 01:50','2026-09-22 02:40','2026-09-22 04:20','2026-09-22 05:10','2026-09-22 12:00','2026-09-22 18:00',
+ ]);
+ assert.deepEqual(await read('fantasy5'),[
+  '2026-09-21 14:50','2026-09-21 15:40','2026-09-21 17:20','2026-09-22 00:00','2026-09-22 06:00',
+ ]);
+});
+
+test('an overlapping daily start dispatches primary only even when recovery runs first',async t=>{
+ const db=await fixture();t.after(()=>db.close());
+ await db.query("select private.matrix_recovery_tick('fantasy5','2030-09-21T09:30:00+08')");
+ await db.query("select private.matrix_primary_tick('fantasy5','2030-09-21T09:30:00+08')");
+ assert.equal(await scalar(db,'select count(*) from net.requests'),1);
+ assert.match(await scalar(db,'select url from net.requests limit 1'),/matrix-primary$/);
+ assert.equal(await scalar(db,"select schedule from cron.job where jobname='matrix-recovery-next-fantasy5'"),'50 06 * * *');
+});
 test('old poller is removed and the two daily starts remain',async t=>{
  const db=await fixture();t.after(()=>db.close());
  assert.equal(await scalar(db,"select count(*) from cron.job where jobname='matrix-admin-watchdog-v1'"),0);
@@ -48,7 +71,7 @@ test('old poller is removed and the two daily starts remain',async t=>{
 });
 test('completion cancels the matching cycle and no new check is dispatched',async t=>{
  const db=await fixture();t.after(()=>db.close());
- await db.query("select private.matrix_recovery_tick('fantasy5','2030-09-21T09:30:00+08')");
+ await db.query("select private.matrix_recovery_tick('fantasy5','2030-09-21T14:50:00+08')");
  assert.equal(await scalar(db,'select count(*) from net.requests'),1);
  await db.exec("insert into lottery_draws values('天天樂','42','2030-09-21','confirmed');insert into private.test_chain values('天天樂','42',true)");
  assert.equal(await scalar(db,"select public.matrix_recovery_complete('天天樂','42')"),true);
@@ -56,12 +79,12 @@ test('completion cancels the matching cycle and no new check is dispatched',asyn
  await db.query("select private.matrix_recovery_tick('fantasy5','2030-09-22T00:00:00+08')");
  assert.equal(await scalar(db,'select count(*) from net.requests'),1);
  assert.deepEqual(await scalar(db,"select public.matrix_recovery_pending('2030-09-22T00:00:00+08')"),[]);
- await db.query("select private.matrix_recovery_tick('fantasy5','2030-09-22T09:30:00+08')");
+ await db.query("select private.matrix_recovery_tick('fantasy5','2030-09-22T14:50:00+08')");
  assert.equal(await scalar(db,'select count(*) from net.requests'),2);
 });
 test('previous-period and preliminary data cannot cancel pending work',async t=>{
  const db=await fixture();t.after(()=>db.close());
- await db.query("select private.matrix_recovery_tick('fantasy5','2026-09-21T09:30:00+08')");
+ await db.query("select private.matrix_recovery_tick('fantasy5','2026-09-21T14:50:00+08')");
  await db.exec("insert into lottery_draws values('天天樂','41','2026-09-20','confirmed');insert into private.test_chain values('天天樂','41',true)");
  assert.equal(await scalar(db,"select public.matrix_recovery_complete('天天樂','41')"),false);
  await db.exec("update lottery_draws set draw_date='2026-09-21',result_status='preliminary'");
@@ -80,7 +103,8 @@ test('no-draw is skipped but an unknown Mark Six calendar is not completion',asy
  const db=await fixture();t.after(()=>db.close());
  await db.exec("insert into private.notification_draw_day_overrides values('今彩539','2026-09-21',false,'manual',null),('大樂透','2026-09-21',false,'manual',null)");
  await db.query("select private.matrix_recovery_tick('evening','2026-09-21T20:30:00+08')");
- const pending=await scalar(db,"select public.matrix_recovery_pending('2026-09-21T20:30:01+08')");
+ await db.query("select private.matrix_recovery_tick('evening','2026-09-22T01:50:00+08')");
+ const pending=await scalar(db,"select public.matrix_recovery_pending('2026-09-22T01:50:01+08')");
  assert.deepEqual(pending.map(r=>r.lottery),['六合彩']);
 });
 test('members cannot forge completion or change schedule',async t=>{
@@ -110,7 +134,7 @@ test('one completed lottery is excluded while the other evening lotteries contin
 });
 test('a late tick skips missed slots instead of starting recovery outside its window',async t=>{
  const db=await fixture();t.after(()=>db.close());
- await db.query("select private.matrix_recovery_tick('fantasy5','2030-09-21T09:30:00+08')");
+ await db.query("select private.matrix_recovery_tick('fantasy5','2030-09-21T14:50:00+08')");
  await db.query("select private.matrix_recovery_tick('fantasy5','2030-09-21T18:00:00+08')");
  assert.equal(await scalar(db,'select count(*) from net.requests'),1);
  assert.equal(await scalar(db,"select schedule from cron.job where jobname='matrix-recovery-next-fantasy5'"),'00 16 * * *');
