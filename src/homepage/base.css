@@ -625,6 +625,7 @@
 
 .home-screen .home-announcement-track {
   display: block;
+  flex: 0 0 auto;
   width: max-content;
   min-width: 100%;
   white-space: nowrap;
@@ -653,7 +654,7 @@
 }
 
 @keyframes home-announcement-marquee {
-  from { transform: translateX(100%); }
+  from { transform: translateX(var(--home-content-width)); }
   to { transform: translateX(-100%); }
 }
 
