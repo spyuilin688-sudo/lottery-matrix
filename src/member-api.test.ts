@@ -45,8 +45,10 @@ const settings = {
   collisionOptions: { 今彩539: ['獨碰二星'], 天天樂: ['獨碰二星'],六合彩: ['獨碰二星'], 大樂透: ['獨碰二星'] },
 } satisfies import('./member-api').MemberNotificationSettings;
 
+let memberSequence = 0;
+
 beforeEach(() => {
-  switchMember('member-a');
+  switchMember(`member-a-${++memberSequence}`);
   supabase.rpc.mockReset().mockResolvedValue({ data: {}, error: null });
   supabase.auth.getSession.mockReset().mockResolvedValue({ data: { session: { access_token: 'token' } }, error: null });
   supabase.auth.getUser.mockReset().mockResolvedValue({ data: { user: { id: 'current-user' } }, error: null });
@@ -126,6 +128,44 @@ describe('member Supabase RPC', () => {
       ['member_bootstrap'],
       ['member_profile'],
     ]);
+  });
+
+  it('reuses one successful bootstrap for the same member session', async () => {
+    const bootstrap = { memberId: 'member-a', lineUserId: 'line-a' };
+    supabase.rpc.mockResolvedValue({ data: bootstrap, error: null });
+
+    await expect(bootstrapMember()).resolves.toEqual(bootstrap);
+    await expect(bootstrapMember()).resolves.toEqual(bootstrap);
+
+    expect(supabase.rpc).toHaveBeenCalledTimes(1);
+    expect(supabase.rpc).toHaveBeenCalledWith('member_bootstrap');
+  });
+
+  it('shares one in-flight bootstrap for concurrent callers in the same session', async () => {
+    const pending = deferred<unknown>();
+    supabase.rpc.mockReturnValueOnce(pending.promise);
+
+    const first = bootstrapMember();
+    const second = bootstrapMember();
+    await vi.waitFor(() => expect(supabase.rpc).toHaveBeenCalledTimes(1));
+    pending.resolve({ data: { memberId: 'member-a', lineUserId: 'line-a' }, error: null });
+
+    await expect(Promise.all([first, second])).resolves.toEqual([
+      { memberId: 'member-a', lineUserId: 'line-a' },
+      { memberId: 'member-a', lineUserId: 'line-a' },
+    ]);
+    expect(supabase.rpc).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not reuse a failed bootstrap attempt', async () => {
+    const failure = new Error('BOOTSTRAP_TEMPORARY_FAILURE');
+    supabase.rpc
+      .mockResolvedValueOnce({ data: null, error: failure })
+      .mockResolvedValueOnce({ data: { memberId: 'member-a', lineUserId: 'line-a' }, error: null });
+
+    await expect(bootstrapMember()).rejects.toBe(failure);
+    await expect(bootstrapMember()).resolves.toEqual({ memberId: 'member-a', lineUserId: 'line-a' });
+    expect(supabase.rpc).toHaveBeenCalledTimes(2);
   });
 
   it('loads the current member referral summary and submits a referral through member-only RPCs', async () => {
