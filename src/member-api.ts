@@ -135,8 +135,30 @@ async function memberSessionStableRpc<T>(name: string) {
   }
 }
 
+let bootstrapScope: number | null = null;
+let bootstrapInFlight: Promise<MemberBootstrapResponse> | null = null;
+let bootstrapResult: MemberBootstrapResponse | null = null;
+
 export function bootstrapMember() {
-  return memberSessionStableRpc<MemberBootstrapResponse>('member_bootstrap');
+  const scope = getAlgorithmCacheScope();
+  if (bootstrapScope !== scope) {
+    bootstrapScope = scope;
+    bootstrapInFlight = null;
+    bootstrapResult = null;
+  }
+  if (bootstrapResult) return Promise.resolve(bootstrapResult);
+  if (bootstrapInFlight) return bootstrapInFlight;
+
+  const request = memberSessionStableRpc<MemberBootstrapResponse>('member_bootstrap');
+  bootstrapInFlight = request.then((result) => {
+    if (bootstrapScope === scope && getAlgorithmCacheScope() === scope) {
+      bootstrapResult = result;
+    }
+    return result;
+  }).finally(() => {
+    if (bootstrapScope === scope) bootstrapInFlight = null;
+  });
+  return bootstrapInFlight;
 }
 
 export function fetchMemberProfile() {
