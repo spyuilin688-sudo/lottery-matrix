@@ -47,7 +47,7 @@ export function FirstVisitGuide({ enabled, onNavigate }: { enabled: boolean; onN
                 <br />
                 點擊首頁下方的 Matrix Core，即可開始探索各種類型的版路。
               </>}
-              alternative="Matrix 探索二期基本查詢可直接使用；天衡、較高期數、完整範圍、天衍與天工請先使用 LINE 或 Google 登入。新註冊 LINE 會員另有天衍 2 天、天工 1 天試用。"
+              alternative="Matrix 探索二期、天衡三期基本查詢可直接使用；較高期數、完整範圍、天衍與天工請先使用 LINE 或 Google 登入。新註冊 LINE 會員另有天衍 2 天、天工 1 天試用。"
             />,
         confirmLabel: registeredMemberFreeAccess
           ? '免費註冊'

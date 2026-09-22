@@ -46,7 +46,7 @@ beforeEach(() => {
   sdk.rpc.mockReset().mockResolvedValue({ data: response, error: null });
 });
 
-test('未登入只保留探索二期基本查詢', async () => {
+test('未登入可以使用探索二期基本查詢', async () => {
   await expect(fetchExploreList({
     lottery: '今彩539',
     numberOrder: '依號碼由小到大排序',
@@ -64,11 +64,29 @@ test('未登入只保留探索二期基本查詢', async () => {
   ]);
 });
 
-test('未登入不能使用天衡三期', async () => {
+test('未登入可以使用天衡三期基本查詢', async () => {
   await expect(fetchTianhengList({
     lottery: '今彩539',
     numberOrder: '依號碼由小到大排序',
     explorePeriods: 3,
+    exploreDateOffset: 0,
+    exploreRange: '標準範圍',
+    ruleCount: 1,
+    roadTypes: ['加減'],
+    selectedStreaks: ['準5進6'],
+    sameCode: false,
+  })).resolves.toBeTruthy();
+
+  expect(sdk.rpc.mock.calls.map(([name]) => name)).toEqual([
+    'matrix_tianheng_list',
+  ]);
+});
+
+test('未登入不能直接使用天衡十三期', async () => {
+  await expect(fetchTianhengList({
+    lottery: '今彩539',
+    numberOrder: '依號碼由小到大排序',
+    explorePeriods: 13,
     exploreDateOffset: 0,
     exploreRange: '標準範圍',
     ruleCount: 1,

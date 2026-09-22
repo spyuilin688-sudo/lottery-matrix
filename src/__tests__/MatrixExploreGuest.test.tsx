@@ -3,7 +3,7 @@ import { render } from '../../test/render-with-dialog';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { MatrixExplorePage } from '../features/MatrixExplorePage';
-import { fetchExploreList, fetchExploreValidation, fetchTianyanList, fetchTiangongList } from '../matrix-algorithm-api';
+import { fetchExploreList, fetchExploreValidation, fetchTianhengList, fetchTianhengValidation, fetchTianyanList, fetchTiangongList } from '../matrix-algorithm-api';
 import { resetReadCacheForTests } from '../read-cache';
 import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
 
@@ -55,6 +55,52 @@ test('未登入二期探索可以顯示 RPC 結果', async () => {
 test('訪客可以讀取二期探索驗證過程', async () => {
   sdk.rpc.mockResolvedValue({ data: { ...response, itemId: 'guest-row', validation: { ruleSets: [] } }, error: null });
   await expect(fetchExploreValidation({ lottery: '今彩539', drawPeriod: '115000210', analysisVersion: '115000210:matrix-python-v13' }, 'guest-row', { explorePeriods: 2, exploreRange: '標準範圍' })).resolves.toMatchObject({ itemId: 'guest-row' });
+});
+
+test('訪客可以直接讀取天衡三期清單與驗證過程', async () => {
+  sdk.rpc.mockResolvedValueOnce({ data: { ...response, kind: 'tianheng' }, error: null });
+  await expect(fetchTianhengList({
+    lottery: '今彩539',
+    numberOrder: '依號碼由小到大排序',
+    explorePeriods: 3,
+    exploreDateOffset: 0,
+    exploreRange: '標準範圍',
+    ruleCount: 1,
+    roadTypes: ['拖牌'],
+    selectedStreaks: ['準5進6'],
+    sameCode: false,
+  })).resolves.toMatchObject({ kind: 'tianheng' });
+  expect(sdk.rpc).toHaveBeenLastCalledWith('matrix_tianheng_list', {
+    p_request: expect.objectContaining({ explorePeriods: 3, exploreRange: '標準範圍' }),
+  });
+
+  sdk.rpc.mockResolvedValueOnce({
+    data: { ...response, kind: 'tianheng', itemId: 'guest-tianheng', validation: { ruleSets: [] } },
+    error: null,
+  });
+  await expect(fetchTianhengValidation(
+    { lottery: '今彩539', drawPeriod: '115000210', analysisVersion: '115000210:matrix-python-v13' },
+    'guest-tianheng',
+    { explorePeriods: 3, exploreRange: '標準範圍' },
+  )).resolves.toMatchObject({ kind: 'tianheng', itemId: 'guest-tianheng' });
+  expect(sdk.rpc).toHaveBeenLastCalledWith('matrix_tianheng_validation', {
+    p_request: expect.objectContaining({ itemId: 'guest-tianheng', explorePeriods: 3, exploreRange: '標準範圍' }),
+  });
+});
+
+test('訪客天衡十三期仍要求登入且不送出請求', async () => {
+  await expect(fetchTianhengList({
+    lottery: '今彩539',
+    numberOrder: '依號碼由小到大排序',
+    explorePeriods: 13,
+    exploreDateOffset: 0,
+    exploreRange: '標準範圍',
+    ruleCount: 1,
+    roadTypes: ['拖牌'],
+    selectedStreaks: ['準5進6'],
+    sameCode: false,
+  })).rejects.toMatchObject({ code: 'AUTH_REQUIRED' });
+  expect(sdk.rpc).not.toHaveBeenCalled();
 });
 
 test('session lookup 失敗時不把未知身分降級成匿名查詢', async () => {

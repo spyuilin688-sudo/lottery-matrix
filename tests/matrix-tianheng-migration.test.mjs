@@ -5,6 +5,7 @@ import test from 'node:test';
 const migration = '../supabase/migrations/20260910233000_matrix_tianheng.sql';
 const sql = readFileSync(new URL(migration, import.meta.url), 'utf8');
 const readMigration = name => readFileSync(new URL(`../supabase/migrations/${name}`, import.meta.url), 'utf8');
+const guestAccessSql = readMigration('20260922120600_tianheng_three_period_guest_access.sql');
 const functionDefinition = (source, name) => {
   const escaped = name.replaceAll('.', '\\.');
   const match = source.match(new RegExp(`create(?: or replace)? function ${escaped}\\([^]*?\\$\\$;`, 'i'));
@@ -107,6 +108,13 @@ test('public Tianheng wrappers use the unchanged request guard with only two new
     assert.ok(sql.includes(`revoke all on function private.matrix_tianheng_${operation}_impl(jsonb) from public, anon, authenticated, service_role;`));
   }
   assert.match(sql, /revoke all on function private\.matrix_request_guard\(text,jsonb\) from public,anon,authenticated,service_role/);
+});
+
+test('latest migration restores anonymous Tianheng wrappers without changing higher-period gates', () => {
+  assert.match(guestAccessSql, /grant execute on function public\.matrix_tianheng_list\(jsonb\) to anon;/i);
+  assert.match(guestAccessSql, /grant execute on function public\.matrix_tianheng_validation\(jsonb\) to anon;/i);
+  assert.doesNotMatch(guestAccessSql, /matrix_(?:tianshu|tianyan|tiangong)/i);
+  assert.doesNotMatch(guestAccessSql, /create(?: or replace)? function|alter function|revoke execute/i);
 });
 
 test('active Explore implementations preserve current behavior except the v13 suffix', () => {
