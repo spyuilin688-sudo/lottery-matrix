@@ -566,14 +566,15 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       const ready = new Set<LotteryId>();
       for (const lottery of lotteries) {
         const item = items.get(lottery);
-        if (!item || item.status !== 200 || !("kind" in item.body) || item.body.kind !== "status-summary") {
+        if (!item || item.status !== 200 || !("kind" in item.body) || item.body.kind !== "status-summary" || !("summary" in item.body)) {
           setMatrixStatusLoads((previous) => ({ ...previous, [lottery]: "error" }));
           continue;
         }
+        const summary = (item.body as { summary: MatrixStatusSummary }).summary;
         ready.add(lottery);
         setMatrixStatuses((previous) => ({
           ...previous,
-          [lottery]: toHomepageMatrixStatus(item.body.summary),
+          [lottery]: toHomepageMatrixStatus(summary),
         }));
         setMatrixStatusLoads((previous) => ({ ...previous, [lottery]: "ready" }));
       }
