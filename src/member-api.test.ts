@@ -46,6 +46,7 @@ const settings = {
 } satisfies import('./member-api').MemberNotificationSettings;
 
 beforeEach(() => {
+  switchMember('test-reset');
   switchMember('member-a');
   supabase.rpc.mockReset().mockResolvedValue({ data: {}, error: null });
   supabase.auth.getSession.mockReset().mockResolvedValue({ data: { session: { access_token: 'token' } }, error: null });
