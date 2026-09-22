@@ -23,23 +23,25 @@
 
 API 執行方式見 [services/matrix-api/README.md](services/matrix-api/README.md)。Repository 中的 `railway*.json` 是否生效，須比對正式服務綁定。
 
+正式 Railway 服務應各自綁定對應的 service-specific config file，避免 monorepo 預設 `railway.json` 讓其他服務在 build plan 顯示錯誤的啟動命令；runtime 使用 `uv run --no-dev --no-sync`，依賴安裝與 bytecode 準備留在 Railpack build 階段。
+
 2026-09-22 讀回 AppDeploy 帳號清單時，既有樂彩／預覽 apps 均為 `deleted`。Repository 根目錄 `backend/` 仍有被 PWA 與 Supabase Edge Function 直接引用的共用 TypeScript 模組，因此不能整批視為 legacy；本次僅移除已無 production import 的 AppDeploy root entrypoint、舊 AppDeploy Matrix storage adapter、舊 realtime adapter 與空 `cron.json`。`apps/admin/backend/` 的 `@appdeploy/sdk` 介面由 Supabase `admin-api` import map 映射到 Edge runtime，不能依套件名稱誤判為舊 AppDeploy 部署。 PWA 的會員 bootstrap／profile／notification／online 已由 `src/member-api.ts` 與 `src/member-online-api.ts` 直接呼叫 Supabase RPC；舊 root AppDeploy member HTTP helper 同步退役。
 
 以下為 2026-09-22 讀回的 Railway project `lottery-matrix-production` production 服務：
 
 | 服務 | 實際啟動命令 | 正式設定 |
 | --- | --- | --- |
-| `lottery-matrix` | `uv run python -u -m app.primary_worker --group evening` | cron `10 22 * * *` UTC，僅作隔日 06:10 台北時間每日備援；動態主排程由 Supabase 保存下一時段並派送 |
-| `fantasy5-analysis` | `uv run python -u -m app.analysis_worker --lottery 天天樂` | cron `10 10 * * *` UTC，僅作 18:10 台北時間每日備援；動態主排程由 Supabase 保存下一時段並派送 |
-| `fantasy5-crawler` | `uv run python -u -m app.fantasy5_railway_job` | cron `33 1,2 * * *` UTC；DST gate 選擇一個有效開始時間 |
-| `matrix-public-api` | `uv run python -u -m app.api_server` | 常駐 API，沒有 cron，healthcheck 為 `/health`；既有 Railway domain 維持不變 |
-| recovery server | `uv run python -u -m app.recovery_server` | 常駐補救服務，沒有 cron |
+| `lottery-matrix` | `uv run --no-dev --no-sync python -u -m app.primary_worker --group evening` | cron `10 22 * * *` UTC，僅作隔日 06:10 台北時間每日備援；動態主排程由 Supabase 保存下一時段並派送 |
+| `fantasy5-analysis` | `uv run --no-dev --no-sync python -u -m app.analysis_worker --lottery 天天樂` | cron `10 10 * * *` UTC，僅作 18:10 台北時間每日備援；動態主排程由 Supabase 保存下一時段並派送 |
+| `fantasy5-crawler` | `uv run --no-dev --no-sync python -u -m app.fantasy5_railway_job` | cron `33 1,2 * * *` UTC；DST gate 選擇一個有效開始時間 |
+| `matrix-public-api` | `uv run --no-dev --no-sync python -u -m app.api_server` | 常駐公開查詢 API，沒有 cron，healthcheck 為 `/health`；不提供 `/jobs/*` 執行入口 |
+| `matrix-recovery` | `uv run --no-dev --no-sync python -u -m app.recovery_server` | 常駐 job/recovery 唯一網路 owner，沒有 cron，healthcheck 為 `/health` |
 
 此 production 環境未列出六合彩或大樂透的獨立 Worker；此處列出本次確認的五個主要服務。2026-09-22 平台讀回時，`impartial-wholeness` 與 `lucky-reflection` 均無服務；先前列出的舊驗證／空服務已不在目前 service list。獨立 `matrix-core-review-site` 維持審查站用途，不併入正式 PWA production 服務。2026-09-20 僅調整 repository：舊 `railway.marksix.json`、`railway.lotto649.json` 移除 cron，保留單次手動 Worker 命令；移除已退役的 `deploy/matrix-worker.timer`，保留 `matrix-worker.service` 手動入口，避免未來部署再建立重複排程。未修改正式 Railway 設定。若其他主機已安裝舊 timer，須另行確認後停用；刪除 repository 檔案不會停止既有主機 timer。
 
 `.github/workflows/matrix-analysis.yml` 目前僅接受手動 `workflow_dispatch`，用於復原分析；沒有 `push` 或 GitHub 定時觸發。其 `--scheduled` 是 Worker 執行模式，與 GitHub `schedule` 事件不同。
 
-主 Worker 的 `worker_schedule.plan_run` 已實作晚間 20:30–01:00 每 10 分鐘、01:00–06:00 每 30 分鐘，以及天天樂分析 09:30–14:00 每 10 分鐘、14:00–18:00 每 30 分鐘的純時間策略，但尚未接入 entrypoint；目前仍全天啟動。完整切換須保證崩潰後次日可重新啟動、當期已確認完成、未完成修復與執行中工作不被誤停；本次不擅自調整 cron 或新增控制器。
+正式主流程目前由 Supabase 的動態 primary scheduler 保存各組下一時段並派送；Railway 的 `lottery-matrix` 與 `fantasy5-analysis` 僅保留主時窗結束後的每日 fallback，不再全天輪詢。Recovery 使用獨立的動態時槽，而且實際 dispatch 已排除與 Primary 相同的 clock；同一時點不會同時送出 `/jobs/primary` 與 `/jobs/recover`。
 
 獨立補救已使用 Supabase 原生每日開始與各組下一次時槽：晚間 20:30／天天樂 09:30 開始，前段每 10 分鐘、後段每 50 分鐘；晚間另有隔日 12:00／18:00，天天樂另有隔日 00:00／06:00。完成或確定不開獎即取消當期剩餘檢查。舊 `matrix-admin-watchdog-v1` 全天 poller 已由 `20260920233444_recovery_dynamic_slots.sql` 取代，不能套用主排程的 30 分鐘間隔。
 
