@@ -53,8 +53,6 @@ const CONFIG_OWNERS = {
   'playwright.matrix-tianshu.config.ts': ['tests/matrix-tianshu-layout.spec.ts'],
   'services/matrix-api/railway.json': ['services/matrix-api/tests/test_railway_cron_contract.py', 'services/matrix-api/tests/test_worker_all.py'],
   'services/matrix-api/railway.fantasy5.json': ['services/matrix-api/tests/test_railway_cron_contract.py', 'services/matrix-api/tests/test_worker_all.py', 'services/matrix-api/tests/test_fantasy5_worker_split.py'],
-  'services/matrix-api/railway.fantasy5-crawler.json': ['services/matrix-api/tests/test_railway_cron_contract.py'],
-  'services/matrix-api/railway.public-api.json': ['services/matrix-api/tests/test_railway_cron_contract.py'],
   'services/matrix-api/railway.recovery.json': ['services/matrix-api/tests/test_railway_recovery_contract.py', 'services/matrix-api/tests/test_railway_cron_contract.py'],
   'services/matrix-api/railway.marksix.json': ['services/matrix-api/tests/test_worker_all.py'],
   'services/matrix-api/railway.lotto649.json': ['services/matrix-api/tests/test_worker_all.py'],

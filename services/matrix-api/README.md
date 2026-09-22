@@ -14,9 +14,9 @@ MATRIX_ADMIN_STATUS_TOKEN=<shared-admin-status-token>
 
 ### Public lottery API
 
-Use `railway.public-api.json`.
-
-Start command:
+The live Railway service configuration is authoritative. Do not bind a custom
+`railway.json` / `railway.toml` config file path: Railway has deprecated that
+Config-as-Code mechanism in favor of project IaC. The current start command is:
 
 ```text
 uv run --no-dev --no-sync python -u -m app.api_server
@@ -65,8 +65,10 @@ Recovery reads job, draw, and analysis state and uses a durable lease before
 dispatch. Its schedule is independent of the primary workers.
 
 The watchdog dispatches targeted crawler, analysis, or Matrix-status work to the
-independent Railway recovery service (`app.recovery_server`, configured by
-`railway.recovery.json`). It is the sole Railway network owner for `/jobs/*`
+independent Railway recovery service (`app.recovery_server`). Its live Railway
+service settings are authoritative; the repository's older `railway.recovery.json`
+is retained only as a legacy/manual compatibility artifact and is not bound as a
+custom config file. The recovery service is the sole Railway network owner for `/jobs/*`
 control routes and can invoke the dedicated 天天樂 crawler before resuming
 analysis. The GitHub `fantasy5-crawler.yml` workflow remains a dispatch-only
 fallback; it does not own recurring acquisition or current scheduled recovery.
@@ -79,10 +81,10 @@ Draw ingestion and Matrix analysis are split for 天天樂:
 | --- | --- | --- |
 | Railway `fantasy5-crawler` | `app.fantasy5_railway_job` | Scheduled acquisition; UTC `33 1,2 * * *`, DST gate selects one start, at most 10 attempts 600 seconds apart |
 | GitHub Actions `fantasy5-crawler.yml` (manual fallback only) | `app.fantasy5_crawler` | Fetch, validate, repair recent gaps, and upsert 天天樂 draws only |
-| Railway `railway.fantasy5.json` | `app.analysis_worker --lottery 天天樂` | Read stored 天天樂 draws and process pending Matrix analysis only |
-| Railway `railway.json` | `app.primary_worker --group evening` | One daily fallback for 今彩539、六合彩、大樂透 after the dynamic window |
-| Railway `railway.marksix.json` | `app.worker --lottery 六合彩 --scheduled` | Manual single-run entry; no cron |
-| Railway `railway.lotto649.json` | `app.worker --lottery 大樂透 --scheduled` | Manual single-run entry; no cron |
+| Railway `fantasy5-analysis` | `app.analysis_worker --lottery 天天樂` | Read stored 天天樂 draws and process pending Matrix analysis only; live Railway service settings own the cron/start command |
+| Railway `lottery-matrix` | `app.primary_worker --group evening` | One daily fallback for 今彩539、六合彩、大樂透 after the dynamic window; live Railway service settings own the cron/start command |
+| Repository legacy/manual `railway.marksix.json` | `app.worker --lottery 六合彩 --scheduled` | Manual single-run compatibility artifact; no production Railway service is currently bound to it |
+| Repository legacy/manual `railway.lotto649.json` | `app.worker --lottery 大樂透 --scheduled` | Manual single-run compatibility artifact; no production Railway service is currently bound to it |
 
 Both crawler entrypoints use the same acquisition service, validate the source
 date and numbers, repair recent period gaps, and upsert `lottery_draws`. They own
@@ -128,16 +130,13 @@ only one of its two daily UTC starts performs acquisition. It exits after
 `acquired` or `already-acquired`; waiting-source attempts are bounded to 10.
 The GitHub workflow is dispatch-only and uses the same bounded retry count.
 
-`app.worker_schedule.plan_run` expresses the approved primary windows: evening
-20:30–01:00 every 10 minutes, then every 30 minutes before 06:00; 天天樂 analysis
-09:30–14:00 every 10 minutes, then every 30 minutes before 18:00. This pure policy
-is **not connected to production entrypoints** and does not reduce all-day
-Railway starts. The integration plan requires a crash-safe next daily start,
-verified current-cycle completion, preservation of pending repair/in-flight work,
-and independent recovery. No cron or admission change is made by this audit fix.
-See `docs/superpowers/plans/2026-09-21-dynamic-worker-schedule.md` for the open
-integration work. Existing completion certificates already skip heavy analysis
-reads when the current stored results and downstream work are verified complete.
+The formal primary schedule is now owned by Supabase's durable dynamic scheduler:
+evening and Fantasy5 groups store the next primary slot and dispatch only inside
+their configured windows. Railway `lottery-matrix` and `fantasy5-analysis`
+remain one daily post-window fallback each. Recovery uses its own durable slots,
+and actual recovery dispatch excludes every clock already owned by Primary.
+Existing completion certificates still skip heavy work when the current stored
+results and downstream work are verified complete.
 
 ## Supabase data boundary
 
