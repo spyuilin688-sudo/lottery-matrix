@@ -38,8 +38,9 @@ test('active history page uses actual years outside the loaded range and exact l
   await waitFor(() => expect(Array.from((screen.getByRole('combobox', { name: '年份' }) as HTMLSelectElement).options).map(o => o.value)).toEqual(['2027', '2023', '2007']));
   expect(lotteryApi.fetchLotteryHistory).toHaveBeenCalledWith('今彩539', 1);
   expect(lotteryApi.fetchLotteryHistory).toHaveBeenCalledWith('今彩539', 1000);
+  await waitFor(() => expect((screen.getByRole('combobox', { name: '年份' }) as HTMLSelectElement).value).toBe('2027'));
   fireEvent.change(screen.getByRole('combobox', { name: '年份' }), { target: { value: '2007' } });
-  expect((screen.getByRole('combobox', { name: '年份' }) as HTMLSelectElement).value).toBe('2007');
+  await waitFor(() => expect((screen.getByRole('combobox', { name: '年份' }) as HTMLSelectElement).value).toBe('2007'));
 });
 
 

@@ -29,7 +29,7 @@ test('engineering handoff describes the current production architecture instead 
 });
 
 
-test('dormant root AppDeploy entrypoints and adapters stay removed', () => {
+test('dormant AppDeploy entrypoints, adapters, and cron ownership stay removed', () => {
   for (const path of [
     'backend/index.ts',
     'backend/matrix-analysis-store.ts',
@@ -45,6 +45,7 @@ test('dormant root AppDeploy entrypoints and adapters stay removed', () => {
     'backend/member-bootstrap-routes.ts',
     'backend/member-route-handlers.ts',
     'cron.json',
+    'apps/admin/cron.json',
   ]) {
     assert.equal(exists(path), false, `retired AppDeploy source returned: ${path}`);
   }
