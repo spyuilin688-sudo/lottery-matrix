@@ -35,10 +35,11 @@ const supabase = vi.hoisted(() => {
       return { data: { subscription: { unsubscribe } } };
     }),
   };
+  const client = { auth };
   return {
     auth,
     emitAuthState: (event: string, session: unknown) => authStateListener?.(event, session),
-    getClient: vi.fn(() => ({ auth })),
+    getClient: vi.fn(() => client),
     resetAuthStateListener: () => { authStateListener = null; },
     unsubscribe,
   };
