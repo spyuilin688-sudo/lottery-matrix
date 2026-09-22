@@ -211,7 +211,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   }, [useDirectLineBrowserLink]);
   useEffect(() => {
     if (memberSession.status === "checking") {
-      if (authState !== "signing-in" && authState !== "signing-out") setAuthState("initializing");
+      setAuthState((current) => current === "signing-in" || current === "signing-out" ? current : "initializing");
       return;
     }
     if (memberSession.status === "error") {
@@ -242,7 +242,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
     if (consumeLineLoginAttempt({ hasSession: Boolean(session) })) {
       void alertDialog({ title: "登入成功", tone: "success" });
     }
-  }, [alertDialog, memberSession, authState]);
+  }, [alertDialog, memberSession]);
   useEffect(() => {
     if (authState !== "authenticated") {
       if (authState === "anonymous" || authState === "degraded") setMemberProfile(null);
