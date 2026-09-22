@@ -567,12 +567,15 @@ async function cachedMatrixResultRpc<T extends { lottery: NumberBallLottery; ana
   request: unknown,
 ): Promise<T> {
   const client = getSupabaseClient();
-  // Only the legacy Matrix Explore two-period read remains public. Tianheng,
-  // higher Explore periods, full range, Tianyan and Tiangong require a member session;
-  // the database remains authoritative for that member's actual entitlement.
+  // Matrix Explore two-period and Tianheng three-period reads are public.
+  // Higher periods, full range, Tianyan and Tiangong still require a member session;
+  // the database remains authoritative for period/range entitlement checks.
+  const explorePeriods = (request as { explorePeriods?: number }).explorePeriods;
   const sessionOptions = {
-    allowGuest: (name === 'matrix_explore_list' || name === 'matrix_explore_validation')
-      && (request as { explorePeriods?: number }).explorePeriods === 2,
+    allowGuest: (
+      ((name === 'matrix_explore_list' || name === 'matrix_explore_validation') && explorePeriods === 2)
+      || ((name === 'matrix_tianheng_list' || name === 'matrix_tianheng_validation') && explorePeriods === 3)
+    ),
   };
   const scope = await readAlgorithmCacheScope(client, sessionOptions);
   const permissionSettings = await readPermissionSettings();
@@ -649,6 +652,7 @@ export function fetchTianhengValidation(
   return directMatrixValidationRpc<TianhengValidationResponse>(
     'matrix_tianheng_validation',
     { ...meta, itemId, ...access },
+    { allowGuest: access.explorePeriods === 3 },
   );
 }
 
