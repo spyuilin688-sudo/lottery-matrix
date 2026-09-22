@@ -1,11 +1,7 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 
-const cron = JSON.parse(readFileSync(
-  new URL('../apps/admin/cron.json', import.meta.url),
-  'utf8',
-));
 const backend = readFileSync(
   new URL('../apps/admin/backend/index.ts', import.meta.url),
   'utf8',
@@ -23,13 +19,8 @@ const watchdogLeaseMigration = readFileSync(
   'utf8',
 );
 
-test('AppDeploy owns one independent ten-minute Matrix watchdog', () => {
-  assert.deepEqual(cron, [{
-    name: 'matrix-independent-watchdog-v3',
-    cron: '3/10 * * * *',
-    handler: 'matrixIndependentWatchdog',
-    timezone: 'Asia/Taipei',
-  }]);
+test('retired AppDeploy cron stays removed while the shared watchdog handler remains available to Supabase', () => {
+  assert.equal(existsSync(new URL('../apps/admin/cron.json', import.meta.url)), false);
   assert.match(backend, /export async function matrixIndependentWatchdog/);
 });
 
