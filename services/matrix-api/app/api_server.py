@@ -92,40 +92,71 @@ def _parse_lottery(value: Any) -> str:
     return lottery
 
 
-def _latest_result_event(repository: AnalysisRepository) -> dict[str, Any] | None:
+def _latest_completed_results(repository: AnalysisRepository) -> dict[str, Any]:
     client = getattr(repository, "client", None)
     if client is None:
-        return None
-    response = (
-        client.table("notification_events")
-        .select("payload")
-        .eq("event_type", "lottery_result")
-        .order("created_at", desc=True)
+        return {"drawDate": None, "items": []}
+
+    latest_response = (
+        client.table("lottery_draws")
+        .select("lottery,period,draw_date,result_status")
+        .eq("result_status", "confirmed")
+        .order("draw_date", desc=True, nullsfirst=False)
+        .order("period", desc=True)
         .limit(1)
         .execute()
     )
-    rows = response.data if isinstance(response.data, list) else []
-    if not rows:
-        return None
-    row = rows[0]
-    payload = row.get("payload") if isinstance(row, dict) else None
+    latest_rows = latest_response.data if isinstance(latest_response.data, list) else []
+    if not latest_rows:
+        return {"drawDate": None, "items": []}
+
+    latest_date = str(latest_rows[0].get("draw_date") or "") if isinstance(latest_rows[0], dict) else ""
     try:
-        if not isinstance(payload, dict):
-            raise ValueError("payload")
-        lottery = _parse_lottery(payload.get("lottery"))
-        draw_date = str(payload.get("drawDate") or "")
-        if date.fromisoformat(draw_date).isoformat() != draw_date:
-            raise ValueError("drawDate")
-        raw_numbers = payload.get("numbers")
-        main_count = 5 if lottery in {"今彩539", "天天樂"} else 6
-        if not isinstance(raw_numbers, list) or len(raw_numbers) < main_count:
-            raise ValueError("numbers")
-        numbers = [_normalize_number(value) for value in raw_numbers[:main_count]]
-        if len(set(numbers)) != main_count:
-            raise ValueError("numbers")
-    except (TypeError, ValueError) as error:
-        raise RuntimeError("LATEST_RESULT_EVENT_INVALID") from error
-    return {"lottery": lottery, "drawDate": draw_date, "numbers": numbers}
+        if date.fromisoformat(latest_date).isoformat() != latest_date:
+            raise ValueError("draw_date")
+    except ValueError as error:
+        raise RuntimeError("LATEST_RESULT_DRAW_INVALID") from error
+
+    response = (
+        client.table("lottery_draws")
+        .select("lottery,period,draw_date,result_status")
+        .eq("result_status", "confirmed")
+        .eq("draw_date", latest_date)
+        .order("period", desc=True)
+        .execute()
+    )
+    rows = response.data if isinstance(response.data, list) else []
+    latest_by_lottery: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            raise RuntimeError("LATEST_RESULT_DRAW_INVALID")
+        lottery = str(row.get("lottery") or "")
+        if lottery not in LOTTERIES or lottery in latest_by_lottery:
+            continue
+        latest_by_lottery[lottery] = row
+
+    items: list[dict[str, str]] = []
+    for lottery in ("今彩539", "天天樂", "大樂透", "六合彩"):
+        row = latest_by_lottery.get(lottery)
+        if row is None:
+            continue
+        period = str(row.get("period") or "")
+        if not period:
+            raise RuntimeError("LATEST_RESULT_DRAW_INVALID")
+        chain = client.rpc("matrix_watchdog_chain_state", {
+            "p_lottery": lottery,
+            "p_draw_period": period,
+        }).execute().data
+        if not isinstance(chain, dict):
+            raise RuntimeError("LATEST_RESULT_CHAIN_INVALID")
+        if (
+            str(chain.get("latestPeriod") or "") == period
+            and chain.get("analysisComplete") is True
+            and chain.get("matrixStatusComplete") is True
+        ):
+            items.append({"lottery": lottery})
+
+    return {"drawDate": latest_date, "items": items}
 
 
 def _parse_recovery_lease_owner(value: Any) -> str:
@@ -726,7 +757,7 @@ def handle_api_request(
                 # Keep the pre-PNG manifest for installed PWA clients.
                 return 200, _card_manifest(lottery, repository)
         if method == "GET" and path == "/api/matrix/latest-result":
-            return 200, {"item": _latest_result_event(repository)}
+            return 200, _latest_completed_results(repository)
         latest_prefix = "/api/matrix/latest/"
         years_prefix = "/api/matrix/history-years/"
         if method == "GET" and path.startswith(years_prefix):
