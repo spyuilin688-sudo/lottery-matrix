@@ -1298,7 +1298,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .auto-renew-setting input { width: 18px; height: 18px; margin: 0; accent-color: #d6a42b; }
 .auto-renew-setting strong { color: #9f988e; font-size: 12px; font-weight: 600; }
 .auto-renew-setting strong[data-active="true"] { color: #e5c36e; }
-.auto-renew-note { margin: 0; padding-top: 2px; color: #9f988e; font-size: 11px; line-height: 1.55; }
 .confirm-payment:not(.branded-explore-action) { width: 100%; min-height: 48px; border: 1px solid var(--pwa-frame-primary); border-radius: var(--pwa-frame-radius); background: var(--pwa-control-selected); color: var(--pwa-frame-secondary); font-size: 16px; font-weight: 750; box-shadow: none; }
 .payment-note { margin: 0; color: #9f988e; font-size: 11px; text-align: center; }
 .about-matrix-card { padding: 18px 16px; }
@@ -2061,11 +2060,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .pro-plans-screen .auto-renew-setting {
   min-height: 36px;
-}
-.pro-plans-screen .auto-renew-note {
-  padding-top: 0;
-  font-size: 9px;
-  line-height: 1.4;
 }
 .matrix-explore-setting-icon { display: block; object-fit: contain; border-radius: 6px; }
 .feature-screen,

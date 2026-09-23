@@ -71,7 +71,7 @@
   min-height: 29px;
 }
 
-.pro-plans-screen .renewal-card :is(h2, dt, dd, .auto-renew-setting label, .auto-renew-setting strong, .auto-renew-note) {
+.pro-plans-screen .renewal-card :is(h2, dt, dd, .auto-renew-setting label, .auto-renew-setting strong) {
   font-weight: 700;
 }
 
@@ -100,4 +100,3 @@
 .pro-plans-screen .payment-note {
   font-size: 11px;
 }
-

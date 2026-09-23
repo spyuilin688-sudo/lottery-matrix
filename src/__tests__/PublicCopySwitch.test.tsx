@@ -260,10 +260,17 @@ test('三種方案與指南的共同權限一致，輪播複本不重複列出�
   const guide = render(<MatrixGuidePage onNavigate={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: '16Matrix Pro' }));
   requested.forEach(text => expect(guide.container.querySelector('.guide-preview')?.textContent).toContain(text));
+  expect(guide.container.querySelector('.guide-preview')?.textContent).not.toContain('Matrix Pro 一次付款採用綠界金流；額度用滿後改為人工轉帳與後台開通。自動續訂未開放。');
+  fireEvent.click(screen.getByRole('button', { name: '04Matrix 探索' }));
+  expect(guide.container.querySelector('.guide-preview')?.textContent).toContain('十三期與完整範圍依目前帳號權限開放。');
 });
 
-test.each([ServiceInfoPage, MemberTermsPage, RefundPolicyPage])('%s 說明綠界一次付款、額度備援與自動續訂狀態', Page => {
+test.each([ServiceInfoPage, MemberTermsPage, RefundPolicyPage, PrivacyPolicyPage, DisclaimerPage])('%s 不再顯示過時的付款說明', Page => {
   const view = render(<Page onNavigate={vi.fn()} />);
-  expect(view.container.textContent).toContain('Matrix Pro 一次付款採用綠界金流；額度用滿後改為人工轉帳與後台開通。自動續訂未開放。');
+  expect(view.container.textContent).not.toContain('Matrix Pro 一次付款採用綠界金流；額度用滿後改為人工轉帳與後台開通。自動續訂未開放。');
+  expect(view.container.textContent).not.toContain('訂閱付款將採用綠界金流，目前尚未開放。');
   expect(view.container.textContent).not.toContain('使用者可自行選擇是否開啟自動續訂。');
+  if (Page === PrivacyPolicyPage || Page === DisclaimerPage) {
+    expect(view.container.textContent).toContain('訂閱付款使用綠界金流。');
+  }
 });
