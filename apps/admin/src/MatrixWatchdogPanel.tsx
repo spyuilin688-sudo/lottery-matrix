@@ -1,7 +1,7 @@
 import {sanitizeWatchdogStatus,watchdogObservation} from '../backend/watchdog-status';
 import type {ChainStage,StageState} from '../backend/matrix-chain';
 import {formatAdminDateTime} from './admin-operations';
-const stageNames:Record<ChainStage,string> = {schedule:'排程執行',job:'工作',crawler:'爬蟲',draw:'開獎資料',analysis:'分析','matrix-status':'Matrix 狀態'};
+const stageNames:Record<ChainStage,string> = {schedule:'排程執行',job:'工作',crawler:'爬蟲',draw:'開獎資料',analysis:'分析','matrix-status':'Matrix 狀態',card:'牌單'};
 const stateNames:Record<StageState,string> = {PASS:'已驗證',FAIL:'異常',WAITING:'等待',UNKNOWN:'證據不足'};
 const tones:Record<StageState,string> = {PASS:'good',FAIL:'bad',WAITING:'warning',UNKNOWN:'limited'};
 const outcomes = {'accepted':'已受理，等待資料驗證','already-running':'執行中，未重複啟動','lease-held':'其他工作持有執行鎖','dispatched':'已派送，等待資料驗證','config-missing':'恢復設定不足','failed':'恢復請求失敗'};
