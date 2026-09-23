@@ -48,6 +48,8 @@ ul { margin: 0; padding: 0; list-style: none; }
   padding-block: clamp(70px, 9vw, 112px);
 }
 .hero-copy { min-width: 0; }
+.hero-side { display: grid; justify-items: center; min-width: 0; gap: 4px; }
+.hero-logo { display: block; width: min(100%, 310px); height: auto; mix-blend-mode: screen; }
 .eyebrow, .section-kicker { color: var(--gold-light); font-size: 12px; font-weight: 700; letter-spacing: .09em; }
 .hero h1 { margin-top: 17px; font-size: clamp(42px, 5vw, 62px); font-weight: 700; letter-spacing: -.055em; line-height: 1.26; }
 .hero h1 span { color: var(--gold-light); }
@@ -62,7 +64,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .text-link:hover { color: var(--gold-light); }
 .text-link span { margin-left: 6px; color: var(--gold-light); }
 
-.lottery-panel { min-width: 0; padding: 23px; border: 1px solid rgba(196, 145, 69, .46); border-radius: 10px; background: var(--surface); }
+.lottery-panel { width: 100%; min-width: 0; padding: 23px; border: 1px solid rgba(196, 145, 69, .46); border-radius: 10px; background: var(--surface); }
 .lottery-kicker { color: var(--gold-light); font-size: 12px; font-weight: 650; letter-spacing: .055em; }
 .lottery-panel h2 { margin: 4px 0 16px; font-size: 18px; font-weight: 650; letter-spacing: -.025em; }
 .lottery-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
@@ -94,6 +96,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 
 @media (max-width: 800px) {
   .hero { grid-template-columns: 1fr; gap: 34px; }
+  .hero-side { justify-items: start; }
   .lottery-panel { width: min(100%, 500px); }
 }
 
@@ -102,6 +105,8 @@ ul { margin: 0; padding: 0; list-style: none; }
   .brand-name { font-size: 16px; }
   .site-nav > a:not(.header-link) { display: none; }
   .hero { gap: 30px; padding-block: 39px 50px; }
+  .hero-side { justify-items: center; gap: 0; width: 100%; }
+  .hero-logo { width: min(100%, 240px); }
   .hero h1 { margin-top: 13px; font-size: clamp(30px, 8vw, 36px); line-height: 1.29; }
   .hero-lead { margin-top: 16px; font-size: 15px; line-height: 1.7; }
   .hero-actions { gap: 18px; margin-top: 23px; }
