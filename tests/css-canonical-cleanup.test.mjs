@@ -61,9 +61,8 @@ test('semantic field variants no longer require important priority', () => {
   assert.equal(important.length, 2);
   assert.ok(important.every(([file, property, selector]) => file === 'src/styles.css' && property === 'cursor' && selector.includes('.device-screen')));
   const file = 'src/feature-pages.css';
-  assert.equal(rule(file, '.manual-transfer-bank-row')['grid-template-columns'], 'minmax(84px, auto) minmax(0, 1fr) auto');
-  assert.equal(rule(file, '.manual-transfer-screen .detail-card dl > div:not(.manual-transfer-bank-row)')['grid-template-columns'], 'minmax(84px, auto) minmax(0, 1fr)');
-  assert.equal(rule(file, '.manual-transfer-copy').height, '28px');
+  assert.equal(rule(file, '.manual-transfer-screen .detail-card dl > div')['grid-template-columns'], 'minmax(84px, auto) minmax(0, 1fr)');
+  assert.equal(rule(file, '.manual-transfer-account')['overflow-wrap'], 'anywhere');
   assert.equal(rule(file, '.manual-transfer-last-five').height, '36px');
   assert.equal(rule(file, '.manual-transfer-submit.confirm-payment')['min-height'], '34px');
 });
