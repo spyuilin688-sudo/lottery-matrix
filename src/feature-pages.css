@@ -605,6 +605,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .history-pagination button { display: grid; width: 32px; height: 30px; padding: 0; place-items: center; border: 0; background: transparent; color: #e2b64b; }
 .history-pagination button:disabled { color: #5f574a; }
 .history-pagination span { width: 68px; font-size: 12px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
+.draw-history-week-list:focus-visible { outline: 2px solid var(--lottery-gold-300); outline-offset: 2px; }
 .draw-history-row .mini-ball { width: 25px; height: 25px; font-size: 9px; }
 .history-filter-trigger {
   display: flex;
