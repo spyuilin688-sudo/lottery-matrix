@@ -226,6 +226,12 @@ function PatchedDrawHistoryPage({
     setDay(`${match[3]}日`);
   }, [dateFilterTouched, latestSelectedDate, lottery, setDay, setMonth, setYear]);
 
+  const changePage = (event: React.MouseEvent<HTMLButtonElement>, direction: -1 | 1) => {
+    setPage((current) => current + direction);
+    const scrollContainer = event.currentTarget.closest<HTMLElement>(".mobile-scroll");
+    if (scrollContainer) scrollContainer.scrollTop = 0;
+  };
+
   const changeLottery = (value: LotteryId) => {
     setLottery(value);
     setAppliedHistorySettings((current) => ({ ...current, lottery: value, numberOrder: normalizeLotteryOrder(value, current.numberOrder, "依號碼由小到大排序") }));
@@ -309,7 +315,7 @@ function PatchedDrawHistoryPage({
           })}
         </div>
       </div>
-      {paginatedHistory.totalPages > 1 ? <nav className="history-pagination" aria-label="歷史開獎紀錄分頁"><button type="button" aria-label="上一頁" disabled={paginatedHistory.currentPage === 1} onClick={() => setPage((current) => current - 1)}><ChevronLeftIcon aria-hidden="true" /></button><span>{paginatedHistory.currentPage} / {paginatedHistory.totalPages}</span><button type="button" aria-label="下一頁" disabled={paginatedHistory.currentPage === paginatedHistory.totalPages} onClick={() => setPage((current) => current + 1)}><ChevronRightIcon aria-hidden="true" /></button></nav> : null}
+      {paginatedHistory.totalPages > 1 ? <nav className="history-pagination" aria-label="歷史開獎紀錄分頁"><button type="button" aria-label="上一頁" disabled={paginatedHistory.currentPage === 1} onClick={(event) => changePage(event, -1)}><ChevronLeftIcon aria-hidden="true" /></button><span>{paginatedHistory.currentPage} / {paginatedHistory.totalPages}</span><button type="button" aria-label="下一頁" disabled={paginatedHistory.currentPage === paginatedHistory.totalPages} onClick={(event) => changePage(event, 1)}><ChevronRightIcon aria-hidden="true" /></button></nav> : null}
     </ToolFeatureShell>
   );
 }

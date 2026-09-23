@@ -57,6 +57,12 @@ export function DrawHistoryPage({
     if (page !== paginatedHistory.currentPage) setPage(paginatedHistory.currentPage);
   }, [page, paginatedHistory.currentPage]);
 
+  const changePage = (event: React.MouseEvent<HTMLButtonElement>, direction: -1 | 1) => {
+    setPage((current) => current + direction);
+    const scrollContainer = event.currentTarget.closest<HTMLElement>(".mobile-scroll");
+    if (scrollContainer) scrollContainer.scrollTop = 0;
+  };
+
   const applyHistoryFilters = () => {
     setAppliedFilters({
       issue: "",
@@ -204,11 +210,11 @@ export function DrawHistoryPage({
       </div>
       {paginatedHistory.totalPages > 1 ? (
         <nav className="history-pagination" aria-label="歷史開獎紀錄分頁">
-          <button type="button" aria-label="上一頁" disabled={paginatedHistory.currentPage === 1} onClick={() => setPage((current) => current - 1)}>
+          <button type="button" aria-label="上一頁" disabled={paginatedHistory.currentPage === 1} onClick={(event) => changePage(event, -1)}>
             <ChevronLeftIcon aria-hidden="true" />
           </button>
           <span>{paginatedHistory.currentPage} / {paginatedHistory.totalPages}</span>
-          <button type="button" aria-label="下一頁" disabled={paginatedHistory.currentPage === paginatedHistory.totalPages} onClick={() => setPage((current) => current + 1)}>
+          <button type="button" aria-label="下一頁" disabled={paginatedHistory.currentPage === paginatedHistory.totalPages} onClick={(event) => changePage(event, 1)}>
             <ChevronRightIcon aria-hidden="true" />
           </button>
         </nav>
