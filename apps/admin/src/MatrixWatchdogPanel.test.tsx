@@ -22,7 +22,7 @@ it('shows independent source freshness and the approved cadence',()=>{
  expect(screen.getByText('資料庫最近檢查').nextElementSibling?.textContent).toBe('尚無紀錄');
 });
 
-const passedReport = {lottery:'今彩539',drawPeriod:'115000228',checkedAt:'2026-09-19T21:34:49Z',stages:['schedule','job','crawler','draw','analysis','matrix-status'].map(stage=>({stage,state:'PASS',period:'115000228',observedAt:'2026-09-19T21:34:49Z',source:'test',code:'PASS'}))};
+const passedReport = {lottery:'今彩539',drawPeriod:'115000228',checkedAt:'2026-09-19T21:34:49Z',stages:['schedule','job','crawler','draw','analysis','matrix-status','card'].map(stage=>({stage,state:'PASS',period:'115000228',observedAt:'2026-09-19T21:34:49Z',source:'test',code:'PASS'}))};
 it('does not describe a passed chain as an unlocated fault',()=>{
  render(<MatrixWatchdogPanel detail={{status:'ok',checkedAt:'2026-09-19T21:34:49Z',completedAt:'2026-09-19T21:34:50Z',reports:[passedReport]}} now={new Date('2026-09-19T21:35:00Z')}/>);
  expect(screen.queryByText(/尚未定位故障層/)).toBeNull();

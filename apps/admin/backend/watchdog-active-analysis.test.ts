@@ -8,7 +8,12 @@ describe('watchdog active analysis resolution', () => {
   it('shows a missing published card as a failed stage and dispatches card repair', async () => {
     const period = '115000215';
     const request = vi.fn(async (path: string) => {
-      if (path === 'rpc/matrix_watchdog_draw_days') return { 今彩539: ['2026-09-04'] };
+      if (path === 'rpc/matrix_watchdog_draw_days') return {
+        今彩539: ['2026-09-04'],
+        天天樂: ['2026-09-04'],
+        六合彩: ['2026-09-04'],
+        大樂透: ['2026-09-04'],
+      };
       if (path.startsWith('system_job_status?')) return [];
       if (path.startsWith('lottery_draws?')) return [{
         period, draw_date: '2026-09-04', result_status: 'confirmed',
