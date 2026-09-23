@@ -75,12 +75,12 @@ describe('data page request failures are not normal empty data', () => {
     expect(await screen.findByText('recovered')).toBeVisible();
   });
 
-  test('歷史開獎號碼 API 失敗時顯示 error + retry', async () => {
+  test('歷史開獎紀錄 API 失敗時顯示 error + retry', async () => {
     lotteryApi.fetchLotteryHistory.mockRejectedValue(new Error('history offline'));
     render(<FeaturePageRouter screen="history" onNavigate={vi.fn()} />);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('歷史開獎號碼載入失敗');
-    expect(screen.getByRole('button', { name: '重新載入歷史開獎號碼' })).toBeEnabled();
+    expect(await screen.findByRole('alert')).toHaveTextContent('歷史開獎紀錄載入失敗');
+    expect(screen.getByRole('button', { name: '重新載入歷史開獎紀錄' })).toBeEnabled();
   });
 
   test('Matrix 同星 API 失敗時顯示 error + retry', async () => {

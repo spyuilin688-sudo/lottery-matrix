@@ -41,7 +41,7 @@ test("Tiangong second-stage rows keep their matching icons with unified labels",
 });
 
 test("Matrix Guide contains the requested chapters and exact notification set", () => {
-  for (const title of ["Matrix 天衍", "Matrix 天工", "歷史開獎號碼"]) {
+  for (const title of ["Matrix 天衍", "Matrix 天工", "歷史開獎紀錄"]) {
     assert.match(featureSource, new RegExp(`title: "${title}"`));
   }
   assert.match(
@@ -69,7 +69,7 @@ test("Matrix Guide documents the current Explore date controls and fixed Tiangon
 });
 
 test("Matrix Guide matches the current history filters and uses spaced halfwidth parentheses", () => {
-  const history = guideSection("歷史開獎號碼");
+  const history = guideSection("歷史開獎紀錄");
   // Check copy literals, excluding TypeScript conditionals and function-call syntax.
   const sections = [...guideSections.matchAll(/"(?:[^"\\]|\\.)*"/g)].map(([literal]) => literal).join("\n");
   assert.ok(sections.length > 0);

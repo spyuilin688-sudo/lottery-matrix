@@ -1264,7 +1264,7 @@ export function ServiceInfoPage({ onNavigate }: { onNavigate: Navigate }) {
               <li>Matrix 天工</li>
             </ul>
           </li>
-          {["Matrix 狀態", "Matrix 同星", "號碼對照單", "連碰立柱計算機", "Matrix 牌單", "Matrix 指南", "歷史開獎號碼", "Matrix 筆記本"].map((item) => <li key={item}>{item}</li>)}
+          {["Matrix 狀態", "Matrix 同星", "號碼對照單", "連碰立柱計算機", "Matrix 牌單", "Matrix 指南", "歷史開獎紀錄", "Matrix 筆記本"].map((item) => <li key={item}>{item}</li>)}
         </ul>
       </LegalInfoSection>
       <LegalInfoSection title="四、支援彩種">

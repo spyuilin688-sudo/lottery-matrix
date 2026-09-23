@@ -15,7 +15,7 @@ const exploreSpacingStyles = readFileSync(new URL("../src/matrix-explore-spacing
 
 test("confirmed feature pages use the latest integrated title artwork [header migration]", () => {
   const header = readFileSync(new URL('../src/features/BrandHeader.tsx', import.meta.url), 'utf8');
-  for (const title of ['Matrix 探索','Matrix 天衡','Matrix 天樞','Matrix 天衍','Matrix 天工','Matrix 指南','Matrix 同星','Matrix 牌單','Matrix 狀態','Matrix 筆記本','號碼對照單','歷史開獎號碼','連碰計算機','立柱計算機']) assert.ok(header.includes(`"${title}":`));
+  for (const title of ['Matrix 探索','Matrix 天衡','Matrix 天樞','Matrix 天衍','Matrix 天工','Matrix 指南','Matrix 同星','Matrix 牌單','Matrix 狀態','Matrix 筆記本','號碼對照單','歷史開獎紀錄','連碰計算機','立柱計算機']) assert.ok(header.includes(`"${title}":`));
   assert.match(header, /matrixYY\.png/);
   assert.doesNotMatch(featurePages, /MATRIX_TITLE_ARTWORK|integrated-title-header/);
 });

@@ -3,7 +3,7 @@ import { ChevronDownIcon, ChevronLeftIcon } from "@radix-ui/react-icons";
 
 const CORE_HEADER_TITLES = new Set(["Matrix 探索", "Matrix 天衡", "Matrix 天樞", "Matrix 天衍"]);
 const TIANGONG_HEADER_TITLE = "Matrix 天工";
-const GEOMETRIC_HEADER_TITLES = new Set(["Matrix 同星", "號碼對照單", "歷史開獎號碼"]);
+const GEOMETRIC_HEADER_TITLES = new Set(["Matrix 同星", "號碼對照單", "歷史開獎紀錄"]);
 
 const PAGE_SUBTITLES: Readonly<Record<string, string>> = {
   "Matrix 探索": "EXPLORE",
@@ -17,7 +17,7 @@ const PAGE_SUBTITLES: Readonly<Record<string, string>> = {
   "Matrix 狀態": "STATUS",
   "Matrix 筆記本": "NOTEBOOK",
   "號碼對照單": "NUMBER REFERENCE",
-  "歷史開獎號碼": "DRAW HISTORY",
+  "歷史開獎紀錄": "DRAW HISTORY",
   "連碰計算機": "COMBINATIONS",
   "立柱計算機": "COLUMNS",
   "通知設定": "NOTIFICATION SETTINGS",
