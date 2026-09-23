@@ -1,5 +1,5 @@
 import { DAILY_SORTED_ONLY_DESCRIPTION, supportsDrawOrder, useLotteryOrder } from "../use-lottery-order";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "@radix-ui/react-icons";
 import { type LotteryId } from "../Prototype";
 import { NumberBall as LotteryNumberBall } from "../NumberBall";
@@ -34,6 +34,8 @@ export function DrawHistoryPage({
     numberOrder,
   });
   const [page, setPage] = useState(1);
+  const historyListRef = useRef<HTMLDivElement>(null);
+  const focusHistoryAfterPageChange = useRef(false);
   const history = useLotteryHistory(
     appliedHistorySettings.lottery,
     getHistoryLimit(appliedHistorySettings.range),
@@ -57,7 +59,14 @@ export function DrawHistoryPage({
     if (page !== paginatedHistory.currentPage) setPage(paginatedHistory.currentPage);
   }, [page, paginatedHistory.currentPage]);
 
+  useLayoutEffect(() => {
+    if (!focusHistoryAfterPageChange.current) return;
+    focusHistoryAfterPageChange.current = false;
+    historyListRef.current?.focus({ preventScroll: true });
+  }, [paginatedHistory.currentPage]);
+
   const changePage = (event: React.MouseEvent<HTMLButtonElement>, direction: -1 | 1) => {
+    focusHistoryAfterPageChange.current = true;
     setPage((current) => current + direction);
     const scrollContainer = event.currentTarget.closest<HTMLElement>(".mobile-scroll");
     if (scrollContainer) scrollContainer.scrollTop = 0;
@@ -167,7 +176,7 @@ export function DrawHistoryPage({
         </section>
       </MobilePagePortal>
       <div className="matrix-explore-main-screen draw-history-history-scope">
-      <div className="draw-history-week-list" data-lottery={appliedHistorySettings.lottery} aria-label={`${appliedHistorySettings.lottery}歷史開獎紀錄`}>
+      <div ref={historyListRef} className="draw-history-week-list" data-lottery={appliedHistorySettings.lottery} role="region" tabIndex={-1} aria-label={`${appliedHistorySettings.lottery}歷史開獎紀錄`}>
         {historyWeekGroups.map((weekRecords) => {
           const firstIssue = weekRecords[0]?.period ?? weekRecords[0]?.issue ?? "";
           return (

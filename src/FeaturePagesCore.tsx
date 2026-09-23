@@ -3,7 +3,7 @@ import { DAILY_SORTED_ONLY_DESCRIPTION, supportsDrawOrder, useLotteryOrder, norm
 import { subscribeLotteryRefresh } from "./lottery-data-refresh";
 import { BrandHeader, HeaderSettingsButton, type HeaderSettings } from "./features/BrandHeader";
 import { useTimedState } from "./use-timed-state";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, MagnifyingGlassIcon, ReloadIcon } from "@radix-ui/react-icons";
 import { BottomNavigation } from "./BottomNavigation";
@@ -189,6 +189,8 @@ function PatchedDrawHistoryPage({
   const [appliedFilters, setAppliedFilters] = useState({ issue: "", date: "" });
   const [appliedHistorySettings, setAppliedHistorySettings] = useState({ lottery, range, numberOrder });
   const [page, setPage] = useState(1);
+  const historyListRef = useRef<HTMLDivElement>(null);
+  const focusHistoryAfterPageChange = useRef(false);
   const { data: selectedLotteryLatest } = useLotteryHistory(lottery, 1);
   const { data: history, loadState: historyLoadState, reload: reloadHistory } = useLotteryHistory(appliedHistorySettings.lottery, getHistoryLimit(appliedHistorySettings.range));
   const historyOrder = getHistoryOrder(appliedHistorySettings.numberOrder);
@@ -217,6 +219,11 @@ function PatchedDrawHistoryPage({
 
   useEffect(() => { setPage(1); }, [appliedHistorySettings, appliedFilters]);
   useEffect(() => { if (page !== paginatedHistory.currentPage) setPage(paginatedHistory.currentPage); }, [page, paginatedHistory.currentPage]);
+  useLayoutEffect(() => {
+    if (!focusHistoryAfterPageChange.current) return;
+    focusHistoryAfterPageChange.current = false;
+    historyListRef.current?.focus({ preventScroll: true });
+  }, [paginatedHistory.currentPage]);
   useEffect(() => {
     if (dateFilterTouched) return;
     const match = latestSelectedDate.match(/^(\d{4})\/(\d{2})\/(\d{2})/);
@@ -227,6 +234,7 @@ function PatchedDrawHistoryPage({
   }, [dateFilterTouched, latestSelectedDate, lottery, setDay, setMonth, setYear]);
 
   const changePage = (event: React.MouseEvent<HTMLButtonElement>, direction: -1 | 1) => {
+    focusHistoryAfterPageChange.current = true;
     setPage((current) => current + direction);
     const scrollContainer = event.currentTarget.closest<HTMLElement>(".mobile-scroll");
     if (scrollContainer) scrollContainer.scrollTop = 0;
@@ -298,7 +306,7 @@ function PatchedDrawHistoryPage({
         {historyLoadState === "error" ? <div className="panel" role="alert"><span>歷史開獎紀錄載入失敗</span><button type="button" aria-label="重新載入歷史開獎紀錄" onClick={reloadHistory}>重新載入</button></div> : null}
         {historyLoadState === "loading" ? <p role="status">歷史開獎紀錄載入中</p> : null}
         {historyLoadState === "empty" ? <p>目前沒有歷史開獎紀錄。</p> : null}
-        <div className="draw-history-week-list" data-lottery={appliedHistorySettings.lottery} aria-label={`${appliedHistorySettings.lottery}歷史開獎紀錄`} hidden={historyLoadState !== "success"}>
+        <div ref={historyListRef} className="draw-history-week-list" data-lottery={appliedHistorySettings.lottery} role="region" tabIndex={-1} aria-label={`${appliedHistorySettings.lottery}歷史開獎紀錄`} hidden={historyLoadState !== "success"}>
           {historyWeekGroups.map((weekRecords) => {
             const firstIssue = weekRecords[0]?.period ?? weekRecords[0]?.issue ?? "";
             return (

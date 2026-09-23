@@ -36,15 +36,21 @@ test.each(['目前頁面', '舊版路由'])('%s切換紀錄頁碼後捲回頁面
   const scroller = container.querySelector<HTMLElement>('.mobile-scroll')!;
   const pagination = await screen.findByRole('navigation', { name: '歷史開獎紀錄分頁' });
 
+  const nextPage = within(pagination).getByRole('button', { name: '下一頁' });
+  nextPage.focus();
   scroller.scrollTop = 900;
-  fireEvent.click(within(pagination).getByRole('button', { name: '下一頁' }));
+  fireEvent.click(nextPage, { detail: 0 });
   expect(pagination.textContent).toContain('2 / 2');
   expect(screen.getByText('11949')).toBeTruthy();
   expect(scroller.scrollTop).toBe(0);
+  expect(document.activeElement).toBe(screen.getByLabelText('今彩539歷史開獎紀錄'));
 
+  const previousPage = within(pagination).getByRole('button', { name: '上一頁' });
+  previousPage.focus();
   scroller.scrollTop = 700;
-  fireEvent.click(within(pagination).getByRole('button', { name: '上一頁' }));
+  fireEvent.click(previousPage, { detail: 0 });
   expect(pagination.textContent).toContain('1 / 2');
   expect(screen.getByText('11999')).toBeTruthy();
   expect(scroller.scrollTop).toBe(0);
+  expect(document.activeElement).toBe(screen.getByLabelText('今彩539歷史開獎紀錄'));
 });
