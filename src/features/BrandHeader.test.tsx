@@ -9,7 +9,7 @@ test("all title variants render the official logo, complete title, subtitle and 
     ["Matrix 探索", true, "EXPLORE", "flow"], ["Matrix 天衡", true, "TIANHENG", "flow"],
     ["Matrix 天樞", true, "TIANSHU", "flow"], ["Matrix 天衍", true, "TIANYAN", "flow"],
     ["Matrix 天工", true, "TIANGONG", "tiangong"],
-    ["歷史開獎號碼", true, "DRAW HISTORY", "geometric"], ["Matrix 同星", true, "TONGXING", "geometric"],
+    ["歷史開獎紀錄", true, "DRAW HISTORY", "geometric"], ["Matrix 同星", true, "TONGXING", "geometric"],
     ["號碼對照單", true, "NUMBER REFERENCE", "geometric"],
     ["Matrix 牌單", true, "DRAW SHEETS", "gold-arc"],
     ["Matrix 指南", true, "GUIDE", "gold-arc"], ["Matrix 狀態", true, "STATUS", "gold-arc"],
@@ -47,7 +47,7 @@ test("header keeps back callbacks, title actions and link navigation operational
   let backs = 0;
   let actions = 0;
   await act(async () => root.render(createElement(BrandHeader, {
-    title: '歷史開獎號碼', onBack: () => backs++,
+    title: '歷史開獎紀錄', onBack: () => backs++,
     action: createElement('button', { onClick: () => actions++ }, '篩選設定'),
   })));
   await act(async () => document.querySelector<HTMLButtonElement>('[aria-label="返回"]')!.click());

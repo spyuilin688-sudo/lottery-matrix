@@ -97,7 +97,7 @@ export function DrawHistoryPage({
 
   return (
     <FeatureShell
-      title="歷史開獎號碼"
+      title="歷史開獎紀錄"
       onNavigate={onNavigate}
       backTarget={backTarget}
       className="draw-history-screen sticky-title-card-screen"
@@ -161,7 +161,7 @@ export function DrawHistoryPage({
         </section>
       </MobilePagePortal>
       <div className="matrix-explore-main-screen draw-history-history-scope">
-      <div className="draw-history-week-list" data-lottery={appliedHistorySettings.lottery} aria-label={`${appliedHistorySettings.lottery}歷史開獎號碼`}>
+      <div className="draw-history-week-list" data-lottery={appliedHistorySettings.lottery} aria-label={`${appliedHistorySettings.lottery}歷史開獎紀錄`}>
         {historyWeekGroups.map((weekRecords) => {
           const firstIssue = weekRecords[0]?.period ?? weekRecords[0]?.issue ?? "";
           return (
@@ -203,7 +203,7 @@ export function DrawHistoryPage({
       </div>
       </div>
       {paginatedHistory.totalPages > 1 ? (
-        <nav className="history-pagination" aria-label="歷史開獎號碼分頁">
+        <nav className="history-pagination" aria-label="歷史開獎紀錄分頁">
           <button type="button" aria-label="上一頁" disabled={paginatedHistory.currentPage === 1} onClick={() => setPage((current) => current - 1)}>
             <ChevronLeftIcon aria-hidden="true" />
           </button>

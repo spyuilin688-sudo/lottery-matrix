@@ -62,7 +62,7 @@ function ToolFeatureShell({
   onQuickConfigure,
   quickActive,
 }: {
-  title: "歷史開獎號碼" | "Matrix 同星";
+  title: "歷史開獎紀錄" | "Matrix 同星";
   children: React.ReactNode;
   onNavigate: Navigate;
   backTarget?: ScreenId;
@@ -287,12 +287,12 @@ function PatchedDrawHistoryPage({
   );
 
   return (
-    <ToolFeatureShell title="歷史開獎號碼" onNavigate={onNavigate} backTarget={backTarget} className="draw-history-screen sticky-title-card-screen" headerAction={historyTitleActions} headerSettings={{ id: "history-header-settings", expanded: filterExpanded, floating: filterFloating, content: historySettings, onClose: () => { setFilterExpanded(false); setFilterFloating(false); } }} onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} quickActive={quickActive}>
+    <ToolFeatureShell title="歷史開獎紀錄" onNavigate={onNavigate} backTarget={backTarget} className="draw-history-screen sticky-title-card-screen" headerAction={historyTitleActions} headerSettings={{ id: "history-header-settings", expanded: filterExpanded, floating: filterFloating, content: historySettings, onClose: () => { setFilterExpanded(false); setFilterFloating(false); } }} onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} quickActive={quickActive}>
       <div className="matrix-explore-main-screen draw-history-history-scope">
-        {historyLoadState === "error" ? <div className="panel" role="alert"><span>歷史開獎號碼載入失敗</span><button type="button" aria-label="重新載入歷史開獎號碼" onClick={reloadHistory}>重新載入</button></div> : null}
-        {historyLoadState === "loading" ? <p role="status">歷史開獎號碼載入中</p> : null}
-        {historyLoadState === "empty" ? <p>目前沒有歷史開獎號碼。</p> : null}
-        <div className="draw-history-week-list" data-lottery={appliedHistorySettings.lottery} aria-label={`${appliedHistorySettings.lottery}歷史開獎號碼`} hidden={historyLoadState !== "success"}>
+        {historyLoadState === "error" ? <div className="panel" role="alert"><span>歷史開獎紀錄載入失敗</span><button type="button" aria-label="重新載入歷史開獎紀錄" onClick={reloadHistory}>重新載入</button></div> : null}
+        {historyLoadState === "loading" ? <p role="status">歷史開獎紀錄載入中</p> : null}
+        {historyLoadState === "empty" ? <p>目前沒有歷史開獎紀錄。</p> : null}
+        <div className="draw-history-week-list" data-lottery={appliedHistorySettings.lottery} aria-label={`${appliedHistorySettings.lottery}歷史開獎紀錄`} hidden={historyLoadState !== "success"}>
           {historyWeekGroups.map((weekRecords) => {
             const firstIssue = weekRecords[0]?.period ?? weekRecords[0]?.issue ?? "";
             return (
@@ -309,7 +309,7 @@ function PatchedDrawHistoryPage({
           })}
         </div>
       </div>
-      {paginatedHistory.totalPages > 1 ? <nav className="history-pagination" aria-label="歷史開獎號碼分頁"><button type="button" aria-label="上一頁" disabled={paginatedHistory.currentPage === 1} onClick={() => setPage((current) => current - 1)}><ChevronLeftIcon aria-hidden="true" /></button><span>{paginatedHistory.currentPage} / {paginatedHistory.totalPages}</span><button type="button" aria-label="下一頁" disabled={paginatedHistory.currentPage === paginatedHistory.totalPages} onClick={() => setPage((current) => current + 1)}><ChevronRightIcon aria-hidden="true" /></button></nav> : null}
+      {paginatedHistory.totalPages > 1 ? <nav className="history-pagination" aria-label="歷史開獎紀錄分頁"><button type="button" aria-label="上一頁" disabled={paginatedHistory.currentPage === 1} onClick={() => setPage((current) => current - 1)}><ChevronLeftIcon aria-hidden="true" /></button><span>{paginatedHistory.currentPage} / {paginatedHistory.totalPages}</span><button type="button" aria-label="下一頁" disabled={paginatedHistory.currentPage === paginatedHistory.totalPages} onClick={() => setPage((current) => current + 1)}><ChevronRightIcon aria-hidden="true" /></button></nav> : null}
     </ToolFeatureShell>
   );
 }

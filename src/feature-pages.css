@@ -2151,7 +2151,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   --product-header-background: url("/assets/lottery/headers/reference.webp");
   --product-header-background-shade: var(--product-header-filter-shade);
 }
-.product-header[data-product-header="歷史開獎號碼"] {
+.product-header[data-product-header="歷史開獎紀錄"] {
   --product-header-background: url("/assets/lottery/headers/history.webp");
   --product-header-background-shade: var(--product-header-filter-shade);
 }

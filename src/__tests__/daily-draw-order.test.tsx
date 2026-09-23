@@ -142,7 +142,7 @@ test('history replaces the applied actual order immediately when the lottery cha
   fireEvent.click(screen.getByRole('button', { name: '展開篩選設定' }));
   chooseLottery('天天樂');
   await flush();
-  const list = screen.getByLabelText('天天樂歷史開獎號碼');
+  const list = screen.getByLabelText('天天樂歷史開獎紀錄');
   expect([...list.querySelectorAll('.draw-history-row:not(.history-head) .number-ball')].map(node => node.textContent)).toEqual(sorted);
 });
 

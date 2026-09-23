@@ -24,7 +24,7 @@ test("Matrix guide uses requested spacing and current opening instructions", () 
   assert.ok(source.includes("可輸入 0 至 3 個探索號碼"));
   assert.ok(source.includes("點擊底部「快捷」：已設定快捷功能時直接開啟；尚未設定時會先開啟快捷設定。"));
   assert.ok(source.includes("在首頁設定按鈕連續點擊兩下可變更快捷功能。"));
-  assert.ok(source.includes("首頁點選查看更多紀錄，可查閱歷史開獎號碼。"));
+  assert.ok(source.includes("首頁點選查看更多紀錄，可查閱歷史開獎紀錄。"));
 });
 
 test("Matrix guide removes stale copy", () => {
