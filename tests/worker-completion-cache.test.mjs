@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
 
 const path = new URL('../supabase/migrations/20260920193052_worker_completion_cache.sql', import.meta.url);
-const cleanupPath = new URL('../supabase/migrations/20260923080000_worker_completion_old_period_cleanup.sql', import.meta.url);
+const cleanupPath = new URL('../supabase/migrations/20260923074945_worker_completion_old_period_cleanup.sql', import.meta.url);
 const tables = ['matrix_analysis_artifacts', 'matrix_analysis_artifact_chunks',
   'matrix_explore_results', 'matrix_tianheng_results', 'matrix_tianshu_results'];
 async function database() {
