@@ -557,8 +557,8 @@ def test_latest_result_returns_only_completed_lotteries_from_latest_draw_date() 
     assert payload == {
         "drawDate": "2026-09-23",
         "items": [
-            {"lottery": "今彩539"},
-            {"lottery": "大樂透"},
+            {"lottery": "今彩539", "period": "115000231"},
+            {"lottery": "大樂透", "period": "115000091"},
         ],
     }
     assert repository.client.rpc_calls == [

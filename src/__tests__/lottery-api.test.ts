@@ -119,14 +119,14 @@ describe('lottery-api response validation', () => {
     const fetcher = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(jsonResponse({
       drawDate: '2026-09-23',
       items: [
-        { lottery: '今彩539' },
-        { lottery: '大樂透' },
+        { lottery: '今彩539', period: '115000231' },
+        { lottery: '大樂透', period: '115000091' },
       ],
     }));
 
     await expect(fetchLatestLotteryResult()).resolves.toEqual([
-      { lottery: '今彩539' },
-      { lottery: '大樂透' },
+      { lottery: '今彩539', period: '115000231' },
+      { lottery: '大樂透', period: '115000091' },
     ]);
     expect(fetcher).toHaveBeenCalledWith(
       `${LOTTERY_API_BASE}/api/matrix/latest-result`,
@@ -139,19 +139,26 @@ describe('lottery-api response validation', () => {
       drawDate: '2026-09-23',
       dueLotteries: ['今彩539', '六合彩'],
       items: [
-        { lottery: '今彩539' },
+        { lottery: '今彩539', period: '115000231' },
       ],
     }));
 
     await expect(fetchLatestLotteryResultState('2026-09-23')).resolves.toEqual({
       drawDate: '2026-09-23',
       dueLotteries: ['今彩539', '六合彩'],
-      items: [{ lottery: '今彩539' }],
+      items: [{ lottery: '今彩539', period: '115000231' }],
     });
     expect(fetcher).toHaveBeenCalledWith(
       `${LOTTERY_API_BASE}/api/matrix/latest-result?cycleDate=2026-09-23`,
       expect.objectContaining({ headers: expect.any(Headers) }),
     );
+  });
+
+  it('舊版完成結果未附期號時仍可顯示彩種，但不能提供本期完成依據', async () => {
+    mockJsonResponse({ drawDate: '2026-09-23', items: [{ lottery: '今彩539' }] });
+    await expect(fetchLatestLotteryResultState('2026-09-23')).resolves.toEqual({
+      drawDate: '2026-09-23', dueLotteries: [], items: [{ lottery: '今彩539' }],
+    });
   });
 
   it('歷史開獎 items 內缺少 numbers 時拒絕異常格式', async () => {

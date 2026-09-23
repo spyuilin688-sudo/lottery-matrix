@@ -20,7 +20,7 @@ import { BottomNavigation, HomeQuickSettingsButton } from "./BottomNavigation";
 import { FeaturePageLoadBoundary } from "./FeaturePageLoadBoundary";
 import { useLatestLotteryDraw } from "./useLatestLotteryDraw";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
-import { fetchLatestLotteryResultState, type LatestLotteryResult, type LotteryDrawRecord } from "./lottery-api";
+import { fetchLatestLotteryResultState, normalizePeriod, type LatestLotteryResult, type LotteryDrawRecord } from "./lottery-api";
 import { formatCountdown, formatNextDrawAt, nextCountdownSeconds, parseCountdown, secondsUntil } from "./countdown.mjs";
 import { fetchMatrixStatusSummaries, type MatrixStatusSummary } from "./matrix-status-api";
 import { subscribeMatrixDataRevision } from "./matrix-data-revision";
@@ -603,9 +603,10 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       }
     };
 
-    const drawMatchesCycle = (record: LotteryDrawRecord | null | undefined, cycleDate: string) => {
+    const drawMatchesCycle = (record: LotteryDrawRecord | null | undefined, cycleDate: string, period: string | undefined) => {
       const rawDate = String(record?.drawDate ?? record?.date ?? "").slice(0, 10).replaceAll("/", "-");
-      return record?.resultStatus === "confirmed" && rawDate === cycleDate;
+      return record?.resultStatus === "confirmed" && rawDate === cycleDate
+        && !!period && normalizePeriod(selectedRef.current, record.period ?? record.issue) === normalizePeriod(selectedRef.current, period);
     };
 
     const scheduleNext = () => {
@@ -636,15 +637,15 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       lotteries: LotteryId[],
       signal: AbortSignal,
       current: number,
-    ): Promise<Set<LotteryId>> => {
-      if (!lotteries.length) return new Set();
+    ): Promise<Map<LotteryId, string>> => {
+      if (!lotteries.length) return new Map();
       const result = await withDeadline(
         (requestSignal) => fetchMatrixStatusSummaries(lotteries, requestSignal),
         { signal },
       );
-      if (!active || current !== generation) return new Set();
+      if (!active || current !== generation) return new Map();
       const items = new Map(result.items.map((item) => [item.lottery, item] as const));
-      const ready = new Set<LotteryId>();
+      const ready = new Map<LotteryId, string>();
       for (const lottery of lotteries) {
         const item = items.get(lottery);
         if (!item || item.status !== 200 || !("kind" in item.body) || item.body.kind !== "status-summary" || !("summary" in item.body)) {
@@ -652,7 +653,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
           continue;
         }
         const summary = (item.body as { summary: MatrixStatusSummary }).summary;
-        ready.add(lottery);
+        if (typeof item.body.drawPeriod === 'string' && item.body.drawPeriod) ready.set(lottery, item.body.drawPeriod);
         setMatrixStatuses((previous) => ({
           ...previous,
           [lottery]: toHomepageMatrixStatus(summary),
@@ -666,7 +667,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       lotteries: LotteryId[],
       signal: AbortSignal,
       current: number,
-    ): Promise<Set<LotteryId>> => {
+    ): Promise<Map<LotteryId, string>> => {
       try {
         return await applyStatusBatch(lotteries, signal, current);
       } catch {
@@ -675,7 +676,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
             setMatrixStatusLoads((previous) => ({ ...previous, [lottery]: "error" }));
           }
         }
-        return new Set();
+        return new Map();
       }
     };
 
@@ -693,7 +694,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
 
       try {
         let state: Awaited<ReturnType<typeof fetchLatestLotteryResultState>> | null = null;
-        let readyStatuses = new Set<LotteryId>();
+        let readyStatuses = new Map<LotteryId, string>();
         let refreshedDraw: LotteryDrawRecord | null | undefined;
 
         if (hydrateAll) {
@@ -731,15 +732,16 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
         if (cycle && state) {
           const key = homepageRefreshCycleKey(cycle);
           const completedLotteries = state.drawDate === cycle.cycleDate
-            ? new Set(state.items.map(({ lottery }) => lottery))
-            : new Set<LotteryId>();
+            ? new Map(state.items.map(({ lottery, period }) => [lottery, period] as const))
+            : new Map<LotteryId, string>();
           const backendComplete = dueLotteries.length === 0
             || dueLotteries.every((lottery) => completedLotteries.has(lottery));
           const statusComplete = dueLotteries.length === 0
-            || dueLotteries.every((lottery) => readyStatuses.has(lottery));
+            || dueLotteries.every((lottery) => !!completedLotteries.get(lottery)
+              && normalizePeriod(lottery, readyStatuses.get(lottery)) === normalizePeriod(lottery, completedLotteries.get(lottery)));
           const selectedIsDue = dueLotteries.includes(selectedRef.current);
           const drawComplete = !selectedIsDue
-            || drawMatchesCycle(refreshedDraw, cycle.cycleDate);
+            || drawMatchesCycle(refreshedDraw, cycle.cycleDate, completedLotteries.get(selectedRef.current));
 
           if (backendComplete && statusComplete && drawComplete) {
             completedHomeRefreshCycles.current.add(key);

@@ -186,7 +186,7 @@ def _latest_completed_results(
             and chain.get("analysisComplete") is True
             and chain.get("matrixStatusComplete") is True
         ):
-            items.append({"lottery": lottery})
+            items.append({"lottery": lottery, "period": period})
 
     payload: dict[str, Any] = {"drawDate": latest_date, "items": items}
     if due_lotteries is not None:
