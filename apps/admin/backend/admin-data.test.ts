@@ -90,6 +90,7 @@ describe('listAdminTable', () => {
       id: 'payment-1', member_id: 'member-1', plan_id: 'plan-1', amount: 2880,
       paid_at: '2026-09-01T00:00:00Z', status: 'refunded', reversed_at: '2026-09-08T00:00:00Z',
       reversal_reason: '銀行退款已完成', reversed_by_name: '管理員',
+      ecpay_order: { merchant_trade_no: 'LM260923001', trade_no: '2609231234567890' },
       plan: { name: '月費方案' }, member: { auth_user_id: 'auth-transfer', line_user_id: 'line-transfer', line_display_name: '小明' },
     }]) };
 
@@ -99,9 +100,26 @@ describe('listAdminTable', () => {
       id: 'payment-1', memberId: 'member-1', identityDisplay: 'LINE ID：line-transfer',
       planId: 'plan-1', planName: '月費方案', status: 'refunded',
       reversedAt: '2026-09-08T00:00:00Z', reversalReason: '銀行退款已完成', reversedByName: '管理員',
+      ecpayMerchantTradeNo: 'LM260923001', ecpayTradeNo: '2609231234567890', transferRequestId: null,
     });
     expect(api.request).toHaveBeenCalledWith(expect.stringContaining('member:members(auth_user_id,line_user_id,line_display_name)'));
     expect(api.request).toHaveBeenCalledWith(expect.stringContaining('plan:plans(name)'));
+    expect(api.request).toHaveBeenCalledWith(expect.stringContaining('ecpay_order:ecpay_orders!payments_ecpay_order_id_fkey(merchant_trade_no,trade_no)'));
+  });
+
+  it('distinguishes a manual payment from an ECPay payment without gateway identifiers', async () => {
+    const api = { request: fixtureRequest(async () => [{
+      id: 'manual-payment', member_id: 'member-1', plan_id: 'plan-1', amount: 2880,
+      paid_at: '2026-09-23T00:00:00Z', status: 'refund_required', transfer_request_id: 'transfer-1',
+      ecpay_order: null, plan: { name: '月費方案' }, member: null,
+    }]) };
+
+    const result = await listAdminTable('subscriptionRecords', api);
+
+    expect(result.items[0]).toMatchObject({
+      id: 'manual-payment', transferRequestId: 'transfer-1', ecpayMerchantTradeNo: null, ecpayTradeNo: null,
+    });
+    expect(api.request).toHaveBeenCalledWith(expect.stringContaining('transfer_request_id'));
   });
 
   it('maps the activation-code redeemer member ID for provider-neutral administration', async () => {

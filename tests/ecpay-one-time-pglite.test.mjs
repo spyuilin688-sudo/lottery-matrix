@@ -5,6 +5,7 @@ import { PGlite } from '@electric-sql/pglite';
 
 const migration = new URL('../supabase/migrations/20260923083441_ecpay_one_time_checkout.sql', import.meta.url);
 const paymentGuardMigration = new URL('../supabase/migrations/20260923125012_guard_payment_plan_entitlements.sql', import.meta.url);
+const reversalSyncMigration = new URL('../supabase/migrations/20260923150500_record_ecpay_payment_reversals.sql', import.meta.url);
 const manualTransferMigration = new URL('../supabase/migrations/20260830060000_manual_bank_transfer.sql', import.meta.url);
 const latestManualReviewMigration = new URL('../supabase/migrations/20260905140908_repair_admin_backend_rpc_execution.sql', import.meta.url);
 const reversalMigration = new URL('../supabase/migrations/20260908210936_record_payment_reversal.sql', import.meta.url);
@@ -23,7 +24,7 @@ async function loadExistingFunction(db, sourcePath, name) {
   await db.exec(definition);
 }
 
-async function setup() {
+async function setup({ applyReversalSync = true } = {}) {
   const db = new PGlite();
   await db.exec(`
     create schema auth; create schema private;
@@ -88,6 +89,7 @@ async function setup() {
   await loadExistingFunction(db, latestManualReviewMigration, 'admin_review_transfer_request');
   await loadExistingFunction(db, reversalMigration, 'admin_record_payment_reversal');
   await db.exec(await readFile(paymentGuardMigration, 'utf8'));
+  if (applyReversalSync) await db.exec(await readFile(reversalSyncMigration, 'utf8'));
   return db;
 }
 
@@ -250,6 +252,134 @@ test('paid callback after lifetime grant preserves permanent membership and mark
     assert.equal(member.is_lifetime, true);
     assert.equal(member.current_plan_id, yearPlanId);
     assert.equal(new Date(member.plan_expires_at).toISOString(), '2099-01-01T00:00:00.000Z');
+  } finally { await db.close(); }
+});
+
+test('a recorded ECPay refund closes the linked order and a repeated paid callback stays refunded', async () => {
+  const db = await setup();
+  try {
+    await service(db);
+    await db.query('select public.ecpay_order_create($1,$2,$3,$4)', [userId, 'month', number, merchant]);
+    await db.query('update public.members set is_lifetime=true,current_plan_id=$1 where id=$2', [yearPlanId, memberId]);
+    await db.query('select public.ecpay_payment_confirm($1,$2,$3,$4)', [number, merchant, '2609231234567890', 2880]);
+    const { rows: [{ id: paymentId }] } = await db.query('select id from public.payments where ecpay_order_id is not null');
+    const actorId = '30000000-0000-4000-8000-000000000004';
+    await owner(db);
+    await db.query('insert into public.admin_accounts(id) values ($1)', [actorId]);
+    await service(db);
+    await db.query('select public.admin_record_payment_reversal($1,$2,$3,$4,$5)', [paymentId, 'refunded', '銀行退款完成', actorId, '客服']);
+
+    const { rows: [order] } = await db.query('select status,trade_no,paid_at from public.ecpay_orders');
+    assert.equal(order.status, 'refunded');
+    assert.equal(order.trade_no, '2609231234567890');
+    assert.ok(order.paid_at);
+    const { rows: [{ result: retry }] } = await db.query('select public.ecpay_payment_confirm($1,$2,$3,$4) as result', [number, merchant, '2609231234567890', 2880]);
+    assert.equal(retry.status, 'refunded');
+    const { rows: [payment] } = await db.query('select status from public.payments where id=$1', [paymentId]);
+    assert.equal(payment.status, 'refunded');
+    const { rows: [{ total }] } = await db.query('select count(*)::integer as total from public.payments');
+    assert.equal(total, 1);
+    await assert.rejects(db.query('select public.ecpay_payment_confirm($1,$2,$3,$4)', [number, merchant, 'OTHERTRADE', 2880]), /PAYMENT_CONFLICT/);
+  } finally { await db.close(); }
+});
+
+test('migration repairs an ECPay order already reversed before the new status sync', async () => {
+  const db = await setup({ applyReversalSync: false });
+  try {
+    await service(db);
+    await db.query('select public.ecpay_order_create($1,$2,$3,$4)', [userId, 'month', number, merchant]);
+    await db.query('select public.ecpay_payment_confirm($1,$2,$3,$4)', [number, merchant, '2609231234567890', 2880]);
+    const { rows: [{ id: paymentId }] } = await db.query('select id from public.payments where ecpay_order_id is not null');
+    const actorId = '30000000-0000-4000-8000-000000000004';
+    await owner(db);
+    await db.query('insert into public.admin_accounts(id) values ($1)', [actorId]);
+    await service(db);
+    await db.query('select public.admin_record_payment_reversal($1,$2,$3,$4,$5)', [paymentId, 'chargeback', '收單行刷退完成', actorId, '客服']);
+    const { rows: [before] } = await db.query('select status from public.ecpay_orders');
+    assert.equal(before.status, 'confirmed');
+
+    await owner(db);
+    await db.exec(await readFile(reversalSyncMigration, 'utf8'));
+    const { rows: [after] } = await db.query('select status from public.ecpay_orders');
+    assert.equal(after.status, 'chargeback');
+  } finally { await db.close(); }
+});
+
+test('a recorded chargeback or cancellation closes only the linked ECPay order', async () => {
+  for (const status of ['chargeback', 'cancelled']) {
+    const db = await setup();
+    try {
+      await service(db);
+      await db.query('select public.ecpay_order_create($1,$2,$3,$4)', [userId, 'month', number, merchant]);
+      await db.query('select public.ecpay_payment_confirm($1,$2,$3,$4)', [number, merchant, '2609231234567890', 2880]);
+      const { rows: [{ id: paymentId }] } = await db.query('select id from public.payments where ecpay_order_id is not null');
+      const actorId = '30000000-0000-4000-8000-000000000004';
+      await owner(db);
+      await db.query('insert into public.admin_accounts(id) values ($1)', [actorId]);
+      await service(db);
+      await db.query('select public.admin_record_payment_reversal($1,$2,$3,$4,$5)', [paymentId, status, '外部沖銷完成', actorId, '客服']);
+      const { rows: [order] } = await db.query('select status from public.ecpay_orders');
+      assert.equal(order.status, status);
+      const { rows: [{ result }] } = await db.query('select public.ecpay_payment_confirm($1,$2,$3,$4) as result', [number, merchant, '2609231234567890', 2880]);
+      assert.equal(result.status, status);
+    } finally { await db.close(); }
+  }
+});
+
+test('a reversal audit failure rolls back both ECPay order and payment changes', async () => {
+  const db = await setup();
+  try {
+    await service(db);
+    await db.query('select public.ecpay_order_create($1,$2,$3,$4)', [userId, 'month', number, merchant]);
+    await db.query('update public.members set is_lifetime=true,current_plan_id=$1 where id=$2', [yearPlanId, memberId]);
+    await db.query('select public.ecpay_payment_confirm($1,$2,$3,$4)', [number, merchant, '2609231234567890', 2880]);
+    const { rows: [{ id: paymentId }] } = await db.query('select id from public.payments where ecpay_order_id is not null');
+    const actorId = '30000000-0000-4000-8000-000000000004';
+    await owner(db);
+    await db.query('insert into public.admin_accounts(id) values ($1)', [actorId]);
+    await db.exec('revoke insert on public.audit_logs from service_role');
+    await service(db);
+    await assert.rejects(db.query('select public.admin_record_payment_reversal($1,$2,$3,$4,$5)', [paymentId, 'refunded', '外部退款完成', actorId, '客服']), /permission denied/);
+    const { rows: [order] } = await db.query('select status from public.ecpay_orders');
+    const { rows: [payment] } = await db.query('select status from public.payments where id=$1', [paymentId]);
+    assert.equal(order.status, 'refund_required');
+    assert.equal(payment.status, 'refund_required');
+  } finally { await db.close(); }
+});
+
+test('a signed callback can be replayed only for an exactly matching linked paid order', async () => {
+  const db = await setup();
+  try {
+    await service(db);
+    await db.query('select public.ecpay_order_create($1,$2,$3,$4)', [userId, 'month', number, merchant]);
+    const recorded = async (tradeNumber = '2609231234567890', amount = 2880, merchantId = merchant) => {
+      const { rows: [{ value }] } = await db.query('select public.ecpay_paid_notification_recorded($1,$2,$3,$4) as value', [number, merchantId, tradeNumber, amount]);
+      return value;
+    };
+    assert.equal(await recorded(), false);
+    await db.query('select public.ecpay_payment_confirm($1,$2,$3,$4)', [number, merchant, '2609231234567890', 2880]);
+    assert.equal(await recorded(), true);
+    assert.equal(await recorded('OTHERTRADE'), false);
+    assert.equal(await recorded('2609231234567890', 1), false);
+    assert.equal(await recorded('2609231234567890', 2880, 'OTHER'), false);
+
+    const { rows: [{ id: paymentId }] } = await db.query('select id from public.payments where ecpay_order_id is not null');
+    const actorId = '30000000-0000-4000-8000-000000000004';
+    await owner(db);
+    await db.query('insert into public.admin_accounts(id) values ($1)', [actorId]);
+    await service(db);
+    await db.query('select public.admin_record_payment_reversal($1,$2,$3,$4,$5)', [paymentId, 'cancelled', '交易已取消', actorId, '客服']);
+    assert.equal(await recorded(), true);
+
+    await owner(db);
+    await db.query('update public.payments set ecpay_order_id=null where id=$1', [paymentId]);
+    await service(db);
+    assert.equal(await recorded(), false);
+    const { rows: [{ guest, member }] } = await db.query(`select
+      has_function_privilege('anon','public.ecpay_paid_notification_recorded(text,text,text,integer)','execute') as guest,
+      has_function_privilege('authenticated','public.ecpay_paid_notification_recorded(text,text,text,integer)','execute') as member`);
+    assert.equal(guest, false);
+    assert.equal(member, false);
   } finally { await db.close(); }
 });
 

@@ -13,6 +13,20 @@ const config = {
 };
 const handler = createEcpayNotifyHandler({
   config,
+  async alreadyRecorded(order) {
+    if (!supabaseUrl || !serviceRoleKey) throw new Error('SERVER_CONFIG_MISSING');
+    const client = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data, error } = await client.rpc('ecpay_paid_notification_recorded', {
+      p_merchant_trade_no: order.merchantTradeNo,
+      p_merchant_id: order.merchantId,
+      p_trade_no: order.tradeNo,
+      p_amount: order.amount,
+    });
+    if (error || typeof data !== 'boolean') throw new Error('PAYMENT_LOOKUP_FAILED');
+    return data;
+  },
   async verifyPaid(order) {
     if (environment !== 'stage' && environment !== 'production') throw new Error('SERVER_CONFIG_MISSING');
     return queryEcpayPaid({ ...config, environment }, order);

@@ -235,6 +235,9 @@ const paymentRecord = (row: Row): PaymentRecord => ({
   reversedAt: typeof row.reversedAt === "string" ? row.reversedAt : null,
   reversalReason: typeof row.reversalReason === "string" ? row.reversalReason : null,
   reversedByName: typeof row.reversedByName === "string" ? row.reversedByName : null,
+  transferRequestId: typeof row.transferRequestId === "string" ? row.transferRequestId : null,
+  ecpayMerchantTradeNo: typeof row.ecpayMerchantTradeNo === "string" ? row.ecpayMerchantTradeNo : null,
+  ecpayTradeNo: typeof row.ecpayTradeNo === "string" ? row.ecpayTradeNo : null,
 });
 
 async function writeClipboardText(value: string) {
@@ -1199,6 +1202,7 @@ function SubscriptionManager({
   const [expiresAt, setExpiresAt] = useState("");
   const [saveError, setSaveError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [paymentPanelOpen, setPaymentPanelOpen] = useState(false);
   const expiryInputRef = useRef<HTMLInputElement>(null);
   const subscriptionSubmitLock = useRef(false);
   const renewRequestId = useRef<string | null>(null);
@@ -1280,12 +1284,15 @@ function SubscriptionManager({
         </div>
       )}
       {userInfo && <UserInfoDialog key={userInfo.id} row={userInfo} client={api} module="subscriptions" onClose={() => setUserInfo(null)} />}
-      <AdminListControls page={paymentPage} showError={false} name="付款紀錄" statuses={[["confirmed", "已付款"], ["refund_required", "需退款處理"], ["refunded", "已退款"], ["chargeback", "已刷退"], ["cancelled", "已取消"]]} sorts={[["paidAt", "付款時間"], ["amount", "付款金額"]]} />
       <PaymentReversalPanel
         key={JSON.stringify(paymentPage.query)}
         payments={paymentPage.loading || paymentPage.error ? null : paymentPage.items.map(paymentRecord)}
         loadError={paymentPage.error ? "付款紀錄載入失敗，請重新載入" : ""}
         canEdit={canEdit}
+        statusFilter={paymentPage.query.status}
+        onStatusFilterChange={status => paymentPage.setQuery({ status })}
+        open={paymentPanelOpen}
+        onOpenChange={setPaymentPanelOpen}
         confirm={confirm}
         onRecord={onPaymentReversal}
         onRefresh={onPaymentRefresh}

@@ -118,7 +118,7 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   subscriptionRecords: {
-    path: '/rest/v1/payments?select=id,member_id,plan_id,amount,paid_at,status,reversed_at,reversal_reason,reversed_by,reversed_by_name,plan:plans(name),member:members(auth_user_id,line_user_id,line_display_name)&order=paid_at.desc.nullslast,id.asc',
+    path: '/rest/v1/payments?select=id,member_id,plan_id,transfer_request_id,amount,paid_at,status,reversed_at,reversal_reason,reversed_by,reversed_by_name,plan:plans(name),member:members(auth_user_id,line_user_id,line_display_name),ecpay_order:ecpay_orders!payments_ecpay_order_id_fkey(merchant_trade_no,trade_no)&order=paid_at.desc.nullslast,id.asc',
     map: (row) => ({
       id: String(row.id),
       memberId: row.member_id,
@@ -134,6 +134,9 @@ const definitions: Record<string, TableDefinition> = {
       reversalReason: row.reversal_reason,
       reversedBy: row.reversed_by,
       reversedByName: row.reversed_by_name,
+      transferRequestId: row.transfer_request_id ?? null,
+      ecpayMerchantTradeNo: (row.ecpay_order as Row | null)?.merchant_trade_no ?? null,
+      ecpayTradeNo: (row.ecpay_order as Row | null)?.trade_no ?? null,
     }),
   },
   auditLogs: {

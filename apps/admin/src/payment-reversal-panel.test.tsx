@@ -19,6 +19,7 @@ const payment = {
   id: 'payment-1', memberId: 'member-1', identityDisplay: 'LINE ID：line-user-1', planName: '月費方案',
   amount: 2880, paidAt: '2026-09-01T02:00:00Z', status: 'confirmed',
 };
+const defaultControls = { statusFilter: 'all', onStatusFilterChange: vi.fn(), open: false, onOpenChange: vi.fn() };
 let container: HTMLDivElement;
 let root: Root;
 
@@ -37,7 +38,8 @@ afterEach(() => {
 async function renderPanel(overrides: Partial<Parameters<typeof PaymentReversalPanel>[0]> = {}) {
   const props = {
     payments: [payment], canEdit: true, confirm: vi.fn(async () => true),
-    onRecord: vi.fn(async () => undefined), onRefresh: vi.fn(async () => undefined), ...overrides,
+    onRecord: vi.fn(async () => undefined), onRefresh: vi.fn(async () => undefined),
+    statusFilter: 'all', onStatusFilterChange: vi.fn(), open: false, onOpenChange: vi.fn(), ...overrides,
   };
   await act(async () => root.render(<PaymentReversalPanel {...props} />));
   return props;
@@ -73,6 +75,33 @@ function change(element: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElem
 }
 
 describe('PaymentReversalPanel', () => {
+  it('shows ECPay order and provider transaction numbers, while identifying manual transfers separately', async () => {
+    await renderPanel({ payments: [{ ...payment, ecpayMerchantTradeNo: 'LM260923001', ecpayTradeNo: '2609231234567890' }] });
+    expect(container.textContent).toContain('綠界訂單編號 LM260923001');
+    expect(container.textContent).toContain('綠界交易編號 2609231234567890');
+
+    await renderPanel({ payments: [{ ...payment, id: 'manual-payment', transferRequestId: 'transfer-1' }] });
+    expect(container.textContent).toContain('銀行轉帳');
+    expect(container.textContent).toContain('轉帳申請 transfer-1');
+    expect(container.textContent).not.toContain('綠界訂單編號');
+    expect(container.textContent).not.toContain('綠界交易編號');
+
+    await renderPanel({ payments: [{ ...payment, id: 'legacy-payment' }] });
+    expect(container.textContent).toContain('付款來源未標示');
+    expect(container.textContent).not.toContain('銀行轉帳');
+  });
+
+  it('offers the refund-required status through a native filter inside the payment disclosure', async () => {
+    const onStatusFilterChange = vi.fn();
+    await renderPanel({ open: true, statusFilter: 'all', onStatusFilterChange });
+    const filter = select('篩選付款狀態');
+    expect(filter).toBeTruthy();
+    expect(filter.closest('details.paymentReversalPanel')).toBeTruthy();
+    expect([...filter.options].map(option => option.value)).toContain('refund_required');
+    change(filter, 'refund_required');
+    expect(onStatusFilterChange).toHaveBeenCalledWith('refund_required');
+  });
+
   it('labels paid orders needing a refund and records a refund only after confirmation', async () => {
     const onRecord = vi.fn(async () => undefined);
     await renderPanel({ payments: [{ ...payment, status: 'refund_required' }], onRecord });
@@ -116,6 +145,7 @@ describe('PaymentReversalPanel', () => {
         confirm={vi.fn()}
         onRecord={vi.fn()}
         onRefresh={onRefresh}
+        {...defaultControls}
       />,
     ));
     expect(container.querySelector('[role="alert"]')?.textContent).toContain('付款紀錄載入失敗');
@@ -124,7 +154,7 @@ describe('PaymentReversalPanel', () => {
     expect(onRefresh).toHaveBeenCalledTimes(1);
 
     await act(async () => root.render(
-      <PaymentReversalPanel payments={[]} canEdit confirm={vi.fn()} onRecord={vi.fn()} onRefresh={vi.fn()} />,
+      <PaymentReversalPanel payments={[]} canEdit confirm={vi.fn()} onRecord={vi.fn()} onRefresh={vi.fn()} {...defaultControls} />,
     ));
     expect(container.textContent).toContain('目前沒有付款紀錄');
   });
@@ -146,7 +176,7 @@ describe('PaymentReversalPanel', () => {
     expect(document.activeElement).toBe(textarea('沖銷原因'));
 
     await act(async () => root.render(
-      <PaymentReversalPanel payments={[payment]} canEdit={false} confirm={vi.fn()} onRecord={vi.fn()} onRefresh={vi.fn()} />,
+      <PaymentReversalPanel payments={[payment]} canEdit={false} confirm={vi.fn()} onRecord={vi.fn()} onRefresh={vi.fn()} {...defaultControls} />,
     ));
     expect(button('記錄沖銷 payment-1')).toBeFalsy();
   });

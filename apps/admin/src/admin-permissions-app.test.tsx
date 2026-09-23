@@ -82,6 +82,7 @@ const app = vi.hoisted(() => {
       return { data: { items: [{
       id: 'payment-1', memberId: 'member-1', lineDisplayName: '王小明', planId: 'plan-1',
       planName: '月費方案', amount: 2880, paidAt: '2026-09-01T02:00:00Z', status: 'confirmed',
+      ecpayMerchantTradeNo: 'LM260923001', ecpayTradeNo: '2609231234567890',
       }], total: 1, currentPage: 1, totalPages: 1 } };
     }
     if (path === '/api/data/plans' || path === '/api/data/transferRequests') return { data: { items: [], total: 0, currentPage: 1, totalPages: 1 } };
@@ -194,6 +195,34 @@ describe('administrator operation permission editing', () => {
     expect(app.api.put).toHaveBeenCalledWith('/api/payments/payment-1/reversal', {
       status: 'refunded', reason: '銀行退款已完成',
     });
+  });
+
+  it('keeps the native payment card open when filtering refund-required payments and clearing the filter', async () => {
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '訂閱管理')?.click());
+    await settle();
+
+    const disclosure = container.querySelector<HTMLDetailsElement>('details.paymentReversalPanel');
+    expect(disclosure?.open).toBe(false);
+    await act(async () => { disclosure?.querySelector('summary')?.click(); });
+    await settle();
+    expect(container.querySelector<HTMLDetailsElement>('details.paymentReversalPanel')?.open).toBe(true);
+    expect(container.textContent).toContain('綠界訂單編號 LM260923001');
+    expect(container.textContent).toContain('綠界交易編號 2609231234567890');
+    expect(container.querySelectorAll('.managementToolbar')).toHaveLength(1);
+
+    const status = container.querySelector<HTMLSelectElement>('[aria-label="篩選付款狀態"]');
+    expect(status).not.toBeNull();
+    await act(async () => { fireEvent.change(status!, { target: { value: 'refund_required' } }); });
+    await settle();
+    expect(app.api.get).toHaveBeenCalledWith(expect.stringMatching(/\/api\/data\/subscriptionRecords\?[^ ]*status=refund_required/));
+    expect(container.querySelector<HTMLDetailsElement>('details.paymentReversalPanel')?.open).toBe(true);
+    expect(container.querySelector<HTMLSelectElement>('[aria-label="篩選付款狀態"]')?.value).toBe('refund_required');
+
+    await act(async () => { fireEvent.change(container.querySelector<HTMLSelectElement>('[aria-label="篩選付款狀態"]')!, { target: { value: 'all' } }); });
+    await settle();
+    expect(container.querySelector<HTMLDetailsElement>('details.paymentReversalPanel')?.open).toBe(true);
   });
 
   it('shows a payment read error instead of false empty or stale actions and recovers inline', async () => {

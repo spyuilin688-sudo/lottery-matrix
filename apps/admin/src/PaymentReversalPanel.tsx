@@ -16,6 +16,9 @@ export type PaymentRecord = {
   reversedAt?: string | null;
   reversalReason?: string | null;
   reversedByName?: string | null;
+  transferRequestId?: string | null;
+  ecpayMerchantTradeNo?: string | null;
+  ecpayTradeNo?: string | null;
 };
 
 export type PaymentReversalConfirmation = {
@@ -32,6 +35,10 @@ type Props = {
   confirm: (request: PaymentReversalConfirmation) => Promise<boolean>;
   onRecord: (id: string, status: PaymentReversalStatus, reason: string) => Promise<unknown>;
   onRefresh: () => Promise<unknown>;
+  statusFilter: string;
+  onStatusFilterChange: (status: string) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 };
 
 const reasonMaxLength = 500;
@@ -73,7 +80,7 @@ function errorMessage(error: unknown) {
     || '沖銷記錄失敗，請確認資料後重試';
 }
 
-export function PaymentReversalPanel({ payments, loadError = '', canEdit, confirm, onRecord, onRefresh }: Props) {
+export function PaymentReversalPanel({ payments, loadError = '', canEdit, confirm, onRecord, onRefresh, statusFilter, onStatusFilterChange, open: isOpen, onOpenChange }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [status, setStatus] = useState<PaymentReversalStatus>('refunded');
   const [reason, setReason] = useState('');
@@ -188,13 +195,24 @@ export function PaymentReversalPanel({ payments, loadError = '', canEdit, confir
   };
 
   return (
-    <details className="panel paymentReversalPanel" open={loadError ? true : undefined}>
+    <details className="panel paymentReversalPanel" open={Boolean(loadError) || isOpen} onToggle={event => onOpenChange(event.currentTarget.open)}>
       <summary className="paymentReversalSummary">
         <span id="payment-reversal-title">付款紀錄與沖銷</span>
         <small>{loadError ? '讀取失敗' : payments === null ? '讀取中' : `${payments.length} 筆`}</small>
       </summary>
       <div className="paymentReversalBody" aria-labelledby="payment-reversal-title">
         <p className="paymentReversalHelp">僅記錄已在外部完成的退款、刷退或交易取消；不執行款項移轉，也不變更訂閱日期。</p>
+        <label className="paymentReversalFilter">
+          <span>付款狀態</span>
+          <select aria-label="篩選付款狀態" value={statusFilter} onChange={event => onStatusFilterChange(event.target.value)}>
+            <option value="all">全部狀態</option>
+            <option value="confirmed">已付款</option>
+            <option value="refund_required">需退款處理</option>
+            <option value="refunded">已退款</option>
+            <option value="chargeback">已刷退</option>
+            <option value="cancelled">已取消</option>
+          </select>
+        </label>
         {notice && <p className="paymentReversalNotice" role="status">{notice}</p>}
         <div className="paymentReversalList">
         {loadError ? (
@@ -218,6 +236,11 @@ export function PaymentReversalPanel({ payments, loadError = '', canEdit, confir
                 <strong>{payment.identityDisplay || "—"}</strong>
                 <span>{payment.planName || payment.planId || '未標示方案'} · NT${Number(payment.amount).toLocaleString('en-US')}</span>
                 <span>付款 {payment.id}</span>
+                {payment.ecpayMerchantTradeNo && <span>綠界訂單編號 {payment.ecpayMerchantTradeNo}</span>}
+                {payment.ecpayTradeNo && <span>綠界交易編號 {payment.ecpayTradeNo}</span>}
+                {!payment.ecpayMerchantTradeNo && !payment.ecpayTradeNo && (payment.transferRequestId
+                  ? <><span>銀行轉帳</span><span>轉帳申請 {payment.transferRequestId}</span></>
+                  : <span>付款來源未標示</span>)}
                 {payment.paidAt && <span>付款時間 {formatAdminDateTime(payment.paidAt)}</span>}
                 {payment.reversalReason && (
                   <span>沖銷原因 {payment.reversalReason}{payment.reversedByName ? `／${payment.reversedByName}` : ''}</span>

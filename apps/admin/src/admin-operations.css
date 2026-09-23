@@ -236,6 +236,9 @@
 .paymentReversalSummary small { float: right; margin: 2px 0 0 10px; color: #8f939b; font-size: 11px; font-weight: 500; }
 .paymentReversalBody { padding: 0 10px 8px; border-top: 1px solid #292c32; }
 .paymentReversalHelp { margin: 6px 0 4px; font-size: 12px; }
+.paymentReversalFilter { display: flex; align-items: center; gap: 8px; width: max-content; max-width: 100%; margin: 6px 0 8px; color: #989ca5; font-size: 12px; }
+.paymentReversalFilter select { min-width: 132px; max-width: 100%; min-height: 32px; padding: 4px 8px; border: 1px solid #343840; border-radius: 8px; background: #0b0d11; color: #eee; font-size: 12px; cursor: pointer; }
+.paymentReversalFilter select:focus-visible { outline: 2px solid #e7c46d; outline-offset: 2px; }
 .paymentReversalNotice,
 .paymentReversalError { margin: 6px 0; padding: 7px 8px; border-radius: 7px; font-size: 12px; }
 .paymentReversalNotice { border: 1px solid #34583d; background: #14271a; color: #a3dfb5; }

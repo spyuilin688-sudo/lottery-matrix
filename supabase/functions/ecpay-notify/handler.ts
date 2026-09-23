@@ -4,6 +4,7 @@ type NotificationConfig = { merchantId: string; hashKey: string; hashIv: string 
 type PaidOrder = { merchantId: string; merchantTradeNo: string; tradeNo: string; amount: number };
 type Dependencies = {
   config: NotificationConfig;
+  alreadyRecorded(order: PaidOrder): Promise<boolean>;
   verifyPaid(order: PaidOrder): Promise<boolean>;
   recordPaid(order: PaidOrder): Promise<unknown>;
 };
@@ -49,6 +50,7 @@ export function createEcpayNotifyHandler(dependencies: Dependencies) {
         tradeNo: fields.TradeNo,
         amount,
       };
+      if (await dependencies.alreadyRecorded(order)) return plain('1|OK', 200);
       if (!await dependencies.verifyPaid(order)) return plain('RETRY', 503);
       await dependencies.recordPaid(order);
       return plain('1|OK', 200);
