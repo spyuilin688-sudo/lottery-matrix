@@ -165,7 +165,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
         { title: "權限內容", items: registeredMemberFreeAccess
           ? ["目前免費開放期間，登入的有效會員可使用 Matrix 探索十三期與完整範圍、天衡、天樞、天衍及天工。", "Matrix 狀態進階資訊仍依訂閱權限開放。", "恢復收費模式時，天衍與天工依訂閱方案開放。"]
           : [...MATRIX_PRO_COMMON_FEATURES, "依訂閱方案顯示 Matrix 天衍、Matrix 天工權限。"] },
-        { title: "管理訂閱", items: ["可前往「我的」查看付款紀錄與管理訂閱。"] },
+        { title: "管理訂閱", items: ["可至「我的」查看目前訂閱狀態與付款紀錄，點選「訂閱方案／收費標準」查看方案並進入付款流程。"] },
       ],
     },
     {
