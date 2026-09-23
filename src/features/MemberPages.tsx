@@ -22,6 +22,7 @@ import { useSubscriptionPurchaseVisible } from "../subscription-purchase-visibil
 import { Navigate, ScreenId } from "./navigation";
 import { FeatureShell, SectionTitle } from "./shared";
 import { MATRIX_PRO_COMMON_FEATURES, SUBSCRIPTION_PAYMENT_NOTICE } from "../matrix-pro-copy";
+import { beginEcpayCheckout } from "../ecpay-checkout";
 import { usePaymentHistory } from "./use-payment-history";
 
 
@@ -637,6 +638,9 @@ export function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
 
 export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
   const appDialog = useAppDialog();
+  const paymentInFlight = useRef(false);
+  const [paymentStarting, setPaymentStarting] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const { profile: renewalProfile, error: renewalProfileError } = useSubscriptionProfile();
   const plans = [
     { code: "month", name: "月費方案", price: "$2,880", days: 30, icons: [], features: [...MATRIX_PRO_COMMON_FEATURES] },
@@ -690,9 +694,33 @@ export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
     return memberExpiryInTaipei(new Date(renewedAt).toISOString())?.date ?? "暫時無法計算";
   }, [selected.days, renewalProfile, renewalProfileError]);
   const handlePayment = async () => {
+    if (paymentInFlight.current) return;
     if (!await appDialog.confirm({ title: `確認以${selected.name}進行付款？`, confirmLabel: "確認付款" })) return;
-    saveManualTransferPlan(selected.code);
-    onNavigate("manual-transfer");
+    if (paymentInFlight.current) return;
+    paymentInFlight.current = true;
+    setPaymentStarting(true);
+    setPaymentError(null);
+    const memberScope = getAlgorithmCacheScope();
+    let submitted = false;
+    try {
+      const result = await beginEcpayCheckout(selected.code);
+      if (memberScope !== getAlgorithmCacheScope()) return;
+      if (result === 'manual') {
+        saveManualTransferPlan(selected.code);
+        onNavigate("manual-transfer");
+      } else {
+        submitted = true;
+      }
+    } catch {
+      if (memberScope === getAlgorithmCacheScope()) {
+        setPaymentError('無法開啟付款頁面，請稍後再試。');
+      }
+    } finally {
+      if (!submitted) {
+        paymentInFlight.current = false;
+        setPaymentStarting(false);
+      }
+    }
   };
   return (
     <ProfileDetailShell title="訂閱方案與收費標準" onNavigate={onNavigate} className="pro-plans-screen">
@@ -729,7 +757,8 @@ export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
           </div>
           <p className="auto-renew-note">{SUBSCRIPTION_PAYMENT_NOTICE}</p>
         </section>
-        <button type="button" className="confirm-payment primary-action branded-explore-action" onClick={handlePayment}><span>確定付款</span></button>
+        <button type="button" className="confirm-payment primary-action branded-explore-action" onClick={handlePayment} disabled={paymentStarting}><span>{paymentStarting ? "正在開啟付款頁面…" : "確定付款"}</span></button>
+        {paymentError && <p className="payment-note" role="alert">{paymentError}</p>}
         <p className="payment-note">點擊 確定付款 將跳轉付款頁面</p>
       </div>
     </ProfileDetailShell>
