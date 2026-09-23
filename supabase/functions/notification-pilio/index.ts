@@ -1,6 +1,7 @@
 import "edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 import { createPilioNotificationHandler } from "./handler.ts";
+import { requestResultProcessing } from "./result-ready.ts";
 
 function secret(name: string): string {
   const value = Deno.env.get(name)?.trim() ?? "";
@@ -45,14 +46,6 @@ Deno.serve(createPilioNotificationHandler({
     if (!response.ok) throw new Error("DISPATCH_REQUEST_FAILED");
   },
   async requestProcessing(result) {
-    const base = Deno.env.get("MATRIX_RAILWAY_API_BASE")?.trim()
-      || "https://heartfelt-generosity-production-9f2b.up.railway.app";
-    const response = await fetch(new URL("/jobs/result-ready", base), {
-      method: "POST", redirect: "error",
-      headers: { "Content-Type": "application/json", "x-matrix-notification-token": secret("MATRIX_NOTIFICATION_INGEST_TOKEN") },
-      body: JSON.stringify({ lottery: result.lottery, drawDate: result.drawDate }),
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!response.ok) throw new Error("RESULT_PROCESSING_REQUEST_FAILED");
+    await requestResultProcessing(result, secret("MATRIX_NOTIFICATION_INGEST_TOKEN"), Deno.env);
   },
 }));
