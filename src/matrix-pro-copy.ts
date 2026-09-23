@@ -7,4 +7,4 @@ export const MATRIX_PRO_COMMON_FEATURES = [
   "Matrix Pro - 專屬推播通知",
 ] as const;
 
-export const SUBSCRIPTION_PAYMENT_NOTICE = "Matrix Pro 訂閱付款將採用綠界金流；綠界付款與自動續訂尚未開放。";
+export const SUBSCRIPTION_PAYMENT_NOTICE = "Matrix Pro 一次付款採用綠界金流；額度用滿後改為人工轉帳與後台開通。自動續訂未開放。";

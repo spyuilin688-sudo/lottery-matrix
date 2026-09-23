@@ -14,11 +14,13 @@ const selection = vi.hoisted(() => ({
   readManualTransferPlan: vi.fn(),
   saveManualTransferPlan: vi.fn(),
 }));
+const ecpay = vi.hoisted(() => ({ beginEcpayCheckout: vi.fn() }));
 vi.mock('../member-api', async (importOriginal) => ({
   ...await importOriginal<typeof import('../member-api')>(),
   ...memberApi,
 }));
 vi.mock('../manual-transfer-selection', () => selection);
+vi.mock('../ecpay-checkout', () => ecpay);
 vi.mock('../dialog/AppDialog', () => ({
   useAppDialog: () => ({ confirm: vi.fn().mockResolvedValue(true), alert: vi.fn() }),
 }));
@@ -61,6 +63,7 @@ describe('Matrix Pro manual bank transfer', () => {
       id: 'transfer-1', planName: '月費方案', amount: 2880,
       accountLastFive: '12345', submittedAt: '2026-08-30T08:00:00Z', status: 'pending',
     });
+    ecpay.beginEcpayCheckout.mockResolvedValue('submitted');
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
       value: { writeText: vi.fn().mockResolvedValue(undefined) },
@@ -140,18 +143,37 @@ describe('Matrix Pro manual bank transfer', () => {
     expect(screen.queryByText('2027/08/22')).not.toBeInTheDocument();
   });
 
-  it('opens transfer reporting after plan payment confirmation', async () => {
+  it('starts one-time Green World checkout without entering manual transfer', async () => {
     const onNavigate = vi.fn();
     render(<ProPlansPage onNavigate={onNavigate} />);
 
     expect(screen.queryByRole('heading', { name: '轉帳資料' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '確定付款' })).toHaveClass('primary-action', 'branded-explore-action');
     expect(screen.getByRole('checkbox', { name: '自動續訂' })).toBeDisabled();
-    expect(screen.getByText('Matrix Pro 訂閱付款將採用綠界金流；綠界付款與自動續訂尚未開放。')).toBeInTheDocument();
+    expect(screen.getByText(/自動續訂未開放/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '確定付款' }));
+    await waitFor(() => expect(ecpay.beginEcpayCheckout).toHaveBeenCalledExactlyOnceWith('month'));
+    expect(selection.saveManualTransferPlan).not.toHaveBeenCalled();
+    expect(onNavigate).not.toHaveBeenCalledWith('manual-transfer');
+  });
 
+  it('retains manual transfer after the operator switches away from Green World', async () => {
+    ecpay.beginEcpayCheckout.mockResolvedValue('manual');
+    const onNavigate = vi.fn();
+    render(<ProPlansPage onNavigate={onNavigate} />);
+    fireEvent.click(screen.getByRole('button', { name: '確定付款' }));
     await waitFor(() => expect(selection.saveManualTransferPlan).toHaveBeenCalledWith('month'));
     expect(onNavigate).toHaveBeenCalledWith('manual-transfer');
+  });
+
+  it('shows an error without redirecting or creating a manual transfer on checkout failure', async () => {
+    ecpay.beginEcpayCheckout.mockRejectedValue(new Error('network'));
+    const onNavigate = vi.fn();
+    render(<ProPlansPage onNavigate={onNavigate} />);
+    fireEvent.click(screen.getByRole('button', { name: '確定付款' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('無法開啟付款頁面，請稍後再試。');
+    expect(screen.getByRole('button', { name: '確定付款' })).toBeEnabled();
+    expect(onNavigate).not.toHaveBeenCalled();
   });
 
   it('omits bank details and account copying while allowing transfer reporting', async () => {
