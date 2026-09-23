@@ -781,7 +781,7 @@ export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
         <button type="button" className="confirm-payment primary-action branded-explore-action" onClick={handlePayment} disabled={paymentStarting || Boolean(restriction)} aria-describedby={restriction ? "plan-purchase-restriction" : undefined}><span>{paymentStarting ? "正在開啟付款頁面…" : "確定付款"}</span></button>
         {restriction && <p className="payment-note" id="plan-purchase-restriction" role="status">{restriction}</p>}
         {paymentError && <p className="payment-note" role="alert">{paymentError}</p>}
-        {!restriction && <p className="payment-note">點擊 確定付款 將跳轉付款頁面</p>}
+        {!restriction && <p className="payment-note">按下「確定付款」後，將進入目前提供的付款流程。</p>}
       </div>
     </ProfileDetailShell>
   );
@@ -1337,7 +1337,7 @@ export function PrivacyPolicyPage({ onNavigate }: { onNavigate: Navigate }) {
     <LegalInfoDocument title="隱私權政策" onNavigate={onNavigate}>
       <LegalInfoSection title="一、蒐集的資料"><DetailList items={["登入服務所提供的帳號識別資料", ...(subscriptionPurchaseVisible ? ["Matrix Pro 訂閱狀態", "訂閱到期日"] : []), "啟動碼使用紀錄", "推薦碼使用紀錄", "推薦成功人數", "通知設定"]} /></LegalInfoSection>
       <LegalInfoSection title="二、使用目的"><DetailList items={["會員登入與帳號識別", ...(subscriptionPurchaseVisible ? ["顯示會員及訂閱狀態", "Matrix Pro 啟用、續訂及權限管理"] : []), "提供使用者已選擇的功能", ...(subscriptionPurchaseVisible ? ["推薦活動資格與獎勵管理"] : []), "系統通知與服務通知"]} /></LegalInfoSection>
-      <LegalInfoSection title="三、第三方服務"><p>目前使用 LINE 與 Google 登入服務。</p>{subscriptionPurchaseVisible && <p>訂閱付款使用綠界金流。</p>}</LegalInfoSection>
+      <LegalInfoSection title="三、第三方服務"><p>目前使用 LINE 與 Google 登入服務。</p>{subscriptionPurchaseVisible && <p>使用綠界付款時，交易由綠界金流處理。</p>}</LegalInfoSection>
       <LegalInfoSection title="四、資料使用範圍"><p>蒐集之資料，僅用於本政策所載之使用目的及提供樂彩 Matrix 服務，不會於未經使用者同意或法律另有規定之情況下，提供予第三方。</p></LegalInfoSection>
       <LegalInfoSection title="五、資料安全"><p>樂彩 Matrix 將採取合理之安全措施保護會員資料，避免未經授權之存取、使用、修改或洩漏。</p></LegalInfoSection>
       <LegalInfoSection title="六、隱私權政策調整"><p>樂彩 Matrix 保留修改本隱私權政策之權利，更新後將公布於本頁面，並自公告日起生效。</p></LegalInfoSection>
@@ -1354,7 +1354,7 @@ export function DisclaimerPage({ onNavigate }: { onNavigate: Navigate }) {
       <LegalInfoSection title="三、使用者決定"><p>使用者應自行決定如何使用服務內提供的資料、{subscriptionPurchaseVisible ? "功能及分析結果" : "功能及查詢結果"}，並自行承擔相關決定所產生的結果。</p></LegalInfoSection>
       <LegalInfoSection title="四、資料差異"><p>如服務內資料與官方公布資料不同，請以官方公布資料為準。</p></LegalInfoSection>
       <LegalInfoSection title="五、系統與服務"><p>樂彩 Matrix 不保證服務持續不中斷、完全無錯誤，或所有功能於任何時間皆可正常使用。</p><p>如因系統維護、更新、網路異常、第三方服務或其他原因造成服務中斷、延遲或資料顯示異常，將依實際情況處理。</p></LegalInfoSection>
-      <LegalInfoSection title="六、第三方服務"><p>本服務使用 LINE 與 Google 登入服務。</p>{subscriptionPurchaseVisible && <p>訂閱付款使用綠界金流。</p>}<p>第三方服務之使用方式、資料處理及服務狀態，依各第三方服務提供者之規定辦理。</p></LegalInfoSection>
+      <LegalInfoSection title="六、第三方服務"><p>本服務使用 LINE 與 Google 登入服務。</p>{subscriptionPurchaseVisible && <p>使用綠界付款時，交易由綠界金流處理。</p>}<p>第三方服務之使用方式、資料處理及服務狀態，依各第三方服務提供者之規定辦理。</p></LegalInfoSection>
       <LegalInfoSection title="七、責任範圍"><p>因使用或無法使用樂彩 Matrix 所提供的資料、{subscriptionPurchaseVisible ? "功能、分析結果或第三方服務" : "功能、查詢結果或第三方服務"}所產生的影響，應依實際情況及相關法令認定。</p></LegalInfoSection>
       <LegalInfoSection title="八、內容調整"><p>樂彩 Matrix 得依服務實際運作需要調整功能、內容及相關說明。</p><p>如涉及會員權益或重要內容調整，將於服務內公告。</p></LegalInfoSection>
       <LegalInfoSection title="九、最終說明"><p>本聲明與免責事項如與中華民國法令的強制或禁止規定不同，依相關法令辦理。</p><p>樂彩 Matrix 保留服務內容、功能說明、資料呈現、規則內容、修改、解釋及最終決定之權利。</p></LegalInfoSection>
