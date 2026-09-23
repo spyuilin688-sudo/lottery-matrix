@@ -277,6 +277,20 @@ test('notification recovery uses demand-driven scheduling with an hourly fallbac
     )).rows[0].next_at;
     assert.equal(new Date(remaining).toISOString(), '2030-01-01T00:20:00.000Z');
 
+    // A pending outbox row without a retry timestamp is due immediately.
+    await db.exec(`
+      insert into public.notification_outbox(id,status,next_attempt_at)
+      values('10000000-0000-4000-8000-000000000004','pending',null);
+    `);
+    const untimedRetry = (await db.query(
+      `select private.notification_recovery_next_at('2030-01-01T00:00:00Z') as next_at`,
+    )).rows[0].next_at;
+    assert.equal(new Date(untimedRetry).toISOString(), '2030-01-01T00:05:00.000Z');
+    await db.exec(`
+      delete from public.notification_outbox
+      where id='10000000-0000-4000-8000-000000000004';
+    `);
+
     // A missing native delivery remains eligible for the five-minute retry.
     await db.exec(`
       update public.notification_outbox

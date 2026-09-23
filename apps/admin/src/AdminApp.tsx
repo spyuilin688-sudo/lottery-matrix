@@ -730,14 +730,21 @@ function AdminApp() {
       }),
       async () => {
         const current = captureView(true);
+        const sameView = captureView();
         setBusy(true);
         setError("");
         try {
           const requestId = revenueResetRequestId.current ?? crypto.randomUUID();
           revenueResetRequestId.current = requestId;
           await api.post("/api/revenue/reset", { requestId });
+          // A successful response commits this operation. The report refresh is
+          // a separate read; another confirmed reset must receive a new key.
+          if (revenueResetRequestId.current === requestId) revenueResetRequestId.current = null;
           if (!current()) return;
-          if (await load("收入報表")) revenueResetRequestId.current = null;
+          const refreshVersion = loadVersion.current + 1;
+          if (!await load("收入報表") && sameView() && loadVersion.current === refreshVersion) {
+            setError("收入已重設，但報表載入失敗；請重新整理");
+          }
         } catch (e) {
           if (current()) setError(e instanceof Error ? e.message : "收入重設失敗");
         } finally {

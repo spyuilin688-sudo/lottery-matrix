@@ -37,7 +37,7 @@ describe('AdminApp weak-network bootstrap',()=>{
     expect(client.post.mock.calls[2][1].requestId).not.toBe(client.post.mock.calls[0][1].requestId);
   });
 
-  it('reuses the reset identity when the reset succeeds but reading the dashboard fails', async () => {
+  it('starts a new reset after a successful POST even if refreshing the dashboard fails', async () => {
     let failDashboardRead = false;
     client.get.mockImplementation(async (path: string) => {
       if (path === '/api/bootstrap') return { data: { admin: { id: 'admin-1', name: 'Owner', role: '超級管理員' } } };
@@ -58,11 +58,11 @@ describe('AdminApp weak-network bootstrap',()=>{
       fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: '確認重設' }));
     };
     await reset();
-    await waitFor(() => expect(screen.getByText('DASHBOARD_DOWN')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('收入已重設，但報表載入失敗；請重新整理')).toBeTruthy());
     fireEvent.click(screen.getByRole('button', { name: /收入報表/ }));
     await reset();
     await waitFor(() => expect(client.post).toHaveBeenCalledTimes(2));
-    expect(client.post.mock.calls[1][1]).toEqual(client.post.mock.calls[0][1]);
+    expect(client.post.mock.calls[1][1].requestId).not.toBe(client.post.mock.calls[0][1].requestId);
   });
 
   it('does not reuse one administrator’s uncertain reset after another administrator signs in', async () => {
