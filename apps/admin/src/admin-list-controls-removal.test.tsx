@@ -71,7 +71,7 @@ it('keeps operational search controls and record counts in one compact toolbar',
       expect(toolbar?.querySelector('input[type="date"]')).toBeNull();
       expect(toolbar?.querySelector('[aria-label*="排序"]')).toBeNull();
       expect(toolbar?.querySelector('[aria-label*="方向"]')).toBeNull();
-      expect(toolbar?.querySelector('.managementCount')?.textContent).toContain('30 筆');
+      await waitFor(() => expect(container.querySelector('.managementToolbar .managementCount')?.textContent).toContain('30 筆'));
     }
 
     for (const page of ['登入紀錄', '審計日誌']) {
