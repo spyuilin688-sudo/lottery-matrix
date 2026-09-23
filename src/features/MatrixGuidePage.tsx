@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { Navigate } from "./navigation";
 import { FeatureShell } from "./shared";
-import { MATRIX_PRO_COMMON_FEATURES, SUBSCRIPTION_PAYMENT_NOTICE } from "../matrix-pro-copy";
+import { MATRIX_PRO_COMMON_FEATURES } from "../matrix-pro-copy";
 import { usePermissionSettings } from "../permission-settings";
 
 export const GUIDE_LOOP_GROUPS = ["leading", "canonical", "trailing"] as const;
@@ -15,9 +15,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
   const registeredMemberFreeAccess = usePermissionSettings()?.registeredMemberFreeAccess === true;
   const exploreAccessCopy = registeredMemberFreeAccess
     ? "二期基本查詢可直接使用；登入的有效會員目前可免費使用十三期與完整範圍。"
-    : subscriptionPurchaseVisible
-      ? "二期基本查詢可直接使用；十三期與完整範圍依 Matrix Pro 權限開放。"
-      : "二期基本查詢可直接使用；十三期與完整範圍依目前系統權限設定開放。";
+    : "二期基本查詢可直接使用；十三期與完整範圍依目前帳號權限開放。";
   const tianhengAccessCopy = registeredMemberFreeAccess
     ? "三期基本查詢可直接使用；登入的有效會員目前可免費使用十三期與完整範圍。"
     : "三期基本查詢可直接使用；十三期與完整範圍依目前帳號權限開放。";
@@ -167,7 +165,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
         { title: "權限內容", items: registeredMemberFreeAccess
           ? ["目前免費開放期間，登入的有效會員可使用 Matrix 探索十三期與完整範圍、天衡、天樞、天衍及天工。", "Matrix 狀態進階資訊仍依訂閱權限開放。", "恢復收費模式時，天衍與天工依訂閱方案開放。"]
           : [...MATRIX_PRO_COMMON_FEATURES, "依訂閱方案顯示 Matrix 天衍、Matrix 天工權限。"] },
-        { title: "付款與續訂", items: [SUBSCRIPTION_PAYMENT_NOTICE, "可前往「我的」查看付款紀錄與管理訂閱。"] },
+        { title: "管理訂閱", items: ["可前往「我的」查看付款紀錄與管理訂閱。"] },
       ],
     },
     {

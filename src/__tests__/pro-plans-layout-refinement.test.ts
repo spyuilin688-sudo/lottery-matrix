@@ -32,7 +32,6 @@ function mountPlans() {
             <h2>管理訂閱／續訂方案</h2>
             <dl><div><dt>已選方案：</dt><dd>月費方案</dd></div></dl>
             <div class="auto-renew-setting"><label><input type="checkbox" /><span>自動續訂</span></label><strong>目前狀態：關閉</strong></div>
-            <p class="auto-renew-note">手動轉帳不會自動扣款。</p>
           </section>
           <button class="confirm-payment primary-action branded-explore-action">確定付款</button>
           <p class="payment-note">點擊確定付款將跳轉付款頁面</p>
@@ -81,7 +80,6 @@ describe("Matrix Pro plan layout refinement", () => {
     expect(getComputedStyle(document.querySelector(".renewal-card dt")!).fontWeight).toBe("700");
     expect(getComputedStyle(document.querySelector(".renewal-card dd")!).fontWeight).toBe("700");
     expect(getComputedStyle(document.querySelector(".auto-renew-setting label")!).fontWeight).toBe("700");
-    expect(getComputedStyle(document.querySelector(".auto-renew-note")!).fontWeight).toBe("700");
     expect(getComputedStyle(document.querySelector(".auto-renew-setting label")!).gap).toBe("4px");
     expect(getComputedStyle(document.querySelector(".auto-renew-setting input")!).width).toBe("14px");
     expect(getComputedStyle(document.querySelector(".auto-renew-setting input")!).height).toBe("14px");

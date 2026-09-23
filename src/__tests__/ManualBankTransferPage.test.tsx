@@ -150,7 +150,7 @@ describe('Matrix Pro manual bank transfer', () => {
     expect(screen.queryByRole('heading', { name: '轉帳資料' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '確定付款' })).toHaveClass('primary-action', 'branded-explore-action');
     expect(screen.getByRole('checkbox', { name: '自動續訂' })).toBeDisabled();
-    expect(screen.getByText(/自動續訂未開放/)).toBeInTheDocument();
+    expect(screen.queryByText(/自動續訂未開放/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '確定付款' }));
     await waitFor(() => expect(ecpay.beginEcpayCheckout).toHaveBeenCalledExactlyOnceWith('month'));
     expect(selection.saveManualTransferPlan).not.toHaveBeenCalled();
