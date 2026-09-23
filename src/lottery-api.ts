@@ -58,6 +58,7 @@ function invalidateLotteryData(lottery: NumberBallLottery) {
 
 export type LatestLotteryResult = {
   lottery: NumberBallLottery;
+  period?: string;
 };
 
 export type LatestLotteryResultState = {
@@ -409,6 +410,13 @@ function parseLatestLotteryList(values: unknown, field: string): LatestLotteryRe
       throw new Error(`Lottery API invalid response: duplicate ${field}`);
     }
     seen.add(lottery);
+    if (field === 'items') {
+      const period = (value as { period?: unknown }).period;
+      if (period !== undefined && (typeof period !== 'string' || !period.trim())) {
+        throw new Error(`Lottery API invalid response: ${field}[${index}].period`);
+      }
+      return period === undefined ? { lottery } : { lottery, period };
+    }
     return { lottery };
   });
 }

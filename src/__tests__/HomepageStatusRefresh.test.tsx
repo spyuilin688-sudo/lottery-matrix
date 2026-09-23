@@ -27,7 +27,7 @@ import { API_REQUEST_TIMEOUT_MS } from '../lib/api-resilience';
 
 vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} unobserve() {} });
 const lotteries: LotteryId[] = ['今彩539', '天天樂', '六合彩', '大樂透'];
-const response = (status = 'ACTIVE') => ({ kind: 'status-summary-batch', items: lotteries.map(lottery => ({ lottery, status: 200, body: { kind: 'status-summary', lottery, summary: { status, count: 1, message: '' } } })) });
+const response = (status = 'ACTIVE') => ({ kind: 'status-summary-batch', items: lotteries.map(lottery => ({ lottery, status: 200, body: { kind: 'status-summary', lottery, drawPeriod: lottery === '今彩539' ? '115000231' : '12008', summary: { status, count: 1, message: '' } } })) });
 const session = (memberId: string, tokenVersion = 1) => ({
   user: { id: memberId },
   access_token: `header.${btoa(JSON.stringify({ session_id: memberId, version: tokenVersion }))}.signature`,
@@ -43,7 +43,7 @@ beforeEach(() => {
   api.fetchLatestLotteryResultState.mockReset().mockResolvedValue({
     drawDate: '2026-09-23',
     dueLotteries: ['今彩539'],
-    items: [{ lottery: '今彩539' }],
+    items: [{ lottery: '今彩539', period: '115000231' }],
   });
   api.refreshLatestDraw.mockReset().mockResolvedValue({
     period: '115000231',
@@ -124,6 +124,64 @@ test('快速 preliminary 只更新畫面不會誤判完成，正式 confirmed �
 
   expect(api.fetchLatestLotteryResultState).not.toHaveBeenCalled();
   expect(api.fetchMatrixStatusSummaries).not.toHaveBeenCalled();
+});
+
+test('正式開獎後仍須等待同一期 Matrix 狀態，前一期快取不可停止檢查', async () => {
+  api.fetchLatestLotteryResultState.mockResolvedValue({
+    drawDate: '2026-09-23',
+    dueLotteries: ['今彩539'],
+    items: [{ lottery: '今彩539', period: '115000231' }],
+  });
+  api.fetchMatrixStatusSummaries.mockImplementation(async (requested: LotteryId[]) => ({
+    kind: 'status-summary-batch',
+    items: requested.map(lottery => ({
+      lottery,
+      status: 200,
+      body: {
+        kind: 'status-summary', lottery,
+        drawPeriod: lottery === '今彩539' ? '115000230' : '12008',
+        summary: { status: 'FOCUS', count: 1, message: '' },
+      },
+    })),
+  }));
+
+  mount(); await flush();
+  api.fetchLatestLotteryResultState.mockClear();
+  await act(async () => { await vi.advanceTimersByTimeAsync(10 * 60_000); });
+  expect(api.fetchLatestLotteryResultState).toHaveBeenCalledTimes(1);
+
+  api.fetchMatrixStatusSummaries.mockImplementation(async (requested: LotteryId[]) => ({
+    kind: 'status-summary-batch',
+    items: requested.map(lottery => ({
+      lottery,
+      status: 200,
+      body: {
+        kind: 'status-summary', lottery,
+        drawPeriod: lottery === '今彩539' ? '115000231' : '12008',
+        summary: { status: 'ACTIVE', count: 1, message: '' },
+      },
+    })),
+  }));
+  api.fetchLatestLotteryResultState.mockClear();
+  await act(async () => { await vi.advanceTimersByTimeAsync(10 * 60_000); });
+  expect(api.fetchLatestLotteryResultState).toHaveBeenCalledTimes(1);
+
+  api.fetchLatestLotteryResultState.mockClear();
+  await act(async () => { await vi.advanceTimersByTimeAsync(10 * 60_000); });
+  expect(api.fetchLatestLotteryResultState).not.toHaveBeenCalled();
+});
+
+test('同日舊期號的正式開獎卡不能讓首頁停止本期檢查', async () => {
+  api.refreshLatestDraw
+    .mockResolvedValueOnce({ period: '115000230', drawDate: '2026/09/23', resultStatus: 'confirmed' })
+    .mockResolvedValueOnce({ period: '115000231', drawDate: '2026/09/23', resultStatus: 'confirmed' });
+  mount(); await flush();
+  api.fetchLatestLotteryResultState.mockClear();
+  await act(async () => { await vi.advanceTimersByTimeAsync(10 * 60_000); });
+  expect(api.fetchLatestLotteryResultState).toHaveBeenCalledTimes(1);
+  api.fetchLatestLotteryResultState.mockClear();
+  await act(async () => { await vi.advanceTimersByTimeAsync(10 * 60_000); });
+  expect(api.fetchLatestLotteryResultState).not.toHaveBeenCalled();
 });
 
 test('批次中的單一彩種失敗不影響其他彩種', async () => {
