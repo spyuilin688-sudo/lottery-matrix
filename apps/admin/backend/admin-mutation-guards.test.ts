@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-const migration = readFileSync(new URL('../../../supabase/migrations/20260923150000_admin_mutation_guards.sql', import.meta.url), 'utf8');
+const migration = readFileSync(new URL('../../../supabase/migrations/20260923125002_admin_mutation_guards.sql', import.meta.url), 'utf8');
 const adminA = '00000000-0000-4000-8000-000000000001';
 const adminB = '00000000-0000-4000-8000-000000000002';
 const member = '00000000-0000-4000-8000-000000000010';

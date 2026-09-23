@@ -4,7 +4,7 @@ import test from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
 
 const migration = new URL('../supabase/migrations/20260923083441_ecpay_one_time_checkout.sql', import.meta.url);
-const paymentGuardMigration = new URL('../supabase/migrations/20260923160000_guard_payment_plan_entitlements.sql', import.meta.url);
+const paymentGuardMigration = new URL('../supabase/migrations/20260923125012_guard_payment_plan_entitlements.sql', import.meta.url);
 const manualTransferMigration = new URL('../supabase/migrations/20260830060000_manual_bank_transfer.sql', import.meta.url);
 const latestManualReviewMigration = new URL('../supabase/migrations/20260905140908_repair_admin_backend_rpc_execution.sql', import.meta.url);
 const reversalMigration = new URL('../supabase/migrations/20260908210936_record_payment_reversal.sql', import.meta.url);
