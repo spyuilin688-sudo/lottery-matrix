@@ -800,10 +800,23 @@ describe('admin revenue reset route wiring', () => {
   it('stores a new reset baseline after an authenticated super-admin request', async () => {
     wiring.supabaseRequest.mockResolvedValueOnce([{ id: 1, reset_at: '2026-09-02T06:45:00.000Z' }]);
     const route = 'POST /api/revenue/reset';
-    const context = await authenticate(route, sessionContext());
+    const context = await authenticate(route, {
+      ...sessionContext(), body: { requestId: '00000000-0000-4000-8000-000000000123' },
+    });
     const routeHandler = routes[route][2] as (input: typeof context) => Promise<unknown>;
     await expect(routeHandler(context)).resolves.toMatchObject({ body: { resetAt: expect.any(String) }, status: 200 });
-    expect(wiring.supabaseRequest).toHaveBeenCalledWith('rpc/admin_reset_revenue_baseline', expect.objectContaining({ method: 'POST' }));
+    expect(wiring.supabaseRequest).toHaveBeenCalledWith('rpc/admin_reset_revenue_baseline_v2', expect.objectContaining({
+      method: 'POST', body: expect.stringContaining('"p_request_id":"00000000-0000-4000-8000-000000000123"'),
+    }));
+  });
+
+  it('rejects a reset without a client request identity before advancing the baseline', async () => {
+    wiring.supabaseRequest.mockClear();
+    const route = 'POST /api/revenue/reset';
+    const context = await authenticate(route, sessionContext());
+    const routeHandler = routes[route][2] as (input: typeof context) => Promise<unknown>;
+    await expect(routeHandler(context)).resolves.toMatchObject({ status: 400 });
+    expect(wiring.supabaseRequest).not.toHaveBeenCalled();
   });
 });
 

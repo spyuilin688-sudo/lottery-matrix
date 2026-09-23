@@ -588,6 +588,7 @@ export const transferStatusLabels = {
 
 export const paymentStatusLabels = {
   ...transferStatusLabels,
+  refund_required: "需退款處理",
   refunded: "已退款",
   chargeback: "已刷退",
   cancelled: "交易已取消",
@@ -636,6 +637,21 @@ export function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
   );
 }
 
+const purchasePlanRank: Record<ManualTransferPlanCode, number> = { month: 1, quarter: 2, year: 3 };
+const currentPlanRank: Record<string, number> = { 月費方案: 1, 季費方案: 2, 年費方案: 3 };
+
+function purchaseBlockReason(profile: MemberProfileResponse | null, error: boolean, code: ManualTransferPlanCode): string | null {
+  if (error) return "會員資料載入失敗，請稍後重新開啟方案頁。";
+  if (!profile) return "正在讀取會員資料，請稍候。";
+  if (profile.isLifetime) return "永久會員無需再購買月／季／年方案。";
+  const expiry = profile.planExpiresAt ? Date.parse(profile.planExpiresAt) : 0;
+  if (profile.planExpiresAt && !Number.isFinite(expiry)) return "暫時無法確認訂閱狀態，請稍後重新開啟方案頁。";
+  if (expiry > Date.now() && (currentPlanRank[profile.planName ?? ""] ?? 0) > purchasePlanRank[code]) {
+    return `目前有效的${profile.planName}無法購買較低方案；可選擇同級或升級。`;
+  }
+  return null;
+}
+
 export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
   const appDialog = useAppDialog();
   const paymentInFlight = useRef(false);
@@ -652,6 +668,11 @@ export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedPlan, setSelectedPlan] = useState(0);
   const selected = plans[selectedPlan];
+  const restriction = purchaseBlockReason(renewalProfile, renewalProfileError, selected.code);
+  const restrictionRef = useRef(restriction);
+  restrictionRef.current = restriction;
+  const selectedCodeRef = useRef(selected.code);
+  selectedCodeRef.current = selected.code;
   const scrollToCarouselPosition = (position: number, behavior: ScrollBehavior = "auto") => {
     const carousel = carouselRef.current;
     const card = carousel?.querySelector<HTMLElement>(`[data-carousel-position="${position}"]`);
@@ -690,19 +711,20 @@ export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
     if (!renewalProfile) return "讀取中";
     const expiry = renewalProfile.planExpiresAt ? Date.parse(renewalProfile.planExpiresAt) : 0;
     if (!Number.isFinite(expiry)) return "暫時無法計算";
+    if (restriction) return "不適用";
     const renewedAt = Math.max(Date.now(), expiry) + selected.days * 86_400_000;
     return memberExpiryInTaipei(new Date(renewedAt).toISOString())?.date ?? "暫時無法計算";
-  }, [selected.days, renewalProfile, renewalProfileError]);
+  }, [selected.days, renewalProfile, renewalProfileError, restriction]);
   const handlePayment = async () => {
-    if (paymentInFlight.current) return;
-    if (!await appDialog.confirm({ title: `確認以${selected.name}進行付款？`, confirmLabel: "確認付款" })) return;
-    if (paymentInFlight.current) return;
+    if (paymentInFlight.current || restrictionRef.current) return;
     paymentInFlight.current = true;
-    setPaymentStarting(true);
-    setPaymentError(null);
     const memberScope = getAlgorithmCacheScope();
     let submitted = false;
     try {
+      if (!await appDialog.confirm({ title: `確認以${selected.name}進行付款？`, confirmLabel: "確認付款" })) return;
+      if (memberScope !== getAlgorithmCacheScope() || restrictionRef.current || selectedCodeRef.current !== selected.code) return;
+      setPaymentStarting(true);
+      setPaymentError(null);
       const result = await beginEcpayCheckout(selected.code);
       if (memberScope !== getAlgorithmCacheScope()) return;
       if (result === 'manual') {
@@ -756,9 +778,10 @@ export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
             <strong data-active={false}>目前狀態：關閉</strong>
           </div>
         </section>
-        <button type="button" className="confirm-payment primary-action branded-explore-action" onClick={handlePayment} disabled={paymentStarting}><span>{paymentStarting ? "正在開啟付款頁面…" : "確定付款"}</span></button>
+        <button type="button" className="confirm-payment primary-action branded-explore-action" onClick={handlePayment} disabled={paymentStarting || Boolean(restriction)} aria-describedby={restriction ? "plan-purchase-restriction" : undefined}><span>{paymentStarting ? "正在開啟付款頁面…" : "確定付款"}</span></button>
+        {restriction && <p className="payment-note" id="plan-purchase-restriction" role="status">{restriction}</p>}
         {paymentError && <p className="payment-note" role="alert">{paymentError}</p>}
-        <p className="payment-note">點擊 確定付款 將跳轉付款頁面</p>
+        {!restriction && <p className="payment-note">點擊 確定付款 將跳轉付款頁面</p>}
       </div>
     </ProfileDetailShell>
   );
@@ -778,6 +801,8 @@ export function ManualTransferPage({ onNavigate }: { onNavigate: Navigate }) {
 
 function ManualTransferForm({ onNavigate, scope, planCode }: { onNavigate: Navigate; scope: number; planCode: ManualTransferPlanCode | null }) {
   const plan = planCode ? manualTransferPlans[planCode] : null;
+  const { profile, error: profileError } = useSubscriptionProfile();
+  const restriction = planCode ? purchaseBlockReason(profile, profileError, planCode) : null;
   const [lastFive, setLastFive] = useState("");
   const [pending, setPending] = useState<MemberTransferRequest | null>(null);
   const [loading, setLoading] = useState(Boolean(plan));
@@ -804,7 +829,7 @@ function ManualTransferForm({ onNavigate, scope, planCode }: { onNavigate: Navig
   if (!plan || !planCode) return null;
 
   const submit = async () => {
-    if (lastFive.length !== 5 || loading || submitInFlight.current || pending || scope !== getAlgorithmCacheScope()) return;
+    if (lastFive.length !== 5 || loading || submitInFlight.current || pending || restriction || scope !== getAlgorithmCacheScope()) return;
     const revision = ++requestRevision.current;
     const isCurrent = () => revision === requestRevision.current && scope === getAlgorithmCacheScope();
     submitInFlight.current = true;
@@ -853,12 +878,13 @@ function ManualTransferForm({ onNavigate, scope, planCode }: { onNavigate: Navig
           maxLength={5}
           value={lastFive}
           onChange={(event) => setLastFive(event.target.value.replace(/\D/g, "").slice(0, 5))}
-          disabled={Boolean(pending)}
+          disabled={Boolean(pending) || Boolean(restriction)}
         />
+        {restriction ? <p role="status">{restriction}</p> : null}
         {loading ? <p role="status">申請狀態載入中</p> : null}
         {pending ? <p className="manual-transfer-pending"><strong>{pending.status === "pending" ? "待確認" : transferStatusLabels[pending.status]}</strong><span>已有待確認申請</span></p> : null}
         {error ? <p role="alert">{error}</p> : null}
-        <button type="button" className="confirm-payment manual-transfer-submit" disabled={loading || submitting || Boolean(pending) || lastFive.length !== 5} onClick={() => void submit()}>{submitting ? "提交中" : "提交"}</button>
+        <button type="button" className="confirm-payment manual-transfer-submit" disabled={loading || submitting || Boolean(pending) || Boolean(restriction) || lastFive.length !== 5} onClick={() => void submit()}>{submitting ? "提交中" : "提交"}</button>
       </section>
     </ProfileDetailShell>
   );

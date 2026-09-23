@@ -15,6 +15,7 @@ const purchaseSetting = vi.hoisted(() => ({ visible: false }));
 vi.mock("../subscription-purchase-visibility", () => ({ useSubscriptionPurchaseVisible: () => purchaseSetting.visible }));
 
 const memberApi = vi.hoisted(() => ({ bootstrapMember: vi.fn(), fetchMemberProfile: vi.fn(), fetchMemberPaymentHistory: vi.fn() }));
+const checkout = vi.hoisted(() => ({ beginEcpayCheckout: vi.fn() }));
 const lineAuth = vi.hoisted(() => ({
   prepareLineLoginUrl: vi.fn(),
   shouldUseDirectLineBrowserLink: vi.fn(),
@@ -50,6 +51,7 @@ vi.mock("../member-api", () => ({
   fetchMemberProfile: memberApi.fetchMemberProfile,
   fetchMemberPaymentHistory: memberApi.fetchMemberPaymentHistory,
 }));
+vi.mock("../ecpay-checkout", () => ({ beginEcpayCheckout: checkout.beginEcpayCheckout }));
 vi.mock("../auth/line-auth", () => ({
   prepareLineLoginUrl: lineAuth.prepareLineLoginUrl,
   shouldUseDirectLineBrowserLink: lineAuth.shouldUseDirectLineBrowserLink,
@@ -63,7 +65,7 @@ vi.mock("../dialog/AppDialog", () => ({ useAppDialog: () => appDialog }));
 vi.mock("../pwa-lifecycle", () => ({ usePwaLifecycle: pwaLifecycle.usePwaLifecycle }));
 
 import { FeaturePageRouter, ProfilePage } from "../FeaturePages";
-import { SubscriptionManagementPage } from "../features/MemberPages";
+import { ProPlansPage, SubscriptionManagementPage } from "../features/MemberPages";
 
 const style = document.createElement("style");
 
@@ -86,6 +88,7 @@ beforeEach(() => {
   purchaseSetting.visible = false;
   reviewSetting.visible = false;
   memberApi.fetchMemberPaymentHistory.mockReset().mockResolvedValue([]);
+  checkout.beginEcpayCheckout.mockReset().mockResolvedValue("manual");
   window.sessionStorage.clear();
   lineAuth.prepareLineLoginUrl.mockReset().mockResolvedValue("https://project.supabase.co/auth/v1/authorize?provider=custom%3Aline");
   lineAuth.shouldUseDirectLineBrowserLink.mockReset().mockReturnValue(false);
@@ -910,4 +913,71 @@ it("購買開關關閉時會卸載已開啟的方案頁", async () => {
   view.rerender(<FeaturePageRouter screen="pro-plans" onNavigate={onNavigate} />);
   expect(document.querySelector(".pro-plans-screen")).toBeNull();
   expect(await screen.findByRole("button", { name: "登出" })).toBeInTheDocument();
+});
+
+it("永久會員在方案頁看見原因但無法送出任何付費方案", async () => {
+  memberApi.fetchMemberProfile.mockResolvedValueOnce({
+    memberId: "member-lifetime", lineUserId: "line-lifetime", planName: "終身方案",
+    planExpiresAt: null, isLifetime: true,
+  });
+  render(<ProPlansPage onNavigate={vi.fn()} />);
+  const pay = await screen.findByRole("button", { name: "確定付款" });
+  await waitFor(() => expect(screen.getByText(/永久會員無需再購買/)).toBeInTheDocument());
+  expect(pay).toBeDisabled();
+  fireEvent.click(pay);
+  expect(appDialog.confirm).not.toHaveBeenCalled();
+  expect(checkout.beginEcpayCheckout).not.toHaveBeenCalled();
+});
+
+it("有效年費會員只能續購同級，月／季方案不會進入付款", async () => {
+  memberApi.fetchMemberProfile.mockResolvedValueOnce({
+    memberId: "member-year", lineUserId: "line-year", planName: "年費方案",
+    planExpiresAt: "2099-01-01T00:00:00.000Z", isLifetime: false,
+  });
+  const onNavigate = vi.fn();
+  render(<ProPlansPage onNavigate={onNavigate} />);
+  const pay = await screen.findByRole("button", { name: "確定付款" });
+  await waitFor(() => expect(screen.getByText(/有效的年費方案無法購買較低方案/)).toBeInTheDocument());
+  expect(pay).toBeDisabled();
+  expect(screen.getByText("不適用", { selector: ".renewal-card dd" })).toBeInTheDocument();
+
+  const carousel = document.querySelector<HTMLElement>(".plan-carousel")!;
+  Object.defineProperty(carousel, "clientWidth", { configurable: true, value: 100 });
+  Object.defineProperty(carousel, "scrollLeft", { configurable: true, writable: true, value: 200 });
+  carousel.querySelectorAll<HTMLElement>(".plan-card").forEach((card, index) => {
+    Object.defineProperty(card, "offsetLeft", { configurable: true, value: index * 100 });
+    Object.defineProperty(card, "clientWidth", { configurable: true, value: 100 });
+  });
+  fireEvent.scroll(carousel);
+  expect(screen.getByText("季費方案", { selector: ".renewal-card dd" })).toBeInTheDocument();
+  expect(pay).toBeDisabled();
+  carousel.scrollLeft = 300;
+  fireEvent.scroll(carousel);
+  expect(screen.getByText("年費方案", { selector: ".renewal-card dd" })).toBeInTheDocument();
+  expect(pay).toBeEnabled();
+  fireEvent.click(pay);
+  await waitFor(() => expect(checkout.beginEcpayCheckout).toHaveBeenCalledWith("year"));
+  expect(onNavigate).toHaveBeenCalledWith("manual-transfer");
+});
+
+it("方案資料未讀取成功前不允許送出付款", async () => {
+  memberApi.fetchMemberProfile.mockRejectedValueOnce(new Error("offline"));
+  render(<ProPlansPage onNavigate={vi.fn()} />);
+  const pay = screen.getByRole("button", { name: "確定付款" });
+  expect(pay).toBeDisabled();
+  await waitFor(() => expect(screen.getByText(/會員資料載入失敗/)).toBeInTheDocument());
+  expect(checkout.beginEcpayCheckout).not.toHaveBeenCalled();
+});
+
+it("付款確認尚未結束時連點只會開啟一次確認，也不會建立重複訂單", async () => {
+  let cancel!: (value: boolean) => void;
+  appDialog.confirm.mockReturnValueOnce(new Promise<boolean>((resolve) => { cancel = resolve; }));
+  render(<ProPlansPage onNavigate={vi.fn()} />);
+  const pay = screen.getByRole("button", { name: "確定付款" });
+  await waitFor(() => expect(pay).toBeEnabled());
+  fireEvent.click(pay);
+  fireEvent.click(pay);
+  expect(appDialog.confirm).toHaveBeenCalledTimes(1);
+  await act(async () => cancel(false));
+  expect(checkout.beginEcpayCheckout).not.toHaveBeenCalled();
 });

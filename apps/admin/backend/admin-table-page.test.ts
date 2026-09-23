@@ -57,6 +57,12 @@ test.each(['activationCodes', 'subscriptionRecords', 'transferRequests'])('%s se
   expectDisplayNameRpc(request, '月費,(x)');
 });
 
+test('payment records allow filtering orders that require a refund', async () => {
+  const requestPage = vi.fn().mockResolvedValue({ items: [], total: 0 });
+  await listAdminTablePage('subscriptionRecords', { status: 'refund_required' }, { request: vi.fn(), requestPage });
+  expect(new URL(requestPage.mock.calls[0][0], 'https://test').searchParams.get('status')).toBe('eq.refund_required');
+});
+
 test('safe literal keyword and status filters remain distinct for audit and administrator searches', async () => {
   const requestPage = vi.fn().mockResolvedValue({ items: [], total: 0 });
   const api = { request: vi.fn(), requestPage };

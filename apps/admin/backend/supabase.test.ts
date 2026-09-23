@@ -73,6 +73,18 @@ describe('createSupabaseTransport', () => {
   });
 
   it.each([
+    ['rpc/admin_update_subscription_guarded', 'SUBSCRIPTION_CONFLICT'],
+    ['rpc/admin_update_subscription_guarded', 'ADMIN_REQUEST_CONFLICT'],
+    ['rpc/admin_reset_revenue_baseline_v2', 'ADMIN_REQUEST_CONFLICT'],
+  ])('returns an actionable conflict for %s %s', async (path, message) => {
+    const transport = createSupabaseTransport(
+      { url: 'https://example.supabase.co', serviceRoleKey: 'test-key' },
+      async () => new Response(JSON.stringify({ code: 'PT409', message }), { status: 409 }),
+    );
+    await expect(transport.supabaseRequest(path)).rejects.toMatchObject({ message, statusCode: 409 });
+  });
+
+  it.each([
     ['/rest/v1/rpc/admin_update_subscription', { code: 'P0001', message: 'PAYMENT_REVERSAL_CONFLICT' }],
     ['/rest/v1/rpc/admin_record_payment_reversal', { code: 'P0001', message: 'UNKNOWN_DATABASE_DETAIL' }],
     ['/rest/v1/rpc/admin_record_payment_reversal', { code: 'XX000', message: 'PAYMENT_REVERSAL_CONFLICT' }],

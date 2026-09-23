@@ -67,9 +67,10 @@ describe('listAdminTable', () => {
   });
 
   it('maps subscription LINE ID as the visible provider identity', async () => {
-    const api = { request: fixtureRequest(async (path: string) => path.includes('member_online_sessions') ? [] : [{ id: 'm1', auth_user_id: 'u1', line_user_id: 'internal-line-id', line_display_name: 'LINE 暱稱', current_plan: null }]) };
+    const api = { request: fixtureRequest(async (path: string) => path.includes('member_online_sessions') ? [] : [{ id: 'm1', auth_user_id: 'u1', line_user_id: 'internal-line-id', line_display_name: 'LINE 暱稱', current_plan: null, subscription_revision: 3 }]) };
     const result = await listAdminTable('subscriptions', api);
-    expect(result.items[0]).toMatchObject({ lineUserId: 'internal-line-id', identityDisplay: 'LINE ID：internal-line-id' });
+    expect(result.items[0]).toMatchObject({ lineUserId: 'internal-line-id', identityDisplay: 'LINE ID：internal-line-id', subscriptionRevision: 3 });
+    expect(api.request).toHaveBeenCalledWith(expect.stringContaining('subscription_revision'));
   });
 
   it('maps the transfer applicant LINE display name', async () => {

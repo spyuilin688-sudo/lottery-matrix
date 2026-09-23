@@ -107,6 +107,7 @@ async function renderTianhengResult(overrides = {}, validation = tianhengValidat
 
 beforeEach(() => {
   vi.clearAllMocks();
+  window.sessionStorage.clear();
   uiState.permissionSettings = {
     subscriptionPurchaseVisible: true, registeredMemberFreeAccess: false, revision: 1,
   };
@@ -364,6 +365,30 @@ it('loads validation only on expansion using the submitted access settings, not 
   fireEvent.click(screen.getByRole('button', { name: '收合版路 th-1' }));
   fireEvent.click(screen.getByRole('button', { name: '展開版路 th-1' }));
   expect(matrixApi.fetchTianhengValidation).toHaveBeenCalledTimes(1);
+});
+
+it('reopening Tianheng validation while pending reuses the same request', async () => {
+  let finish!: (value: { validation: typeof tianhengValidation }) => void;
+  matrixApi.fetchTianhengValidation.mockReturnValueOnce(new Promise((done) => { finish = done; }));
+  await openPage();
+  await search();
+  fireEvent.click(screen.getByRole('button', { name: '展開版路 th-1' }));
+  fireEvent.click(screen.getByRole('button', { name: '收合版路 th-1' }));
+  fireEvent.click(screen.getByRole('button', { name: '展開版路 th-1' }));
+  expect(matrixApi.fetchTianhengValidation).toHaveBeenCalledTimes(1);
+  expect(screen.getByText('驗證資料載入中')).toBeInTheDocument();
+  await act(async () => finish({ validation: tianhengValidation }));
+  expect(screen.getByRole('region', { name: '天衡驗證過程' })).toBeInTheDocument();
+});
+
+it('changing Tianheng lottery clears the completed result and requests the selected lottery next', async () => {
+  await openPage();
+  await search();
+  fireEvent.click(screen.getByRole('tab', { name: '天天樂' }));
+  expect(screen.queryByRole('button', { name: '展開版路 th-1' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: '天衡結果區' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '開始天衡' }));
+  expect(matrixApi.fetchTianhengList).toHaveBeenLastCalledWith(expect.objectContaining({ lottery: '天天樂' }));
 });
 
 it('orders the drag summary in exactly two rows', async () => {

@@ -368,7 +368,7 @@ const routes: Record<string, unknown> = {
   'POST /api/revenue/reset': [sessionGuard, revenueResetGuard, async (ctx: Context) => {
     try {
       const admin = await getAdmin(ctx);
-      return json(await adminData.resetRevenue(actorOf(admin)));
+      return json(await adminData.resetRevenue(actorOf(admin), bodyOf(ctx).requestId as string));
     } catch (cause) {
       return fail(cause);
     }
@@ -677,6 +677,8 @@ const routes: Record<string, unknown> = {
         action: String(body.action ?? '') as 'activate' | 'renew' | 'cancel' | 'adjustExpiry' | 'lifetime',
         planId: body.planId === undefined ? undefined : String(body.planId),
         expiresAt: body.expiresAt === undefined ? undefined : String(body.expiresAt),
+        expectedRevision: body.expectedRevision as number | undefined,
+        requestId: body.requestId as string | undefined,
       }, actorOf(admin)));
     } catch (cause) {
       return fail(cause);

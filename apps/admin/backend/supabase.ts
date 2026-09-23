@@ -57,10 +57,16 @@ const permissionSettingsDomainErrors = new Map<string, {
   ['22023', { httpStatus: 400, messages: ['INVALID_REQUEST'] }],
 ]);
 
+const adminMutationConflictMessages: Record<string, readonly string[]> = {
+  'rest/v1/rpc/admin_reset_revenue_baseline_v2': ['ADMIN_REQUEST_CONFLICT'],
+  'rest/v1/rpc/admin_update_subscription_guarded': ['ADMIN_REQUEST_CONFLICT', 'SUBSCRIPTION_CONFLICT'],
+};
+
 async function readSupabaseDomainError(path: string, response: Response) {
   const normalizedPath = path.replace(/^\/+/, '').split('?')[0];
   if (normalizedPath !== 'rest/v1/rpc/admin_record_payment_reversal'
-    && normalizedPath !== 'rest/v1/rpc/admin_matrix_permission_settings_update') return null;
+    && normalizedPath !== 'rest/v1/rpc/admin_matrix_permission_settings_update'
+    && !(normalizedPath in adminMutationConflictMessages)) return null;
 
   let body: unknown;
   try {
@@ -71,6 +77,12 @@ async function readSupabaseDomainError(path: string, response: Response) {
   if (!body || typeof body !== 'object') return null;
   const { code, message } = body as { code?: unknown; message?: unknown };
   if (typeof code !== 'string' || typeof message !== 'string') return null;
+  if (normalizedPath in adminMutationConflictMessages) {
+    return code === 'PT409' && response.status === 409
+      && adminMutationConflictMessages[normalizedPath].includes(message)
+      ? new SupabaseDomainError(message, 409)
+      : null;
+  }
   if (normalizedPath === 'rest/v1/rpc/admin_record_payment_reversal') {
     const domain = paymentReversalDomainErrors.get(code);
     return domain?.httpStatus === response.status && domain.messages.includes(message)

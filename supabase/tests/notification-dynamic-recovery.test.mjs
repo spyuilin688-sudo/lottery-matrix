@@ -11,6 +11,14 @@ async function currentMigration() {
   return readFile(new URL(name, directory), 'utf8');
 }
 
+async function candidateLimitFix() {
+  const directory = new URL('../migrations/', import.meta.url);
+  const names = await readdir(directory);
+  const name = names.find(candidate => candidate.endsWith('_fix_notification_recovery_candidate_limit.sql'));
+  assert.ok(name, 'notification recovery candidate limit fix migration is missing');
+  return readFile(new URL(name, directory), 'utf8');
+}
+
 test('notification recovery uses demand-driven scheduling with an hourly fallback', async () => {
   const db = new PGlite();
   try {
@@ -134,6 +142,7 @@ test('notification recovery uses demand-driven scheduling with an hourly fallbac
     `);
 
     await db.exec(await currentMigration());
+    await db.exec(await candidateLimitFix());
 
     const jobs = async () => (await db.query(
       'select jobname,schedule,active,command from cron.job order by jobname',
@@ -236,6 +245,70 @@ test('notification recovery uses demand-driven scheduling with an hourly fallbac
       active: true,
       command: 'select private.notification_recovery_tick(pg_catalog.now());',
     }]);
+
+    // The next retry must win even when it comes from a later UNION arm.
+    await db.exec(`
+      insert into public.notification_events(id,fanout_status,next_fanout_at)
+      values('20000000-0000-4000-8000-000000000002',
+        'pending','2030-01-01T00:30:00Z'),
+        ('20000000-0000-4000-8000-000000000003',
+        'pending','2030-01-01T00:20:00Z');
+      insert into public.notification_outbox(id,status,next_attempt_at)
+      values('10000000-0000-4000-8000-000000000002',
+        'pending','2030-01-01T00:05:00Z');
+    `);
+    const earliest = (await db.query(
+      `select private.notification_recovery_next_at('2030-01-01T00:00:00Z') as next_at`,
+    )).rows[0].next_at;
+    assert.equal(new Date(earliest).toISOString(), '2030-01-01T00:05:00.000Z');
+    await db.query(`select private.notification_recovery_replan('2030-01-01T00:00:00Z')`);
+    const scheduled = await jobs();
+    assert.equal(scheduled.find(job => job.jobname === 'matrix-notification-recovery-next').schedule,
+      '05 00 * * *');
+    assert.equal(scheduled.find(job => job.jobname === 'matrix-notification-recovery-fallback').schedule,
+      '7 * * * *');
+
+    await db.exec(`
+      update public.notification_outbox set status='sent'
+      where id='10000000-0000-4000-8000-000000000002';
+    `);
+    const remaining = (await db.query(
+      `select private.notification_recovery_next_at('2030-01-01T00:00:00Z') as next_at`,
+    )).rows[0].next_at;
+    assert.equal(new Date(remaining).toISOString(), '2030-01-01T00:20:00.000Z');
+
+    // A pending outbox row without a retry timestamp is due immediately.
+    await db.exec(`
+      insert into public.notification_outbox(id,status,next_attempt_at)
+      values('10000000-0000-4000-8000-000000000004','pending',null);
+    `);
+    const untimedRetry = (await db.query(
+      `select private.notification_recovery_next_at('2030-01-01T00:00:00Z') as next_at`,
+    )).rows[0].next_at;
+    assert.equal(new Date(untimedRetry).toISOString(), '2030-01-01T00:05:00.000Z');
+    await db.exec(`
+      delete from public.notification_outbox
+      where id='10000000-0000-4000-8000-000000000004';
+    `);
+
+    // A missing native delivery remains eligible for the five-minute retry.
+    await db.exec(`
+      update public.notification_outbox
+      set status='pending',member_id='30000000-0000-4000-8000-000000000001',
+        next_attempt_at='2030-01-01T00:25:00Z'
+      where id='10000000-0000-4000-8000-000000000002';
+      insert into private.native_push_devices(
+        installation_id,member_id,revision,enabled,enabled_at
+      ) values (
+        '40000000-0000-4000-8000-000000000001',
+        '30000000-0000-4000-8000-000000000001',
+        '50000000-0000-4000-8000-000000000001',true,'2020-01-01T00:00:00Z'
+      );
+    `);
+    const nativeRetry = (await db.query(
+      `select private.notification_recovery_next_at('2030-01-01T00:00:00Z') as next_at`,
+    )).rows[0].next_at;
+    assert.equal(new Date(nativeRetry).toISOString(), '2030-01-01T00:05:00.000Z');
 
     for (const role of ['anon', 'authenticated', 'service_role']) {
       for (const signature of [

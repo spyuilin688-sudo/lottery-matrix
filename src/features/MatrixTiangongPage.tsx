@@ -117,6 +117,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [validationById, setValidationById] = useState<Record<string, TiangongValidation>>({});
   const [validationLoadingId, setValidationLoadingId] = useState<string | null>(null);
+  const validationInFlight = useRef(new Set<string>());
   const numberCounts = new Map<string, number>();
   for (const row of response?.items ?? []) numberCounts.set(row.predictionNumber, (numberCounts.get(row.predictionNumber) ?? 0) + 1);
   const sameAllowed = (response?.items ?? []).filter((row) => !sameCode || (numberCounts.get(row.predictionNumber) ?? 0) > 1);
@@ -130,6 +131,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   useEffect(() => {
     const clearResults = () => {
       cacheGeneration.current += 1;
+      validationInFlight.current.clear();
       setResponse(null);
       setSameCode(false);
       setSelectedNumber(null);
@@ -164,6 +166,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   const startExplore = async () => {
     if (loading) return;
     const generation = ++cacheGeneration.current;
+    validationInFlight.current.clear();
     setExpandedId(null);
     setValidationById({});
     setValidationLoadingId(null);
@@ -214,6 +217,9 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
     const cacheKey = `${response.analysisVersion}:${itemId}`;
     if (validationById[cacheKey]) return;
     setValidationLoadingId(cacheKey);
+    const flightKey = `${generation}:${cacheKey}`;
+    if (validationInFlight.current.has(flightKey)) return;
+    validationInFlight.current.add(flightKey);
     void fetchTiangongValidation({ lottery: response.lottery, drawPeriod: response.drawPeriod, analysisVersion: response.analysisVersion }, itemId)
       .then((detail) => {
         if (generation === cacheGeneration.current) setValidationById((current) => ({ ...current, [cacheKey]: detail.validation }));
@@ -222,6 +228,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
         if (generation === cacheGeneration.current) setRequestError("Matrix API 讀取失敗");
       })
       .finally(() => {
+        validationInFlight.current.delete(flightKey);
         if (generation === cacheGeneration.current) setValidationLoadingId((current) => current === cacheKey ? null : current);
       });
   };

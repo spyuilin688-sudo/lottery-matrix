@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { render } from '../../test/render-with-dialog';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { MatrixExplorePage } from '../FeaturePages';
 
@@ -70,16 +70,31 @@ test('天衍移除近10期開獎號碼', () => {
   expect(screen.queryByText('近10期開獎號碼')).toBeNull();
 });
 
-test('天衍修改彩種但未開始探索時，原結果及補充排版使用的彩種保持不變', async () => {
+test('天衍切換彩種立即清除原結果與驗證，重查使用新彩種', async () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
   fireEvent.click(screen.getByRole('button', { name: '開始天衍' }));
   fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
-  const region = await screen.findByRole('region', { name: '天衍驗證過程' });
-  const before = region.innerHTML;
+  await screen.findByRole('region', { name: '天衍驗證過程' });
   fireEvent.click(screen.getByRole('tab', { name: '六合彩' }));
-  expect(region.innerHTML).toBe(before);
-  expect(region.getAttribute('data-lottery')).toBe('今彩539');
+  expect(screen.queryByRole('region', { name: '天衍驗證過程' })).toBeNull();
+  expect(screen.queryByRole('button', { name: /展開版路/ })).toBeNull();
   expect(matrixApi.fetchTianyanList).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole('button', { name: '開始天衍' }));
+  expect(matrixApi.fetchTianyanList).toHaveBeenLastCalledWith(expect.objectContaining({ lottery: '六合彩' }));
+});
+
+test('天衍驗證快速收合再展開時不重複呼叫', async () => {
+  let finish!: (result: { validation: typeof validation }) => void;
+  matrixApi.fetchTianyanValidation.mockReturnValueOnce(new Promise((done) => { finish = done; }));
+  render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始天衍' }));
+  fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
+  fireEvent.click(screen.getByRole('button', { name: /收合版路/ }));
+  fireEvent.click(screen.getByRole('button', { name: /展開版路/ }));
+  expect(matrixApi.fetchTianyanValidation).toHaveBeenCalledTimes(1);
+  expect(screen.getByText('驗證資料載入中')).toBeTruthy();
+  await act(async () => finish({ validation }));
+  expect(screen.getByRole('region', { name: '天衍驗證過程' })).toBeTruthy();
 });
 
 test('天衍連準篩選固定為指定五項', async () => {

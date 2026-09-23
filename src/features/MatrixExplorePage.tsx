@@ -151,9 +151,11 @@ export function MatrixExplorePage({
   const [validationLoadingId, setValidationLoadingId] = useState<string | null>(null);
   const cacheGeneration = useRef(0);
   const queryRevision = useRef(0);
+  const validationInFlight = useRef(new Set<string>());
   useEffect(() => {
     const clearResults = () => {
       cacheGeneration.current += 1;
+      validationInFlight.current.clear();
       setExploreResponse(null);
       setTianyanResponse(null);
       setTianhengResponse(null);
@@ -284,6 +286,7 @@ export function MatrixExplorePage({
   ) => {
     const generation = cacheGeneration.current;
     const revision = ++queryRevision.current;
+    validationInFlight.current.clear();
     const isCurrent = () => generation === cacheGeneration.current && revision === queryRevision.current;
     setExploreLoading(true);
     setExploreError(null);
@@ -391,7 +394,26 @@ export function MatrixExplorePage({
   };
 
   const changeLottery = (value: LotteryId) => {
+    if (value === lottery) return;
+    cacheGeneration.current += 1;
+    queryRevision.current += 1;
+    validationInFlight.current.clear();
+    pendingRoadScrollRef.current = null;
     setLottery(value);
+    setExploreResponse(null);
+    setTianyanResponse(null);
+    setTianhengResponse(null);
+    setValidationById({});
+    setTianyanValidationById({});
+    setTianhengValidationById({});
+    setExpandedRoad(null);
+    setValidationLoadingId(null);
+    setExploreLoading(false);
+    setExploreError(null);
+    setSearched(false);
+    setSameCode(false);
+    setSelectedPredictionNumber(null);
+    setResultPage(1);
   };
 
   const startExplore = () => {
@@ -443,6 +465,9 @@ export function MatrixExplorePage({
       const cacheKey = `${tianhengResponse.analysisVersion}:${itemId}`;
       if (tianhengValidationById[cacheKey]) return;
       setValidationLoadingId(cacheKey);
+      const flightKey = `${generation}:${revision}:${cacheKey}`;
+      if (validationInFlight.current.has(flightKey)) return;
+      validationInFlight.current.add(flightKey);
       const validationMeta = {
         lottery: tianhengResponse.lottery,
         drawPeriod: tianhengResponse.drawPeriod,
@@ -458,6 +483,7 @@ export function MatrixExplorePage({
         if (generation !== cacheGeneration.current || revision !== queryRevision.current) return;
         setExploreError("Matrix API 讀取失敗");
       }).finally(() => {
+        validationInFlight.current.delete(flightKey);
         if (generation !== cacheGeneration.current || revision !== queryRevision.current) return;
         setValidationLoadingId((current) => current === cacheKey ? null : current);
       });
@@ -467,6 +493,9 @@ export function MatrixExplorePage({
       const cacheKey = `${tianyanResponse.analysisVersion}:${itemId}`;
       if (tianyanValidationById[cacheKey]) return;
       setValidationLoadingId(cacheKey);
+      const flightKey = `${generation}:${revision}:${cacheKey}`;
+      if (validationInFlight.current.has(flightKey)) return;
+      validationInFlight.current.add(flightKey);
       void fetchTianyanValidation({
         lottery: tianyanResponse.lottery,
         drawPeriod: tianyanResponse.drawPeriod,
@@ -478,6 +507,7 @@ export function MatrixExplorePage({
         if (generation !== cacheGeneration.current || revision !== queryRevision.current) return;
         setExploreError("Matrix API 讀取失敗");
       }).finally(() => {
+        validationInFlight.current.delete(flightKey);
         if (generation !== cacheGeneration.current || revision !== queryRevision.current) return;
         setValidationLoadingId((current) => current === cacheKey ? null : current);
       });
@@ -487,6 +517,9 @@ export function MatrixExplorePage({
     const cacheKey = `${exploreResponse.analysisVersion}:${itemId}`;
     if (validationById[cacheKey]) return;
     setValidationLoadingId(cacheKey);
+    const flightKey = `${generation}:${revision}:${cacheKey}`;
+    if (validationInFlight.current.has(flightKey)) return;
+    validationInFlight.current.add(flightKey);
     void fetchExploreValidation({
       lottery: exploreResponse.lottery,
       drawPeriod: exploreResponse.drawPeriod,
@@ -498,6 +531,7 @@ export function MatrixExplorePage({
       if (generation !== cacheGeneration.current || revision !== queryRevision.current) return;
       setExploreError("Matrix API 讀取失敗");
     }).finally(() => {
+      validationInFlight.current.delete(flightKey);
       if (generation !== cacheGeneration.current || revision !== queryRevision.current) return;
       setValidationLoadingId((current) => current === cacheKey ? null : current);
     });

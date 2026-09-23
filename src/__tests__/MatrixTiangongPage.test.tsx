@@ -128,6 +128,23 @@ test('API 結果取代固定範例，展開時才讀取驗證', async () => {
   expect(document.querySelectorAll('.explore-validation-issue, .explore-validation-number-row, .explore-validation-formula-row')).toHaveLength(9);
 });
 
+test('天工驗證快速收合再展開共用未完成請求，完成後不重查', async () => {
+  let finish!: (value: { validation: { itemId: string; evidence: { rows: never[] } } }) => void;
+  matrixApi.fetchTiangongValidation.mockReturnValueOnce(new Promise((done) => { finish = done; }));
+  render(<MatrixTiangongPage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
+  fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
+  fireEvent.click(screen.getByRole('button', { name: /收合版路/ }));
+  fireEvent.click(screen.getByRole('button', { name: /展開版路/ }));
+  expect(matrixApi.fetchTiangongValidation).toHaveBeenCalledTimes(1);
+  expect(screen.getByText('驗證資料載入中')).toBeTruthy();
+  await act(async () => finish({ validation: { itemId: 'tg-api-1', evidence: { rows: [] } } }));
+  expect(screen.getByRole('region', { name: '天工驗證過程' })).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: /收合版路/ }));
+  fireEvent.click(screen.getByRole('button', { name: /展開版路/ }));
+  expect(matrixApi.fetchTiangongValidation).toHaveBeenCalledTimes(1);
+});
+
 test('未完成分析時只顯示狀態，不回退固定資料', async () => {
   matrixApi.fetchTiangongList.mockRejectedValue({ code: 'ANALYSIS_NOT_READY' });
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);

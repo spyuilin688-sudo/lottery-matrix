@@ -32,6 +32,8 @@ export type SubscriptionAction = {
   action: 'activate' | 'renew' | 'cancel' | 'adjustExpiry' | 'lifetime';
   planId?: string;
   expiresAt?: string;
+  expectedRevision?: number;
+  requestId?: string;
 };
 
 type Row = Record<string, unknown>;
@@ -49,6 +51,9 @@ export class AdminDataError extends Error {
     this.statusCode = statusCode;
   }
 }
+
+const validAdminRequestId = (value: unknown): value is string =>
+  typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
 const definitions: Record<string, TableDefinition> = {
   users: {
@@ -73,7 +78,7 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   subscriptions: {
-    path: '/rest/v1/members?select=id,auth_user_id,line_user_id,line_display_name,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,referral_code,invitation_code,last_online_at,total_online_seconds,online_session_count,current_plan:plans!members_current_plan_id_fkey!inner(name,price,duration_days)&order=plan_started_at.desc.nullslast,id.asc',
+    path: '/rest/v1/members?select=id,auth_user_id,line_user_id,line_display_name,registered_at,current_plan_id,plan_started_at,plan_expires_at,subscription_revision,is_lifetime,auto_renew,status,referral_code,invitation_code,last_online_at,total_online_seconds,online_session_count,current_plan:plans!members_current_plan_id_fkey!inner(name,price,duration_days)&order=plan_started_at.desc.nullslast,id.asc',
     map: (row) => {
       const plan = (row.current_plan ?? null) as Row | null;
       return {
@@ -89,6 +94,7 @@ const definitions: Record<string, TableDefinition> = {
         planDurationDays: plan?.duration_days ?? null,
         planStartedAt: row.plan_started_at,
         planExpiresAt: row.plan_expires_at,
+        subscriptionRevision: row.subscription_revision,
         isLifetime: row.is_lifetime,
         autoRenew: row.auto_renew,
         status: row.status,
@@ -368,7 +374,7 @@ const pageDefinitions: Record<string, PageDefinition> = {
     pageSize: 30,
     columns: { id: 'id', memberId: 'member_id', planId: 'plan_id', lineDisplayName: 'member(line_display_name)', planName: 'plan(name)', amount: 'amount', paidAt: 'paid_at', status: 'status', reversedAt: 'reversed_at', reversalReason: 'reversal_reason', reversedByName: 'reversed_by_name' },
     dates: ['paidAt', 'reversedAt'], keywords: ['status', 'reversal_reason', 'reversed_by_name'], numeric: ['amount'], identifiers: ['member_id', 'plan_id'],
-    statuses: ['pending', 'confirmed', 'rejected', 'refunded', 'chargeback', 'cancelled'],
+    statuses: ['pending', 'confirmed', 'refund_required', 'rejected', 'refunded', 'chargeback', 'cancelled'],
     relations: [{ alias: 'keyword_member', relation: 'members', field: 'line_display_name' }, { alias: 'keyword_plan', relation: 'plans', field: 'name' }],
   },
   transferRequests: {
@@ -734,13 +740,19 @@ export function createAdminData(transport: WriteTransport) {
     if ((input.action === 'activate' || input.action === 'renew') && !planId) {
       throw new AdminDataError('訂閱方案必填');
     }
+    if (input.action === 'renew' && !validAdminRequestId(input.requestId)) {
+      throw new AdminDataError('續訂操作識別碼必填');
+    }
     let expiresAt: string | null = null;
     if (input.action === 'adjustExpiry') {
+      if (!Number.isSafeInteger(input.expectedRevision) || input.expectedRevision! < 0) {
+        throw new AdminDataError('訂閱版本不正確，請重新載入');
+      }
       const expiry = new Date(String(input.expiresAt ?? ''));
       if (!Number.isFinite(expiry.getTime())) throw new AdminDataError('到期時間不正確');
       expiresAt = expiry.toISOString();
     }
-    return transport.supabaseRequest<Row>('rpc/admin_update_subscription', {
+    return transport.supabaseRequest<Row>('rpc/admin_update_subscription_guarded', {
       method: 'POST',
       body: JSON.stringify({
         p_member_id: id,
@@ -750,6 +762,8 @@ export function createAdminData(transport: WriteTransport) {
         p_now: currentDate.toISOString(),
         p_actor_id: actor.id,
         p_actor_name: actor.name || actor.account,
+        p_expected_revision: input.action === 'adjustExpiry' ? input.expectedRevision : null,
+        p_request_id: input.action === 'renew' ? input.requestId : null,
       }),
     });
   }
@@ -799,13 +813,14 @@ export function createAdminData(transport: WriteTransport) {
     });
   }
 
-  async function resetRevenue(actor: AdminActor) {
+  async function resetRevenue(actor: AdminActor, requestId: string) {
     if (actor.role !== '超級管理員') {
       throw new AdminDataError('僅超級管理員可重設收入', 403);
     }
-    const [saved] = await transport.supabaseRequest<Row[]>('rpc/admin_reset_revenue_baseline', {
+    if (!validAdminRequestId(requestId)) throw new AdminDataError('收入重設操作識別碼必填');
+    const [saved] = await transport.supabaseRequest<Row[]>('rpc/admin_reset_revenue_baseline_v2', {
       method: 'POST',
-      body: JSON.stringify({}),
+      body: JSON.stringify({ p_request_id: requestId, p_actor_id: actor.id }),
     });
     const savedResetAt = typeof saved?.reset_at === 'string' ? new Date(saved.reset_at) : null;
     if (!savedResetAt || !Number.isFinite(savedResetAt.getTime())) {
