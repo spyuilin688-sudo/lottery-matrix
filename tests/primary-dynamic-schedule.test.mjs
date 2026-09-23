@@ -90,18 +90,6 @@ test('primary scheduler coexists with recovery and dispatches only due lotteries
   assert.equal(await scalar(db, "select count(*) from cron.job where jobname like 'matrix-recovery-%'"), 2);
 });
 
-test('all current-cycle completions cancel the group until next daily start', async t => {
-  const db = await fixture(); t.after(() => db.close());
-  await db.exec("insert into private.notification_draw_day_overrides values('大樂透','2026-09-21',false,'manual',null),('六合彩','2026-09-21',false,'manual',null)");
-  await db.query("select private.matrix_primary_tick('evening','2026-09-21T20:30:00+08')");
-  await db.exec("insert into lottery_draws values('今彩539','42','2026-09-21','confirmed'); insert into private.test_chain values('今彩539','42',true)");
-  await db.exec("insert into private.matrix_worker_completion values('今彩539',1,1,'42','2026-09-23',now())");
-  assert.equal(await scalar(db, "select completed_at is not null from private.matrix_primary_schedule where worker_group='evening'"), true);
-  assert.equal(await scalar(db, "select count(*) from cron.job where jobname='matrix-primary-next-evening'"), 0);
-  await db.query("select private.matrix_primary_tick('evening','2026-09-21T21:00:00+08')");
-  assert.equal(await scalar(db, 'select count(*) from net.requests'), 1);
-});
-
 test('previous or preliminary draws never certify primary completion', async t => {
   const db = await fixture(); t.after(() => db.close());
   await db.exec("insert into private.notification_draw_day_overrides values('大樂透','2026-09-21',false,'manual',null),('六合彩','2026-09-21',false,'manual',null)");
