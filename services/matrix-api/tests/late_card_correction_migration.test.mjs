@@ -176,15 +176,90 @@ test('missing Matrix Status remains pending after analysis and cards pass, witho
     assert.deepEqual(pending.rows[0].value, [{ lottery:'今彩539',cycleDate:'2026-09-21' }]);
     await db.query(`select private.matrix_retention_with_correction_tick($1::timestamptz)`, [at]);
     const requests = await db.query(`select count(*)::integer as count from private.test_http`);
-    assert.equal(requests.rows[0].count, 1);
+    assert.equal(requests.rows[0].count, 0);
+    await db.exec(`update private.matrix_recovery_schedule
+      set dispatched_at='2026-09-21T13:40:00Z',next_at=null`);
+    await db.query(`select private.matrix_retention_with_correction_tick($1::timestamptz)`, [at]);
+    const fallback = await db.query(`select count(*)::integer as count from private.test_http`);
+    assert.equal(fallback.rows[0].count, 1);
     await db.exec(`update public.matrix_card_publications set matrix_ready=true`);
     const recovered = await db.query(`select public.matrix_recovery_pending($1::timestamptz) as value`, [at]);
-    assert.deepEqual(recovered.rows[0].value, [{ lottery:'今彩539',cycleDate:'2026-09-21' }]);
-    // The original natural recovery remains pending until its own completion
-    // check, while this hourly late-correction dispatch is now unnecessary.
+    assert.deepEqual(recovered.rows[0].value, []);
     await db.query(`select private.matrix_retention_with_correction_tick($1::timestamptz)`, [at]);
     const after = await db.query(`select count(*)::integer as count from private.test_http`);
     assert.equal(after.rows[0].count, 1);
+  } finally { await db.close(); }
+});
+
+test('a future recovery slot owns retry without an extra hourly HTTP call', async () => {
+  const db = await makeDb();
+  try {
+    await current(db, { completed:true });
+    await db.exec(`update private.matrix_recovery_schedule
+      set completed_at=null,next_at='2026-09-21T15:00:00Z' where lottery='今彩539'`);
+    const at = '2026-09-21T14:01:00Z';
+    const candidates = await db.query(`select * from private.matrix_late_correction_candidates($1::timestamptz)`, [at]);
+    assert.deepEqual(candidates.rows, []);
+    await db.query(`select private.matrix_retention_with_correction_tick($1::timestamptz)`, [at]);
+    const idle = await db.query(`select count(*)::integer as count from private.test_http`);
+    assert.equal(idle.rows[0].count, 0);
+    await db.exec(`update private.matrix_recovery_schedule
+      set next_at='2026-09-22T10:00:00Z' where lottery='今彩539'`);
+    const finalSlot = await db.query(`select * from private.matrix_late_correction_candidates($1::timestamptz)`, [at]);
+    assert.deepEqual(finalSlot.rows, []);
+
+    await db.exec(`update private.matrix_recovery_schedule
+      set dispatched_at='2026-09-21T14:00:00Z' where lottery='今彩539'`);
+    const natural = await db.query(`select public.matrix_recovery_pending($1::timestamptz) as value`, [at]);
+    assert.deepEqual(natural.rows[0].value, [{ lottery:'今彩539',cycleDate:'2026-09-21' }]);
+    await db.query(`select private.matrix_retention_with_correction_tick($1::timestamptz)`, [at]);
+    const overlap = await db.query(`select count(*)::integer as count from private.test_http`);
+    assert.equal(overlap.rows[0].count, 0);
+
+    await db.exec(`update private.matrix_recovery_schedule
+      set next_at=null,dispatched_at='2026-09-21T13:40:00Z' where lottery='今彩539'`);
+    const stranded = await db.query(`select public.matrix_recovery_pending($1::timestamptz) as value`, [at]);
+    assert.deepEqual(stranded.rows[0].value, [{ lottery:'今彩539',cycleDate:'2026-09-21' }]);
+    await db.query(`select private.matrix_retention_with_correction_tick($1::timestamptz)`, [at]);
+    const rescued = await db.query(`select count(*)::integer as count from private.test_http`);
+    assert.equal(rescued.rows[0].count, 1);
+
+    await db.exec(`update private.matrix_recovery_schedule
+      set next_at='2026-09-22T10:00:00Z',dispatched_at='2026-09-22T10:00:00Z'`);
+    const afterFinal = '2026-09-22T10:17:00Z';
+    const late = await db.query(`select public.matrix_recovery_pending($1::timestamptz) as value`, [afterFinal]);
+    assert.deepEqual(late.rows[0].value, [{ lottery:'今彩539',cycleDate:'2026-09-21' }]);
+    await db.query(`select private.matrix_retention_with_correction_tick($1::timestamptz)`, [afterFinal]);
+    const noFuture = await db.query(`select count(*)::integer as count from private.test_http`);
+    assert.equal(noFuture.rows[0].count, 2);
+  } finally { await db.close(); }
+});
+
+test('today recovery suppresses a duplicate hourly call for yesterday latest correction', async () => {
+  const db = await makeDb();
+  try {
+    await current(db, { completed:true });
+    await db.exec(`update private.matrix_primary_schedule set cycle_date='2026-09-22',completed_at=null;
+      update private.matrix_recovery_schedule set cycle_date='2026-09-22',completed_at=null,
+        next_at='2026-09-22T13:20:00Z',dispatched_at='2026-09-22T13:10:00Z'`);
+    const at = '2026-09-22T13:17:00Z';
+    const candidates = await db.query(`select * from private.matrix_late_correction_candidates($1::timestamptz)`, [at]);
+    assert.deepEqual(candidates.rows, []);
+    const pending = await db.query(`select public.matrix_recovery_pending($1::timestamptz) as value`, [at]);
+    assert.deepEqual(pending.rows[0].value, [{ lottery:'今彩539',cycleDate:'2026-09-22' }]);
+    await db.query(`select private.matrix_retention_with_correction_tick($1::timestamptz)`, [at]);
+    const normal = await db.query(`select count(*)::integer as count from private.test_http`);
+    assert.equal(normal.rows[0].count, 0);
+
+    // A canonical no-draw decision stops today's recovery, leaving the
+    // corrected prior draw as the latest card that still needs attention.
+    await db.exec(`update private.matrix_recovery_schedule
+      set skip_reason='no-draw',next_at=null,dispatched_at=null`);
+    const older = await db.query(`select public.matrix_recovery_pending($1::timestamptz) as value`, [at]);
+    assert.deepEqual(older.rows[0].value, [{ lottery:'今彩539',cycleDate:'2026-09-21' }]);
+    await db.query(`select private.matrix_retention_with_correction_tick($1::timestamptz)`, [at]);
+    const fallback = await db.query(`select count(*)::integer as count from private.test_http`);
+    assert.equal(fallback.rows[0].count, 1);
   } finally { await db.close(); }
 });
 

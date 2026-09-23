@@ -23,18 +23,44 @@ language sql stable security invoker set search_path = '' as $$
     on primary_state.worker_group = case when item.lottery='天天樂' then 'fantasy5' else 'evening' end
   left join private.matrix_recovery_schedule recovery_state
     on recovery_state.lottery = item.lottery
+  cross join lateral (
+    select max(recovery.slot) as last_at
+    from private.matrix_recovery_slots(
+      case when item.lottery='天天樂' then 'fantasy5' else 'evening' end,
+      draw.draw_date
+    ) as recovery(slot)
+  ) recovery_window
+  cross join lateral (
+    select max(recovery.slot) as last_at
+    from private.matrix_recovery_slots(
+      coalesce(recovery_state.worker_group,
+        case when item.lottery='天天樂' then 'fantasy5' else 'evening' end),
+      coalesce(recovery_state.cycle_date,draw.draw_date)
+    ) as recovery(slot)
+  ) active_window
   where draw.result_status = 'confirmed'
     and draw.draw_date <= (p_now at time zone 'Asia/Taipei')::date
     and (
       (primary_state.cycle_date = draw.draw_date and primary_state.completed_at is not null)
       or (recovery_state.cycle_date = draw.draw_date and recovery_state.completed_at is not null)
-      or p_now > (
-        select max(slot) from private.matrix_recovery_slots(
-          case when item.lottery='天天樂' then 'fantasy5' else 'evening' end,
-          draw.draw_date
-        ) as recovery(slot)
-      )
+      or p_now > recovery_window.last_at
     )
+    -- The existing one-shot recovery owns this lottery until its next valid
+    -- future slot, even when a newer cycle has superseded this draw's date.
+    and (
+      recovery_state.completed_at is null
+      and recovery_state.skip_reason is null
+      and recovery_state.next_at > p_now
+      and recovery_state.next_at <= active_window.last_at
+    ) is not true
+    -- net.http_post queues asynchronously. Do not queue the same draw again
+    -- while a normal recovery dispatch from the past ten minutes is pending.
+    and (
+      recovery_state.completed_at is null
+      and recovery_state.skip_reason is null
+      and recovery_state.dispatched_at > p_now - interval '10 minutes'
+      and recovery_state.dispatched_at <= p_now
+    ) is not true
     and (
       chain.value->>'latestPeriod' is distinct from draw.period
       or (chain.value->>'analysisComplete')::boolean is distinct from true
