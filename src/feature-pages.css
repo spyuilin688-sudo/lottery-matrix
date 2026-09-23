@@ -2683,31 +2683,13 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .manual-transfer-screen .detail-card dl > div {
   display: grid;
+  grid-template-columns: minmax(84px, auto) minmax(0, 1fr);
   align-items: center;
   gap: 6px;
-}
-.manual-transfer-screen .detail-card dl > div:not(.manual-transfer-bank-row) {
-  grid-template-columns: minmax(84px, auto) minmax(0, 1fr);
 }
 .manual-transfer-screen .detail-card dt { color: #a9a39a; }
 .manual-transfer-screen .detail-card dd { min-width: 0; margin: 0; color: #f0cc72; }
-.manual-transfer-bank-row {
-  display: grid;
-  grid-template-columns: minmax(84px, auto) minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 6px;
-}
 .manual-transfer-account { min-width: 0; overflow-wrap: anywhere; }
-.manual-transfer-copy {
-  padding: 0 12px;
-  border: 1px solid var(--pwa-frame-tertiary);
-  border-radius: var(--pwa-frame-radius);
-  background: var(--pwa-control-surface);
-  color: #e6c56a;
-  height: 28px;
-  min-height: 28px;
-  padding-inline: 8px;
-}
 .manual-transfer-last-five {
   width: 100%;
   min-width: 0;

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import '@testing-library/jest-dom/vitest';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const memberApi = vi.hoisted(() => ({
@@ -183,12 +183,35 @@ describe('Matrix Pro manual bank transfer', () => {
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
-  it('omits bank details and account copying while allowing transfer reporting', async () => {
+  it.each([
+    ['month', '月費方案', 'NT$2,880'],
+    ['quarter', '季費方案', 'NT$5,580'],
+    ['year', '年費方案', 'NT$17,800'],
+  ])('shows the approved receiving account for the selected %s plan', async (code, name, amount) => {
+    selection.readManualTransferPlan.mockReturnValue(code);
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+
+    expect(await screen.findByText(amount)).toBeInTheDocument();
+    expect(screen.getByText(name)).toBeInTheDocument();
+    const bank = screen.getByRole('region', { name: '轉帳資料' });
+    for (const [label, value] of [
+      ['收款銀行', '連線銀行'],
+      ['銀行代碼', '824'],
+      ['收款帳號', '111023004501'],
+      ['戶名', '黎小姐'],
+    ]) {
+      const term = within(bank).getByText(label, { selector: 'dt' });
+      expect(term.nextElementSibling).toHaveTextContent(new RegExp(`^${value}$`));
+    }
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    expect(memberApi.submitTransferRequest).not.toHaveBeenCalled();
+    expect(ecpay.beginEcpayCheckout).not.toHaveBeenCalled();
+  });
+
+  it('keeps reporting the payer account last five separately from the receiving account', async () => {
     render(<ManualTransferPage onNavigate={vi.fn()} />);
 
     expect(await screen.findByText('NT$2,880')).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: '轉帳資料' })).not.toBeInTheDocument();
-    expect(document.querySelector('.manual-transfer-bank-card')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '複製帳號' })).not.toBeInTheDocument();
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
     await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
