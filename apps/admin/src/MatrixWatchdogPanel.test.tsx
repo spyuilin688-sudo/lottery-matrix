@@ -26,7 +26,7 @@ const passedReport = {lottery:'今彩539',drawPeriod:'115000228',checkedAt:'2026
 it('names a failed card publication and its status',()=>{
  const report = {...passedReport,stages:passedReport.stages.map(stage=>stage.stage==='card'?{...stage,state:'FAIL'}:stage)};
  render(<MatrixWatchdogPanel detail={{checkedAt:'2026-09-19T21:34:49Z',completedAt:'2026-09-19T21:34:50Z',reports:[report]}} now={new Date('2026-09-19T21:35:00Z')}/>);
- expect(screen.getByText('牌單').nextElementSibling?.textContent).toBe('異常');
+ expect(screen.getAllByText('牌單').some(label=>label.nextElementSibling?.textContent==='異常')).toBe(true);
 });
 it('does not describe a passed chain as an unlocated fault',()=>{
  render(<MatrixWatchdogPanel detail={{status:'ok',checkedAt:'2026-09-19T21:34:49Z',completedAt:'2026-09-19T21:34:50Z',reports:[passedReport]}} now={new Date('2026-09-19T21:35:00Z')}/>);
