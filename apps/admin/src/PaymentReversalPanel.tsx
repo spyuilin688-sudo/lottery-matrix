@@ -39,6 +39,7 @@ const reasonMaxLength = 500;
 const statusLabels: Record<string, string> = {
   pending: '待確認',
   confirmed: '已確認',
+  refund_required: '需退款處理',
   rejected: '已退回',
   refunded: '已退款',
   chargeback: '已刷退',
@@ -224,7 +225,7 @@ export function PaymentReversalPanel({ payments, loadError = '', canEdit, confir
               </div>
               <div className="paymentReversalActions">
                 <b className="paymentReversalState" data-status={paymentStatus}>{statusLabels[paymentStatus] || paymentStatus}</b>
-                {canEdit && paymentStatus === 'confirmed' && !isEditing && (
+                {canEdit && (paymentStatus === 'confirmed' || paymentStatus === 'refund_required') && !isEditing && (
                   <button
                     type="button"
                     className="paymentReversalOpen"

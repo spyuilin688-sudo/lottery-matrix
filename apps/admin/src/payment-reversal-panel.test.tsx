@@ -73,6 +73,17 @@ function change(element: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElem
 }
 
 describe('PaymentReversalPanel', () => {
+  it('labels paid orders needing a refund and records a refund only after confirmation', async () => {
+    const onRecord = vi.fn(async () => undefined);
+    await renderPanel({ payments: [{ ...payment, status: 'refund_required' }], onRecord });
+    expect(container.querySelector('[data-status="refund_required"]')?.textContent).toBe('需退款處理');
+    openForm();
+    change(textarea('沖銷原因'), '已核對銀行退款完成');
+    await act(async () => button('記錄已完成沖銷').click());
+    expect(onRecord).toHaveBeenCalledWith('payment-1', 'refunded', '已核對銀行退款完成');
+    expect(container.querySelector('[data-status="refunded"]')?.textContent).toBe('已退款');
+  });
+
   it('keeps the entire payment history card collapsed until the administrator expands it', async () => {
     await renderPanel();
     const disclosure = container.querySelector('details.paymentReversalPanel') as HTMLDetailsElement;

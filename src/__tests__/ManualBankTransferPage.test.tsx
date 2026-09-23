@@ -53,7 +53,7 @@ describe('Matrix Pro manual bank transfer', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-09-07T00:00:00Z'));
     memberApi.fetchMemberProfile.mockResolvedValue({
-      lineUserId: 'member', planName: '年費方案',
+      lineUserId: 'member', planName: '月費方案',
       planExpiresAt: '2027-11-04T23:20:01.683Z', isLifetime: false,
     });
     selection.readManualTransferPlan.mockReturnValue('month');
@@ -73,6 +73,10 @@ describe('Matrix Pro manual bank transfer', () => {
   afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
   it('shows actual member information in subscription management', async () => {
+    memberApi.fetchMemberProfile.mockResolvedValueOnce({
+      lineUserId: 'member', planName: '年費方案',
+      planExpiresAt: '2027-11-04T23:20:01.683Z', isLifetime: false,
+    });
     render(<SubscriptionManagementPage onNavigate={vi.fn()} />);
     expect(await screen.findByText('2027/11/05')).toBeInTheDocument();
     expect(screen.getByText('年費方案')).toBeInTheDocument();
@@ -151,6 +155,7 @@ describe('Matrix Pro manual bank transfer', () => {
     expect(screen.getByRole('button', { name: '確定付款' })).toHaveClass('primary-action', 'branded-explore-action');
     expect(screen.getByRole('checkbox', { name: '自動續訂' })).toBeDisabled();
     expect(screen.queryByText(/自動續訂未開放/)).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', { name: '確定付款' })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: '確定付款' }));
     await waitFor(() => expect(ecpay.beginEcpayCheckout).toHaveBeenCalledExactlyOnceWith('month'));
     expect(selection.saveManualTransferPlan).not.toHaveBeenCalled();
@@ -161,6 +166,7 @@ describe('Matrix Pro manual bank transfer', () => {
     ecpay.beginEcpayCheckout.mockResolvedValue('manual');
     const onNavigate = vi.fn();
     render(<ProPlansPage onNavigate={onNavigate} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: '確定付款' })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: '確定付款' }));
     await waitFor(() => expect(selection.saveManualTransferPlan).toHaveBeenCalledWith('month'));
     expect(onNavigate).toHaveBeenCalledWith('manual-transfer');
@@ -170,6 +176,7 @@ describe('Matrix Pro manual bank transfer', () => {
     ecpay.beginEcpayCheckout.mockRejectedValue(new Error('network'));
     const onNavigate = vi.fn();
     render(<ProPlansPage onNavigate={onNavigate} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: '確定付款' })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: '確定付款' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('無法開啟付款頁面，請稍後再試。');
     expect(screen.getByRole('button', { name: '確定付款' })).toBeEnabled();
@@ -192,6 +199,28 @@ describe('Matrix Pro manual bank transfer', () => {
 
     await waitFor(() => expect(memberApi.submitTransferRequest).toHaveBeenCalledWith('month', '12345'));
     expect(await screen.findByText('待確認')).toBeInTheDocument();
+  });
+
+  it('shows a paid membership restriction and prevents manual transfer submission', async () => {
+    memberApi.fetchMemberProfile.mockResolvedValueOnce({
+      lineUserId: 'member', planName: '年費方案',
+      planExpiresAt: '2027-11-04T23:20:01.683Z', isLifetime: false,
+    });
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+    expect(await screen.findByText(/有效的年費方案無法購買較低方案/)).toBeInTheDocument();
+    expect(screen.getByLabelText('帳號末五碼')).toBeDisabled();
+    expect(screen.getByRole('button', { name: '提交' })).toBeDisabled();
+    expect(memberApi.submitTransferRequest).not.toHaveBeenCalled();
+  });
+
+  it('labels paid but unfulfilled orders as needing refund in member history', async () => {
+    authenticatePaymentHistory();
+    memberApi.fetchMemberPaymentHistory.mockResolvedValue([{
+      id: 'payment-refund', planName: '月費方案', amount: 2880,
+      submittedAt: '2026-09-07T00:00:00Z', status: 'refund_required',
+    }]);
+    render(<PaymentHistoryPage onNavigate={vi.fn()} />);
+    expect(await screen.findByText('需退款處理')).toBeInTheDocument();
   });
 
   it('blocks another submission while one request is pending', async () => {

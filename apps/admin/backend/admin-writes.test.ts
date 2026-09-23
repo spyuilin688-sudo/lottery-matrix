@@ -434,7 +434,7 @@ describe('authorized Supabase writes', () => {
     });
 
     await data.updateSubscription('member-1', { action: 'cancel' }, actor, new Date('2026-08-21T00:00:00Z'));
-    expect(rpc).toHaveBeenCalledWith('rpc/admin_update_subscription', expect.objectContaining({
+    expect(rpc).toHaveBeenCalledWith('rpc/admin_update_subscription_guarded', expect.objectContaining({
       body: expect.stringContaining('"p_action":"cancel"'),
     }));
   });
@@ -446,9 +446,9 @@ describe('authorized Supabase writes', () => {
     });
 
     await data.updateSubscription('member-1', { action: 'activate', planId: 'plan-30' }, actor, new Date('2026-08-21T00:00:00Z'));
-    await data.updateSubscription('member-1', { action: 'renew', planId: 'plan-30' }, actor, new Date('2026-08-21T00:00:00Z'));
-    expect(rpc).toHaveBeenNthCalledWith(1, 'rpc/admin_update_subscription', expect.objectContaining({ body: expect.stringContaining('"p_action":"activate"') }));
-    expect(rpc).toHaveBeenNthCalledWith(2, 'rpc/admin_update_subscription', expect.objectContaining({ body: expect.stringContaining('"p_action":"renew"') }));
+    await data.updateSubscription('member-1', { action: 'renew', planId: 'plan-30', requestId: '00000000-0000-4000-8000-000000000111' }, actor, new Date('2026-08-21T00:00:00Z'));
+    expect(rpc).toHaveBeenNthCalledWith(1, 'rpc/admin_update_subscription_guarded', expect.objectContaining({ body: expect.stringContaining('"p_action":"activate"') }));
+    expect(rpc).toHaveBeenNthCalledWith(2, 'rpc/admin_update_subscription_guarded', expect.objectContaining({ body: expect.stringContaining('"p_request_id":"00000000-0000-4000-8000-000000000111"') }));
   });
 
   it('adjusts expiry and supports a lifetime subscription', async () => {
@@ -458,11 +458,28 @@ describe('authorized Supabase writes', () => {
     });
 
     await data.updateSubscription('member-1', {
-      action: 'adjustExpiry', expiresAt: '2026-12-31T00:00:00Z',
+      action: 'adjustExpiry', expiresAt: '2026-12-31T00:00:00Z', expectedRevision: 4,
     }, actor, new Date('2026-08-21T00:00:00Z'));
     await data.updateSubscription('member-1', { action: 'lifetime' }, actor, new Date('2026-08-21T00:00:00Z'));
-    expect(rpc).toHaveBeenNthCalledWith(1, 'rpc/admin_update_subscription', expect.objectContaining({ body: expect.stringContaining('"p_expires_at":"2026-12-31T00:00:00.000Z"') }));
-    expect(rpc).toHaveBeenNthCalledWith(2, 'rpc/admin_update_subscription', expect.objectContaining({ body: expect.stringContaining('"p_action":"lifetime"') }));
+    expect(rpc).toHaveBeenNthCalledWith(1, 'rpc/admin_update_subscription_guarded', expect.objectContaining({ body: expect.stringContaining('"p_expires_at":"2026-12-31T00:00:00.000Z"') }));
+    expect(rpc).toHaveBeenNthCalledWith(1, 'rpc/admin_update_subscription_guarded', expect.objectContaining({ body: expect.stringContaining('"p_expected_revision":4') }));
+    expect(rpc).toHaveBeenNthCalledWith(2, 'rpc/admin_update_subscription_guarded', expect.objectContaining({ body: expect.stringContaining('"p_action":"lifetime"') }));
+  });
+
+  it('requires a client request identity to make a retried renewal safe', async () => {
+    const rpc = vi.fn();
+    const data = createAdminData({ insertRows: vi.fn(), selectRows: vi.fn(), updateRows: vi.fn(), deleteRows: vi.fn(), supabaseRequest: rpc });
+    await expect(data.updateSubscription('member-1', { action: 'renew', planId: 'plan-30' }, actor))
+      .rejects.toMatchObject({ statusCode: 400 });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('requires the loaded member revision before changing a subscription expiry', async () => {
+    const rpc = vi.fn();
+    const data = createAdminData({ insertRows: vi.fn(), selectRows: vi.fn(), updateRows: vi.fn(), deleteRows: vi.fn(), supabaseRequest: rpc });
+    await expect(data.updateSubscription('member-1', { action: 'adjustExpiry', expiresAt: '2026-12-31T00:00:00Z' }, actor))
+      .rejects.toMatchObject({ statusCode: 400 });
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it('confirms a transfer request through one transactional RPC', async () => {

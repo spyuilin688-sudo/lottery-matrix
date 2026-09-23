@@ -58,3 +58,7 @@
   text-align: right;
   white-space: nowrap;
 }
+
+.payment-ledger-status[data-status="refund_required"] {
+  color: #f4c17b;
+}

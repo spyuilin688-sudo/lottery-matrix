@@ -7,6 +7,7 @@ afterEach(cleanup);
 const app = vi.hoisted(() => {
   const state = {
     expiresAt: null as string | null,
+    revision: 0,
     writeError: null as Error | null,
     pendingWrite: null as Promise<void> | null,
   };
@@ -27,17 +28,19 @@ const app = vi.hoisted(() => {
         if (url.startsWith('/api/data/subscriptions?')) return { data: { total: 1, currentPage: 1, totalPages: 1, items: [{
           id: 'member-1', authUserId: 'auth-1', lineDisplayName: '測試會員', status: 'active',
           currentPlanId: 'plan-monthly', planName: '月費方案', planStartedAt: null,
-          planExpiresAt: state.expiresAt, isLifetime: false, autoRenew: false,
+          planExpiresAt: state.expiresAt, subscriptionRevision: state.revision, isLifetime: false, autoRenew: false,
         }] } };
         return { data: { items: [] } };
       }),
-      put: vi.fn(async (url: string, payload: { action: string; expiresAt?: string }) => {
+      put: vi.fn(async (url: string, payload: { action: string; expiresAt?: string; expectedRevision?: number }) => {
         if (url !== '/api/subscriptions/member-1' || payload.action !== 'adjustExpiry') {
           throw new Error('Unexpected write');
         }
         if (state.pendingWrite) await state.pendingWrite;
         if (state.writeError) throw state.writeError;
+        if (payload.expectedRevision !== state.revision) throw new Error('SUBSCRIPTION_CONFLICT');
         state.expiresAt = `${payload.expiresAt}T00:00:00Z`;
+        state.revision += 1;
         return { data: { id: 'member-1', planExpiresAt: state.expiresAt } };
       }),
       post: vi.fn(), delete: vi.fn(),
@@ -70,6 +73,7 @@ describe('subscription expiry save recovery', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     app.state.expiresAt = null;
+    app.state.revision = 0;
     app.state.writeError = null;
     app.state.pendingWrite = null;
     window.history.replaceState(null, '', '/');
@@ -104,7 +108,7 @@ describe('subscription expiry save recovery', () => {
     expect((within(editor).getByLabelText('到期日') as HTMLInputElement).value).toBe('2026-09-11');
     expect(app.api.put).toHaveBeenCalledTimes(1);
     expect(app.api.put).toHaveBeenCalledWith('/api/subscriptions/member-1', {
-      action: 'adjustExpiry', expiresAt: '2026-09-11',
+      action: 'adjustExpiry', expiresAt: '2026-09-11', expectedRevision: 0,
     });
     expect(screen.queryByText('2026/09/11 08:00')).toBeNull();
 
@@ -113,6 +117,32 @@ describe('subscription expiry save recovery', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(await screen.findByText('2026/09/11 08:00')).toBeTruthy();
     expect(app.api.put).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the other administrator’s expiry and explains a stale edit conflict', async () => {
+    const editor = await openEditor();
+    app.state.revision = 1;
+    app.state.expiresAt = '2026-12-01T00:00:00Z';
+    setDate(editor, '2026-12-20');
+    await confirmSave(editor);
+
+    await waitFor(() => expect(within(editor).getByRole('alert').textContent).toContain('重新開啟'));
+    expect(app.state.expiresAt).toBe('2026-12-01T00:00:00Z');
+    expect(app.api.put).toHaveBeenCalledWith('/api/subscriptions/member-1', {
+      action: 'adjustExpiry', expiresAt: '2026-12-20', expectedRevision: 0,
+    });
+    expect(screen.getByRole('dialog')).toBe(editor);
+
+    fireEvent.click(within(editor).getByRole('button', { name: '取消' }));
+    expect(await screen.findByText('2026/12/01 08:00')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '調整到期日' }));
+    const updatedEditor = screen.getByRole('dialog');
+    setDate(updatedEditor, '2026-12-20');
+    await confirmSave(updatedEditor);
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(app.api.put).toHaveBeenLastCalledWith('/api/subscriptions/member-1', {
+      action: 'adjustExpiry', expiresAt: '2026-12-20', expectedRevision: 1,
+    });
   });
 
   it('keeps the draft without writing when the administrator cancels confirmation', async () => {

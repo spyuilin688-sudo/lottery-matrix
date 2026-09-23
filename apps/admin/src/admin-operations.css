@@ -252,6 +252,7 @@
 .paymentReversalActions { display: flex; flex-direction: row; align-items: center; justify-content: flex-end; gap: 4px; }
 .paymentReversalState { display: inline-flex; min-height: 24px; align-items: center; justify-content: center; padding: 3px 7px; border: 1px solid transparent; border-radius: 999px; background: #252a31; color: #c4c6cc; font-size: 11px; line-height: 1; white-space: nowrap; }
 .paymentReversalState[data-status="confirmed"] { border-color: #5c5030; background: #201d14; color: #e1c170; }
+.paymentReversalState[data-status="refund_required"] { border-color: #735020; background: #2b1d10; color: #f4c17b; }
 .paymentReversalState:is([data-status="refunded"],[data-status="chargeback"],[data-status="cancelled"]) { background: #371919; color: #efabab; }
 .paymentReversalOpen { width: auto; min-height: 0; height: 24px; padding: 0 5px; border: 1px solid #6f3737; border-radius: 6px; background: #241616; color: #efabab; font-size: 10px; line-height: 1; white-space: nowrap; }
 .paymentReversalForm { grid-column: 1 / -1; display: grid; grid-template-columns: 130px minmax(0, 1fr) auto; gap: 5px 6px; align-items: end; padding: 6px; border: 1px solid #343840; border-radius: 8px; background: #0d1014; }

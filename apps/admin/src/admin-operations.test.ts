@@ -25,8 +25,10 @@ describe('admin operation helpers', () => {
     const put = vi.fn(async () => ({ data: {} }));
     await saveMemberStatus({ put }, 'member-1', 'disabled');
     await saveSubscription({ put }, 'member-1', { action: 'cancel' });
+    await saveSubscription({ put }, 'member-1', { action: 'adjustExpiry', expiresAt: '2026-09-11', expectedRevision: 3 });
     expect(put).toHaveBeenNthCalledWith(1, '/api/members/member-1/status', { status: 'disabled' });
     expect(put).toHaveBeenNthCalledWith(2, '/api/subscriptions/member-1', { action: 'cancel' });
+    expect(put).toHaveBeenNthCalledWith(3, '/api/subscriptions/member-1', { action: 'adjustExpiry', expiresAt: '2026-09-11', expectedRevision: 3 });
   });
 
   it('sends activation-code deletion to its dedicated backend route', async () => {

@@ -38,6 +38,17 @@ describe('ECPay payment notification', () => {
     expect(verifyPaid).toHaveBeenCalledOnce();
   });
 
+  it('acknowledges a fully recorded refund obligation, including a repeated provider notification', async () => {
+    const recordPaid = vi.fn().mockResolvedValue({ status: 'refund_required' });
+    const handler = createEcpayNotifyHandler({ config, recordPaid, verifyPaid: vi.fn().mockResolvedValue(true) });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const response = await handler(await signedRequest());
+      expect(response.status).toBe(200);
+      expect(await response.text()).toBe('1|OK');
+    }
+    expect(recordPaid).toHaveBeenCalledTimes(2);
+  });
+
   it('does not record simulated or unsuccessful payment notifications', async () => {
     const recordPaid = vi.fn();
     const verifyPaid = vi.fn();

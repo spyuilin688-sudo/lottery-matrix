@@ -37,7 +37,7 @@ export type MemberReferralSummary = {
 
 export type ManualTransferPlanCode = 'month' | 'quarter' | 'year';
 export type TransferRequestStatus = 'pending' | 'confirmed' | 'rejected';
-export type PaymentStatus = TransferRequestStatus | 'refunded' | 'chargeback' | 'cancelled';
+export type PaymentStatus = TransferRequestStatus | 'refund_required' | 'refunded' | 'chargeback' | 'cancelled';
 
 export type MemberTransferRequest = {
   id: string;

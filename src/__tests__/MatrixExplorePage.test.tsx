@@ -500,24 +500,39 @@ test.each([
   ['今彩539', '六合彩'],
   ['大樂透', '今彩539'],
   ['六合彩', '今彩539'],
-] as const)('%s結果在設定改成%s但未開始探索時，驗證內容與彩種格式不變', async (resultLottery, draftLottery) => {
+] as const)('%s結果切換到%s時立即清除舊版路與驗證', async (resultLottery, draftLottery) => {
   matrixApi.fetchExploreList.mockResolvedValue({ ...exploreEnvelope, lottery: resultLottery });
   matrixApi.fetchExploreValidation.mockResolvedValue({ ...exploreValidationEnvelope, lottery: resultLottery });
   render(<MatrixExplorePage onNavigate={vi.fn()} />);
   fireEvent.click(screen.getByRole('tab', { name: resultLottery }));
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
   fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
-  const validation = await screen.findByRole('region', { name: '驗證過程' });
-  const before = validation.innerHTML;
-
+  await screen.findByRole('region', { name: '驗證過程' });
   fireEvent.click(screen.getByRole('tab', { name: draftLottery }));
-
-  expect(validation.innerHTML).toBe(before);
-  expect(validation.querySelector('.explore-validation-group')?.getAttribute('data-lottery')).toBe(resultLottery);
+  expect(screen.queryByRole('region', { name: '驗證過程' })).toBeNull();
+  expect(screen.queryByRole('button', { name: /展開版路/ })).toBeNull();
+  expect(screen.queryByText('22.26')).toBeNull();
   expect(matrixApi.fetchExploreList).toHaveBeenCalledTimes(1);
-  fireEvent.click(screen.getByRole('button', { name: /收合版路/ }));
-  fireEvent.click(screen.getByRole('button', { name: /展開版路/ }));
-  expect(screen.getByRole('region', { name: '驗證過程' }).innerHTML).toBe(before);
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(expect.objectContaining({ lottery: draftLottery }));
+});
+
+test.each(['success', 'failure'] as const)('切換彩種後忽略先前探索請求的 %s', async (outcome) => {
+  let resolve!: (value: typeof exploreEnvelope) => void;
+  let reject!: (reason: unknown) => void;
+  matrixApi.fetchExploreList.mockReturnValueOnce(new Promise((done, fail) => { resolve = done; reject = fail; }));
+  render(<MatrixExplorePage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('tab', { name: '天天樂' }));
+  expect(screen.queryByText('分析結果載入中')).toBeNull();
+  expect(screen.queryByRole('heading', { name: '探索結果區' })).toBeNull();
+
+  await act(async () => { outcome === 'success' ? resolve(exploreEnvelope) : reject({ code: 'FORBIDDEN' }); });
+  expect(screen.queryByRole('button', { name: /展開版路/ })).toBeNull();
+  expect(screen.queryByRole('alert')).toBeNull();
+  expect(screen.queryByRole('dialog')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(expect.objectContaining({ lottery: '天天樂' }));
 });
 
 test.each([
@@ -991,6 +1006,24 @@ test('只有展開結果時才讀取該筆驗證資料', async () => {
     'api-item-1',
     expect.objectContaining({ exploreRange: '標準範圍' }),
   );
+});
+
+test('探索驗證快速收合再展開時共用進行中的請求並持續顯示載入', async () => {
+  let finish!: (value: typeof exploreValidationEnvelope) => void;
+  matrixApi.fetchExploreValidation.mockReturnValueOnce(new Promise((done) => { finish = done; }));
+  render(<MatrixExplorePage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  const row = await screen.findByRole('button', { name: /展開版路/ });
+  fireEvent.click(row);
+  fireEvent.click(screen.getByRole('button', { name: /收合版路/ }));
+  fireEvent.click(screen.getByRole('button', { name: /展開版路/ }));
+  expect(matrixApi.fetchExploreValidation).toHaveBeenCalledTimes(1);
+  expect(screen.getByText('驗證資料載入中')).toBeTruthy();
+  await act(async () => finish(exploreValidationEnvelope));
+  expect(screen.getByRole('region', { name: '驗證過程' }).textContent).toContain('114123');
+  fireEvent.click(screen.getByRole('button', { name: /收合版路/ }));
+  fireEvent.click(screen.getByRole('button', { name: /展開版路/ }));
+  expect(matrixApi.fetchExploreValidation).toHaveBeenCalledTimes(1);
 });
 
 test('Matrix 探索驗證過程在頁面 hidden 時遮蔽、回到前景後還原，且不重新讀取資料', async () => {

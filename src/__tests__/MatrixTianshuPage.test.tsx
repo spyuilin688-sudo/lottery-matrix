@@ -109,6 +109,30 @@ async function search() {
   return screen.findByRole('button', { name: '展開版路 ts-1' });
 }
 
+it('reopening Tianshu validation while pending reuses the same request', async () => {
+  let finish!: (value: { validation: TianshuValidation }) => void;
+  matrixApi.fetchTianshuValidation.mockReturnValueOnce(new Promise((done) => { finish = done; }));
+  await openPage();
+  await search();
+  fireEvent.click(screen.getByRole('button', { name: '展開版路 ts-1' }));
+  fireEvent.click(screen.getByRole('button', { name: '收合版路 ts-1' }));
+  fireEvent.click(screen.getByRole('button', { name: '展開版路 ts-1' }));
+  expect(matrixApi.fetchTianshuValidation).toHaveBeenCalledTimes(1);
+  expect(screen.getByText('驗證資料載入中')).toBeInTheDocument();
+  await act(async () => finish({ validation }));
+  expect(screen.getByRole('region', { name: '天樞驗證過程' })).toBeInTheDocument();
+});
+
+it('changing Tianshu lottery clears the completed result and requests the selected lottery next', async () => {
+  await openPage();
+  await search();
+  fireEvent.click(screen.getByRole('tab', { name: '天天樂' }));
+  expect(screen.queryByRole('button', { name: '展開版路 ts-1' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: '天樞結果區' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '開始天樞' }));
+  expect(matrixApi.fetchTianshuList).toHaveBeenLastCalledWith(expect.objectContaining({ lottery: '天天樂' }));
+});
+
 it('routes Tianshu through the Tianheng visual contract with the same settings', async () => {
   render(<FeaturePageRouter screen="tianshu" onNavigate={vi.fn()} />);
   await act(async () => {});

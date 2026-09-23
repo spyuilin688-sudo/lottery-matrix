@@ -301,6 +301,8 @@ function AdminApp() {
   const [selectedActivationCodeIds, setSelectedActivationCodeIds] = useState<Set<string>>(new Set());
   const [activationCopyFeedback, setActivationCopyFeedback] = useState("");
   const activationCopyFeedbackTimer = useRef<number | null>(null);
+  const revenueResetRequestId = useRef<string | null>(null);
+  const revenueResetActorId = useRef<string | null>(null);
   const loadVersion = useRef(0);
   const loadPending = useRef(false);
   const viewVersion = useRef(0);
@@ -313,6 +315,13 @@ function AdminApp() {
   const activeRef = useRef(active);
   const signedRef = useRef(signed);
   const adminIdRef = useRef(String(admin?.id ?? ""));
+  useEffect(() => {
+    const currentActorId = String(admin?.id ?? "");
+    if (revenueResetActorId.current !== currentActorId) {
+      revenueResetActorId.current = currentActorId;
+      revenueResetRequestId.current = null;
+    }
+  }, [admin?.id]);
   activeRef.current = active;
   signedRef.current = signed;
   adminIdRef.current = String(admin?.id ?? "");
@@ -355,7 +364,7 @@ function AdminApp() {
     return () => mounted.current && view === viewVersion.current && adminId === adminIdRef.current && name === activeRef.current && (!trackRead || read === loadVersion.current);
   };
   const load = async (name = activeRef.current, expectedAdminId = adminIdRef.current) => {
-    if (!mounted.current || !signedRef.current || name !== activeRef.current || expectedAdminId !== adminIdRef.current) return;
+    if (!mounted.current || !signedRef.current || name !== activeRef.current || expectedAdminId !== adminIdRef.current) return false;
     const version = ++loadVersion.current;
     loadPending.current = true;
     const validView = captureView();
@@ -375,7 +384,7 @@ function AdminApp() {
         let totalPages = 1;
         do {
           const result = await api.get(`/api/data/plans?page=${page}`);
-          if (!current()) return;
+          if (!current()) return false;
           const resultPage = readAdminDataPage(result.data);
           if (resultPage.currentPage !== page || (resultPage.total > 0 && resultPage.items.length === 0)) {
             throw new Error("方案列表分頁資料不完整，請重新載入");
@@ -388,9 +397,11 @@ function AdminApp() {
       }
     } catch (cause) {
       if (current()) setError(cause instanceof Error ? cause.message : "資料讀取失敗");
+      return false;
     } finally {
       if (current()) { loadPending.current = false; setBusy(false); }
     }
+    return current();
   };
   const boot = async (showError = false) => {
     const version = ++bootVersion.current;
@@ -722,9 +733,11 @@ function AdminApp() {
         setBusy(true);
         setError("");
         try {
-          await api.post("/api/revenue/reset");
+          const requestId = revenueResetRequestId.current ?? crypto.randomUUID();
+          revenueResetRequestId.current = requestId;
+          await api.post("/api/revenue/reset", { requestId });
           if (!current()) return;
-          await load("收入報表");
+          if (await load("收入報表")) revenueResetRequestId.current = null;
         } catch (e) {
           if (current()) setError(e instanceof Error ? e.message : "收入重設失敗");
         } finally {
@@ -898,7 +911,14 @@ function AdminApp() {
                     setBusy(true);
                     setError("");
                     try {
-                      await saveSubscription(api, id, payload);
+                      try {
+                        await saveSubscription(api, id, payload);
+                      } catch (cause) {
+                        if (current() && cause instanceof Error && cause.message === "SUBSCRIPTION_CONFLICT") {
+                          await load("訂閱管理");
+                        }
+                        throw cause;
+                      }
                       if (!current()) return;
                       await load("訂閱管理");
                     } finally {
@@ -1135,6 +1155,8 @@ type SubscriptionPayload = {
   action: "activate" | "renew" | "cancel" | "adjustExpiry" | "lifetime";
   planId?: string;
   expiresAt?: string;
+  expectedRevision?: number;
+  requestId?: string;
 };
 
 function SubscriptionManager({
@@ -1172,6 +1194,7 @@ function SubscriptionManager({
   const [submitting, setSubmitting] = useState(false);
   const expiryInputRef = useRef<HTMLInputElement>(null);
   const subscriptionSubmitLock = useRef(false);
+  const renewRequestId = useRef<string | null>(null);
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const [userInfo, setUserInfo] = useState<Row | null>(null);
@@ -1180,6 +1203,7 @@ function SubscriptionManager({
     setEditing(row);
     setAction(nextAction);
     setSaveError("");
+    renewRequestId.current = nextAction === "renew" ? crypto.randomUUID() : null;
     setPlanId(String(row.currentPlanId || plans[0]?.id || ""));
     setExpiresAt(row.planExpiresAt ? adminBusinessDateKey(String(row.planExpiresAt)) : "");
   };
@@ -1192,15 +1216,21 @@ function SubscriptionManager({
     }
     const payload: SubscriptionPayload = { action };
     if (action === "activate" || action === "renew") payload.planId = planId;
-    if (action === "adjustExpiry") payload.expiresAt = expiresAt;
+    if (action === "renew") payload.requestId = renewRequestId.current ?? (renewRequestId.current = crypto.randomUUID());
+    if (action === "adjustExpiry") {
+      payload.expiresAt = expiresAt;
+      payload.expectedRevision = Number(editing.subscriptionRevision);
+    }
     subscriptionSubmitLock.current = true;
     setSubmitting(true);
     setSaveError("");
     try {
       const saved = await onSubscription(editing.id, payload);
       if (mounted.current && saved) setEditing(null);
-    } catch {
-      if (mounted.current) setSaveError("訂閱更新失敗，請確認日期與連線後重試");
+    } catch (cause) {
+      if (mounted.current) setSaveError(cause instanceof Error && cause.message === "SUBSCRIPTION_CONFLICT"
+        ? "此會員訂閱資料已變更，請取消編輯並重新開啟該會員的到期日"
+        : "訂閱更新失敗，請確認日期與連線後重試");
     } finally {
       subscriptionSubmitLock.current = false;
       if (mounted.current) setSubmitting(false);
@@ -1243,7 +1273,7 @@ function SubscriptionManager({
         </div>
       )}
       {userInfo && <UserInfoDialog key={userInfo.id} row={userInfo} client={api} module="subscriptions" onClose={() => setUserInfo(null)} />}
-      <AdminListControls page={paymentPage} showError={false} name="付款紀錄" statuses={[["confirmed", "已付款"], ["refunded", "已退款"], ["chargeback", "已刷退"], ["cancelled", "已取消"]]} sorts={[["paidAt", "付款時間"], ["amount", "付款金額"]]} />
+      <AdminListControls page={paymentPage} showError={false} name="付款紀錄" statuses={[["confirmed", "已付款"], ["refund_required", "需退款處理"], ["refunded", "已退款"], ["chargeback", "已刷退"], ["cancelled", "已取消"]]} sorts={[["paidAt", "付款時間"], ["amount", "付款金額"]]} />
       <PaymentReversalPanel
         key={JSON.stringify(paymentPage.query)}
         payments={paymentPage.loading || paymentPage.error ? null : paymentPage.items.map(paymentRecord)}

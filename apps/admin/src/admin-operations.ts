@@ -54,6 +54,8 @@ export async function saveSubscription(
     action: 'activate' | 'renew' | 'cancel' | 'adjustExpiry' | 'lifetime';
     planId?: string;
     expiresAt?: string;
+    expectedRevision?: number;
+    requestId?: string;
   },
 ) {
   return api.put(`/api/subscriptions/${id}`, payload);
