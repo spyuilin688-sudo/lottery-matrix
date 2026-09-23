@@ -70,5 +70,5 @@ begin
   end loop;
   return null;
 end;
-$function$
+$function$;
 commit;
