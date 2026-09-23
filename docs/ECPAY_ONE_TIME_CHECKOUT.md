@@ -10,7 +10,7 @@
 
 ## 啟用順序
 
-1. 部署 `20260923080601_ecpay_one_time_checkout.sql` 和 `ecpay-checkout`、`ecpay-notify` 兩個 Edge Functions。前者需 `verify_jwt=true`，綠界回傳的後者需 `verify_jwt=false`；回傳處理器會驗證綠界檢查碼並向綠界查詢付款結果。尚未設定模式時，原人工轉帳流程可用。
+1. 部署 `20260923083441_ecpay_one_time_checkout.sql` 和 `ecpay-checkout`、`ecpay-notify` 兩個 Edge Functions。前者需 `verify_jwt=true`，綠界回傳的後者需 `verify_jwt=false`；回傳處理器會驗證綠界檢查碼並向綠界查詢付款結果。尚未設定模式時，原人工轉帳流程可用。
 2. 從 [綠界廠商後台](https://vendor.ecpay.com.tw/) → 系統設定 → 系統介接設定 → 介接資訊，取得正式環境的特店編號、HashKey、HashIV。不要將正式金鑰貼入程式碼、GitHub、聊天或瀏覽器網址。
 3. 將 `ECPAY_MERCHANT_ID`、`ECPAY_HASH_KEY`、`ECPAY_HASH_IV`、`ECPAY_ENVIRONMENT=production`、`ECPAY_CLIENT_BACK_URL=https://matrixlottery.idv.tw/` 設定為 Supabase Edge Function Secrets；先讓 `ECPAY_PAYMENT_MODE=manual`。
 4. 部署前端網站，確認方案頁可進入原人工轉帳流程。再用綠界測試商店金鑰、`ECPAY_ENVIRONMENT=stage`、`ECPAY_PAYMENT_MODE=ecpay` 在獨立測試環境完成付款、通知、會員期限及重複通知測試；正式環境切回正式金鑰和 `production`。

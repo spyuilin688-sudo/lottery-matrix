@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
 
-const migration = new URL('../supabase/migrations/20260923080601_ecpay_one_time_checkout.sql', import.meta.url);
+const migration = new URL('../supabase/migrations/20260923083441_ecpay_one_time_checkout.sql', import.meta.url);
 const userId = '00000000-0000-4000-8000-000000000001';
 const memberId = '10000000-0000-4000-8000-000000000001';
 const planId = '20000000-0000-4000-8000-000000000001';
