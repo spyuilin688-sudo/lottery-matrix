@@ -46,6 +46,16 @@ function createAppDeployContractDatabase(): AppDeployDatabaseContract {
 }
 
 describe('watchdog status store', () => {
+  it('retains the card-only recovery reason in the saved heartbeat', async () => {
+    const database = createDatabase();
+    await createWatchdogStatusStore(database).save({
+      ...heartbeat,
+      actions: [{ lottery: '今彩539', target: 'railway', reasons: ['card-missing'], outcome: 'accepted' }],
+    });
+    expect(database.add).toHaveBeenCalledWith('matrix-watchdog-status', [
+      expect.objectContaining({ actions: [{ lottery: '今彩539', target: 'railway', reasons: ['card-missing'], outcome: 'accepted' }] }),
+    ]);
+  });
   it('accepts the exact AppDeploy list record contract', () => {
     expect(createWatchdogStatusStore(createAppDeployContractDatabase())).toBeDefined();
   });

@@ -102,6 +102,32 @@ def test_ready_notifications_skip_http_when_durable_event_state_already_exists(
     )
 
 
+def test_repaired_card_notification_fills_only_missing_durable_event_once(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository = DurableReadyRepository()
+    durable = {
+        'lottery_result:539:000001001',
+        'matrix_status:539:000001001',
+    }
+    repository.notification_event_exists = lambda event: event['eventKey'] in durable
+    monkeypatch.setattr(worker_module, '_card_ready', lambda *args, **kwargs: True)
+
+    class Emitter:
+        enabled = True
+        sent: list[str] = []
+
+        def emit(self, event: dict):
+            self.sent.append(event['eventKey'])
+            durable.add(event['eventKey'])
+            return {'created': True}
+
+    emitter = Emitter()
+    emit_ready_notifications(LOTTERY, PERIOD, repository, emitter, set())
+    emit_ready_notifications(LOTTERY, PERIOD, repository, emitter, set())
+    assert emitter.sent == ['matrix_card:539:000001001']
+
+
 def test_completed_confirmed_period_fast_exits_before_card_publish_restore_or_source_fetch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

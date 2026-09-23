@@ -80,3 +80,37 @@ def test_primary_job_requires_worker_token(monkeypatch) -> None:
         run_primary=lambda *_: "accepted",
     )
     assert (status, payload) == (403, {"error": "FORBIDDEN"})
+
+
+def test_fantasy_primary_repairs_only_the_missing_card_without_analysis(monkeypatch) -> None:
+    from types import SimpleNamespace
+    from app import primary_worker
+    from contextlib import nullcontext
+
+    class Repo:
+        def __init__(self):
+            self.client = self
+
+        def list_draws(self, lottery, limit):
+            return [{'period': '12004', 'drawDate': '2026-09-19', 'resultStatus': 'confirmed'}]
+
+        def rpc(self, name, params):
+            assert name == 'matrix_watchdog_chain_state'
+            return SimpleNamespace(execute=lambda: SimpleNamespace(data={
+                'latestPeriod': '12004', 'analysisComplete': True,
+                'matrixStatusComplete': True, 'cardComplete': False,
+            }))
+
+    repaired = []
+    monkeypatch.setattr(primary_worker, 'load_settings', lambda: SimpleNamespace(
+        supabase_url='url', supabase_secret_key='secret'))
+    monkeypatch.setattr(primary_worker, 'create_supabase_repository', lambda *args: Repo())
+    monkeypatch.setattr(primary_worker, 'notification_emitter_context', lambda *_: nullcontext(None))
+    monkeypatch.setattr(primary_worker, 'repair_current_card_if_needed',
+                        lambda lottery, period, repo: repaired.append((lottery, period)) or True)
+    monkeypatch.setattr(primary_worker, 'run_analysis_only_worker',
+                        lambda *args, **kwargs: (_ for _ in ()).throw(
+                            AssertionError('card-only repair must not rerun analysis')))
+    monkeypatch.setattr(primary_worker, 'certify_completed_result', lambda *args, **kwargs: None)
+    primary_worker.run_primary_group('fantasy5', date(2026, 9, 19), ('天天樂',))
+    assert repaired == [('天天樂', '12004')]

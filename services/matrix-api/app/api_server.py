@@ -702,7 +702,7 @@ def handle_api_request(
             minimum_date = recovery_request.get("minimumDrawDate")
             options = {}
             if stage is not None:
-                if stage not in {"crawler", "analysis", "matrix-status"}:
+                if stage not in {"crawler", "analysis", "matrix-status", "card"}:
                     raise ValueError("RECOVERY_STAGE_INVALID")
                 if stage != "crawler" and (not isinstance(period, str) or not period.isascii() or not period.isdigit() or len(period) > 20):
                     raise ValueError("RECOVERY_PERIOD_REQUIRED")

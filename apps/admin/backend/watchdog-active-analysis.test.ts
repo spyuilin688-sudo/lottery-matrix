@@ -5,6 +5,39 @@ import {
 } from './watchdog';
 
 describe('watchdog active analysis resolution', () => {
+  it('shows a missing published card as a failed stage and dispatches card repair', async () => {
+    const period = '115000215';
+    const request = vi.fn(async (path: string) => {
+      if (path === 'rpc/matrix_watchdog_draw_days') return {
+        今彩539: ['2026-09-04'],
+        天天樂: ['2026-09-04'],
+        六合彩: ['2026-09-04'],
+        大樂透: ['2026-09-04'],
+      };
+      if (path.startsWith('system_job_status?')) return [];
+      if (path.startsWith('lottery_draws?')) return [{
+        period, draw_date: '2026-09-04', result_status: 'confirmed',
+        numbers: ['01', '02', '03', '04', '05'], draw_order_numbers: ['05', '04', '03', '02', '01'],
+      }];
+      if (path === 'rpc/matrix_watchdog_analysis_state') return {
+        drawPeriod: period, status: 'complete', leaseExpiresAt: null,
+      };
+      if (path === 'rpc/matrix_watchdog_chain_state') return {
+        latestPeriod: period, analysisComplete: true, matrixStatusComplete: true,
+        cardComplete: false,
+      };
+      throw new Error('unexpected watchdog query');
+    });
+    const snapshots = await createSupabaseWatchdogSnapshotLoader({ supabaseRequest: request })(
+      new Date('2026-09-04T12:43:00.000Z'),
+    );
+    const snapshot = snapshots.find((item) => item.lottery === '今彩539')!;
+    expect(snapshot.chain?.state).toBe('FAIL');
+    expect(snapshot.chain?.stages.find((stage) => stage.stage === 'card')?.state).toBe('FAIL');
+    expect(planWatchdogActions([snapshot], new Date('2026-09-04T12:43:00.000Z'))).toEqual([{
+      lottery: '今彩539', target: 'railway', reasons: ['card-missing'],
+    }]);
+  });
   it('treats current split v14 active analyses as complete instead of analysis-missing', async () => {
     const period = '115000215';
     const supabaseRequest = vi.fn(async (path: string) => {

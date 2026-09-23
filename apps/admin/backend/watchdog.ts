@@ -8,6 +8,7 @@ export type WatchdogSnapshot = {
   drawDays?: string[];
   recoveryCycleDate?: string;
   recoveryComplete?: boolean;
+  cardComplete?: boolean;
   chain?: ChainReport;
   unavailable?: boolean;
   job: null | {
@@ -15,7 +16,7 @@ export type WatchdogSnapshot = {
     startedAt: string | null;
     updatedAt: string | null;
   };
-  latestDraw: null | { period: string; drawDate: string | null; resultStatus?: string | null };
+  latestDraw: null | { period: string; drawDate: string | null; resultStatus?: string | null; drawOrderAvailable?: boolean };
   latestAnalysis: null | {
     drawPeriod: string;
     status: 'running' | 'complete' | 'failed';
@@ -208,6 +209,7 @@ export function planWatchdogActions(
       || !/^\d{4}-\d{2}-\d{2}$/.test(drawDate)
       || drawDate < minimumDrawDate
       || snapshot.latestDraw?.resultStatus === 'preliminary'
+      || (snapshot.lottery !== '天天樂' && snapshot.latestDraw?.drawOrderAvailable === false)
     );
     if (staleDraw) {
       const jobHeartbeat = snapshot.job?.updatedAt ?? snapshot.job?.startedAt;
@@ -253,6 +255,10 @@ export function planWatchdogActions(
     for (const stage of ['matrix-status'] as const) {
       if (snapshot.chain?.stages.find(s => s.stage === stage)?.state === 'FAIL') add(snapshot.lottery, 'railway', `${stage}-missing`);
     }
+    if (snapshot.cardComplete === false && snapshot.latestDraw.resultStatus === 'confirmed'
+      && snapshot.chain?.stages.find(s => s.stage === 'analysis')?.state === 'PASS'
+      && snapshot.chain?.stages.find(s => s.stage === 'matrix-status')?.state === 'PASS'
+      && !staleDraw) add(snapshot.lottery, 'railway', 'card-missing');
   }
   return [...planned.values()];
 }
@@ -386,7 +392,7 @@ export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
           `system_job_status?select=status,started_at,updated_at,written_period,database_period&job_name=eq.${encode(JOB_NAME[lottery])}&limit=1`,
         ).catch(missing),
         supabaseRequest<Record<string, unknown>[]>(supabase,
-          `lottery_draws?select=period,draw_date,result_status&lottery=eq.${encode(lottery)}&order=draw_date.desc.nullslast,period.desc&limit=1`,
+          `lottery_draws?select=period,draw_date,result_status,numbers,draw_order_numbers&lottery=eq.${encode(lottery)}&order=draw_date.desc.nullslast,period.desc&limit=1`,
         ).catch(missing),
       ]);
       const jobRow = jobRows[0];
@@ -419,6 +425,15 @@ export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
       const evidence = (stage: StageEvidence['stage'], state: StageEvidence['state'], code: string, source = 'supabase'): StageEvidence => ({stage,state,code,source,period,observedAt});
       const liveAnalysis = analysisStatus === 'running' && Boolean(analysisState?.leaseExpiresAt) && Date.parse(String(analysisState?.leaseExpiresAt)) > at.getTime();
       const verifiedAnalysis = chainState?.analysisComplete === true && chainState?.latestPeriod === period;
+      const formalOrderMissing = lottery !== '天天樂' && drawRow?.result_status === 'confirmed'
+        && 'draw_order_numbers' in (drawRow ?? {}) && !(
+          Array.isArray(drawRow?.numbers) && Array.isArray(drawRow?.draw_order_numbers)
+          && drawRow.numbers.length === (lottery === '今彩539' ? 5 : 7)
+          && drawRow.draw_order_numbers.length === drawRow.numbers.length
+          && new Set(drawRow.draw_order_numbers).size === drawRow.numbers.length
+          && [...drawRow.draw_order_numbers].sort().join(',') === [...drawRow.numbers].sort().join(',')
+          && (lottery === '今彩539' || drawRow.draw_order_numbers[6] === drawRow.numbers[6])
+        );
       const stages: StageEvidence[] = [
         evidence('schedule', jobMatches && Boolean(jobRow?.started_at) ? 'PASS' : 'UNKNOWN', 'SCHEDULE_EXECUTION_OBSERVED', 'system_job_status'),
         evidence('job', jobMatches && jobStatus === 'success' ? 'PASS' : jobStatus === 'running' ? 'WAITING' : jobStatus === 'failed' ? 'FAIL' : 'UNKNOWN', 'JOB_' + (jobStatus ?? 'MISSING').toUpperCase(), 'system_job_status'),
@@ -426,9 +441,13 @@ export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
         evidence('draw', currentDraw ? 'PASS' : expected ? 'FAIL' : 'UNKNOWN', currentDraw ? 'CURRENT_DRAW_STORED' : 'DRAW_STALE', 'lottery_draws'),
         evidence('analysis', !chainState ? 'UNKNOWN' : verifiedAnalysis ? 'PASS' : liveAnalysis ? 'WAITING' : 'FAIL', verifiedAnalysis ? 'ACTIVE_ANALYSIS_COMPLETE' : liveAnalysis ? 'ANALYSIS_LEASE_ACTIVE' : 'ANALYSIS_INCOMPLETE', 'matrix_watchdog_chain_state'),
         evidence('matrix-status', !chainState ? 'UNKNOWN' : chainState.matrixStatusComplete === true ? 'PASS' : verifiedAnalysis ? 'FAIL' : 'WAITING', 'MATRIX_STATUS_ARTIFACT', 'matrix_watchdog_chain_state'),
+        evidence('card', !chainState || typeof chainState.cardComplete !== 'boolean' ? 'UNKNOWN'
+          : chainState.cardComplete === true ? 'PASS'
+          : drawRow?.result_status !== 'confirmed' || formalOrderMissing || !verifiedAnalysis || chainState.matrixStatusComplete !== true
+            ? 'WAITING' : 'FAIL', 'CURRENT_CARD_PUBLICATION', 'matrix_watchdog_chain_state'),
       ];
       let recoveryComplete = false;
-      if (scheduled && period && drawRow?.result_status === 'confirmed' && drawRow?.draw_date === recoveryCycleDate && verifiedAnalysis && chainState?.matrixStatusComplete === true) {
+      if (scheduled && period && drawRow?.result_status === 'confirmed' && drawRow?.draw_date === recoveryCycleDate && verifiedAnalysis && chainState?.matrixStatusComplete === true && chainState?.cardComplete !== false) {
         recoveryComplete = await supabaseRequest<boolean>(supabase,'rpc/matrix_recovery_complete', {
           method:'POST',body:JSON.stringify({p_lottery:lottery,p_period:period}),
         }).catch(() => false);
@@ -436,6 +455,7 @@ export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
       return {
         lottery,
         ...(recoveryCycleDate ? {recoveryCycleDate,recoveryComplete} : {}),
+        ...(typeof chainState?.cardComplete === 'boolean' ? {cardComplete:chainState.cardComplete} : {}),
         unavailable,
         chain: evaluateChain({lottery,drawPeriod:period,checkedAt:observedAt,stages}),
         drawDays: calendarDrawDays(calendar, lottery),
@@ -448,6 +468,8 @@ export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
           period,
           drawDate: nullableString(drawRow?.draw_date),
           resultStatus: nullableString(drawRow?.result_status),
+          ...('draw_order_numbers' in (drawRow ?? {}) ? {drawOrderAvailable:
+            lottery === '天天樂' || !formalOrderMissing} : {}),
         } : null,
         latestAnalysis: visibleAnalysisStatus ? {
           drawPeriod: nullableString(analysisState?.drawPeriod) ?? '',
@@ -533,7 +555,7 @@ export function createFantasy5GithubDispatcher(
   };
 }
 
-export type RecoveryTarget = {stage:'crawler'|'analysis'|'matrix-status';drawPeriod:string|null;minimumDrawDate?:string};
+export type RecoveryTarget = {stage:'crawler'|'analysis'|'matrix-status'|'card';drawPeriod:string|null;minimumDrawDate?:string};
 
 type WatchdogDependencies = {
   collectRailway?: (at?: Date) => Promise<RailwayEvidence[]>;
@@ -585,7 +607,9 @@ export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
           } else {
             const snapshot = snapshots.find(s => s.lottery === action.lottery)!;
             const crawler = action.reasons.some(r => ['job-failed','job-stuck','crawler-stale'].includes(r));
-            const stage: RecoveryTarget['stage'] = crawler ? 'crawler' : action.reasons.some(r => r.startsWith('analysis-')) ? 'analysis' : 'matrix-status';
+            const stage: RecoveryTarget['stage'] = crawler ? 'crawler'
+              : action.reasons.some(r => r.startsWith('analysis-')) ? 'analysis'
+              : action.reasons.some(r => r.startsWith('matrix-status-')) ? 'matrix-status' : 'card';
             const expectedDate = snapshot.recoveryCycleDate ?? expectedDrawDateForDueWindow(action.lottery,at,snapshot.drawDays);
             const target: RecoveryTarget = {stage,drawPeriod:crawler ? null : snapshot.latestDraw?.period ?? null,...(crawler && expectedDate ? {minimumDrawDate:minimumExpectedDrawDate(action.lottery,expectedDate)} : {})};
             const response = await dependencies.recoverRailway(action.lottery, owner, target) as { status?: unknown };

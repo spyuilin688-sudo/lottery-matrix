@@ -39,6 +39,7 @@ class Cards:
     def release(self, lottery: str, token: str, error: str | None = None) -> None:
         if token == self.owner:
             self.owner = None
+            self.row['last_error'] = error
 
     def read_manifest(self, lottery: str):
         return deepcopy(self.row["manifest"])
@@ -87,3 +88,37 @@ def test_current_manifest_returns_without_acquiring_another_write_lease() -> Non
 
     assert second == first
     assert cards.claims == 1
+
+
+def test_reset_publication_metadata_rebinds_the_same_current_cards_without_rendering(monkeypatch) -> None:
+    from types import SimpleNamespace
+    from app.targeted_recovery import repair_current_card_if_needed
+
+    repository = InMemoryAnalysisRepository()
+    for draw in history():
+        repository.upsert_draw(draw)
+    cards = Cards()
+    repository.card_repository = cards
+    first = CardPublicationService(repository, cards, renderer=png_stub).ensure_current(LOTTERY, NOW)
+    assert first is not None
+    cards.row['desired_digest'] = None
+    cards.row['desired_period'] = None
+    cards.row['last_error'] = 'OLD_CLEANUP_FAILURE'
+
+    repository.client = SimpleNamespace(rpc=lambda name, params: SimpleNamespace(
+        execute=lambda: SimpleNamespace(data={
+            'latestPeriod': '12000', 'analysisComplete': True,
+            'matrixStatusComplete': True,
+            'cardComplete': cards.row['desired_digest'] == first['generation'],
+        })))
+    monkeypatch.setattr('app.targeted_recovery.publish_current_card',
+                        lambda *args: (_ for _ in ()).throw(
+                            AssertionError('unchanged current PNG must be reused')))
+    assert repair_current_card_if_needed(LOTTERY, '12000', repository) is True
+    second = cards.read_manifest(LOTTERY)
+    assert second['generation'] == first['generation']
+    assert second['cards'] == first['cards']
+    assert cards.row['desired_digest'] == first['generation']
+    assert cards.row['desired_period'] == first['period']
+    assert cards.row['last_error'] is None
+    assert cards.claims == 2
