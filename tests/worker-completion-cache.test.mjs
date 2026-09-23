@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
 
 const path = new URL('../supabase/migrations/20260920193052_worker_completion_cache.sql', import.meta.url);
+const cleanupPath = new URL('../supabase/migrations/20260923080000_worker_completion_old_period_cleanup.sql', import.meta.url);
 const tables = ['matrix_analysis_artifacts', 'matrix_analysis_artifact_chunks',
   'matrix_explore_results', 'matrix_tianheng_results', 'matrix_tianshu_results'];
 async function database() {
@@ -18,6 +19,11 @@ async function database() {
   for (const table of tables) await db.exec(`create table ${table} (
     lottery text, draw_period text, analysis_version text, expires_at timestamptz);`);
   if (existsSync(path)) await db.exec(readFileSync(path, 'utf8'));
+  // The fixture starts from the original migration; production's predecessor
+  // checksum belongs to the later result-item migration.
+  const cleanup = readFileSync(cleanupPath, 'utf8');
+  await db.exec(cleanup.slice(cleanup.indexOf('CREATE OR REPLACE FUNCTION'),
+    cleanup.lastIndexOf('commit;')));
   await db.exec(`insert into lottery_draws values ('天天樂','11988','2026-09-20','confirmed','[1,2,3,4,5]');
     insert into matrix_analysis_artifacts values ('天天樂','11988','11988:v15-sorted',now()+interval '1 day');`);
   return db;
@@ -66,6 +72,32 @@ test('every readiness dependency invalidates the marker and fences stale certifi
       assert.ok(after.generation > before.generation, sql);
       assert.equal(await certify(db, before.generation), false, sql);
     }
+  } finally { await db.close(); }
+});
+
+test('old-period retention deletes keep the current certificate; current deletes still fence it', async () => {
+  const db = await database();
+  try {
+    for (const table of tables) {
+      await db.exec(`insert into ${table} values ('天天樂','11987','11987:v15-sorted',now()-interval '1 day')`);
+    }
+    const before = await snapshot(db);
+    assert.equal(await certify(db, before.generation), true);
+    for (const table of tables) {
+      await db.exec(`delete from ${table} where draw_period='11987'`);
+      const after = await snapshot(db);
+      assert.equal(after.generation, before.generation, table);
+      assert.equal(after.ready, true, table);
+    }
+    await db.exec(`insert into matrix_tianshu_results values
+      ('天天樂','11988','11988:v15-sorted',now()+interval '1 day')`);
+    const current = await snapshot(db);
+    assert.equal(await certify(db, current.generation), true);
+    await db.exec(`delete from matrix_tianshu_results where draw_period='11988'`);
+    const changed = await snapshot(db);
+    assert.ok(changed.generation > current.generation);
+    assert.equal(changed.ready, false);
+    assert.equal(await certify(db, current.generation), false);
   } finally { await db.close(); }
 });
 
