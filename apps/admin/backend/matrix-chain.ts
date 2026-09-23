@@ -1,5 +1,5 @@
 import type { WatchdogLottery } from './watchdog';
-export const CHAIN_STAGES = ['schedule','job','crawler','draw','analysis','matrix-status'] as const;
+export const CHAIN_STAGES = ['schedule','job','crawler','draw','analysis','matrix-status','card'] as const;
 export type ChainStage = typeof CHAIN_STAGES[number];
 export type StageState = 'PASS' | 'FAIL' | 'WAITING' | 'UNKNOWN';
 export type StageEvidence = { stage: ChainStage; state: StageState; source: string; observedAt: string; period: string | null; code: string };

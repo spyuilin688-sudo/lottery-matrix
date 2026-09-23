@@ -8,6 +8,7 @@ import {
   planWatchdogActions,
   type WatchdogSnapshot,
 } from './watchdog';
+import { evaluateChain, CHAIN_STAGES } from './matrix-chain';
 
 const healthy = (
   lottery: WatchdogSnapshot['lottery'],
@@ -49,6 +50,55 @@ const plannedAtOffsets = (
 };
 
 describe('independent Matrix watchdog planning', () => {
+  it('sends a complete confirmed draw with only a missing card to card repair', async () => {
+    const at = new Date('2026-09-04T12:43:00.000Z');
+    const snapshot = healthy('今彩539', '115000215', '2026-09-04');
+    snapshot.latestDraw = { ...snapshot.latestDraw!, resultStatus: 'confirmed', drawOrderAvailable: true };
+    snapshot.cardComplete = false;
+    snapshot.chain = evaluateChain({
+      lottery: '今彩539', drawPeriod: '115000215', checkedAt: at.toISOString(),
+      stages: CHAIN_STAGES.map((stage) => ({
+        stage, state: (stage === 'card' ? 'FAIL' : 'PASS') as 'FAIL' | 'PASS', source: 'supabase',
+        observedAt: at.toISOString(), period: '115000215', code: 'READY',
+      })),
+    });
+    const recoverRailway = vi.fn(async () => ({ status: 'accepted' }));
+    const watchdog = createIndependentWatchdog({
+      loadSnapshot: async () => [snapshot],
+      claimLease: async () => true,
+      releaseLease: async () => undefined,
+      recoverRailway,
+      dispatchFantasy5: async () => 'unused',
+    });
+    const result = await watchdog.run(at, 'card-invocation');
+    expect(result.status).toBe('degraded');
+    expect(result).toMatchObject({
+      recoveryReports: [expect.objectContaining({
+        state: 'FAIL', stages: expect.arrayContaining([expect.objectContaining({ stage: 'card', state: 'FAIL' })]),
+      })],
+    });
+    expect(recoverRailway).toHaveBeenCalledWith('今彩539', 'card-invocation', {
+      stage: 'card', drawPeriod: '115000215',
+    });
+  });
+
+  it('sends a confirmed draw missing its actual order to source repair', () => {
+    const snapshot = healthy('今彩539', '115000215', '2026-09-04');
+    snapshot.latestDraw = { ...snapshot.latestDraw!, resultStatus: 'confirmed', drawOrderAvailable: false };
+    snapshot.cardComplete = false;
+    expect(planWatchdogActions([snapshot], new Date('2026-09-04T12:43:00.000Z'))).toEqual([{
+      lottery: '今彩539', target: 'railway', reasons: ['crawler-stale'],
+    }]);
+  });
+
+  it('does not repair a preliminary sorted card before the formal result arrives', () => {
+    const snapshot = healthy('今彩539', '115000215', '2026-09-04');
+    snapshot.latestDraw = { ...snapshot.latestDraw!, resultStatus: 'preliminary', drawOrderAvailable: false };
+    snapshot.cardComplete = false;
+    expect(planWatchdogActions([snapshot], new Date('2026-09-04T12:43:00.000Z'))).toEqual([{
+      lottery: '今彩539', target: 'railway', reasons: ['crawler-stale'],
+    }]);
+  });
   it('uses exact ten/fifty minute offsets and the two extra evening checks', () => {
     expect(buildWatchdogPhasePlan()).toEqual([
       ...Array.from({length:27},(_,i)=>i*10),270,320,370,420,470,520,930,1290,

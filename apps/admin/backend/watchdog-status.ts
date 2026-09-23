@@ -62,6 +62,7 @@ const LOTTERIES = new Set<WatchdogStatusAction['lottery']>(['今彩539', '天天
 const TARGETS = new Set<WatchdogStatusAction['target']>(['github', 'railway']);
 const REASONS = new Set([
   'matrix-status-missing',
+  'card-missing',
   'job-failed',
   'job-stuck',
   'crawler-stale',

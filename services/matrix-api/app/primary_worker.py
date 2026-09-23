@@ -10,6 +10,7 @@ from typing import Any
 import httpx
 
 from app.analysis_worker import (
+    _emit_ready_notifications as emit_fantasy5_ready_notifications,
     _completed_period_idle_ready,
     run_analysis_only_worker,
 )
@@ -21,11 +22,13 @@ from app.services.marksix_calendar import sync_marksix_calendar
 from app.services.notification_events import notification_emitter_context
 from app.services.tinyfish_status import create_tinyfish_telemetry
 from app.settings import load_settings
+from app.targeted_recovery import repair_current_card_if_needed
 from app.worker import (
     _read_worker_completion,
     analysis_version_for_order,
     certify_completed_result,
     create_notification_emitter,
+    emit_ready_notifications,
     run_scheduled_worker,
 )
 from app.worker_all import (
@@ -110,6 +113,29 @@ def _validate_request(
         raise ValueError("PRIMARY_LOTTERIES_INVALID")
 
 
+def _card_only_result(lottery: str, cycle_date: date, repository: Any) -> dict[str, Any] | None:
+    latest = repository.list_draws(lottery, 1)
+    if not latest or latest[0].get('drawDate') != cycle_date.isoformat() or latest[0].get('resultStatus') != 'confirmed':
+        return None
+    period = str(latest[0]['period'])
+    # Older chain-state deployments have no card flag. Their existing worker
+    # path keeps running until the final migration installs this evidence.
+    try:
+        chain = repository.client.rpc('matrix_watchdog_chain_state', {
+            'p_lottery': lottery, 'p_draw_period': period,
+        }).execute().data
+    except Exception:
+        return None
+    if (not isinstance(chain, dict) or chain.get('latestPeriod') != period
+            or chain.get('cardComplete') is not False
+            or chain.get('analysisComplete') is not True
+            or chain.get('matrixStatusComplete') is not True):
+        return None
+    if not repair_current_card_if_needed(lottery, period, repository):
+        return None
+    return {'lottery': lottery, 'drawPeriod': period, 'status': 'complete'}
+
+
 def run_primary_group(
     group: str,
     cycle_date: date,
@@ -123,9 +149,16 @@ def run_primary_group(
     )
     if group == "fantasy5":
         with notification_emitter_context(settings) as emitter:
-            result = run_analysis_only_worker(
-                "天天樂", repository, notification_emitter=emitter,
-            )
+            result = _card_only_result('天天樂', cycle_date, repository)
+            if result is not None:
+                latest = repository.list_draws('天天樂', 1)[0]
+                emit_fantasy5_ready_notifications(
+                    {'lottery': '天天樂', **latest}, repository, emitter, set(),
+                )
+            else:
+                result = run_analysis_only_worker(
+                    "天天樂", repository, notification_emitter=emitter,
+                )
             certify_completed_result(
                 "天天樂", result, repository, emitter, scope="analysis-only",
                 ready_check=lambda draw: _completed_period_idle_ready(
@@ -154,6 +187,11 @@ def run_primary_group(
         emitter = create_notification_emitter(settings, client)
 
         def run_one(lottery: str) -> dict[str, Any]:
+            repaired = _card_only_result(lottery, cycle_date, repository)
+            if repaired is not None:
+                emit_ready_notifications(lottery, repaired['drawPeriod'], repository, emitter, set())
+                certify_completed_result(lottery, repaired, repository, emitter)
+                return repaired
             completion = _read_worker_completion(lottery, repository, emitter)
             options: dict[str, Any] = {
                 "primary_cycle_date": cycle_date,

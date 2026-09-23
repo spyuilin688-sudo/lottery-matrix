@@ -4,6 +4,12 @@ const at = '2026-09-19T16:00:00.000Z';
 const stages = (): StageEvidence[] => CHAIN_STAGES.map(stage => ({stage,state:'PASS',source:'supabase',observedAt:at,period:'12004',code:'VERIFIED'}));
 const report = (s = stages()) => evaluateChain({lottery:'天天樂',drawPeriod:'12004',checkedAt:at,stages:s});
 describe('chain evidence', () => {
+ it('reports a missing current card as a failed chain', () => {
+  const missing = stages();
+  missing.find(stage => stage.stage === 'card')!.state = 'FAIL';
+  expect(report(missing).state).toBe('FAIL');
+  expect(report(missing).stages.find(stage => stage.stage === 'card')?.state).toBe('FAIL');
+ });
  it('requires every stage for the same period', () => {
   expect(report().state).toBe('PASS');
   expect(report(stages().slice(1)).state).toBe('UNKNOWN');
@@ -21,8 +27,8 @@ describe('chain evidence', () => {
  });
 });
 
-it('passes the current chain without retired custom evidence, including old stored heartbeats', () => {
+it('does not mistake an old six-stage heartbeat for a verified card', () => {
  const current = ['schedule','job','crawler','draw','analysis','matrix-status'].map(stage => ({stage,state:'PASS',source:'supabase',observedAt:at,period:'12004',code:'VERIFIED'})) as StageEvidence[];
- expect(report(current).state).toBe('PASS');
- expect(report([...current,{stage:'custom-status',state:'FAIL',source:'legacy',observedAt:at,period:'12004',code:'CUSTOM_MISSING'} as unknown as StageEvidence]).state).toBe('PASS');
+ expect(report(current).state).toBe('UNKNOWN');
+ expect(report([...current,{stage:'custom-status',state:'FAIL',source:'legacy',observedAt:at,period:'12004',code:'CUSTOM_MISSING'} as unknown as StageEvidence]).state).toBe('UNKNOWN');
 });

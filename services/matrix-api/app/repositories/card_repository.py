@@ -126,14 +126,17 @@ class SupabaseCardRepository:
         }).eq('lottery', lottery).eq('lease_token', token).execute())
 
     def read_state(self, lottery: str) -> dict[str, Any]:
-        rows = (self.client.table(TABLE).select('manifest,last_error')
+        rows = (self.client.table(TABLE).select('manifest,last_error,desired_digest,desired_period')
                 .eq('lottery', lottery).limit(1).execute().data)
         if not rows:
-            return {'manifest': None, 'last_error': None}
+            return {'manifest': None, 'last_error': None, 'desired_digest': None,
+                    'desired_period': None}
         row = rows[0]
         return {
             'manifest': row.get('manifest'),
             'last_error': row.get('last_error'),
+            'desired_digest': row.get('desired_digest'),
+            'desired_period': row.get('desired_period'),
         }
 
     def read_manifest(self, lottery: str) -> dict[str, Any] | None:
