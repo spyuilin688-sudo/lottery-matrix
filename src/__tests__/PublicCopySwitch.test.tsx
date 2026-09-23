@@ -271,6 +271,6 @@ test.each([ServiceInfoPage, MemberTermsPage, RefundPolicyPage, PrivacyPolicyPage
   expect(view.container.textContent).not.toContain('訂閱付款將採用綠界金流，目前尚未開放。');
   expect(view.container.textContent).not.toContain('使用者可自行選擇是否開啟自動續訂。');
   if (Page === PrivacyPolicyPage || Page === DisclaimerPage) {
-    expect(view.container.textContent).toContain('訂閱付款使用綠界金流。');
+    expect(view.container.textContent).toContain('使用綠界付款時，交易由綠界金流處理。');
   }
 });
