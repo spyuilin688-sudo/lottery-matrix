@@ -125,7 +125,7 @@ beforeEach(() => {
 });
 
 describe("ProfilePage member API", () => {
-  it("購買關閉時保留訂閱狀態與登入，隱藏購買入口、付款紀錄與退款規範", async () => {
+  it("購買關閉時保留訂閱狀態與登入、付款紀錄及退款規範，只隱藏購買入口", async () => {
     const onNavigate = vi.fn();
     render(<ProfilePage onNavigate={onNavigate} />);
 
@@ -142,9 +142,9 @@ describe("ProfilePage member API", () => {
     expect(artworkTop).toBeLessThan(387);
     expect(artworkTop + artworkHeight).toBeGreaterThanOrEqual(740);
     expect(artwork.querySelector(".subscription-information-art")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "付款紀錄" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "退款規範" })).not.toBeInTheDocument();
-    expect(screen.queryByText("會員相關")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "付款紀錄" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "退款規範" })).toBeInTheDocument();
+    expect(screen.getByText("會員相關")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "隱私權政策" })).toBeInTheDocument();
     expect(onNavigate).not.toHaveBeenCalled();
   });
@@ -155,13 +155,21 @@ describe("ProfilePage member API", () => {
     expect(screen.queryByRole("button", { name: "訂閱方案／收費標準" })).not.toBeInTheDocument();
   });
 
-  it.each(["pro-plans", "manual-transfer", "payment-history", "refund-policy"] as const)("暫時隱藏 %s 購買頁並顯示會員頁", async (purchaseScreen) => {
+  it.each(["pro-plans", "manual-transfer"] as const)("暫時隱藏 %s 購買頁並顯示會員頁", async (purchaseScreen) => {
     render(<FeaturePageRouter screen={purchaseScreen} onNavigate={vi.fn()} />);
     expect(screen.getByRole("heading", { name: "我的", level: 1 })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "確定付款" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "提交" })).not.toBeInTheDocument();
     await screen.findByRole("button", { name: "登出" });
     expect(memberApi.fetchMemberPaymentHistory).not.toHaveBeenCalled();
+  });
+
+  it('購買關閉仍可進入已付款紀錄與退款規範', async () => {
+    const first = render(<FeaturePageRouter screen="payment-history" onNavigate={vi.fn()} />);
+    expect(await screen.findByRole('heading', { name: '付款紀錄', level: 1 })).toBeInTheDocument();
+    first.unmount();
+    render(<FeaturePageRouter screen="refund-policy" onNavigate={vi.fn()} />);
+    expect(screen.getAllByRole('heading', { name: '退款規範', level: 1 })).toHaveLength(2);
   });
 
   it("LINE 暱稱為資訊文字，不呈現輸入框邊線", async () => {
@@ -900,8 +908,8 @@ it("開啟購買開關後恢復入口，關閉後不需重掛即可隱藏入口�
   view.rerender(<ProfilePage onNavigate={onNavigate} />);
   expect(screen.queryByRole("button", { name: "訂閱方案／收費標準" })).not.toBeInTheDocument();
   expect(screen.getByText("目前訂閱狀態")).toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "付款紀錄" })).not.toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "退款規範" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "付款紀錄" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "退款規範" })).toBeInTheDocument();
 });
 
 it("購買開關關閉時會卸載已開啟的方案頁", async () => {

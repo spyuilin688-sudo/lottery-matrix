@@ -133,6 +133,60 @@ describe('payment history access and recovery', () => {
     expect(timestamp).not.toHaveTextContent('付款時間');
   });
 
+  it('labels a provider-confirmed failed order without presenting it as pending', async () => {
+    fetchHistory.mockResolvedValue([{ ...payment, accountLastFive: null, status: 'failed' }]);
+    showPage();
+    expect(await screen.findByText('付款失敗')).toHaveAttribute('data-status', 'failed');
+    expect(screen.queryByText('待確認')).not.toBeInTheDocument();
+  });
+
+  it('lets a pending payment refresh once and displays a later confirmation without flashing the list', async () => {
+    const later = deferred<MemberPaymentHistoryItem[]>();
+    fetchHistory.mockResolvedValueOnce([{ ...payment, status: 'pending', accountLastFive: null }])
+      .mockReturnValueOnce(later.promise);
+    showPage();
+    const refresh = await screen.findByRole('button', { name: '更新付款紀錄' });
+    fireEvent.click(refresh);
+    expect(refresh).toBeDisabled();
+    expect(screen.getByText('待確認')).toBeInTheDocument();
+    fireEvent.click(refresh);
+    expect(fetchHistory).toHaveBeenCalledTimes(2);
+    await act(async () => later.resolve([payment]));
+    expect(await screen.findByText('✓ 已確認')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '更新付款紀錄' })).not.toBeInTheDocument();
+  });
+
+  it('refreshes a pending ECPay payment once when returning to the visible tab', async () => {
+    fetchHistory.mockResolvedValueOnce([{ ...payment, status: 'pending', accountLastFive: null }])
+      .mockResolvedValueOnce([payment]);
+    const visibility = vi.spyOn(document, 'visibilityState', 'get');
+    try {
+      showPage();
+      await screen.findByText('待確認');
+      visibility.mockReturnValue('hidden');
+      fireEvent(document, new Event('visibilitychange'));
+      visibility.mockReturnValue('visible');
+      fireEvent(document, new Event('visibilitychange'));
+      expect(await screen.findByText('✓ 已確認')).toBeInTheDocument();
+      fireEvent(document, new Event('visibilitychange'));
+      expect(fetchHistory).toHaveBeenCalledTimes(2);
+    } finally {
+      visibility.mockRestore();
+    }
+  });
+
+  it('discards a pending refresh when the member signs out', async () => {
+    const later = deferred<MemberPaymentHistoryItem[]>();
+    fetchHistory.mockResolvedValueOnce([{ ...payment, status: 'pending', accountLastFive: null }])
+      .mockReturnValueOnce(later.promise);
+    showPage();
+    fireEvent.click(await screen.findByRole('button', { name: '更新付款紀錄' }));
+    emit('SIGNED_OUT', null);
+    await act(async () => later.resolve([payment]));
+    expect(screen.getByRole('button', { name: '前往登入' })).toBeInTheDocument();
+    expect(screen.queryByText('季費方案')).not.toBeInTheDocument();
+  });
+
   it('distinguishes an unknown session from a confirmed guest and allows retry', async () => {
     auth.getSession.mockRejectedValueOnce(new Error('auth unavailable'));
     showPage();

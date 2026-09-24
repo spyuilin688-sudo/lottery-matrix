@@ -2706,24 +2706,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   color: #f5f2ea;
 }
 .manual-transfer-pending { display: flex; gap: 8px; align-items: center; }
-.payment-history-screen .detail-card { padding: 10px; }
-.payment-history-screen .detail-card h2 { margin-bottom: 6px; font-size: 15px; }
-.payment-history-list { display: grid; gap: 6px; }
-.payment-history-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  row-gap: 2px;
-  column-gap: 8px;
-  padding: 7px 9px;
-  border: 1px solid var(--pwa-frame-secondary);
-  border-radius: var(--pwa-frame-radius);
-}
-.payment-history-item strong,
-.payment-history-item > span,
-.payment-history-item b { font-size: 13px; line-height: 1.35; }
-.payment-history-item > span,
-.payment-history-item b { text-align: right; }
-.payment-history-item time { color: #a9a39a; font-size: 11px; line-height: 1.35; }
 .referral-input-card .code-entry-block,
 .activation-card .code-entry-block {
   gap: 12px;

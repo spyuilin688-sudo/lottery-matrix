@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createEcpayCheckMacValue } from '../_shared/ecpay.ts';
-import { createEcpayNotifyHandler } from './handler.ts';
+import { createEcpayNotifyHandler, matchesRecordedPaidOrder } from './handler.ts';
 
 const config = { merchantId: '3002607', hashKey: 'pwFHCqoQZGmho4w6', hashIv: 'EkRm7iFT261dpevs' };
 const payment = {
@@ -48,6 +48,43 @@ describe('ECPay payment notification', () => {
     });
     for (let i=0;i<2;i++) expect((await handler(await signedRequest())).status).toBe(200);
     expect(events).toEqual(['verified','quota+membership','verified','quota+membership']);
+  });
+  it('acknowledges an already-recorded matching payment without a second provider query or write', async () => {
+    const alreadyRecorded = vi.fn().mockResolvedValue(true);
+    const verifyPaid = vi.fn();
+    const recordPaid = vi.fn();
+    const handler = createEcpayNotifyHandler({ config, alreadyRecorded, verifyPaid, recordPaid });
+    const response = await handler(await signedRequest());
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe('1|OK');
+    expect(alreadyRecorded).toHaveBeenCalledOnce();
+    expect(verifyPaid).not.toHaveBeenCalled();
+    expect(recordPaid).not.toHaveBeenCalled();
+  });
+  it('skips provider verification only for the exact paid order and signed trade identity', () => {
+    const order = { merchantId: payment.MerchantID, merchantTradeNo: payment.MerchantTradeNo,
+      tradeNo: payment.TradeNo, amount: 2880 };
+    const saved = { merchant_id: order.merchantId, amount: order.amount,
+      trade_no: order.tradeNo, status: 'confirmed', quota_provider_status: '1' };
+    expect(matchesRecordedPaidOrder(order, saved)).toBe(true);
+    expect(matchesRecordedPaidOrder(order, { ...saved, status: 'refund_required' })).toBe(true);
+    for (const unverified of [null,
+      { ...saved, merchant_id: 'another-merchant' },
+      { ...saved, amount: 2881 },
+      { ...saved, trade_no: 'another-trade' },
+      { ...saved, status: 'pending' },
+      { ...saved, quota_provider_status: '0' },
+    ]) expect(matchesRecordedPaidOrder(order, unverified)).toBe(false);
+  });
+  it('does not skip independent verification for an unrecorded payment', async () => {
+    const alreadyRecorded = vi.fn().mockResolvedValue(false);
+    const verifyPaid = vi.fn().mockResolvedValue(verified);
+    const recordPaid = vi.fn().mockResolvedValue(undefined);
+    const handler = createEcpayNotifyHandler({ config, alreadyRecorded, verifyPaid, recordPaid });
+    expect((await handler(await signedRequest())).status).toBe(200);
+    expect(alreadyRecorded).toHaveBeenCalledOnce();
+    expect(verifyPaid).toHaveBeenCalledOnce();
+    expect(recordPaid).toHaveBeenCalledOnce();
   });
   it('records issued ATM/CVS quota without activating a membership', async () => {
     const recorded: unknown[] = [];

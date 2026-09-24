@@ -1,6 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.112.3';
-import { createEcpayNotifyHandler } from './handler.ts';
+import { createEcpayNotifyHandler, matchesRecordedPaidOrder } from './handler.ts';
 import { queryEcpayPaid } from './query.ts';
 import { paidRecordParams, quotaRecordParams } from '../_shared/ecpay-quota.ts';
 
@@ -12,13 +12,21 @@ const config = {
   hashKey: Deno.env.get('ECPAY_HASH_KEY') ?? '',
   hashIv: Deno.env.get('ECPAY_HASH_IV') ?? '',
 };
+const client = createClient(supabaseUrl || 'https://invalid.local',serviceRoleKey || 'missing',{
+  auth: { persistSession: false,autoRefreshToken: false },
+});
 const handler = createEcpayNotifyHandler({
   config,
+  async alreadyRecorded(order) {
+    if (!supabaseUrl || !serviceRoleKey) throw new Error('SERVER_CONFIG_MISSING');
+    const { data,error } = await client.from('ecpay_orders')
+      .select('merchant_id,amount,trade_no,status,quota_provider_status')
+      .eq('merchant_trade_no',order.merchantTradeNo).maybeSingle();
+    if (error) throw new Error('ORDER_LOOKUP_FAILED');
+    return matchesRecordedPaidOrder(order, data);
+  },
   async recordQuota(evidence) {
     if (!supabaseUrl || !serviceRoleKey) throw new Error('SERVER_CONFIG_MISSING');
-    const client = createClient(supabaseUrl,serviceRoleKey,{
-      auth: { persistSession: false,autoRefreshToken: false },
-    });
     const { error } = await client.rpc('ecpay_quota_record',quotaRecordParams(evidence));
     if (error) throw new Error('QUOTA_RECORD_FAILED');
   },
@@ -28,9 +36,6 @@ const handler = createEcpayNotifyHandler({
   },
   async recordPaid(evidence) {
     if (!supabaseUrl || !serviceRoleKey) throw new Error('SERVER_CONFIG_MISSING');
-    const client = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
     const { error } = await client.rpc('ecpay_paid_reconcile',paidRecordParams(evidence));
     if (error) throw new Error('PAYMENT_CONFIRM_FAILED');
   },

@@ -62,3 +62,30 @@
 .payment-ledger-status[data-status="refund_required"] {
   color: #f4c17b;
 }
+
+.payment-ledger-status[data-status="failed"] {
+  color: #f4c17b;
+}
+
+.payment-ledger-refresh {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+  border: 1px solid var(--pwa-frame-divider);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--pwa-frame-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.payment-ledger-refresh:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.payment-ledger-refresh:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}

@@ -23,7 +23,6 @@ import { Navigate, ScreenId } from "./navigation";
 import { FeatureShell, SectionTitle } from "./shared";
 import { MATRIX_PRO_COMMON_FEATURES } from "../matrix-pro-copy";
 import { beginEcpayCheckout } from "../ecpay-checkout";
-import { usePaymentHistory } from "./use-payment-history";
 
 
 /** Keep the approved raster artwork intact; mask sample text and the sample photo.
@@ -391,11 +390,6 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
     { title: "系統相關", items: [["通知設定", "notifications"], ["版本資訊/更新紀錄", "version-info"]] },
     { title: "客服與支援", items: [["聯絡客服/問題回報/商務合作", "merchant-info"]] },
   ];
-  const visibleMenuGroups = menuGroups.map((group) => ({
-    ...group,
-    items: group.items.filter(([, screen]) => subscriptionPurchaseVisible
-      || (screen !== "payment-history" && screen !== "refund-policy")),
-  })).filter((group) => group.items.length > 0);
 
   return (
     <FeatureShell title="我的" onNavigate={onNavigate} active="我的" className="profile-screen" compactHeader>
@@ -480,7 +474,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
           </button>}
         </section>
       </div>
-      {visibleMenuGroups.map((group) => (
+      {menuGroups.map((group) => (
         <ProfileMenu title={group.title} items={group.items} onNavigate={onNavigate} key={group.title}>
           {group.title === "系統相關" && showInstallAction ? (
             <button type="button" onClick={() => void handleInstallAction()}>
@@ -588,54 +582,12 @@ export const transferStatusLabels = {
 
 export const paymentStatusLabels = {
   ...transferStatusLabels,
+  failed: "付款失敗",
   refund_required: "需退款處理",
   refunded: "已退款",
   chargeback: "已刷退",
   cancelled: "交易已取消",
 } as const;
-
-export function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
-  const payments = usePaymentHistory();
-  let content: ReactNode;
-  switch (payments.status) {
-    case "guest":
-      content = <>
-          <p role="status">請先登入，即可查看付款紀錄。</p>
-          <button type="button" className="primary-action branded-explore-action" onClick={() => onNavigate("profile")}><span>前往登入</span></button>
-        </>;
-      break;
-    case "error":
-    case "auth-error":
-      content = <div role="alert">
-          <p>{payments.status === "auth-error" ? "登入狀態確認失敗，請稍後再試。" : "付款紀錄載入失敗，請稍後再試。"}</p>
-          <button type="button" className="primary-action branded-explore-action" aria-label={payments.status === "auth-error" ? "重新確認登入狀態" : "重新載入付款紀錄"} onClick={payments.retry}><span>重新載入</span></button>
-        </div>;
-      break;
-    case "checking":
-    case "loading":
-      content = <p role="status">{payments.status === "checking" ? "登入狀態確認中…" : "付款紀錄載入中…"}</p>;
-      break;
-    case "ready":
-      content = payments.history.length === 0 ? <p>目前沒有付款紀錄。</p> : (
-          <div className="payment-history-list">
-            {payments.history.map((item) => (
-              <article className="payment-history-item" key={item.id}>
-                <strong>{item.planName}</strong>
-                <span>{`NT$${item.amount.toLocaleString("en-US")}`}</span>
-                <time>{new Date(item.submittedAt).toLocaleString("zh-TW")}</time>
-                <b data-status={item.status}>{paymentStatusLabels[item.status]}</b>
-              </article>
-            ))}
-          </div>
-        );
-      break;
-  }
-  return (
-    <ProfileDetailShell title="付款紀錄" onNavigate={onNavigate} className="payment-history-screen">
-      <DetailCard title="付款紀錄">{content}</DetailCard>
-    </ProfileDetailShell>
-  );
-}
 
 const purchasePlanRank: Record<ManualTransferPlanCode, number> = { month: 1, quarter: 2, year: 3 };
 const currentPlanRank: Record<string, number> = { 月費方案: 1, 季費方案: 2, 年費方案: 3 };

@@ -6,6 +6,7 @@ import { setup, service, owner, userId, memberId, planId, number, merchant } fro
 const quotaMigration = new URL('../supabase/migrations/20260924001807_ecpay_quota_reconciliation.sql', import.meta.url);
 const recoveryMigration = new URL('../supabase/migrations/20260924041358_ecpay_paid_recovery.sql', import.meta.url);
 const improvementMigration = new URL('../supabase/migrations/20260924051512_ecpay_offline_recovery_and_paid_date.sql', import.meta.url);
+const historyMigration = new URL('../supabase/migrations/20260924061600_ecpay_failed_history_status.sql', import.meta.url);
 const tradeNo = '2609231234567890';
 const paidEvidence = [merchant, number, 2880, 'occupied', 'Credit_CreditCard', '1', new Date('2026-09-23T02:30:00Z'), tradeNo];
 
@@ -14,6 +15,7 @@ async function ready() {
   const source = await readFile(recoveryMigration, 'utf8');
   await db.exec(source.split('-- Scheduled invocation')[0]);
   await db.exec(await readFile(improvementMigration, 'utf8'));
+  await db.exec(await readFile(historyMigration, 'utf8'));
   await service(db);
   await db.query('select public.ecpay_order_create_with_quota($1,$2,$3,$4)', [userId, 'month', number, merchant]);
   await owner(db);
@@ -41,6 +43,23 @@ test('a lost callback is recovered from a paid provider response and grants exac
     const { rows: [order] } = await db.query('select status,quota_state,quota_provider_status from public.ecpay_orders where merchant_trade_no=$1', [number]);
     assert.deepEqual(order, { status: 'confirmed', quota_state: 'occupied', quota_provider_status: '1' });
     assert.equal((await db.query('select count(*)::integer as count from public.payments')).rows[0].count, 1);
+  } finally { await db.close(); }
+});
+
+test('a provider-confirmed failed ECPay order is shown as failed without changing its pending order row', async () => {
+  const db = await ready();
+  try {
+    await db.query('select public.ecpay_quota_record($1,$2,$3,$4,$5,$6,$7,$8)',
+      [merchant, number, 2880, 'released', 'Credit_CreditCard', '10200095', null, '']);
+    await owner(db);
+    await db.exec(`set role authenticated; set request.jwt.claim.sub = '${userId}'`);
+    const { rows: [result] } = await db.query('select public.member_payment_history_get() as history');
+    assert.equal(result.history.length, 1);
+    assert.equal(result.history[0].status, 'failed');
+    await owner(db);
+    const { rows: [order] } = await db.query('select status from public.ecpay_orders where merchant_trade_no=$1', [number]);
+    assert.equal(order.status, 'pending');
+    assert.equal((await db.query('select count(*)::integer as count from public.payments')).rows[0].count, 0);
   } finally { await db.close(); }
 });
 

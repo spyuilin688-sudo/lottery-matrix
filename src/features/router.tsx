@@ -44,8 +44,7 @@ export function FeaturePageRouter({
   statusLottery?: LotteryId;
 }) {
   const subscriptionPurchaseVisible = useSubscriptionPurchaseVisible();
-  if (!subscriptionPurchaseVisible && (screen === "pro-plans" || screen === "manual-transfer"
-    || screen === "payment-history" || screen === "refund-policy")) {
+  if (!subscriptionPurchaseVisible && (screen === "pro-plans" || screen === "manual-transfer")) {
     return <ProfilePage onNavigate={onNavigate} />;
   }
   if (screen === "matrix-core") return <MatrixExplorePage onNavigate={onNavigate} />;
