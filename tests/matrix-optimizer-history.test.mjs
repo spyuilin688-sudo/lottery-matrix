@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {PGlite} from '@electric-sql/pglite';
 const read=n=>readFileSync(new URL(`../supabase/migrations/${n}`,import.meta.url),'utf8');
-const migration=read('20260919174332_matrix_optimizer_history_schedule.sql');
+const migration=read('20260919180508_matrix_optimizer_history_schedule.sql');
 const scalar=async(db,q,p=[])=>Object.values((await db.query(q,p)).rows[0])[0];
 async function fixture(){
  const db=new PGlite();
@@ -19,7 +19,7 @@ async function fixture(){
  await db.exec(read('20260904103000_add_matrix_watchdog_leases.sql'));
  await db.exec(read('20260910123745_admin_watchdog_status_store.sql'));
  await db.exec(migration);
- await db.exec(read('20260919181118_matrix_optimizer_cron_origin.sql'));
+ await db.exec(read('20260919181404_matrix_optimizer_cron_origin.sql'));
  // The generated migration precedes the existing PR's additive counter migration.
  await db.exec('alter table system_job_status add column retry_count bigint default 0,add column recovery_count bigint default 0,add column last_recovery_at timestamptz');
  return db;

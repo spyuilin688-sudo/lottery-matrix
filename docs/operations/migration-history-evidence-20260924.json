@@ -1,0 +1,2118 @@
+{
+  "checked_at_utc": "2026-09-24",
+  "project_ref": "wcimzbbapfrdotjsfyxa",
+  "base_main": "b9eaf27baf7e07f24582ea730c9e9a878536fb5c",
+  "source": "Read-only SELECT from supabase_migrations.schema_migrations; no database writes",
+  "ledger": [
+    {
+      "version": "20260813174647",
+      "name": "admin_dashboard",
+      "statement_count": 1,
+      "bytes": 16076
+    },
+    {
+      "version": "20260813175127",
+      "name": "admin_dashboard_advisor_fixes",
+      "statement_count": 1,
+      "bytes": 529
+    },
+    {
+      "version": "20260813190048",
+      "name": "relax_member_expiry_check",
+      "statement_count": 1,
+      "bytes": 261
+    },
+    {
+      "version": "20260819235712",
+      "name": "complete_matrix_admin_backend_tables",
+      "statement_count": 1,
+      "bytes": 1831
+    },
+    {
+      "version": "20260820174842",
+      "name": "secure_admin_backend_integration",
+      "statement_count": 1,
+      "bytes": 2563
+    },
+    {
+      "version": "20260821005644",
+      "name": "matrix_custom_status_configs",
+      "statement_count": 1,
+      "bytes": 2670
+    },
+    {
+      "version": "20260821011026",
+      "name": "matrix_custom_status_admin_read",
+      "statement_count": 1,
+      "bytes": 171
+    },
+    {
+      "version": "20260821012728",
+      "name": "matrix_custom_status_api_only_mutations",
+      "statement_count": 1,
+      "bytes": 455
+    },
+    {
+      "version": "20260821101646",
+      "name": "admin_operations_status",
+      "statement_count": 1,
+      "bytes": 615
+    },
+    {
+      "version": "20260821102531",
+      "name": "admin_atomic_member_operations",
+      "statement_count": 1,
+      "bytes": 6321
+    },
+    {
+      "version": "20260821102612",
+      "name": "protect_last_super_admin",
+      "statement_count": 1,
+      "bytes": 983
+    },
+    {
+      "version": "20260821102631",
+      "name": "protect_last_super_admin_delete_safe",
+      "statement_count": 1,
+      "bytes": 697
+    },
+    {
+      "version": "20260821115603",
+      "name": "member_online_tracking",
+      "statement_count": 1,
+      "bytes": 3071
+    },
+    {
+      "version": "20260821120037",
+      "name": "skip_super_admin_activity_logs",
+      "statement_count": 1,
+      "bytes": 1008
+    },
+    {
+      "version": "20260821145754",
+      "name": "admin_atomic_activation_code_delete",
+      "statement_count": 1,
+      "bytes": 1335
+    },
+    {
+      "version": "20260821150025",
+      "name": "fix_admin_activation_code_role_check",
+      "statement_count": 1,
+      "bytes": 1324
+    },
+    {
+      "version": "20260821161110",
+      "name": "fix_activation_code_service_role_claim",
+      "statement_count": 1,
+      "bytes": 1363
+    },
+    {
+      "version": "20260821161913",
+      "name": "add_system_job_recovery_state",
+      "statement_count": 1,
+      "bytes": 464
+    },
+    {
+      "version": "20260821164129",
+      "name": "add_system_job_atomic_recovery_lease",
+      "statement_count": 1,
+      "bytes": 5305
+    },
+    {
+      "version": "20260821165120",
+      "name": "harden_system_job_recovery_lease",
+      "statement_count": 1,
+      "bytes": 4446
+    },
+    {
+      "version": "20260823042016",
+      "name": "create_member_notification_settings",
+      "statement_count": 1,
+      "bytes": 323
+    },
+    {
+      "version": "20260823160150",
+      "name": "lock_down_member_notification_settings",
+      "statement_count": 1,
+      "bytes": 179
+    },
+    {
+      "version": "20260824094431",
+      "name": "matrix_fastapi_backend",
+      "statement_count": 1,
+      "bytes": 3212
+    },
+    {
+      "version": "20260824190505",
+      "name": "sync_line_members_from_auth",
+      "statement_count": 1,
+      "bytes": 2870
+    },
+    {
+      "version": "20260824192549",
+      "name": "sync_line_display_names",
+      "statement_count": 1,
+      "bytes": 2094
+    },
+    {
+      "version": "20260824192630",
+      "name": "sync_line_identity_profile_updates",
+      "statement_count": 1,
+      "bytes": 358
+    },
+    {
+      "version": "20260824211820",
+      "name": "index_lottery_draws_history_order",
+      "statement_count": 1,
+      "bytes": 133
+    },
+    {
+      "version": "20260824223022",
+      "name": "matrix_analysis_artifact_chunks",
+      "statement_count": 1,
+      "bytes": 1944
+    },
+    {
+      "version": "20260825102959",
+      "name": "prepare_appdeploy_history_merge",
+      "statement_count": 1,
+      "bytes": 3676
+    },
+    {
+      "version": "20260825103738",
+      "name": "remove_appdeploy_history_merge_rpc",
+      "statement_count": 1,
+      "bytes": 73
+    },
+    {
+      "version": "20260827091443",
+      "name": "matrix_explore_rpc",
+      "statement_count": 1,
+      "bytes": 9599
+    },
+    {
+      "version": "20260829181805",
+      "name": "member_pwa_rpc",
+      "statement_count": 1,
+      "bytes": 10530
+    },
+    {
+      "version": "20260829181807",
+      "name": "matrix_result_rpc",
+      "statement_count": 1,
+      "bytes": 19672
+    },
+    {
+      "version": "20260829192625",
+      "name": "security_review_fixes",
+      "statement_count": 1,
+      "bytes": 9237
+    },
+    {
+      "version": "20260829193611",
+      "name": "compact_matrix_status_sources",
+      "statement_count": 1,
+      "bytes": 1648
+    },
+    {
+      "version": "20260829194135",
+      "name": "backfill_compact_matrix_status_sources",
+      "statement_count": 1,
+      "bytes": 4779
+    },
+    {
+      "version": "20260829205310",
+      "name": "free_member_profile_label",
+      "statement_count": 1,
+      "bytes": 919
+    },
+    {
+      "version": "20260829205413",
+      "name": "lock_member_profile_rpc_to_authenticated",
+      "statement_count": 1,
+      "bytes": 272
+    },
+    {
+      "version": "20260829213702",
+      "name": "fix_member_coalesce",
+      "statement_count": 1,
+      "bytes": 1979
+    },
+    {
+      "version": "20260829223804",
+      "name": "manual_bank_transfer",
+      "statement_count": 1,
+      "bytes": 9016
+    },
+    {
+      "version": "20260829225358",
+      "name": "rename_member_payment_history_rpc",
+      "statement_count": 1,
+      "bytes": 273
+    },
+    {
+      "version": "20260829232518",
+      "name": "fix_payment_history_and_audit_logs",
+      "statement_count": 1,
+      "bytes": 1580
+    },
+    {
+      "version": "20260830095443",
+      "name": "mobile_push_notifications",
+      "statement_count": 1,
+      "bytes": 5190
+    },
+    {
+      "version": "20260830103236",
+      "name": "mobile_push_notification_indexes",
+      "statement_count": 1,
+      "bytes": 332
+    },
+    {
+      "version": "20260830105558",
+      "name": "matrix_python_v6_explore_results",
+      "statement_count": 1,
+      "bytes": 11612
+    },
+    {
+      "version": "20260830130523",
+      "name": "fix_matrix_v6_rpc_nullif",
+      "statement_count": 1,
+      "bytes": 9341
+    },
+    {
+      "version": "20260830130914",
+      "name": "fix_matrix_v6_rpc_coalesce",
+      "statement_count": 1,
+      "bytes": 9274
+    },
+    {
+      "version": "20260830131255",
+      "name": "fix_matrix_entitlement_coalesce",
+      "statement_count": 1,
+      "bytes": 2532
+    },
+    {
+      "version": "20260830141227",
+      "name": "fix_mobile_push_rpc_nullif",
+      "statement_count": 1,
+      "bytes": 3632
+    },
+    {
+      "version": "20260830192202",
+      "name": "tiangong_two_stage_ready2_only",
+      "statement_count": 1,
+      "bytes": 3214
+    },
+    {
+      "version": "20260830235651",
+      "name": "matrix_python_v7_explore_rpc",
+      "statement_count": 1,
+      "bytes": 9219
+    },
+    {
+      "version": "20260831000718",
+      "name": "repair_qualified_coalesce",
+      "statement_count": 1,
+      "bytes": 1224
+    },
+    {
+      "version": "20260831130348",
+      "name": "matrix_python_v8_explore_rpc",
+      "statement_count": 1,
+      "bytes": 2000
+    },
+    {
+      "version": "20260831130405",
+      "name": "restore_matrix_explore_date_offsets",
+      "statement_count": 1,
+      "bytes": 4103
+    },
+    {
+      "version": "20260831151548",
+      "name": "block_tiangong_artifacts",
+      "statement_count": 1,
+      "bytes": 665
+    },
+    {
+      "version": "20260831205221",
+      "name": "matrix_tiangong_python_rpc",
+      "statement_count": 1,
+      "bytes": 5247
+    },
+    {
+      "version": "20260831210046",
+      "name": "matrix_tiangong_python_rpc_after_v8",
+      "statement_count": 1,
+      "bytes": 5249
+    },
+    {
+      "version": "20260901115059",
+      "name": "matrix_explore_v2_ranges",
+      "statement_count": 1,
+      "bytes": 10369
+    },
+    {
+      "version": "20260901154008",
+      "name": "admin_transfer_review_rpc",
+      "statement_count": 1,
+      "bytes": 3241
+    },
+    {
+      "version": "20260901161953",
+      "name": "restore_super_admin_activity_log_exemption",
+      "statement_count": 1,
+      "bytes": 267
+    },
+    {
+      "version": "20260901172741",
+      "name": "matrix_explore_v11_rpc",
+      "statement_count": 1,
+      "bytes": 9138
+    },
+    {
+      "version": "20260901174019",
+      "name": "matrix_explore_v11_draw_order",
+      "statement_count": 1,
+      "bytes": 6558
+    },
+    {
+      "version": "20260901174618",
+      "name": "matrix_explore_v11_draw_order_forward",
+      "statement_count": 1,
+      "bytes": 6498
+    },
+    {
+      "version": "20260901175025",
+      "name": "matrix_latest_run_draw_order",
+      "statement_count": 1,
+      "bytes": 9552
+    },
+    {
+      "version": "20260902065226",
+      "name": "admin_revenue_reset_baseline",
+      "statement_count": 1,
+      "bytes": 398
+    },
+    {
+      "version": "20260902065309",
+      "name": "limit_admin_revenue_settings_privileges",
+      "statement_count": 1,
+      "bytes": 153
+    },
+    {
+      "version": "20260902070157",
+      "name": "admin_revenue_reset_rpc",
+      "statement_count": 1,
+      "bytes": 579
+    },
+    {
+      "version": "20260902070913",
+      "name": "worker_freshness_status",
+      "statement_count": 1,
+      "bytes": 436
+    },
+    {
+      "version": "20260902072734",
+      "name": "matrix_explore_v12_rpc",
+      "statement_count": 1,
+      "bytes": 9602
+    },
+    {
+      "version": "20260902072845",
+      "name": "matrix_explore_v12_cleanup",
+      "statement_count": 1,
+      "bytes": 507
+    },
+    {
+      "version": "20260902091404",
+      "name": "fix_activation_code_plan_entitlements",
+      "statement_count": 1,
+      "bytes": 5096
+    },
+    {
+      "version": "20260902190446",
+      "name": "repair_pg_catalog_greatest",
+      "statement_count": 1,
+      "bytes": 5248
+    },
+    {
+      "version": "20260902190724",
+      "name": "repair_qualified_sql_constructs",
+      "statement_count": 1,
+      "bytes": 1413
+    },
+    {
+      "version": "20260902190849",
+      "name": "repair_admin_transfer_audit_actor",
+      "statement_count": 1,
+      "bytes": 4056
+    },
+    {
+      "version": "20260902203534",
+      "name": "admin_credential_login_schema",
+      "statement_count": 1,
+      "bytes": 537
+    },
+    {
+      "version": "20260902213221",
+      "name": "activation_code_generation_rules",
+      "statement_count": 1,
+      "bytes": 8253
+    },
+    {
+      "version": "20260902223653",
+      "name": "member_referral_rpc",
+      "statement_count": 1,
+      "bytes": 7589
+    },
+    {
+      "version": "20260903084602",
+      "name": "matrix_tianyan_result_road_types",
+      "statement_count": 1,
+      "bytes": 4710
+    },
+    {
+      "version": "20260903185906",
+      "name": "matrix_analysis_run_lease",
+      "statement_count": 1,
+      "bytes": 4267
+    },
+    {
+      "version": "20260904034400",
+      "name": "normalize_manual_transfer_review",
+      "statement_count": 1,
+      "bytes": 3571
+    },
+    {
+      "version": "20260904080846",
+      "name": "admin_todos",
+      "statement_count": 1,
+      "bytes": 637
+    },
+    {
+      "version": "20260904080854",
+      "name": "matrix_status_validation_source",
+      "statement_count": 1,
+      "bytes": 1807
+    },
+    {
+      "version": "20260904081015",
+      "name": "admin_todos_admin_id_index",
+      "statement_count": 1,
+      "bytes": 74
+    },
+    {
+      "version": "20260904083730",
+      "name": "admin_todos_on_delete_cascade",
+      "statement_count": 1,
+      "bytes": 246
+    },
+    {
+      "version": "20260904091705",
+      "name": "notification_dispatch_schema",
+      "statement_count": 1,
+      "bytes": 5154
+    },
+    {
+      "version": "20260904091709",
+      "name": "notification_dispatch_pipeline",
+      "statement_count": 1,
+      "bytes": 10634
+    },
+    {
+      "version": "20260904091714",
+      "name": "notification_member_match_guard",
+      "statement_count": 1,
+      "bytes": 4803
+    },
+    {
+      "version": "20260904091719",
+      "name": "notification_dispatch_rpc",
+      "statement_count": 1,
+      "bytes": 5657
+    },
+    {
+      "version": "20260904091723",
+      "name": "notification_dispatch_time_events",
+      "statement_count": 1,
+      "bytes": 6088
+    },
+    {
+      "version": "20260904091727",
+      "name": "notification_dispatch_cron",
+      "statement_count": 1,
+      "bytes": 2278
+    },
+    {
+      "version": "20260904092249",
+      "name": "notification_outbox_member_id_index",
+      "statement_count": 1,
+      "bytes": 105
+    },
+    {
+      "version": "20260904104229",
+      "name": "add_matrix_watchdog_leases",
+      "statement_count": 1,
+      "bytes": 4938
+    },
+    {
+      "version": "20260904183827",
+      "name": "allow_referral_code_after_payment",
+      "statement_count": 1,
+      "bytes": 4395
+    },
+    {
+      "version": "20260904200211",
+      "name": "restrict_matrix_watchdog_rpc_execute",
+      "statement_count": 1,
+      "bytes": 1084
+    },
+    {
+      "version": "20260904200919",
+      "name": "restrict_member_rpc_execute",
+      "statement_count": 1,
+      "bytes": 585
+    },
+    {
+      "version": "20260904201028",
+      "name": "restrict_matrix_tianyan_list_execute",
+      "statement_count": 1,
+      "bytes": 171
+    },
+    {
+      "version": "20260904201636",
+      "name": "add_admin_sessions_admin_id_index",
+      "statement_count": 1,
+      "bytes": 91
+    },
+    {
+      "version": "20260905101136",
+      "name": "matrix_tianyan_result_parity",
+      "statement_count": 1,
+      "bytes": 7355
+    },
+    {
+      "version": "20260905105134",
+      "name": "matrix_visitor_counts",
+      "statement_count": 1,
+      "bytes": 4894
+    },
+    {
+      "version": "20260905114917",
+      "name": "consolidate_matrix_custom_status_select_policy",
+      "statement_count": 1,
+      "bytes": 535
+    },
+    {
+      "version": "20260905122413",
+      "name": "create_static_matrix_card_publication",
+      "statement_count": 1,
+      "bytes": 5582
+    },
+    {
+      "version": "20260905140908",
+      "name": "repair_admin_backend_rpc_execution",
+      "statement_count": 1,
+      "bytes": 22256
+    },
+    {
+      "version": "20260905141003",
+      "name": "repair_matrix_analysis_retention_and_recovery",
+      "statement_count": 1,
+      "bytes": 11503
+    },
+    {
+      "version": "20260905170912",
+      "name": "restrict_redeemed_activation_code_deletion",
+      "statement_count": 1,
+      "bytes": 1913
+    },
+    {
+      "version": "20260905181320",
+      "name": "add_matrix_card_cleanup_lease",
+      "statement_count": 1,
+      "bytes": 1269
+    },
+    {
+      "version": "20260905205428",
+      "name": "notification_fast_results",
+      "statement_count": 1,
+      "bytes": 10562
+    },
+    {
+      "version": "20260906135233",
+      "name": "line_pwa_handoff_diagnostics",
+      "statement_count": 1,
+      "bytes": 3937
+    },
+    {
+      "version": "20260906171005",
+      "name": "admin_transfer_push",
+      "statement_count": 1,
+      "bytes": 7731
+    },
+    {
+      "version": "20260907030419",
+      "name": "explore_line_weekday_and_member_entry_defaults",
+      "statement_count": 1,
+      "bytes": 2749
+    },
+    {
+      "version": "20260907031835",
+      "name": "matrix_tianyan_search_settings",
+      "statement_count": 1,
+      "bytes": 9268
+    },
+    {
+      "version": "20260907043836",
+      "name": "matrix_tiangong_sorted_results",
+      "statement_count": 1,
+      "bytes": 5764
+    },
+    {
+      "version": "20260907045216",
+      "name": "member_login_history",
+      "statement_count": 1,
+      "bytes": 3237
+    },
+    {
+      "version": "20260908021154",
+      "name": "simplify_result_and_status_notification_bodies",
+      "statement_count": 1,
+      "bytes": 2651
+    },
+    {
+      "version": "20260908022115",
+      "name": "simplify_matrix_card_notification_body",
+      "statement_count": 1,
+      "bytes": 2703
+    },
+    {
+      "version": "20260908035518",
+      "name": "line_registration_algorithm_trials",
+      "statement_count": 1,
+      "bytes": 18974
+    },
+    {
+      "version": "20260908040432",
+      "name": "matrix_custom_status_v2",
+      "statement_count": 1,
+      "bytes": 11971
+    },
+    {
+      "version": "20260908153522",
+      "name": "member_admin_revocation",
+      "statement_count": 1,
+      "bytes": 4687
+    },
+    {
+      "version": "20260908154542",
+      "name": "member_push_endpoint_security",
+      "statement_count": 1,
+      "bytes": 2818
+    },
+    {
+      "version": "20260908172909",
+      "name": "admin_api_registry",
+      "statement_count": 1,
+      "bytes": 952
+    },
+    {
+      "version": "20260908210936",
+      "name": "record_payment_reversal",
+      "statement_count": 1,
+      "bytes": 7012
+    },
+    {
+      "version": "20260909095221",
+      "name": "lottery_matrix_app_native_push",
+      "statement_count": 1,
+      "bytes": 15328
+    },
+    {
+      "version": "20260909215507",
+      "name": "matrix_permission_switches",
+      "statement_count": 1,
+      "bytes": 7296
+    },
+    {
+      "version": "20260910111850",
+      "name": "security_monitoring",
+      "statement_count": 1,
+      "bytes": 21795
+    },
+    {
+      "version": "20260910112657",
+      "name": "security_monitoring_cleanup",
+      "statement_count": 1,
+      "bytes": 182
+    },
+    {
+      "version": "20260910123427",
+      "name": "admin_atomic_activation_batch",
+      "statement_count": 1,
+      "bytes": 4844
+    },
+    {
+      "version": "20260910123745",
+      "name": "admin_watchdog_status_store",
+      "statement_count": 1,
+      "bytes": 2606
+    },
+    {
+      "version": "20260910170958",
+      "name": "admin_watchdog_supabase_runner",
+      "statement_count": 1,
+      "bytes": 4440
+    },
+    {
+      "version": "20260910224706",
+      "name": "matrix_tianheng",
+      "statement_count": 1,
+      "bytes": 30491
+    },
+    {
+      "version": "20260910225542",
+      "name": "admin_matrix_permission_settings",
+      "statement_count": 1,
+      "bytes": 2963
+    },
+    {
+      "version": "20260911052301",
+      "name": "remove_legacy_matrix_permission_token_path",
+      "statement_count": 1,
+      "bytes": 163
+    },
+    {
+      "version": "20260912164917",
+      "name": "two_stage_lottery_results",
+      "statement_count": 1,
+      "bytes": 12457
+    },
+    {
+      "version": "20260912164926",
+      "name": "two_stage_card_publication",
+      "statement_count": 1,
+      "bytes": 5028
+    },
+    {
+      "version": "20260912164938",
+      "name": "matrix_order_analysis_reads",
+      "statement_count": 1,
+      "bytes": 47010
+    },
+    {
+      "version": "20260912192941",
+      "name": "preserve_provisional_draw_identity",
+      "statement_count": 1,
+      "bytes": 8154
+    },
+    {
+      "version": "20260912192953",
+      "name": "matrix_analysis_owned_writes",
+      "statement_count": 1,
+      "bytes": 14084
+    },
+    {
+      "version": "20260912193421",
+      "name": "matrix_analysis_seal_direct_writes",
+      "statement_count": 1,
+      "bytes": 560
+    },
+    {
+      "version": "20260912202503",
+      "name": "avoid_unchanged_draw_writes",
+      "statement_count": 1,
+      "bytes": 8795
+    },
+    {
+      "version": "20260912202511",
+      "name": "independent_card_order_publication",
+      "statement_count": 1,
+      "bytes": 6913
+    },
+    {
+      "version": "20260912230514",
+      "name": "matrix_analysis_active_versions",
+      "statement_count": 1,
+      "bytes": 13264
+    },
+    {
+      "version": "20260913031818",
+      "name": "matrix_analysis_retention_v2",
+      "statement_count": 1,
+      "bytes": 21813
+    },
+    {
+      "version": "20260913133102",
+      "name": "notification_reminder_draw_days",
+      "statement_count": 1,
+      "bytes": 16479
+    },
+    {
+      "version": "20260913153424",
+      "name": "notification_marksix_official_calendar",
+      "statement_count": 1,
+      "bytes": 10742
+    },
+    {
+      "version": "20260913171551",
+      "name": "admin_service_health_evidence",
+      "statement_count": 1,
+      "bytes": 7606
+    },
+    {
+      "version": "20260913190020",
+      "name": "notification_delivery_receipts",
+      "statement_count": 1,
+      "bytes": 5411
+    },
+    {
+      "version": "20260913190028",
+      "name": "admin_native_notification_health",
+      "statement_count": 1,
+      "bytes": 3177
+    },
+    {
+      "version": "20260913193834",
+      "name": "remove_win_notification_settings",
+      "statement_count": 1,
+      "bytes": 4929
+    },
+    {
+      "version": "20260914010516",
+      "name": "cover_foreign_key_indexes",
+      "statement_count": 1,
+      "bytes": 414
+    },
+    {
+      "version": "20260914015017",
+      "name": "secure_visitor_counting",
+      "statement_count": 1,
+      "bytes": 1851
+    },
+    {
+      "version": "20260914114232",
+      "name": "guard_degradation",
+      "statement_count": 1,
+      "bytes": 4664
+    },
+    {
+      "version": "20260914114420",
+      "name": "matrix_draw_query_pagination",
+      "statement_count": 1,
+      "bytes": 9933
+    },
+    {
+      "version": "20260914141705",
+      "name": "database_security_boundaries",
+      "statement_count": 1,
+      "bytes": 1329
+    },
+    {
+      "version": "20260914143243",
+      "name": "raw_card_requires_completed_analysis",
+      "statement_count": 1,
+      "bytes": 4759
+    },
+    {
+      "version": "20260914153439",
+      "name": "matrix_storage_pending_cleanup_health",
+      "statement_count": 1,
+      "bytes": 2472
+    },
+    {
+      "version": "20260914184931",
+      "name": "confirmed_member_permission_fixes",
+      "statement_count": 1,
+      "bytes": 885
+    },
+    {
+      "version": "20260915072007",
+      "name": "guest_algorithm_access",
+      "statement_count": 1,
+      "bytes": 3440
+    },
+    {
+      "version": "20260915114856",
+      "name": "allow_google_member_bootstrap",
+      "statement_count": 1,
+      "bytes": 1745
+    },
+    {
+      "version": "20260915152839",
+      "name": "restore_registered_algorithm_access",
+      "statement_count": 1,
+      "bytes": 3344
+    },
+    {
+      "version": "20260915154417",
+      "name": "tianheng_requires_login",
+      "statement_count": 1,
+      "bytes": 248
+    },
+    {
+      "version": "20260915175243",
+      "name": "google_member_perks",
+      "statement_count": 1,
+      "bytes": 7909
+    },
+    {
+      "version": "20260915195954",
+      "name": "reconcile_confirmed_same_period_draws",
+      "statement_count": 1,
+      "bytes": 9825
+    },
+    {
+      "version": "20260915214936",
+      "name": "skip_empty_notification_dispatch",
+      "statement_count": 1,
+      "bytes": 1883
+    },
+    {
+      "version": "20260916002910",
+      "name": "runtime_idle_schedule_guards",
+      "statement_count": 1,
+      "bytes": 3461
+    },
+    {
+      "version": "20260916002923",
+      "name": "watchdog_active_analysis_state",
+      "statement_count": 1,
+      "bytes": 4653
+    },
+    {
+      "version": "20260916002935",
+      "name": "notification_event_exists_guard",
+      "statement_count": 1,
+      "bytes": 1365
+    },
+    {
+      "version": "20260916003025",
+      "name": "watchdog_active_analysis_state_least_greatest_fix",
+      "statement_count": 1,
+      "bytes": 4615
+    },
+    {
+      "version": "20260916014316",
+      "name": "member_profile_member_id",
+      "statement_count": 1,
+      "bytes": 946
+    },
+    {
+      "version": "20260916025212",
+      "name": "native_notification_dispatch_guard",
+      "statement_count": 1,
+      "bytes": 2700
+    },
+    {
+      "version": "20260916025223",
+      "name": "cron_runtime_retention",
+      "statement_count": 1,
+      "bytes": 1476
+    },
+    {
+      "version": "20260916025241",
+      "name": "notification_fanout_delivery_guard",
+      "statement_count": 1,
+      "bytes": 3736
+    },
+    {
+      "version": "20260916025300",
+      "name": "matrix_status_compact_source",
+      "statement_count": 1,
+      "bytes": 4283
+    },
+    {
+      "version": "20260916032653",
+      "name": "canonical_draw_day_runtime",
+      "statement_count": 1,
+      "bytes": 4549
+    },
+    {
+      "version": "20260916101659",
+      "name": "admin_session_login_record_link",
+      "statement_count": 1,
+      "bytes": 234
+    },
+    {
+      "version": "20260916130351",
+      "name": "optimize_matrix_status_compact_read",
+      "statement_count": 1,
+      "bytes": 5947
+    },
+    {
+      "version": "20260916131439",
+      "name": "precompute_matrix_status_compact_payload",
+      "statement_count": 1,
+      "bytes": 6756
+    },
+    {
+      "version": "20260916133043",
+      "name": "admin_member_display_name_search",
+      "statement_count": 1,
+      "bytes": 1305
+    },
+    {
+      "version": "20260916161223",
+      "name": "fix_member_profile_coalesce",
+      "statement_count": 1,
+      "bytes": 856
+    },
+    {
+      "version": "20260916161309",
+      "name": "optimize_matrix_draw_query_read_path",
+      "statement_count": 1,
+      "bytes": 11468
+    },
+    {
+      "version": "20260916193833",
+      "name": "guard_idle_watchdog_http",
+      "statement_count": 1,
+      "bytes": 5135
+    },
+    {
+      "version": "20260917171330",
+      "name": "matrix_custom_status_results",
+      "statement_count": 1,
+      "bytes": 1297
+    },
+    {
+      "version": "20260917171346",
+      "name": "matrix_status_identity_get",
+      "statement_count": 1,
+      "bytes": 1777
+    },
+    {
+      "version": "20260919101456",
+      "name": "matrix_tianshu",
+      "statement_count": 1,
+      "bytes": 53835
+    },
+    {
+      "version": "20260919172621",
+      "name": "align_card_publication_v15",
+      "statement_count": 1,
+      "bytes": 4839
+    },
+    {
+      "version": "20260919180508",
+      "name": "matrix_optimizer_history_schedule",
+      "statement_count": 1,
+      "bytes": 8117
+    },
+    {
+      "version": "20260919180526",
+      "name": "matrix_chain_evidence",
+      "statement_count": 1,
+      "bytes": 2971
+    },
+    {
+      "version": "20260919180528",
+      "name": "matrix_verified_recovery",
+      "statement_count": 1,
+      "bytes": 4985
+    },
+    {
+      "version": "20260919180603",
+      "name": "matrix_custom_status_guard",
+      "statement_count": 1,
+      "bytes": 4042
+    },
+    {
+      "version": "20260919180618",
+      "name": "matrix_missing_artifact_recovery",
+      "statement_count": 1,
+      "bytes": 7444
+    },
+    {
+      "version": "20260919180638",
+      "name": "matrix_optimizer_snapshot",
+      "statement_count": 1,
+      "bytes": 3139
+    },
+    {
+      "version": "20260919181404",
+      "name": "matrix_optimizer_cron_origin",
+      "statement_count": 1,
+      "bytes": 1144
+    },
+    {
+      "version": "20260919212711",
+      "name": "retire_matrix_custom_status",
+      "statement_count": 1,
+      "bytes": 11227
+    },
+    {
+      "version": "20260920051031",
+      "name": "watchdog_schedule_evidence",
+      "statement_count": 1,
+      "bytes": 3733
+    },
+    {
+      "version": "20260920063055",
+      "name": "align_watchdog_report_storage_limit",
+      "statement_count": 1,
+      "bytes": 559
+    },
+    {
+      "version": "20260920094607",
+      "name": "ecpay_review_login",
+      "statement_count": 1,
+      "bytes": 4847
+    },
+    {
+      "version": "20260920102528",
+      "name": "manual_refresh_jobs",
+      "statement_count": 1,
+      "bytes": 3542
+    },
+    {
+      "version": "20260920112247",
+      "name": "admin_dashboard_summary",
+      "statement_count": 1,
+      "bytes": 3404
+    },
+    {
+      "version": "20260920112248",
+      "name": "optimize_status_summary_reads",
+      "statement_count": 1,
+      "bytes": 2584
+    },
+    {
+      "version": "20260920112249",
+      "name": "read_validation_draw_periods",
+      "statement_count": 1,
+      "bytes": 3708
+    },
+    {
+      "version": "20260920112250",
+      "name": "admin_member_auth_profiles",
+      "statement_count": 1,
+      "bytes": 1258
+    },
+    {
+      "version": "20260920112544",
+      "name": "ensure_matrix_status_identity_get",
+      "statement_count": 1,
+      "bytes": 1777
+    },
+    {
+      "version": "20260920192323",
+      "name": "matrix_draw_indexed_read_cache",
+      "statement_count": 1,
+      "bytes": 14181
+    },
+    {
+      "version": "20260920192331",
+      "name": "notification_due_before_vault",
+      "statement_count": 1,
+      "bytes": 1989
+    },
+    {
+      "version": "20260920193052",
+      "name": "worker_completion_cache",
+      "statement_count": 1,
+      "bytes": 7649
+    },
+    {
+      "version": "20260920233444",
+      "name": "recovery_dynamic_slots",
+      "statement_count": 1,
+      "bytes": 16275
+    },
+    {
+      "version": "20260921003028",
+      "name": "result_item_dedup",
+      "statement_count": 1,
+      "bytes": 43576
+    },
+    {
+      "version": "20260921003045",
+      "name": "retire_unused_result_prediction_indexes",
+      "statement_count": 1,
+      "bytes": 1497
+    },
+    {
+      "version": "20260921014842",
+      "name": "enforce_active_member_notifications",
+      "statement_count": 1,
+      "bytes": 7884
+    },
+    {
+      "version": "20260921065325",
+      "name": "admin_push_member_page",
+      "statement_count": 1,
+      "bytes": 4569
+    },
+    {
+      "version": "20260921065627",
+      "name": "admin_account_revision",
+      "statement_count": 1,
+      "bytes": 766
+    },
+    {
+      "version": "20260921074128",
+      "name": "dynamic_primary_worker_schedule",
+      "statement_count": 1,
+      "bytes": 10303
+    },
+    {
+      "version": "20260921074825",
+      "name": "retire_legacy_explore_entitlements",
+      "statement_count": 1,
+      "bytes": 61
+    },
+    {
+      "version": "20260921075707",
+      "name": "refresh_watchdog_after_recovery",
+      "statement_count": 1,
+      "bytes": 2441
+    },
+    {
+      "version": "20260921093104",
+      "name": "matrix_status_canonical_entitlements",
+      "statement_count": 1,
+      "bytes": 382
+    },
+    {
+      "version": "20260921102301",
+      "name": "reduce_minute_idle_work",
+      "statement_count": 1,
+      "bytes": 6943
+    },
+    {
+      "version": "20260921104200",
+      "name": "split_expiry_reminder_scan",
+      "statement_count": 1,
+      "bytes": 2847
+    },
+    {
+      "version": "20260921111849",
+      "name": "fixed_bet_reminder_cron",
+      "statement_count": 1,
+      "bytes": 7396
+    },
+    {
+      "version": "20260921114248",
+      "name": "event_driven_notification_dispatch",
+      "statement_count": 1,
+      "bytes": 7919
+    },
+    {
+      "version": "20260921154432",
+      "name": "admin_notification_delivery_health",
+      "statement_count": 1,
+      "bytes": 6838
+    },
+    {
+      "version": "20260921154446",
+      "name": "admin_service_operation_evidence_v2",
+      "statement_count": 1,
+      "bytes": 4011
+    },
+    {
+      "version": "20260921203045",
+      "name": "notification_calendar_refresh_recovery",
+      "statement_count": 1,
+      "bytes": 5534
+    },
+    {
+      "version": "20260921212658",
+      "name": "marksix_calendar_fixed_check_times",
+      "statement_count": 1,
+      "bytes": 7331
+    },
+    {
+      "version": "20260921213733",
+      "name": "marksix_calendar_tue_thu_sat_sun_safety",
+      "statement_count": 1,
+      "bytes": 2932
+    },
+    {
+      "version": "20260921221415",
+      "name": "marksix_calendar_dedicated_refresh",
+      "statement_count": 1,
+      "bytes": 7780
+    },
+    {
+      "version": "20260921222326",
+      "name": "marksix_calendar_mwf_2300",
+      "statement_count": 1,
+      "bytes": 4405
+    },
+    {
+      "version": "20260922002937",
+      "name": "materialized_algorithm_read_cache",
+      "statement_count": 1,
+      "bytes": 19883
+    },
+    {
+      "version": "20260922034033",
+      "name": "consolidate_member_read_paths",
+      "statement_count": 1,
+      "bytes": 8952
+    },
+    {
+      "version": "20260922045310",
+      "name": "consolidate_referral_member_reads",
+      "statement_count": 1,
+      "bytes": 6696
+    },
+    {
+      "version": "20260922112435",
+      "name": "dedupe_primary_recovery_dispatch",
+      "statement_count": 1,
+      "bytes": 8305
+    },
+    {
+      "version": "20260922120600",
+      "name": "tianheng_three_period_guest_access",
+      "statement_count": 1,
+      "bytes": 430
+    },
+    {
+      "version": "20260922122733",
+      "name": "replace_line_registration_trial_entitlements",
+      "statement_count": 1,
+      "bytes": 3287
+    },
+    {
+      "version": "20260922192551",
+      "name": "notification_dynamic_recovery",
+      "statement_count": 1,
+      "bytes": 16462
+    },
+    {
+      "version": "20260923074945",
+      "name": "worker_completion_old_period_cleanup",
+      "statement_count": 1,
+      "bytes": 3171
+    },
+    {
+      "version": "20260923083441",
+      "name": "ecpay_one_time_checkout",
+      "statement_count": 1,
+      "bytes": 7777
+    },
+    {
+      "version": "20260923124951",
+      "name": "fix_notification_recovery_candidate_limit",
+      "statement_count": 1,
+      "bytes": 4022
+    },
+    {
+      "version": "20260923125002",
+      "name": "admin_mutation_guards",
+      "statement_count": 1,
+      "bytes": 8085
+    },
+    {
+      "version": "20260923125012",
+      "name": "guard_payment_plan_entitlements",
+      "statement_count": 1,
+      "bytes": 20576
+    },
+    {
+      "version": "20260923232511",
+      "name": "require_current_card_for_completion",
+      "statement_count": 1,
+      "bytes": 10301
+    },
+    {
+      "version": "20260923234314",
+      "name": "retry_late_card_invalidation",
+      "statement_count": 1,
+      "bytes": 8851
+    },
+    {
+      "version": "20260924001807",
+      "name": "ecpay_quota_reconciliation",
+      "statement_count": 1,
+      "bytes": 8743
+    },
+    {
+      "version": "20260924014322",
+      "name": "serialize_ecpay_quota_backoff",
+      "statement_count": 1,
+      "bytes": 860
+    },
+    {
+      "version": "20260924014336",
+      "name": "idempotent_member_transfer_submit",
+      "statement_count": 1,
+      "bytes": 5251
+    },
+    {
+      "version": "20260924020932",
+      "name": "superadmin_reversal_entitlements",
+      "statement_count": 1,
+      "bytes": 7771
+    },
+    {
+      "version": "20260924022506",
+      "name": "admin_todo_revision",
+      "statement_count": 1,
+      "bytes": 196
+    },
+    {
+      "version": "20260924022524",
+      "name": "test_push_idempotency",
+      "statement_count": 1,
+      "bytes": 4664
+    },
+    {
+      "version": "20260924030920",
+      "name": "payment_entitlement_grant_evidence",
+      "statement_count": 1,
+      "bytes": 17689
+    },
+    {
+      "version": "20260924033647",
+      "name": "cleanup_reconciled_provisional_analysis",
+      "statement_count": 1,
+      "bytes": 10055
+    },
+    {
+      "version": "20260924033653",
+      "name": "matrix_card_signals",
+      "statement_count": 1,
+      "bytes": 2939
+    },
+    {
+      "version": "20260924033659",
+      "name": "avoid_duplicate_fast_result_fanout",
+      "statement_count": 1,
+      "bytes": 2218
+    },
+    {
+      "version": "20260924041358",
+      "name": "ecpay_paid_recovery",
+      "statement_count": 1,
+      "bytes": 4592
+    },
+    {
+      "version": "20260924051512",
+      "name": "ecpay_offline_recovery_and_paid_date",
+      "statement_count": 1,
+      "bytes": 10514
+    },
+    {
+      "version": "20260924051532",
+      "name": "calendar_trigger_timebase",
+      "statement_count": 1,
+      "bytes": 1161
+    },
+    {
+      "version": "20260924062921",
+      "name": "intro_only_visitor_counting",
+      "statement_count": 1,
+      "bytes": 4948
+    },
+    {
+      "version": "20260924065325",
+      "name": "ecpay_failed_history_status",
+      "statement_count": 1,
+      "bytes": 2570
+    },
+    {
+      "version": "20260924072927",
+      "name": "skip_same_day_intro_visitor_write",
+      "statement_count": 1,
+      "bytes": 1863
+    },
+    {
+      "version": "20260924073703",
+      "name": "restrict_tiangong_50_two_stage",
+      "statement_count": 1,
+      "bytes": 3920
+    }
+  ],
+  "repairs": [
+    {
+      "old": "20260904110000_restrict_member_rpc_execute.sql",
+      "recorded": "20260904200919_restrict_member_rpc_execute.sql",
+      "content": "unchanged repo bytes",
+      "repo_sha256": "2eae4a465ded5fce6f8fc868f35b08d838d9c3670a02225292966f7528eb307d",
+      "recorded_sha256": "bc6b2075b4394b2e567d265f9f6ca20f7840f010de3da2240f5d145d9bbe4263",
+      "repo_bytes": 586,
+      "recorded_bytes": 585,
+      "statement_count": 1
+    },
+    {
+      "old": null,
+      "recorded": "20260904201636_add_admin_sessions_admin_id_index.sql",
+      "content": "restored exact recorded SQL",
+      "repo_sha256": "a3074eae685cb7f792da6b253376ba76746384536977487a0be1cfa07b054079",
+      "recorded_sha256": "a3074eae685cb7f792da6b253376ba76746384536977487a0be1cfa07b054079",
+      "repo_bytes": 91,
+      "recorded_bytes": 91,
+      "statement_count": 1
+    },
+    {
+      "old": "20260916015000_google_member_perks.sql",
+      "recorded": "20260915175243_google_member_perks.sql",
+      "content": "unchanged repo bytes",
+      "repo_sha256": "9498423b84596fed4de7fb3497b538a84544118bc5b87124b153f85b42b55221",
+      "recorded_sha256": "9498423b84596fed4de7fb3497b538a84544118bc5b87124b153f85b42b55221",
+      "repo_bytes": 7909,
+      "recorded_bytes": 7909,
+      "statement_count": 1
+    },
+    {
+      "old": "20260919174332_matrix_optimizer_history_schedule.sql",
+      "recorded": "20260919180508_matrix_optimizer_history_schedule.sql",
+      "content": "unchanged repo bytes",
+      "repo_sha256": "285a951a2d01fce40a53e3c5224bfc7e0351313695fe9b84016a1e366042d9f8",
+      "recorded_sha256": "285a951a2d01fce40a53e3c5224bfc7e0351313695fe9b84016a1e366042d9f8",
+      "repo_bytes": 8117,
+      "recorded_bytes": 8117,
+      "statement_count": 1
+    },
+    {
+      "old": "20260920001000_matrix_chain_evidence.sql",
+      "recorded": "20260919180526_matrix_chain_evidence.sql",
+      "content": "unchanged repo bytes",
+      "repo_sha256": "da6619e9f67e879c6348332d703af8086c586d8a6ac85e4376256c49818b3b3d",
+      "recorded_sha256": "da6619e9f67e879c6348332d703af8086c586d8a6ac85e4376256c49818b3b3d",
+      "repo_bytes": 2971,
+      "recorded_bytes": 2971,
+      "statement_count": 1
+    },
+    {
+      "old": "20260920002000_matrix_verified_recovery.sql",
+      "recorded": "20260919180528_matrix_verified_recovery.sql",
+      "content": "unchanged repo bytes",
+      "repo_sha256": "707e5abf2861caabcb35e0ac3c68bdb801a5d9a3bcc65b06599b504f09a9cca3",
+      "recorded_sha256": "707e5abf2861caabcb35e0ac3c68bdb801a5d9a3bcc65b06599b504f09a9cca3",
+      "repo_bytes": 4985,
+      "recorded_bytes": 4985,
+      "statement_count": 1
+    },
+    {
+      "old": "20260920003000_matrix_custom_status_guard.sql",
+      "recorded": "20260919180603_matrix_custom_status_guard.sql",
+      "content": "aligned to recorded SQL",
+      "repo_sha256": "671d6eade55f8b27ba364aa14f13a668605fb281122f68973e5ed563bbc36159",
+      "recorded_sha256": "671d6eade55f8b27ba364aa14f13a668605fb281122f68973e5ed563bbc36159",
+      "repo_bytes": 4042,
+      "recorded_bytes": 4042,
+      "statement_count": 1
+    },
+    {
+      "old": "20260920004000_matrix_missing_artifact_recovery.sql",
+      "recorded": "20260919180618_matrix_missing_artifact_recovery.sql",
+      "content": "aligned to recorded SQL",
+      "repo_sha256": "877b87fbd4fa4f2a0b55790cd1ee6db421cabc6ca024337e5245a83314a6c88d",
+      "recorded_sha256": "877b87fbd4fa4f2a0b55790cd1ee6db421cabc6ca024337e5245a83314a6c88d",
+      "repo_bytes": 7444,
+      "recorded_bytes": 7444,
+      "statement_count": 1
+    },
+    {
+      "old": "20260920005000_matrix_optimizer_snapshot.sql",
+      "recorded": "20260919180638_matrix_optimizer_snapshot.sql",
+      "content": "aligned to recorded SQL",
+      "repo_sha256": "95e6f1b95f7f1f1ceb08d0fa599b874edac47845f0c595c337ffcf1fe1977a26",
+      "recorded_sha256": "95e6f1b95f7f1f1ceb08d0fa599b874edac47845f0c595c337ffcf1fe1977a26",
+      "repo_bytes": 3139,
+      "recorded_bytes": 3139,
+      "statement_count": 1
+    },
+    {
+      "old": "20260919181118_matrix_optimizer_cron_origin.sql",
+      "recorded": "20260919181404_matrix_optimizer_cron_origin.sql",
+      "content": "aligned to recorded SQL",
+      "repo_sha256": "654fb66e25c8d35e84190e6be7637b67fcc655905742d18f65f0170090b422e1",
+      "recorded_sha256": "654fb66e25c8d35e84190e6be7637b67fcc655905742d18f65f0170090b422e1",
+      "repo_bytes": 1144,
+      "recorded_bytes": 1144,
+      "statement_count": 1
+    },
+    {
+      "old": "20260920006000_retire_matrix_custom_status.sql",
+      "recorded": "20260919212711_retire_matrix_custom_status.sql",
+      "content": "unchanged repo bytes",
+      "repo_sha256": "8768aae590cb99f13ab4687f621c58fbf67c20aab71939d6bf1b682055a56102",
+      "recorded_sha256": "8768aae590cb99f13ab4687f621c58fbf67c20aab71939d6bf1b682055a56102",
+      "repo_bytes": 11227,
+      "recorded_bytes": 11227,
+      "statement_count": 1
+    }
+  ],
+  "remaining_version_mismatches": [
+    {
+      "repo": "20260813175200_relax_member_expiry_check.sql",
+      "recorded": "20260813190048_relax_member_expiry_check.sql"
+    },
+    {
+      "repo": "20260820174733_secure_admin_backend_integration.sql",
+      "recorded": "20260820174842_secure_admin_backend_integration.sql"
+    },
+    {
+      "repo": "20260821212800_matrix_custom_status_api_only_mutations.sql",
+      "recorded": "20260821012728_matrix_custom_status_api_only_mutations.sql"
+    },
+    {
+      "repo": "20260821190000_admin_operations_status.sql",
+      "recorded": "20260821101646_admin_operations_status.sql"
+    },
+    {
+      "repo": "20260821193000_admin_atomic_member_operations.sql",
+      "recorded": "20260821102531_admin_atomic_member_operations.sql"
+    },
+    {
+      "repo": "20260821194500_protect_last_super_admin.sql",
+      "recorded": "20260821102612_protect_last_super_admin.sql"
+    },
+    {
+      "repo": "20260821220000_member_online_tracking.sql",
+      "recorded": "20260821115603_member_online_tracking.sql"
+    },
+    {
+      "repo": "20260821223000_skip_super_admin_activity_logs.sql",
+      "recorded": "20260821120037_skip_super_admin_activity_logs.sql"
+    },
+    {
+      "repo": "20260821224500_admin_atomic_activation_code_delete.sql",
+      "recorded": "20260821145754_admin_atomic_activation_code_delete.sql"
+    },
+    {
+      "repo": "20260821225000_fix_admin_activation_code_role_check.sql",
+      "recorded": "20260821150025_fix_admin_activation_code_role_check.sql"
+    },
+    {
+      "repo": "20260824180000_matrix_fastapi_backend.sql",
+      "recorded": "20260824094431_matrix_fastapi_backend.sql"
+    },
+    {
+      "repo": "20260824190427_sync_line_members_from_auth.sql",
+      "recorded": "20260824190505_sync_line_members_from_auth.sql"
+    },
+    {
+      "repo": "20260824192513_sync_line_display_names.sql",
+      "recorded": "20260824192549_sync_line_display_names.sql"
+    },
+    {
+      "repo": "20260824192612_sync_line_identity_profile_updates.sql",
+      "recorded": "20260824192630_sync_line_identity_profile_updates.sql"
+    },
+    {
+      "repo": "20260824212000_index_lottery_draws_history_order.sql",
+      "recorded": "20260824211820_index_lottery_draws_history_order.sql"
+    },
+    {
+      "repo": "20260825060000_matrix_analysis_artifact_chunks.sql",
+      "recorded": "20260824223022_matrix_analysis_artifact_chunks.sql"
+    },
+    {
+      "repo": "20260827165000_matrix_explore_rpc.sql",
+      "recorded": "20260827091443_matrix_explore_rpc.sql"
+    },
+    {
+      "repo": "20260829090000_member_pwa_rpc.sql",
+      "recorded": "20260829181805_member_pwa_rpc.sql"
+    },
+    {
+      "repo": "20260829093000_matrix_result_rpc.sql",
+      "recorded": "20260829181807_matrix_result_rpc.sql"
+    },
+    {
+      "repo": "20260829103000_security_review_fixes.sql",
+      "recorded": "20260829192625_security_review_fixes.sql"
+    },
+    {
+      "repo": "20260829194000_compact_matrix_status_sources.sql",
+      "recorded": "20260829193611_compact_matrix_status_sources.sql"
+    },
+    {
+      "repo": "20260829195500_backfill_compact_matrix_status_sources.sql",
+      "recorded": "20260829194135_backfill_compact_matrix_status_sources.sql"
+    },
+    {
+      "repo": "20260829205227_free_member_profile_label.sql",
+      "recorded": "20260829205310_free_member_profile_label.sql"
+    },
+    {
+      "repo": "20260829205500_lock_member_profile_rpc_to_authenticated.sql",
+      "recorded": "20260829205413_lock_member_profile_rpc_to_authenticated.sql"
+    },
+    {
+      "repo": "20260830060000_manual_bank_transfer.sql",
+      "recorded": "20260829223804_manual_bank_transfer.sql"
+    },
+    {
+      "repo": "20260830075300_rename_member_payment_history_rpc.sql",
+      "recorded": "20260829225358_rename_member_payment_history_rpc.sql"
+    },
+    {
+      "repo": "20260830083000_fix_payment_history_and_audit_logs.sql",
+      "recorded": "20260829232518_fix_payment_history_and_audit_logs.sql"
+    },
+    {
+      "repo": "20260830144700_mobile_push_notifications.sql",
+      "recorded": "20260830095443_mobile_push_notifications.sql"
+    },
+    {
+      "repo": "20260830183000_mobile_push_notification_indexes.sql",
+      "recorded": "20260830103236_mobile_push_notification_indexes.sql"
+    },
+    {
+      "repo": "20260830220000_fix_matrix_v6_rpc_nullif.sql",
+      "recorded": "20260830130523_fix_matrix_v6_rpc_nullif.sql"
+    },
+    {
+      "repo": "20260830221500_fix_matrix_v6_rpc_coalesce.sql",
+      "recorded": "20260830130914_fix_matrix_v6_rpc_coalesce.sql"
+    },
+    {
+      "repo": "20260830223000_fix_matrix_entitlement_coalesce.sql",
+      "recorded": "20260830131255_fix_matrix_entitlement_coalesce.sql"
+    },
+    {
+      "repo": "20260830223000_fix_mobile_push_rpc_nullif.sql",
+      "recorded": "20260830141227_fix_mobile_push_rpc_nullif.sql"
+    },
+    {
+      "repo": "20260831030000_tiangong_two_stage_ready2_only.sql",
+      "recorded": "20260830192202_tiangong_two_stage_ready2_only.sql"
+    },
+    {
+      "repo": "20260831213000_matrix_python_v7_explore_rpc.sql",
+      "recorded": "20260830235651_matrix_python_v7_explore_rpc.sql"
+    },
+    {
+      "repo": "20260831235800_repair_qualified_coalesce.sql",
+      "recorded": "20260831000718_repair_qualified_coalesce.sql"
+    },
+    {
+      "repo": "20260901000000_matrix_python_v8_explore_rpc.sql",
+      "recorded": "20260831130348_matrix_python_v8_explore_rpc.sql"
+    },
+    {
+      "repo": "20260901010000_restore_matrix_explore_date_offsets.sql",
+      "recorded": "20260831130405_restore_matrix_explore_date_offsets.sql"
+    },
+    {
+      "repo": "20260901100000_matrix_explore_v2_ranges.sql",
+      "recorded": "20260901115059_matrix_explore_v2_ranges.sql"
+    },
+    {
+      "repo": "20260901153758_admin_transfer_review_rpc.sql",
+      "recorded": "20260901154008_admin_transfer_review_rpc.sql"
+    },
+    {
+      "repo": "20260901164500_restore_super_admin_activity_log_exemption.sql",
+      "recorded": "20260901161953_restore_super_admin_activity_log_exemption.sql"
+    },
+    {
+      "repo": "20260902010000_matrix_explore_v11_rpc.sql",
+      "recorded": "20260901172741_matrix_explore_v11_rpc.sql"
+    },
+    {
+      "repo": "20260902020000_matrix_explore_v11_draw_order.sql",
+      "recorded": "20260901174019_matrix_explore_v11_draw_order.sql"
+    },
+    {
+      "repo": "20260902030000_matrix_explore_v11_draw_order_forward.sql",
+      "recorded": "20260901174618_matrix_explore_v11_draw_order_forward.sql"
+    },
+    {
+      "repo": "20260902031000_matrix_latest_run_draw_order.sql",
+      "recorded": "20260901175025_matrix_latest_run_draw_order.sql"
+    },
+    {
+      "repo": "20260902064500_admin_revenue_reset_baseline.sql",
+      "recorded": "20260902065226_admin_revenue_reset_baseline.sql"
+    },
+    {
+      "repo": "20260902070030_limit_admin_revenue_settings_privileges.sql",
+      "recorded": "20260902065309_limit_admin_revenue_settings_privileges.sql"
+    },
+    {
+      "repo": "20260902071500_admin_revenue_reset_rpc.sql",
+      "recorded": "20260902070157_admin_revenue_reset_rpc.sql"
+    },
+    {
+      "repo": "20260902070000_worker_freshness_status.sql",
+      "recorded": "20260902070913_worker_freshness_status.sql"
+    },
+    {
+      "repo": "20260902040000_matrix_explore_v12_rpc.sql",
+      "recorded": "20260902072734_matrix_explore_v12_rpc.sql"
+    },
+    {
+      "repo": "20260902050000_matrix_explore_v12_cleanup.sql",
+      "recorded": "20260902072845_matrix_explore_v12_cleanup.sql"
+    },
+    {
+      "repo": "20260902081857_fix_activation_code_plan_entitlements.sql",
+      "recorded": "20260902091404_fix_activation_code_plan_entitlements.sql"
+    },
+    {
+      "repo": "20260902190500_repair_pg_catalog_greatest.sql",
+      "recorded": "20260902190446_repair_pg_catalog_greatest.sql"
+    },
+    {
+      "repo": "20260902193000_repair_qualified_sql_constructs.sql",
+      "recorded": "20260902190724_repair_qualified_sql_constructs.sql"
+    },
+    {
+      "repo": "20260902194500_repair_admin_transfer_audit_actor.sql",
+      "recorded": "20260902190849_repair_admin_transfer_audit_actor.sql"
+    },
+    {
+      "repo": "20260903042000_admin_credential_login_schema.sql",
+      "recorded": "20260902203534_admin_credential_login_schema.sql"
+    },
+    {
+      "repo": "20260902204215_member_referral_rpc.sql",
+      "recorded": "20260902223653_member_referral_rpc.sql"
+    },
+    {
+      "repo": "20260904050000_normalize_manual_transfer_review.sql",
+      "recorded": "20260904034400_normalize_manual_transfer_review.sql"
+    },
+    {
+      "repo": "20260904103000_add_matrix_watchdog_leases.sql",
+      "recorded": "20260904104229_add_matrix_watchdog_leases.sql"
+    },
+    {
+      "repo": "20260905090000_allow_referral_code_after_payment.sql",
+      "recorded": "20260904183827_allow_referral_code_after_payment.sql"
+    },
+    {
+      "repo": "20260905172358_add_matrix_card_cleanup_lease.sql",
+      "recorded": "20260905181320_add_matrix_card_cleanup_lease.sql"
+    },
+    {
+      "repo": "20260906145500_line_pwa_handoff_diagnostics.sql",
+      "recorded": "20260906135233_line_pwa_handoff_diagnostics.sql"
+    },
+    {
+      "repo": "20260910105312_admin_atomic_activation_batch.sql",
+      "recorded": "20260910123427_admin_atomic_activation_batch.sql"
+    },
+    {
+      "repo": "20260910233000_matrix_tianheng.sql",
+      "recorded": "20260910224706_matrix_tianheng.sql"
+    },
+    {
+      "repo": "20260914084000_cover_foreign_key_indexes.sql",
+      "recorded": "20260914010516_cover_foreign_key_indexes.sql"
+    },
+    {
+      "repo": "20260914014411_secure_visitor_counting.sql",
+      "recorded": "20260914015017_secure_visitor_counting.sql"
+    },
+    {
+      "repo": "20260914190000_confirmed_member_permission_fixes.sql",
+      "recorded": "20260914184931_confirmed_member_permission_fixes.sql"
+    },
+    {
+      "repo": "20260915150500_guest_algorithm_access.sql",
+      "recorded": "20260915072007_guest_algorithm_access.sql"
+    },
+    {
+      "repo": "20260915193500_allow_google_member_bootstrap.sql",
+      "recorded": "20260915114856_allow_google_member_bootstrap.sql"
+    },
+    {
+      "repo": "20260915154500_tianheng_requires_login.sql",
+      "recorded": "20260915154417_tianheng_requires_login.sql"
+    },
+    {
+      "repo": "20260916090000_reconcile_confirmed_same_period_draws.sql",
+      "recorded": "20260915195954_reconcile_confirmed_same_period_draws.sql"
+    },
+    {
+      "repo": "20260916093000_skip_empty_notification_dispatch.sql",
+      "recorded": "20260915214936_skip_empty_notification_dispatch.sql"
+    },
+    {
+      "repo": "20260916094500_runtime_idle_schedule_guards.sql",
+      "recorded": "20260916002910_runtime_idle_schedule_guards.sql"
+    },
+    {
+      "repo": "20260916095000_watchdog_active_analysis_state.sql",
+      "recorded": "20260916002923_watchdog_active_analysis_state.sql"
+    },
+    {
+      "repo": "20260916100500_notification_event_exists_guard.sql",
+      "recorded": "20260916002935_notification_event_exists_guard.sql"
+    },
+    {
+      "repo": "20260916103000_member_profile_member_id.sql",
+      "recorded": "20260916014316_member_profile_member_id.sql"
+    },
+    {
+      "repo": "20260916110000_native_notification_dispatch_guard.sql",
+      "recorded": "20260916025212_native_notification_dispatch_guard.sql"
+    },
+    {
+      "repo": "20260916110100_cron_runtime_retention.sql",
+      "recorded": "20260916025223_cron_runtime_retention.sql"
+    },
+    {
+      "repo": "20260916110200_notification_fanout_delivery_guard.sql",
+      "recorded": "20260916025241_notification_fanout_delivery_guard.sql"
+    },
+    {
+      "repo": "20260916110300_matrix_status_compact_source.sql",
+      "recorded": "20260916025300_matrix_status_compact_source.sql"
+    },
+    {
+      "repo": "20260916112000_canonical_draw_day_runtime.sql",
+      "recorded": "20260916032653_canonical_draw_day_runtime.sql"
+    },
+    {
+      "repo": "20260916095200_admin_session_login_record_link.sql",
+      "recorded": "20260916101659_admin_session_login_record_link.sql"
+    },
+    {
+      "repo": "20260916132000_optimize_matrix_status_compact_read.sql",
+      "recorded": "20260916130351_optimize_matrix_status_compact_read.sql"
+    },
+    {
+      "repo": "20260916134500_precompute_matrix_status_compact_payload.sql",
+      "recorded": "20260916131439_precompute_matrix_status_compact_payload.sql"
+    },
+    {
+      "repo": "20260916140000_admin_member_display_name_search.sql",
+      "recorded": "20260916133043_admin_member_display_name_search.sql"
+    },
+    {
+      "repo": "20260917002000_optimize_matrix_draw_query_read_path.sql",
+      "recorded": "20260916161309_optimize_matrix_draw_query_read_path.sql"
+    },
+    {
+      "repo": "20260917040000_guard_idle_watchdog_http.sql",
+      "recorded": "20260916193833_guard_idle_watchdog_http.sql"
+    },
+    {
+      "repo": "20260917165000_matrix_custom_status_results.sql",
+      "recorded": "20260917171330_matrix_custom_status_results.sql"
+    },
+    {
+      "repo": "20260917170500_matrix_status_identity_get.sql",
+      "recorded": "20260917171346_matrix_status_identity_get.sql"
+    },
+    {
+      "repo": "20260920060000_watchdog_schedule_evidence.sql",
+      "recorded": "20260920051031_watchdog_schedule_evidence.sql"
+    },
+    {
+      "repo": "20260920091230_ecpay_review_login.sql",
+      "recorded": "20260920094607_ecpay_review_login.sql"
+    },
+    {
+      "repo": "20260920100000_manual_refresh_jobs.sql",
+      "recorded": "20260920102528_manual_refresh_jobs.sql"
+    },
+    {
+      "repo": "20260920105700_admin_dashboard_summary.sql",
+      "recorded": "20260920112247_admin_dashboard_summary.sql"
+    },
+    {
+      "repo": "20260920105819_optimize_status_summary_reads.sql",
+      "recorded": "20260920112248_optimize_status_summary_reads.sql"
+    },
+    {
+      "repo": "20260920105823_read_validation_draw_periods.sql",
+      "recorded": "20260920112249_read_validation_draw_periods.sql"
+    },
+    {
+      "repo": "20260920105827_admin_member_auth_profiles.sql",
+      "recorded": "20260920112250_admin_member_auth_profiles.sql"
+    },
+    {
+      "repo": "20260921012052_enforce_active_member_notifications.sql",
+      "recorded": "20260921014842_enforce_active_member_notifications.sql"
+    },
+    {
+      "repo": "20260921072423_dynamic_primary_worker_schedule.sql",
+      "recorded": "20260921074128_dynamic_primary_worker_schedule.sql"
+    },
+    {
+      "repo": "20260921073500_retire_legacy_explore_entitlements.sql",
+      "recorded": "20260921074825_retire_legacy_explore_entitlements.sql"
+    },
+    {
+      "repo": "20260921075225_refresh_watchdog_after_recovery.sql",
+      "recorded": "20260921075707_refresh_watchdog_after_recovery.sql"
+    },
+    {
+      "repo": "20260921172000_matrix_status_canonical_entitlements.sql",
+      "recorded": "20260921093104_matrix_status_canonical_entitlements.sql"
+    },
+    {
+      "repo": "20260921181500_reduce_minute_idle_work.sql",
+      "recorded": "20260921102301_reduce_minute_idle_work.sql"
+    },
+    {
+      "repo": "20260921184500_split_expiry_reminder_scan.sql",
+      "recorded": "20260921104200_split_expiry_reminder_scan.sql"
+    },
+    {
+      "repo": "20260921190000_fixed_bet_reminder_cron.sql",
+      "recorded": "20260921111849_fixed_bet_reminder_cron.sql"
+    },
+    {
+      "repo": "20260921194000_event_driven_notification_dispatch.sql",
+      "recorded": "20260921114248_event_driven_notification_dispatch.sql"
+    },
+    {
+      "repo": "20260921233500_admin_notification_delivery_health.sql",
+      "recorded": "20260921154432_admin_notification_delivery_health.sql"
+    },
+    {
+      "repo": "20260921234200_admin_service_operation_evidence_v2.sql",
+      "recorded": "20260921154446_admin_service_operation_evidence_v2.sql"
+    },
+    {
+      "repo": "20260922042500_notification_calendar_refresh_recovery.sql",
+      "recorded": "20260921203045_notification_calendar_refresh_recovery.sql"
+    },
+    {
+      "repo": "20260922052500_marksix_calendar_fixed_check_times.sql",
+      "recorded": "20260921212658_marksix_calendar_fixed_check_times.sql"
+    },
+    {
+      "repo": "20260922054000_marksix_calendar_tue_thu_sat_sun_safety.sql",
+      "recorded": "20260921213733_marksix_calendar_tue_thu_sat_sun_safety.sql"
+    },
+    {
+      "repo": "20260922061000_marksix_calendar_dedicated_refresh.sql",
+      "recorded": "20260921221415_marksix_calendar_dedicated_refresh.sql"
+    },
+    {
+      "repo": "20260922062500_marksix_calendar_mwf_2300.sql",
+      "recorded": "20260921222326_marksix_calendar_mwf_2300.sql"
+    },
+    {
+      "repo": "20260921074500_materialized_algorithm_read_cache.sql",
+      "recorded": "20260922002937_materialized_algorithm_read_cache.sql"
+    }
+  ],
+  "remaining_recorded_without_repo_file": [
+    "20260819235712_complete_matrix_admin_backend_tables.sql",
+    "20260821102631_protect_last_super_admin_delete_safe.sql",
+    "20260821161110_fix_activation_code_service_role_claim.sql",
+    "20260821161913_add_system_job_recovery_state.sql",
+    "20260821164129_add_system_job_atomic_recovery_lease.sql",
+    "20260821165120_harden_system_job_recovery_lease.sql",
+    "20260825102959_prepare_appdeploy_history_merge.sql",
+    "20260825103738_remove_appdeploy_history_merge_rpc.sql",
+    "20260831151548_block_tiangong_artifacts.sql",
+    "20260831205221_matrix_tiangong_python_rpc.sql",
+    "20260909095221_lottery_matrix_app_native_push.sql",
+    "20260916003025_watchdog_active_analysis_state_least_greatest_fix.sql",
+    "20260920112544_ensure_matrix_status_identity_get.sql"
+  ],
+  "remaining_repo_without_same_named_record": [
+    "20260904032000_update_subscription_plan_prices.sql",
+    "20260904040000_matrix_explore_prediction_number_group_order.sql",
+    "20260924072000_sync_ecpay_payment_reversals.sql"
+  ]
+}

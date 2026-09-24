@@ -1,6 +1,5 @@
-begin;
 -- Serialize a member's config mutations and result publication, including inserts.
-create function private.matrix_custom_status_config_lock() returns trigger
+create or replace function private.matrix_custom_status_config_lock() returns trigger
 language plpgsql set search_path = '' as $$
 begin
  if tg_op <> 'INSERT' then
@@ -13,10 +12,11 @@ begin
  return old;
 end;
 $$;
+drop trigger if exists matrix_custom_status_config_lock on public.matrix_custom_status_configs;
 create trigger matrix_custom_status_config_lock before insert or update or delete
  on public.matrix_custom_status_configs for each row execute function private.matrix_custom_status_config_lock();
 
-create function public.matrix_custom_status_publish(p_result jsonb) returns boolean
+create or replace function public.matrix_custom_status_publish(p_result jsonb) returns boolean
 language plpgsql security definer set search_path = '' as $$
 declare
  v_member uuid := (p_result->>'member_id')::uuid;
@@ -49,7 +49,7 @@ begin
 end;
 $$;
 revoke all on function private.matrix_custom_status_config_lock() from public,anon,authenticated;
-create function public.matrix_custom_status_clear_if_unconfigured(p_member uuid,p_lottery text) returns boolean
+create or replace function public.matrix_custom_status_clear_if_unconfigured(p_member uuid,p_lottery text) returns boolean
 language plpgsql security definer set search_path = '' as $$
 begin
  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(p_member::text||':'||p_lottery,0));
@@ -64,4 +64,3 @@ grant execute on function public.matrix_custom_status_clear_if_unconfigured(uuid
 revoke all on function public.matrix_custom_status_publish(jsonb) from public,anon,authenticated;
 grant execute on function public.matrix_custom_status_publish(jsonb) to service_role;
 notify pgrst,'reload schema';
-commit;

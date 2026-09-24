@@ -1,6 +1,14 @@
 # 自訂觸發狀態退役
 
-## 最新合併檢查：仍由 CI 阻擋
+## 2026-09-24 正式歷史核對
+
+正式 `schema_migrations` 已記錄 `20260919212711_retire_matrix_custom_status`；
+[#684](https://github.com/spyuilin688-sudo/lottery-matrix/pull/684) 亦已合併。
+本次只修正 repository 的歷史檔名與相依紀錄，沒有重跑退役 SQL。
+詳見 [migration history follow-up](migration-history-followup-20260924.md)。
+下列「尚未部署／CI 阻擋」與上線步驟保留為當時的工作紀錄，不代表目前仍待執行。
+
+## 歷史合併檢查：當時由 CI 阻擋
 
 本次使用者已同意合併、部署與依序清除自訂資料，但尚未執行合併、部署或退役遷移。
 
@@ -28,7 +36,7 @@ CI 後續 Node 契約步驟另有大批既有失敗。依本次差異選出的�
 
 ## 資料庫清除範圍
 
-`20260920006000_retire_matrix_custom_status.sql` 使用交易與 RESTRICT；不修改歷史遷移。
+`20260919212711_retire_matrix_custom_status.sql` 使用交易與 RESTRICT；不修改歷史遷移。
 
 實際只讀盤點時，`matrix_custom_status_configs` 有 3 筆、`matrix_custom_status_results` 有 3 筆。
 遷移移除兩表及其所屬索引、policy、trigger、constraint；另移除 11 個專用函式：6 個 public custom RPC、`matrix_status_identity_get(jsonb)`、4 個 private custom helpers。

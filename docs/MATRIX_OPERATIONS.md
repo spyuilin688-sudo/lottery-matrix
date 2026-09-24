@@ -41,9 +41,13 @@ status or recovery counters. It creates no second monitor or repair log table. R
 
 ## Activation order and rollback
 
-1. Apply 20260919174332 and migrations 20260920001000 through 20260920005000 via the normal reviewed
-   Supabase release process. They require the existing active-version and custom
-   status schema. Test on staging first, including concurrent draw/config changes.
+1. Production already records optimizer history at `20260919180508`, chain evidence
+   at `20260919180526`, verified recovery at `20260919180528`, custom-status guards
+   at `20260919180603`, pointer recovery at `20260919180618`, snapshots at
+   `20260919180638`, and the cron-origin fix at `20260919181404`. Preserve this order
+   before retirement at `20260919212711`; do not reapply these migrations to production.
+   See [the migration-history reconciliation](operations/migration-history-followup-20260924.md)
+   for the remaining history differences. Bulk database push is not cleared.
 2. Deploy the matrix-status Edge Function and Railway recovery/API code, then the
    admin backend/UI. During mixed versions incomplete observations remain unknown;
    old receivers must not receive targeted requests before the receiver is deployed.
@@ -97,10 +101,10 @@ The latest PR commit must still pass the complete scoped release gate. The full 
 typecheck has pre-existing SDK/CSS/test typing failures; changed pure modules and the
 new panel pass a scoped strict typecheck. No full test suite was run.
 
-Continuation checks confirmed that production does not yet expose the new chain,
-completion or optimizer RPCs, and no Supabase development branch is configured.
-The pointer-restoration SQL is therefore included in the still-unapplied migration
-20260920004000. Its targeted Python and SQL regressions cover stale ownership,
+The original continuation checks predated production application. A read-only check
+on 2026-09-24 confirmed pointer-restoration SQL in production migration history at
+`20260919180618_matrix_missing_artifact_recovery.sql` (formerly `20260920004000`).
+Its targeted Python and SQL regressions cover stale ownership,
 expired leases, superseded periods, missing artifacts, mixed versions and atomic
 sorted/draw restoration. No live schema or deployment was changed by these checks.
 

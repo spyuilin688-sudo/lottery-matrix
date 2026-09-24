@@ -35,7 +35,7 @@ before(async () => {
   // The deployed helper includes the existing pg_catalog.coalesce repair.
   await db.exec(fn(read('20260829093000_matrix_result_rpc.sql'), 'private.matrix_artifact_payload').replaceAll('pg_catalog.coalesce', 'coalesce'));
   await db.exec(read('20260913171551_admin_service_health_evidence.sql'));
-  await db.exec(fn(read('20260920006000_retire_matrix_custom_status.sql'), 'public.admin_service_operation_evidence'));
+  await db.exec(fn(read('20260919212711_retire_matrix_custom_status.sql'), 'public.admin_service_operation_evidence'));
   await db.exec(read('20260921234200_admin_service_operation_evidence_v2.sql'));
   await db.exec('drop table public.matrix_custom_status_configs');
 });

@@ -1,5 +1,4 @@
 -- Match the existing Watchdog origin guard without weakening authentication.
-begin;
 create or replace function private.matrix_optimizer_http_tick(p_scope text) returns bigint
 language plpgsql security definer set search_path='' as $$
 declare v_url text;v_token text;v_request bigint;
@@ -14,5 +13,3 @@ begin
  body:=jsonb_build_object('optimizer',true,'optimizerScope',p_scope),timeout_milliseconds:=120000) into v_request;
  return v_request;
 end $$;
-
-commit;
