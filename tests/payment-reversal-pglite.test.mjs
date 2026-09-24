@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PGlite } from '@electric-sql/pglite';
+import { loadMemberSubscriptionRevision, paymentGrantMigration } from './helpers/ecpay-db.mjs';
 
 const migration = readFileSync(
   new URL('../supabase/migrations/20260908210936_record_payment_reversal.sql', import.meta.url),
@@ -11,6 +12,9 @@ const entitlementReversalMigration = readFileSync(
   new URL('../supabase/migrations/20260924020932_superadmin_reversal_entitlements.sql', import.meta.url),
   'utf8',
 );
+const ecpayMigration = readFileSync(new URL('../supabase/migrations/20260923083441_ecpay_one_time_checkout.sql', import.meta.url), 'utf8');
+const paymentGuardMigration = readFileSync(new URL('../supabase/migrations/20260923125012_guard_payment_plan_entitlements.sql', import.meta.url), 'utf8');
+const grantEvidenceMigration = readFileSync(paymentGrantMigration, 'utf8');
 
 const referralMigration = readFileSync(
   new URL('../supabase/migrations/20260905090000_allow_referral_code_after_payment.sql', import.meta.url),
@@ -149,13 +153,14 @@ async function setup() {
   await db.exec(memberReferralSummarySql);
   await db.exec(matrixEntitlementsSql);
   await db.exec(migration);
+  await db.exec(ecpayMigration);
+  await db.exec(paymentGuardMigration);
+  await loadMemberSubscriptionRevision(db);
   await db.exec(`
-    alter table public.payments drop constraint payments_status_check;
-    alter table public.payments add constraint payments_status_check
-      check (status in ('pending','confirmed','refund_required','rejected','refunded','chargeback','cancelled'));
     select pg_catalog.set_config('request.jwt.claim.role', 'service_role', false);
   `);
   await db.exec(entitlementReversalMigration);
+  await db.exec(grantEvidenceMigration);
   await db.exec(`
     insert into public.plans (id, name, price, duration_days) values
       ('${IDS.plan}', '月費方案', 2880, 30),
@@ -177,31 +182,29 @@ async function setup() {
       null,
       'REF-CODE'
     from pg_catalog.generate_series(2, 51) as generated(n);
-    insert into public.payments (id, member_id, plan_id, amount, paid_at, status)
+    insert into public.payments (id, member_id, plan_id, amount, paid_at, status, entitlement_granted_at, entitlement_revision)
     select
       ('50000000-0000-4000-8000-' || pg_catalog.lpad(n::text, 12, '0'))::uuid,
       ('30000000-0000-4000-8000-' || pg_catalog.lpad((n + 1)::text, 12, '0'))::uuid,
       '${IDS.plan}',
       2880,
       '2026-02-01T00:00:00Z',
-      'confirmed'
+      'confirmed', '2026-02-01T00:00:00Z', 1
     from pg_catalog.generate_series(1, 50) as generated(n);
-    insert into public.payments (id, member_id, plan_id, amount, paid_at, status)
+    insert into public.payments (id, member_id, plan_id, amount, paid_at, status, entitlement_granted_at, entitlement_revision)
     values (
       '50000000-0000-4000-8000-000000000051',
       '30000000-0000-4000-8000-000000000002',
-      '${IDS.plan}', 2880, '2026-02-02T00:00:00Z', 'confirmed'
+      '${IDS.plan}', 2880, '2026-02-02T00:00:00Z', 'confirmed', '2026-02-02T00:00:00Z', 2
     );
     update public.members as member
     set current_plan_id = '${IDS.plan}',
         plan_started_at = '2026-02-01T00:00:00Z',
-        plan_expires_at = case
-          when member.id = '30000000-0000-4000-8000-000000000002'
-            then '2026-04-02T00:00:00Z'::timestamptz
-          else '2026-03-03T00:00:00Z'::timestamptz
-        end,
+        plan_expires_at = '2026-03-03T00:00:00Z',
         auto_renew = false
     where member.id in (select payment.member_id from public.payments as payment where payment.status = 'confirmed');
+    update public.members set plan_expires_at='2026-04-02T00:00:00Z'
+    where id='30000000-0000-4000-8000-000000000002';
     select pg_catalog.set_config('request.jwt.claim.sub', '${IDS.referrerAuth}', false);
   `);
   return db;
@@ -226,20 +229,22 @@ async function setupTwoPurchases() {
   await db.exec(`
     insert into public.plans(id, name, price, duration_days) values
       ('10000000-0000-4000-8000-000000000003', '年費方案', 17800, 365);
-    insert into public.members(
-      id, auth_user_id, current_plan_id, plan_started_at, plan_expires_at,
-      is_lifetime, auto_renew
-    ) values (
+    insert into public.members(id, auth_user_id, is_lifetime, auto_renew) values (
       '30000000-0000-4000-8000-000000000999',
       '40000000-0000-4000-8000-000000000999',
-      '10000000-0000-4000-8000-000000000003',
-      '2026-09-23T14:08:07Z', '2027-10-23T14:08:07Z', false, false
+      false, false
     );
-    insert into public.payments(id, member_id, plan_id, amount, paid_at, status) values
+    update public.members set current_plan_id='${IDS.plan}',
+      plan_started_at='2026-09-23T14:08:07Z', plan_expires_at='2026-10-23T14:08:07Z'
+      where id='30000000-0000-4000-8000-000000000999';
+    update public.members set current_plan_id='10000000-0000-4000-8000-000000000003',
+      plan_expires_at='2027-10-23T14:08:07Z'
+      where id='30000000-0000-4000-8000-000000000999';
+    insert into public.payments(id, member_id, plan_id, amount, paid_at, status, entitlement_granted_at, entitlement_revision) values
       ('50000000-0000-4000-8000-000000000901', '30000000-0000-4000-8000-000000000999',
-       '${IDS.plan}', 2880, '2026-09-23T14:08:07Z', 'confirmed'),
+       '${IDS.plan}', 2880, '2026-09-23T14:08:07Z', 'confirmed', '2026-09-23T14:08:07Z', 1),
       ('50000000-0000-4000-8000-000000000902', '30000000-0000-4000-8000-000000000999',
-       '10000000-0000-4000-8000-000000000003', 17800, '2026-09-23T18:19:24Z', 'confirmed');
+       '10000000-0000-4000-8000-000000000003', 17800, '2026-09-23T18:19:24Z', 'confirmed', '2026-09-23T18:19:24Z', 2);
   `);
   return db;
 }
@@ -354,6 +359,103 @@ test('a payment that never opened a plan can be reversed without changing anothe
   } finally {
     await db.close();
   }
+});
+
+async function useMatchedLegacyEcpayGrants(db) {
+  await db.exec(`
+    insert into public.ecpay_orders(id,member_id,plan_id,merchant_id,merchant_trade_no,trade_no,amount,status,paid_at)
+    select id,member_id,plan_id,'3002607','LEGACY'||right(id::text,3),'PROVIDER'||right(id::text,3),amount,'confirmed',paid_at
+    from public.payments where member_id='30000000-0000-4000-8000-000000000999';
+    update public.payments set ecpay_order_id=id,entitlement_granted_at=null,entitlement_revision=null
+    where member_id='30000000-0000-4000-8000-000000000999';
+  `);
+}
+
+test('legacy ECPay grants remain reversible only with exactly matching original orders', async () => {
+  const db = await setupTwoPurchases();
+  try {
+    await useMatchedLegacyEcpayGrants(db);
+    const before = await subscriptionOf(db);
+    for (const mismatch of [
+      "amount=1",
+      `member_id='${IDS.referrer}'`,
+      `plan_id='${IDS.plan}'`,
+      "paid_at='2026-09-23T18:19:25Z'",
+      "status='refund_required'",
+    ]) {
+      await db.exec(`update public.ecpay_orders set ${mismatch}
+        where id='50000000-0000-4000-8000-000000000902'`);
+      await assert.rejects(() => reverse(db, 902), /PAYMENT_ENTITLEMENT_CONFLICT/);
+      assert.deepEqual(await subscriptionOf(db), before);
+      assert.equal(await scalar(db, "select status from public.payments where id='50000000-0000-4000-8000-000000000902'"), 'confirmed');
+      await db.exec(`update public.ecpay_orders set amount=17800,
+        member_id='30000000-0000-4000-8000-000000000999',
+        plan_id='10000000-0000-4000-8000-000000000003',
+        paid_at='2026-09-23T18:19:24Z',status='confirmed'
+        where id='50000000-0000-4000-8000-000000000902'`);
+    }
+    await reverse(db, 902);
+    assert.deepEqual(await subscriptionOf(db), {
+      current_plan_id: IDS.plan,
+      plan_started_at: '2026-09-23T14:08:07.000Z',
+      plan_expires_at: '2026-10-23T14:08:07.000Z',
+      is_lifetime: false,
+      auto_renew: false,
+    });
+  } finally { await db.close(); }
+});
+
+test('legacy manual receipts without grant evidence cannot be guessed from payment time', async () => {
+  const db = await setupTwoPurchases();
+  try {
+    await db.exec(`
+      insert into public.transfer_requests(id,member_id,plan_id,amount,account_last_five,transferred_at,status)
+      values('60000000-0000-4000-8000-000000000901','30000000-0000-4000-8000-000000000999',
+        '${IDS.plan}',2880,'12345','2026-09-23T14:08:07Z','confirmed');
+      update public.payments set transfer_request_id='60000000-0000-4000-8000-000000000901',
+        entitlement_granted_at=null,entitlement_revision=null
+      where id='50000000-0000-4000-8000-000000000901';
+    `);
+    const before = await subscriptionOf(db);
+    for (const payment of [901, 902]) {
+      await assert.rejects(() => reverse(db, payment), /PAYMENT_ENTITLEMENT_CONFLICT/);
+      assert.deepEqual(await subscriptionOf(db), before);
+    }
+    assert.equal(await scalar(db, `select count(*)::int from public.payments
+      where member_id='30000000-0000-4000-8000-000000000999' and status='confirmed'`), 2);
+  } finally { await db.close(); }
+});
+
+test('legacy payments sharing a receipt timestamp fail safely without application-order evidence', async () => {
+  const db = await setupTwoPurchases();
+  try {
+    await useMatchedLegacyEcpayGrants(db);
+    await db.exec(`
+      update public.payments set paid_at='2026-09-23T14:08:07Z'
+      where id='50000000-0000-4000-8000-000000000902';
+      update public.ecpay_orders set paid_at='2026-09-23T14:08:07Z'
+      where id='50000000-0000-4000-8000-000000000902';
+    `);
+    const before = await subscriptionOf(db);
+    await assert.rejects(() => reverse(db, 902), /PAYMENT_ENTITLEMENT_CONFLICT/);
+    assert.deepEqual(await subscriptionOf(db), before);
+    assert.equal(await scalar(db, "select status from public.payments where id='50000000-0000-4000-8000-000000000902'"), 'confirmed');
+  } finally { await db.close(); }
+});
+
+test('grant evidence keeps the existing missing-receipt guard and cannot be partially stored', async () => {
+  const db = await setupTwoPurchases();
+  try {
+    for (const incomplete of ['entitlement_granted_at=null', 'entitlement_revision=null', 'entitlement_revision=0']) {
+      await assert.rejects(db.exec(`update public.payments set ${incomplete}
+        where id='50000000-0000-4000-8000-000000000902'`), /payments_entitlement_evidence_check/);
+    }
+    await db.exec("update public.payments set paid_at=null where id='50000000-0000-4000-8000-000000000902'");
+    const before = await subscriptionOf(db);
+    await assert.rejects(() => reverse(db, 902), /PAYMENT_ENTITLEMENT_CONFLICT/);
+    assert.deepEqual(await subscriptionOf(db), before);
+    assert.equal(await scalar(db, "select status from public.payments where id='50000000-0000-4000-8000-000000000902'"), 'confirmed');
+  } finally { await db.close(); }
 });
 
 test('payment reversal is atomic, restricted, idempotent, and preserves unrelated billing data', async () => {

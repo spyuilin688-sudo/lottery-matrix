@@ -288,6 +288,21 @@ describe('Matrix Pro manual bank transfer', () => {
     expect(screen.getByRole('button', { name: '提交' })).toBeDisabled();
   });
 
+  it.each([[2880, 'NT$2,880'], [2580, 'NT$2,580']])(
+    'shows the existing request plan and recorded amount %s after another plan was selected', async (amount, expectedAmount) => {
+      selection.readManualTransferPlan.mockReturnValue('year');
+      memberApi.fetchPendingTransferRequest.mockResolvedValue({ ...pendingTransfer, amount });
+      render(<ManualTransferPage onNavigate={vi.fn()} />);
+
+      await screen.findByText('已有待確認申請');
+      expect(screen.getByText('月費方案')).toBeInTheDocument();
+      expect(screen.getByText(String(expectedAmount))).toBeInTheDocument();
+      expect(screen.queryByText('年費方案')).not.toBeInTheDocument();
+      expect(screen.queryByText('NT$17,800')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '提交' })).toBeDisabled();
+    },
+  );
+
   it('does not refetch pending transfers merely because the navigation callback changes', async () => {
     const old = deferred<unknown>();
     memberApi.fetchPendingTransferRequest.mockReturnValueOnce(old.promise);
@@ -475,6 +490,54 @@ describe('Matrix Pro manual bank transfer', () => {
     render(<ManualTransferPage onNavigate={vi.fn()} />);
     expect(screen.getByText('年費方案')).toBeInTheDocument();
     expect(screen.getByLabelText('帳號末五碼')).toHaveValue('');
+  });
+
+  it('does not retain a rejected attempt after a different pending transfer is reviewed', async () => {
+    memberApi.fetchPendingTransferRequest.mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(pendingTransfer).mockResolvedValue(null);
+    memberApi.submitTransferRequest.mockRejectedValueOnce({
+      code: '23505', message: 'PENDING_TRANSFER_EXISTS', details: null, hint: null,
+    });
+    const first = render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12345' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    await screen.findByText('已有待確認申請');
+    const rejectedId = memberApi.submitTransferRequest.mock.calls[0][2];
+    expect(rejectedId).not.toBe(pendingTransfer.id);
+    first.unmount();
+
+    // The other request has been reviewed, so the pending-only read is now empty.
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '重新確認申請' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('帳號末五碼')).toHaveValue('');
+    expect(screen.getByLabelText('帳號末五碼')).toBeEnabled();
+    expect(screen.getByRole('button', { name: '提交' })).toBeDisabled();
+    expect(memberApi.submitTransferRequest).toHaveBeenCalledTimes(1);
+
+    fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '54321' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    await screen.findByText('已有待確認申請');
+    expect(memberApi.submitTransferRequest.mock.calls[1]).toEqual(['month', '54321', expect.any(String)]);
+    expect(memberApi.submitTransferRequest.mock.calls[1][2]).not.toBe(rejectedId);
+  });
+
+  it('does not misclassify a rejected attempt when the other transfer is reviewed before reconciliation', async () => {
+    memberApi.fetchPendingTransferRequest.mockResolvedValue(null);
+    memberApi.submitTransferRequest.mockRejectedValueOnce({
+      code: '23505', message: 'PENDING_TRANSFER_EXISTS', details: null, hint: null,
+    });
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12345' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    await waitFor(() => expect(memberApi.fetchPendingTransferRequest).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByRole('button', { name: '提交' })).toBeEnabled());
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('帳號末五碼')).toBeEnabled();
+    expect(memberApi.submitTransferRequest).toHaveBeenCalledTimes(1);
   });
 
   it.each([
