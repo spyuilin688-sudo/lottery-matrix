@@ -59,7 +59,7 @@ test("首頁固定 Logo 列由頂部安全區開始，內容保留固定底部�
 });
 
 test("狀態卡維持 4px 網格且與 Matrix Core 使用單一 7–10px 響應式間距來源", () => {
-  assert.match(homepageCss, /--home-gap-status-core:\s*clamp\(7px,\s*1\.35dvh,\s*10px\);/);
+  assert.match(homepageCss, /--home-gap-status-core:\s*clamp\(4px,\s*1\.35dvh,\s*7px\);/);
   assert.match(homepageCss, /\.home-screen \.matrix-status-section\s*\{[^}]*flex:\s*0 0 auto;[^}]*min-height:\s*0;/s);
   assert.match(homepageCss, /\.home-screen \.matrix-status-card-grid\s*\{[^}]*height:\s*auto;[^}]*gap:\s*4px;[^}]*align-content:\s*start;/s);
   assert.match(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*var\(--home-gap-status-core\);/s);

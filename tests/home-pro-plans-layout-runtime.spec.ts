@@ -45,7 +45,7 @@ for (const width of MOBILE_WIDTHS) {
       announcementSwitcher: "clamp(6px,0.9dvh,8px)",
       announcementHeight: "26px",
       switcherDraw: "clamp(4px,calc(0.9dvh+1px),7px)",
-      drawStatus: "clamp(7px,calc(1.15dvh+1px),10px)",
+      drawStatus: "clamp(4px,calc(1.15dvh+1px),7px)",
       featuresNav: "clamp(4px,0.7dvh,8px)",
     });
     expect(Number.parseFloat(homepageTokens.headerTop)).toBeGreaterThanOrEqual(8);

@@ -20,8 +20,8 @@ test("homepage owns the approved matching 7–10px Core gaps and responsive navi
   const lotteryScreen = css.match(/\.home-screen \.lottery-screen \{([\s\S]*?)\n\}/)?.[1] ?? "";
   const bottomGroup = css.match(/\.home-screen \.home-bottom-group \{([\s\S]*?)\n\}/)?.[1] ?? "";
 
-  assert.match(homeLayout, /--home-gap-status-core:\s*clamp\(7px,\s*1\.35dvh,\s*10px\)/);
-  assert.match(homeLayout, /--home-gap-core-features:\s*var\(--home-gap-status-core\)/);
+  assert.match(homeLayout, /--home-gap-status-core:\s*clamp\(4px,\s*1\.35dvh,\s*7px\)/);
+  assert.match(homeLayout, /--home-gap-core-features:\s*clamp\(7px,\s*1\.35dvh,\s*10px\)/);
   assert.match(homeLayout, /--home-gap-features-nav:\s*clamp\(4px,\s*0\.7dvh,\s*8px\)/);
   assert.match(homeLayout, /padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ var\(--home-gap-features-nav\)\)/);
   assert.doesNotMatch(lotteryScreen, /--home-gap-(?:status-core|core-features)/);

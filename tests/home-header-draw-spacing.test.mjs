@@ -36,10 +36,10 @@ test("首頁設定齒輪為 18px，視覺圖示距標題卡上方與右側各 4p
   assert.match(position, /place-items:\s*start end;/);
 });
 
-test("Matrix Core 上下間距共用同一個 7 至 10px 響應式規則", () => {
+test("Matrix Core 上方間距為 4 至 7px，下方保留 7 至 10px", () => {
   const layout = ruleBody(base, ".home-screen .home-layout");
-  assert.match(layout, /--home-gap-status-core:\s*clamp\(7px,\s*1\.35dvh,\s*10px\);/);
-  assert.match(layout, /--home-gap-core-features:\s*var\(--home-gap-status-core\);/);
+  assert.match(layout, /--home-gap-status-core:\s*clamp\(4px,\s*1\.35dvh,\s*7px\);/);
+  assert.match(layout, /--home-gap-core-features:\s*clamp\(7px,\s*1\.35dvh,\s*10px\);/);
 });
 
 test("順球落球按鈕總高度縮減 3px 且文字仍為 12px", () => {

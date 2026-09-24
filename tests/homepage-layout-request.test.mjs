@@ -59,14 +59,14 @@ test("homepage reserves the logo above its scroller and preserves the requested 
   assert.equal(style(".home-logo-image").objectPosition, "center bottom");
   assert.equal(layout.getPropertyValue("--home-feature-inline").trim(), "16px");
   assert.equal(layout.getPropertyValue("--home-feature-gap").trim(), "6px");
-  assert.equal(layout.getPropertyValue("--home-gap-status-core").replaceAll(" ", ""), "clamp(7px,1.35dvh,10px)");
-  assert.equal(layout.getPropertyValue("--home-gap-core-features").replaceAll(" ", ""), "var(--home-gap-status-core)");
+  assert.equal(layout.getPropertyValue("--home-gap-status-core").replaceAll(" ", ""), "clamp(4px,1.35dvh,7px)");
+  assert.equal(layout.getPropertyValue("--home-gap-core-features").replaceAll(" ", ""), "clamp(7px,1.35dvh,10px)");
   assert.equal(layout.getPropertyValue("--home-gap-features-nav").replaceAll(" ", ""), "clamp(4px,0.7dvh,8px)");
   assert.equal(lotteryScreen.getPropertyValue("--home-gap-logo-announcement").replaceAll(" ", ""), "clamp(5px,0.8dvh,8px)");
   assert.equal(lotteryScreen.getPropertyValue("--home-gap-announcement-switcher").replaceAll(" ", ""), "clamp(6px,0.9dvh,8px)");
   assert.equal(style(".home-announcement").height, "26px");
   assert.equal(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").replaceAll(" ", ""), "clamp(4px,calc(0.9dvh+1px),7px)");
-  assert.equal(lotteryScreen.getPropertyValue("--home-gap-draw-status").replaceAll(" ", ""), "clamp(7px,calc(1.15dvh+1px),10px)");
+  assert.equal(lotteryScreen.getPropertyValue("--home-gap-draw-status").replaceAll(" ", ""), "clamp(4px,calc(1.15dvh+1px),7px)");
   assert.match(bottomGroup.getPropertyValue("--home-core-width"), /- 32px/);
   assert.equal(style(".matrix-status-section").paddingInline, "0px");
   assert.equal(style(".matrix-status-section").paddingBlockStart, "0");

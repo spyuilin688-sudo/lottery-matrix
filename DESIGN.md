@@ -167,7 +167,7 @@ Matrix 探索、天衡、天衍、天工與狀態頁的驗證過程，依鎖定�
 
 Matrix 探索、天衡、天樞、天衍、天工的驗證過程，四彩種的歷史驗證組固定由上往下依時間「舊 → 新」排列；目前來源／本期預測組維持在歷史組之後。只調整驗證呈現順序，不改變演算法計算、連準、公式、預測結果或儲存資料。
 
-2026-09-08：首頁 Logo 以當前尺寸等比例放大 5%，百分比寬度僅由 `src/homepage/logo-spacing.css` 擁有，高度沿用自動比例；移除 base 中重複的尺寸宣告。狀態卡與 Matrix Core 間距由 `src/homepage/base.css` 的 `--home-gap-status-core` 隨視窗高度限制在 9–12px；移除狀態容器底部額外 1.5px 留白，使外框間距直接由此變數控制。首頁兩列依內容高度由上排列，移除會把剩餘高度撐在狀態卡與 Core 之間的 1fr；底部導覽仍維持固定。不得新增覆寫或固定 Logo 高度。
+2026-09-08：首頁 Logo 以當前尺寸等比例放大 5%，百分比寬度僅由 `src/homepage/logo-spacing.css` 擁有，高度沿用自動比例；移除 base 中重複的尺寸宣告。2026-09-24 間距更新：`src/homepage/base.css` 的 `--home-gap-draw-status`（開獎資訊卡至狀態）與 `--home-gap-status-core`（狀態至 Matrix Core）隨視窗高度限制在 4–7px；Matrix Core 至四大功能的 `--home-gap-core-features` 獨立保留原有 7–10px；移除狀態容器底部額外 1.5px 留白，使外框間距直接由此變數控制。首頁兩列依內容高度由上排列，移除會把剩餘高度撐在狀態卡與 Core 之間的 1fr；底部導覽仍維持固定。不得新增覆寫或固定 Logo 高度。
 
 ### 首頁固定 Logo — 2026-09-09
 
