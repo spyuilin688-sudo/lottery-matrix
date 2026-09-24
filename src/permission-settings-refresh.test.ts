@@ -33,11 +33,11 @@ test('foreground events share a 30-second burst window and do not restore 30-sec
   expect(rpc).toHaveBeenCalledTimes(2);
 });
 
-test('visible idle fallback refreshes every five minutes instead of every 30 seconds', async () => {
+test('visible idle fallback refreshes every 12 hours instead of every five minutes', async () => {
   const { installPermissionSettingsRefresh } = await import('./permission-settings');
   dispose = installPermissionSettingsRefresh();
   await vi.advanceTimersByTimeAsync(0);
-  await vi.advanceTimersByTimeAsync(4 * 60_000 + 59_999);
+  await vi.advanceTimersByTimeAsync(12 * 60 * 60_000 - 1);
   expect(rpc).toHaveBeenCalledTimes(1);
   await vi.advanceTimersByTimeAsync(1);
   expect(rpc).toHaveBeenCalledTimes(2);
@@ -48,7 +48,7 @@ test('slow requests never overlap and an elapsed fallback resumes after settleme
   rpc.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
   const { installPermissionSettingsRefresh } = await import('./permission-settings');
   dispose = installPermissionSettingsRefresh();
-  await vi.advanceTimersByTimeAsync(5 * 60_000);
+  await vi.advanceTimersByTimeAsync(12 * 60 * 60_000);
   expect(rpc).toHaveBeenCalledTimes(1);
   resolve(response);
   await vi.advanceTimersByTimeAsync(0);
@@ -66,12 +66,12 @@ test('explicit permission checks remain fresh while foreground events reuse thei
   expect(rpc).toHaveBeenCalledTimes(2);
 });
 
-test('a recent explicit check moves the next idle fallback to its five-minute deadline', async () => {
+test('a recent explicit check moves the next idle fallback to its 12-hour deadline', async () => {
   const { installPermissionSettingsRefresh, refreshPermissionSettings } = await import('./permission-settings');
   dispose = installPermissionSettingsRefresh();
-  await vi.advanceTimersByTimeAsync(4 * 60_000);
+  await vi.advanceTimersByTimeAsync(4 * 60 * 60_000);
   await refreshPermissionSettings();
-  await vi.advanceTimersByTimeAsync(4 * 60_000 + 59_999);
+  await vi.advanceTimersByTimeAsync(12 * 60 * 60_000 - 1);
   expect(rpc).toHaveBeenCalledTimes(2);
   await vi.advanceTimersByTimeAsync(1);
   expect(rpc).toHaveBeenCalledTimes(3);
@@ -82,7 +82,7 @@ test('hidden tabs skip fallback polling and returning to foreground refreshes on
   dispose = installPermissionSettingsRefresh();
   await vi.advanceTimersByTimeAsync(0);
   vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
-  await vi.advanceTimersByTimeAsync(10 * 60_000);
+  await vi.advanceTimersByTimeAsync(12 * 60 * 60_000);
   expect(rpc).toHaveBeenCalledTimes(1);
 
   vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
