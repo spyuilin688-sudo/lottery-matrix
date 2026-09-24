@@ -55,6 +55,17 @@ describe('lottery-api response validation', () => {
     expect((await fetchLatestLotteryDraw('今彩539'))?.numbers).toEqual(['06', '07', '08', '09', '10']);
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
+
+  it('rechecks the due lottery calendar on each dated homepage request', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-24T07:00:00Z'));
+    const fetcher = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(jsonResponse({ drawDate: '2026-09-23', items: [], dueLotteries: ['今彩539'] }))
+      .mockResolvedValueOnce(jsonResponse({ drawDate: '2026-09-23', items: [], dueLotteries: [] }));
+    expect((await fetchLatestLotteryResultState('2026-09-23')).dueLotteries).toEqual(['今彩539']);
+    expect((await fetchLatestLotteryResultState('2026-09-23')).dueLotteries).toEqual([]);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
   it('keeps public GET headers simple while retrying a transient read response once', async () => {
     const draw = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
     const fetcher = vi.spyOn(globalThis, 'fetch')

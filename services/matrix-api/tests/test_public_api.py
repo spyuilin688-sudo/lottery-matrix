@@ -505,6 +505,7 @@ class LatestCompletedRpc:
 
 class LatestCompletedResultClient:
     def __init__(self) -> None:
+        self.due_lotteries = {"今彩539", "天天樂", "六合彩"}
         self.rows = [
             {"lottery": "今彩539", "period": "115000231", "draw_date": "2026-09-23", "result_status": "confirmed"},
             {"lottery": "天天樂", "period": "12008", "draw_date": "2026-09-23", "result_status": "confirmed"},
@@ -532,10 +533,8 @@ class LatestCompletedResultClient:
             day = str(args["p_start_date"])
             assert args == {"p_start_date": day, "p_end_date": day}
             return LatestCompletedRpc({
-                "今彩539": [day],
-                "天天樂": [day],
-                "大樂透": [],
-                "六合彩": [day],
+                lottery: [day] if lottery in self.due_lotteries else []
+                for lottery in ("今彩539", "天天樂", "大樂透", "六合彩")
             })
         assert name == "matrix_watchdog_chain_state"
         key = (str(args["p_lottery"]), str(args["p_draw_period"]))
@@ -592,6 +591,18 @@ def test_latest_result_cycle_date_returns_canonical_due_lotteries() -> None:
         "p_start_date": "2026-09-23",
         "p_end_date": "2026-09-23",
     }) in repository.client.rpc_calls
+
+
+def test_calendar_overrides_revalidate_even_when_public_results_are_cached() -> None:
+    from app.draw_read_cache import DrawReadCache
+
+    repository = InMemoryAnalysisRepository()
+    repository.client = LatestCompletedResultClient()
+    repository.draw_read_cache = DrawReadCache(ttl=900)
+    path = "/api/matrix/latest-result?cycleDate=2026-09-23"
+    assert handle_api_request("GET", path, None, repository)[1]["dueLotteries"] == ["今彩539", "天天樂", "六合彩"]
+    repository.client.due_lotteries = {"今彩539"}
+    assert handle_api_request("GET", path, None, repository)[1]["dueLotteries"] == ["今彩539"]
 
 
 def test_latest_result_rejects_invalid_cycle_date() -> None:

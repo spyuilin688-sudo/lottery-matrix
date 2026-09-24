@@ -825,7 +825,9 @@ def handle_api_request(
                 if cycle_date.isoformat() != cycle_values[0]:
                     raise ValueError("INVALID_CYCLE_DATE")
             cache = getattr(repository, "draw_read_cache", None)
-            if cache is None or getattr(repository, "client", None) is None:
+            # Calendar overrides are independent of draw/result revisions.
+            # Resolve due lotteries on every dated request.
+            if cycle_date is not None or cache is None or getattr(repository, "client", None) is None:
                 return 200, _latest_completed_results(repository, cycle_date)
             key = json.dumps(["latest-result", cycle_date.isoformat() if cycle_date else None])
             return 200, cache.read(key, lambda: _latest_completed_results(repository, cycle_date),

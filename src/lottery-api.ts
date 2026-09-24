@@ -479,6 +479,14 @@ export async function fetchLatestLotteryResultState(
     throw new Error('Lottery API invalid cycle date');
   }
   const query = cycleDate ? `?cycleDate=${encodeURIComponent(cycleDate)}` : '';
+  // Today's due lotteries can change through a calendar override without a
+  // draw publication. Recheck dated homepage requests on each entry/retry.
+  if (cycleDate) {
+    return parsedLatestResultState(await requestJson<{ drawDate?: unknown; items?: unknown; dueLotteries?: unknown }>(
+      `/api/matrix/latest-result${query}`,
+      signal ? { signal } : undefined,
+    ));
+  }
   let expiresAt = Infinity;
   return readThroughCache(
     stableCacheKey('lottery:published-result', { cycleDate }),
