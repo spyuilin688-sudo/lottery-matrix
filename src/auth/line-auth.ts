@@ -7,7 +7,8 @@ import {
   markLineProviderTokenRevokedFor,
   readLineProviderToken,
 } from './line-provider-token';
-import { cleanupBrowserPushSubscription } from '../push-subscription';
+import { cleanupBrowserPushSubscription, restoreBrowserPushSubscription } from '../push-subscription';
+import { getAlgorithmCacheScope } from './algorithm-cache-scope';
 import { endActiveMemberOnlineSession } from '../member-online';
 import { ApiRequestError, withDeadline } from '../lib/api-resilience';
 import { logicalSessionIdentity } from './session-identity';
@@ -30,6 +31,12 @@ type PresenceRecovery = {
 
 let presenceRecoveryGeneration = 0;
 let pendingPresenceRecovery: PresenceRecovery | null = null;
+let pendingPushRecovery: { identity: string; restore: () => Promise<void> } | null = null;
+let explicitLogoutPushCleanupCount = 0;
+
+export function isExplicitLogoutPushCleanupInProgress() {
+  return explicitLogoutPushCleanupCount > 0;
+}
 
 function resumePresence(resumeOnline: (() => void) | null) {
   try {
@@ -42,6 +49,7 @@ function resumePresence(resumeOnline: (() => void) | null) {
 function discardPendingPresenceRecovery() {
   if (pendingPresenceRecovery) pendingPresenceRecovery.decision = 'discard';
   pendingPresenceRecovery = null;
+  pendingPushRecovery = null;
 }
 
 function maybeResumePresence(recovery: PresenceRecovery) {
@@ -54,6 +62,13 @@ function maybeResumePresence(recovery: PresenceRecovery) {
 }
 
 export function reconcilePendingLineLogoutPresence(session: Session | null | undefined) {
+  if (session !== undefined && pendingPushRecovery) {
+    const recovery = pendingPushRecovery;
+    pendingPushRecovery = null;
+    if (session && logicalSessionIdentity(session) === recovery.identity) {
+      void recovery.restore().catch(() => undefined);
+    }
+  }
   const recovery = pendingPresenceRecovery;
   if (!recovery || session === undefined) return;
 
@@ -144,6 +159,7 @@ export async function signOutFromMatrix(
   revoke: (providerAccessToken: string) => Promise<void> = revokeLineProviderToken,
   cleanupPush: () => Promise<void> = cleanupBrowserPushSubscription,
   cleanupOnline: () => Promise<void | (() => void)> = endActiveMemberOnlineSession,
+  restorePush: typeof restoreBrowserPushSubscription = restoreBrowserPushSubscription,
 ) {
   discardPendingPresenceRecovery();
   let session: Session | null = null;
@@ -157,6 +173,34 @@ export async function signOutFromMatrix(
     // Provider session inspection is best-effort; local logout must remain available.
   }
   const accessToken = session?.access_token ?? null;
+  const pushScope = getAlgorithmCacheScope();
+  const originalIdentity = logicalSessionIdentity(session);
+  let pushCleanupSucceeded = false;
+  const restorePushForSession = async (current: Session | null) => {
+    if (!pushCleanupSucceeded || !originalIdentity || !current
+      || logicalSessionIdentity(current) !== originalIdentity
+      || getAlgorithmCacheScope() !== pushScope) return;
+    try {
+      await withDeadline(() => restorePush(() => getAlgorithmCacheScope() === pushScope),
+        { timeoutMs: CLEANUP_TIMEOUT_MS });
+    } catch {
+      // Push recovery is best-effort; preserve the sanitized sign-out error.
+    }
+  };
+  const restorePushAfterFailure = async () => {
+    if (!pushCleanupSucceeded || !originalIdentity) return;
+    try {
+      const { data, error } = await withDeadline(() => client.auth.getSession(),
+        { timeoutMs: SESSION_READ_TIMEOUT_MS });
+      if (error) throw error;
+      await restorePushForSession(data.session);
+    } catch {
+      pendingPushRecovery = {
+        identity: originalIdentity,
+        restore: () => restorePushForSession(session),
+      };
+    }
+  };
   const presenceRecovery: PresenceRecovery = {
     generation: ++presenceRecoveryGeneration,
     sessionIdentity: logicalSessionIdentity(session),
@@ -196,6 +240,7 @@ export async function signOutFromMatrix(
   const pushTask = async () => {
     try {
       await withDeadline(() => cleanupPush(), { timeoutMs: CLEANUP_TIMEOUT_MS });
+      pushCleanupSucceeded = true;
     } catch {
       // Push cleanup is best-effort; local logout must remain available.
     }
@@ -203,6 +248,7 @@ export async function signOutFromMatrix(
 
   await Promise.all([revokeTask(), onlineTask(), pushTask()]);
 
+  if (pushCleanupSucceeded) explicitLogoutPushCleanupCount += 1;
   try {
     const { error } = await withDeadline(
       () => client.auth.signOut({ scope: 'local' }),
@@ -221,6 +267,10 @@ export async function signOutFromMatrix(
         reconciledSession = data.session;
       } catch {
         pendingPresenceRecovery = presenceRecovery;
+        if (pushCleanupSucceeded && originalIdentity) pendingPushRecovery = {
+          identity: originalIdentity,
+          restore: () => restorePushForSession(session),
+        };
         throw new Error('SUPABASE_SIGN_OUT_UNCERTAIN');
       }
       if (!reconciledSession) {
@@ -230,11 +280,15 @@ export async function signOutFromMatrix(
       }
       presenceRecovery.decision = 'resume';
       maybeResumePresence(presenceRecovery);
+      await restorePushForSession(reconciledSession);
       throw new Error('SUPABASE_SIGN_OUT_FAILED');
     }
     presenceRecovery.decision = 'resume';
     maybeResumePresence(presenceRecovery);
+    await restorePushAfterFailure();
     throw new Error('SUPABASE_SIGN_OUT_FAILED');
+  } finally {
+    if (pushCleanupSucceeded) explicitLogoutPushCleanupCount -= 1;
   }
 
   presenceRecovery.decision = 'discard';

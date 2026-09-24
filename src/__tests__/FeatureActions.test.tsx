@@ -10,7 +10,7 @@ const matrixCards = vi.hoisted(() => ({
 }));
 const matrixTicket = vi.hoisted(() => ({ download: vi.fn() }));
 const activation = vi.hoisted(() => ({ redeem: vi.fn() }));
-const memberReferral = vi.hoisted(() => ({ fetchSummary: vi.fn(), submit: vi.fn() }));
+const memberReferral = vi.hoisted(() => ({ bootstrap: vi.fn(), fetchSummary: vi.fn(), submit: vi.fn() }));
 
 vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ auth: {
   getSession: async () => ({ data: { session: { access_token: 'member-session', user: { id: 'feature-actions-member', app_metadata: { provider: 'custom:line' }, identities: [] } } }, error: null }),
@@ -34,6 +34,7 @@ vi.mock("../activation/redeemActivationCode", async (importOriginal) => ({
 
 vi.mock("../member-api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../member-api")>()),
+  bootstrapMember: memberReferral.bootstrap,
   fetchMemberReferralSummary: memberReferral.fetchSummary,
   submitMemberReferralCode: memberReferral.submit,
 }));
@@ -43,6 +44,7 @@ import { AppDialogProvider } from "../dialog/AppDialog";
 import { publishMemberSessionReady } from "../auth/member-session-store";
 
 beforeEach(() => {
+  memberReferral.bootstrap.mockReset().mockResolvedValue({});
   publishMemberSessionReady({ access_token: 'member-session', user: { id: 'feature-actions-member' } } as never);
   window.localStorage.clear();
   window.sessionStorage.clear();

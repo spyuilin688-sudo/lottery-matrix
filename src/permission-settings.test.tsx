@@ -56,10 +56,14 @@ test('closing free access invalidates protected cache and the next RPC denial re
   const request = { lottery: '今彩539' as const, selectedStreaks: ['準4進5'], sameCode: false };
   await fetchTianyanList(request);
   await fetchTianyanList(request);
+  expect(rpc.mock.calls.filter(([name]) => name === 'matrix_permission_settings')).toHaveLength(1);
   expect(rpc.mock.calls.filter(([name]) => name === 'matrix_tianyan_list')).toHaveLength(1);
   const oldRevision = getMatrixDataRevision();
   allowed = false; revision++;
   await expect(fetchTianyanList(request)).rejects.toMatchObject({ code: 'FORBIDDEN' });
   expect(getMatrixDataRevision()).toBeGreaterThan(oldRevision);
+  expect(rpc.mock.calls.filter(([name]) => name === 'matrix_tianyan_list')).toHaveLength(1);
+  await refreshPermissionSettings();
+  await expect(fetchTianyanList(request)).rejects.toMatchObject({ code: 'FORBIDDEN' });
   expect(rpc.mock.calls.filter(([name]) => name === 'matrix_tianyan_list')).toHaveLength(2);
 });

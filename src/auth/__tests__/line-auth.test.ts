@@ -431,6 +431,35 @@ describe('LINE auth helper', () => {
     expect(resumeOnline).toHaveBeenCalledTimes(1);
   });
 
+  it('restores push for the same session when local sign-out fails after cleanup', async () => {
+    const { client } = createClient({
+      session: { access_token: 'still-signed-in' },
+      signOut: vi.fn().mockResolvedValue({ error: new Error('network') }),
+    });
+    const cleanupPush = vi.fn().mockResolvedValue(undefined);
+    const restorePush = vi.fn().mockResolvedValue(undefined);
+
+    await expect(signOutFromMatrix(client as never, vi.fn(), cleanupPush, vi.fn(), restorePush))
+      .rejects.toThrow('SUPABASE_SIGN_OUT_FAILED');
+
+    expect(cleanupPush).toHaveBeenCalledTimes(1);
+    expect(restorePush).toHaveBeenCalledTimes(1);
+    expect(restorePush.mock.calls[0][0]()).toBe(true);
+  });
+
+  it('does not restore push for a different member after a failed local sign-out', async () => {
+    const getSession = vi.fn()
+      .mockResolvedValueOnce({ data: { session: { access_token: 'former-session' } }, error: null })
+      .mockResolvedValueOnce({ data: { session: { access_token: 'new-session' } }, error: null });
+    const { client } = createClient({ getSession,
+      signOut: vi.fn().mockResolvedValue({ error: new Error('network') }) });
+    const restorePush = vi.fn().mockResolvedValue(undefined);
+
+    await expect(signOutFromMatrix(client as never, vi.fn(), vi.fn().mockResolvedValue(undefined),
+      vi.fn(), restorePush)).rejects.toThrow('SUPABASE_SIGN_OUT_FAILED');
+    expect(restorePush).not.toHaveBeenCalled();
+  });
+
   it('leaves online tracking stopped after successful local sign-out', async () => {
     const resumeOnline = vi.fn();
     const cleanupOnline = vi.fn().mockResolvedValue(resumeOnline);
@@ -750,6 +779,24 @@ describe('LINE auth helper', () => {
     await rejection;
 
     expect(resumeOnline).not.toHaveBeenCalled();
+  });
+
+  it('restores push only after an uncertain logout resolves to the original session', async () => {
+    vi.useFakeTimers();
+    const getSession = vi.fn()
+      .mockResolvedValueOnce({ data: { session: { access_token: 'still-signed-in' } }, error: null })
+      .mockResolvedValueOnce({ data: { session: null }, error: new Error('offline') });
+    const { client } = createClient({ getSession,
+      signOut: vi.fn().mockReturnValue(new Promise(() => undefined)) });
+    const restorePush = vi.fn().mockResolvedValue(undefined);
+    const logout = signOutFromMatrix(client as never, vi.fn(),
+      vi.fn().mockResolvedValue(undefined), vi.fn(), restorePush);
+    const rejected = expect(logout).rejects.toThrow('SUPABASE_SIGN_OUT_UNCERTAIN');
+    await vi.advanceTimersByTimeAsync(8_000);
+    await rejected;
+    expect(restorePush).not.toHaveBeenCalled();
+    reconcileUncertainPresence({ access_token: 'still-signed-in' });
+    await vi.waitFor(() => expect(restorePush).toHaveBeenCalledTimes(1));
   });
 
   it('resumes presence once when timed-out online cleanup returns its handle after a definite sign-out failure', async () => {

@@ -22,6 +22,7 @@ const lineAuth = vi.hoisted(() => ({
   signInWithLine: vi.fn(),
   signOutFromMatrix: vi.fn(),
   reconcilePendingLineLogoutPresence: vi.fn(),
+  isExplicitLogoutPushCleanupInProgress: vi.fn(),
 }));
 const googleAuth = vi.hoisted(() => ({ signInWithGoogle: vi.fn() }));
 const appDialog = vi.hoisted(() => ({ confirm: vi.fn(), alert: vi.fn() }));
@@ -58,6 +59,7 @@ vi.mock("../auth/line-auth", () => ({
   signInWithLine: lineAuth.signInWithLine,
   signOutFromMatrix: lineAuth.signOutFromMatrix,
   reconcilePendingLineLogoutPresence: lineAuth.reconcilePendingLineLogoutPresence,
+  isExplicitLogoutPushCleanupInProgress: lineAuth.isExplicitLogoutPushCleanupInProgress,
 }));
 vi.mock("../auth/google-auth", () => ({ signInWithGoogle: googleAuth.signInWithGoogle }));
 vi.mock("../lib/supabase", () => ({ getSupabaseClient: supabase.getClient }));
@@ -95,6 +97,7 @@ beforeEach(() => {
   lineAuth.signInWithLine.mockReset().mockResolvedValue(undefined);
   lineAuth.signOutFromMatrix.mockReset().mockResolvedValue(undefined);
   lineAuth.reconcilePendingLineLogoutPresence.mockReset();
+  lineAuth.isExplicitLogoutPushCleanupInProgress.mockReset().mockReturnValue(false);
   googleAuth.signInWithGoogle.mockReset().mockResolvedValue(undefined);
   appDialog.confirm.mockReset().mockResolvedValue(true);
   appDialog.alert.mockReset().mockResolvedValue(undefined);

@@ -40,6 +40,7 @@ const client = {
 export const getSupabaseClient = () => client;
 export const hasSupabaseConfig = () => true;
 export const reconcilePendingLineLogoutPresence = () => undefined;
+export const isExplicitLogoutPushCleanupInProgress = () => false;
 export async function signOutFromMatrix() {
   if (scenario === "logout-error") throw new Error("QA_LOGOUT_FAILED");
   session = null;

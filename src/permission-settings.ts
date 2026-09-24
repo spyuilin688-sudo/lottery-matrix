@@ -66,16 +66,21 @@ export async function refreshPermissionSettings(): Promise<PermissionSettings> {
 }
 
 /**
- * Protected and automatic callers share only the current in-flight read.
- * Explicit refreshPermissionSettings() remains a force-refresh primitive so
- * revision ordering can still be verified with overlapping explicit refreshes.
+ * Page reads reuse the published revision. Scheduled foreground / idle refreshes
+ * remain force-refreshes; server RPCs still authorize each result cache hit.
  */
-export function readPermissionSettings(): Promise<PermissionSettings> {
+function refreshSharedRead(): Promise<PermissionSettings> {
   if (sharedRead) return sharedRead;
   sharedRead = refreshPermissionSettings().finally(() => {
     sharedRead = null;
   });
   return sharedRead;
+}
+
+export function readPermissionSettings(): Promise<PermissionSettings> {
+  if (sharedRead) return sharedRead;
+  if (settings) return Promise.resolve(settings);
+  return refreshSharedRead();
 }
 
 export function installPermissionSettingsRefresh() {
@@ -99,7 +104,7 @@ export function installPermissionSettingsRefresh() {
 
   const startBackgroundRead = () => {
     if (disposed) return;
-    void readPermissionSettings()
+    void refreshSharedRead()
       .catch(() => {})
       .finally(() => { if (!disposed) scheduleFallback(); });
   };

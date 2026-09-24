@@ -127,13 +127,15 @@ test('foreground permission read joins an automatic refresh already in flight', 
   expect(rpc).toHaveBeenCalledTimes(1);
 
   await readPermissionSettings();
-  expect(rpc).toHaveBeenCalledTimes(2);
+  expect(rpc).toHaveBeenCalledTimes(1);
 });
 
-test('result-cache permission reads coalesce only concurrent RPCs', async () => {
-  const { readPermissionSettings } = await import('./permission-settings');
+test('result-cache permission reads reuse a settled revision until an explicit refresh', async () => {
+  const { readPermissionSettings, refreshPermissionSettings } = await import('./permission-settings');
   await Promise.all([readPermissionSettings(), readPermissionSettings(), readPermissionSettings()]);
   expect(rpc).toHaveBeenCalledTimes(1);
   await readPermissionSettings();
+  expect(rpc).toHaveBeenCalledTimes(1);
+  await refreshPermissionSettings();
   expect(rpc).toHaveBeenCalledTimes(2);
 });

@@ -61,6 +61,7 @@ before(async () => {
       ('20000000-0000-0000-0000-000000000001','AAAA-BBBB-CCCC-DDDD','30_days',now(),now()+interval '1 month');
   `);
   await db.exec(await migration('20260908153522_member_admin_revocation'));
+  await db.exec(await migration('20260924174910_avoid_duplicate_activation_member_lock'));
 });
 after(async () => { await db.close(); });
 
@@ -68,11 +69,22 @@ test('disabled member cannot redeem a valid code or submit a transfer; neither h
   for (const status of ['停用','disabled','inactive']) {
     await asOwner(); await db.query('update members set status=$1 where id=$2', [status, mid]); await asMember();
     await assert.rejects(db.query("select public.redeem_activation_code('AAAA-BBBB-CCCC-DDDD')"), /FORBIDDEN/);
+    await assert.rejects(db.query("select public.redeem_activation_code('INVALID')"), /FORBIDDEN/);
     await assert.rejects(db.query("select public.member_transfer_request_submit('month','12345')"), /FORBIDDEN/);
   }
   await asOwner();
   assert.equal((await query('select count(*)::int as count from transfer_requests'))[0].count, 0);
   assert.equal((await query('select status from activation_codes'))[0].status, 'unused');
+});
+
+test('activation redemption locks the member once before the code and keeps the private entry point closed', async () => {
+  await asOwner();
+  const wrapper = (await query("select pg_get_functiondef('public.redeem_activation_code(text)'::regprocedure) as definition"))[0].definition;
+  const redeem = (await query("select pg_get_functiondef('private.redeem_activation_code(text)'::regprocedure) as definition"))[0].definition;
+  assert.doesNotMatch(wrapper, /lock_active_member_id/);
+  assert.equal((redeem.match(/from public\.members as member\s+where member\.auth_user_id = v_auth_user_id\s+for update/gi) ?? []).length, 1);
+  assert.ok(redeem.indexOf('from public.members as member') < redeem.indexOf('from public.activation_codes as activation_code'));
+  assert.match(redeem, /'停用', 'disabled', 'inactive'/);
 });
 
 test('enabled member retains normal redemption, plan extension, transfer price, and duplicate protection', async () => {
@@ -144,4 +156,3 @@ test('last-super-admin protection rolls back password and session changes togeth
   assert.equal((await query('select credential_version from admin_accounts where id=$1',[other]))[0].credential_version,1);
   assert.equal((await query("select count(*)::int as count from admin_sessions where token_hash='super-fresh'"))[0].count,1);
 });
-

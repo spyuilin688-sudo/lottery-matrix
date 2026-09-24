@@ -1007,6 +1007,7 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   const memberSessionKey = memberSession.status === "ready"
     ? `ready:${logicalSessionIdentity(memberSession.session) ?? "guest"}`
     : memberSession.status;
+  const activationLoginRequired = memberSession.status !== "ready" || !memberSession.session;
   const { confirm: confirmDialog } = useAppDialog();
   const [referralCode, setReferralCode] = useState("");
   const [activationCode, setActivationCode] = useState("");
@@ -1079,8 +1080,11 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
         // Keep member API work outside the Supabase auth callback; the bridge has
         // already published this stable session snapshot.
         loadTimer = setTimeout(() => {
-          void fetchMemberReferralSummary().then((summary) => {
-            if (active && referralRequestRevision.current === revision) setReferralSummary(summary);
+          void bootstrapMember().then(() => {
+            if (!active || referralRequestRevision.current !== revision) return null;
+            return fetchMemberReferralSummary();
+          }).then((summary) => {
+            if (summary && active && referralRequestRevision.current === revision) setReferralSummary(summary);
           }).catch((error: unknown) => {
             if (!active || referralRequestRevision.current !== revision) return;
             const message = error && typeof error === "object" && "message" in error ? String(error.message) : "";
@@ -1134,7 +1138,7 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   }
 
   async function handleActivation() {
-    if (submitting) return;
+    if (submitting || activationLoginRequired) return;
 
     const sessionRevision = activationRequestRevision.current;
     setSubmitting(true);
@@ -1242,8 +1246,8 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
               <input id="activation-code" value={activationCode} onChange={(event) => {
                 setActivationCode(event.target.value);
                 setResultState("idle");
-              }} aria-label="啟動碼" />
-              <button type="button" className="primary-action branded-explore-action" onClick={handleActivation} disabled={submitting}><span>確認</span></button>
+              }} aria-label="啟動碼" disabled={activationLoginRequired} />
+              <button type="button" className="primary-action branded-explore-action" onClick={handleActivation} disabled={submitting || activationLoginRequired}><span>確認</span></button>
             </div>
             {resultState === "success" && <p className="activation-result success" role="status">啟動成功</p>}
             {resultState !== "idle" && resultState !== "success" && (
@@ -1272,6 +1276,8 @@ function InviteFriendsContent({ onNavigate, scope }: { onNavigate: Navigate; sco
     requestRevision.current = revision;
     setLoadState("loading");
     try {
+      await bootstrapMember();
+      if (revision !== requestRevision.current || scope !== getAlgorithmCacheScope()) return;
       const nextSummary = await fetchMemberReferralSummary();
       if (revision !== requestRevision.current || scope !== getAlgorithmCacheScope()) return;
       setSummary(nextSummary);
