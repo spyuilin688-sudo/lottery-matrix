@@ -926,6 +926,12 @@ function ManualTransferForm({ onNavigate, scope, planCode, initialAttempt }: { o
         setServerRestriction(rejectedText);
         return;
       }
+      const pendingConflict = rejectionCode === '23505' && rejected === 'PENDING_TRANSFER_EXISTS';
+      if (pendingConflict) {
+        // The RPC checks this request ID before rejecting another pending transfer.
+        if (submittedRequestId) clearManualTransferAttempt(submittedRequestId);
+        setAttempt(null);
+      }
       try {
         const value = await fetchPendingTransferRequest();
         if (isCurrent()) {
@@ -935,7 +941,7 @@ function ManualTransferForm({ onNavigate, scope, planCode, initialAttempt }: { o
             clearManualTransferAttempt(value.id);
             setAttempt(null);
           }
-          if (!value) setError("尚未確認提交結果，請重試確認。");
+          if (!value && !pendingConflict) setError("尚未確認提交結果，請重試確認。");
         }
       } catch {
         if (isCurrent()) {
@@ -956,8 +962,8 @@ function ManualTransferForm({ onNavigate, scope, planCode, initialAttempt }: { o
       <section className="panel detail-card manual-transfer-summary">
         <h2>付款方案</h2>
         <dl>
-          <div><dt>方案</dt><dd>{plan.name}</dd></div>
-          <div><dt>金額</dt><dd>{`NT$${plan.amount.toLocaleString("en-US")}`}</dd></div>
+          <div><dt>方案</dt><dd>{pending?.planName ?? plan.name}</dd></div>
+          <div><dt>金額</dt><dd>{`NT$${(pending?.amount ?? plan.amount).toLocaleString("en-US")}`}</dd></div>
         </dl>
       </section>
       <section className="panel detail-card manual-transfer-bank-card" aria-label="轉帳資料">

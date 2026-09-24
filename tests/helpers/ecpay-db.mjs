@@ -9,6 +9,9 @@ const transferSubmitMigration = new URL('../../supabase/migrations/2026092401433
 const manualTransferMigration = new URL('../../supabase/migrations/20260830060000_manual_bank_transfer.sql', import.meta.url);
 const latestManualReviewMigration = new URL('../../supabase/migrations/20260905140908_repair_admin_backend_rpc_execution.sql', import.meta.url);
 const reversalMigration = new URL('../../supabase/migrations/20260908210936_record_payment_reversal.sql', import.meta.url);
+const entitlementReversalMigration = new URL('../../supabase/migrations/20260924020932_superadmin_reversal_entitlements.sql', import.meta.url);
+const memberRevisionMigration = new URL('../../supabase/migrations/20260923125002_admin_mutation_guards.sql', import.meta.url);
+const paymentGrantMigration = new URL('../../supabase/migrations/20260924030920_payment_entitlement_grant_evidence.sql', import.meta.url);
 const userId = '00000000-0000-4000-8000-000000000001';
 const memberId = '10000000-0000-4000-8000-000000000001';
 const planId = '20000000-0000-4000-8000-000000000001';
@@ -22,6 +25,14 @@ async function loadExistingFunction(db, sourcePath, name) {
   const definition = source.match(new RegExp(`create or replace function public\\.${name}\\([\\s\\S]*?\\$\\$;`, 'i'))?.[0];
   assert.ok(definition, `expected historical function ${name}`);
   await db.exec(definition);
+}
+
+async function loadMemberSubscriptionRevision(db) {
+  const source = await readFile(memberRevisionMigration, 'utf8');
+  const start = source.indexOf('alter table public.members');
+  const end = source.indexOf('create function public.admin_reset_revenue_baseline_v2(', start);
+  assert.ok(start >= 0 && end > start, 'expected production subscription revision trigger');
+  await db.exec(source.slice(start, end));
 }
 
 async function setup(quotaMigration) {
@@ -56,7 +67,9 @@ async function setup(quotaMigration) {
       reversed_at timestamptz, reversal_reason text, reversed_by uuid, reversed_by_name text,
       constraint payments_status_check check (status in ('pending', 'confirmed', 'rejected', 'refunded', 'chargeback', 'cancelled'))
     );
-    create table public.admin_accounts (id uuid primary key);
+    create table public.admin_accounts (
+      id uuid primary key, role text not null default '營運管理員', status text not null default '啟用'
+    );
     create table public.audit_logs (
       admin_id uuid, admin text, operation_type text, target_table text,
       target_id text, content text, before_data jsonb, after_data jsonb
@@ -79,17 +92,20 @@ async function setup(quotaMigration) {
     grant select, update on public.members to service_role;
     grant select on public.plans to service_role;
     grant select, update on public.transfer_requests to service_role;
-    grant select on public.admin_accounts to service_role;
+    grant select, update on public.admin_accounts to service_role;
     grant insert on public.audit_logs to service_role;
     grant insert, select, update on public.payments to service_role;
     grant usage on schema auth to authenticated;
   `);
+  await loadMemberSubscriptionRevision(db);
   await db.exec(await readFile(migration, 'utf8'));
   await loadExistingFunction(db, manualTransferMigration, 'member_transfer_request_submit');
   await loadExistingFunction(db, latestManualReviewMigration, 'admin_review_transfer_request');
   await loadExistingFunction(db, reversalMigration, 'admin_record_payment_reversal');
   await db.exec(await readFile(paymentGuardMigration, 'utf8'));
   await db.exec(await readFile(transferSubmitMigration, 'utf8'));
+  await db.exec(await readFile(entitlementReversalMigration, 'utf8'));
+  await db.exec(await readFile(paymentGrantMigration, 'utf8'));
   if (quotaMigration) {
     await db.exec(await readFile(quotaMigration, 'utf8'));
     await db.exec(await readFile(quotaBackoffMigration, 'utf8'));
@@ -97,8 +113,8 @@ async function setup(quotaMigration) {
   return db;
 }
 
-async function service(db) { await db.exec('reset role; set role service_role'); }
+async function service(db) { await db.exec("reset role; set role service_role; set request.jwt.claim.role = 'service_role'"); }
 async function owner(db) { await db.exec('reset role'); }
 
 
-export { setup, service, owner, userId, memberId, planId, quarterPlanId, yearPlanId, number, merchant };
+export { setup, service, owner, loadMemberSubscriptionRevision, paymentGrantMigration, userId, memberId, planId, quarterPlanId, yearPlanId, number, merchant };

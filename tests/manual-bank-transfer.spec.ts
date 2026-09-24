@@ -176,3 +176,65 @@ test('a lost response can replay an already reviewed request after reload with t
   await expect(submit).toBeDisabled();
   expect(submissions).toBe(2);
 });
+
+test('an existing request displays its saved plan and amount instead of the selected plan', async ({ page }) => {
+  await page.route('**/rest/v1/rpc/member_pending_transfer_request', route => route.fulfill({ json: {
+    id: '00000000-0000-4000-8000-000000009001', planName: '年費方案', amount: 17000,
+    accountLastFive: '54321', submittedAt: '2026-09-23T00:00:00Z', status: 'pending',
+  } }));
+  await page.goto('/tests/pwa-frame-fixture.html?page=manual-transfer');
+  await expect(page.getByText('待確認', { exact: true })).toBeVisible();
+  const summary = page.locator('.manual-transfer-summary');
+  await expect(summary).toContainText('年費方案');
+  await expect(summary).toContainText('NT$17,000');
+  await expect(summary).not.toContainText('月費方案');
+  await expect(page.getByRole('button', { name: '提交', exact: true })).toBeDisabled();
+});
+
+test('a rejected duplicate attempt is not offered for replay after the other request is reviewed', async ({ page }) => {
+  let submissions = 0;
+  let otherReviewed = false;
+  let rejectedId: string | undefined;
+  await page.route('**/rest/v1/rpc/member_transfer_request_submit', route => {
+    submissions += 1;
+    const payload = route.request().postDataJSON();
+    if (submissions === 1) {
+      rejectedId = payload.p_request_id;
+      return route.fulfill({ status: 409, json: {
+        code: '23505', message: 'PENDING_TRANSFER_EXISTS', details: null, hint: null,
+      } });
+    }
+    expect(payload.p_request_id).not.toBe(rejectedId);
+    expect(payload.p_account_last_five).toBe('54321');
+    return route.fulfill({ json: {
+      id: payload.p_request_id, planName: '月費方案', amount: 2880,
+      accountLastFive: '54321', submittedAt: '2026-09-24T00:00:00Z', status: 'pending',
+    } });
+  });
+  await page.route('**/rest/v1/rpc/member_pending_transfer_request', route => {
+    return submissions === 0 || otherReviewed
+      ? route.fulfill({ contentType: 'application/json', body: 'null' })
+      : route.fulfill({ json: {
+        id: '00000000-0000-4000-8000-000000009002', planName: '月費方案', amount: 2880,
+        accountLastFive: '99999', submittedAt: '2026-09-23T00:00:00Z', status: 'pending',
+      } });
+  });
+  await page.goto('/tests/pwa-frame-fixture.html?page=manual-transfer');
+  await page.getByLabel('帳號末五碼').fill('12345');
+  const submit = page.getByRole('button', { name: /^(提交|重新確認申請|確認中)$/ });
+  await expect(submit).toBeEnabled();
+  await submit.click();
+  await expect(page.getByText('待確認', { exact: true })).toBeVisible();
+  await expect(submit).toBeDisabled();
+  otherReviewed = true;
+  await page.reload();
+  await expect(page.getByText('申請狀態載入中')).toBeHidden();
+  await expect(page.getByLabel('帳號末五碼')).toHaveValue('');
+  await expect(page.getByRole('button', { name: '重新確認申請' })).toHaveCount(0);
+  expect(submissions).toBe(1);
+  await page.getByLabel('帳號末五碼').fill('54321');
+  await expect(submit).toBeEnabled();
+  await submit.click();
+  await expect(page.getByText('待確認', { exact: true })).toBeVisible();
+  expect(submissions).toBe(2);
+});

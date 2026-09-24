@@ -30,6 +30,11 @@ test('a real paid order extends membership exactly once and keeps auto renew off
     assert.equal(member[0].auto_renew, false);
     const { rows: payments } = await db.query('select amount, status from public.payments');
     assert.deepEqual(payments, [{ amount: 2880, status: 'confirmed' }]);
+    const { rows: [grant] } = await db.query(`select
+      payment.entitlement_granted_at=payment.paid_at as same_grant_time,
+      payment.entitlement_revision=member.subscription_revision as current_revision
+      from public.payments payment join public.members member on member.id=payment.member_id`);
+    assert.deepEqual(grant, { same_grant_time: true, current_revision: true });
     await assert.rejects(db.query('select public.ecpay_payment_confirm($1,$2,$3,$4)', [number, merchant, 'different', 2880]), /PAYMENT_CONFLICT/);
   } finally { await db.close(); }
 });
@@ -130,6 +135,8 @@ test('paid monthly callback after upgrading to year records refund_required once
     assert.equal(member.is_lifetime, false);
     const { rows: [payment] } = await db.query('select amount,status from public.payments');
     assert.deepEqual(payment, { amount: 2880, status: 'refund_required' });
+    const { rows: [evidence] } = await db.query('select entitlement_granted_at,entitlement_revision from public.payments');
+    assert.deepEqual(evidence, { entitlement_granted_at: null, entitlement_revision: null });
     const { rows: [order] } = await db.query('select status,trade_no,paid_at from public.ecpay_orders');
     assert.equal(order.status, 'refund_required');
     assert.equal(order.trade_no, '2609231234567890');
@@ -198,13 +205,15 @@ test('manual transfer paid review after lifetime grant requires refund, keeps me
     await owner(db);
     await db.query('update public.members set is_lifetime=true,current_plan_id=$1 where id=$2', [yearPlanId, memberId]);
     const actorId = '30000000-0000-4000-8000-000000000003';
-    await db.query('insert into public.admin_accounts(id) values ($1)', [actorId]);
+    await db.query("insert into public.admin_accounts(id,role) values ($1,'超級管理員')", [actorId]);
     await db.exec(`set role authenticated; set request.jwt.claim.sub = '${userId}'`);
     await assert.rejects(db.query('select public.admin_review_transfer_request($1,$2,now(),$3,$4)', [request.id, 'confirmed', actorId, '客服']), /permission denied/);
     await service(db);
     await db.query('select public.admin_review_transfer_request($1,$2,now(),$3,$4)', [request.id, 'confirmed', actorId, '客服']);
     const { rows: [payment] } = await db.query('select id,status from public.payments');
     assert.equal(payment.status, 'refund_required');
+    const { rows: [evidence] } = await db.query('select entitlement_granted_at,entitlement_revision from public.payments');
+    assert.deepEqual(evidence, { entitlement_granted_at: null, entitlement_revision: null });
     const { rows: [member] } = await db.query('select current_plan_id,is_lifetime,plan_expires_at from public.members where id=$1', [memberId]);
     assert.equal(member.current_plan_id, yearPlanId);
     assert.equal(member.is_lifetime, true);
@@ -341,5 +350,98 @@ test('manual submit overload requires a UUID and restricts execution to authenti
     await owner(db);
     const { rows: [total] } = await db.query('select count(*)::integer as count from public.transfer_requests');
     assert.equal(total.count, 1);
+  } finally { await db.close(); }
+});
+
+const reversalActorId = '30000000-0000-4000-8000-000000000099';
+
+async function prepareUnsubscribedMember(db) {
+  await owner(db);
+  await db.query(`update public.members set current_plan_id=null,plan_started_at=null,
+    plan_expires_at=null,is_lifetime=false,auto_renew=false where id=$1`, [memberId]);
+  await db.query("insert into public.admin_accounts(id,role) values ($1,'超級管理員')", [reversalActorId]);
+}
+
+async function submitAndReview(db, plan, reviewAt) {
+  await owner(db);
+  await db.exec(`set role authenticated; set request.jwt.claim.sub = '${userId}'`);
+  const { rows: [{ result: request }] } = await db.query(
+    "select public.member_transfer_request_submit($1,'12345',gen_random_uuid()) as result", [plan]);
+  const grantedAt = typeof reviewAt === 'function' ? reviewAt(request) : reviewAt;
+  await service(db);
+  await db.query("select public.admin_review_transfer_request($1,'confirmed',$2,$3,'超級管理員')",
+    [request.id, grantedAt, reversalActorId]);
+  const { rows: [payment] } = await db.query('select * from public.payments where transfer_request_id=$1', [request.id]);
+  return { request, payment, grantedAt };
+}
+
+async function reverseGrantedPayment(db, paymentId) {
+  await service(db);
+  return db.query("select public.admin_record_payment_reversal($1,'refunded','完成退款',$2,'超級管理員') as result",
+    [paymentId, reversalActorId]);
+}
+
+test('a new manual payment reverses its review-time grant without changing the transfer receipt time', async () => {
+  const db = await setup();
+  try {
+    await prepareUnsubscribedMember(db);
+    const { payment, request } = await submitAndReview(db, 'month', '2030-01-02T03:04:05.123Z');
+    const { rows: [receipt] } = await db.query(`select payment.paid_at=request.transferred_at as preserved
+      from public.payments payment join public.transfer_requests request on request.id=payment.transfer_request_id
+      where payment.id=$1`, [payment.id]);
+    assert.equal(receipt.preserved, true);
+    assert.equal((await reverseGrantedPayment(db, payment.id)).rows[0].result.status, 'refunded');
+    const { rows: [member] } = await db.query('select current_plan_id,plan_started_at,plan_expires_at from public.members where id=$1', [memberId]);
+    assert.deepEqual(member, { current_plan_id: null, plan_started_at: null, plan_expires_at: null });
+    const { rows: [after] } = await db.query(`select payment.paid_at=request.transferred_at as preserved,
+      request.status from public.payments payment join public.transfer_requests request
+      on request.id=payment.transfer_request_id where request.id=$1`, [request.id]);
+    assert.deepEqual(after, { preserved: true, status: 'confirmed' });
+    await reverseGrantedPayment(db, payment.id);
+  } finally { await db.close(); }
+});
+
+test('reversing an earlier card payment preserves all 30 days of a later manual review grant', async () => {
+  const db = await setup();
+  try {
+    await prepareUnsubscribedMember(db);
+    await service(db);
+    await db.query('select public.ecpay_order_create($1,$2,$3,$4)', [userId, 'month', number, merchant]);
+    await db.query('select public.ecpay_payment_confirm($1,$2,$3,$4)', [number, merchant, 'PROVIDER123', 2880]);
+    const { rows: [card] } = await db.query('select id from public.payments where ecpay_order_id is not null');
+    // A previously confirmed ECPay order has no new grant metadata at rollout.
+    await owner(db);
+    await db.query('update public.payments set entitlement_granted_at=null,entitlement_revision=null where id=$1', [card.id]);
+    const manual = await submitAndReview(db, 'month', request =>
+      new Date(Date.parse(request.submittedAt) + 60 * 60 * 1000).toISOString());
+    await reverseGrantedPayment(db, card.id);
+    const { rows: [member] } = await db.query('select current_plan_id,plan_started_at,plan_expires_at from public.members where id=$1', [memberId]);
+    assert.equal(member.current_plan_id, planId);
+    assert.equal(member.plan_started_at.toISOString(), manual.grantedAt);
+    assert.equal(member.plan_expires_at.toISOString(), new Date(Date.parse(manual.grantedAt) + 30 * 86400000).toISOString());
+    assert.equal((await db.query('select status from public.payments where id=$1', [manual.payment.id])).rows[0].status, 'confirmed');
+  } finally { await db.close(); }
+});
+
+test('reversal preserves application order when effective grant timestamps arrive out of order', async () => {
+  const db = await setup();
+  try {
+    await prepareUnsubscribedMember(db);
+    const first = await submitAndReview(db, 'month', '2030-01-02T00:00:00Z');
+    const second = await submitAndReview(db, 'year', '2030-01-01T00:00:00Z');
+    const last = await submitAndReview(db, 'year', '2030-01-03T00:00:00Z');
+    const { rows: [order] } = await db.query(`select
+      first.entitlement_revision < second.entitlement_revision
+        and second.entitlement_revision < last.entitlement_revision as applied_in_order,
+      last.entitlement_revision=member.subscription_revision as trigger_revision_matches
+      from public.payments first,public.payments second,public.payments last,public.members member
+      where first.id=$1 and second.id=$2 and last.id=$3 and member.id=$4`,
+    [first.payment.id, second.payment.id, last.payment.id, memberId]);
+    assert.deepEqual(order, { applied_in_order: true, trigger_revision_matches: true });
+    await reverseGrantedPayment(db, last.payment.id);
+    const { rows: [member] } = await db.query('select current_plan_id,plan_started_at,plan_expires_at from public.members where id=$1', [memberId]);
+    assert.equal(member.current_plan_id, yearPlanId);
+    assert.equal(member.plan_started_at.toISOString(), '2030-01-02T00:00:00.000Z');
+    assert.equal(member.plan_expires_at.toISOString(), '2031-02-01T00:00:00.000Z');
   } finally { await db.close(); }
 });
