@@ -8,6 +8,10 @@ const snapshot = JSON.parse(readFileSync(new URL('../docs/operations/migration-h
 const directory = new URL('../supabase/migrations/', import.meta.url);
 const files = readdirSync(directory).filter(name => name.endsWith('.sql')).sort();
 const hash = (algorithm, bytes) => createHash(algorithm).update(bytes).digest('hex');
+// Applied after this 254-record snapshot; Supabase assigned the new filename's version.
+const appliedAfterSnapshot = new Map([
+ ['20260924072000_sync_ecpay_payment_reversals.sql', '20260924121843_sync_ecpay_payment_reversals.sql'],
+]);
 
 test('every captured production record has exactly one canonical filename in recorded order', () => {
  const versions = files.map(name => name.split('_')[0]);
@@ -30,13 +34,22 @@ test('renames preserve reviewed repository SQL and restorations preserve recorde
  assert.equal(snapshot.records.filter(row => row.restored).length, 13);
 });
 
-test('unrecorded historical files stay explicit and are never marked as applied', () => {
+test('unrecorded historical files stay explicit, including later applied migrations', () => {
  const cutoff = snapshot.records.at(-1).version;
  const captured = new Set(snapshot.records.map(row => row.file));
+ const stillUnrecorded = snapshot.unrecorded_files.filter(row => !appliedAfterSnapshot.has(row.file));
  assert.deepEqual(files.filter(name => name.slice(0, 14) <= cutoff && !captured.has(name)),
-  snapshot.unrecorded_files.map(row => row.file));
- for (const row of snapshot.unrecorded_files) {
+  stillUnrecorded.map(row => row.file));
+ for (const row of stillUnrecorded) {
   assert.equal(hash('sha256', readFileSync(new URL(row.file, directory))), row.repo_sha256, row.file);
+ }
+ for (const [oldFile, newFile] of appliedAfterSnapshot) {
+  const recordedAtSnapshot = snapshot.unrecorded_files.find(row => row.file === oldFile);
+  assert.ok(recordedAtSnapshot, oldFile);
+  assert.equal(files.includes(oldFile), false, oldFile);
+  assert.equal(files.includes(newFile), true, newFile);
+  assert.ok(newFile.slice(0, 14) > cutoff, newFile);
+  assert.equal(hash('sha256', readFileSync(new URL(newFile, directory))), recordedAtSnapshot.repo_sha256, newFile);
  }
 });
 
