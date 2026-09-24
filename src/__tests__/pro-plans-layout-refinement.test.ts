@@ -61,20 +61,18 @@ describe("Matrix Pro plan layout refinement", () => {
     expect(existsSync(retiredMobilePath)).toBe(false);
   });
 
-  it("uses the approved card sizing and visual hierarchy", () => {
+  it("uses the approved card sizing and checkout typography", () => {
     mountPlans();
 
     const idlePlan = getComputedStyle(document.querySelector('.plan-card[data-current="false"]')!);
-    const currentPlan = getComputedStyle(document.querySelector('.plan-card[data-current="true"]')!);
     const renewal = getComputedStyle(document.querySelector(".renewal-card")!);
 
     expect(idlePlan.minHeight).toBe("190px");
     expect(idlePlan.height).toBe("auto");
     expect(idlePlan.padding).toBe("12px");
-    expect(idlePlan.borderTopColor).toBe("rgb(117, 83, 41)");
-    expect(currentPlan.borderTopColor).toBe("rgb(214, 164, 43)");
+    // Token-based frame colors are exercised in pwa-frame-system.spec.ts:
+    // jsdom does not resolve the custom properties inside border shorthands.
     expect(renewal.padding).toBe("8px");
-    expect(renewal.borderTopColor).toBe("rgb(117, 83, 41)");
     expect(getComputedStyle(document.querySelector(".renewal-card dl > div")!).minHeight).toBe("29px");
     expect(getComputedStyle(document.querySelector(".renewal-card h2")!).fontWeight).toBe("700");
     expect(getComputedStyle(document.querySelector(".renewal-card dt")!).fontWeight).toBe("700");

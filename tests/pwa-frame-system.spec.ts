@@ -91,6 +91,22 @@ for (const { screen, width } of cases) {
   });
 }
 
+test('subscription plan cards and checkout retain secondary frames', async ({ page }) => {
+  await page.route('**/rest/v1/rpc/matrix_permission_settings', route => route.fulfill({ json: {
+    subscriptionPurchaseVisible: true, registeredMemberFreeAccess: true,
+    revision: 1, updatedAt: '2026-09-25T00:00:00Z',
+  } }));
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.goto('/tests/pwa-frame-fixture.html?page=pro-plans');
+  await expect(page.locator('.plan-card[data-current="true"]').first()).toBeVisible();
+  const cards = page.locator('.plan-card, .renewal-card');
+  for (const card of await cards.all()) {
+    await expect(card).toHaveCSS('border-top-width', '1px');
+    await expect(card).toHaveCSS('border-top-color', colors.secondary);
+    await expect(card).toHaveCSS('box-shadow', 'none');
+  }
+});
+
 test('real advanced native select has a frame and selected options change without glow', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/tests/pwa-frame-fixture.html?page=explore');
