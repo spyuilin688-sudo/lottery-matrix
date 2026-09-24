@@ -10,11 +10,12 @@ const auth = vi.hoisted(() => ({
   unsubscribe: vi.fn(),
   receive: null as null | ((event: string, session: unknown) => void),
 }));
-const referral = vi.hoisted(() => ({ fetchSummary: vi.fn() }));
+const referral = vi.hoisted(() => ({ fetchSummary: vi.fn(), bootstrap: vi.fn() }));
 const activation = vi.hoisted(() => ({ redeem: vi.fn() }));
 vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ auth }) }));
 vi.mock('../member-api', async (original) => ({
   ...await original<typeof import('../member-api')>(),
+  bootstrapMember: referral.bootstrap,
   fetchMemberReferralSummary: referral.fetchSummary,
 }));
 vi.mock('../activation/redeemActivationCode', async (original) => ({
@@ -46,6 +47,7 @@ beforeEach(() => {
     return { data: { subscription: { unsubscribe: auth.unsubscribe } } };
   });
   referral.fetchSummary.mockResolvedValue(summary);
+  referral.bootstrap.mockReset().mockResolvedValue({});
   activation.redeem.mockReset();
   activation.redeem.mockResolvedValue({});
 });
@@ -57,6 +59,39 @@ describe('referral page login state', () => {
     expect(screen.queryByText('推薦碼資訊暫時無法讀取，請稍後再試')).not.toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: '推薦碼' })).toBeDisabled();
     expect(referral.fetchSummary).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '啟動碼' }));
+    expect(screen.getByRole('textbox', { name: '啟動碼' })).toBeDisabled();
+    expect(within(document.getElementById('activation-code-panel')!).getByRole('button', { name: '確認' })).toBeDisabled();
+    expect(activation.redeem).not.toHaveBeenCalled();
+  });
+
+  it('waits for first-login member creation before reading the referral code', async () => {
+    let finishBootstrap!: () => void;
+    referral.bootstrap.mockReturnValue(new Promise<void>((resolve) => { finishBootstrap = resolve; }));
+    auth.getSession.mockResolvedValue({ data: { session }, error: null });
+    showPage();
+    await waitFor(() => expect(referral.bootstrap).toHaveBeenCalled());
+    expect(referral.fetchSummary).not.toHaveBeenCalled();
+    await act(async () => { finishBootstrap(); });
+    expect(await screen.findByText(summary.referralCode)).toBeVisible();
+    expect(referral.fetchSummary).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not read referral data for an account whose bootstrap finishes after switching accounts', async () => {
+    let finishOld!: () => void;
+    let oldAccount = true;
+    const oldBootstrap = new Promise<void>((resolve) => { finishOld = resolve; });
+    referral.bootstrap.mockImplementation(() => oldAccount
+      ? oldBootstrap
+      : Promise.resolve({}));
+    auth.getSession.mockResolvedValue({ data: { session }, error: null });
+    showPage();
+    await waitFor(() => expect(referral.bootstrap).toHaveBeenCalled());
+    oldAccount = false;
+    act(() => auth.receive?.('SIGNED_IN', nextSession));
+    expect(await screen.findByText(summary.referralCode)).toBeVisible();
+    await act(async () => finishOld());
+    expect(referral.fetchSummary).toHaveBeenCalledTimes(1);
   });
 
   it('loads referral data after login while the page remains open', async () => {

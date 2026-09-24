@@ -9,6 +9,7 @@ import { postMemberOnline } from '../member-online-api';
 import { withDeadline } from '../lib/api-resilience';
 import { logicalSessionIdentity } from './session-identity';
 import { isLineProviderSession } from './session-provider';
+import { isExplicitLogoutPushCleanupInProgress } from './line-auth';
 import { updateAlgorithmCacheSession } from './algorithm-cache-scope';
 import {
   getMemberSessionSnapshot,
@@ -187,7 +188,7 @@ export function MemberSessionBridge({
       publishMemberSessionReady(currentSession);
       if (event === 'SIGNED_OUT') {
         clearLineAuthEphemeralState();
-        void cleanupPush().catch(() => undefined);
+        if (!isExplicitLogoutPushCleanupInProgress()) void cleanupPush().catch(() => undefined);
         updateSession(null, false);
         return;
       } else if (session?.provider_token && isLineProviderSession(session)) {

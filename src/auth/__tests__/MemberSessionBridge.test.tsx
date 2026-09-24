@@ -4,6 +4,7 @@ import { cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { subscribeAlgorithmCacheScope } from '../algorithm-cache-scope';
 import { MemberSessionBridge } from '../MemberSessionBridge';
+import { signOutFromMatrix } from '../line-auth';
 import { endActiveMemberOnlineSession, startMemberOnlineTracking } from '../../member-online';
 import {
   clearLineAuthEphemeralState,
@@ -602,6 +603,22 @@ describe('MemberSessionBridge', () => {
     emit('SIGNED_OUT', null);
 
     await waitFor(() => expect(cleanupPush).toHaveBeenCalledTimes(1));
+  });
+
+  it('does not clean push a second time when explicit logout emits SIGNED_OUT', async () => {
+    const { client, emit } = createClient({ access_token: 'member-session' });
+    const cleanupPush = vi.fn().mockResolvedValue(undefined);
+    (client.auth as typeof client.auth & { signOut: ReturnType<typeof vi.fn> }).signOut = vi.fn(async () => {
+      emit('SIGNED_OUT', null);
+      return { error: null };
+    });
+    render(<MemberSessionBridge client={client as never} bootstrap={vi.fn().mockResolvedValue({})}
+      cleanupPush={cleanupPush} startTracking={noopStartTracking} />);
+    await waitFor(() => expect(client.auth.getSession).toHaveBeenCalled());
+
+    await signOutFromMatrix(client as never, vi.fn(), cleanupPush, vi.fn().mockResolvedValue(undefined));
+
+    expect(cleanupPush).toHaveBeenCalledTimes(1);
   });
 
   it('cancels queued auth work and unsubscribes during cleanup', () => {

@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const memberApi = vi.hoisted(() => ({
+  bootstrapMember: vi.fn(),
   fetchMemberReferralSummary: vi.fn(),
 }));
 
@@ -14,6 +15,7 @@ vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ auth: {
 
 vi.mock('../member-api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../member-api')>()),
+  bootstrapMember: memberApi.bootstrapMember,
   fetchMemberReferralSummary: memberApi.fetchMemberReferralSummary,
 }));
 
@@ -32,6 +34,7 @@ const summary = {
 describe('invite friends referral summary', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    memberApi.bootstrapMember.mockResolvedValue({});
     updateAlgorithmCacheSession({ access_token: 'member-a', user: { id: 'member-a' } } as never);
     publishMemberSessionReady({ access_token: 'member-a', user: { id: 'member-a' } } as never);
     memberApi.fetchMemberReferralSummary.mockResolvedValue(summary);
@@ -76,11 +79,22 @@ describe('invite friends referral summary', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
+  test('first-login invitation waits for member creation before reading a referral code', async () => {
+    let finishBootstrap!: () => void;
+    memberApi.bootstrapMember.mockReturnValueOnce(new Promise<void>((resolve) => { finishBootstrap = resolve; }));
+    render(<FeaturePageRouter screen="invite-friends" onNavigate={vi.fn()} />);
+    await waitFor(() => expect(memberApi.bootstrapMember).toHaveBeenCalledTimes(1));
+    expect(memberApi.fetchMemberReferralSummary).not.toHaveBeenCalled();
+    await act(async () => finishBootstrap());
+    expect(await screen.findByText(summary.referralCode)).toBeVisible();
+  });
+
   test('account changes replace referral data and ignore an old member response', async () => {
     let finishOld!: (value: unknown) => void;
     memberApi.fetchMemberReferralSummary.mockReturnValueOnce(new Promise(resolve => { finishOld = resolve; }))
       .mockResolvedValue({ ...summary, referralCode: 'NEW-MEMBER' });
     render(<FeaturePageRouter screen="invite-friends" onNavigate={vi.fn()} />);
+    await waitFor(() => expect(memberApi.fetchMemberReferralSummary).toHaveBeenCalledTimes(1));
     act(() => updateAlgorithmCacheSession({ access_token: 'member-b', user: { id: 'member-b' } } as never));
     await screen.findByText('NEW-MEMBER');
     await act(async () => finishOld({ ...summary, referralCode: 'OLD-MEMBER' }));

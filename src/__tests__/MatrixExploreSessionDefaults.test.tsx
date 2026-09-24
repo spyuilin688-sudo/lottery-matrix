@@ -71,6 +71,43 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   updateAlgorithmCacheSession(null);
+  vi.useRealTimers();
+});
+
+test.each([
+  ['Tuesday', '2026-09-22'],
+  ['Friday', '2026-09-25'],
+])('%s midnight refreshes the free seven-period and referral range entitlements', async (_weekday, date) => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(`${date}T15:59:59.000Z`));
+  sdk.profile.mockReset().mockResolvedValueOnce({
+    ...guestProfile,
+    memberId: 'line-member',
+    lineUserId: 'line-member',
+    exploreEntitlements: { canUseSeven: true, canUseThirteen: false, canUseFullRange: true },
+  }).mockResolvedValue(guestProfile);
+  render(<MatrixExplorePage title="Matrix 探索" onNavigate={vi.fn()} />);
+  await waitFor(() => expect(sdk.profile).toHaveBeenCalledTimes(1));
+  await waitFor(() => expect(screen.getByText('七期').closest('button')?.getAttribute('data-selected')).toBe('true'));
+  fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
+  expect(screen.getByText('完整範圍').closest('button')?.getAttribute('data-selected')).toBe('true');
+
+  vi.setSystemTime(new Date(`${date}T16:00:01.000Z`));
+  act(() => window.dispatchEvent(new Event('focus')));
+  await waitFor(() => expect(sdk.profile).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(screen.getByText('二期').closest('button')?.getAttribute('data-selected')).toBe('true'));
+  expect(screen.getByText('標準範圍').closest('button')?.getAttribute('data-selected')).toBe('true');
+});
+
+test('a visible page refreshes entitlements at Taipei midnight without a foreground event', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-09-22T15:59:59.900Z'));
+  sdk.profile.mockReset().mockResolvedValueOnce(fullAccessProfile).mockResolvedValue(guestProfile);
+  render(<MatrixExplorePage title="Matrix 探索" onNavigate={vi.fn()} />);
+  await waitFor(() => expect(sdk.profile).toHaveBeenCalledTimes(1));
+  vi.setSystemTime(new Date('2026-09-22T16:00:00.100Z'));
+  await waitFor(() => expect(sdk.profile).toHaveBeenCalledTimes(2));
+  expect(screen.getByText('二期').closest('button')?.getAttribute('data-selected')).toBe('true');
 });
 
 test.each([

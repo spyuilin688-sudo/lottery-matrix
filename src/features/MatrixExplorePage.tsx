@@ -16,6 +16,10 @@ import { Navigate } from "./navigation";
 import { FeatureShell, MatrixPageSwitcher, SectionTitle, SettingLabelIcon, LotteryTabs } from "./shared";
 import { ExploreValidationProcess, TianhengValidationProcess, TianyanValidationProcess } from "./MatrixValidation";
 
+const taipeiOffsetMs = 8 * 60 * 60_000;
+const dayMs = 24 * 60 * 60_000;
+const currentTaipeiDay = () => new Date(Date.now() + taipeiOffsetMs).toISOString().slice(0, 10);
+
 export function MatrixExplorePage({
   onNavigate,
   title = "Matrix 探索",
@@ -41,6 +45,9 @@ export function MatrixExplorePage({
     : (["標準範圍", "完整範圍"] as const);
   const permissionSettings = usePermissionSettings();
   const [exploreAccess, setExploreAccess] = useState<MemberProfileResponse['exploreEntitlements']>();
+  const [taipeiDay, setTaipeiDay] = useState(currentTaipeiDay);
+  const observedTaipeiDay = useRef(taipeiDay);
+  const profileTaipeiDay = useRef(taipeiDay);
   const initializedDefaultsKey = useRef<string | null>(null);
   const [memberSessionRevision, setMemberSessionRevision] = useState(0);
   const defaultsContextKey = `${title}:${permissionSettings?.revision ?? "unknown"}:${memberSessionRevision}`;
@@ -153,6 +160,23 @@ export function MatrixExplorePage({
   const queryRevision = useRef(0);
   const validationInFlight = useRef(new Set<string>());
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const checkDay = () => {
+      if (!document.hidden) setTaipeiDay(currentTaipeiDay());
+      clearTimeout(timer);
+      const remaining = dayMs - ((Date.now() + taipeiOffsetMs) % dayMs);
+      timer = setTimeout(checkDay, remaining + 50);
+    };
+    checkDay();
+    window.addEventListener('focus', checkDay);
+    document.addEventListener('visibilitychange', checkDay);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('focus', checkDay);
+      document.removeEventListener('visibilitychange', checkDay);
+    };
+  }, []);
+  useEffect(() => {
     const clearResults = () => {
       cacheGeneration.current += 1;
       validationInFlight.current.clear();
@@ -173,6 +197,11 @@ export function MatrixExplorePage({
       setMemberSessionRevision((current) => current + 1);
       clearResults();
     };
+    if (observedTaipeiDay.current !== taipeiDay) {
+      observedTaipeiDay.current = taipeiDay;
+      setExploreAccess(undefined);
+      clearResults();
+    }
     const unsubscribeSession = subscribeAlgorithmCacheScope(refreshSessionDefaults, { notifyOnInitialize: true });
     const unsubscribeData = subscribeMatrixDataRevision(clearResults);
     return () => {
@@ -180,7 +209,7 @@ export function MatrixExplorePage({
       unsubscribeSession();
       unsubscribeData();
     };
-  }, []);
+  }, [taipeiDay]);
   const roadResultRowRefs = useRef(new Map<string, HTMLButtonElement>());
   const pendingRoadScrollRef = useRef<string | null>(null);
 
@@ -194,11 +223,22 @@ export function MatrixExplorePage({
   useEffect(() => {
     if (!isExplore && !isTianyan && !isLockedAlgorithm) return;
     let active = true;
+    const dayChanged = profileTaipeiDay.current !== taipeiDay;
+    profileTaipeiDay.current = taipeiDay;
+    const restrictExpiredAccess = (profile: MemberProfileResponse | null) => {
+      if (!dayChanged || isTianyan) return;
+      const allowed = getExploreEntryDefaults(profile);
+      setPeriod((current) => current === "十三期" && allowed.period !== "十三期"
+        ? isLockedAlgorithm ? "三期" : allowed.period
+        : current === "七期" && allowed.period === "二期" ? "二期" : current);
+      if (allowed.range !== "完整範圍") setExploreRange("標準範圍");
+    };
     void bootstrapMember()
       .then(() => fetchMemberProfile())
       .then((profile) => {
         if (!active) return;
         setExploreAccess(profile.exploreEntitlements);
+        restrictExpiredAccess(profile);
         if (initializedDefaultsKey.current !== defaultsContextKey) {
           const defaults = getExploreEntryDefaults(profile);
           setPeriod(isTianyan ? "十三期" : isLockedAlgorithm ? (defaults.period === "十三期" ? "十三期" : "三期") : defaults.period);
@@ -209,6 +249,7 @@ export function MatrixExplorePage({
       .catch(() => {
         if (!active) return;
         setExploreAccess(undefined);
+        restrictExpiredAccess(null);
         if (initializedDefaultsKey.current !== defaultsContextKey) {
           const defaults = getExploreEntryDefaults(null);
           setPeriod(isTianyan ? "十三期" : isLockedAlgorithm ? "三期" : defaults.period);
@@ -217,7 +258,7 @@ export function MatrixExplorePage({
         }
       });
     return () => { active = false; };
-  }, [defaultsContextKey, isExplore, isLockedAlgorithm, isTianyan]);
+  }, [defaultsContextKey, isExplore, isLockedAlgorithm, isTianyan, taipeiDay]);
 
   const visibleResults = useMemo(() => {
     if (isLockedAlgorithm) {
