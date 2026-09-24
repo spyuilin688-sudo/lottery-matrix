@@ -30,6 +30,8 @@ for (const viewport of viewports) {
       const header = root.querySelector(".brand-header")!.getBoundingClientRect();
       const cards = Array.from(root.querySelectorAll(".matrix-status-card"));
       const core = root.querySelector(".matrix-core-banner")!.getBoundingClientRect();
+      const draw = root.querySelector(".latest-draw-card")!.getBoundingClientRect();
+      const shortcuts = root.querySelector(".home-shortcut-row")!.getBoundingClientRect();
       const canvas = root.getBoundingClientRect();
       const appCanvas = root.closest(".app-mobile-canvas")!.getBoundingClientRect();
       const scroller = root.querySelector(".mobile-scroll")!.getBoundingClientRect();
@@ -60,6 +62,8 @@ for (const viewport of viewports) {
         logoHeight: logoRect.height,
         expectedLogoHeight: logoRect.width * logo.naturalHeight / logo.naturalWidth,
         cardCoreGap: core.top - Math.max(...cards.map((card) => card.getBoundingClientRect().bottom)),
+        drawStatusGap: Math.min(...cards.map((card) => card.getBoundingClientRect().top)) - draw.bottom,
+        coreFeaturesGap: shortcuts.top - core.bottom,
         logoInsetLeft: logoRect.left - canvas.left,
         logoInsetRight: canvas.right - logoRect.right,
         horizontalOverflow: document.documentElement.scrollWidth - innerWidth,
@@ -83,8 +87,11 @@ for (const viewport of viewports) {
     expect(geometry.logoInsetTop).toBeGreaterThanOrEqual(8);
     expect(Math.abs(geometry.logoWidth - geometry.expectedLogoWidth)).toBeLessThan(0.1);
     expect(Math.abs(geometry.logoHeight - geometry.expectedLogoHeight)).toBeLessThan(0.1);
-    expect(geometry.cardCoreGap).toBeGreaterThanOrEqual(6.98);
-    expect(geometry.cardCoreGap).toBeLessThanOrEqual(10.02);
+    expect(geometry.cardCoreGap).toBeGreaterThanOrEqual(3.98);
+    expect(geometry.cardCoreGap).toBeLessThanOrEqual(7.02);
+    expect(geometry.drawStatusGap).toBeGreaterThanOrEqual(3.98);
+    expect(geometry.drawStatusGap).toBeLessThanOrEqual(7.02);
+    expect(geometry.coreFeaturesGap).toBeCloseTo(Math.max(7, Math.min(viewport.height * 0.0135, 10)), 1);
     expect(geometry.logoInsetLeft).toBeGreaterThanOrEqual(0);
     expect(geometry.logoInsetRight).toBeGreaterThanOrEqual(0);
     expect(geometry.horizontalOverflow).toBe(0);
