@@ -4,6 +4,7 @@ export type AdminTodo = {
   authorName: string;
   content: string;
   createdAt: string;
+  revision: number;
 };
 
 export type AdminTodoActor = {
@@ -32,6 +33,7 @@ export function normalizeAdminTodo(value: unknown): AdminTodo {
     authorName: String(item.author_name ?? item.authorName ?? '管理員'),
     content: String(item.content ?? ''),
     createdAt: String(item.created_at ?? item.createdAt ?? ''),
+    revision: Number(item.revision ?? 0),
   };
 }
 
@@ -68,8 +70,9 @@ export async function updateAdminTodo(
   client: Pick<AdminTodoApiClient, 'put'>,
   id: string,
   content: string,
+  expectedRevision: number,
 ) {
-  const response = record((await client.put(`/api/todos/${encodeURIComponent(id)}`, { content })).data);
+  const response = record((await client.put(`/api/todos/${encodeURIComponent(id)}`, { content, expectedRevision })).data);
   return normalizeAdminTodo(response.item);
 }
 
@@ -83,6 +86,8 @@ const safeErrors = new Set([
   '只能編輯自己的代辦事項',
   '只能刪除自己的代辦事項',
   '找不到此代辦事項',
+  '代辦版本無效，請重新讀取',
+  '代辦已被其他裝置更新，請確認最新內容後重試',
 ]);
 
 export function formatAdminTodoError(cause: unknown, fallback: string) {

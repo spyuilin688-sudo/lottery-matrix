@@ -345,7 +345,7 @@ const routes: Record<string, unknown> = {
   'PUT /api/todos/:id': [sessionGuard, async (ctx: Context) => {
     try {
       const admin = await getAdmin(ctx);
-      const item = await adminTodos.update(ctx.params.id, bodyOf(ctx).content, actorOf(admin));
+      const item = await adminTodos.update(ctx.params.id, bodyOf(ctx).content, actorOf(admin), bodyOf(ctx).expectedRevision);
       return json({ item });
     } catch (cause) { return fail(cause); }
   }],
@@ -411,6 +411,8 @@ const routes: Record<string, unknown> = {
       return json(await pushNotifications.sendMemberTestPush(
         userId,
         String(admin.account ?? ''),
+        typeof bodyOf(ctx).requestId === 'string' ? bodyOf(ctx).requestId as string : '',
+        String(admin.id ?? ''),
       ));
     } catch (cause) {
       return fail(cause);

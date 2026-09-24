@@ -8,6 +8,8 @@ const config = {
 
 const USER_ONE = '11111111-1111-4111-8111-111111111111';
 const USER_TWO = '22222222-2222-4222-8222-222222222222';
+const REQUEST_ID = '33333333-3333-4333-8333-333333333333';
+const ADMIN_ID = '44444444-4444-4444-8444-444444444444';
 
 function response(body: unknown, status = 200, total?: number) {
   return new Response(JSON.stringify(body), {
@@ -24,7 +26,7 @@ describe('createPushNotifications', () => {
     const fetcher = vi.fn<typeof fetch>();
     const api = createPushNotifications(config, fetcher);
 
-    await expect(api.sendMemberTestPush('   ', 'admin@test')).rejects.toThrow('MEMBER_REQUIRED');
+    await expect(api.sendMemberTestPush('   ', 'admin@test', REQUEST_ID, ADMIN_ID)).rejects.toThrow('MEMBER_REQUIRED');
     expect(fetcher).not.toHaveBeenCalled();
   });
 
@@ -32,7 +34,7 @@ describe('createPushNotifications', () => {
     const fetcher = vi.fn<typeof fetch>();
     const api = createPushNotifications(config, fetcher);
 
-    await expect(api.sendMemberTestPush('member-1', 'admin@test')).rejects.toMatchObject({
+    await expect(api.sendMemberTestPush('member-1', 'admin@test', REQUEST_ID, ADMIN_ID)).rejects.toMatchObject({
       message: 'INVALID_MEMBER_ID',
       statusCode: 400,
     });
@@ -43,7 +45,7 @@ describe('createPushNotifications', () => {
     const fetcher = vi.fn(async () => response({ sent: 1, failed: 0 }));
     const api = createPushNotifications(config, fetcher);
 
-    await expect(api.sendMemberTestPush(USER_ONE, 'admin@test')).resolves.toEqual({
+    await expect(api.sendMemberTestPush(USER_ONE, 'admin@test', REQUEST_ID, ADMIN_ID)).resolves.toEqual({
       sent: 1,
       failed: 0,
     });
@@ -51,7 +53,7 @@ describe('createPushNotifications', () => {
       'https://example.supabase.co/functions/v1/send-test-push',
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ userId: USER_ONE, adminAccount: 'admin@test' }),
+        body: JSON.stringify({ userId: USER_ONE, adminAccount: 'admin@test', requestId: REQUEST_ID, adminId: ADMIN_ID }),
       }),
     );
   });
@@ -198,11 +200,14 @@ describe('createPushNotifications', () => {
   it.each([
     [400, 'INVALID_REQUEST'],
     [409, 'NO_ACTIVE_SUBSCRIPTIONS'],
+    [409, 'TEST_PUSH_IN_PROGRESS'],
+    [500, 'SUBSCRIPTION_LOOKUP_FAILED'],
+    [503, 'TEST_PUSH_STATUS_UNKNOWN'],
   ])('preserves the safe Edge business failure for HTTP %i', async (status, code) => {
     const fetcher = vi.fn(async () => response({ error: { code } }, status));
     const api = createPushNotifications(config, fetcher);
 
-    await expect(api.sendMemberTestPush(USER_ONE, 'admin@test')).rejects.toMatchObject({
+    await expect(api.sendMemberTestPush(USER_ONE, 'admin@test', REQUEST_ID, ADMIN_ID)).rejects.toMatchObject({
       code,
       message: code,
       statusCode: status,
@@ -215,7 +220,7 @@ describe('createPushNotifications', () => {
   ])('keeps %s as a stable upstream failure', async (_label, fetcher) => {
     const api = createPushNotifications(config, fetcher);
 
-    await expect(api.sendMemberTestPush(USER_ONE, 'admin@test')).rejects.toMatchObject({
+    await expect(api.sendMemberTestPush(USER_ONE, 'admin@test', REQUEST_ID, ADMIN_ID)).rejects.toMatchObject({
       code: 'UNAVAILABLE',
       message: 'Supabase is temporarily unavailable',
       statusCode: 503,
@@ -228,7 +233,7 @@ describe('createPushNotifications', () => {
     }, 409));
     const api = createPushNotifications(config, fetcher);
 
-    const failure = await api.sendMemberTestPush(USER_ONE, 'admin@test').catch((error) => error);
+    const failure = await api.sendMemberTestPush(USER_ONE, 'admin@test', REQUEST_ID, ADMIN_ID).catch((error) => error);
     expect(failure).toMatchObject({
       code: 'UNAVAILABLE',
       message: 'Supabase is temporarily unavailable',

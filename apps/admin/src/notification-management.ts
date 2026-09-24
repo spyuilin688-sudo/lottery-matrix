@@ -60,10 +60,11 @@ export async function listPushDeliveryLogs(client: Pick<NotificationApiClient, '
 export async function sendTestPush(
   client: Pick<NotificationApiClient, 'post'>,
   memberId: string,
+  requestId: string,
 ): Promise<TestPushResult> {
   const selectedMember = memberId.trim();
   if (!selectedMember) throw new Error('請先選擇會員');
-  const response = await client.post(`/api/push-members/${encodeURIComponent(selectedMember)}/test`, {});
+  const response = await client.post(`/api/push-members/${encodeURIComponent(selectedMember)}/test`, { requestId });
   return response.data as TestPushResult;
 }
 
@@ -109,9 +110,31 @@ export function isNoActiveSubscriptionsError(cause: unknown) {
   return notificationErrorCode(cause) === 'NO_ACTIVE_SUBSCRIPTIONS';
 }
 
+export function isDefinitiveTestPushError(cause: unknown) {
+  return ['NO_ACTIVE_SUBSCRIPTIONS', 'SUBSCRIPTION_LOOKUP_FAILED', 'INVALID_REQUEST']
+    .includes(notificationErrorCode(cause));
+}
+
+export function testPushRequestId(adminId: string, memberId: string) {
+  const key = `admin-test-push:${adminId}:${memberId}`;
+  try {
+    const pending = sessionStorage.getItem(key);
+    if (pending) return pending;
+  } catch { /* The in-memory fallback is managed by the component. */ }
+  const requestId = crypto.randomUUID();
+  try { sessionStorage.setItem(key, requestId); } catch { /* Storage can be disabled. */ }
+  return requestId;
+}
+
+export function clearTestPushRequestId(adminId: string, memberId: string) {
+  try { sessionStorage.removeItem(`admin-test-push:${adminId}:${memberId}`); } catch { /* Storage can be disabled. */ }
+}
+
 export function formatNotificationError(cause: unknown) {
   const code = notificationErrorCode(cause);
   if (code === 'NO_ACTIVE_SUBSCRIPTIONS') return '此會員目前沒有有效的推播訂閱';
+  if (code === 'TEST_PUSH_IN_PROGRESS') return '上次發送仍在處理；稍後重按會查詢同一筆結果，不會再次發送';
+  if (code === 'TEST_PUSH_STATUS_UNKNOWN' || code === 'TEST_PUSH_CLAIM_FAILED') return '發送狀態未確認；稍後重按會查詢同一筆結果';
   if (code === 'INVALID_MEMBER_ID' || code === 'MEMBER_REQUIRED' || code === 'INVALID_REQUEST') {
     return '會員資料無效，請重新選擇會員';
   }

@@ -6,6 +6,7 @@ type Row = {
   admin_id: string;
   content: string;
   created_at: string;
+  revision: number;
 };
 
 const actors = {
@@ -26,8 +27,10 @@ function createStore(initialRows: Row[] = []) {
   const match = (query: string, row: Row) => {
     const id = /(?:^|&)id=eq\.([^&]+)/.exec(query)?.[1];
     const adminId = /(?:^|&)admin_id=eq\.([^&]+)/.exec(query)?.[1];
+    const revision = /(?:^|&)revision=eq\.([^&]+)/.exec(query)?.[1];
     return (!id || row.id === decodeURIComponent(id))
-      && (!adminId || row.admin_id === decodeURIComponent(adminId));
+      && (!adminId || row.admin_id === decodeURIComponent(adminId))
+      && (revision === undefined || row.revision === Number(revision));
   };
 
   return {
@@ -51,6 +54,7 @@ function createStore(initialRows: Row[] = []) {
             id: `todo-${++sequence}`,
             admin_id: input.admin_id,
             content: input.content,
+            revision: 0,
             created_at: `2026-09-04T0${sequence}:00:00.000Z`,
           };
           rows.push(saved);
@@ -77,7 +81,7 @@ const row = (
   adminId: string,
   content: string,
   createdAt: string,
-): Row => ({ id, admin_id: adminId, content, created_at: createdAt });
+): Row => ({ id, admin_id: adminId, content, created_at: createdAt, revision: 0 });
 
 describe('createAdminTodos', () => {
   it('lists newest todos first and exposes only safe author information', async () => {
@@ -89,11 +93,11 @@ describe('createAdminTodos', () => {
     await expect(createAdminTodos(store.transport).list()).resolves.toEqual([
       {
         id: 'todo-new', admin_id: actors.other.id, author_name: 'Other', content: '較新',
-        created_at: '2026-09-04T02:00:00.000Z',
+        created_at: '2026-09-04T02:00:00.000Z', revision: 0,
       },
       {
         id: 'todo-old', admin_id: actors.owner.id, author_name: 'Owner', content: '較早',
-        created_at: '2026-09-04T01:00:00.000Z',
+        created_at: '2026-09-04T01:00:00.000Z', revision: 0,
       },
     ]);
   });
@@ -122,8 +126,8 @@ describe('createAdminTodos', () => {
     const createdAt = '2026-09-04T01:00:00.000Z';
     const store = createStore([row('todo-1', actors.owner.id, '原內容', createdAt)]);
 
-    await expect(createAdminTodos(store.transport).update('todo-1', '  新內容  ', actors.owner)).resolves.toEqual({
-      id: 'todo-1', admin_id: actors.owner.id, author_name: 'Owner', content: '新內容', created_at: createdAt,
+    await expect(createAdminTodos(store.transport).update('todo-1', '  新內容  ', actors.owner, 0)).resolves.toEqual({
+      id: 'todo-1', admin_id: actors.owner.id, author_name: 'Owner', content: '新內容', created_at: createdAt, revision: 1,
     });
     expect(store.rows[0].created_at).toBe(createdAt);
   });
@@ -131,7 +135,7 @@ describe('createAdminTodos', () => {
   it('rejects another administrator updating the todo', async () => {
     const store = createStore([row('todo-1', actors.owner.id, '原內容', '2026-09-04T01:00:00.000Z')]);
 
-    await expect(createAdminTodos(store.transport).update('todo-1', '越權修改', actors.other)).rejects.toMatchObject({
+    await expect(createAdminTodos(store.transport).update('todo-1', '越權修改', actors.other, 0)).rejects.toMatchObject({
       statusCode: 403,
     });
     expect(store.rows[0].content).toBe('原內容');
@@ -161,10 +165,24 @@ describe('createAdminTodos', () => {
   });
 
   it.each([
-    ['update', (todos: ReturnType<typeof createAdminTodos>) => todos.update('missing', '內容', actors.owner)],
+    ['update', (todos: ReturnType<typeof createAdminTodos>) => todos.update('missing', '內容', actors.owner, 0)],
     ['delete', (todos: ReturnType<typeof createAdminTodos>) => todos.remove('missing', actors.owner)],
   ])('returns 404 when %s targets a missing todo', async (_operation, invoke) => {
     const todos = createAdminTodos(createStore().transport);
     await expect(invoke(todos)).rejects.toMatchObject({ statusCode: 404 });
+  });
+
+  it('rejects a stale second edit without overwriting the latest content', async () => {
+    const store = createStore([row('todo-1', actors.owner.id, '原內容', '2026-09-04T01:00:00.000Z')]);
+    const todos = createAdminTodos(store.transport);
+    await todos.update('todo-1', '裝置甲', actors.owner, 0);
+    await expect(todos.update('todo-1', '裝置乙', actors.owner, 0)).rejects.toMatchObject({ statusCode: 409 });
+    expect(store.rows[0]).toMatchObject({ content: '裝置甲', revision: 1 });
+  });
+
+  it('requires a numeric expected revision before writing', async () => {
+    const store = createStore([row('todo-1', actors.owner.id, '原內容', '2026-09-04T01:00:00.000Z')]);
+    await expect(createAdminTodos(store.transport).update('todo-1', '新內容', actors.owner, '0')).rejects.toMatchObject({ statusCode: 400 });
+    expect(store.rows[0].content).toBe('原內容');
   });
 });

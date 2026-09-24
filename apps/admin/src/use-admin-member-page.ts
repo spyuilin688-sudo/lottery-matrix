@@ -3,8 +3,8 @@ import { useAdminDataPage } from './use-admin-data-page';
 type Client = { get(path: string): Promise<{ data: unknown }> };
 
 // Member lists keep their existing public controls and use the same server-page owner.
-export function useAdminMemberPage(table: 'users' | 'subscriptions', revision: number, client: Client) {
-  const page = useAdminDataPage(table, revision, client, 'member-list');
+export function useAdminMemberPage(table: 'users' | 'subscriptions', revision: number, client: Client, enabled = true) {
+  const page = useAdminDataPage(table, revision, client, 'member-list', enabled);
   return {
     ...page,
     keyword: page.query.keyword, status: page.query.status, plan: page.query.plan ?? 'all',

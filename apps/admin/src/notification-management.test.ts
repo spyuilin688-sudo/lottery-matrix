@@ -13,15 +13,15 @@ describe('notification management client', () => {
   it('rejects an empty member selection before calling the API', async () => {
     const post = vi.fn();
 
-    await expect(sendTestPush({ post }, '   ')).rejects.toThrow('請先選擇會員');
+    await expect(sendTestPush({ post }, '   ', 'request-1')).rejects.toThrow('請先選擇會員');
     expect(post).not.toHaveBeenCalled();
   });
 
   it('sends only to the selected member endpoint', async () => {
     const post = vi.fn(async () => ({ data: { sent: 1, failed: 0 } }));
 
-    await expect(sendTestPush({ post }, 'member-1')).resolves.toEqual({ sent: 1, failed: 0 });
-    expect(post).toHaveBeenCalledWith('/api/push-members/member-1/test', {});
+    await expect(sendTestPush({ post }, 'member-1', 'request-1')).resolves.toEqual({ sent: 1, failed: 0 });
+    expect(post).toHaveBeenCalledWith('/api/push-members/member-1/test', { requestId: 'request-1' });
   });
 
   it('loads member status and delivery logs from their dedicated endpoints', async () => {

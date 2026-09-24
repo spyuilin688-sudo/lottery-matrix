@@ -12,6 +12,27 @@ const client = vi.hoisted(()=>({get:vi.fn(),post:vi.fn(),put:vi.fn(),delete:vi.f
 vi.mock('@appdeploy/client',()=>({api:client,auth:{signIn:vi.fn(),signOut:vi.fn()}}));
 afterEach(()=>{cleanup();vi.clearAllMocks();});
 describe('AdminApp weak-network bootstrap',()=>{
+  it('requests only the visible subscription tab and reloads it when revisited', async () => {
+    window.location.hash = '';
+    client.get.mockImplementation(async (path: string) => {
+      if (path === '/api/bootstrap') return { data: { admin: { id: 'admin-1', name: 'Owner', role: '超級管理員' } } };
+      if (path === '/api/dashboard') return { data: dashboard };
+      return { data: { items: [], total: 0, currentPage: 1, totalPages: 1 } };
+    });
+    const calls = (table: string) => client.get.mock.calls.filter(([path]) => path.startsWith(`/api/data/${table}?`)).length;
+    render(<AdminApp />);
+    fireEvent.click(await screen.findByRole('button', { name: /訂閱管理/ }));
+    await waitFor(() => expect(calls('subscriptions')).toBe(1));
+    expect(calls('subscriptionRecords')).toBe(0);
+    expect(calls('transferRequests')).toBe(0);
+    fireEvent.click(screen.getByRole('tab', { name: '付款紀錄' }));
+    await waitFor(() => expect(calls('subscriptionRecords')).toBe(1));
+    expect(calls('transferRequests')).toBe(0);
+    fireEvent.click(screen.getByRole('tab', { name: '轉帳申請' }));
+    await waitFor(() => expect(calls('transferRequests')).toBe(1));
+    fireEvent.click(screen.getByRole('tab', { name: '訂閱會員' }));
+    await waitFor(() => expect(calls('subscriptions')).toBe(2));
+  });
   it('reuses the revenue reset identity after an uncertain response and creates a new one after success', async () => {
     client.get.mockImplementation(async (path: string) => {
       if (path === '/api/bootstrap') return { data: { admin: { id: 'admin-1', name: 'Owner', role: '超級管理員' } } };

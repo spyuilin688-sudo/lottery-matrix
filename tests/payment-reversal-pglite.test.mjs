@@ -8,7 +8,7 @@ const migration = readFileSync(
   'utf8',
 );
 const entitlementReversalMigration = readFileSync(
-  new URL('../supabase/migrations/20260924090000_superadmin_reversal_entitlements.sql', import.meta.url),
+  new URL('../supabase/migrations/20260924020932_superadmin_reversal_entitlements.sql', import.meta.url),
   'utf8',
 );
 

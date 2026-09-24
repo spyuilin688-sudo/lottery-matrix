@@ -606,8 +606,8 @@ describe('admin push notification route wiring', () => {
     const route = 'POST /api/push-members/:id/test';
     const context = await authenticate(route, sessionContext({ id: '11111111-1111-4111-8111-111111111111' }));
     const routeHandler = routes[route][2] as (input: typeof context & { body?: unknown }) => Promise<unknown>;
-    await routeHandler({ ...context, body: { adminAccount: 'attacker@example.com', userId: 'member-2' } });
-    expect(wiring.sendMemberTestPush).toHaveBeenCalledWith('11111111-1111-4111-8111-111111111111', 'admin@example.com');
+    await routeHandler({ ...context, body: { adminAccount: 'attacker@example.com', userId: 'member-2', requestId: '33333333-3333-4333-8333-333333333333' } });
+    expect(wiring.sendMemberTestPush).toHaveBeenCalledWith('11111111-1111-4111-8111-111111111111', 'admin@example.com', '33333333-3333-4333-8333-333333333333', wiring.admin.id);
   });
 
   it('returns safe push validation and business errors', async () => {
@@ -618,7 +618,7 @@ describe('admin push notification route wiring', () => {
     for (const [statusCode, message] of [[400, 'INVALID_REQUEST'], [409, 'NO_ACTIVE_SUBSCRIPTIONS']] as const) {
       wiring.sendMemberTestPush.mockRejectedValueOnce(Object.assign(new Error(message), { statusCode }));
       context = await authenticate(route, sessionContext({ id: '11111111-1111-4111-8111-111111111111' }));
-      await expect(routeHandler(context)).resolves.toEqual({ error: message, status: statusCode });
+      await expect(routeHandler({ ...context, body: { requestId: '33333333-3333-4333-8333-333333333333' } })).resolves.toEqual({ error: message, status: statusCode });
     }
   });
 
@@ -690,7 +690,7 @@ describe('admin todo route wiring', () => {
     const updateRoute = 'PUT /api/todos/:id';
     const updateContext = await authenticate(updateRoute, sessionContext({ id: 'todo-1' }));
     const updateHandler = routes[updateRoute][1] as (input: typeof updateContext & { body?: unknown }) => Promise<unknown>;
-    await updateHandler({ ...updateContext, body: { content: '已更新', adminId: 'attacker' } });
+    await updateHandler({ ...updateContext, body: { content: '已更新', expectedRevision: 0, adminId: 'attacker' } });
 
     const deleteRoute = 'DELETE /api/todos/:id';
     const deleteContext = await authenticate(deleteRoute, sessionContext({ id: 'todo-1' }));
@@ -703,7 +703,7 @@ describe('admin todo route wiring', () => {
       name: wiring.admin.name,
       role: wiring.admin.role,
     };
-    expect(wiring.todoUpdate).toHaveBeenCalledWith('todo-1', '已更新', actor);
+    expect(wiring.todoUpdate).toHaveBeenCalledWith('todo-1', '已更新', actor, 0);
     expect(wiring.todoRemove).toHaveBeenCalledWith('todo-1', actor);
   });
 
@@ -713,7 +713,7 @@ describe('admin todo route wiring', () => {
     const context = await authenticate(route, sessionContext({ id: 'todo-1' }));
     const routeHandler = routes[route][1] as (input: typeof context & { body?: unknown }) => Promise<unknown>;
 
-    await expect(routeHandler({ ...context, body: { content: '越權' } })).resolves.toEqual({
+    await expect(routeHandler({ ...context, body: { content: '越權', expectedRevision: 0 } })).resolves.toEqual({
       error: '只能編輯自己的代辦事項',
       status: 403,
     });

@@ -14,6 +14,8 @@ function assertEquals(actual: unknown, expected: unknown) {
 }
 
 const SERVICE_ROLE_KEY = "test-service-role-key";
+const REQUEST_ID = "10000000-0000-4000-8000-000000000001";
+const ADMIN_ID = "20000000-0000-4000-8000-000000000001";
 const SUBSCRIPTION_A: PushSubscription = {
   id: "subscription-a",
   endpoint: "https://fcm.googleapis.com/fcm/send/a",
@@ -44,7 +46,7 @@ function request(
         Authorization: authorization,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ requestId: REQUEST_ID, adminId: ADMIN_ID, ...(body as Record<string, unknown>) }),
     },
   );
 }
@@ -69,11 +71,22 @@ function dependencies(overrides: {
     subscription: PushSubscription;
     payload: PushPayload;
   }> = [];
+  const claims = new Map<string, { state: "pending" | "completed"; result: { sent?: number; failed?: number; error?: string } | null }>();
 
   return {
     observations: { logs, successes, failures, listedUserIds, sent },
     value: {
       serviceRoleKey: SERVICE_ROLE_KEY,
+      claimRequest(requestId: string) {
+        const existing = claims.get(requestId);
+        if (existing) return Promise.resolve({ state: existing.state, result: existing.result });
+        claims.set(requestId, { state: "pending", result: null });
+        return Promise.resolve({ state: "claimed" as const });
+      },
+      finishRequest(requestId: string, _userId: string, _adminId: string, result: { sent?: number; failed?: number; error?: string }) {
+        claims.set(requestId, { state: "completed", result });
+        return Promise.resolve();
+      },
       now: () => new Date("2026-08-30T07:00:00.000Z"),
       listSubscriptions(userId: string) {
         listedUserIds.push(userId);
@@ -245,4 +258,21 @@ Deno.test("已成功送出不因 log 寫入錯誤被誤標為推播失敗", asyn
   assertEquals(await response.json(), { sent: 1, failed: 0 });
   assertEquals(setup.observations.successes.length, 1);
   assertEquals(setup.observations.failures, []);
+});
+
+Deno.test("相同 requestId 在處理中或完成後重試都不會再次發送", async () => {
+  let release!: () => void;
+  const wait = new Promise<void>(resolve => { release = resolve; });
+  const setup = dependencies({ sendPush: () => wait });
+  const handler = createSendTestPushHandler(setup.value);
+  const first = handler(request({ userId: "member-1", adminAccount: "admin@test" }));
+  while (setup.observations.sent.length === 0) await Promise.resolve();
+  const pending = await handler(request({ userId: "member-1", adminAccount: "admin@test" }));
+  assertEquals(pending.status, 409);
+  assertEquals(await pending.json(), { error: { code: "TEST_PUSH_IN_PROGRESS" } });
+  release();
+  assertEquals((await first).status, 200);
+  const completed = await handler(request({ userId: "member-1", adminAccount: "admin@test" }));
+  assertEquals(await completed.json(), { sent: 1, failed: 0 });
+  assertEquals(setup.observations.sent.length, 1);
 });

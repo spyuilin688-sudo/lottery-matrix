@@ -2,7 +2,7 @@ import type { ManualRefreshTask } from '../shared/manual-refresh';
 import { MatrixWatchdogPanel } from "./MatrixWatchdogPanel";
 import { loadAdminBootstrap, createActivationBatchSubmitter } from "./admin-recovery";
 import { useAdminMemberPage } from "./use-admin-member-page";
-import { useAdminDataPage, type AdminDataPageController } from "./use-admin-data-page";
+import { useAdminDataPage } from "./use-admin-data-page";
 import { AdminListControls } from "./AdminListControls";
 import { readAdminDataPage } from "./admin-table-pagination";
 import { adminBusinessDateKey } from "../shared/admin-business-time";
@@ -353,8 +353,6 @@ function AdminApp() {
   const sessionKey = signed ? String(admin?.id ?? "") : "";
   const mainTable = active === "管理員權限" ? "admins" : tableMap[active];
   const listPage = useAdminDataPage(signed && mainTable && !["users", "subscriptions"].includes(mainTable) ? mainTable : null, memberListRevision, api, sessionKey);
-  const paymentPage = useAdminDataPage(signed && active === "訂閱管理" ? "subscriptionRecords" : null, memberListRevision, api, sessionKey);
-  const transferPage = useAdminDataPage(signed && active === "訂閱管理" ? "transferRequests" : null, memberListRevision, api, sessionKey);
   const rows = listPage.items;
   const captureView = (trackRead = false) => {
     const read = loadVersion.current;
@@ -528,7 +526,6 @@ function AdminApp() {
     setDash(null);
     setPlans([]);
   });
-  const refreshPayments = paymentPage.refresh;
   const openProfileName = () => {
     setProfileName(String(admin?.name || ""));
     setShowProfileName(true);
@@ -861,7 +858,7 @@ function AdminApp() {
             />
           )}{" "}
           {active === "系統設定" && <SystemSettings canEdit={moduleCan("systemSettings", "edit", "edit")} confirm={requestConfirmation} />}{" "}
-          {active === "通知管理" && <NotificationManagement key={sessionKey} client={api} canEdit={can("edit")} />}{" "}
+          {active === "通知管理" && <NotificationManagement key={sessionKey} client={api} canEdit={can("edit")} adminId={sessionKey} />}{" "}
           {active === "代辦事項" && admin && (
             <AdminTodos
               key={sessionKey}
@@ -906,13 +903,11 @@ function AdminApp() {
               key={sessionKey}
               revision={memberListRevision}
               plans={plans}
-              transferPage={transferPage}
-              paymentPage={paymentPage}
+              sessionKey={sessionKey}
               isSuper={isSuper}
               canEdit={moduleCan("subscriptions", "edit", "edit")}
               confirm={requestConfirmation}
               onPaymentReversal={(id, status, reason) => api.put(`/api/payments/${id}/reversal`, { status, reason })}
-              onPaymentRefresh={refreshPayments}
               onSubscription={async (id, payload) => {
                 return runConfirmed(
                   () => requestConfirmation({ title: "確認修改訂閱", message: `會員 ${id} 的訂閱資料將更新。`, confirmLabel: "確認修改" }),
@@ -1172,33 +1167,32 @@ type SubscriptionPayload = {
 function SubscriptionManager({
   revision,
   plans,
-  transferPage,
-  paymentPage,
+  sessionKey,
   isSuper,
   canEdit,
   confirm,
   onPaymentReversal,
-  onPaymentRefresh,
   onSubscription,
   onTransfer,
 }: {
   revision: number;
   plans: Row[];
-  transferPage: AdminDataPageController;
-  paymentPage: AdminDataPageController;
+  sessionKey: string;
   isSuper: boolean;
   canEdit: boolean;
   confirm: (request: Omit<ConfirmationRequest, "resolve">) => Promise<boolean>;
   onPaymentReversal: (id: string, status: PaymentReversalStatus, reason: string) => Promise<unknown>;
-  onPaymentRefresh: () => Promise<unknown>;
   onSubscription: (id: string, payload: SubscriptionPayload) => Promise<boolean>;
   onTransfer: (id: string, decision: "confirmed" | "rejected") => Promise<void>;
 }) {
-  const memberPage = useAdminMemberPage("subscriptions", revision, api);
-  const { plan, setPlan, setPage, paged, loading, error } = memberPage;
   const [activeTab, setActiveTab] = useState<'members' | 'payments' | 'transfers'>(
     () => isSuper && window.location.hash === '#transfer-requests' ? 'transfers' : 'members',
   );
+  const [memberRefreshRevision, setMemberRefreshRevision] = useState(0);
+  const memberPage = useAdminMemberPage("subscriptions", revision + memberRefreshRevision, api, activeTab === 'members');
+  const paymentPage = useAdminDataPage('subscriptionRecords', revision, api, sessionKey, activeTab === 'payments');
+  const transferPage = useAdminDataPage('transferRequests', revision, api, sessionKey, activeTab === 'transfers');
+  const { plan, setPlan, setPage, paged, loading, error } = memberPage;
   useEffect(() => {
     if (!isSuper) return;
     const openTransfers = () => { if (window.location.hash === '#transfer-requests') setActiveTab('transfers'); };
@@ -1334,8 +1328,8 @@ function SubscriptionManager({
         expanded
         confirm={confirm}
         onRecord={onPaymentReversal}
-        onRefresh={onPaymentRefresh}
-        onMemberRefresh={memberPage.refresh}
+        onRefresh={paymentPage.refresh}
+        onMemberRefresh={async () => { setMemberRefreshRevision(value => value + 1); }}
       />
       <Pagination page={paymentPage.currentPage} totalPages={paymentPage.totalPages} onPage={paymentPage.setPage} disabled={paymentPage.loading || Boolean(paymentPage.error)} />
       </>}

@@ -17,6 +17,7 @@ type TodoRow = {
   admin_id?: unknown;
   content?: unknown;
   created_at?: unknown;
+  revision?: unknown;
   author?: { name?: unknown; account?: unknown } | null;
 };
 
@@ -26,6 +27,7 @@ export type AdminTodo = {
   author_name: string;
   content: string;
   created_at: string;
+  revision: number;
 };
 
 export class AdminTodoError extends Error {
@@ -60,6 +62,7 @@ function safeTodo(row: TodoRow, actor?: TodoActor): AdminTodo {
     author_name: authorName,
     content: String(row.content ?? ''),
     created_at: String(row.created_at ?? ''),
+    revision: Number(row.revision ?? 0),
   };
 }
 
@@ -67,7 +70,7 @@ export function createAdminTodos(transport: TodoTransport) {
   async function find(id: string) {
     const [item] = await transport.selectRows<TodoRow>(
       'admin_todos',
-      `select=id,admin_id,content,created_at&id=eq.${encodeURIComponent(id)}&limit=1`,
+      `select=id,admin_id,content,created_at,revision&id=eq.${encodeURIComponent(id)}&limit=1`,
     );
     if (!item) throw new AdminTodoError('找不到此代辦事項', 404);
     return item;
@@ -77,7 +80,7 @@ export function createAdminTodos(transport: TodoTransport) {
     async list() {
       const rows = await transport.selectRows<TodoRow>(
         'admin_todos',
-        'select=id,admin_id,content,created_at,author:admin_accounts!admin_todos_admin_id_fkey(name,account)&order=created_at.desc,id.desc',
+        'select=id,admin_id,content,created_at,revision,author:admin_accounts!admin_todos_admin_id_fkey(name,account)&order=created_at.desc,id.desc',
       );
       return rows.map((row) => safeTodo(row));
     },
@@ -92,18 +95,21 @@ export function createAdminTodos(transport: TodoTransport) {
       return safeTodo(created, actor);
     },
 
-    async update(id: string, value: unknown, actor: TodoActor) {
+    async update(id: string, value: unknown, actor: TodoActor, expectedRevision: unknown) {
       const content = normalizeTodoContent(value);
-      const before = await find(id);
-      if (String(before.admin_id) !== actor.id) {
-        throw new AdminTodoError('只能編輯自己的代辦事項', 403);
+      if (!Number.isSafeInteger(expectedRevision) || Number(expectedRevision) < 0) {
+        throw new AdminTodoError('代辦版本無效，請重新讀取', 400);
       }
       const [updated] = await transport.updateRows<TodoRow>(
         'admin_todos',
-        `id=eq.${encodeURIComponent(id)}&admin_id=eq.${encodeURIComponent(actor.id)}`,
-        { content },
+        `id=eq.${encodeURIComponent(id)}&admin_id=eq.${encodeURIComponent(actor.id)}&revision=eq.${expectedRevision}`,
+        { content, revision: Number(expectedRevision) + 1 },
       );
-      if (!updated) throw new AdminTodoError('找不到此代辦事項', 404);
+      if (!updated) {
+        const before = await find(id);
+        if (String(before.admin_id) !== actor.id) throw new AdminTodoError('只能編輯自己的代辦事項', 403);
+        throw new AdminTodoError('代辦已被其他裝置更新，請確認最新內容後重試', 409);
+      }
       return safeTodo(updated, actor);
     },
 

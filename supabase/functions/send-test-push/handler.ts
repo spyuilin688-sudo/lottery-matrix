@@ -14,6 +14,13 @@ export type {
 type Dependencies = DeliveryDependencies & {
   serviceRoleKey: string;
   listSubscriptions(userId: string): Promise<PushSubscription[]>;
+  claimRequest(requestId: string, userId: string, adminId: string): Promise<{
+    state: "claimed" | "pending" | "completed";
+    result?: { sent?: number; failed?: number; error?: string } | null;
+  }>;
+  finishRequest(requestId: string, userId: string, adminId: string, result: {
+    sent?: number; failed?: number; error?: string;
+  }): Promise<void>;
 };
 
 export const CORS_HEADERS = {
@@ -28,6 +35,7 @@ const PAYLOAD: PushPayload = {
   body: "手機推播已成功啟用",
   url: "/",
 };
+const UUID_PATTERN = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 
 function json(body: unknown, status: number) {
   return new Response(JSON.stringify(body), {
@@ -90,31 +98,64 @@ export function createSendTestPushHandler(dependencies: Dependencies) {
     }
     const userId = nonEmpty(body.userId);
     const adminAccount = nonEmpty(body.adminAccount);
-    if (!userId || !adminAccount) {
+    const adminId = nonEmpty(body.adminId);
+    const requestId = nonEmpty(body.requestId);
+    if (!userId || !adminAccount || !UUID_PATTERN.test(adminId) || !UUID_PATTERN.test(requestId)) {
       return json({ error: { code: "INVALID_REQUEST" } }, 400);
+    }
+
+    let claim: Awaited<ReturnType<Dependencies["claimRequest"]>>;
+    try {
+      claim = await dependencies.claimRequest(requestId, userId, adminId);
+    } catch {
+      return json({ error: { code: "TEST_PUSH_CLAIM_FAILED" } }, 503);
+    }
+    if (claim.state === "pending") return json({ error: { code: "TEST_PUSH_IN_PROGRESS" } }, 409);
+    if (claim.state === "completed") {
+      if (claim.result?.error === "NO_ACTIVE_SUBSCRIPTIONS") {
+        return json({ error: { code: "NO_ACTIVE_SUBSCRIPTIONS" } }, 409);
+      }
+      if (claim.result?.error === "SUBSCRIPTION_LOOKUP_FAILED") {
+        return json({ error: { code: "SUBSCRIPTION_LOOKUP_FAILED" } }, 500);
+      }
+      if (typeof claim.result?.sent === "number" && typeof claim.result?.failed === "number") {
+        return json({ sent: claim.result.sent, failed: claim.result.failed }, 200);
+      }
+      return json({ error: { code: "TEST_PUSH_CLAIM_FAILED" } }, 503);
     }
 
     let subscriptions: PushSubscription[];
     try {
       subscriptions = await dependencies.listSubscriptions(userId);
     } catch {
+      try { await dependencies.finishRequest(requestId, userId, adminId, { error: "SUBSCRIPTION_LOOKUP_FAILED" }); }
+      catch { return json({ error: { code: "TEST_PUSH_STATUS_UNKNOWN" } }, 503); }
       return json({ error: { code: "SUBSCRIPTION_LOOKUP_FAILED" } }, 500);
     }
     if (subscriptions.length === 0) {
+      try { await dependencies.finishRequest(requestId, userId, adminId, { error: "NO_ACTIVE_SUBSCRIPTIONS" }); }
+      catch { return json({ error: { code: "TEST_PUSH_STATUS_UNKNOWN" } }, 503); }
       return json({ error: { code: "NO_ACTIVE_SUBSCRIPTIONS" } }, 409);
     }
 
     let sent = 0;
     let failed = 0;
-    for (const subscription of subscriptions) {
-      const result = await deliverPushToSubscription(dependencies, {
-        userId,
-        subscription,
-        payload: PAYLOAD,
-        adminAccount,
-      });
-      if (result.delivered) sent += 1;
-      else failed += 1;
+    try {
+      for (const subscription of subscriptions) {
+        const result = await deliverPushToSubscription(dependencies, {
+          userId,
+          subscription,
+          payload: PAYLOAD,
+          adminAccount,
+        });
+        if (result.delivered) sent += 1;
+        else failed += 1;
+      }
+      await dependencies.finishRequest(requestId, userId, adminId, { sent, failed });
+    } catch {
+      // A provider may have accepted the push already. Keep this request claimed;
+      // a retry may only inspect its state, never deliver it again.
+      return json({ error: { code: "TEST_PUSH_STATUS_UNKNOWN" } }, 503);
     }
 
     return json({ sent, failed }, 200);
