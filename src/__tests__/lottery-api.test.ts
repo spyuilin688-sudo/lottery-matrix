@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { API_REQUEST_TIMEOUT_MS } from '../lib/api-resilience';
-import { LOTTERY_API_BASE, fetchLatestLotteryDraw, fetchLatestLotteryResult, fetchLatestLotteryResultState, fetchLotteryHistory, fetchLotteryHistoryYears, fetchNumberReference, fetchTongXing, normalizePeriod } from '../lottery-api';
+import { LOTTERY_API_BASE, fetchLatestLotteryDraw, fetchLatestLotteryResult, fetchLatestLotteryResultState, fetchLotteryHistory, fetchLotteryHistoryYears, fetchNumberReference, fetchTongXing, invalidatePublishedLotteryData, normalizePeriod } from '../lottery-api';
 import { clearReadCache, readThroughCache, resetReadCacheForTests } from '../read-cache';
 
 afterEach(() => {
@@ -28,6 +28,33 @@ function jsonResponse(body: unknown) {
 }
 
 describe('lottery-api response validation', () => {
+  it('reuses the completed public home result across reloads, then rechecks after the fallback window', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-24T07:00:00Z'));
+    const fetcher = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(jsonResponse({ drawDate: '2026-09-23', items: [{ lottery: '今彩539', period: '115000231' }], dueLotteries: [] }))
+      .mockResolvedValueOnce(jsonResponse({ drawDate: '2026-09-24', items: [{ lottery: '今彩539', period: '115000232' }], dueLotteries: [] }));
+    const first = await fetchLatestLotteryResultState();
+    resetReadCacheForTests();
+    expect(await fetchLatestLotteryResultState()).toEqual(first);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    vi.setSystemTime(new Date('2026-09-24T07:15:01Z'));
+    expect((await fetchLatestLotteryResultState()).items[0].period).toBe('115000232');
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it('a published draw invalidates the mobile snapshot even before its fallback expires', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-24T07:00:00Z'));
+    const fetcher = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(jsonResponse({ item: { period: '115000231', resultStatus: 'confirmed', numbers: ['01', '02', '03', '04', '05'] }, revision: 'r1' }))
+      .mockResolvedValueOnce(jsonResponse({ item: { period: '115000231', resultStatus: 'confirmed', numbers: ['06', '07', '08', '09', '10'] }, revision: 'r2' }));
+    expect((await fetchLatestLotteryDraw('今彩539'))?.numbers).toEqual(['01', '02', '03', '04', '05']);
+    resetReadCacheForTests();
+    invalidatePublishedLotteryData('今彩539');
+    expect((await fetchLatestLotteryDraw('今彩539'))?.numbers).toEqual(['06', '07', '08', '09', '10']);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
   it('keeps public GET headers simple while retrying a transient read response once', async () => {
     const draw = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
     const fetcher = vi.spyOn(globalThis, 'fetch')
