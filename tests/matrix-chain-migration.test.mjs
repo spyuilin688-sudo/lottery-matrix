@@ -1,18 +1,29 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import test from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
 const read = name => readFileSync(new URL(`../supabase/migrations/${name}`,import.meta.url),'utf8');
 // Literal paths keep the scoped-test selector aware of every migration covered here.
-const retirement = read('20260920006000_retire_matrix_custom_status.sql');
+const retirement = read('20260919212711_retire_matrix_custom_status.sql');
 const functionSql = (sql, name) => sql.match(new RegExp(`create(?: or replace)? function ${name.replaceAll('.', '\\.')}\\([\\s\\S]*?\\$(?:function)?\\$;`, 'i'))[0];
 const migrations = [
- read('20260920001000_matrix_chain_evidence.sql'),
- read('20260920002000_matrix_verified_recovery.sql'),
- read('20260920003000_matrix_custom_status_guard.sql'),
- read('20260920004000_matrix_missing_artifact_recovery.sql'),
- read('20260920005000_matrix_optimizer_snapshot.sql'),
+ read('20260919180526_matrix_chain_evidence.sql'),
+ read('20260919180528_matrix_verified_recovery.sql'),
+ read('20260919180603_matrix_custom_status_guard.sql'),
+ read('20260919180618_matrix_missing_artifact_recovery.sql'),
+ read('20260919180638_matrix_optimizer_snapshot.sql'),
 ];
+test('migration filenames keep the optimizer and custom-status prerequisites before retirement', () => {
+ const expected = [
+  'matrix_optimizer_history_schedule', 'matrix_chain_evidence', 'matrix_verified_recovery',
+  'matrix_custom_status_guard', 'matrix_missing_artifact_recovery', 'matrix_optimizer_snapshot',
+  'matrix_optimizer_cron_origin', 'retire_matrix_custom_status',
+ ];
+ const names = readdirSync(new URL('../supabase/migrations/', import.meta.url))
+  .filter(name => expected.includes(name.replace(/^\d+_/, '').replace(/\.sql$/, '')))
+  .sort().map(name => name.replace(/^\d+_/, '').replace(/\.sql$/, ''));
+ assert.deepEqual(names, expected);
+});
 async function fixture({ retire = true } = {}) {
  const db = new PGlite();
  await db.exec(`create role anon; create role authenticated; create role service_role;
@@ -73,6 +84,13 @@ const sharedRows = async db => {
  const tables=['lottery_draws','matrix_analysis_runs','matrix_analysis_artifacts','private.matrix_analysis_active_versions','system_job_status','matrix_watchdog_leases','members','notification_outbox'];
  return Object.fromEntries(await Promise.all(tables.map(async table=>[table,(await db.query(`select * from ${table}`)).rows])));
 };
+test('recorded custom-status guard can replace existing functions and its trigger', async t => {
+ const db = await fixture({ retire: false }); t.after(() => db.close());
+ await db.exec(read('20260919180603_matrix_custom_status_guard.sql'));
+ assert.equal(await scalar(db, "select count(*) from pg_trigger where tgname='matrix_custom_status_config_lock' and not tgisinternal"), 1);
+ assert.deepEqual(await sharedRows(db), db.sharedBefore);
+});
+
 test('retirement removes only custom objects and preserves shared data and API boundaries', async t => {
  const db=await fixture(); t.after(()=>db.close());
  assert.deepEqual(await sharedRows(db),db.sharedBefore);
@@ -98,7 +116,7 @@ test('retirement rolls back if an unexpected dependency would be removed', async
 test('retirement preserves guest, member, paid and trial entitlement decisions', async t => {
  const db=await fixture(); t.after(()=>db.close());
  const member='11111111-1111-1111-1111-111111111111';
- const oldEntitlement=functionSql(read('20260916015000_google_member_perks.sql'),'private.matrix_result_entitlements');
+ const oldEntitlement=functionSql(read('20260915175243_google_member_perks.sql'),'private.matrix_result_entitlements');
  const newEntitlement=functionSql(retirement,'private.matrix_result_entitlements');
  const rights=()=>scalar(db,'select private.matrix_result_entitlements()');
  for(const scenario of ['guest','free','registered-access','trial','monthly','quarterly','yearly','lifetime','line-trial']) {

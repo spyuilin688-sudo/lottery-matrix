@@ -1,4 +1,3 @@
-begin;
 create function public.matrix_optimizer_snapshot() returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare v_sql jsonb := null; v_indexes jsonb; v_tables jsonb; v_functions jsonb; v_security jsonb; v_jobs jsonb; v_reset timestamptz;
@@ -41,4 +40,3 @@ $$;
 revoke all on function public.matrix_optimizer_snapshot() from public,anon,authenticated;
 grant execute on function public.matrix_optimizer_snapshot() to service_role;
 notify pgrst,'reload schema';
-commit;

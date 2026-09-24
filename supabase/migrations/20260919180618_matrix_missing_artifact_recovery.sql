@@ -1,4 +1,3 @@
-begin;
 CREATE OR REPLACE FUNCTION public.matrix_analysis_acquire_run(p_lottery text, p_draw_period text, p_analysis_version text, p_owner_id text, p_started_at timestamp with time zone, p_lease_seconds integer DEFAULT 300)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -162,4 +161,3 @@ $$;
 revoke all on function public.matrix_restore_analysis_pointers(text,text,jsonb,text,text) from public,anon,authenticated;
 grant execute on function public.matrix_restore_analysis_pointers(text,text,jsonb,text,text) to service_role;
 notify pgrst,'reload schema';
-commit;
