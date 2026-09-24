@@ -136,3 +136,29 @@ test("390px 系統通知拒絕狀態使用實際狀態樣式並保留完整文�
   assert.equal(dom.window.getComputedStyle(status).overflowWrap, "anywhere");
   assert.equal(dom.window.getComputedStyle(detail).color, "var(--lottery-label)");
 });
+
+for (const width of [320, 390, 430]) {
+  test(`${width}px 系統通知列的手機啟用按鈕可換行並保留觸控尺寸`, () => {
+    const dom = new JSDOM(`<!doctype html>
+      <style>${responsiveCss}\n${css}</style>
+      <main class="notifications-screen notifications-screen-v2">
+        <div class="notification-heading">
+          <div class="notification-icon"></div>
+          <div class="notification-title">
+            <h2><span>系統通知</span></h2>
+            <p class="notification-push-status" role="status">手機通知未開啟</p>
+            <button type="button" class="notification-push-enable">開啟手機通知</button>
+          </div>
+          <div class="notification-actions"></div>
+        </div>
+      </main>`, { pretendToBeVisual: true });
+    Object.defineProperty(dom.window, "innerWidth", { configurable: true, value: width });
+    const button = dom.window.document.querySelector(".notification-push-enable");
+    const style = dom.window.getComputedStyle(button);
+
+    assert.equal(style.minHeight, "44px");
+    assert.equal(style.maxWidth, "100%");
+    assert.equal(style.whiteSpace, "normal");
+    assert.equal(button.closest('[role="status"]'), null);
+  });
+}

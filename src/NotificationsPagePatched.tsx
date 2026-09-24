@@ -405,7 +405,9 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
       pushBusy
       || pushNotice === "checking"
       || pushNotice === "status-failed"
+      || pushAuthenticated !== true
       || !pushStatus.supported
+      || pushStatus.permission === "denied"
       || pushStatus.enabled
     ) return;
     const operationRevision = pushOperationRevision.current + 1;
@@ -528,7 +530,15 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     const disabled = !settings[key] || key === "collision" || notificationSettingsLoadUiState === "unauthenticated" || (!isSystemRow && notificationSettingsControlsBlocked);
     const expanded = expandedKey === key && !disabled;
     const settingsPanelId = `notification-settings-${key}`;
-    const pushToggleUnavailable = pushNotice === "checking" || pushNotice === "status-failed" || pushAuthenticated !== true || !pushStatus.supported || pushStatus.permission === "denied";
+    const canEnablePhoneNotifications = isSystemRow
+      && notificationSettingsLoadUiState === "ready"
+      && settings.system
+      && pushAuthenticated === true
+      && pushNotice !== "checking"
+      && pushNotice !== "status-failed"
+      && pushStatus.supported
+      && pushStatus.permission !== "denied"
+      && !pushStatus.enabled;
     const systemToggleLabel = `${settings.system ? "關閉" : "開啟"}系統通知`;
     return <article className="notification-row" data-notification-key={key} key={key}>
       <div className="notification-heading">
@@ -536,10 +546,12 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
         <div className="notification-title"><h2><span>{title}</span></h2>{isSystemRow ? <p className="notification-push-status" role={pushNotice === "enable-failed" ? "alert" : "status"} aria-live="polite" aria-atomic="true"><span>{pushStatusMessage}</span>{pushNotice === "denied" ? <span className="notification-push-status-detail">通知權限已拒絕</span> : null}{pushNotice === "status-failed" ? <button type="button" className="notification-settings-toggle" aria-label="重新檢查手機通知" onClick={() => {
           setPushNotice("checking");
           setPushCheckRevision((current) => current + 1);
-        }}>重新檢查</button> : null}</p> : null}</div>
+        }}>重新檢查</button> : null}</p> : null}
+          {canEnablePhoneNotifications ? <button type="button" className="notification-push-enable" disabled={pushBusy} onClick={() => { void enablePushForSystemNotifications(); }}>{pushBusy ? "手機通知開啟中" : "開啟手機通知"}</button> : null}
+        </div>
         <div className="notification-actions">
           <button type="button" className="notification-settings-toggle" disabled={disabled} aria-controls={settingsPanelId} aria-expanded={expanded} onClick={() => setExpandedKey((current) => current === key ? null : key)}><span>設定選項</span><ChevronDownIcon aria-hidden="true" /></button>
-          <Toggle checked={settings[key]} disabled={isSystemRow ? pushBusy || pushToggleUnavailable || notificationSettingsControlsBlocked : key === "collision" || notificationSettingsControlsBlocked} label={isSystemRow ? systemToggleLabel : `${settings[key] ? "關閉" : "開啟"}${title}`} busy={isSystemRow && pushBusy} onChange={() => {
+          <Toggle checked={settings[key]} disabled={isSystemRow ? pushBusy || notificationSettingsLoadUiState !== "ready" || notificationSettingsControlsBlocked : key === "collision" || notificationSettingsControlsBlocked} label={isSystemRow ? systemToggleLabel : `${settings[key] ? "關閉" : "開啟"}${title}`} busy={isSystemRow && pushBusy} onChange={() => {
             if (isSystemRow) {
               const nextSystemEnabled = !settings.system;
               applyNotificationSettingsEdit((current) => ({
