@@ -4,6 +4,7 @@ const dependencies = vi.hoisted(() => ({
   rpc: vi.fn(),
   readAlgorithmCacheScope: vi.fn().mockResolvedValue('member:tianshu'),
   getAlgorithmCacheScope: vi.fn().mockReturnValue('member:tianshu'),
+  isGuestAlgorithmCacheSession: vi.fn().mockReturnValue(false),
   readPermissionSettings: vi.fn().mockResolvedValue({ revision: 1 }),
 }));
 vi.mock('./lib/supabase', () => ({
@@ -11,6 +12,7 @@ vi.mock('./lib/supabase', () => ({
 }));
 vi.mock('./auth/algorithm-cache-scope', () => ({
   getAlgorithmCacheScope: dependencies.getAlgorithmCacheScope,
+  isGuestAlgorithmCacheSession: dependencies.isGuestAlgorithmCacheSession,
   readAlgorithmCacheScope: dependencies.readAlgorithmCacheScope,
 }));
 vi.mock('./permission-settings', () => ({

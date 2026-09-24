@@ -4,6 +4,8 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, expect, it, vi } from 'vitest';
 import { render } from '../../test/render-with-dialog';
 import { MatrixExplorePage } from '../features/MatrixExplorePage';
+import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
+import { publishMemberSessionReady, resetMemberSessionStoreForTests } from '../auth/member-session-store';
 import { MatrixPageSwitcher } from '../features/shared';
 import { FeaturePageRouter } from '../features/router';
 import { invalidateMatrixData } from '../matrix-data-revision';
@@ -107,6 +109,10 @@ async function renderTianhengResult(overrides = {}, validation = tianhengValidat
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetMemberSessionStoreForTests();
+  const session = { user: { id: 'member' }, access_token: 'member-session' };
+  publishMemberSessionReady(session as never);
+  updateAlgorithmCacheSession(session as never);
   window.sessionStorage.clear();
   uiState.permissionSettings = {
     subscriptionPurchaseVisible: true, registeredMemberFreeAccess: false, revision: 1,

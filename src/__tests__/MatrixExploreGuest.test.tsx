@@ -6,10 +6,11 @@ import { MatrixExplorePage } from '../features/MatrixExplorePage';
 import { fetchExploreList, fetchExploreValidation, fetchTianhengList, fetchTianhengValidation, fetchTianyanList, fetchTiangongList, type ExploreListRequest } from '../matrix-algorithm-api';
 import { resetReadCacheForTests } from '../read-cache';
 import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
+import { publishMemberSessionError, publishMemberSessionReady, resetMemberSessionStoreForTests } from '../auth/member-session-store';
 
-const sdk = vi.hoisted(() => ({ rpc: vi.fn(), getSession: vi.fn(), profile: vi.fn() }));
+const sdk = vi.hoisted(() => ({ rpc: vi.fn(), getSession: vi.fn(), profile: vi.fn(), bootstrap: vi.fn() }));
 vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ rpc: sdk.rpc, auth: { getSession: sdk.getSession } }) }));
-vi.mock('../member-api', () => ({ bootstrapMember: async () => {}, fetchMemberProfile: sdk.profile }));
+vi.mock('../member-api', () => ({ bootstrapMember: sdk.bootstrap, fetchMemberProfile: sdk.profile }));
 vi.mock('../permission-settings', () => ({
   readPermissionSettings: vi.fn().mockResolvedValue({
     subscriptionPurchaseVisible: false,
@@ -32,11 +33,40 @@ const response = { kind: 'explore', lottery: '今彩539', drawPeriod: '115000210
 beforeEach(() => {
   resetReadCacheForTests();
   updateAlgorithmCacheSession(null);
+  resetMemberSessionStoreForTests();
+  publishMemberSessionReady(null);
+  sdk.bootstrap.mockReset().mockResolvedValue(undefined);
   sdk.getSession.mockReset().mockResolvedValue({ data: { session: null }, error: null });
   sdk.rpc.mockReset().mockResolvedValue({ data: response, error: null });
   sdk.profile.mockReset().mockResolvedValue(null);
 });
 afterEach(cleanup);
+
+test.each(['Matrix 探索', 'Matrix 天衡', 'Matrix 天樞', 'Matrix 天衍'] as const)(
+  '%s 訪客進頁不初始化會員或讀取會員資料', async (title) => {
+    await act(async () => { render(<MatrixExplorePage title={title} onNavigate={vi.fn()} />); });
+    expect(sdk.bootstrap).not.toHaveBeenCalled();
+    expect(sdk.profile).not.toHaveBeenCalled();
+  },
+);
+
+test('登入狀態未確認時不初始化會員，確認登入後只讀取一次資料', async () => {
+  resetMemberSessionStoreForTests();
+  const session = { user: { id: 'member' }, access_token: 'member-session' };
+  await act(async () => { render(<MatrixExplorePage onNavigate={vi.fn()} />); });
+  expect(sdk.bootstrap).not.toHaveBeenCalled();
+  await act(async () => { publishMemberSessionReady(session as never); });
+  await waitFor(() => expect(sdk.profile).toHaveBeenCalledTimes(1));
+  expect(sdk.bootstrap).toHaveBeenCalledTimes(1);
+});
+
+test('登入狀態讀取失敗時不嘗試會員初始化', async () => {
+  resetMemberSessionStoreForTests();
+  await act(async () => { render(<MatrixExplorePage onNavigate={vi.fn()} />); });
+  await act(async () => { publishMemberSessionError(); });
+  expect(sdk.bootstrap).not.toHaveBeenCalled();
+  expect(sdk.profile).not.toHaveBeenCalled();
+});
 
 async function start() {
   await act(async () => { render(<MatrixExplorePage onNavigate={vi.fn()} />); });
@@ -170,6 +200,9 @@ test('訪客選擇七期時須登入，且不送出探索請求', async () => {
 });
 
 test('Matrix 探索進頁選取會員實際最高期數及範圍', async () => {
+  const session = { user: { id: 'member' }, access_token: 'member-session' };
+  publishMemberSessionReady(session as never);
+  updateAlgorithmCacheSession(session as never);
   sdk.profile.mockResolvedValue({ lineUserId: 'line-member', planName: null, isLifetime: false, exploreEntitlements: { canUseSeven: true, canUseThirteen: false, canUseFullRange: true } });
   await act(async () => { render(<MatrixExplorePage title="Matrix 探索" onNavigate={vi.fn()} />); });
   expect(screen.getByText('七期').getAttribute('data-selected')).toBe('true');
