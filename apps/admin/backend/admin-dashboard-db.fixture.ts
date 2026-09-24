@@ -12,7 +12,7 @@ const ready = (async () => {
 })();
 export async function dashboardFromRows(respond: (path: string) => Promise<unknown>, now: string) {
   await ready;
-  await dashboardDb.exec(readFileSync(new URL('../../../supabase/migrations/20260920105700_admin_dashboard_summary.sql', import.meta.url), 'utf8'));
+  await dashboardDb.exec(readFileSync(new URL('../../../supabase/migrations/20260920112247_admin_dashboard_summary.sql', import.meta.url), 'utf8'));
   await dashboardDb.exec('truncate plans, members, payments, admin_revenue_settings');
   const asRows = (value: unknown) => Array.isArray(value) ? value : [];
   const members = asRows(await respond('/rest/v1/members?select=registered_at'));

@@ -25,7 +25,7 @@ beforeAll(async () => {
       ('00000000-0000-0000-0000-000000000002','{"full_name":"別的會員"}');
     insert into auth.identities values ('00000000-0000-0000-0000-000000000003','00000000-0000-0000-0000-000000000001',
       'google','google-1','{"sub":"google-1","email":"hidden@example.test"}',now());`);
-  for (const name of ['20260920105819_optimize_status_summary_reads.sql','20260920105823_read_validation_draw_periods.sql','20260920105827_admin_member_auth_profiles.sql']) {
+  for (const name of ['20260920112248_optimize_status_summary_reads.sql','20260920112249_read_validation_draw_periods.sql','20260920112250_admin_member_auth_profiles.sql']) {
     await db.exec(migration(name));
   }
 });

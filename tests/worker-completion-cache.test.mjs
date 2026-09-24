@@ -165,7 +165,7 @@ test('draw read cache and worker completion triggers invalidate together on alia
       alter table lottery_draws add column draw_order_numbers jsonb;
       alter table lottery_draws add column updated_at timestamptz default now();`);
     for (const name of ['20260914114420_matrix_draw_query_pagination.sql',
-      '20260917002000_optimize_matrix_draw_query_read_path.sql',
+      '20260916161309_optimize_matrix_draw_query_read_path.sql',
       '20260920192323_matrix_draw_indexed_read_cache.sql']) {
       await db.exec(readFileSync(new URL(`../supabase/migrations/${name}`, import.meta.url), 'utf8'));
     }

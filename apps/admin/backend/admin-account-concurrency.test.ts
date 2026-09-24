@@ -16,7 +16,7 @@ describe('administrator edits use database compare-and-swap', () => {
         can_view boolean, can_add boolean, can_edit boolean, can_delete boolean);
       insert into public.admin_accounts values ('operator', 'operator', 'Operator', '營運管理員', '啟用', true, true, true, true);
       insert into public.admin_accounts values ('owner', 'owner', 'Owner', '超級管理員', '啟用', true, true, true, true);`);
-    await db.exec(readFileSync(new URL('../../../supabase/migrations/20260821194500_protect_last_super_admin.sql', import.meta.url), 'utf8'));
+    await db.exec(readFileSync(new URL('../../../supabase/migrations/20260821102612_protect_last_super_admin.sql', import.meta.url), 'utf8'));
     if (existsSync(migration)) await db.exec(readFileSync(migration, 'utf8'));
   });
   afterEach(async () => { await db.close(); });

@@ -15,7 +15,7 @@ const fantasy5Workflow = readFileSync(
   'utf8',
 );
 const watchdogLeaseMigration = readFileSync(
-  new URL('../supabase/migrations/20260904103000_add_matrix_watchdog_leases.sql', import.meta.url),
+  new URL('../supabase/migrations/20260904104229_add_matrix_watchdog_leases.sql', import.meta.url),
   'utf8',
 );
 

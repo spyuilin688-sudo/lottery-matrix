@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
 
 const migration = readFileSync(
-  new URL('../supabase/migrations/20260921074500_materialized_algorithm_read_cache.sql', import.meta.url),
+  new URL('../supabase/migrations/20260922002937_materialized_algorithm_read_cache.sql', import.meta.url),
   'utf8',
 );
 

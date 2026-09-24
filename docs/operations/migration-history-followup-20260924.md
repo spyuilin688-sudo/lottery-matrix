@@ -1,5 +1,7 @@
 # Migration history follow-up — 2026-09-24
 
+> Historical #869 snapshot. The [remaining reconciliation](migration-history-remaining-20260924.md) supersedes the 113-version/13-missing counts below; the original evidence and decisions are preserved.
+
 Production was queried read-only. This repair changes repository history only; it does not run, replay, repair, or push migrations against any database.
 
 Base main: `b9eaf27baf7e07f24582ea730c9e9a878536fb5c`. The complete ledger snapshot contains 254 rows; main contains 243 migration files. Before this repair, 123 same-name files had different version prefixes. This repair renames 10 files and restores one missing file.

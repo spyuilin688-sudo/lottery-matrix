@@ -6,7 +6,7 @@ import test from 'node:test';
 test('event-driven notification health is read-only, aggregate-only and follows the recovery architecture', async () => {
   const db = new PGlite();
   const sql = await readFile(
-    new URL('../migrations/20260921233500_admin_notification_delivery_health.sql', import.meta.url),
+    new URL('../migrations/20260921154432_admin_notification_delivery_health.sql', import.meta.url),
     'utf8',
   );
   try {

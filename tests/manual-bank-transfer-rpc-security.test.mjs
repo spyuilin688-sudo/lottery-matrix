@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import test from "node:test";
 
-const path = new URL("../supabase/migrations/20260830060000_manual_bank_transfer.sql", import.meta.url);
+const path = new URL("../supabase/migrations/20260829223804_manual_bank_transfer.sql", import.meta.url);
 const migrations = new URL("../supabase/migrations/", import.meta.url);
 
 async function readMigration(suffix) {

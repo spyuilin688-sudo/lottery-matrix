@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const target = new URL('../supabase/migrations/20260921190000_fixed_bet_reminder_cron.sql', import.meta.url);
+const target = new URL('../supabase/migrations/20260921111849_fixed_bet_reminder_cron.sql', import.meta.url);
 
 function sql() { return fs.readFileSync(target, 'utf8'); }
 

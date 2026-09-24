@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {PGlite} from '@electric-sql/pglite';
 
 const sql = readFileSync(
-  new URL('../supabase/migrations/20260921072423_dynamic_primary_worker_schedule.sql', import.meta.url),
+  new URL('../supabase/migrations/20260921074128_dynamic_primary_worker_schedule.sql', import.meta.url),
   'utf8',
 );
 

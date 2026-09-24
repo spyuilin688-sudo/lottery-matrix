@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const migrationUrl = new URL(
-  '../../../supabase/migrations/20260901164500_restore_super_admin_activity_log_exemption.sql',
+  '../../../supabase/migrations/20260901161953_restore_super_admin_activity_log_exemption.sql',
   import.meta.url,
 );
 

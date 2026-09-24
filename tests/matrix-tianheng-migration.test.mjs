@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-const migration = '../supabase/migrations/20260910233000_matrix_tianheng.sql';
+const migration = '../supabase/migrations/20260910224706_matrix_tianheng.sql';
 const sql = readFileSync(new URL(migration, import.meta.url), 'utf8');
 const readMigration = name => readFileSync(new URL(`../supabase/migrations/${name}`, import.meta.url), 'utf8');
 const guestAccessSql = readMigration('20260922120600_tianheng_three_period_guest_access.sql');
@@ -120,7 +120,7 @@ test('latest migration restores anonymous Tianheng wrappers without changing hig
 test('active Explore implementations preserve current behavior except the v13 suffix', () => {
   for (const [operation, source] of [
     ['list', '20260904040000_matrix_explore_prediction_number_group_order.sql'],
-    ['validation', '20260902040000_matrix_explore_v12_rpc.sql'],
+    ['validation', '20260902072734_matrix_explore_v12_rpc.sql'],
   ]) {
     const active = functionDefinition(sql, `private.matrix_explore_${operation}_impl`);
     const prior = functionDefinition(readMigration(source), `public.matrix_explore_${operation}`);

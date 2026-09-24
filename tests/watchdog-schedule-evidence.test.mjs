@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {PGlite} from '@electric-sql/pglite';
-const path=new URL('../supabase/migrations/20260920060000_watchdog_schedule_evidence.sql',import.meta.url);
+const path=new URL('../supabase/migrations/20260920051031_watchdog_schedule_evidence.sql',import.meta.url);
 const scalar=async(db,q,p=[])=>Object.values((await db.query(q,p)).rows[0])[0];
 async function fixture(){
  const db=new PGlite();

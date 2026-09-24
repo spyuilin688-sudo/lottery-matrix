@@ -20,7 +20,7 @@ before(async () => {
         '{"canUseSeven":true,"canUseThirteen":true,"canUseFullRange":true,"canUseTianyan":true,"canUseTiangong":true,"canViewFullStatus":true}'::jsonb)
     $$;`);
   await db.exec(read('./fixtures/matrix-analysis-tables.sql'));
-  await db.exec(read('../migrations/20260825060000_matrix_analysis_artifact_chunks.sql'));
+  await db.exec(read('../migrations/20260824223022_matrix_analysis_artifact_chunks.sql'));
   // An optional SQL file permits replaying these regressions against a prior deployment.
   const migration = process.env.MATRIX_READS_MIGRATION
     ? readFileSync(process.env.MATRIX_READS_MIGRATION, 'utf8')

@@ -33,12 +33,12 @@ before(async () => {
     create table public.members(id uuid primary key,auth_user_id uuid,status text,plan_expires_at timestamptz,is_lifetime boolean default false);
   `);
   for (const file of [
-    '20260824180000_matrix_fastapi_backend.sql',
+    '20260824094431_matrix_fastapi_backend.sql',
     '20260823042016_create_member_notification_settings.sql',
-    '20260830144700_mobile_push_notifications.sql',
-    '20260830183000_mobile_push_notification_indexes.sql',
+    '20260830095443_mobile_push_notifications.sql',
+    '20260830103236_mobile_push_notification_indexes.sql',
   ]) await db.exec(read(file));
-  const defaults = read('20260829090000_member_pwa_rpc.sql')
+  const defaults = read('20260829181805_member_pwa_rpc.sql')
     .match(/create or replace function private.default_member_notification_settings\(\)[\s\S]*?\$\$;/i);
   assert.ok(defaults, 'production notification defaults must be installed');
   await db.exec(defaults[0]);
@@ -61,7 +61,7 @@ before(async () => {
     '20260913133102_notification_reminder_draw_days.sql',
     '20260913153424_notification_marksix_official_calendar.sql',
     '20260913190020_notification_delivery_receipts.sql',
-    '20260921012052_enforce_active_member_notifications.sql',
+    '20260921014842_enforce_active_member_notifications.sql',
   ]) await db.exec(read(file));
 });
 after(async () => db.close());

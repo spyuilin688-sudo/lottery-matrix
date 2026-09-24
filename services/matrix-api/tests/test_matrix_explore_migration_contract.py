@@ -10,26 +10,26 @@ SQL_PATH = (
 )
 SQL = SQL_PATH.read_text(encoding="utf-8")
 REPAIR_SQL_PATHS = (
-    ROOT / "supabase" / "migrations" / "20260830220000_fix_matrix_v6_rpc_nullif.sql",
-    ROOT / "supabase" / "migrations" / "20260830221500_fix_matrix_v6_rpc_coalesce.sql",
+    ROOT / "supabase" / "migrations" / "20260830130523_fix_matrix_v6_rpc_nullif.sql",
+    ROOT / "supabase" / "migrations" / "20260830130914_fix_matrix_v6_rpc_coalesce.sql",
 )
 ENTITLEMENT_REPAIR_SQL_PATH = (
     ROOT
     / "supabase"
     / "migrations"
-    / "20260830223000_fix_matrix_entitlement_coalesce.sql"
+    / "20260830131255_fix_matrix_entitlement_coalesce.sql"
 )
 V7_SQL_PATH = (
     ROOT
     / "supabase"
     / "migrations"
-    / "20260831213000_matrix_python_v7_explore_rpc.sql"
+    / "20260830235651_matrix_python_v7_explore_rpc.sql"
 )
 V10_SQL_PATH = (
     ROOT
     / "supabase"
     / "migrations"
-    / "20260901100000_matrix_explore_v2_ranges.sql"
+    / "20260901115059_matrix_explore_v2_ranges.sql"
 )
 
 

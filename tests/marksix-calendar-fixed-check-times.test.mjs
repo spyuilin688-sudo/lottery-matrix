@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const target = new URL(
-  '../supabase/migrations/20260922052500_marksix_calendar_fixed_check_times.sql',
+  '../supabase/migrations/20260921212658_marksix_calendar_fixed_check_times.sql',
   import.meta.url,
 );
 

@@ -14,7 +14,7 @@ const tables = ['matrix_analysis_artifacts', 'matrix_analysis_artifact_chunks', 
 before(async () => {
   await db.exec('create role anon; create role authenticated; create role service_role bypassrls; create schema private;');
   await db.exec(read('./fixtures/matrix-analysis-tables.sql'));
-  await db.exec(read('../migrations/20260825060000_matrix_analysis_artifact_chunks.sql'));
+  await db.exec(read('../migrations/20260824223022_matrix_analysis_artifact_chunks.sql'));
   await db.exec(read('../migrations/20260903185906_matrix_analysis_run_lease.sql'));
   await db.exec('grant select, insert, update, delete on public.matrix_explore_results, public.matrix_tianheng_results to service_role;');
   await db.exec(read('../migrations/20260912192953_matrix_analysis_owned_writes.sql'));
