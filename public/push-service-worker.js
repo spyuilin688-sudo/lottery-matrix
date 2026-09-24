@@ -127,12 +127,18 @@ function keepAlive(event, operation) {
   }
 }
 
+function versionedShellUrl() {
+  const url = new URL("/", self.location.origin);
+  url.searchParams.set("matrix_pwa_build", BUILD_SOURCE_SHA);
+  return url.href;
+}
+
 async function precacheAppShell() {
   const cache = await openStaticCache();
   // Cache Storage is optional, but an incomplete update must not replace a
   // working cache when storage is available.
   if (!cache) return;
-  const shell = await fetch("/", { cache: "reload" });
+  const shell = await fetch(versionedShellUrl(), { cache: "reload" });
   const paths = await shellAssetPaths(shell);
   if (BUILD_ASSET_PATHS.length && paths.some(path => !BUILD_ASSET_PATHS.includes(path))) {
     throw new Error("PWA_BUILD_MISMATCH");
@@ -199,13 +205,17 @@ async function handleNavigation(event) {
   try {
     // A prior deployment's HTML may still be fresh in the HTTP cache. Revalidate
     // before preparing its assets; complete cached shells remain the fallback.
-    const response = await fetch(event.request, { cache: "no-cache" });
+    let response = await fetch(event.request, { cache: "no-cache" });
     // Only the main PWA entry is an app shell. Never store admin/other documents
     // under '/', or persist a LINE callback response in the shell cache.
     const url = new URL(event.request.url);
     if (!["/", "/index.html"].includes(url.pathname) || url.search) return response;
     const cache = await openStaticCache();
-    const paths = await shellAssetPaths(response);
+    let paths = await shellAssetPaths(response);
+    if (BUILD_ASSET_PATHS.length && paths.some(path => !BUILD_ASSET_PATHS.includes(path))) {
+      response = await fetch(versionedShellUrl(), { cache: "reload" });
+      paths = await shellAssetPaths(response);
+    }
     const stored = await prepareAssets(cache, paths, false);
     if (stored) await cacheResponse(cache, "/", response);
     return response;
