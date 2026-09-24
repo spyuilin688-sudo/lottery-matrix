@@ -177,7 +177,7 @@
   box-sizing: border-box;
   width: max-content;
   max-width: 100%;
-  min-height: 44px;
+  min-height: 26px;
   margin-top: 2px;
   padding: 4px 8px;
   border: 1px solid var(--pwa-frame-tertiary);
