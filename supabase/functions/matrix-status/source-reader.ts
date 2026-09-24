@@ -1,4 +1,11 @@
 type MatrixLottery = '今彩539' | '天天樂' | '六合彩' | '大樂透';
+const publicLotteries: MatrixLottery[] = ['今彩539', '天天樂', '六合彩', '大樂透'];
+
+export type MatrixPublicResultRevisions = Record<MatrixLottery, {
+  drawRevision: string;
+  generation: number;
+  activeVersions: Record<string, unknown>;
+}>;
 
 export type MatrixStatusSourcePayload = {
   analysisVersion?: unknown;
@@ -77,6 +84,31 @@ export function createMatrixStatusCompactReader(
       response,
       'SUPABASE_ANALYSIS_READ_FAILED',
     );
+  };
+}
+
+export function createMatrixPublicResultRevisionReader(
+  loadConfig: () => Config,
+  fetcher: typeof fetch = fetch,
+) {
+  return async (): Promise<MatrixPublicResultRevisions> => {
+    const config = loadConfig();
+    const response = await fetcher(`${config.url}/rest/v1/rpc/matrix_public_result_revision`, {
+      method: 'POST', headers: serviceHeaders(config.serviceRoleKey), body: '{}',
+    });
+    if (!response.ok) throw new Error('SUPABASE_RESULT_REVISION_READ_FAILED');
+    const revisions = await response.json() as Record<string, unknown>;
+    if (!revisions || typeof revisions !== 'object' || Array.isArray(revisions)
+      || Object.keys(revisions).length !== publicLotteries.length
+      || publicLotteries.some((lottery) => {
+        const item = revisions[lottery] as Record<string, unknown> | undefined;
+        return !item || typeof item !== 'object' || Array.isArray(item)
+          || typeof item.drawRevision !== 'string'
+          || !Number.isSafeInteger(item.generation)
+          || !item.activeVersions || typeof item.activeVersions !== 'object'
+          || Array.isArray(item.activeVersions);
+      })) throw new Error('SUPABASE_RESULT_REVISION_READ_FAILED');
+    return revisions as MatrixPublicResultRevisions;
   };
 }
 

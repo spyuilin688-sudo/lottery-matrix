@@ -193,6 +193,101 @@ describe('Matrix status Edge Function', () => {
     expect(deps.resolveEntitlements).not.toHaveBeenCalled();
   });
 
+  it('shares only completed public summaries until the database revision changes', async () => {
+    const lotteries = ['今彩539', '天天樂', '六合彩', '大樂透'] as const;
+    const deps = dependencies();
+    let version = 1;
+    let count = 1;
+    const readCompactStatus = vi.fn(async (requestedLottery: MatrixLottery) => ({
+      analysisVersion, drawPeriod,
+      payload: { lottery: requestedLottery, drawPeriod, summary: { status: 'ACTIVE', count, message: '' } },
+    }));
+    const readRevision = vi.fn(async () => Object.fromEntries(lotteries.map((item) => [item, {
+      drawRevision: 'draw-v1', generation: version, activeVersions: {},
+    }])));
+    const handler = createMatrixStatusEdgeHandler({ ...deps, readCompactStatus }, readRevision);
+    const request = (action: string) => new Request('https://example.test/functions/v1/matrix-status', {
+      method: 'POST', body: JSON.stringify({ action, lotteries }),
+    });
+    const first = await (await handler(request('summary-batch'))).json();
+    const second = await (await handler(request('summary-batch'))).json();
+    expect(first).toEqual(second);
+    expect(readCompactStatus).toHaveBeenCalledTimes(4);
+    expect(readRevision).toHaveBeenCalledTimes(3); // Check before and after the first load, then once on the hit.
+
+    version = 2; // Same-period result correction.
+    count = 2;
+    const corrected = await (await handler(request('summary-batch'))).json();
+    expect(corrected.items[0].body.summary.count).toBe(2);
+    expect(readCompactStatus).toHaveBeenCalledTimes(8);
+
+    await handler(request('batch'));
+    expect(readCompactStatus).toHaveBeenCalledTimes(12);
+    expect(deps.resolveEntitlements).toHaveBeenCalledTimes(4);
+  });
+
+  it('falls back to direct summary reads when the version probe is unavailable', async () => {
+    const lotteries = ['今彩539'] as const;
+    const deps = dependencies();
+    const readCompactStatus = vi.fn(async () => ({
+      analysisVersion, drawPeriod,
+      payload: { lottery, drawPeriod, summary: { status: 'ACTIVE', count: 1, message: '' } },
+    }));
+    const handler = createMatrixStatusEdgeHandler({ ...deps, readCompactStatus },
+      async () => { throw new Error('revision unavailable'); });
+    const request = () => new Request('https://example.test/functions/v1/matrix-status', {
+      method: 'POST', body: JSON.stringify({ action: 'summary-batch', lotteries }),
+    });
+    expect((await (await handler(request())).json()).items[0].status).toBe(200);
+    expect((await (await handler(request())).json()).items[0].status).toBe(200);
+    expect(readCompactStatus).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not save an old summary when the version changes during loading', async () => {
+    const lotteries = ['今彩539', '天天樂', '六合彩', '大樂透'] as const;
+    const deps = dependencies();
+    let generation = 1;
+    const readCompactStatus = vi.fn(async (requestedLottery: MatrixLottery) => {
+      if (requestedLottery === '今彩539' && generation === 1) generation = 2;
+      return {
+        analysisVersion, drawPeriod,
+        payload: { lottery: requestedLottery, drawPeriod,
+          summary: { status: 'ACTIVE', count: generation, message: '' } },
+      };
+    });
+    const readRevision = async () => Object.fromEntries(lotteries.map((item) => [item, {
+      drawRevision: 'same-period', generation, activeVersions: {},
+    }]));
+    const handler = createMatrixStatusEdgeHandler({ ...deps, readCompactStatus }, readRevision);
+    const request = () => new Request('https://example.test/functions/v1/matrix-status', {
+      method: 'POST', body: JSON.stringify({ action: 'summary-batch', lotteries }),
+    });
+    const first = await (await handler(request())).json();
+    expect(first.items.every((item: { body: { summary: { count: number } } }) => item.body.summary.count === 2)).toBe(true);
+    const readsAfterFirst = readCompactStatus.mock.calls.length;
+    expect(readsAfterFirst).toBeGreaterThan(4);
+    expect((await (await handler(request())).json()).items).toEqual(first.items);
+    expect(readCompactStatus).toHaveBeenCalledTimes(readsAfterFirst);
+  });
+
+  it('does not reuse a not-ready summary as a completed result', async () => {
+    const deps = dependencies();
+    const readCompactStatus = vi.fn()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValue({ analysisVersion, drawPeriod,
+        payload: { lottery, drawPeriod, summary: { status: 'ACTIVE', count: 1, message: '' } } });
+    const revisions = async () => Object.fromEntries(['今彩539', '天天樂', '六合彩', '大樂透'].map((item) => [item, {
+      drawRevision: 'stable', generation: 1, activeVersions: {},
+    }]));
+    const handler = createMatrixStatusEdgeHandler({ ...deps, readCompactStatus }, revisions);
+    const request = () => new Request('https://example.test/functions/v1/matrix-status', {
+      method: 'POST', body: JSON.stringify({ action: 'summary-batch', lotteries: [lottery] }),
+    });
+    expect((await (await handler(request())).json()).items[0].status).toBe(404);
+    expect((await (await handler(request())).json()).items[0].status).toBe(200);
+    expect(readCompactStatus).toHaveBeenCalledTimes(2);
+  });
+
   it('rejects unsupported methods without reading analysis data', async () => {
     const deps = dependencies();
     const handler = createMatrixStatusEdgeHandler(deps);
