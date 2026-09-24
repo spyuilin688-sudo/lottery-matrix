@@ -65,9 +65,9 @@ test('homepage announcement sits below the logo as a compact non-interactive mar
 });
 
 test('homepage requested responsive vertical gaps are owned by the existing canonical rules', () => {
-  assertBlock(css, '.home-screen .lottery-screen', /--home-gap-draw-status:\s*clamp\(7px,\s*calc\(1\.15dvh\s*\+\s*1px\),\s*10px\);/);
-  assertBlock(css, '.home-screen .home-layout', /--home-gap-status-core:\s*clamp\(7px,\s*1\.35dvh,\s*10px\);/);
-  assertBlock(css, '.home-screen .home-layout', /--home-gap-core-features:\s*var\(--home-gap-status-core\);/);
+  assertBlock(css, '.home-screen .lottery-screen', /--home-gap-draw-status:\s*clamp\(4px,\s*calc\(1\.15dvh\s*\+\s*1px\),\s*7px\);/);
+  assertBlock(css, '.home-screen .home-layout', /--home-gap-status-core:\s*clamp\(4px,\s*1\.35dvh,\s*7px\);/);
+  assertBlock(css, '.home-screen .home-layout', /--home-gap-core-features:\s*clamp\(7px,\s*1\.35dvh,\s*10px\);/);
   assert.ok(!blocks(css, '.home-screen .matrix-status-section').some((body) => /padding-block-start:\s*1\.5px;/.test(body)));
 });
 

@@ -15,7 +15,7 @@ const notificationsSource = readFileSync(new URL("../src/NotificationsPagePatche
 test("首頁狀態區、Matrix Core 與四大功能使用指定節奏", () => {
   assert.doesNotMatch(homeCss, /\.home-screen \.home-layout\s*\{[^}]*row-gap:/s);
   assert.match(homeCss, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*var\(--home-gap-status-core\);/s);
-  assert.match(homeCss, /\.home-screen \.home-layout\s*\{[^}]*--home-gap-status-core:\s*clamp\(7px,\s*1\.35dvh,\s*10px\);[^}]*--home-gap-core-features:\s*var\(--home-gap-status-core\);[^}]*--home-gap-features-nav:\s*clamp\(4px,\s*0\.7dvh,\s*8px\);/s);
+  assert.match(homeCss, /\.home-screen \.home-layout\s*\{[^}]*--home-gap-status-core:\s*clamp\(4px,\s*1\.35dvh,\s*7px\);[^}]*--home-gap-core-features:\s*clamp\(7px,\s*1\.35dvh,\s*10px\);[^}]*--home-gap-features-nav:\s*clamp\(4px,\s*0\.7dvh,\s*8px\);/s);
   assert.match(homeCss, /\.home-bottom-group\s*\{[^}]*gap:\s*var\(--home-gap-core-features\);/s);
   assert.doesNotMatch(homeCss, /\.home-bottom-group\s*\{[^}]*(?:--home-gap-core-features\s*:|padding-bottom:\s*8px)/s);
 });

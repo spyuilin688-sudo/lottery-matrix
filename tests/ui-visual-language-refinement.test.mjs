@@ -32,8 +32,8 @@ test("homepage status frame owns 16px inset, zero top padding and 4px card gaps"
   assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "padding-block-start"), "");
   assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "border"), "0");
   assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-card-grid", "gap"), "4px");
-  assert.match(homeCss, /--home-gap-draw-status:\s*clamp\(7px,\s*calc\(1\.15dvh\s*\+\s*1px\),\s*10px\);/);
-  assert.match(homeCss, /--home-gap-status-core:\s*clamp\(7px,\s*1\.35dvh,\s*10px\);/);
+  assert.match(homeCss, /--home-gap-draw-status:\s*clamp\(4px,\s*calc\(1\.15dvh\s*\+\s*1px\),\s*7px\);/);
+  assert.match(homeCss, /--home-gap-status-core:\s*clamp\(4px,\s*1\.35dvh,\s*7px\);/);
 });
 
 test("homepage status logos are 80 percent larger and shift left 6px without a max-width lock", () => {

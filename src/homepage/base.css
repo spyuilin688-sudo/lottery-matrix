@@ -32,8 +32,8 @@
 .home-screen .home-layout {
   --home-feature-inline: 16px;
   --home-feature-gap: 6px;
-  --home-gap-status-core: clamp(7px, 1.35dvh, 10px);
-  --home-gap-core-features: var(--home-gap-status-core);
+  --home-gap-status-core: clamp(4px, 1.35dvh, 7px);
+  --home-gap-core-features: clamp(7px, 1.35dvh, 10px);
   --home-gap-features-nav: clamp(4px, 0.7dvh, 8px);
   box-sizing: border-box;
   display: grid;
@@ -54,7 +54,7 @@
   --home-gap-logo-announcement: clamp(5px, 0.8dvh, 8px);
   --home-gap-announcement-switcher: clamp(6px, 0.9dvh, 8px);
   --home-gap-switcher-draw: clamp(4px, calc(0.9dvh + 1px), 7px);
-  --home-gap-draw-status: clamp(7px, calc(1.15dvh + 1px), 10px);
+  --home-gap-draw-status: clamp(4px, calc(1.15dvh + 1px), 7px);
   box-sizing: border-box;
   display: flex;
   width: 100%;
