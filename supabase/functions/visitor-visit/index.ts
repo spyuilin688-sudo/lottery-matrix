@@ -18,8 +18,12 @@ const handler = createVisitorVisitHandler({
     const { error } = await supabase.rpc('record_matrix_visit_edge', { p_source: source });
     if (error) throw error;
   },
-  async readStats() {
-    const { data, error } = await supabase.rpc('admin_visitor_stats');
+  async recordIntroVisit(source) {
+    const { error } = await supabase.rpc('record_matrix_intro_visit_edge', { p_source: source });
+    if (error) throw error;
+  },
+  async readIntroStats() {
+    const { data, error } = await supabase.rpc('intro_visitor_stats');
     if (error) throw error;
     return data;
   },

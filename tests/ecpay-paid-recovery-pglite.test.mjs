@@ -6,7 +6,7 @@ import { setup, service, owner, userId, memberId, planId, number, merchant } fro
 const quotaMigration = new URL('../supabase/migrations/20260924001807_ecpay_quota_reconciliation.sql', import.meta.url);
 const recoveryMigration = new URL('../supabase/migrations/20260924041358_ecpay_paid_recovery.sql', import.meta.url);
 const improvementMigration = new URL('../supabase/migrations/20260924051512_ecpay_offline_recovery_and_paid_date.sql', import.meta.url);
-const historyMigration = new URL('../supabase/migrations/20260924061600_ecpay_failed_history_status.sql', import.meta.url);
+const historyMigration = new URL('../supabase/migrations/20260924063836_ecpay_failed_history_status.sql', import.meta.url);
 const tradeNo = '2609231234567890';
 const paidEvidence = [merchant, number, 2880, 'occupied', 'Credit_CreditCard', '1', new Date('2026-09-23T02:30:00Z'), tradeNo];
 

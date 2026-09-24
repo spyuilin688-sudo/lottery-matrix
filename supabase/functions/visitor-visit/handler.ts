@@ -1,6 +1,7 @@
 type Dependencies = {
   recordVisit(source: string): Promise<void>;
-  readStats?(): Promise<unknown>;
+  recordIntroVisit?(source: string): Promise<void>;
+  readIntroStats?(): Promise<unknown>;
 };
 
 const ALLOWED_ORIGINS = new Set([
@@ -17,10 +18,12 @@ function responseHeaders(origin: string) {
   };
 }
 
-function clientIp(request: Request) {
+function clientIp(request: Request, introVisit: boolean) {
   const forwarded = request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim();
+  const gateway = request.headers.get('CF-Connecting-IP')?.trim();
+  if (introVisit && gateway) return gateway;
   return forwarded
-    || request.headers.get('CF-Connecting-IP')?.trim()
+    || gateway
     || request.headers.get('X-Real-IP')?.trim()
     || '';
 }
@@ -29,7 +32,7 @@ function isVisitorCount(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 }
 
-export function createVisitorVisitHandler({ recordVisit, readStats }: Dependencies) {
+export function createVisitorVisitHandler({ recordVisit, recordIntroVisit, readIntroStats }: Dependencies) {
   return async (request: Request): Promise<Response> => {
     const origin = request.headers.get('Origin')?.trim() ?? '';
     if (!ALLOWED_ORIGINS.has(origin)) {
@@ -41,22 +44,28 @@ export function createVisitorVisitHandler({ recordVisit, readStats }: Dependenci
       return Response.json({ error: { code: 'METHOD_NOT_ALLOWED' } }, { status: 405, headers });
     }
 
-    const ip = clientIp(request);
+    const introVisit = new URL(request.url).searchParams.get('stats') === '1';
+    const ip = clientIp(request, introVisit);
     if (!ip || ip.length > 128) {
       return Response.json({ error: { code: 'VISITOR_SOURCE_UNAVAILABLE' } }, { status: 400, headers });
     }
     try {
-      await recordVisit(ip);
+      if (introVisit) {
+        if (!recordIntroVisit) throw new Error('INTRO_VISITOR_RECORDER_UNAVAILABLE');
+        await recordIntroVisit(ip);
+      } else {
+        await recordVisit(ip);
+      }
     } catch {
       return Response.json({ error: { code: 'VISITOR_RECORD_FAILED' } }, { status: 503, headers });
     }
 
-    if (new URL(request.url).searchParams.get('stats') !== '1') {
+    if (!introVisit) {
       return new Response(null, { status: 204, headers });
     }
     try {
-      if (!readStats) throw new Error('VISITOR_STATS_UNAVAILABLE');
-      const stats = await readStats() as Record<string, unknown> | null;
+      if (!readIntroStats) throw new Error('VISITOR_STATS_UNAVAILABLE');
+      const stats = await readIntroStats() as Record<string, unknown> | null;
       const todayVisitors = stats?.todayVisitors;
       const totalVisitors = stats?.totalVisitors;
       if (!isVisitorCount(todayVisitors) || !isVisitorCount(totalVisitors)) {
