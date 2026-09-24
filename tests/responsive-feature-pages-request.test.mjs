@@ -82,9 +82,9 @@ test('通知頁使用 v2 緊密密度且右側動作固定欄對齊', () => {
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-settings-toggle\s*\{[^}]*width:\s*56px;[^}]*height:\s*20px/s);
   assert.doesNotMatch(responsiveCss, /@media \(max-width: 360px\)[\s\S]*?notification-heading/);
   assert.match(css, /\.notification-row h2\s*\{[^}]*font-size:\s*14px;[^}]*line-height:\s*18px;/s);
-  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-actions > \.notification-settings-toggle\s*\{[^}]*height:\s*44px;/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-actions > \.notification-settings-toggle\s*\{[^}]*height:\s*32px;/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-actions > \.notification-settings-toggle::before\s*\{[^}]*height:\s*20px;/s);
-  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-actions > \.toggle\s*\{[^}]*width:\s*38px;[^}]*height:\s*44px;/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-actions > \.toggle\s*\{[^}]*width:\s*38px;[^}]*height:\s*32px;/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.toggle::before\s*\{[^}]*height:\s*18px;/s);
 });
 

@@ -49,7 +49,7 @@ for (const width of [390, 375, 360]) {
   });
 }
 
-test("通知列現有設定鍵與開關保留原外觀並擴大觸控高度", () => {
+test("通知列設定鍵與開關保留原外觀並使用 32px 觸控高度", () => {
   const dom = new JSDOM(`<!doctype html>
     <style>${css}</style>
     <main class="notifications-screen-v2">
@@ -63,8 +63,8 @@ test("通知列現有設定鍵與開關保留原外觀並擴大觸控高度", ()
   const settings = dom.window.document.querySelector(".notification-actions > .notification-settings-toggle");
   const toggle = dom.window.document.querySelector(".notification-actions > .toggle");
 
-  assert.equal(dom.window.getComputedStyle(settings).height, "44px");
-  assert.equal(dom.window.getComputedStyle(toggle).height, "44px");
+  assert.equal(dom.window.getComputedStyle(settings).height, "32px");
+  assert.equal(dom.window.getComputedStyle(toggle).height, "32px");
   assert.match(css, /notification-actions > \.notification-settings-toggle::before\s*\{[^}]*height:\s*20px/);
   assert.match(css, /notifications-screen-v2 \.toggle::before\s*\{[^}]*height:\s*18px/);
 });
