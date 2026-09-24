@@ -7,6 +7,10 @@ const migration = readFileSync(
   new URL('../supabase/migrations/20260908210936_record_payment_reversal.sql', import.meta.url),
   'utf8',
 );
+const entitlementReversalMigration = readFileSync(
+  new URL('../supabase/migrations/20260924090000_superadmin_reversal_entitlements.sql', import.meta.url),
+  'utf8',
+);
 
 const referralMigration = readFileSync(
   new URL('../supabase/migrations/20260905090000_allow_referral_code_after_payment.sql', import.meta.url),
@@ -67,7 +71,8 @@ async function setup() {
       id uuid primary key,
       account text not null,
       name text not null,
-      role text not null
+      role text not null,
+      status text not null default '啟用'
     );
     create table public.members (
       id uuid primary key,
@@ -145,6 +150,13 @@ async function setup() {
   await db.exec(matrixEntitlementsSql);
   await db.exec(migration);
   await db.exec(`
+    alter table public.payments drop constraint payments_status_check;
+    alter table public.payments add constraint payments_status_check
+      check (status in ('pending','confirmed','refund_required','rejected','refunded','chargeback','cancelled'));
+    select pg_catalog.set_config('request.jwt.claim.role', 'service_role', false);
+  `);
+  await db.exec(entitlementReversalMigration);
+  await db.exec(`
     insert into public.plans (id, name, price, duration_days) values
       ('${IDS.plan}', '月費方案', 2880, 30),
       ('${IDS.trialPlan}', '試用方案', 0, 7);
@@ -180,6 +192,16 @@ async function setup() {
       '30000000-0000-4000-8000-000000000002',
       '${IDS.plan}', 2880, '2026-02-02T00:00:00Z', 'confirmed'
     );
+    update public.members as member
+    set current_plan_id = '${IDS.plan}',
+        plan_started_at = '2026-02-01T00:00:00Z',
+        plan_expires_at = case
+          when member.id = '30000000-0000-4000-8000-000000000002'
+            then '2026-04-02T00:00:00Z'::timestamptz
+          else '2026-03-03T00:00:00Z'::timestamptz
+        end,
+        auto_renew = false
+    where member.id in (select payment.member_id from public.payments as payment where payment.status = 'confirmed');
     select pg_catalog.set_config('request.jwt.claim.sub', '${IDS.referrerAuth}', false);
   `);
   return db;
@@ -190,14 +212,149 @@ async function scalar(db, sql, params = []) {
   return Object.values(result.rows[0])[0];
 }
 
-async function reverse(db, number, status = 'refunded', actor = IDS.actor, reason = `已完成沖銷 ${number}`) {
+async function reverse(db, number, status = 'refunded', actor = IDS.superActor, reason = `已完成沖銷 ${number}`) {
   const paymentId = `50000000-0000-4000-8000-${String(number).padStart(12, '0')}`;
   const result = await db.query(
-    `select public.admin_record_payment_reversal($1::uuid, $2::text, $3::text, $4::uuid, '營運管理員') as value`,
-    [paymentId, status, reason, actor],
+    `select public.admin_record_payment_reversal($1::uuid, $2::text, $3::text, $4::uuid, $5::text) as value`,
+    [paymentId, status, reason, actor, actor === IDS.superActor ? '超級管理員' : '營運管理員'],
   );
   return result.rows[0].value;
 }
+
+async function setupTwoPurchases() {
+  const db = await setup();
+  await db.exec(`
+    insert into public.plans(id, name, price, duration_days) values
+      ('10000000-0000-4000-8000-000000000003', '年費方案', 17800, 365);
+    insert into public.members(
+      id, auth_user_id, current_plan_id, plan_started_at, plan_expires_at,
+      is_lifetime, auto_renew
+    ) values (
+      '30000000-0000-4000-8000-000000000999',
+      '40000000-0000-4000-8000-000000000999',
+      '10000000-0000-4000-8000-000000000003',
+      '2026-09-23T14:08:07Z', '2027-10-23T14:08:07Z', false, false
+    );
+    insert into public.payments(id, member_id, plan_id, amount, paid_at, status) values
+      ('50000000-0000-4000-8000-000000000901', '30000000-0000-4000-8000-000000000999',
+       '${IDS.plan}', 2880, '2026-09-23T14:08:07Z', 'confirmed'),
+      ('50000000-0000-4000-8000-000000000902', '30000000-0000-4000-8000-000000000999',
+       '10000000-0000-4000-8000-000000000003', 17800, '2026-09-23T18:19:24Z', 'confirmed');
+  `);
+  return db;
+}
+
+async function subscriptionOf(db, memberId = '30000000-0000-4000-8000-000000000999') {
+  const { rows: [member] } = await db.query(
+    'select current_plan_id, plan_started_at, plan_expires_at, is_lifetime, auto_renew from public.members where id = $1',
+    [memberId],
+  );
+  return {
+    ...member,
+    plan_started_at: member.plan_started_at?.toISOString() ?? null,
+    plan_expires_at: member.plan_expires_at?.toISOString() ?? null,
+  };
+}
+
+test('reversing the annual purchase retains the earlier month and its original expiry', async () => {
+  const db = await setupTwoPurchases();
+  try {
+    await reverse(db, 902, 'refunded', IDS.superActor);
+    assert.deepEqual(await subscriptionOf(db), {
+      current_plan_id: IDS.plan,
+      plan_started_at: '2026-09-23T14:08:07.000Z',
+      plan_expires_at: '2026-10-23T14:08:07.000Z',
+      is_lifetime: false,
+      auto_renew: false,
+    });
+    await reverse(db, 902, 'refunded', IDS.superActor, '同筆重試');
+    assert.equal((await subscriptionOf(db)).plan_expires_at, '2026-10-23T14:08:07.000Z');
+  } finally {
+    await db.close();
+  }
+});
+
+test('reversing the earlier month preserves the annual plan but removes those 30 days', async () => {
+  const db = await setupTwoPurchases();
+  try {
+    await reverse(db, 901, 'chargeback', IDS.superActor);
+    assert.deepEqual(await subscriptionOf(db), {
+      current_plan_id: '10000000-0000-4000-8000-000000000003',
+      plan_started_at: '2026-09-23T18:19:24.000Z',
+      plan_expires_at: '2027-09-23T18:19:24.000Z',
+      is_lifetime: false,
+      auto_renew: false,
+    });
+  } finally {
+    await db.close();
+  }
+});
+
+test('reversing the last effective purchase removes the paid plan without changing the member status', async () => {
+  const db = await setupTwoPurchases();
+  try {
+    await reverse(db, 902, 'cancelled', IDS.superActor);
+    await reverse(db, 901, 'refunded', IDS.superActor);
+    const member = await subscriptionOf(db);
+    assert.equal(member.current_plan_id, null);
+    assert.equal(member.plan_started_at, null);
+    assert.equal(member.plan_expires_at, null);
+    assert.equal(await scalar(db, `select status from public.members where id = '30000000-0000-4000-8000-000000000999'`), 'active');
+  } finally {
+    await db.close();
+  }
+});
+
+test('a manual expiry adjustment blocks the entire payment reversal instead of erasing that grant', async () => {
+  const db = await setupTwoPurchases();
+  try {
+    await db.exec(`update public.members set plan_expires_at = '2027-11-01T14:08:07Z'
+      where id = '30000000-0000-4000-8000-000000000999'`);
+    const before = await subscriptionOf(db);
+    await assert.rejects(() => reverse(db, 902, 'refunded', IDS.superActor), /PAYMENT_ENTITLEMENT_CONFLICT/);
+    assert.deepEqual(await subscriptionOf(db), before);
+    assert.equal(await scalar(db, `select status from public.payments where id = '50000000-0000-4000-8000-000000000902'`), 'confirmed');
+  } finally {
+    await db.close();
+  }
+});
+
+test('an operations administrator cannot reverse a payment even when able to edit subscriptions', async () => {
+  const db = await setupTwoPurchases();
+  try {
+    await assert.rejects(() => reverse(db, 902, 'refunded', IDS.actor), /PAYMENT_REVERSAL_FORBIDDEN/);
+    assert.equal(await scalar(db, `select status from public.payments where id = '50000000-0000-4000-8000-000000000902'`), 'confirmed');
+  } finally {
+    await db.close();
+  }
+});
+
+test('a disabled super administrator cannot reverse a payment', async () => {
+  const db = await setupTwoPurchases();
+  try {
+    await db.exec(`update public.admin_accounts set status = '停用' where id = '${IDS.superActor}'`);
+    await assert.rejects(() => reverse(db, 902, 'refunded', IDS.superActor), /PAYMENT_REVERSAL_FORBIDDEN/);
+    assert.equal(await scalar(db, `select status from public.payments where id = '50000000-0000-4000-8000-000000000902'`), 'confirmed');
+  } finally {
+    await db.close();
+  }
+});
+
+test('a payment that never opened a plan can be reversed without changing another entitlement', async () => {
+  const db = await setupTwoPurchases();
+  try {
+    await db.exec(`insert into public.payments(id, member_id, plan_id, amount, paid_at, status)
+      values ('50000000-0000-4000-8000-000000000903',
+        '30000000-0000-4000-8000-000000000999', '${IDS.plan}', 2880,
+        '2026-09-24T00:00:00Z', 'refund_required')`);
+    const before = await subscriptionOf(db);
+    await reverse(db, 903, 'refunded', IDS.superActor);
+    assert.deepEqual(await subscriptionOf(db), before);
+    assert.equal(await scalar(db, `select status from public.payments where id = '50000000-0000-4000-8000-000000000903'`), 'refunded');
+  } finally {
+    await db.close();
+  }
+});
 
 test('payment reversal is atomic, restricted, idempotent, and preserves unrelated billing data', async () => {
   const db = await setup();
@@ -207,16 +364,16 @@ test('payment reversal is atomic, restricted, idempotent, and preserves unrelate
       from public.members as member
       where id = '30000000-0000-4000-8000-000000000002'
     `);
-    const first = await reverse(db, 51, 'refunded', IDS.actor, '退款已由銀行完成');
+    const first = await reverse(db, 51, 'refunded', IDS.superActor, '退款已由銀行完成');
     assert.equal(first.status, 'refunded');
     assert.equal(first.referralSuccessCount, 50);
-    assert.equal(await scalar(db, `select count(*)::int from public.audit_logs where target_id = '50000000-0000-4000-8000-000000000051'`), 1);
+    assert.equal(await scalar(db, `select count(*)::int from public.audit_logs where target_id = '50000000-0000-4000-8000-000000000051'`), 0);
 
     const retry = await reverse(db, 51, 'refunded', IDS.superActor, '不同的重試理由');
     assert.equal(retry.reversedAt, first.reversedAt);
     assert.equal(retry.reversalReason, '退款已由銀行完成');
-    assert.equal(retry.reversedBy, IDS.actor);
-    assert.equal(await scalar(db, `select count(*)::int from public.audit_logs where target_id = '50000000-0000-4000-8000-000000000051'`), 1);
+    assert.equal(retry.reversedBy, IDS.superActor);
+    assert.equal(await scalar(db, `select count(*)::int from public.audit_logs where target_id = '50000000-0000-4000-8000-000000000051'`), 0);
 
     await assert.rejects(() => reverse(db, 51, 'chargeback'), /PAYMENT_REVERSAL_CONFLICT/);
     assert.equal(await scalar(db, `select status from public.payments where id = '50000000-0000-4000-8000-000000000051'`), 'refunded');
@@ -235,10 +392,11 @@ test('payment reversal is atomic, restricted, idempotent, and preserves unrelate
     assert.equal(preservedPayment.rows[0].paid_at.toISOString(), '2026-02-01T00:00:00.000Z');
     assert.equal(preservedPayment.rows[0].member_id, '30000000-0000-4000-8000-000000000002');
     assert.equal(preservedPayment.rows[0].plan_id, IDS.plan);
-    assert.deepEqual(
+    assert.notDeepEqual(
       await scalar(db, `select pg_catalog.to_jsonb(member) - 'invitation_code' from public.members as member where id = '30000000-0000-4000-8000-000000000002'`),
       beforeMember,
     );
+    assert.equal((await subscriptionOf(db, '30000000-0000-4000-8000-000000000002')).current_plan_id, null);
 
     assert.equal(await scalar(db, `select has_function_privilege('anon', 'public.admin_record_payment_reversal(uuid,text,text,uuid,text)', 'EXECUTE')`), false);
     assert.equal(await scalar(db, `select has_function_privilege('authenticated', 'public.admin_record_payment_reversal(uuid,text,text,uuid,text)', 'EXECUTE')`), false);
@@ -296,7 +454,7 @@ test('reversal recomputes canonical distinct referral counts and 10/15/30/50 rew
   }
 });
 
-test('invalid transitions and late audit failures roll back, while member history prefers terminal payment status', async () => {
+test('invalid transitions and late payment write failures roll back, while member history prefers terminal payment status', async () => {
   const db = await setup();
   try {
     await db.exec(`
@@ -325,7 +483,7 @@ test('invalid transitions and late audit failures roll back, while member histor
       ['50000000-0000-4000-8000-000000000001', 'refunded', '理'.repeat(501)],
     ]) {
       await assert.rejects(
-        () => db.query('select public.admin_record_payment_reversal($1::uuid, $2::text, $3::text, $4::uuid, $5::text)', [...args, IDS.actor, '營運管理員']),
+        () => db.query('select public.admin_record_payment_reversal($1::uuid, $2::text, $3::text, $4::uuid, $5::text)', [...args, IDS.superActor, '超級管理員']),
       );
     }
 
@@ -338,25 +496,27 @@ test('invalid transitions and late audit failures roll back, while member histor
     await reverse(db, 1, 'refunded', IDS.superActor, '超級管理員已確認退款完成');
     assert.equal(await scalar(db, `select count(*)::int from public.audit_logs where target_id = '50000000-0000-4000-8000-000000000001'`), 0);
     assert.equal(await scalar(db, `select reversal_reason from public.payments where id = '50000000-0000-4000-8000-000000000001'`), '超級管理員已確認退款完成');
-    await db.exec(`delete from public.admin_accounts where id = '${IDS.superActor}'`);
-    assert.equal(await scalar(db, `select reversed_by from public.payments where id = '50000000-0000-4000-8000-000000000001'`), IDS.superActor);
-
     await db.exec(`
-      create function public.reject_test_payment_audit() returns trigger
+      create function public.reject_test_payment_update() returns trigger
       language plpgsql set search_path = '' as $$
       begin
-        if new.target_id = '50000000-0000-4000-8000-000000000003' then
-          raise exception 'TEST_AUDIT_FAILURE';
+        if new.id = '50000000-0000-4000-8000-000000000003' then
+          raise exception 'TEST_PAYMENT_WRITE_FAILURE';
         end if;
         return new;
       end;
       $$;
-      create trigger z_reject_test_payment_audit
-        before insert on public.audit_logs
-        for each row execute function public.reject_test_payment_audit();
+      create trigger reject_test_payment_update
+        before update on public.payments
+        for each row execute function public.reject_test_payment_update();
     `);
-    await assert.rejects(() => reverse(db, 3), /TEST_AUDIT_FAILURE/);
+    const memberBefore = await subscriptionOf(db, '30000000-0000-4000-8000-000000000004');
+    await assert.rejects(() => reverse(db, 3), /TEST_PAYMENT_WRITE_FAILURE/);
     assert.equal(await scalar(db, `select status from public.payments where id = '50000000-0000-4000-8000-000000000003'`), 'confirmed');
+    assert.deepEqual(await subscriptionOf(db, '30000000-0000-4000-8000-000000000004'), memberBefore);
+
+    await db.exec(`delete from public.admin_accounts where id = '${IDS.superActor}'`);
+    assert.equal(await scalar(db, `select reversed_by from public.payments where id = '50000000-0000-4000-8000-000000000001'`), IDS.superActor);
 
     await db.exec(`select pg_catalog.set_config('request.jwt.claim.sub', '40000000-0000-4000-8000-000000000002', false)`);
     const history = await scalar(db, 'select public.member_payment_history_get()');

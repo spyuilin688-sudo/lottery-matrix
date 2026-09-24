@@ -93,6 +93,11 @@ describe('PaymentReversalPanel', () => {
     expect(disclosure.querySelector('summary')?.textContent).toContain('付款紀錄與沖銷');
   });
 
+  it('opens payment history when displayed as the active subscription tab', async () => {
+    await renderPanel({ expanded: true });
+    expect((container.querySelector('details.paymentReversalPanel') as HTMLDetailsElement).open).toBe(true);
+  });
+
   it('opens the card and exposes retry when payment history loading fails', async () => {
     await renderPanel({ payments: null, loadError: '付款紀錄載入失敗' });
     const disclosure = container.querySelector('details.paymentReversalPanel') as HTMLDetailsElement;
@@ -186,6 +191,8 @@ describe('PaymentReversalPanel', () => {
     expect(message).toContain('NT$2,880');
     expect(message).toContain('收單行已完成刷退');
     expect(message).toContain('推薦成功人數與 Matrix 資格會依剩餘有效付款重新計算');
+    expect(message).toContain('方案與效期會依剩餘有效付款重新計算');
+    expect(message).not.toContain('訂閱日期不會變更');
     expect(onRecord).not.toHaveBeenCalled();
   });
 
@@ -275,5 +282,15 @@ describe('PaymentReversalPanel', () => {
 
     expect(container.querySelector('[role="alert"]')?.textContent).toContain('這筆付款已記錄其他沖銷結果');
     expect(container.querySelector('[role="alert"]')?.textContent).not.toContain('PAYMENT_REVERSAL_CONFLICT');
+  });
+
+  it('explains entitlement conflicts without claiming the payment has been reversed', async () => {
+    await renderPanel({ onRecord: vi.fn().mockRejectedValue(new Error('PAYMENT_ENTITLEMENT_CONFLICT')) });
+    openForm();
+    change(textarea('沖銷原因'), '已完成退款');
+    await act(async () => button('記錄已完成沖銷').click());
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('會員訂閱曾有其他調整');
+    expect(textarea('沖銷原因').value).toBe('已完成退款');
+    expect(container.textContent).not.toContain('沖銷已記錄，付款紀錄');
   });
 });

@@ -6,7 +6,7 @@ import { useAdminDataPage, type AdminDataPageController } from "./use-admin-data
 import { AdminListControls } from "./AdminListControls";
 import { readAdminDataPage } from "./admin-table-pagination";
 import { adminBusinessDateKey } from "../shared/admin-business-time";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { api, auth } from "@appdeploy/client";
 import {
   BarChart3,
@@ -475,7 +475,10 @@ function AdminApp() {
     return () => window.removeEventListener("hashchange", openTransfers);
   }, [signed, isSuper]);
   useEffect(() => {
-    if (signed && active === "訂閱管理" && window.location.hash === "#transfer-requests") document.getElementById("transfer-requests")?.scrollIntoView?.({ block: "start" });
+    if (signed && active === "訂閱管理" && window.location.hash === "#transfer-requests") {
+      const panel = document.getElementById("transfer-requests");
+      if (panel && !panel.hidden) panel.scrollIntoView?.({ block: "start" });
+    }
   }, [signed, active, busy]);
   const runAuthentication = async (operation: (current: () => boolean) => Promise<void>) => {
     if (authPending.current) return;
@@ -1193,6 +1196,29 @@ function SubscriptionManager({
 }) {
   const memberPage = useAdminMemberPage("subscriptions", revision, api);
   const { plan, setPlan, setPage, paged, loading, error } = memberPage;
+  const [activeTab, setActiveTab] = useState<'members' | 'payments' | 'transfers'>(
+    () => isSuper && window.location.hash === '#transfer-requests' ? 'transfers' : 'members',
+  );
+  useEffect(() => {
+    if (!isSuper) return;
+    const openTransfers = () => { if (window.location.hash === '#transfer-requests') setActiveTab('transfers'); };
+    window.addEventListener('hashchange', openTransfers);
+    return () => window.removeEventListener('hashchange', openTransfers);
+  }, [isSuper]);
+  const tabs = [
+    { id: 'members', label: '訂閱會員', panel: 'subscription-members' },
+    { id: 'payments', label: '付款紀錄', panel: 'subscription-payments' },
+    { id: 'transfers', label: '轉帳申請', panel: 'transfer-requests' },
+  ] as const;
+  const onTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const next = event.key === 'ArrowRight' ? (index + 1) % tabs.length
+      : event.key === 'ArrowLeft' ? (index + tabs.length - 1) % tabs.length
+        : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : -1;
+    if (next < 0) return;
+    event.preventDefault();
+    setActiveTab(tabs[next].id);
+    document.getElementById(`subscription-tab-${tabs[next].id}`)?.focus();
+  };
   const [editing, setEditing] = useState<Row | null>(null);
   const [action, setAction] = useState<SubscriptionPayload["action"]>("activate");
   const [planId, setPlanId] = useState("");
@@ -1248,6 +1274,21 @@ function SubscriptionManager({
   };
   return (
     <>
+      <div className="subscriptionTabs" role="tablist" aria-label="訂閱管理分頁">
+        {tabs.map((tab, index) => <button
+          key={tab.id}
+          type="button"
+          id={`subscription-tab-${tab.id}`}
+          role="tab"
+          aria-selected={activeTab === tab.id}
+          aria-controls={tab.panel}
+          tabIndex={activeTab === tab.id ? 0 : -1}
+          onClick={() => setActiveTab(tab.id)}
+          onKeyDown={(event) => onTabKeyDown(event, index)}
+        >{tab.label}</button>)}
+      </div>
+      <section id="subscription-members" role="tabpanel" aria-labelledby="subscription-tab-members" hidden={activeTab !== 'members'}>
+      {activeTab === 'members' && <>
       <AdminListControls page={memberPage} name="訂閱" className="subscriptionManagementToolbar" statuses={[["active", "啟用"], ["disabled", "停用"]]} sorts={[["planStartedAt", "開始時間"], ["planExpiresAt", "到期時間"]]}>
         <select aria-label="篩選訂閱方案" value={plan} onChange={(event) => setPlan(event.target.value)}>
           <option value="all">全部方案</option><option value="monthly">月費</option><option value="quarterly">季費</option><option value="yearly">年費</option>
@@ -1280,18 +1321,27 @@ function SubscriptionManager({
         </div>
       )}
       {userInfo && <UserInfoDialog key={userInfo.id} row={userInfo} client={api} module="subscriptions" onClose={() => setUserInfo(null)} />}
+      </>}
+      </section>
+      <section id="subscription-payments" role="tabpanel" aria-labelledby="subscription-tab-payments" hidden={activeTab !== 'payments'}>
+      {activeTab === 'payments' && <>
       <AdminListControls page={paymentPage} showError={false} name="付款紀錄" statuses={[["confirmed", "已付款"], ["refund_required", "需退款處理"], ["refunded", "已退款"], ["chargeback", "已刷退"], ["cancelled", "已取消"]]} sorts={[["paidAt", "付款時間"], ["amount", "付款金額"]]} />
       <PaymentReversalPanel
         key={JSON.stringify(paymentPage.query)}
         payments={paymentPage.loading || paymentPage.error ? null : paymentPage.items.map(paymentRecord)}
         loadError={paymentPage.error ? "付款紀錄載入失敗，請重新載入" : ""}
-        canEdit={canEdit}
+        canEdit={isSuper && canEdit}
+        expanded
         confirm={confirm}
         onRecord={onPaymentReversal}
         onRefresh={onPaymentRefresh}
+        onMemberRefresh={memberPage.refresh}
       />
       <Pagination page={paymentPage.currentPage} totalPages={paymentPage.totalPages} onPage={paymentPage.setPage} disabled={paymentPage.loading || Boolean(paymentPage.error)} />
-      <div className="panel transferPanel" id="transfer-requests">
+      </>}
+      </section>
+      <section id="transfer-requests" role="tabpanel" aria-labelledby="subscription-tab-transfers" hidden={activeTab !== 'transfers'}>
+      {activeTab === 'transfers' && <div className="panel transferPanel">
         <h2>轉帳申請</h2>
         <AdminTransferPush client={api} isSuper={isSuper} />
         <AdminListControls page={transferPage} name="轉帳申請" statuses={[["pending", "待確認"], ["confirmed", "已確認"], ["rejected", "已拒絕"]]} sorts={[["submittedAt", "申請時間"], ["amount", "轉帳金額"]]} />
@@ -1303,7 +1353,8 @@ function SubscriptionManager({
           </div>
         ))}
         <Pagination page={transferPage.currentPage} totalPages={transferPage.totalPages} onPage={transferPage.setPage} disabled={transferPage.loading || Boolean(transferPage.error)} />
-      </div>
+      </div>}
+      </section>
     </>
   );
 }
