@@ -387,14 +387,14 @@ describe("requested responsive layout refinement", () => {
     const cardNumber = getComputedStyle(document.querySelector(".guide-category-card > span")!);
     const previewNumber = getComputedStyle(document.querySelector(".guide-preview header > span")!);
 
-    expect(rail.marginLeft).toBe("4px");
+    expect(rail.marginTop).toBe("0px");\n    expect(rail.marginLeft).toBe("4px");
     expect(rail.marginRight).toBe("4px");
     expect(rail.paddingTop).toBe("3px");
     expect(rail.paddingBottom).toBe("3px");
     expect(rail.scrollPaddingInline).toBe("20px");
     expect(card.minHeight).toBe("30.888px");
-    expect(card.padding).toBe("5.616px 11.232px");
-    expect(card.fontSize).toBe("16.848px");
+    expect(card.padding).toBe("5px 9px");
+    expect(card.fontSize).toBe("14px");\n    expect(card.fontWeight).toBe("600");
     expect(cardNumber.fontSize).toBe("11.88px");
     expect(previewNumber.width).toBe("18px");
     expect(previewNumber.height).toBe("18px");
