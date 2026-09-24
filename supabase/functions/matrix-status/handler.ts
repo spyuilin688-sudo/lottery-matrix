@@ -1,4 +1,5 @@
 import { createMatrixStatusRoutes } from '../../../backend/matrix-status-routes.ts';
+import type { MatrixPublicResultRevisions } from './source-reader.ts';
 
 type MatrixStatusDependencies = Parameters<typeof createMatrixStatusRoutes>[0];
 type MatrixLottery = '今彩539' | '天天樂' | '六合彩' | '大樂透';
@@ -22,8 +23,56 @@ function record(value: unknown) {
   return value as Record<string, unknown>;
 }
 
-export function createMatrixStatusEdgeHandler(dependencies: MatrixStatusDependencies) {
+export function createMatrixStatusEdgeHandler(
+  dependencies: MatrixStatusDependencies,
+  readPublicResultRevision?: () => Promise<MatrixPublicResultRevisions>,
+) {
   const routes = createMatrixStatusRoutes(dependencies);
+  type SummaryResult = Awaited<ReturnType<typeof routes.summary>>;
+  const summaries = new Map<MatrixLottery, { version: string; result: SummaryResult }>();
+
+  const revision = async () => {
+    try { return await readPublicResultRevision?.() ?? null; }
+    catch { return null; } // Old deployments continue through the original read path.
+  };
+
+  const readSummaries = async (requested: MatrixLottery[], authorization: string | undefined) => {
+    let versions = dependencies.readCompactStatus ? await revision() : null;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      let loaded = false;
+      const items = await Promise.all(requested.map(async (lottery) => {
+        const key = versions ? JSON.stringify(versions[lottery]) : null;
+        const stored = key ? summaries.get(lottery) : null;
+        if (stored && stored.version === key) {
+          return { lottery, status: stored.result.status, body: stored.result.body };
+        }
+        loaded = true;
+        const result = await routes.summary({ authorization, body: { lottery } });
+        return { lottery, status: result.status, body: result.body };
+      }));
+      if (!versions || !loaded) return items;
+
+      const after = await revision();
+      if (!after) return items;
+      if (requested.some((lottery) => JSON.stringify(after[lottery]) !== JSON.stringify(versions[lottery]))) {
+        versions = after;
+        if (attempt === 0) continue; // Retry a draw that changed during the cold load.
+        return items;
+      }
+      for (const item of items) {
+        const body = record(item.body);
+        if (item.status === 200 && body?.kind === 'status-summary' && body.lottery === item.lottery
+          && typeof body.drawPeriod === 'string' && body.drawPeriod) {
+          summaries.set(item.lottery, {
+            version: JSON.stringify(versions[item.lottery]),
+            result: { status: item.status, body: item.body },
+          });
+        }
+      }
+      return items;
+    }
+    throw new Error('UNREACHABLE_STATUS_BATCH');
+  };
   return async (request: Request) => {
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders });
@@ -58,15 +107,13 @@ export function createMatrixStatusEdgeHandler(dependencies: MatrixStatusDependen
       ) {
         return json({ error: { code: 'INVALID_REQUEST' } }, 400);
       }
-      const items = await Promise.all(requested.map(async (item) => {
-        const lottery = item as MatrixLottery;
-        const route = action === 'summary-batch' ? routes.summary : routes.get;
-        const result = await route({
-          authorization,
-          body: { lottery },
-        });
-        return { lottery, status: result.status, body: result.body };
-      }));
+      const items = action === 'summary-batch'
+        ? await readSummaries(requested as MatrixLottery[], authorization)
+        : await Promise.all(requested.map(async (item) => {
+          const lottery = item as MatrixLottery;
+          const result = await routes.get({ authorization, body: { lottery } });
+          return { lottery, status: result.status, body: result.body };
+        }));
       return json({
         kind: action === 'summary-batch' ? 'status-summary-batch' : 'status-batch',
         items,

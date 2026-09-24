@@ -143,9 +143,55 @@ def _latest_completed_results(
         if cycle_date is not None
         else None
     )
-    empty_payload: dict[str, Any] = {"drawDate": None, "items": []}
+    cache = getattr(repository, "completed_result_cache", None)
+    if cache is not None:
+        for _attempt in range(2):
+            version = _public_result_revision(client)
+            if version is None:
+                break
+            key = "latest-result:" + json.dumps(version, ensure_ascii=False, sort_keys=True)
+
+            def load():
+                payload = _read_latest_completed_results(client)
+                if _public_result_revision(client) != version:
+                    raise _CompletedResultRevisionChanged()
+                return payload
+
+            try:
+                result = cache.read(key, load)
+                return {**result, **({"dueLotteries": due_lotteries} if due_lotteries is not None else {})}
+            except _CompletedResultRevisionChanged:
+                continue
+
+    result = _read_latest_completed_results(client)
     if due_lotteries is not None:
-        empty_payload["dueLotteries"] = due_lotteries
+        result["dueLotteries"] = due_lotteries
+    return result
+
+
+class _CompletedResultRevisionChanged(Exception):
+    pass
+
+
+def _public_result_revision(client: Any) -> dict[str, Any] | None:
+    try:
+        revision = client.rpc("matrix_public_result_revision", {}).execute().data
+    except Exception:
+        # Old deployments keep serving the original public read path.
+        return None
+    if not isinstance(revision, dict) or set(revision) != LOTTERIES:
+        return None
+    if any(not isinstance(part, dict)
+           or not isinstance(part.get("drawRevision"), str)
+           or type(part.get("generation")) is not int
+           or not isinstance(part.get("activeVersions"), dict)
+           for part in revision.values()):
+        return None
+    return revision
+
+
+def _read_latest_completed_results(client: Any) -> dict[str, Any]:
+    empty_payload: dict[str, Any] = {"drawDate": None, "items": []}
 
     latest_response = (
         client.table("lottery_draws")
@@ -207,8 +253,6 @@ def _latest_completed_results(
             items.append({"lottery": lottery, "period": period})
 
     payload: dict[str, Any] = {"drawDate": latest_date, "items": items}
-    if due_lotteries is not None:
-        payload["dueLotteries"] = due_lotteries
     return payload
 
 
@@ -1155,6 +1199,9 @@ def create_repository() -> AnalysisRepository:
             settings.supabase_url, settings.supabase_secret_key, httpx_client=client,
         )
         repository.draw_read_cache = DrawReadCache()
+        repository.completed_result_cache = DrawReadCache(
+            ttl=365 * 24 * 60 * 60, max_entries=8, max_bytes=128 * 1024,
+        )
         return repository
     except Exception:
         client.close()
