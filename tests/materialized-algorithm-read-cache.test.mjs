@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
 
 const migration = readFileSync(
@@ -34,6 +34,8 @@ async function database() {
       language sql stable as $$ select 'v1'::text $$;
   `);
   await db.exec(migration);
+  const contractMigration = readdirSync('supabase/migrations').find(name => name.endsWith('_restrict_tiangong_50_two_stage.sql'));
+  if (contractMigration) await db.exec(readFileSync(`supabase/migrations/${contractMigration}`, 'utf8'));
   return db;
 }
 
@@ -75,6 +77,33 @@ const tiangongItem = (id, exploreDirection) => ({
   eligiblePeriodRange: 50,
   firstStageDirection: '固定',
   secondStageDirection: '固定',
+});
+
+test('Tiangong accepts only 50 periods and two-stage requests', async () => {
+  const db = await database();
+  try {
+    const payload = {
+      lottery: '今彩539', drawPeriod: '42', numberOrder: '依號碼由小到大排序',
+      items: [tiangongItem('g1', '固定')], validationById: {},
+    };
+    await db.query(`insert into public.matrix_analysis_artifacts
+      (id,lottery,draw_period,analysis_version,kind,payload)
+      values ('00000000-0000-0000-0000-000000000010','今彩539','42','v1','tiangong',$1)`,
+    [JSON.stringify(payload)]);
+    const request = {
+      lottery: '今彩539', periodRange: 50, mode: 'two-stage', hitCondition: '準2進3',
+      exploreDirections: ['固定'], firstStageDirections: ['固定'], firstRoadTypes: ['加減'],
+      secondStageDirections: ['固定'], secondRoadTypes: ['合值'],
+    };
+    const list = (value) => db.query('select private.matrix_tiangong_list_impl($1::jsonb) result', [JSON.stringify(value)]);
+    assert.deepEqual((await list(request)).rows[0].result.items.map(item => item.id), ['g1']);
+    await assert.rejects(list({ ...request, periodRange: 80 }), /INVALID_REQUEST/);
+    await assert.rejects(list({ ...request, mode: 'one-stage' }), /INVALID_REQUEST/);
+    const { mode: _mode, ...missingMode } = request;
+    await assert.rejects(list(missingMode), /INVALID_REQUEST/);
+  } finally {
+    await db.close();
+  }
 });
 
 test('Tianyan and Tiangong list reads are materialized from artifact writes', async () => {
