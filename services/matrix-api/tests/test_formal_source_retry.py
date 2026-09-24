@@ -1,5 +1,8 @@
 from pathlib import Path
 from types import SimpleNamespace
+import os
+import subprocess
+import textwrap
 
 from app import worker_all
 
@@ -97,3 +100,64 @@ def test_fantasy5_workflow_is_manual_backup_and_keeps_source_retry() -> None:
     assert "not-acquired" in workflow
     assert "sleep 600" in workflow
     assert "FANTASY5_MAX_ATTEMPTS" in workflow
+
+
+def _run_fantasy5_backup(tmp_path: Path, statuses: str) -> tuple[subprocess.CompletedProcess[str], int, list[str]]:
+    workflow = (
+        Path(__file__).resolve().parents[3] / ".github" / "workflows" / "fantasy5-crawler.yml"
+    ).read_text(encoding="utf-8")
+    run_script = textwrap.dedent(workflow.split("        run: |\n", 1)[1])
+    counter = tmp_path / "attempts"
+    counter.write_text("0", encoding="utf-8")
+    sleeps = tmp_path / "sleeps"
+    sleeps.write_text("", encoding="utf-8")
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    uv = bin_dir / "uv"
+    uv.write_text(
+        '#!/usr/bin/env bash\n'
+        'attempt="$(cat "$FAKE_ATTEMPTS")"\n'
+        'IFS=, read -r -a statuses <<< "$FAKE_STATUSES"\n'
+        'printf "%s" "$((attempt + 1))" > "$FAKE_ATTEMPTS"\n'
+        'printf "天天樂 12005 %s\\n" "${statuses[$attempt]}"\n',
+        encoding="utf-8",
+    )
+    uv.chmod(0o755)
+    sleep = bin_dir / "sleep"
+    sleep.write_text('#!/usr/bin/env bash\nprintf "%s\\n" "$1" >> "$FAKE_SLEEPS"\n', encoding="utf-8")
+    sleep.chmod(0o755)
+    env = {
+        **os.environ,
+        "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}",
+        "FANTASY5_MAX_ATTEMPTS": "3",
+        "FAKE_ATTEMPTS": str(counter),
+        "FAKE_SLEEPS": str(sleeps),
+        "FAKE_STATUSES": statuses,
+    }
+    result = subprocess.run(["bash", "-c", run_script], env=env, text=True, capture_output=True, check=False)
+    return result, int(counter.read_text(encoding="utf-8")), sleeps.read_text(encoding="utf-8").splitlines()
+
+
+def test_fantasy5_manual_backup_reports_failure_after_all_source_retries(tmp_path: Path) -> None:
+    result, attempts, sleeps = _run_fantasy5_backup(tmp_path, "not-acquired,not-acquired,not-acquired")
+
+    assert result.returncode != 0
+    assert attempts == 3
+    assert sleeps == ["600", "600"]
+    assert "still waiting after 3 attempts" in result.stdout
+
+
+def test_fantasy5_manual_backup_accepts_already_acquired_without_extra_attempts(tmp_path: Path) -> None:
+    result, attempts, sleeps = _run_fantasy5_backup(tmp_path, "already-acquired")
+
+    assert result.returncode == 0
+    assert attempts == 1
+    assert sleeps == []
+
+
+def test_fantasy5_manual_backup_retries_pending_source_then_succeeds(tmp_path: Path) -> None:
+    result, attempts, sleeps = _run_fantasy5_backup(tmp_path, "not-acquired,acquired")
+
+    assert result.returncode == 0
+    assert attempts == 2
+    assert sleeps == ["600"]

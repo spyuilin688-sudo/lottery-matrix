@@ -21,6 +21,8 @@ for (const viewport of viewports) {
       const img = image as HTMLImageElement;
       return img.complete && img.naturalWidth > 0;
     }))).toBe(true);
+    // Geometry below covers the successful draw state, which has both time items.
+    await expect(home.locator(".latest-draw-card .next-draw-item")).toHaveCount(2);
 
     const geometry = await home.evaluate((root) => {
       const logo = root.querySelector<HTMLImageElement>(".home-logo-image")!;

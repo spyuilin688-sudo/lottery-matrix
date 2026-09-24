@@ -302,7 +302,13 @@ function AdminApp() {
   const [editingAdmin, setEditingAdmin] = useState<string | null>(null);
   const [showProfileName, setShowProfileName] = useState(false);
   const [profileName, setProfileName] = useState("");
+  const [profileNameError, setProfileNameError] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const profileDialog = useRef<HTMLDialogElement>(null);
+  const profileNameInput = useRef<HTMLInputElement>(null);
   const [confirmation, setConfirmation] = useState<ConfirmationRequest | null>(null);
+  const actionLocks = useRef(new Set<string>());
+  const [actionsInFlight, setActionsInFlight] = useState<ReadonlySet<string>>(new Set());
   const [activationSelectionMode, setActivationSelectionMode] = useState(false);
   const [selectedActivationCodeIds, setSelectedActivationCodeIds] = useState<Set<string>>(new Set());
   const [activationCopyFeedback, setActivationCopyFeedback] = useState("");
@@ -331,6 +337,28 @@ function AdminApp() {
   activeRef.current = active;
   signedRef.current = signed;
   adminIdRef.current = String(admin?.id ?? "");
+  useEffect(() => {
+    if (!showProfileName) return;
+    const element = profileDialog.current!;
+    const previous = document.activeElement as HTMLElement | null;
+    element.showModal();
+    profileNameInput.current?.focus();
+    return () => { element.close(); previous?.focus(); };
+  }, [showProfileName]);
+  const runLockedAction = async (kind: "member" | "transfer" | "code", id: string, action: () => Promise<unknown>) => {
+    const key = `${kind}:${id}`;
+    const group = `${kind}:*`;
+    if (actionLocks.current.has(group)) return;
+    actionLocks.current.add(key);
+    actionLocks.current.add(group);
+    setActionsInFlight(new Set(actionLocks.current));
+    try { await action(); }
+    finally {
+      actionLocks.current.delete(key);
+      actionLocks.current.delete(group);
+      if (mounted.current) setActionsInFlight(new Set(actionLocks.current));
+    }
+  };
   const requestConfirmation = (request: Omit<ConfirmationRequest, "resolve">) => {
     const current = captureView();
     confirmationRef.current?.resolve(false);
@@ -567,6 +595,8 @@ function AdminApp() {
   });
   const openProfileName = () => {
     setProfileName(String(admin?.name || ""));
+    setProfileNameError("");
+    setProfileSaving(false);
     setShowProfileName(true);
   };
   const saveProfileName = async () => {
@@ -574,16 +604,18 @@ function AdminApp() {
       () => requestConfirmation({ title: "確認修改名稱", message: `管理員名稱將修改為「${profileName.trim() || "未填寫"}」`, confirmLabel: "確認修改" }),
       async () => {
         const current = captureView(true);
+        setProfileSaving(true);
         setBusy(true);
-        setError("");
+        setProfileNameError("");
         try {
           const updated = await saveOwnAdminName(api, profileName);
           if (!current()) return;
           setAdmin((current) => ({ ...current, ...updated }));
           setShowProfileName(false);
         } catch (e) {
-          if (current()) setError(e instanceof Error ? e.message : "管理員名稱更新失敗");
+          if (current()) setProfileNameError(e instanceof Error ? e.message : "管理員名稱更新失敗");
         } finally {
+          if (mounted.current) setProfileSaving(false);
           if (current()) setBusy(false);
         }
       },
@@ -627,7 +659,7 @@ function AdminApp() {
   };
   const deleteCode = async (id: string) => {
     const code = rows.find((row) => row.id === id)?.code;
-    await runConfirmed(
+    await runLockedAction("code", id, () => runConfirmed(
       () => requestConfirmation({
         title: "確認刪除啟動碼",
         message: `啟動碼「${text(code)}」刪除後無法復原。`,
@@ -648,7 +680,7 @@ function AdminApp() {
           if (current()) setBusy(false);
         }
       },
-    );
+    ));
   };
   const toggleActivationSelectionMode = () => {
     setActivationSelectionMode((current) => !current);
@@ -866,25 +898,26 @@ function AdminApp() {
           </div>
         </header>
         {showProfileName && (
-          <div className="modalBackdrop" role="presentation">
-            <div className="nameDialog" role="dialog" aria-modal="true" aria-labelledby="profile-name-title">
+            <dialog ref={profileDialog} className="nameDialog" aria-labelledby="profile-name-title" aria-busy={profileSaving} onCancel={(event) => { event.preventDefault(); if (!profileSaving) setShowProfileName(false); }}>
               <h2 id="profile-name-title">修改名稱</h2>
               <label>
                 管理員名稱
                 <input
-                  autoFocus
+                  ref={profileNameInput}
                   value={profileName}
-                  onChange={(event) => setProfileName(event.target.value)}
+                  aria-invalid={Boolean(profileNameError)}
+                  aria-describedby={profileNameError ? "profile-name-error" : undefined}
+                  onChange={(event) => { setProfileName(event.target.value); setProfileNameError(""); }}
                 />
               </label>
+              {profileNameError && <p className="error" id="profile-name-error" role="alert">{profileNameError}</p>}
               <div className="formActions">
-                <button onClick={() => setShowProfileName(false)}>取消</button>
-                <button className="primary" onClick={saveProfileName} disabled={busy}>
+                <button disabled={profileSaving} onClick={() => setShowProfileName(false)}>取消</button>
+                <button className="primary" onClick={saveProfileName} disabled={profileSaving}>
                   儲存
                 </button>
               </div>
-            </div>
-          </div>
+            </dialog>
         )}
         <section className="content">
           {error && <div className="error">{error}</div>}
@@ -914,8 +947,9 @@ function AdminApp() {
               key={sessionKey}
               revision={memberListRevision}
               canEdit={moduleCan("users", "edit", "edit")}
+              pendingActionIds={actionsInFlight}
               onStatus={async (id, status) => {
-                await runConfirmed(
+                await runLockedAction("member", id, () => runConfirmed(
                   () => requestConfirmation({
                     title: status === "disabled" ? "確認停權用戶" : "確認啟動用戶",
                     message: `LINE 用戶 ${id}`,
@@ -936,7 +970,7 @@ function AdminApp() {
                       if (current()) setBusy(false);
                     }
                   },
-                );
+                ));
               }}
             />
           )}{" "}
@@ -948,6 +982,7 @@ function AdminApp() {
               sessionKey={sessionKey}
               isSuper={isSuper}
               canEdit={moduleCan("subscriptions", "edit", "edit")}
+              pendingActionIds={actionsInFlight}
               confirm={requestConfirmation}
               onPaymentReversal={(id, status, reason) => api.put(`/api/payments/${id}/reversal`, { status, reason })}
               onSubscription={async (id, payload) => {
@@ -975,7 +1010,7 @@ function AdminApp() {
                 );
               }}
               onTransfer={async (id, decision) => {
-                await runConfirmed(
+                await runLockedAction("transfer", id, () => runConfirmed(
                   () => requestConfirmation({
                     title: decision === "confirmed" ? "確認通過轉帳" : "確認拒絕轉帳",
                     message: `轉帳申請 ${id}`,
@@ -996,7 +1031,7 @@ function AdminApp() {
                       if (current()) setBusy(false);
                     }
                   },
-                );
+                ));
               }}
             />
           )}{" "}
@@ -1103,6 +1138,7 @@ function AdminApp() {
                 fields={fields}
                 canDelete={active === "啟動碼管理" && moduleCan("activationCodes", "edit", "delete")}
                 onDelete={deleteCode}
+                pendingDeleteIds={actionsInFlight}
                 selection={active === "啟動碼管理" ? {
                   enabled: activationSelectionMode,
                   selectedIds: selectedActivationCodeIds,
@@ -1162,10 +1198,12 @@ function ConfirmationDialog({
 function UserManager({
   revision,
   canEdit,
+  pendingActionIds,
   onStatus,
 }: {
   revision: number;
   canEdit: boolean;
+  pendingActionIds: ReadonlySet<string>;
   onStatus: (id: string, status: "active" | "disabled") => Promise<void>;
 }) {
   const memberPage = useAdminMemberPage("users", revision, api);
@@ -1186,7 +1224,7 @@ function UserManager({
           <thead><tr>{fields.map((field) => <th key={field}>{zh[field] || field}</th>)}<th>用戶資訊</th></tr></thead>
           <tbody>{paged.items.length === 0 ? <tr><td colSpan={fields.length + 1} className="empty">{loading ? "資料讀取中" : error ? "資料載入失敗" : "目前沒有資料"}</td></tr> : paged.items.map((row) => (
             <tr key={row.id}>
-              {fields.map((field) => <td key={field}>{field === "status" ? <span className="memberStatusCell">{showValue(field, row)}{canEdit && <button className="compactButton" onClick={() => onStatus(row.id, statusText(row.status) === "停用" ? "active" : "disabled")}>{statusText(row.status) === "停用" ? "啟動" : "停權"}</button>}</span> : showValue(field, row)}</td>)}
+              {fields.map((field) => <td key={field}>{field === "status" ? <span className="memberStatusCell">{showValue(field, row)}{canEdit && <button className="compactButton" disabled={pendingActionIds.has("member:*")} aria-busy={pendingActionIds.has(`member:${row.id}`)} onClick={() => onStatus(row.id, statusText(row.status) === "停用" ? "active" : "disabled")}>{statusText(row.status) === "停用" ? "啟動" : "停權"}</button>}</span> : showValue(field, row)}</td>)}
               <td><button className="compactButton" onClick={() => setUserInfo(row)}>用戶資訊</button></td>
             </tr>
           ))}</tbody>
@@ -1212,6 +1250,7 @@ function SubscriptionManager({
   sessionKey,
   isSuper,
   canEdit,
+  pendingActionIds,
   confirm,
   onPaymentReversal,
   onSubscription,
@@ -1222,6 +1261,7 @@ function SubscriptionManager({
   sessionKey: string;
   isSuper: boolean;
   canEdit: boolean;
+  pendingActionIds: ReadonlySet<string>;
   confirm: (request: Omit<ConfirmationRequest, "resolve">) => Promise<boolean>;
   onPaymentReversal: (id: string, status: PaymentReversalStatus, reason: string) => Promise<unknown>;
   onSubscription: (id: string, payload: SubscriptionPayload) => Promise<boolean>;
@@ -1261,11 +1301,21 @@ function SubscriptionManager({
   const [expiresAt, setExpiresAt] = useState("");
   const [saveError, setSaveError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const operationDialog = useRef<HTMLDialogElement>(null);
+  const operationCancel = useRef<HTMLButtonElement>(null);
   const expiryInputRef = useRef<HTMLInputElement>(null);
   const subscriptionSubmitLock = useRef(false);
   const renewRequestId = useRef<string | null>(null);
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => {
+    if (!editing) return;
+    const element = operationDialog.current!;
+    const previous = document.activeElement as HTMLElement | null;
+    element.showModal();
+    operationCancel.current?.focus();
+    return () => { element.close(); previous?.focus(); };
+  }, [Boolean(editing)]);
   const [userInfo, setUserInfo] = useState<Row | null>(null);
   const open = (row: Row, nextAction: SubscriptionPayload["action"]) => {
     if (subscriptionSubmitLock.current) return;
@@ -1344,17 +1394,15 @@ function SubscriptionManager({
       </div>
       <Pagination page={paged.currentPage} totalPages={paged.totalPages} onPage={setPage} disabled={loading || Boolean(error)} />
       {editing && (
-        <div className="modalBackdrop" role="presentation">
-          <div className="operationDialog" role="dialog" aria-modal="true" aria-labelledby="subscription-action-title" aria-busy={submitting}>
+          <dialog ref={operationDialog} className="operationDialog" aria-labelledby="subscription-action-title" aria-busy={submitting} onCancel={(event) => { event.preventDefault(); if (!submitting) setEditing(null); }}>
             <h2 id="subscription-action-title">{actionText[action]}</h2>
             <p>{text(editing.memberDisplayName ?? editing.identityDisplay)}{editing.memberDisplayName && editing.identityDisplay ? ` · ${text(editing.identityDisplay)}` : ""}</p>
             {(action === "activate" || action === "renew") && <label>方案<select disabled={submitting} value={planId} onChange={(event) => setPlanId(event.target.value)}>{plans.map((plan) => <option key={plan.id} value={plan.id}>{text(plan.name)}／{money(Number(plan.price))}／{text(plan.durationDays)} 天</option>)}</select></label>}
             {action === "adjustExpiry" && <label>到期日<input ref={expiryInputRef} type="date" disabled={submitting} value={expiresAt} aria-invalid={Boolean(saveError) && !expiresAt} aria-describedby={saveError ? "subscription-save-error" : undefined} onChange={(event) => { setExpiresAt(event.target.value); setSaveError(""); }} /></label>}
             {action === "cancel" && <p>取消後只停止自動續訂，權限保留至到期日。</p>}
             {saveError && <p className="error" id="subscription-save-error" role="alert">{saveError}</p>}
-            <div className="formActions"><button disabled={submitting} onClick={() => setEditing(null)}>取消</button><button className="primary" disabled={submitting} onClick={submit}>確認</button></div>
-          </div>
-        </div>
+            <div className="formActions"><button ref={operationCancel} disabled={submitting} onClick={() => setEditing(null)}>取消</button><button className="primary" disabled={submitting} onClick={submit}>確認</button></div>
+          </dialog>
       )}
       {userInfo && <UserInfoDialog key={userInfo.id} row={userInfo} client={api} module="subscriptions" onClose={() => setUserInfo(null)} />}
       </>}
@@ -1385,7 +1433,7 @@ function SubscriptionManager({
           <div className="transferRow" key={row.id}>
             <div><b>{text(row.identityDisplay)}</b><span>{text(row.planName)}／{money(Number(row.amount))}／末五碼 {text(row.accountLastFive)}</span></div>
             <span>{({ pending: "待確認", confirmed: "已確認", rejected: "已拒絕" } as Record<string, string>)[String(row.status)] || text(row.status)}</span>
-            {canEdit && row.status === "pending" && <div className="transferActions"><button onClick={() => onTransfer(row.id, "confirmed")}>確認</button><button className="transferReject" onClick={() => onTransfer(row.id, "rejected")}>拒絕</button></div>}
+            {canEdit && row.status === "pending" && <div className="transferActions"><button disabled={pendingActionIds.has("transfer:*")} aria-busy={pendingActionIds.has(`transfer:${row.id}`)} onClick={() => onTransfer(row.id, "confirmed")}>確認</button><button className="transferReject" disabled={pendingActionIds.has("transfer:*")} aria-busy={pendingActionIds.has(`transfer:${row.id}`)} onClick={() => onTransfer(row.id, "rejected")}>拒絕</button></div>}
           </div>
         ))}
         <Pagination page={transferPage.currentPage} totalPages={transferPage.totalPages} onPage={transferPage.setPage} disabled={transferPage.loading || Boolean(transferPage.error)} />
@@ -1914,6 +1962,7 @@ function DataTable({
   fields,
   canDelete,
   onDelete,
+  pendingDeleteIds,
   selection,
   getDeleteDisabledReason,
 }: {
@@ -1922,6 +1971,7 @@ function DataTable({
   fields: string[];
   canDelete: boolean;
   onDelete: (id: string) => void;
+  pendingDeleteIds?: ReadonlySet<string>;
   selection?: {
     enabled: boolean;
     selectedIds: ReadonlySet<string>;
@@ -1973,7 +2023,8 @@ function DataTable({
                         className="danger"
                         aria-label={`刪除啟動碼 ${text(r.code)}`}
                         aria-describedby={deleteDisabledReason ? deleteReasonId : undefined}
-                        disabled={Boolean(deleteDisabledReason)}
+                        disabled={Boolean(deleteDisabledReason) || pendingDeleteIds?.has("code:*")}
+                        aria-busy={pendingDeleteIds?.has(`code:${r.id}`) ?? false}
                         onClick={() => { if (!deleteDisabledReason) onDelete(r.id); }}
                       >
                         <Trash2 size={15} />

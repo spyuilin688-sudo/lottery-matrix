@@ -86,6 +86,7 @@
   color: #efb3b3;
 }
 .compactButton { height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #4b4534; background: #1b1913; color: #e1c170; border-radius: 8px; padding: 4px 8px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.memberStatusCell .compactButton:disabled { opacity: .55; }
 .mobileManagement { display: none; }
 .managementCard { border: 1px solid #292c32; background: #111419; border-radius: 12px; padding: 14px; }
 .cardHeading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
@@ -98,7 +99,8 @@
 .statusBadge.bad { color: #efabab; background: #371919; }
 .mobileManagement.subscriptionGrid { display: none; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .cardActions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.operationDialog { width: min(430px, 100%); padding: 14px; border: 1px solid #8c6d28; border-radius: 12px; background: #111419; box-shadow: 0 24px 80px #000b; }
+.operationDialog { width: calc(100% - 32px); max-width: 430px; max-height: calc(100dvh - 32px); overflow-y: auto; color: #ece7d8; padding: 14px; border: 1px solid #8c6d28; border-radius: 12px; background: #111419; box-shadow: 0 24px 80px #000b; }
+.operationDialog::backdrop { background: #000a; }
 .operationDialog h2 { margin: 0 0 10px; font-size: 18px; }
 .operationDialog p { color:#989ca5; }
 .operationDialog label { display: block; color: #989ca5; font-size: 12px; }
@@ -110,6 +112,7 @@
 .transferActions button { width: auto; min-width: 52px; height: 32px; display: inline-flex; align-items: center; justify-content: center; padding: 0 10px; border: 1px solid #30333a; border-radius: 8px; background: #15181d; color: #c9cbd1; white-space: nowrap; cursor: pointer; }
 .transferActions button:hover:not(:disabled),
 .transferActions button:focus-visible { border-color: #6a603f; background: #211e17; color: #f0d98f; }
+.transferActions button:disabled { opacity: .55; }
 .transferActions .transferReject { color: #d98585; }
 .permissionBox span { font-size: 13px; color: #c4c6cc; }
 .managementList table { width: max-content; min-width: 860px; }

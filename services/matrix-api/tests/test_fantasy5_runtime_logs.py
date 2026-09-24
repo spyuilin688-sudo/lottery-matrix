@@ -124,6 +124,22 @@ def test_crawler_logs_each_attempt_without_changing_retry_behavior(crawler_cli, 
     assert all(r["durationMs"] >= 0 for r in logs)
 
 
+def test_crawler_exhausted_source_reports_failure_after_existing_retry_window(crawler_cli, monkeypatch, capsys):
+    attempts = []
+    sleeps = []
+    retry = fantasy5_railway_job.run_retry_loop
+    monkeypatch.setattr(fantasy5_crawler, "run_fantasy5_crawler_once",
+                        lambda: attempts.append(True) or {
+                            "lottery": "天天樂", "drawPeriod": "12005", "status": "not-acquired"})
+    monkeypatch.setattr(fantasy5_railway_job, "run_retry_loop",
+                        lambda fn, **kw: retry(fn, sleeper=sleeps.append, **kw))
+
+    assert fantasy5_railway_job.main() == 1
+    assert len(attempts) == 3
+    assert sleeps == [600, 600]
+    assert [r["outcome"] for r in records(capsys)] == ["not-acquired"] * 3
+
+
 def test_crawler_logs_failure_without_retrying_exception(crawler_cli, monkeypatch, capsys):
     calls = []
 

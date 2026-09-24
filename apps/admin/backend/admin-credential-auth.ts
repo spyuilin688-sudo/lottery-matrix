@@ -89,6 +89,9 @@ export function createAdminCredentialAuth(transport: Transport, now = () => new 
     const rows = await transport.selectRows<Row>('admin_accounts', `select=id,password_hash&id=eq.${encodeURIComponent(adminId)}&limit=1`);
     return typeof rows[0]?.password_hash === 'string' && Boolean(rows[0].password_hash);
   };
+  const revokeLogin = async (token: string) => {
+    await transport.deleteRows('admin_sessions', `token_hash=eq.${encodeURIComponent(await digestHex(token))}`);
+  };
   const login = async (account: string, password: string) => {
     const normalized = normalizeAccount(account);
     if (!normalized || !password) throw new AdminCredentialError('管理員帳號或密碼錯誤');
@@ -103,9 +106,15 @@ export function createAdminCredentialAuth(transport: Transport, now = () => new 
     const loginTime = now();
     const token = randomBase64Url(32);
     const loginRecordId = shouldRecordAdminActivity(mapAdmin(row)) ? crypto.randomUUID() : null;
-    await transport.insertRows('admin_sessions', [{ token_hash: await digestHex(token), admin_id: row.id, credential_version: row.credential_version, login_record_id: loginRecordId, expires_at: new Date(loginTime.getTime() + sessionSeconds * 1000).toISOString() }]);
-    // A password change may have committed while PBKDF2 or the insert was in flight.
-    const admin = await getAdminFromHeaders({ cookie: `${cookieName}=${token}` });
+    let admin: CredentialAdmin;
+    try {
+      await transport.insertRows('admin_sessions', [{ token_hash: await digestHex(token), admin_id: row.id, credential_version: row.credential_version, login_record_id: loginRecordId, expires_at: new Date(loginTime.getTime() + sessionSeconds * 1000).toISOString() }]);
+      // A password change may have committed while PBKDF2 or the insert was in flight.
+      admin = await getAdminFromHeaders({ cookie: `${cookieName}=${token}` });
+    } catch (cause) {
+      try { await revokeLogin(token); } catch { /* Preserve the original authentication failure. */ }
+      throw cause;
+    }
     // Expiry is inclusive, matching session validation. Maintenance must not
     // prevent a valid login, and runs here rather than on every authenticated request.
     let cleanupTimer: ReturnType<typeof setTimeout> | undefined;
@@ -151,5 +160,5 @@ export function createAdminCredentialAuth(transport: Transport, now = () => new 
     }
     await transport.deleteRows('admin_sessions', `token_hash=eq.${encodeURIComponent(tokenHash)}`);
   };
-  return { passwordFields, setPassword, isConfigured, login, getAdminFromHeaders, logout, sessionCookie: (token: string) => `${cookieName}=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${sessionSeconds}`, clearSessionCookie: () => `${cookieName}=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0` };
+  return { passwordFields, setPassword, isConfigured, login, revokeLogin, getAdminFromHeaders, logout, sessionCookie: (token: string) => `${cookieName}=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${sessionSeconds}`, clearSessionCookie: () => `${cookieName}=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0` };
 }

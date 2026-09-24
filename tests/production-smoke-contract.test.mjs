@@ -45,13 +45,22 @@ test("PWA and admin smoke targets require a successful final response", () => {
   );
 });
 
-test("optional API smoke target may be protected but never accepts a server error", () => {
+test("optional API health target requires a successful response", () => {
   assert.doesNotThrow(() => evaluateSmokeResponse("API", "https://api.example.test/health", 200));
-  assert.doesNotThrow(() => evaluateSmokeResponse("API", "https://api.example.test/health", 401));
-  assert.doesNotThrow(() => evaluateSmokeResponse("API", "https://api.example.test/health", 403));
+  for (const status of [204, 401, 403, 404, 500]) {
+    assert.throws(
+      () => evaluateSmokeResponse("API", "https://api.example.test/health", status),
+      new RegExp(`API.*${status}`),
+    );
+  }
+});
+
+test("an optional protected API target never accepts a missing endpoint", () => {
+  assert.doesNotThrow(() => evaluateSmokeResponse("API", "https://api.example.test/jobs/status", 401));
+  assert.doesNotThrow(() => evaluateSmokeResponse("API", "https://api.example.test/jobs/status", 403));
   assert.throws(
-    () => evaluateSmokeResponse("API", "https://api.example.test/health", 500),
-    /API.*500/,
+    () => evaluateSmokeResponse("API", "https://api.example.test/jobs/status", 404),
+    /API.*404/,
   );
 });
 
@@ -77,6 +86,16 @@ test('production smoke accepts one consistent frontend asset version', async () 
   await runProductionSmoke({ env, fetchImpl });
   assert.deepEqual(seen, [env.SMOKE_PWA_URL, env.SMOKE_ADMIN_URL,
     'https://pwa.example.test/index.html', 'https://pwa.example.test/push-service-worker.js']);
+});
+
+test('production smoke stops before asset checks when configured API health endpoint is missing', async () => {
+  const withApi = { ...env, SMOKE_API_URL: 'https://api.example.test/health' };
+  const { fetchImpl, seen } = fetchSmoke();
+  const apiNotFound = async (url, options) => url === withApi.SMOKE_API_URL
+    ? new Response('Not Found', { status: 404 })
+    : fetchImpl(url, options);
+  await assert.rejects(runProductionSmoke({ env: withApi, fetchImpl: apiNotFound }), /API.*404/);
+  assert.deepEqual(seen, [env.SMOKE_PWA_URL, env.SMOKE_ADMIN_URL]);
 });
 
 test('production smoke detects different asset versions at / and /index.html', async () => {

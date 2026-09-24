@@ -19,11 +19,12 @@ const wiring = vi.hoisted(() => {
     runPrimary: workerRunPrimary,
   }));
   const insertRows = vi.fn(async () => []);
+  const updateRows = vi.fn(async () => []);
   const supabaseRequest = vi.fn(async () => []);
   const requestPage = vi.fn(async (_path: string) => ({ items: [], total: 61 }));
   const createSupabaseTransport = vi.fn(() => ({
     request: vi.fn(async () => []), requestPage,
-    selectRows: vi.fn(async () => []), insertRows, updateRows: vi.fn(async () => []), deleteRows: vi.fn(async () => []), supabaseRequest,
+    selectRows: vi.fn(async () => []), insertRows, updateRows, deleteRows: vi.fn(async () => []), supabaseRequest,
   }));
   const connectionGet = vi.fn(async () => ({ checkedAt: 'test', items: [] }));
   const connectionRetry = vi.fn(async () => ({ id: 'test' }));
@@ -37,6 +38,7 @@ const wiring = vi.hoisted(() => {
   const createAdminCredentialAuth = vi.fn(() => ({
     getAdminFromHeaders,
     login: vi.fn(),
+    revokeLogin: vi.fn(async () => undefined),
     logout: vi.fn(),
     sessionCookie: vi.fn(() => 'admin_session=test; HttpOnly'),
     clearSessionCookie: vi.fn(() => 'admin_session=; Max-Age=0'),
@@ -91,7 +93,7 @@ const wiring = vi.hoisted(() => {
     remove: todoRemove,
   }));
   return {
-    workerGetStatus, workerRefreshLottery, workerRecoverLottery, workerRunPrimary, workerRefreshMarkSixCalendar, getWorkerConfig, createWorkerApi, insertRows, supabaseRequest,
+    workerGetStatus, workerRefreshLottery, workerRecoverLottery, workerRunPrimary, workerRefreshMarkSixCalendar, getWorkerConfig, createWorkerApi, insertRows, updateRows, supabaseRequest,
     createSupabaseTransport, requestPage, createConnectionStatus, admin, requireAdmin, requirePermission, requireModulePermission,
     shouldRecordAdminActivity, getAdminFromHeaders, createAdminCredentialAuth, listMemberPushStatus,
     sendMemberTestPush, listPushDeliveryLogs, createPushNotifications,
@@ -971,9 +973,31 @@ describe('payment reversal route wiring', () => {
 
 
 describe('security login wiring', () => {
+  it.each(['observation', 'last_login', 'login_record'] as const)(
+    'revokes the newly created session without setting a cookie when %s fails', async (stage) => {
+      const auth = wiring.createAdminCredentialAuth.mock.results[0].value;
+      auth.login.mockResolvedValueOnce({ admin: wiring.admin, token: 'one-time-token', loginRecordId: 'login-record-id' });
+      auth.revokeLogin.mockClear();
+      wiring.insertRows.mockClear();
+      wiring.shouldRecordAdminActivity.mockReturnValueOnce(true);
+      if (stage === 'observation') securityWiring.observe.mockRejectedValueOnce(new Error('observation unavailable'));
+      if (stage === 'last_login') wiring.updateRows.mockRejectedValueOnce(new Error('update unavailable'));
+      if (stage === 'login_record') wiring.insertRows.mockRejectedValueOnce(new Error('insert unavailable'));
+
+      const handler = routes['POST /api/admin-login'][0] as (ctx: unknown) => Promise<unknown>;
+      const result = await handler({ params: {}, body: { account: 'operator', password: 'test-password' }, event: { headers: {} } });
+
+      expect(result).toMatchObject({ status: 403 });
+      expect(JSON.stringify(result)).not.toContain('one-time-token');
+      expect(auth.revokeLogin).toHaveBeenCalledExactlyOnceWith('one-time-token');
+      if (stage !== 'login_record') expect(wiring.insertRows).not.toHaveBeenCalled();
+    },
+  );
   it.each(['203.0.113.7', ''])('persists verified location IP "%s" without falling back to proxy headers', async (clientIp) => {
-    const login = wiring.createAdminCredentialAuth.mock.results[0].value.login;
+    const auth = wiring.createAdminCredentialAuth.mock.results[0].value;
+    const login = auth.login;
     login.mockResolvedValueOnce({ admin: wiring.admin, token: 'test-session', loginRecordId: 'login-ip-test' });
+    auth.revokeLogin.mockClear();
     wiring.shouldRecordAdminActivity.mockReturnValueOnce(true);
     wiring.insertRows.mockClear();
     const handler = routes['POST /api/admin-login'][0] as (ctx: unknown) => Promise<unknown>;
@@ -986,6 +1010,7 @@ describe('security login wiring', () => {
       },
     });
     expect(response).toMatchObject({ status: 200 });
+    expect(auth.revokeLogin).not.toHaveBeenCalled();
     expect(wiring.insertRows).toHaveBeenCalledWith('admin_login_records', [expect.objectContaining({
       id: 'login-ip-test', ip: clientIp, device: 'test-device',
     })]);

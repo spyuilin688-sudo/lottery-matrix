@@ -50,11 +50,9 @@ export function evaluateSmokeResponse(name, url, status) {
     throw new Error(`${name} returned an invalid HTTP status for ${url}: ${status}`);
   }
 
-  if (status >= 500) {
-    throw new Error(`${name} smoke check failed with HTTP ${status}: ${url}`);
-  }
-
-  if (name !== "API" && status >= 400) {
+  if (status >= 500 || status === 404 ||
+    (name === "API" && new URL(url).pathname === "/health" && status !== 200) ||
+    (name !== "API" && status >= 400)) {
     throw new Error(`${name} smoke check failed with HTTP ${status}: ${url}`);
   }
 }

@@ -259,23 +259,25 @@ export type LatestDrawCardProps = {
   lottery: LotteryId;
   result: DrawResultData;
   nextDrawInfo: NextDrawInfoData;
+  loadState?: "loading" | "error" | "empty" | "stale" | "ready";
   order: DrawOrder;
   onOrderChange: (order: DrawOrder) => void;
   onOpenHistory?: () => void;
   className?: string;
 };
 
-export function LatestDrawCard({ lottery, result, nextDrawInfo, order: requestedOrder, onOrderChange, onOpenHistory, className = "" }: LatestDrawCardProps) {
+export function LatestDrawCard({ lottery, result, nextDrawInfo, loadState = "ready", order: requestedOrder, onOrderChange, onOpenHistory, className = "" }: LatestDrawCardProps) {
   const order = useLotteryOrder(lottery, requestedOrder, onOrderChange, "順球");
-  const displayedNumbers = order === "順球" ? result.numbers : result.drawOrderNumbers ?? [];
-  const displayedSpecialNumber = order === "順球" ? result.specialNumber : result.drawOrderSpecialNumber;
-  const hasMeta = Boolean(result.issue || result.date);
+  const visibleResult: DrawResultData = loadState === "ready" || loadState === "stale" ? result : { numbers: [] };
+  const displayedNumbers = order === "順球" ? visibleResult.numbers : visibleResult.drawOrderNumbers ?? [];
+  const displayedSpecialNumber = order === "順球" ? visibleResult.specialNumber : visibleResult.drawOrderSpecialNumber;
+  const hasMeta = Boolean(visibleResult.issue || visibleResult.date);
   const hasSpecial = Boolean(displayedSpecialNumber);
   return (
-    <section className={`latest-draw-card ${className}`.trim()} data-lottery={lottery} aria-label={`${lottery}最新開獎資訊`} data-testid="latest-draw-card">
+    <section className={`latest-draw-card ${className}`.trim()} data-lottery={lottery} aria-label={`${lottery}最新開獎資訊`} aria-busy={loadState === "loading"} data-testid="latest-draw-card">
       <div className="draw-meta" data-empty={!hasMeta}>
-        {result.issue ? <div className="draw-issue"><span>第</span><strong>{result.issue}</strong><span>期</span></div> : null}
-        {result.date ? <div className="draw-date"><CalendarIcon className="draw-date-icon" aria-hidden="true" />{result.date}</div> : null}
+        {visibleResult.issue ? <div className="draw-issue"><span>第</span><strong>{visibleResult.issue}</strong><span>期</span></div> : null}
+        {visibleResult.date ? <div className="draw-date"><CalendarIcon className="draw-date-icon" aria-hidden="true" />{visibleResult.date}</div> : null}
       </div>
       <div className="draw-order" role="radiogroup" aria-label="號碼排列">
         {(["順球", "落球"] as DrawOrder[]).map((option) => (
@@ -285,12 +287,14 @@ export function LatestDrawCard({ lottery, result, nextDrawInfo, order: requested
       <button className="history-link" type="button" onClick={onOpenHistory} aria-label="查看更多紀錄"><span>查看更多紀錄</span><span aria-hidden="true">&gt;</span></button>
       <div className="draw-balls" data-has-special={hasSpecial}>
         <div className="main-balls">
+          {loadState !== "ready" && loadState !== "stale" ? <span role={loadState === "error" ? "alert" : "status"}>{loadState === "loading" ? "開獎資料讀取中" : loadState === "error" ? "開獎資料讀取失敗" : "尚無開獎資料"}</span> : null}
           {order === "落球" && hasMeta && !displayedNumbers.length ? <span role="status">實際落球順序待公布</span> : null}
           {displayedNumbers.map((number, index) => <LotteryNumberBall lottery={lottery} number={number} key={`${number}-${index}`} />)}
         </div>
         {displayedSpecialNumber ? <><span className="special-ball-separator" aria-hidden="true" /><div className="special-ball-group"><span className="special-label">特別號</span><LotteryNumberBall lottery={lottery} number={displayedSpecialNumber} isSpecial /></div></> : null}
       </div>
-      <NextDrawInfoBar {...nextDrawInfo} className="next-draw-info--embedded" />
+      {loadState === "ready" ? <NextDrawInfoBar {...nextDrawInfo} className="next-draw-info--embedded" /> : null}
+      {loadState === "stale" ? <div className="next-draw-info next-draw-info--embedded" role="status"><div className="next-draw-item draw-refresh-warning"><span className="next-draw-label">更新失敗，顯示上次資料</span></div></div> : null}
     </section>
   );
 }
@@ -547,7 +551,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     }
   });
   const { deviceId, setDeviceId } = useMobileDevice();
-  const { data: latestDraw, refresh: refreshLatestDraw } = useLatestLotteryDraw(selected, {
+  const { data: latestDraw, loading: latestDrawLoading, error: latestDrawError, refresh: refreshLatestDraw } = useLatestLotteryDraw(selected, {
     subscribeToRefresh: false,
     initialFetch: false,
   });
@@ -571,6 +575,11 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       }
     : NEXT_DRAW_INFO[selected];
   const drawResult: DrawResultData = latestDraw ? toDrawResult(selected, latestDraw) : DRAW_RESULTS[selected];
+  const hasLatestDrawNumbers = drawResult.numbers.length > 0;
+  const latestDrawLoadState: NonNullable<LatestDrawCardProps["loadState"]> = latestDrawError
+    ? hasLatestDrawNumbers ? "stale" : "error"
+    : latestDrawLoading && !hasLatestDrawNumbers ? "loading"
+    : hasLatestDrawNumbers ? "ready" : "empty";
 
   useEffect(() => { setDeviceId("pixel-10"); }, [setDeviceId]);
   useEffect(() => subscribeAlgorithmCacheScope(() => {
@@ -907,7 +916,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
           <main className="screen-content lottery-screen" data-testid="lottery-screen" aria-label="首頁彩種切換元件預覽">
             <HomeAnnouncement latestResults={latestAnnouncementResults} />
             <LotterySwitcher selected={selected} onChange={setSelected} className="lottery-switcher--home-style home-switcher-box" />
-            <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} className="home-draw-box" />
+            <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} loadState={latestDrawLoadState} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} className="home-draw-box" />
             <MatrixStatusSection statuses={matrixStatuses} loadStates={matrixStatusLoads} onOpen={(lottery) => { setStatusLottery(lottery); navigate("status"); }} />
           </main>
           <div className="home-bottom-group">

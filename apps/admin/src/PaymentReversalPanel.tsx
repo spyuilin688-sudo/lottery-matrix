@@ -167,7 +167,9 @@ export function PaymentReversalPanel({ payments, loadError = '', canEdit, expand
             try {
               const results = await Promise.allSettled([onRefresh(), onMemberRefresh?.()]);
               if (results.some((result) => result.status === 'rejected')) throw new Error('資料重新載入失敗');
-              if (mountedRef.current) setNotice(onMemberRefresh ? '沖銷已記錄，付款紀錄與會員訂閱已更新' : '沖銷已記錄，付款紀錄已更新');
+              if (mountedRef.current) setNotice(onMemberRefresh
+                ? '沖銷已記錄，付款紀錄已更新；會員訂閱清單將於開啟時重新載入，請再確認最新狀態'
+                : '沖銷已記錄，付款紀錄已更新');
             } catch {
               if (mountedRef.current) {
                 setNotice(onMemberRefresh

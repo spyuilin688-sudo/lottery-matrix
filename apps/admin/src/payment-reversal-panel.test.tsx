@@ -285,6 +285,24 @@ describe('PaymentReversalPanel', () => {
     expect(container.textContent).not.toContain('服務暫時無法使用');
   });
 
+  it('does not claim the member subscription list is updated when only a reload was queued', async () => {
+    const onMemberRefresh = vi.fn(async () => undefined);
+    const onRefresh = vi.fn(async () => undefined);
+    const onRecord = vi.fn(async () => undefined);
+    await renderPanel({ onMemberRefresh, onRefresh, onRecord });
+    openForm();
+    change(textarea('沖銷原因'), '退款已完成');
+
+    await act(async () => button('記錄已完成沖銷').click());
+
+    expect(onRecord).toHaveBeenCalledTimes(1);
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+    expect(onMemberRefresh).toHaveBeenCalledTimes(1);
+    expect(container.querySelector('.paymentReversalNotice')?.textContent).toContain('付款紀錄已更新');
+    expect(container.querySelector('.paymentReversalNotice')?.textContent).toContain('會員訂閱清單將於開啟時重新載入');
+    expect(container.querySelector('.paymentReversalNotice')?.textContent).not.toContain('會員訂閱已更新');
+  });
+
   it('translates symbolic SQL errors into clear Traditional Chinese feedback', async () => {
     const onRecord = vi.fn().mockRejectedValue(new Error('PAYMENT_REVERSAL_CONFLICT'));
     await renderPanel({ onRecord });

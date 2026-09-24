@@ -49,6 +49,26 @@ for (const width of [390, 375, 360]) {
   });
 }
 
+test("通知列現有設定鍵與開關保留原外觀並擴大觸控高度", () => {
+  const dom = new JSDOM(`<!doctype html>
+    <style>${css}</style>
+    <main class="notifications-screen-v2">
+      <div class="notification-heading">
+        <div class="notification-actions">
+          <button class="notification-settings-toggle"><span>設定選項</span><svg></svg></button>
+          <button class="toggle"><span></span></button>
+        </div>
+      </div>
+    </main>`, { pretendToBeVisual: true });
+  const settings = dom.window.document.querySelector(".notification-actions > .notification-settings-toggle");
+  const toggle = dom.window.document.querySelector(".notification-actions > .toggle");
+
+  assert.equal(dom.window.getComputedStyle(settings).height, "44px");
+  assert.equal(dom.window.getComputedStyle(toggle).height, "44px");
+  assert.match(css, /notification-actions > \.notification-settings-toggle::before\s*\{[^}]*height:\s*20px/);
+  assert.match(css, /notifications-screen-v2 \.toggle::before\s*\{[^}]*height:\s*18px/);
+});
+
 test("通知設定面板使用確認的展開收合動態與 reduced-motion 降級", () => {
   const dom = new JSDOM(`<!doctype html>
     <style>${css}</style>

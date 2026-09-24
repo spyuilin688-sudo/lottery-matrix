@@ -256,9 +256,9 @@ const routes: Record<string, unknown> = {
       response.headers['Cache-Control'] = 'no-store';
       return response;
     }
+    let login: Awaited<ReturnType<typeof credentialAuth.login>> | undefined;
     try {
       const body = bodyOf(ctx);
-      let login;
       try { login = await credentialAuth.login(String(body.account ?? ''), String(body.password ?? '')); }
       catch (cause) {
         await securityMonitor.observe(ctx, 'admin_login', 'denied');
@@ -267,15 +267,18 @@ const routes: Record<string, unknown> = {
       await securityMonitor.observe(ctx, 'admin_login', 'success');
       const lastLoginAt = now();
       if (shouldRecordAdminActivity(login.admin)) {
-        await Promise.all([
-          supabase.updateRows('admin_accounts', `id=eq.${encodeURIComponent(login.admin.id)}`, { last_login_at: lastLoginAt }),
-          supabase.insertRows('admin_login_records', [{ id: login.loginRecordId, admin_id: login.admin.id, account: login.admin.account, login_at: lastLoginAt, ...requestMetadata(ctx) }]),
-        ]);
+        await supabase.updateRows('admin_accounts', `id=eq.${encodeURIComponent(login.admin.id)}`, { last_login_at: lastLoginAt });
+        await supabase.insertRows('admin_login_records', [{ id: login.loginRecordId, admin_id: login.admin.id, account: login.admin.account, login_at: lastLoginAt, ...requestMetadata(ctx) }]);
       }
       const response = json({ admin: { ...login.admin, lastLoginAt } });
       response.headers['Set-Cookie'] = credentialAuth.sessionCookie(login.token);
       return response;
-    } catch (cause) { return fail(cause); }
+    } catch (cause) {
+      if (login) {
+        try { await credentialAuth.revokeLogin(login.token); } catch { /* Do not replace the original login failure. */ }
+      }
+      return fail(cause);
+    }
   }],
 
   'POST /api/admin-logout': [async (ctx: Context) => {

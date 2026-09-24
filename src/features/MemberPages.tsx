@@ -782,13 +782,17 @@ function ManualTransferForm({ onNavigate, scope, planCode, initialAttempt }: { o
   const { profile, error: profileError } = useSubscriptionProfile();
   const [attempt, setAttempt] = useState(initialAttempt);
   const [serverRestriction, setServerRestriction] = useState<string | null>(null);
-  const restriction = serverRestriction ?? (planCode && !attempt ? purchaseBlockReason(profile, profileError, planCode) : null);
+  const purchaseRestriction = planCode ? purchaseBlockReason(profile, profileError, planCode) : null;
+  const restriction = serverRestriction ?? (!attempt ? purchaseRestriction : null);
   const [lastFive, setLastFive] = useState(initialAttempt?.lastFive ?? "");
   const [pending, setPending] = useState<MemberTransferRequest | null>(null);
   const [loading, setLoading] = useState(Boolean(plan));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(initialAttempt ? "尚未確認提交結果，請重試確認。" : null);
   const [statusUnresolved, setStatusUnresolved] = useState(false);
+  const showReceivingDetails = pending
+    ? pending.status === 'pending' || pending.status === 'confirmed'
+    : !loading && !statusUnresolved && !serverRestriction && !purchaseRestriction;
   const requestRevision = useRef(0);
   const submitInFlight = useRef(false);
 
@@ -918,7 +922,7 @@ function ManualTransferForm({ onNavigate, scope, planCode, initialAttempt }: { o
           <div><dt>金額</dt><dd>{`NT$${(pending?.amount ?? plan.amount).toLocaleString("en-US")}`}</dd></div>
         </dl>
       </section>
-      <section className="panel detail-card manual-transfer-bank-card" aria-label="轉帳資料">
+      {showReceivingDetails && <section className="panel detail-card manual-transfer-bank-card" aria-label="轉帳資料">
         <h2>轉帳資料</h2>
         <dl>
           <div><dt>收款銀行</dt><dd>連線銀行</dd></div>
@@ -926,7 +930,7 @@ function ManualTransferForm({ onNavigate, scope, planCode, initialAttempt }: { o
           <div><dt>收款帳號</dt><dd className="manual-transfer-account">111023004501</dd></div>
           <div><dt>戶名</dt><dd>黎小姐</dd></div>
         </dl>
-      </section>
+      </section>}
       <section className="panel detail-card manual-transfer-form-card">
         <h2>回報轉帳</h2>
         <label htmlFor="manual-transfer-last-five">帳號末五碼</label>
