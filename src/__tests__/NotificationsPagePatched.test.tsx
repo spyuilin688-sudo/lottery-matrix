@@ -225,39 +225,55 @@ describe("NotificationsPagePatched", () => {
     expect(pushSubscription.disablePushNotifications).not.toHaveBeenCalled();
   });
 
-  it("已開啟系統通知偏好時可直接啟用這支手機且不重存偏好", async () => {
+  it("手機未訂閱時不新增按鈕，沿用系統通知開關啟用手機通知", async () => {
     const request = deferred<{ supported: boolean; permission: NotificationPermission; enabled: boolean }>();
     pushSubscription.enablePushNotifications.mockReturnValue(request.promise);
     render(<NotificationsPagePatched onNavigate={vi.fn()} />);
     const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
 
-    const enable = await within(systemRow).findByRole("button", { name: "開啟手機通知" });
+    expect(await screen.findByText("手機通知未開啟")).toBeVisible();
+    expect(within(systemRow).queryByRole("button", { name: "開啟手機通知" })).toBeNull();
     expect(within(systemRow).getByRole("button", { name: "關閉系統通知" })).toHaveAttribute("data-checked", "true");
     expect(within(systemRow).getByRole("status").querySelector("button")).toBeNull();
+    fireEvent.click(within(systemRow).getByRole("button", { name: "關閉系統通知" }));
+    await waitFor(() => expect(memberApi.saveNotificationSettings).toHaveBeenLastCalledWith({
+      ...storedSettings,
+      settings: { ...storedSettings.settings, system: false },
+    }));
+    const enable = within(systemRow).getByRole("button", { name: "開啟系統通知" });
     fireEvent.click(enable);
     fireEvent.click(enable);
 
     expect(pushSubscription.enablePushNotifications).toHaveBeenCalledTimes(1);
-    expect(await within(systemRow).findByRole("button", { name: "手機通知開啟中" })).toBeDisabled();
+    expect(within(systemRow).getByRole("button", { name: "關閉系統通知" })).toBeDisabled();
+    expect(await screen.findByText("手機通知開啟中")).toBeVisible();
     await act(async () => { request.resolve({ supported: true, permission: "granted", enabled: true }); });
     expect(await screen.findByText("手機通知已開啟")).toBeVisible();
     expect(within(systemRow).queryByRole("button", { name: "開啟手機通知" })).toBeNull();
-    expect(memberApi.saveNotificationSettings).not.toHaveBeenCalled();
+    await waitFor(() => expect(memberApi.saveNotificationSettings).toHaveBeenLastCalledWith(storedSettings));
     expect(pushSubscription.disablePushNotifications).not.toHaveBeenCalled();
   });
 
-  it("手機啟用失敗後可直接重試且不變更系統通知偏好", async () => {
+  it("手機啟用失敗後沿用原本系統通知開關重試，不新增按鈕", async () => {
     pushSubscription.enablePushNotifications.mockRejectedValueOnce(pushFailure("browser-subscription"));
     render(<NotificationsPagePatched onNavigate={vi.fn()} />);
     const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
 
-    fireEvent.click(await within(systemRow).findByRole("button", { name: "開啟手機通知" }));
+    expect(await screen.findByText("手機通知未開啟")).toBeVisible();
+    fireEvent.click(within(systemRow).getByRole("button", { name: "關閉系統通知" }));
+    await waitFor(() => expect(memberApi.saveNotificationSettings).toHaveBeenLastCalledWith({
+      ...storedSettings,
+      settings: { ...storedSettings.settings, system: false },
+    }));
+    fireEvent.click(within(systemRow).getByRole("button", { name: "開啟系統通知" }));
     expect(await screen.findByText("手機瀏覽器建立訂閱失敗")).toBeVisible();
-    fireEvent.click(within(systemRow).getByRole("button", { name: "開啟手機通知" }));
+    expect(within(systemRow).queryByRole("button", { name: "開啟手機通知" })).toBeNull();
+    fireEvent.click(within(systemRow).getByRole("button", { name: "關閉系統通知" }));
+    fireEvent.click(within(systemRow).getByRole("button", { name: "開啟系統通知" }));
 
     expect(await screen.findByText("手機通知已開啟")).toBeVisible();
     expect(pushSubscription.enablePushNotifications).toHaveBeenCalledTimes(2);
-    expect(memberApi.saveNotificationSettings).not.toHaveBeenCalled();
+    await waitFor(() => expect(memberApi.saveNotificationSettings).toHaveBeenLastCalledWith(storedSettings));
   });
 
   it("會員設定尚未讀取完成時不顯示手機啟用按鈕", async () => {
