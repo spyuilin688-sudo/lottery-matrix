@@ -23,6 +23,36 @@ const makeTransport = () => {
 };
 
 describe('admin credential authentication', () => {
+  it('removes a newly inserted session when its write response is lost, without revoking an existing login', async () => {
+    const state = makeTransport();
+    const auth = createAdminCredentialAuth(state.transport, () => new Date('2026-09-03T00:00:00Z'));
+    state.admins.push({ id: 'a1', account: 'admin001', role: '超級管理員', status: '啟用', ...await auth.passwordFields('correct', true) });
+    const existing = await auth.login('admin001', 'correct');
+    const existingHash = state.sessions[0].token_hash;
+    const lostResponse = new Error('session insert response lost');
+    state.transport.insertRows.mockImplementationOnce(async (_table, rows) => {
+      state.sessions.push(...rows as Record<string, unknown>[]);
+      throw lostResponse;
+    });
+
+    await expect(auth.login('admin001', 'correct')).rejects.toBe(lostResponse);
+
+    expect(state.sessions.map((row) => row.token_hash)).toEqual([existingHash]);
+    await expect(auth.getAdminFromHeaders({ cookie: `matrix_admin_session=${existing.token}` })).resolves.toMatchObject({ id: 'a1' });
+  });
+  it('revokes only the rejected login token while another administrator session stays valid', async () => {
+    const state = makeTransport();
+    const auth = createAdminCredentialAuth(state.transport, () => new Date('2026-09-03T00:00:00Z'));
+    state.admins.push({ id: 'a1', account: 'admin001', role: '超級管理員', status: '啟用', ...await auth.passwordFields('correct', true) });
+    const rejected = await auth.login('admin001', 'correct');
+    const retained = await auth.login('admin001', 'correct');
+
+    await auth.revokeLogin(rejected.token);
+
+    expect(state.sessions).toHaveLength(1);
+    await expect(auth.getAdminFromHeaders({ cookie: `matrix_admin_session=${rejected.token}` })).rejects.toThrow('管理員登入已失效');
+    await expect(auth.getAdminFromHeaders({ cookie: `matrix_admin_session=${retained.token}` })).resolves.toMatchObject({ id: 'a1' });
+  });
   it('stores only derived password fields and accepts the matching password', async () => {
     const state = makeTransport();
     const auth = createAdminCredentialAuth(state.transport, () => new Date('2026-09-03T00:00:00Z'));
@@ -172,5 +202,6 @@ describe('expired session maintenance', () => {
     await started;
     Object.assign(state.admins[0], await auth.passwordFields('new',true), {credential_version:1});
     release(); await rejected;
+    expect(state.sessions).toHaveLength(0);
   });
  });

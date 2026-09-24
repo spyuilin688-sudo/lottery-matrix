@@ -21,12 +21,21 @@ const LOTTERY_TABS_SESSION_KEY = "matrix-core-lottery";
 
 function getPersistedLotteryTab(): LotteryId | null {
   if (typeof window === "undefined") return null;
-  const value = window.sessionStorage.getItem(LOTTERY_TABS_SESSION_KEY);
-  return LOTTERIES.includes(value as LotteryId) ? value as LotteryId : null;
+  try {
+    const value = window.sessionStorage.getItem(LOTTERY_TABS_SESSION_KEY);
+    return LOTTERIES.includes(value as LotteryId) ? value as LotteryId : null;
+  } catch {
+    return null;
+  }
 }
 
 function persistLotteryTab(value: LotteryId) {
-  if (typeof window !== "undefined") window.sessionStorage.setItem(LOTTERY_TABS_SESSION_KEY, value);
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(LOTTERY_TABS_SESSION_KEY, value);
+  } catch {
+    // Keep the selected tab usable when browser storage is unavailable.
+  }
 }
 
 export function updateLookupInputValues(values: string[], index: number, rawValue: string) {

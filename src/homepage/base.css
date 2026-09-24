@@ -398,6 +398,11 @@
   white-space: nowrap;
 }
 
+.home-screen .latest-draw-card .next-draw-info--embedded .draw-refresh-warning {
+  grid-template-columns: minmax(0, 1fr);
+  text-align: center;
+}
+
 .home-screen .matrix-status-section {
   flex: 0 0 auto;
   min-height: 0;

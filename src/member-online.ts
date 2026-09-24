@@ -60,7 +60,12 @@ export function startMemberOnlineTracking(post: MemberOnlinePost, target: Docume
     return request;
   };
   const visibility = () => {
-    if (target.visibilityState === 'visible') void start();
+    if (target.visibilityState === 'visible') {
+      // A prior hidden event may still be waiting for a pending start/end.
+      // Try again after that end settles; start() still checks current visibility.
+      if (endInFlight) void endInFlight.then(() => { void start(); });
+      else void start();
+    }
     else void end();
   };
   const pagehide = () => void end();

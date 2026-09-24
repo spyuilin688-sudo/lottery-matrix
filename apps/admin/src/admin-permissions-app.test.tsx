@@ -15,6 +15,9 @@ const app = vi.hoisted(() => {
     } as Record<string, unknown>,
     failPaymentRead: false,
     memberStatus: 'active',
+    memberRows: null as Array<{ id: string; memberDisplayName: string; status: string }> | null,
+    transferRequests: [] as Array<{ id: string; status: string; amount: number }>,
+    activationCodeRows: null as Array<{ id: string; code: string; status: string; redeemedAt: string | null; redeemedByLineDisplayName: string | null }> | null,
     nextSubscriptionRead: null as Promise<{ data: { items: Array<{ id: string; status: string }> } }> | null,
     permissionSettings: {
       subscriptionPurchaseVisible: true,
@@ -68,7 +71,10 @@ const app = vi.hoisted(() => {
     } };
     if (url === '/api/permission-settings') return { data: state.permissionSettings };
     if (path === '/api/data/admins') return { data: { items: [otherAdmin], total: 37, currentPage: 1, totalPages: 2 } };
-    if (url.startsWith('/api/data/users?')) return { data: { items: [{ id: 'member-1', memberDisplayName: '測試會員', status: state.memberStatus }], total: 1, currentPage: 1, totalPages: 1 } };
+    if (url.startsWith('/api/data/users?')) {
+      const items = state.memberRows ?? [{ id: 'member-1', memberDisplayName: '測試會員', status: state.memberStatus }];
+      return { data: { items, total: items.length, currentPage: 1, totalPages: 1 } };
+    }
     if (url.startsWith('/api/data/subscriptions?')) {
       if (state.nextSubscriptionRead) {
         const pending = state.nextSubscriptionRead;
@@ -84,11 +90,15 @@ const app = vi.hoisted(() => {
       planName: '月費方案', amount: 2880, paidAt: '2026-09-01T02:00:00Z', status: 'confirmed',
       }], total: 1, currentPage: 1, totalPages: 1 } };
     }
-    if (path === '/api/data/plans' || path === '/api/data/transferRequests') return { data: { items: [], total: 0, currentPage: 1, totalPages: 1 } };
-    if (path === '/api/data/activationCodes') return { data: { items: [
+    if (path === '/api/data/transferRequests') return { data: { items: state.transferRequests, total: state.transferRequests.length, currentPage: 1, totalPages: 1 } };
+    if (path === '/api/data/plans') return { data: { items: [], total: 0, currentPage: 1, totalPages: 1 } };
+    if (path === '/api/data/activationCodes') {
+      const items = state.activationCodeRows ?? [
       { id: 'code-1', code: 'ABCD-EFGH-IJKL-MNOP', status: 'unused', redeemedAt: null, redeemedByLineDisplayName: null },
       { id: 'code-2', code: 'QRST-UVWX-YZ12-3456', status: 'used', redeemedAt: '2026-09-05T01:00:00Z', redeemedByLineDisplayName: '兌換者' },
-    ], total: 2, currentPage: 1, totalPages: 1 } };
+      ];
+      return { data: { items, total: items.length, currentPage: 1, totalPages: 1 } };
+    }
     return { data: { items: [], total: 0, currentPage: 1, totalPages: 1 } };
   });
   return {
@@ -135,6 +145,9 @@ describe('administrator operation permission editing', () => {
     };
     app.state.failPaymentRead = false;
     app.state.memberStatus = 'active';
+    app.state.memberRows = null;
+    app.state.transferRequests = [];
+    app.state.activationCodeRows = null;
     app.state.nextSubscriptionRead = null;
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -205,7 +218,8 @@ describe('administrator operation permission editing', () => {
       status: 'refunded', reason: '銀行退款已完成',
     });
     expect(app.api.get).toHaveBeenCalledWith(expect.stringContaining('/api/data/subscriptions?page=1&'));
-    expect(container.querySelector('[role="status"]')?.textContent).toContain('付款紀錄與會員訂閱已更新');
+    expect(container.querySelector('[role="status"]')?.textContent).toContain('付款紀錄已更新');
+    expect(container.querySelector('[role="status"]')?.textContent).toContain('會員訂閱清單將於開啟時重新載入');
     expect(app.api.get.mock.calls.filter(([url]) => String(url).startsWith('/api/data/subscriptions?'))).toHaveLength(1);
     await act(async () => subscriptionTab(container, '訂閱會員').click());
     await waitFor(() => expect(app.api.get.mock.calls.filter(([url]) => String(url).startsWith('/api/data/subscriptions?'))).toHaveLength(2));
@@ -372,6 +386,242 @@ describe('administrator operation permission editing', () => {
     expect(container.querySelector('[role="alertdialog"]')).toBeNull();
     expect(document.activeElement).toBe(trigger);
     expect(app.api.delete).not.toHaveBeenCalled();
+  });
+
+  it('shows own-name update failures inside the keyboard-safe edit dialog and preserves the draft', async () => {
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    const trigger = within(container).getByRole('button', { name: '超級管理員' });
+    trigger.focus();
+    await act(async () => trigger.click());
+    const editor = within(container).getByRole('dialog');
+    expect(editor.tagName).toBe('DIALOG');
+    expect((editor as HTMLDialogElement).open).toBe(true);
+    const input = within(editor).getByLabelText('管理員名稱') as HTMLInputElement;
+    expect(document.activeElement).toBe(input);
+    await act(async () => fireEvent.change(input, { target: { value: '新的管理員名稱' } }));
+    app.api.put.mockRejectedValueOnce(new Error('網路斷線'));
+    await act(async () => within(editor).getByRole('button', { name: '儲存' }).click());
+    await act(async () => within(within(container).getByRole('alertdialog')).getByRole('button', { name: '確認修改' }).click());
+    await waitFor(() => expect(within(editor).getByRole('alert').textContent).toContain('網路斷線'));
+    expect(input.value).toBe('新的管理員名稱');
+    expect(container.querySelector('.content > .error')).toBeNull();
+    await act(async () => fireEvent(editor, new Event('cancel', { cancelable: true })));
+    expect(within(container).queryByRole('dialog')).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('keeps the own-name dialog open while its update is in progress', async () => {
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => { release = resolve; });
+    app.api.put.mockImplementationOnce(async () => { await pending; return { data: { admin: { name: '新的管理員名稱' } } }; });
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => within(container).getByRole('button', { name: '超級管理員' }).click());
+    const editor = within(container).getByRole('dialog');
+    await act(async () => fireEvent.change(within(editor).getByLabelText('管理員名稱'), { target: { value: '新的管理員名稱' } }));
+    await act(async () => within(editor).getByRole('button', { name: '儲存' }).click());
+    await act(async () => within(within(container).getByRole('alertdialog')).getByRole('button', { name: '確認修改' }).click());
+    await waitFor(() => expect(app.api.put).toHaveBeenCalledTimes(1));
+    expect((within(editor).getByRole('button', { name: '儲存' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(editor).getByRole('button', { name: '取消' }) as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => fireEvent(editor, new Event('cancel', { cancelable: true })));
+    expect(within(container).getByRole('dialog')).toBe(editor);
+    await act(async () => release());
+    await waitFor(() => expect(within(container).queryByRole('dialog')).toBeNull());
+    expect(within(container).getByRole('button', { name: '新的管理員名稱' })).toBeDefined();
+  });
+
+  it('blocks a duplicate member status write until the pending attempt ends', async () => {
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => { release = resolve; });
+    app.api.put.mockImplementationOnce(async () => { await pending; throw new Error('暫時無法更新'); });
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '用戶管理')?.click());
+    await settle();
+    const trigger = within(container).getByRole('button', { name: '停權' });
+    await act(async () => trigger.click());
+    await act(async () => within(within(container).getByRole('alertdialog')).getByRole('button', { name: '確認停權' }).click());
+    await waitFor(() => expect(app.api.put).toHaveBeenCalledTimes(1));
+    expect((trigger as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => trigger.click());
+    expect(within(container).queryByRole('alertdialog')).toBeNull();
+    expect(app.api.put).toHaveBeenCalledTimes(1);
+    await act(async () => release());
+    await waitFor(() => expect((trigger as HTMLButtonElement).disabled).toBe(false));
+  });
+
+  it('waits for a member status write before allowing another member status write', async () => {
+    app.state.memberRows = [
+      { id: 'member-1', memberDisplayName: '甲會員', status: 'active' },
+      { id: 'member-2', memberDisplayName: '乙會員', status: 'active' },
+    ];
+    let release!: () => void;
+    app.api.put.mockImplementationOnce(async () => {
+      await new Promise<void>((resolve) => { release = resolve; });
+      return { data: {} };
+    });
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '用戶管理')?.click());
+    await settle();
+    const rows = [...container.querySelectorAll('tbody tr')];
+    const first = within(rows[0]).getByRole('button', { name: '停權' });
+    const second = within(rows[1]).getByRole('button', { name: '停權' });
+    const userReads = () => app.api.get.mock.calls.filter(([url]) => String(url).startsWith('/api/data/users?')).length;
+    const initialReads = userReads();
+    await act(async () => first.click());
+    await act(async () => within(within(container).getByRole('alertdialog')).getByRole('button', { name: '確認停權' }).click());
+    await waitFor(() => expect(app.api.put).toHaveBeenCalledTimes(1));
+    expect((second as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => second.click());
+    expect(app.api.put).toHaveBeenCalledTimes(1);
+    expect(within(container).queryByRole('alertdialog')).toBeNull();
+    await act(async () => release());
+    await waitFor(() => expect((within([...container.querySelectorAll('tbody tr')][1]).getByRole('button', { name: '停權' }) as HTMLButtonElement).disabled).toBe(false));
+    await act(async () => within([...container.querySelectorAll('tbody tr')][1]).getByRole('button', { name: '停權' }).click());
+    await act(async () => within(within(container).getByRole('alertdialog')).getByRole('button', { name: '確認停權' }).click());
+    expect(app.api.put).toHaveBeenCalledWith('/api/members/member-2/status', { status: 'disabled' });
+    expect(app.api.put).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(userReads()).toBeGreaterThanOrEqual(initialReads + 2));
+  });
+
+  it('blocks both decisions for one transfer during a pending review', async () => {
+    app.state.transferRequests = [{ id: 'transfer-1', status: 'pending', amount: 2880 }];
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => { release = resolve; });
+    app.api.put.mockImplementationOnce(async () => { await pending; return { data: {} }; });
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '訂閱管理')?.click());
+    await settle();
+    await act(async () => subscriptionTab(container, '轉帳申請').click());
+    await settle();
+    const row = container.querySelector<HTMLElement>('.transferRow')!;
+    const approve = within(row).getByRole('button', { name: '確認' });
+    const reject = within(row).getByRole('button', { name: '拒絕' });
+    await act(async () => approve.click());
+    await act(async () => within(within(container).getByRole('alertdialog')).getByRole('button', { name: '確認通過' }).click());
+    await waitFor(() => expect(app.api.put).toHaveBeenCalledTimes(1));
+    expect((approve as HTMLButtonElement).disabled).toBe(true);
+    expect((reject as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => reject.click());
+    expect(within(container).queryByRole('alertdialog')).toBeNull();
+    expect(app.api.put).toHaveBeenCalledTimes(1);
+    await act(async () => release());
+    await waitFor(() => expect((within(container.querySelector<HTMLElement>('.transferRow')!).getByRole('button', { name: '確認' }) as HTMLButtonElement).disabled).toBe(false));
+  });
+
+  it('waits for a transfer decision before allowing another transfer decision', async () => {
+    app.state.transferRequests = [
+      { id: 'transfer-1', status: 'pending', amount: 2880 },
+      { id: 'transfer-2', status: 'pending', amount: 2880 },
+    ];
+    let release!: () => void;
+    app.api.put.mockImplementationOnce(async () => {
+      await new Promise<void>((resolve) => { release = resolve; });
+      return { data: {} };
+    });
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '訂閱管理')?.click());
+    await settle();
+    await act(async () => subscriptionTab(container, '轉帳申請').click());
+    await settle();
+    const rows = [...container.querySelectorAll<HTMLElement>('.transferRow')];
+    const transferReads = () => app.api.get.mock.calls.filter(([url]) => String(url).startsWith('/api/data/transferRequests?')).length;
+    const initialReads = transferReads();
+    await act(async () => within(rows[0]).getByRole('button', { name: '確認' }).click());
+    await act(async () => within(within(container).getByRole('alertdialog')).getByRole('button', { name: '確認通過' }).click());
+    await waitFor(() => expect(app.api.put).toHaveBeenCalledTimes(1));
+    expect((within(rows[1]).getByRole('button', { name: '確認' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(rows[1]).getByRole('button', { name: '拒絕' }) as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => within(rows[1]).getByRole('button', { name: '拒絕' }).click());
+    expect(app.api.put).toHaveBeenCalledTimes(1);
+    expect(within(container).queryByRole('alertdialog')).toBeNull();
+    await act(async () => release());
+    await waitFor(() => expect((within([...container.querySelectorAll<HTMLElement>('.transferRow')][1]).getByRole('button', { name: '拒絕' }) as HTMLButtonElement).disabled).toBe(false));
+    await act(async () => within([...container.querySelectorAll<HTMLElement>('.transferRow')][1]).getByRole('button', { name: '拒絕' }).click());
+    await act(async () => within(within(container).getByRole('alertdialog')).getByRole('button', { name: '確認拒絕' }).click());
+    expect(app.api.put).toHaveBeenCalledWith('/api/transfer-requests/transfer-2', { decision: 'rejected' });
+    expect(app.api.put).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(transferReads()).toBeGreaterThanOrEqual(initialReads + 2));
+  });
+
+  it('blocks a duplicate activation-code deletion until the pending attempt ends', async () => {
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => { release = resolve; });
+    app.api.delete.mockImplementationOnce(async () => { await pending; throw new Error('刪除失敗'); });
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '啟動碼管理')?.click());
+    await settle();
+    const trigger = within(container).getByRole('button', { name: '刪除啟動碼 ABCD-EFGH-IJKL-MNOP' });
+    await act(async () => trigger.click());
+    await act(async () => within(within(container).getByRole('alertdialog')).getByRole('button', { name: '確認刪除' }).click());
+    await waitFor(() => expect(app.api.delete).toHaveBeenCalledTimes(1));
+    expect((trigger as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => trigger.click());
+    expect(within(container).queryByRole('alertdialog')).toBeNull();
+    expect(app.api.delete).toHaveBeenCalledTimes(1);
+    await act(async () => release());
+    await waitFor(() => expect((trigger as HTMLButtonElement).disabled).toBe(false));
+  });
+
+  it('waits for an activation-code deletion before allowing another code deletion', async () => {
+    app.state.activationCodeRows = [
+      { id: 'code-1', code: 'ABCD-EFGH-IJKL-MNOP', status: 'unused', redeemedAt: null, redeemedByLineDisplayName: null },
+      { id: 'code-2', code: 'QRST-UVWX-YZ12-3456', status: 'unused', redeemedAt: null, redeemedByLineDisplayName: null },
+    ];
+    let release!: () => void;
+    app.api.delete.mockImplementationOnce(async () => {
+      await new Promise<void>((resolve) => { release = resolve; });
+      return { data: {} };
+    });
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '啟動碼管理')?.click());
+    await settle();
+    const first = within(container).getByRole('button', { name: '刪除啟動碼 ABCD-EFGH-IJKL-MNOP' });
+    const second = within(container).getByRole('button', { name: '刪除啟動碼 QRST-UVWX-YZ12-3456' });
+    const codeReads = () => app.api.get.mock.calls.filter(([url]) => String(url).startsWith('/api/data/activationCodes?')).length;
+    const initialReads = codeReads();
+    await act(async () => first.click());
+    await act(async () => within(within(container).getByRole('alertdialog')).getByRole('button', { name: '確認刪除' }).click());
+    await waitFor(() => expect(app.api.delete).toHaveBeenCalledTimes(1));
+    expect((second as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => second.click());
+    expect(app.api.delete).toHaveBeenCalledTimes(1);
+    expect(within(container).queryByRole('alertdialog')).toBeNull();
+    await act(async () => release());
+    await waitFor(() => expect((within(container).getByRole('button', { name: '刪除啟動碼 QRST-UVWX-YZ12-3456' }) as HTMLButtonElement).disabled).toBe(false));
+    await act(async () => within(container).getByRole('button', { name: '刪除啟動碼 QRST-UVWX-YZ12-3456' }).click());
+    await act(async () => within(within(container).getByRole('alertdialog')).getByRole('button', { name: '確認刪除' }).click());
+    expect(app.api.delete).toHaveBeenCalledWith('/api/activation-codes/code-2');
+    expect(app.api.delete).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(codeReads()).toBeGreaterThanOrEqual(initialReads + 2));
+  });
+
+  it('allows a member status write while an activation-code deletion is pending', async () => {
+    let release!: () => void;
+    app.api.delete.mockImplementationOnce(async () => {
+      await new Promise<void>((resolve) => { release = resolve; });
+      return { data: {} };
+    });
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '啟動碼管理')?.click());
+    await settle();
+    await act(async () => within(container).getByRole('button', { name: '刪除啟動碼 ABCD-EFGH-IJKL-MNOP' }).click());
+    await act(async () => within(within(container).getByRole('alertdialog')).getByRole('button', { name: '確認刪除' }).click());
+    await waitFor(() => expect(app.api.delete).toHaveBeenCalledTimes(1));
+    await act(async () => buttonWithText(container, '用戶管理')?.click());
+    await settle();
+    await act(async () => within(container).getByRole('button', { name: '停權' }).click());
+    await act(async () => within(within(container).getByRole('alertdialog')).getByRole('button', { name: '確認停權' }).click());
+    expect(app.api.put).toHaveBeenCalledWith('/api/members/member-1/status', { status: 'disabled' });
+    await act(async () => release());
   });
 
   it('starts a clean create after cancelling an administrator edit and posts the new account', async () => {

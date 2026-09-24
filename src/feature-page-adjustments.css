@@ -236,9 +236,49 @@
   transform: rotate(180deg);
 }
 
+/* Keep the compact 56 × 20 appearance while making the row's button 44px tall. */
+.notifications-screen-v2 .notification-actions > .notification-settings-toggle {
+  position: relative;
+  height: 44px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+}
+
+.notifications-screen-v2 .notification-actions > .notification-settings-toggle::before {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  box-sizing: border-box;
+  width: 100%;
+  height: 20px;
+  border: 1px solid var(--pwa-frame-tertiary);
+  border-radius: var(--pwa-frame-radius);
+  background: var(--pwa-control-surface);
+  pointer-events: none;
+  content: "";
+}
+
+.notifications-screen-v2 .notification-actions > .notification-settings-toggle > :is(span, svg) {
+  position: relative;
+}
+
+.notifications-screen-v2 .notification-actions > .notification-settings-toggle:disabled::before {
+  border-color: #46505c;
+}
+
+.notifications-screen-v2 .notification-row[data-notification-key="collision"] .notification-actions > .notification-settings-toggle:disabled::before {
+  border-color: rgba(211, 166, 66, .58);
+}
+
+.notifications-screen-v2 .notification-actions > .notification-settings-toggle:focus-visible {
+  outline: 2px solid var(--lottery-gold-300);
+  outline-offset: -2px;
+}
+
 .notifications-screen-v2 .notification-actions > .toggle {
   width: 38px;
-  height: 18px;
+  height: 44px;
   flex: 0 0 38px;
   align-self: center;
   padding: 0;
@@ -249,7 +289,7 @@
 }
 
 .notifications-screen-v2 .toggle::before {
-  top: 0;
+  top: 13px;
   width: 38px;
   height: 18px;
   border-radius: 9px;
@@ -265,13 +305,18 @@
 }
 
 .notifications-screen-v2 .toggle span {
-  top: 2px;
+  top: 15px;
   width: 14px;
   height: 14px;
 }
 
 .notifications-screen-v2 .toggle[data-checked="true"] span {
   transform: translateX(20px);
+}
+
+.notifications-screen-v2 .notification-actions > .toggle:focus-visible {
+  outline: 2px solid var(--lottery-gold-300);
+  outline-offset: -2px;
 }
 
 .notifications-screen-v2 .notification-inline-settings {

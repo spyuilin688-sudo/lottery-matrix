@@ -262,9 +262,67 @@ describe('Matrix Pro manual bank transfer', () => {
     });
     render(<ManualTransferPage onNavigate={vi.fn()} />);
     expect(await screen.findByText(/有效的年費方案無法購買較低方案/)).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: '轉帳資料' })).not.toBeInTheDocument();
     expect(screen.getByLabelText('帳號末五碼')).toBeDisabled();
     expect(screen.getByRole('button', { name: '提交' })).toBeDisabled();
     expect(memberApi.submitTransferRequest).not.toHaveBeenCalled();
+  });
+
+  it('withholds receiving details until an eligible member profile is confirmed', async () => {
+    const profile = deferred<unknown>();
+    memberApi.fetchMemberProfile.mockReturnValue(profile.promise);
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+
+    expect(screen.getByText('正在讀取會員資料，請稍候。')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: '轉帳資料' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '提交' })).toBeDisabled();
+
+    await act(async () => profile.resolve({ planName: '月費方案', planExpiresAt: null, isLifetime: false }));
+    expect(screen.getByRole('region', { name: '轉帳資料' })).toBeInTheDocument();
+  });
+
+  it('withholds receiving details if the member profile fails to load', async () => {
+    memberApi.fetchMemberProfile.mockRejectedValue(new Error('member profile unavailable'));
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+
+    expect(await screen.findByText('會員資料載入失敗，請稍後重新開啟方案頁。')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: '轉帳資料' })).not.toBeInTheDocument();
+  });
+
+  it('keeps an existing pending request visible even if a new purchase is blocked', async () => {
+    memberApi.fetchMemberProfile.mockResolvedValue({ planName: null, planExpiresAt: null, isLifetime: true });
+    memberApi.fetchPendingTransferRequest.mockResolvedValue(pendingTransfer);
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+
+    expect(await screen.findByText('已有待確認申請')).toBeInTheDocument();
+    expect(screen.getByText('NT$2,880')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: '轉帳資料' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '提交' })).toBeDisabled();
+  });
+
+  it('keeps a rejected retry result visible without offering receiving details for a blocked member', async () => {
+    memberApi.fetchPendingTransferRequest.mockResolvedValue(null);
+    memberApi.submitTransferRequest.mockRejectedValueOnce(new Error('response lost'));
+    const first = render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12345' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('尚未確認提交結果');
+    const requestId = memberApi.submitTransferRequest.mock.calls[0][2];
+    first.unmount();
+
+    memberApi.fetchMemberProfile.mockResolvedValue({ planName: null, planExpiresAt: null, isLifetime: true });
+    memberApi.submitTransferRequest.mockResolvedValueOnce({ ...pendingTransfer, id: requestId, status: 'rejected' });
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    expect(screen.queryByRole('region', { name: '轉帳資料' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '重新確認申請' }));
+
+    expect(await screen.findByText('申請已退回')).toBeInTheDocument();
+    expect(screen.getByText('已退回')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: '轉帳資料' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '提交' })).toBeDisabled();
+    expect(memberApi.submitTransferRequest.mock.calls[1][2]).toBe(requestId);
   });
 
   it('labels paid but unfulfilled orders as needing refund in member history', async () => {
@@ -483,6 +541,7 @@ describe('Matrix Pro manual bank transfer', () => {
     fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12345' } });
     fireEvent.click(screen.getByRole('button', { name: '提交' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('無法購買較低方案');
+    expect(screen.queryByRole('region', { name: '轉帳資料' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '提交' })).toBeDisabled();
     first.unmount();
 
@@ -577,7 +636,12 @@ describe('Matrix Pro manual bank transfer', () => {
     const requestId = memberApi.submitTransferRequest.mock.calls[0][2];
     first.unmount();
 
+    const profile = deferred<unknown>();
+    memberApi.fetchMemberProfile.mockReturnValueOnce(profile.promise);
     render(<ManualTransferPage onNavigate={vi.fn()} />);
+    expect(screen.queryByRole('region', { name: '轉帳資料' })).not.toBeInTheDocument();
+    await act(async () => profile.resolve({ planName: '月費方案', planExpiresAt: null, isLifetime: false }));
+    expect(screen.getByRole('region', { name: '轉帳資料' })).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
     expect(screen.getByLabelText('帳號末五碼')).toHaveValue('12345');
     fireEvent.click(screen.getByRole('button', { name: '重新確認申請' }));

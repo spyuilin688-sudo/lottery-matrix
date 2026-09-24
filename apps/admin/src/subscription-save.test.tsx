@@ -58,7 +58,9 @@ import AdminApp from './AdminApp';
 async function openEditor() {
   render(<AdminApp />);
   fireEvent.click(await screen.findByRole('button', { name: /訂閱管理/ }));
-  fireEvent.click(await screen.findByRole('button', { name: '調整到期日' }));
+  const trigger = await screen.findByRole('button', { name: '調整到期日' });
+  trigger.focus();
+  fireEvent.click(trigger);
   return screen.getByRole('dialog');
 }
 
@@ -80,6 +82,17 @@ describe('subscription expiry save recovery', () => {
     app.state.writeError = null;
     app.state.pendingWrite = null;
     window.history.replaceState(null, '', '/');
+  });
+
+  it('opens a native modal and returns focus to the edit control after Escape', async () => {
+    const editor = await openEditor();
+    expect(editor.tagName).toBe('DIALOG');
+    expect((editor as HTMLDialogElement).open).toBe(true);
+    expect(document.activeElement).toBe(within(editor).getByRole('button', { name: '取消' }));
+    fireEvent(editor, new Event('cancel', { cancelable: true }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: '調整到期日' }));
+    expect(app.api.put).not.toHaveBeenCalled();
   });
 
   it('keeps an empty date editable and explains the correction before confirmation or a write', async () => {

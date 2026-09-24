@@ -104,4 +104,31 @@ describe('member online tracking', () => {
     await vi.waitFor(() => expect(startCount).toBe(2));
     stop();
   });
+
+  it('starts a new session if the page returns before the first start and end finish', async () => {
+    let resolveStart: ((value: Record<string, unknown>) => void) | undefined;
+    let resolveEnd: ((value: Record<string, unknown>) => void) | undefined;
+    const firstStart = new Promise<Record<string, unknown>>((resolve) => { resolveStart = resolve; });
+    const firstEnd = new Promise<Record<string, unknown>>((resolve) => { resolveEnd = resolve; });
+    let starts = 0;
+    const post = vi.fn((path: string) => {
+      if (path.endsWith('/start')) return ++starts === 1 ? firstStart : Promise.resolve({ sessionId: 'session-2' });
+      return firstEnd;
+    });
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+    const stop = startMemberOnlineTracking(post, document);
+    expect(starts).toBe(1);
+
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    resolveStart?.({ sessionId: 'session-1' });
+    await vi.waitFor(() => expect(post).toHaveBeenCalledWith('/api/member-online/end', { sessionId: 'session-1' }));
+    expect(starts).toBe(1);
+    resolveEnd?.({ onlineSeconds: 2 });
+    await vi.waitFor(() => expect(starts).toBe(2));
+    stop();
+  });
 });

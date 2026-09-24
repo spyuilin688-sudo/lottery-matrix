@@ -51,3 +51,4 @@ jobs:
             fi
           done
           echo "Fantasy5 formal source is still waiting after ${FANTASY5_MAX_ATTEMPTS} attempts."
+          exit 1

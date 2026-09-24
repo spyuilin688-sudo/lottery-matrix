@@ -82,7 +82,10 @@ test('通知頁使用 v2 緊密密度且右側動作固定欄對齊', () => {
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-settings-toggle\s*\{[^}]*width:\s*56px;[^}]*height:\s*20px/s);
   assert.doesNotMatch(responsiveCss, /@media \(max-width: 360px\)[\s\S]*?notification-heading/);
   assert.match(css, /\.notification-row h2\s*\{[^}]*font-size:\s*14px;[^}]*line-height:\s*18px;/s);
-  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-actions > \.toggle\s*\{[^}]*width:\s*38px;[^}]*height:\s*18px;/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-actions > \.notification-settings-toggle\s*\{[^}]*height:\s*44px;/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-actions > \.notification-settings-toggle::before\s*\{[^}]*height:\s*20px;/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-actions > \.toggle\s*\{[^}]*width:\s*38px;[^}]*height:\s*44px;/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.toggle::before\s*\{[^}]*height:\s*18px;/s);
 });
 
 test('舊按鈕規則不再覆蓋正式精簡規格', () => {
@@ -104,4 +107,3 @@ test('本次正式規則不新增整頁縮放、負位移或 important 補償', 
 test('號碼對照單刷新圖示不再有頁面專屬尺寸覆寫', () => {
   assert.doesNotMatch(responsiveCss, /\.number-reference-screen \.reference-refresh-trigger > svg\s*\{/);
 });
-

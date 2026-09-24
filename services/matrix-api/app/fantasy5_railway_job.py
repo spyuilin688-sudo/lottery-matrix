@@ -63,6 +63,7 @@ def main() -> int:
             "Fantasy5 formal source is still waiting after "
             f"{max_attempts} attempts."
         )
+        return 1
     return 0
 
 
