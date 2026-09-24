@@ -28,6 +28,7 @@ function createWorkerHarness(options: {
   cachePutFailure?: boolean;
   cacheDeleteFailure?: boolean;
   cacheNames?: string[];
+  buildAssetPaths?: string[];
 } = {}) {
   const handlers = new Map<string, WorkerHandler>();
   const entries = new Map<string, Response>();
@@ -78,7 +79,8 @@ function createWorkerHarness(options: {
     if (url.endsWith('.webmanifest')) return typedResponse('{}', 'application/manifest+json');
     return typedResponse(shellHtml, 'text/html');
   });
-  const source = readFileSync(`${process.cwd()}/public/push-service-worker.js`, 'utf8');
+  const source = readFileSync(`${process.cwd()}/public/push-service-worker.js`, 'utf8')
+    .replace('const BUILD_ASSET_PATHS = [];', `const BUILD_ASSET_PATHS = ${JSON.stringify(options.buildAssetPaths ?? [])};`);
   new Function('self', 'caches', 'fetch', source)(worker, cacheStorage, network);
 
   async function dispatchLifecycle(type: 'install' | 'activate') {
@@ -165,6 +167,29 @@ describe('combined Push and PWA service worker', () => {
     expect(close).toHaveBeenCalledTimes(1);
     expect(worker.focus).toHaveBeenCalledTimes(1);
     expect(worker.openWindow).not.toHaveBeenCalled();
+  });
+
+  it('installs and serves the current shell when the unversioned homepage is stale', async () => {
+    const latestShell = '<link rel="stylesheet" href="/assets/app-v2.css"><script type="module" src="/assets/app-v2.js"></script><body>current app shell</body>';
+    const worker = createWorkerHarness({ buildAssetPaths: ['/assets/app-v2.css', '/assets/app-v2.js'] });
+    worker.network.mockImplementation(async (request) => {
+      const url = new URL(requestKey(request as string | WorkerRequest));
+      if (url.pathname.endsWith('.css')) return typedResponse('body { color: gold }', 'text/css');
+      if (url.pathname.endsWith('.js')) return typedResponse('/* app */', 'text/javascript');
+      if (url.pathname === '/' || url.pathname === '/index.html') {
+        return typedResponse(url.search ? latestShell : shellHtml, 'text/html');
+      }
+      return typedResponse('image', 'image/png');
+    });
+
+    await worker.dispatchLifecycle('install');
+
+    expect(await worker.entries.get(requestKey('/'))?.text()).toBe(latestShell);
+    expect(worker.skipWaiting).toHaveBeenCalledTimes(1);
+
+    const navigation = await worker.dispatchFetch({ url: `${origin}/`, method: 'GET', mode: 'navigate', destination: 'document' });
+    expect(await navigation.response?.text()).toBe(latestShell);
+    await navigation.waited;
   });
 
   it('returns a cached static asset after a successful first request goes offline', async () => {
