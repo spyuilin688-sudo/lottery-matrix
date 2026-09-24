@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
 
-const migrationPath = new URL('../migrations/20260924040000_matrix_card_signals.sql', import.meta.url);
+const migrationPath = new URL('../migrations/20260924033653_matrix_card_signals.sql', import.meta.url);
 const lottery = '今彩539';
 const generation = 'a'.repeat(64);
 const oldGeneration = 'd'.repeat(64);

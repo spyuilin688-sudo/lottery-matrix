@@ -5,7 +5,7 @@ import test from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
 
 const migrations = join(import.meta.dirname, '../../../supabase/migrations');
-const migrationPath = join(migrations, '20260923233000_retry_late_card_invalidation.sql');
+const migrationPath = join(migrations, '20260923234314_retry_late_card_invalidation.sql');
 const sql = existsSync(migrationPath) ? readFileSync(migrationPath, 'utf8') : '';
 
 function definition(source, functionName) {

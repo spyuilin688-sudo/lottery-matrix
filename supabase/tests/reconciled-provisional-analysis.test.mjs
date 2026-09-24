@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
 
 const read = path => readFileSync(new URL(path, import.meta.url), 'utf8');
-const fix = new URL('../migrations/20260924030000_cleanup_reconciled_provisional_analysis.sql', import.meta.url);
+const fix = new URL('../migrations/20260924033647_cleanup_reconciled_provisional_analysis.sql', import.meta.url);
 const lottery = '六合彩';
 
 test('reconciling an official period removes the duplicate provisional analysis and preserves older periods', async () => {
