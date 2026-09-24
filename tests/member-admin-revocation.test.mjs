@@ -61,7 +61,7 @@ before(async () => {
       ('20000000-0000-0000-0000-000000000001','AAAA-BBBB-CCCC-DDDD','30_days',now(),now()+interval '1 month');
   `);
   await db.exec(await migration('20260908153522_member_admin_revocation'));
-  await db.exec(await migration('20260924171250_avoid_duplicate_activation_member_lock'));
+  await db.exec(await migration('20260924174910_avoid_duplicate_activation_member_lock'));
 });
 after(async () => { await db.close(); });
 
