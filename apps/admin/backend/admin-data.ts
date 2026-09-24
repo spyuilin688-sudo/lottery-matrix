@@ -352,7 +352,7 @@ const memberColumns = {
   lastOnlineAt: 'last_online_at', referralCode: 'referral_code', invitationCode: 'invitation_code',
 };
 const pageDefinitions: Record<string, PageDefinition> = {
-  users: { pageSize: 30, columns: memberColumns, dates: ['registeredAt', 'planStartedAt', 'planExpiresAt', 'lastOnlineAt'], keywords: ['line_display_name', 'referral_code', 'invitation_code'], identifiers: ['auth_user_id'], relations: [{ alias: 'keyword_plan', relation: 'plans!members_current_plan_id_fkey', field: 'name' }] },
+  users: { pageSize: 15, columns: memberColumns, dates: ['registeredAt', 'planStartedAt', 'planExpiresAt', 'lastOnlineAt'], keywords: ['line_display_name', 'referral_code', 'invitation_code'], identifiers: ['auth_user_id'], relations: [{ alias: 'keyword_plan', relation: 'plans!members_current_plan_id_fkey', field: 'name' }] },
   subscriptions: { pageSize: 30, columns: memberColumns, dates: ['planStartedAt', 'planExpiresAt', 'registeredAt', 'lastOnlineAt'], keywords: ['line_display_name', 'referral_code', 'invitation_code'], identifiers: ['auth_user_id'], relations: [{ alias: 'keyword_plan', relation: 'plans!members_current_plan_id_fkey', field: 'name' }] },
   loginRecords: {
     pageSize: 10, columns: { id: 'id', account: 'account', loginAt: 'login_at', logoutAt: 'logout_at', onlineMinutes: 'online_minutes', ip: 'ip', device: 'device' },
@@ -525,7 +525,6 @@ export async function listAdminMemberPage(
   api: PageRequester,
   currentDate = new Date(),
 ) {
-  const page = parsePage(query, 30);
   const keyword = String(query.keyword ?? '').trim();
   const status = String(query.status ?? 'all');
   const plan = String(query.plan ?? 'all');
@@ -536,6 +535,8 @@ export async function listAdminMemberPage(
       || (table === 'users' && plan !== 'all')) {
     throw new AdminDataError('查詢條件不正確');
   }
+  const pageSize = pageDefinitions[table].pageSize;
+  const page = parsePage(query, pageSize);
   const definition = getAdminTableDefinition(table);
   const url = new URL(definition.path, 'https://supabase.invalid');
   if (table === 'subscriptions') {
@@ -552,7 +553,7 @@ export async function listAdminMemberPage(
   }
   const googleNameClauses = await googleMemberNameClauses(table, keyword, api);
   applyAdminPageFilters(url, table, query, false, googleNameClauses);
-  const result = await readAdminPage(url, page, 30, api);
+  const result = await readAdminPage(url, page, pageSize, api);
   const items = await enrichMembers(result.items.map(row => definition.map(row, currentDate)), api, currentDate, true);
   return { ...result, items };
 }

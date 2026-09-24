@@ -909,10 +909,11 @@ describe('payment reversal route wiring', () => {
     const route = 'GET /api/data/:table';
     const context = await authenticate(route, sessionContext({ table: 'users' }));
     const routeHandler = routes[route][2] as (input: typeof context & { query: Record<string, string> }) => Promise<unknown>;
-    await expect(routeHandler({ ...context, query: { page: '2', status: 'disabled' } })).resolves.toMatchObject({ body: { total: 61, currentPage: 2 } });
+    await expect(routeHandler({ ...context, query: { page: '2', status: 'disabled' } })).resolves.toMatchObject({ body: { total: 61, currentPage: 2, totalPages: 5 } });
     expect(wiring.requireModulePermission).toHaveBeenCalledWith(wiring.admin, 'users', 'view');
     const query = new URL(wiring.requestPage.mock.calls[0][0], 'https://example.test').searchParams;
-    expect(query.get('offset')).toBe('30');
+    expect(query.get('limit')).toBe('15');
+    expect(query.get('offset')).toBe('15');
     expect(query.get('status')).toBe('in.(disabled,inactive,停用)');
 
     wiring.requestPage.mockClear();

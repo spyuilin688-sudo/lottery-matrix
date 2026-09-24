@@ -11,13 +11,16 @@ function expectDisplayNameRpc(request: ReturnType<typeof vi.fn>, keyword: string
   expect(request.mock.calls.some(([path]) => String(path).startsWith('/auth/v1/admin/users?'))).toBe(false);
   expect(request.mock.calls.some(([path]) => String(path).startsWith('/rest/v1/members?select=id,auth_user_id'))).toBe(false);
 }
-test('member page requests only 30 rows, preserves filtered total and scopes online summaries to returned members', async () => {
+test.each([
+  ['users', 15, 16],
+  ['subscriptions', 30, 31],
+] as const)('%s uses its page size, preserves filtered total and scopes online summaries to returned members', async (table, pageSize, total) => {
   const request = vi.fn().mockResolvedValue([]);
-  const requestPage = vi.fn().mockResolvedValue({ items: [member], total: 31 });
-  const result = await listAdminMemberPage('users', { page: '2', keyword: '', status: 'disabled' }, { request, requestPage });
-  expect(result).toMatchObject({ total: 31, currentPage: 2, totalPages: 2, items: [{ lineDisplayName: '找到的會員' }] });
+  const requestPage = vi.fn().mockResolvedValue({ items: [member], total });
+  const result = await listAdminMemberPage(table, { page: '2', keyword: '', status: 'disabled' }, { request, requestPage });
+  expect(result).toMatchObject({ total, currentPage: 2, totalPages: 2, items: [{ lineDisplayName: '找到的會員' }] });
   const query = new URL(requestPage.mock.calls[0][0], 'https://test').searchParams;
-  expect(query.get('limit')).toBe('30'); expect(query.get('offset')).toBe('30');
+  expect(query.get('limit')).toBe(String(pageSize)); expect(query.get('offset')).toBe(String(pageSize));
   expect(query.get('status')).toBe('in.(disabled,inactive,停用)');
   expect(request.mock.calls.filter(([p]) => p.includes('member_online_sessions')).every(([p]) => new URL(p, 'https://test').searchParams.get('member_id') === 'in.(11111111-1111-4111-8111-111111111111)')).toBe(true);
 });
@@ -54,11 +57,14 @@ test.each(['users', 'subscriptions'] as const)('%s active search includes legacy
   expectDisplayNameRpc(request, '月費,(x)');
 });
 
-test('deleted last page clamps to final available page without fetching the full table', async () => {
-  const requestPage = vi.fn().mockResolvedValueOnce({ items: [], total: 31 }).mockResolvedValueOnce({ items: [member], total: 31 });
-  const result = await listAdminMemberPage('subscriptions', { page: '9' }, { request: vi.fn().mockResolvedValue([]), requestPage });
-  expect(result.currentPage).toBe(2);
-  expect(requestPage.mock.calls[1][0]).toContain('offset=30');
+test.each([
+  ['users', 16, '15'],
+  ['subscriptions', 31, '30'],
+] as const)('%s clamps a deleted last page without fetching the full table', async (table, total, offset) => {
+  const requestPage = vi.fn().mockResolvedValueOnce({ items: [], total }).mockResolvedValueOnce({ items: [member], total });
+  const result = await listAdminMemberPage(table, { page: '9' }, { request: vi.fn().mockResolvedValue([]), requestPage });
+  expect(result).toMatchObject({ currentPage: 2, totalPages: 2, total, items: [{ id: member.id }] });
+  expect(new URL(requestPage.mock.calls[1][0], 'https://test').searchParams.get('offset')).toBe(offset);
 });
 
 test.each(['0', '-1', '1.5', 'NaN', '9007199254740991'])('invalid page %s is rejected before reading', async page => {
