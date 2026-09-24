@@ -4,7 +4,7 @@ import { MatrixApiError } from './matrix-api-client';
 import { getSupabaseClient } from './lib/supabase';
 import { readThroughCache, stableCacheKey } from './read-cache';
 import { getAlgorithmCacheScope, readAlgorithmCacheScope } from './auth/algorithm-cache-scope';
-import { getMatrixDataRevision } from './matrix-data-revision';
+import { getMatrixDataRevision, invalidateMatrixData } from './matrix-data-revision';
 import { lotteryReadCacheTtlMs } from './lottery-cache-policy';
 
 export type MatrixNumberOrder = '依號碼由小到大排序' | '依實際開獎順序排序';
@@ -562,6 +562,42 @@ async function matrixResultRpc<T>(name: string, request: unknown) {
   return normalizeMatrixRpcResponse(name, data) as T;
 }
 
+type MatrixListEntitlements = {
+  canUseSeven: boolean;
+  canUseThirteen: boolean;
+  canUseFullRange: boolean;
+  canUseTianyan: boolean;
+  canUseTiangong: boolean;
+};
+
+async function authorizeCachedMatrixList(name: string, request: unknown) {
+  try {
+    // This RPC calls the same database entitlement function as the list RPCs.
+    // Unlike the public settings revision, it checks this member's current status.
+    const { data, error } = await getSupabaseClient().rpc('matrix_status_entitlements');
+    if (error) matrixRpcError(error);
+    const access = data as MatrixListEntitlements | null;
+    if (!access || (['canUseSeven', 'canUseThirteen', 'canUseFullRange', 'canUseTianyan', 'canUseTiangong'] as const)
+      .some((field) => typeof access[field] !== 'boolean')) {
+      throw new MatrixApiError('API_ERROR', 500);
+    }
+    const periods = (request as { explorePeriods?: number }).explorePeriods;
+    const fullRange = (request as { exploreRange?: string }).exploreRange === '完整範圍';
+    const allowed = (name !== 'matrix_explore_list' || periods !== 7 || access.canUseSeven)
+      && ((name !== 'matrix_explore_list' && name !== 'matrix_tianheng_list' && name !== 'matrix_tianshu_list')
+        || periods !== 13 || access.canUseThirteen)
+      && ((!['matrix_explore_list', 'matrix_tianheng_list', 'matrix_tianshu_list'].includes(name))
+        || !fullRange || access.canUseFullRange)
+      && (name !== 'matrix_tianyan_list' || access.canUseTianyan)
+      && (name !== 'matrix_tiangong_list' || access.canUseTiangong);
+    if (!allowed) throw new MatrixApiError('FORBIDDEN', 403);
+  } catch (error) {
+    // A denied or unavailable fresh check must also hide results already on screen.
+    invalidateMatrixData();
+    throw error instanceof MatrixApiError ? error : new MatrixApiError('API_ERROR', 500);
+  }
+}
+
 async function cachedMatrixResultRpc<T extends { lottery: NumberBallLottery; analysisVersion?: string }>(
   name: string,
   request: unknown,
@@ -592,13 +628,18 @@ async function cachedMatrixResultRpc<T extends { lottery: NumberBallLottery; ana
   };
   const key = stableCacheKey(`matrix-rpc:${name}`, { scope, permissionRevision: permissionSettings.revision, request });
   const lottery = (request as { lottery: NumberBallLottery }).lottery;
+  let loadedFromServer = false;
   const result = await readThroughCache(key, lotteryReadCacheTtlMs(lottery, 'standard'), async ({ isCurrent }) => {
     const value = await matrixResultRpc<T>(name, request);
     assertCurrentSession();
     assertCurrentData();
     if (!isCurrent()) throw new MatrixApiError('ANALYSIS_VERSION_MISMATCH', 409);
+    loadedFromServer = true;
     return value;
   });
+  // The list RPC already checks current entitlement on a miss; a cache hit
+  // needs a lightweight, server-authoritative check before exposing old rows.
+  if (!loadedFromServer) await authorizeCachedMatrixList(name, request);
   // Cache hits must also verify the session before reaching a caller.
   assertCurrentSession();
   assertCurrentData();

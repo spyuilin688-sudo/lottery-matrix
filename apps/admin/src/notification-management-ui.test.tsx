@@ -105,6 +105,28 @@ describe('NotificationManagement', () => {
     expect(container.textContent).not.toMatch(/全體|群發|排程/);
   });
 
+  it('does not request the same member search twice when Enter repeats the active query', async () => {
+    const apiClient = await renderManager();
+    const search = container.querySelector<HTMLInputElement>('#notification-member-search')!;
+    await act(async () => {
+      fireEvent.change(search, { target: { value: '會員一' } });
+      fireEvent.keyDown(search, { key: 'Enter' });
+    });
+    expect(apiClient.get.mock.calls.filter(([path]) => path.startsWith('/api/push-members'))).toHaveLength(2);
+    await act(async () => { fireEvent.keyDown(search, { key: 'Enter' }); });
+    expect(apiClient.get.mock.calls.filter(([path]) => path.startsWith('/api/push-members'))).toHaveLength(2);
+    await act(async () => { fireEvent.change(search, { target: { value: '會員一 ' } }); });
+    expect(apiClient.get.mock.calls.filter(([path]) => path.startsWith('/api/push-members'))).toHaveLength(2);
+  });
+
+  it('discloses the log history limit once the newest 200 records fill the response', async () => {
+    const recentLogs = Array.from({ length: 200 }, (_, index) => ({ ...failedLog, id: `log-${index + 1}` }));
+    await renderManager(client({ get: vi.fn(async (path: string) => ({
+      data: { items: path.startsWith('/api/push-members') ? members : recentLogs },
+    })) }));
+    expect(container.textContent).toContain('只顯示最近 200 筆');
+  });
+
   it('reports send counts, blocks duplicate sends, and shows time, result, and failure reason', async () => {
     let release!: () => void;
     const post = vi.fn(() => new Promise<{ data: { sent: number; failed: number } }>((resolve) => {

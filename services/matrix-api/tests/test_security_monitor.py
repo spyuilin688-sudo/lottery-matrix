@@ -45,6 +45,7 @@ def test_request_categories_separate_public_costs_and_exempt_protected_services(
     assert request_category('/api/matrix/tongxing', 'POST') == 'public_compute'
     assert request_category('/jobs/result-ready', 'POST') is None
     assert request_category('/jobs/status', 'GET') is None
+    assert request_category('/jobs/refresh/status?lottery=%E5%A4%A9%E5%A4%A9%E6%A8%82', 'GET') is None
     assert request_category('/jobs/primary', 'POST') is None
     assert request_category('/jobs/calendar/marksix', 'POST') is None
     assert request_category('/not-an-api', 'GET') == 'unauthorized'
@@ -154,6 +155,30 @@ def test_protected_success_is_not_counted_as_unauthorized(monkeypatch):
         response,_=request(address,'GET','/jobs/status')
         assert response.status == 403
     assert [e[3] for e in monitor.events] == ['attempt','denied']
+
+
+def test_refresh_status_valid_token_has_no_security_observation_but_invalid_token_is_denied(monkeypatch):
+    class Monitor:
+        def __init__(self): self.events=[]
+        def identity(self,peer): return 'a'*64,False
+        def check(self,category,source,trusted):
+            self.events.append(('check',category))
+            return {'allowed': True, 'retryAfter': 0}
+        def observe(self,*args): self.events.append(args)
+
+    monitor=Monitor()
+    repository=HttpOperationalRepository()
+    request_id='00000000-0000-0000-0000-000000000001'
+    repository.manual_refresh.claim('天天樂',request_id)
+    path=f'/jobs/refresh/status?lottery=%E5%A4%A9%E5%A4%A9%E6%A8%82&requestId={request_id}'
+    monkeypatch.setenv('MATRIX_ADMIN_STATUS_TOKEN','expected-token')
+    with running_recovery_server(repository,monitor) as address:
+        response,_=request(address,'GET',path,{'X-Matrix-Admin-Token':'expected-token'})
+        assert response.status == 200
+        assert monitor.events == []
+        response,_=request(address,'GET',path,{'X-Matrix-Admin-Token':'incorrect'})
+        assert response.status == 403
+    assert [event[3] for event in monitor.events] == ['attempt','denied']
 
 
 def test_valid_result_ready_is_not_preclassified_as_unauthorized(monkeypatch):

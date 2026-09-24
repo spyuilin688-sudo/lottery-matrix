@@ -593,7 +593,14 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     let request: AbortController | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let queued: ReturnType<typeof setTimeout> | undefined;
+    let queuedPriority = 0;
+    let pendingFullRefresh = false;
     let firstRefresh = true;
+    let refreshInFlight = false;
+    const failedStatuses = new Set<LotteryId>();
+    let failedLatestResult = false;
+    let failedLatestDraw = false;
+    let lastOffWindowRetryAt = -Infinity;
     const allLotteries = LOTTERIES.map(({ id }) => id);
 
     const clearTimer = () => {
@@ -649,9 +656,11 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       for (const lottery of lotteries) {
         const item = items.get(lottery);
         if (!item || item.status !== 200 || !("kind" in item.body) || item.body.kind !== "status-summary" || !("summary" in item.body)) {
+          failedStatuses.add(lottery);
           setMatrixStatusLoads((previous) => ({ ...previous, [lottery]: "error" }));
           continue;
         }
+        failedStatuses.delete(lottery);
         const summary = (item.body as { summary: MatrixStatusSummary }).summary;
         if (typeof item.body.drawPeriod === 'string' && item.body.drawPeriod) ready.set(lottery, item.body.drawPeriod);
         setMatrixStatuses((previous) => ({
@@ -673,6 +682,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       } catch {
         if (active && current === generation) {
           for (const lottery of lotteries) {
+            failedStatuses.add(lottery);
             setMatrixStatusLoads((previous) => ({ ...previous, [lottery]: "error" }));
           }
         }
@@ -680,17 +690,20 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       }
     };
 
-    const refresh = async (forceAll: boolean) => {
+    const refresh = async (forceAll: boolean, failedOnly = false) => {
       if (!active || document.visibilityState === "hidden") {
         scheduleNext();
         return;
       }
+      if (forceAll && !failedOnly) pendingFullRefresh = false;
+      refreshInFlight = true;
       const current = ++generation;
       request?.abort();
       request = new AbortController();
       const signal = request.signal;
       const cycle = homepageRefreshCycleAt(new Date());
       const hydrateAll = forceAll || firstRefresh;
+      const retryFailed = failedOnly && !firstRefresh;
 
       try {
         let state: Awaited<ReturnType<typeof fetchLatestLotteryResultState>> | null = null;
@@ -698,12 +711,23 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
         let refreshedDraw: LotteryDrawRecord | null | undefined;
 
         if (hydrateAll) {
+          const loadLatestResult = !retryFailed || failedLatestResult;
+          const loadLatestDraw = !retryFailed || failedLatestDraw;
           const [stateResult, statusResult, drawResult] = await Promise.all([
-            fetchLatestLotteryResultState(cycle?.cycleDate, signal).catch(() => null),
-            readStatuses(allLotteries, signal, current),
-            latestDrawRefreshRef.current(),
+            loadLatestResult
+              ? fetchLatestLotteryResultState(cycle?.cycleDate, signal).then((value) => {
+                  if (active && current === generation) failedLatestResult = false;
+                  return value;
+                }).catch(() => {
+                  if (active && current === generation) failedLatestResult = true;
+                  return null;
+                })
+              : Promise.resolve(null),
+            readStatuses(retryFailed ? [...failedStatuses] : allLotteries, signal, current),
+            loadLatestDraw ? latestDrawRefreshRef.current() : Promise.resolve(null),
           ]);
           if (!active || current !== generation) return;
+          if (loadLatestDraw) failedLatestDraw = drawResult === undefined;
           state = stateResult;
           readyStatuses = statusResult;
           refreshedDraw = drawResult;
@@ -752,25 +776,42 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
 
         firstRefresh = false;
       } catch {
+        if (active && current === generation) failedLatestResult = true;
         // Keep the last valid UI snapshot. Active pending windows retry on the
         // shared ten-minute fallback; outside a window no network poll runs.
       } finally {
-        if (active && current === generation) scheduleNext();
+        if (active && current === generation) {
+          refreshInFlight = false;
+          scheduleNext();
+        }
       }
     };
 
-    const queueRefresh = (forceAll = false) => {
-      if (!active || document.visibilityState === "hidden") return;
+    const queueRefresh = (forceAll = false, failedOnly = false) => {
+      if (!active) return;
+      if (forceAll && !failedOnly) pendingFullRefresh = true;
+      if (document.visibilityState === "hidden") return;
+      if (pendingFullRefresh || firstRefresh) {
+        forceAll = true;
+        failedOnly = false;
+      }
       if (!forceAll) {
         const cycle = homepageRefreshCycleAt(new Date());
         if (!cycle || completedHomeRefreshCycles.current.has(homepageRefreshCycleKey(cycle))) {
           return;
         }
       }
-      if (queued !== undefined) return;
+      const priority = forceAll ? failedOnly ? 1 : 2 : 0;
+      if (queued !== undefined) {
+        queuedPriority = Math.max(queuedPriority, priority);
+        return;
+      }
+      queuedPriority = priority;
       queued = setTimeout(() => {
         queued = undefined;
-        void refresh(forceAll);
+        const nextPriority = queuedPriority;
+        queuedPriority = 0;
+        void refresh(nextPriority > 0, nextPriority === 1);
       }, 0);
     };
 
@@ -787,9 +828,24 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     homepageSessionInvalidator.current = invalidate;
     void refresh(true);
     const unsubscribe = subscribeMatrixDataRevision(invalidate);
-    const wake = () => queueRefresh(false);
+    const wake = () => {
+      if (document.visibilityState === "hidden") return;
+      if (pendingFullRefresh || firstRefresh) {
+        if (firstRefresh && !pendingFullRefresh && refreshInFlight) return;
+        queueRefresh(true);
+        return;
+      }
+      if (!homepageRefreshCycleAt(new Date()) && (failedStatuses.size || failedLatestResult || failedLatestDraw)) {
+        if (Date.now() - lastOffWindowRetryAt < 30_000) return;
+        lastOffWindowRetryAt = Date.now();
+        queueRefresh(true, true);
+        return;
+      }
+      queueRefresh(false);
+    };
     document.addEventListener("visibilitychange", wake);
     window.addEventListener("online", wake);
+    window.addEventListener("focus", wake);
 
     return () => {
       active = false;
@@ -801,6 +857,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       if (homepageSessionInvalidator.current === invalidate) homepageSessionInvalidator.current = null;
       document.removeEventListener("visibilitychange", wake);
       window.removeEventListener("online", wake);
+      window.removeEventListener("focus", wake);
     };
   }, [screen]);
   useEffect(() => { if (!startupVisible) return; const fallback = window.setTimeout(() => setStartupVisible(false), 6500); return () => window.clearTimeout(fallback); }, [startupVisible]);

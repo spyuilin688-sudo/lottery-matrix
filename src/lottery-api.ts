@@ -306,7 +306,11 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   if (!LOTTERY_API_BASE) {
     throw new Error('Railway Lottery API is not configured');
   }
-  const { headers } = withRequestId(init?.headers);
+  // Public cross-origin reads have no server-side request-id consumer. A custom
+  // header turns each uncached GET into a CORS preflight before the actual read.
+  const readMethod = !init?.method || /^(GET|HEAD)$/i.test(init.method);
+  const headers = readMethod ? new Headers(init?.headers) : withRequestId(init?.headers).headers;
+  if (readMethod) headers.delete('X-Request-ID');
   headers.set('Accept', 'application/json');
   const response = await fetchWithPolicy(`${LOTTERY_API_BASE}${path}`, {
     ...init,

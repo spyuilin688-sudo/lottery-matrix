@@ -6,10 +6,15 @@ const permissionMocks = vi.hoisted(() => ({
 vi.mock('./permission-settings', () => ({ readPermissionSettings: permissionMocks.readPermissionSettings }));
 
 const rpc = vi.fn();
+const entitlementsRpc = vi.fn();
 const getSession = vi.fn();
 
 vi.mock('./lib/supabase', () => ({
-  getSupabaseClient: () => ({ rpc, auth: { getSession } }),
+  getSupabaseClient: () => ({
+    rpc: (name: string, request?: unknown) => name === 'matrix_status_entitlements'
+      ? entitlementsRpc() : rpc(name, request),
+    auth: { getSession },
+  }),
 }));
 
 import {
@@ -29,6 +34,10 @@ describe('Matrix exploration Supabase RPC', () => {
     resetReadCacheForTests();
     updateAlgorithmCacheSession(null);
     rpc.mockReset();
+    entitlementsRpc.mockReset().mockResolvedValue({ data: {
+      canUseSeven: true, canUseThirteen: true, canUseFullRange: true,
+      canUseTianyan: true, canUseTiangong: true,
+    }, error: null });
     permissionMocks.readPermissionSettings.mockClear();
     getSession.mockReset();
     getSession.mockResolvedValue({
@@ -75,6 +84,7 @@ describe('Matrix exploration Supabase RPC', () => {
     await fetchExploreList(request);
 
     expect(rpc).toHaveBeenCalledTimes(1);
+    expect(entitlementsRpc).toHaveBeenCalledTimes(1);
   });
 
   it('calls the validation RPC with the selected item', async () => {

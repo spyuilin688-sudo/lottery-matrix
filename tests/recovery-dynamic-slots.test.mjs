@@ -6,6 +6,7 @@ const sql=readFileSync(new URL('../supabase/migrations/20260920233444_recovery_d
 const primarySql=readFileSync(new URL('../supabase/migrations/20260921072423_dynamic_primary_worker_schedule.sql',import.meta.url),'utf8');
 const refreshSql=readFileSync(new URL('../supabase/migrations/20260921075225_refresh_watchdog_after_recovery.sql',import.meta.url),'utf8');
 const dedupeSql=readFileSync(new URL('../supabase/migrations/20260922112435_dedupe_primary_recovery_dispatch.sql',import.meta.url),'utf8');
+const calendarTimebaseSql=readFileSync(new URL('../supabase/migrations/20260924051532_calendar_trigger_timebase.sql',import.meta.url),'utf8');
 async function fixture(){
  const db=new PGlite();
  await db.exec(`create role anon; create role authenticated; create role service_role;
@@ -32,6 +33,7 @@ async function fixture(){
  await db.exec(primarySql);
  await db.exec(refreshSql);
  await db.exec(dedupeSql);
+ await db.exec(calendarTimebaseSql);
  return db;
 }
 const scalar=async(db,q,p=[])=>Object.values((await db.query(q,p)).rows[0])[0];
@@ -146,6 +148,31 @@ test('calendar updates skip and rearm an unfinished cycle without dispatch',asyn
  assert.equal(await scalar(db,"select skip_reason from private.matrix_recovery_schedule where lottery='六合彩'"),'no-draw');
  await db.exec("update private.notification_draw_day_overrides set is_draw_day=true where lottery='六合彩'");
  assert.equal(await scalar(db,"select skip_reason from private.matrix_recovery_schedule where lottery='六合彩'"),null);
+ assert.equal(await scalar(db,'select count(*) from net.requests'),0);
+});
+test('official no-draw calendar written after transaction start cancels primary and recovery checks',async t=>{
+ const db=await fixture();t.after(()=>db.close());
+ await db.query("select private.matrix_recovery_tick('evening','2030-09-21T20:30:00+08',false)");
+ await db.query("select private.matrix_primary_tick('evening','2030-09-21T20:30:00+08',false)");
+ await db.exec(`insert into private.notification_draw_day_overrides values
+  ('今彩539','2030-09-21',false,'manual',null),
+  ('大樂透','2030-09-21',false,'manual',null),
+  ('六合彩','2030-09-21',false,'hkjc',null)`);
+ assert.equal(await scalar(db,"select skip_reason from private.matrix_recovery_schedule where lottery='六合彩'"),null);
+ assert.equal(await scalar(db,"select completed_at is not null from private.matrix_primary_schedule where worker_group='evening'"),false);
+
+ await db.exec('begin');
+ await db.query('select pg_sleep(0.02)');
+ await db.exec(`insert into private.notification_draw_calendar_sync
+  (lottery,last_error,last_success_at,valid_until,coverage_start,coverage_end)
+  values('六合彩',null,clock_timestamp(),clock_timestamp()+interval '1 hour','2030-09-01','2030-09-30')`);
+ await db.exec('commit');
+
+ assert.equal(await scalar(db,"select skip_reason from private.matrix_recovery_schedule where lottery='六合彩'"),'no-draw');
+ assert.equal(await scalar(db,"select next_at is null from private.matrix_recovery_schedule where lottery='六合彩'"),true);
+ assert.equal(await scalar(db,"select count(*) from cron.job where jobname='matrix-recovery-next-evening'"),0);
+ assert.equal(await scalar(db,"select completed_at is not null from private.matrix_primary_schedule where worker_group='evening'"),true);
+ assert.equal(await scalar(db,"select count(*) from cron.job where jobname='matrix-primary-next-evening'"),0);
  assert.equal(await scalar(db,'select count(*) from net.requests'),0);
 });
 test('successful recovery queues a fresh watchdog check exactly once',async t=>{

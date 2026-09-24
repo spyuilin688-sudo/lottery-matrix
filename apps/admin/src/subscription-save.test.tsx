@@ -25,6 +25,9 @@ const app = vi.hoisted(() => {
           todayRevenue: 0, monthRevenue: 0, quarterRevenue: 0, yearRevenue: 0, cumulativeRevenue: 0,
           userGrowth: [], revenueGrowth: [],
         } };
+        if (url.startsWith('/api/data/plans?')) return { data: { total: 1, currentPage: 1, totalPages: 1, items: [{
+          id: 'plan-monthly', name: '月費方案', price: 2880, durationDays: 30,
+        }] } };
         if (url.startsWith('/api/data/subscriptions?')) return { data: { total: 1, currentPage: 1, totalPages: 1, items: [{
           id: 'member-1', authUserId: 'auth-1', lineDisplayName: '測試會員', status: 'active',
           currentPlanId: 'plan-monthly', planName: '月費方案', planStartedAt: null,
@@ -117,6 +120,18 @@ describe('subscription expiry save recovery', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(await screen.findByText('2026/09/11 08:00')).toBeTruthy();
     expect(app.api.put).toHaveBeenCalledTimes(2);
+  });
+
+  it('refreshes a saved subscription without rereading unrelated plan pages, then refreshes plans on a new visit', async () => {
+    const editor = await openEditor();
+    await waitFor(() => expect(app.api.get.mock.calls.filter(([url]) => url.startsWith('/api/data/plans?'))).toHaveLength(1));
+    setDate(editor);
+    await confirmSave(editor);
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(app.api.get.mock.calls.filter(([url]) => url.startsWith('/api/data/plans?'))).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: /營運概覽/ }));
+    fireEvent.click(screen.getByRole('button', { name: /訂閱管理/ }));
+    await waitFor(() => expect(app.api.get.mock.calls.filter(([url]) => url.startsWith('/api/data/plans?'))).toHaveLength(2));
   });
 
   it('keeps the other administrator’s expiry and explains a stale edit conflict', async () => {

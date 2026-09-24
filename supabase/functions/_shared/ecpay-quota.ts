@@ -1,9 +1,13 @@
 import { createEcpayCheckMacValue, verifyEcpayCheckMacValue } from './ecpay.ts';
 
-export type QuotaOrder = { merchantId: string; merchantTradeNo: string; amount: number };
+export type QuotaOrder = { merchantId: string; merchantTradeNo: string; amount: number;
+  quotaState?: string; quotaPaymentType?: string | null; quotaProviderStatus?: string | null;
+  quotaTradeNo?: string | null;
+};
 export type QuotaEvidence = QuotaOrder & {
   state: 'reserved' | 'occupied' | 'released';
-  paymentType: string; providerStatus: string; occurredAt: string | null; tradeNo: string;
+  paymentType: string; providerStatus: string; occurredAt: string | null;
+  paidAt: string | null; tradeNo: string;
 };
 type Config = { merchantId: string; hashKey: string; hashIv: string; environment: 'stage' | 'production' };
 
@@ -40,7 +44,11 @@ export function quotaEvidence(fields: Record<string,string>): QuotaEvidence {
   return {
     merchantId: fields.MerchantID, merchantTradeNo: fields.MerchantTradeNo, amount,
     state, paymentType, providerStatus: status, tradeNo: fields.TradeNo ?? '',
-    occurredAt: state === 'occupied' ? tradeDate(fields.TradeDate ?? '') : null,
+    // Offline numbers occupy quota when issued; credit occupies it on authorization.
+    occurredAt: state === 'occupied'
+      ? tradeDate(credit && status === '1' ? fields.PaymentDate ?? '' : fields.TradeDate ?? '')
+      : null,
+    paidAt: status === '1' ? tradeDate(fields.PaymentDate ?? '') : null,
   };
 }
 
@@ -72,14 +80,26 @@ async function query(config: Config, order: QuotaOrder, path: string, fetcher: t
 export async function queryEcpayQuota(config: Config, order: QuotaOrder, fetcher: typeof fetch = fetch) {
   const fields = await query(config,order,'/Cashier/QueryTradeInfo/V5',fetcher);
   if (fields.SimulatePaid === '1') throw new Error('SIMULATED_PAYMENT');
+  const previouslyIssued = order.quotaState === 'occupied' && order.quotaProviderStatus === '0';
+  if (previouslyIssued && fields.TradeStatus === '0'
+    && (order.quotaPaymentType !== fields.PaymentType || order.quotaTradeNo !== fields.TradeNo)) {
+    throw new Error('UNVERIFIED_PAYMENT_NUMBER');
+  }
   if (fields.TradeStatus === '0' && /^(ATM|CVS|BARCODE)_/.test(fields.PaymentType ?? '')) {
-    const issued = await query(config,order,'/Cashier/QueryPaymentInfo',fetcher);
-    if (issued.RtnCode !== '1' || issued.TradeNo !== fields.TradeNo
-      || issued.PaymentType !== fields.PaymentType || issued.TradeDate !== fields.TradeDate) {
-      throw new Error('UNVERIFIED_PAYMENT_NUMBER');
+    if (!previouslyIssued) {
+      const issued = await query(config,order,'/Cashier/QueryPaymentInfo',fetcher);
+      if (issued.RtnCode !== '1' || issued.TradeNo !== fields.TradeNo
+        || issued.PaymentType !== fields.PaymentType || issued.TradeDate !== fields.TradeDate) {
+        throw new Error('UNVERIFIED_PAYMENT_NUMBER');
+      }
     }
   }
   return quotaEvidence(fields);
+}
+
+export function paidRecordParams(evidence: QuotaEvidence) {
+  if (evidence.providerStatus !== '1' || !evidence.paidAt) throw new Error('INVALID_PAID_EVIDENCE');
+  return { ...quotaRecordParams(evidence), p_paid_at: evidence.paidAt };
 }
 
 export function quotaRecordParams(evidence: QuotaEvidence) {

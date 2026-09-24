@@ -2,7 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.112.3';
 import { createEcpayCheckoutHandler } from './handler.ts';
 import { createOrderWithQuota, reconcileQuotaBatch } from './quota.ts';
-import { queryEcpayQuota, quotaRecordParams, type QuotaOrder } from '../_shared/ecpay-quota.ts';
+import { paidRecordParams, queryEcpayQuota, quotaRecordParams, type QuotaOrder } from '../_shared/ecpay-quota.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
@@ -56,7 +56,8 @@ const handler = createEcpayCheckoutHandler({
           async record(evidence) {
             const paid = evidence.providerStatus === '1';
             const { error: recordError } = await client.rpc(
-              paid ? 'ecpay_paid_reconcile' : 'ecpay_quota_record',quotaRecordParams(evidence)
+              paid ? 'ecpay_paid_reconcile' : 'ecpay_quota_record',
+              paid ? paidRecordParams(evidence) : quotaRecordParams(evidence)
             );
             if (recordError) throw new Error(paid ? 'PAYMENT_CONFIRM_FAILED' : 'QUOTA_RECORD_FAILED');
           },

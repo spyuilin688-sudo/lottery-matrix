@@ -11,6 +11,7 @@ const root = new URL('.', import.meta.url).pathname;
 export default defineConfig(({ mode }) => ({
     root,
     plugins: [react()],
+    ...(mode === 'test' ? { server: { fs: { allow: [new URL('../..', import.meta.url).pathname] } } } : {}),
     test: {
         setupFiles: [new URL('../../test/dialog-test-setup.ts', import.meta.url).pathname],
     },

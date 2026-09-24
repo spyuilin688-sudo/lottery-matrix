@@ -49,7 +49,7 @@ export function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
               <article className="payment-ledger-row" key={item.id}>
                 <strong>{item.planName}</strong>
                 <span className="payment-ledger-amount">{`NT$${item.amount.toLocaleString("en-US")}`}</span>
-                <time dateTime={item.submittedAt}>{formatPaymentDate(item.submittedAt)}</time>
+                <time dateTime={item.submittedAt}>{item.accountLastFive === null ? "綠界訂單建立時間" : "轉帳回報時間"}：{formatPaymentDate(item.submittedAt)}</time>
                 <b className="payment-ledger-status" data-status={item.status}>{item.status === "confirmed" ? `✓ ${statusLabel}` : statusLabel}</b>
               </article>
             );

@@ -1,4 +1,5 @@
 import { createEcpayCheckMacValue, verifyEcpayCheckMacValue } from '../_shared/ecpay.ts';
+import { quotaEvidence } from '../_shared/ecpay-quota.ts';
 
 type Config = { merchantId: string; hashKey: string; hashIv: string; environment: 'stage' | 'production' };
 type PaidOrder = { merchantId: string; merchantTradeNo: string; tradeNo: string; amount: number };
@@ -33,8 +34,8 @@ export async function queryEcpayPaid(config: Config, order: PaidOrder, fetcher: 
     || fields.TradeNo !== order.tradeNo
     || fields.TradeAmt !== String(order.amount)
     || !await verifyEcpayCheckMacValue(fields, fields.CheckMacValue ?? '', config.hashKey, config.hashIv)
-    || fields.TradeStatus !== '1') {
+    || fields.TradeStatus !== '1' || fields.SimulatePaid === '1') {
     throw new Error('ECPAY_QUERY_UNPAID_OR_MISMATCH');
   }
-  return true;
+  return quotaEvidence(fields);
 }

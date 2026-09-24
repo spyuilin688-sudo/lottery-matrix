@@ -47,6 +47,11 @@ test('closing free access invalidates protected cache and the next RPC denial re
   let allowed = true;
   rpc.mockImplementation(async (name: string) => name === 'matrix_permission_settings'
     ? { ...state(revision), data: { ...state(revision).data, registeredMemberFreeAccess: allowed } }
+    : name === 'matrix_status_entitlements'
+      ? { data: {
+        canUseSeven: allowed, canUseThirteen: allowed, canUseFullRange: allowed,
+        canUseTianyan: allowed, canUseTiangong: allowed,
+      }, error: null }
     : allowed ? { data: { lottery: '今彩539', items: [] }, error: null } : { data: null, error: { code: '42501', message: 'FORBIDDEN' } });
   const request = { lottery: '今彩539' as const, selectedStreaks: ['準4進5'], sameCode: false };
   await fetchTianyanList(request);

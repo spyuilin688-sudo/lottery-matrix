@@ -104,6 +104,35 @@ describe('payment history access and recovery', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
+  it('labels a manual transfer timestamp as the time its report was submitted, even after confirmation', async () => {
+    fetchHistory.mockResolvedValue([{
+      ...payment,
+      accountLastFive: '12345',
+      paidAt: '2026-09-13T00:00:00Z',
+    }]);
+    showPage();
+
+    const timestamp = await screen.findByText(/^轉帳回報時間：/);
+    expect(timestamp).toHaveAttribute('datetime', '2026-09-12T00:00:00Z');
+    expect(timestamp).toHaveTextContent(/2026\/09\/12\s+08:00/);
+    expect(timestamp).not.toHaveTextContent('付款時間');
+  });
+
+  it('labels an ECPay timestamp as order creation even when payment is still pending', async () => {
+    fetchHistory.mockResolvedValue([{
+      ...payment,
+      id: 'ecpay-order',
+      accountLastFive: null,
+      status: 'pending',
+    }]);
+    showPage();
+
+    const timestamp = await screen.findByText(/^綠界訂單建立時間：/);
+    expect(timestamp).toHaveAttribute('datetime', '2026-09-12T00:00:00Z');
+    expect(timestamp).toHaveTextContent(/2026\/09\/12\s+08:00/);
+    expect(timestamp).not.toHaveTextContent('付款時間');
+  });
+
   it('distinguishes an unknown session from a confirmed guest and allows retry', async () => {
     auth.getSession.mockRejectedValueOnce(new Error('auth unavailable'));
     showPage();
