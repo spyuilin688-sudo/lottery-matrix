@@ -9,7 +9,7 @@ type RecordedOrder = { merchant_id: string; amount: number; trade_no: string | n
 export function matchesRecordedPaidOrder(order: PaidOrder, saved: RecordedOrder | null): boolean {
   return saved?.merchant_id === order.merchantId && saved.amount === order.amount
     && saved.trade_no === order.tradeNo && saved.quota_provider_status === '1'
-    && (saved.status === 'confirmed' || saved.status === 'refund_required');
+    && ['confirmed', 'refund_required', 'refunded', 'chargeback', 'cancelled'].includes(saved.status);
 }
 
 type Dependencies = {

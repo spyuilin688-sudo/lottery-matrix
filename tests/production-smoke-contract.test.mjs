@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { collectSmokeTargets, evaluateSmokeResponse } from "../scripts/production-smoke.mjs";
+import { collectSmokeTargets, evaluateSmokeResponse, runProductionSmoke } from "../scripts/production-smoke.mjs";
 
 test("production smoke target collection requires configured PWA and admin URLs", () => {
   assert.throws(
@@ -55,3 +55,36 @@ test("optional API smoke target may be protected but never accepts a server erro
   );
 });
 
+const env = { SMOKE_PWA_URL: 'https://pwa.example.test/', SMOKE_ADMIN_URL: 'https://admin.example.test/' };
+const page = (asset) => `<!doctype html><html><script type="module" src="/assets/${asset}.js"></script></html>`;
+const worker = (asset) => `const BUILD_ASSET_PATHS = ["/assets/${asset}.js"];`;
+
+function fetchSmoke({ root = page('new'), index = page('new'), serviceWorker = worker('new') } = {}) {
+  const seen = [];
+  const fetchImpl = async (url) => {
+    seen.push(url);
+    const pathname = new URL(url).pathname;
+    const body = url.startsWith(env.SMOKE_ADMIN_URL) ? '<html>admin</html>'
+      : pathname === '/index.html' ? index
+        : pathname === '/push-service-worker.js' ? serviceWorker : root;
+    return new Response(body, { status: 200 });
+  };
+  return { fetchImpl, seen };
+}
+
+test('production smoke accepts one consistent frontend asset version', async () => {
+  const { fetchImpl, seen } = fetchSmoke();
+  await runProductionSmoke({ env, fetchImpl });
+  assert.deepEqual(seen, [env.SMOKE_PWA_URL, env.SMOKE_ADMIN_URL,
+    'https://pwa.example.test/index.html', 'https://pwa.example.test/push-service-worker.js']);
+});
+
+test('production smoke detects different asset versions at / and /index.html', async () => {
+  const { fetchImpl } = fetchSmoke({ index: page('old') });
+  await assert.rejects(runProductionSmoke({ env, fetchImpl }), /PWA.*asset.*version|PWA.*mixed/i);
+});
+
+test('production smoke detects a stale service worker asset list', async () => {
+  const { fetchImpl } = fetchSmoke({ serviceWorker: worker('old') });
+  await assert.rejects(runProductionSmoke({ env, fetchImpl }), /PWA.*asset.*version|PWA.*mixed/i);
+});

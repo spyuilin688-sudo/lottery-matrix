@@ -230,6 +230,8 @@ const paymentRecord = (row: Row): PaymentRecord => ({
   planId: typeof row.planId === "string" ? row.planId : null,
   planName: typeof row.planName === "string" ? row.planName : null,
   transferRequestId: typeof row.transferRequestId === "string" ? row.transferRequestId : null,
+  ecpayMerchantTradeNo: typeof row.ecpayMerchantTradeNo === "string" ? row.ecpayMerchantTradeNo : null,
+  ecpayTradeNo: typeof row.ecpayTradeNo === "string" ? row.ecpayTradeNo : null,
   amount: Number(row.amount ?? 0),
   paidAt: typeof row.paidAt === "string" ? row.paidAt : null,
   status: String(row.status ?? ""),
