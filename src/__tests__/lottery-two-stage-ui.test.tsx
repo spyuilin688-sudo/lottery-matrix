@@ -7,6 +7,9 @@ import { FeaturePageRouter } from '../FeaturePagesCore';
 import { MatrixCardPage } from '../features/MatrixCardPage';
 import { AppDialogProvider } from '../dialog/AppDialog';
 import { resetReadCacheForTests } from '../read-cache';
+vi.mock('../lib/supabase', () => ({
+  getSupabaseClient: () => { throw new Error('Realtime unavailable in two-stage fixtures'); },
+}));
 const sorted = ['01', '08', '14', '25', '39'];
 const preliminary = { period: '115209', drawDate: '2026/09/12' };
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.useRealTimers(); resetReadCacheForTests(); localStorage.clear(); sessionStorage.clear(); });

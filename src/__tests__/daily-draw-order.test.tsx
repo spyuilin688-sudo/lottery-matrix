@@ -38,6 +38,9 @@ vi.mock('../member-api', async importOriginal => ({
     exploreEntitlements: { canUseSeven: true, canUseThirteen: true, canUseFullRange: true },
   }),
 }));
+vi.mock('../matrix-card-refresh', () => ({
+  subscribeMatrixCardRefresh: () => () => {},
+}));
 
 const sortedOrder = '依號碼由小到大排序';
 const actualOrder = '依實際開獎順序排序';
