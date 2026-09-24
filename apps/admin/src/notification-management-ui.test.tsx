@@ -34,6 +34,7 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   container.remove();
+  sessionStorage.clear();
 });
 
 function client(overrides: Partial<{
@@ -51,7 +52,7 @@ function client(overrides: Partial<{
 
 async function renderManager(apiClient = client(), canEdit = true) {
   await act(async () => {
-    root.render(createElement(NotificationManagement, { client: apiClient, canEdit }));
+    root.render(createElement(NotificationManagement, { client: apiClient, canEdit, adminId: 'admin-1' }));
     await Promise.resolve();
   });
   return apiClient;
@@ -128,6 +129,19 @@ describe('NotificationManagement', () => {
     expect(container.textContent).toContain('2026/08/30 18:00');
   });
 
+  it('reuses an uncertain send identity and starts a new send only after a confirmed result', async () => {
+    const post = vi.fn().mockRejectedValueOnce(new Error('NETWORK_TIMEOUT'))
+      .mockResolvedValue({ data: { sent: 1, failed: 0 } });
+    await renderManager(client({ post }));
+    await chooseMember('member-1');
+    await act(async () => { sendButton().click(); });
+    await act(async () => { sendButton().click(); });
+    expect(post).toHaveBeenCalledTimes(2);
+    expect(post.mock.calls[0][1].requestId).toBe(post.mock.calls[1][1].requestId);
+    await act(async () => { sendButton().click(); });
+    expect(post.mock.calls[2][1].requestId).not.toBe(post.mock.calls[0][1].requestId);
+  });
+
   it('revalidates members and logs after a 200 response and keeps an expired member disabled', async () => {
     let memberRequest = 0;
     let logRequest = 0;
@@ -162,7 +176,7 @@ describe('NotificationManagement', () => {
       return { data: { items: [{ ...failedLog, id: 'fresh-log', failureReason: 'fresh reason' }] } };
     });
     act(() => {
-      root.render(createElement(NotificationManagement, { client: client({ get }), canEdit: true }));
+      root.render(createElement(NotificationManagement, { client: client({ get }), canEdit: true, adminId: 'admin-1' }));
     });
     await act(async () => { await Promise.resolve(); });
 
@@ -272,7 +286,7 @@ describe('NotificationManagement', () => {
     expect(selector().value).toBe('member-1');
     expect(container.querySelector('.notificationMemberSummary')?.textContent).toContain('會員一');
     await act(async () => { sendButton().click(); });
-    expect(api.post).toHaveBeenCalledWith('/api/push-members/member-1/test', {});
+    expect(api.post).toHaveBeenCalledWith('/api/push-members/member-1/test', { requestId: expect.any(String) });
     expect(get.mock.calls.filter(([url]) => url === '/api/push-members')).toHaveLength(1);
     expect(get.mock.calls.some(([url]) => url.includes('userId=member-1'))).toBe(true);
     expect(sendButton().disabled).toBe(true);

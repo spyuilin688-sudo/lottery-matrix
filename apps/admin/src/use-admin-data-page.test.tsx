@@ -66,3 +66,36 @@ it('invalidates old sessions and unmounts, clears failed rows and supports expli
   last.resolve(response('unmounted'));
   await assertion;
 });
+
+it('reads only the active tab, preserves its filters, and refreshes it when selected again', async () => {
+  const client = { get: vi.fn().mockResolvedValue(response('current')) };
+  const { result, rerender } = renderHook(
+    ({ enabled, revision }) => useAdminDataPage('subscriptionRecords', revision, client, 'admin-1', enabled),
+    { initialProps: { enabled: false, revision: 0 } },
+  );
+  expect(client.get).not.toHaveBeenCalled();
+  rerender({ enabled: true, revision: 0 });
+  await waitFor(() => expect(client.get).toHaveBeenCalledTimes(1));
+  act(() => result.current.setQuery({ status: 'confirmed' }));
+  await waitFor(() => expect(client.get).toHaveBeenCalledTimes(2));
+  rerender({ enabled: false, revision: 0 });
+  rerender({ enabled: true, revision: 0 });
+  await waitFor(() => expect(client.get).toHaveBeenCalledTimes(3));
+  expect(result.current.query.status).toBe('confirmed');
+  expect(client.get).toHaveBeenLastCalledWith(expect.stringContaining('status=confirmed'));
+});
+
+it('ignores an in-flight inactive tab result until the tab becomes active again', async () => {
+  const slow = deferred();
+  const client = { get: vi.fn().mockReturnValueOnce(slow.promise).mockResolvedValue(response('fresh')) };
+  const { result, rerender } = renderHook(
+    ({ enabled }) => useAdminDataPage('transferRequests', 0, client, 'admin-1', enabled),
+    { initialProps: { enabled: true } },
+  );
+  await waitFor(() => expect(client.get).toHaveBeenCalledTimes(1));
+  rerender({ enabled: false });
+  await act(async () => slow.resolve(response('stale')));
+  rerender({ enabled: true });
+  await waitFor(() => expect(result.current.items).toEqual([{ id: 'fresh' }]));
+  expect(client.get).toHaveBeenCalledTimes(2);
+});

@@ -22,11 +22,12 @@ type AuthUser = {
 export type PushMemberQuery = { page?: unknown; keyword?: unknown; userId?: unknown };
 export type PushMemberPage = { items: MemberPushStatus[]; total: number; currentPage: number; totalPages: number };
 
-type EdgeBusinessErrorCode = 'INVALID_REQUEST' | 'NO_ACTIVE_SUBSCRIPTIONS';
+type EdgeBusinessErrorCode = 'INVALID_REQUEST' | 'NO_ACTIVE_SUBSCRIPTIONS' | 'TEST_PUSH_IN_PROGRESS'
+  | 'SUBSCRIPTION_LOOKUP_FAILED' | 'TEST_PUSH_STATUS_UNKNOWN' | 'TEST_PUSH_CLAIM_FAILED';
 type EdgeBusinessEnvelope = {
   edgeBusinessError: {
     code: EdgeBusinessErrorCode;
-    statusCode: 400 | 409;
+    statusCode: 400 | 409 | 500 | 503;
   };
 };
 
@@ -84,7 +85,7 @@ export function requireMemberUuid(value: unknown) {
 }
 
 async function edgeBusinessEnvelope(response: Response): Promise<EdgeBusinessEnvelope | null> {
-  if (response.status !== 400 && response.status !== 409) return null;
+  if (![400, 409, 500, 503].includes(response.status)) return null;
   let body: Row;
   try {
     body = await response.clone().json() as Row;
@@ -96,8 +97,14 @@ async function edgeBusinessEnvelope(response: Response): Promise<EdgeBusinessEnv
   if (response.status === 400 && code === 'INVALID_REQUEST') {
     return { edgeBusinessError: { code, statusCode: 400 } };
   }
-  if (response.status === 409 && code === 'NO_ACTIVE_SUBSCRIPTIONS') {
+  if (response.status === 409 && (code === 'NO_ACTIVE_SUBSCRIPTIONS' || code === 'TEST_PUSH_IN_PROGRESS')) {
     return { edgeBusinessError: { code, statusCode: 409 } };
+  }
+  if (response.status === 500 && code === 'SUBSCRIPTION_LOOKUP_FAILED') {
+    return { edgeBusinessError: { code, statusCode: 500 } };
+  }
+  if (response.status === 503 && (code === 'TEST_PUSH_STATUS_UNKNOWN' || code === 'TEST_PUSH_CLAIM_FAILED')) {
+    return { edgeBusinessError: { code, statusCode: 503 } };
   }
   return null;
 }
@@ -190,13 +197,18 @@ export function createPushNotifications(
     async sendMemberTestPush(
       userId: string,
       adminAccount: string,
+      requestId: string,
+      adminId: string,
     ): Promise<{ sent: number; failed: number }> {
       const member = requireMemberUuid(userId);
+      if (!UUID_PATTERN.test(requestId) || !UUID_PATTERN.test(adminId)) {
+        throw new PushNotificationsError('INVALID_REQUEST');
+      }
       const result = await supabase.request<
         { sent: number; failed: number } | EdgeBusinessEnvelope
       >('/functions/v1/send-test-push', {
         method: 'POST',
-        body: JSON.stringify({ userId: member, adminAccount: adminAccount.trim() }),
+        body: JSON.stringify({ userId: member, adminAccount: adminAccount.trim(), requestId, adminId }),
       });
       if ('edgeBusinessError' in result) {
         throw new PushNotificationsError(

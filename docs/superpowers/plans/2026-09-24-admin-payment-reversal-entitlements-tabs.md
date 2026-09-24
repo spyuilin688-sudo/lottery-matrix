@@ -32,7 +32,7 @@
 
 **Files:**
 - Modify: `tests/payment-reversal-pglite.test.mjs`
-- Create: `supabase/migrations/20260924090000_superadmin_reversal_entitlements.sql`
+- Create: `supabase/migrations/20260924020932_superadmin_reversal_entitlements.sql`
 
 **Interfaces:**
 - Consumes: `public.payments`, `public.members`, `public.plans`, `public.admin_accounts`。
@@ -42,7 +42,7 @@
 - [ ] **Step 2: 驗證紅燈。** 執行 `node --test tests/payment-reversal-pglite.test.mjs`；預期新權限／效期斷言失敗，且失敗與缺少新規則對應。
 - [ ] **Step 3: 實作最小 migration。** 同簽名替換 RPC；驗證服務角色及啟用的超級管理員；以付款查會員 ID、先鎖會員再鎖付款；在鎖內按 `(paid_at,id)` 順序以 `greatest(paid_at, prior_expiry) + make_interval(days => duration_days)` 重現 confirmed 付款。實況不等於重現狀態就丟 `PT409`，吻合才略過待沖銷付款重算並更新會員；`refund_required` 不更新會員。同交易更新付款欄位、原有稽核及推薦人數。保留相同結果重試與衝突處理。
 - [ ] **Step 4: 驗證綠燈。** 執行 `node --test tests/payment-reversal-pglite.test.mjs`；全部通過。
-- [ ] **Step 5: 只提交 Task 1 檔案。** `git add tests/payment-reversal-pglite.test.mjs supabase/migrations/20260924090000_superadmin_reversal_entitlements.sql`，`git commit -m "Synchronize payment reversal with member entitlement"`。
+- [ ] **Step 5: 只提交 Task 1 檔案。** `git add tests/payment-reversal-pglite.test.mjs supabase/migrations/20260924020932_superadmin_reversal_entitlements.sql`，`git commit -m "Synchronize payment reversal with member entitlement"`。
 
 ### Task 2: 後端角色與衝突錯誤
 

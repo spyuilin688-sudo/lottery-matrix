@@ -4,13 +4,16 @@ import {
   TEST_PUSH_BODY,
   TEST_PUSH_TITLE,
   canSendTestPush,
+  clearTestPushRequestId,
   createExclusiveAction,
   createLatestRequestGate,
   formatNotificationError,
+  isDefinitiveTestPushError,
   isNoActiveSubscriptionsError,
   listPushDeliveryLogs,
   listPushMembers,
   sendTestPush,
+  testPushRequestId,
   type NotificationApiClient,
   type PushDeliveryLog,
   type PushMember,
@@ -20,6 +23,7 @@ import {
 type Props = {
   client: NotificationApiClient;
   canEdit: boolean;
+  adminId: string;
 };
 
 const deliveryLogPageSize = 5;
@@ -36,7 +40,7 @@ function MemberAvatar({ member }: { member: PushMember }) {
   return <span className="notificationAvatar notificationAvatarFallback" aria-hidden="true">{name.slice(0, 1)}</span>;
 }
 
-export function NotificationManagement({ client, canEdit }: Props) {
+export function NotificationManagement({ client, canEdit, adminId }: Props) {
   const [members, setMembers] = useState<PushMember[]>([]);
   const [logs, setLogs] = useState<PushDeliveryLog[]>([]);
   const [logPage, setLogPage] = useState(1);
@@ -54,6 +58,7 @@ export function NotificationManagement({ client, canEdit }: Props) {
   const [logsError, setLogsError] = useState('');
   const [sendError, setSendError] = useState('');
   const [sendResult, setSendResult] = useState<TestPushResult | null>(null);
+  const pendingSend = useRef<{ memberId: string; requestId: string } | null>(null);
   const [memberRequests] = useState(createLatestRequestGate);
   const [logRequests] = useState(createLatestRequestGate);
   const [sendRequests] = useState(createLatestRequestGate);
@@ -161,7 +166,14 @@ export function NotificationManagement({ client, canEdit }: Props) {
       setSendError('');
       setSendResult(null);
       try {
-        const result = await sendTestPush(client, selectedMember.userId);
+        const memberId = selectedMember.userId;
+        const requestId = pendingSend.current?.memberId === memberId
+          ? pendingSend.current.requestId
+          : testPushRequestId(adminId, memberId);
+        pendingSend.current = { memberId, requestId };
+        const result = await sendTestPush(client, memberId, requestId);
+        clearTestPushRequestId(adminId, memberId);
+        pendingSend.current = null;
         if (!sendRequests.canCommit(request) || !editAllowed.current) return;
         setSendResult(result);
         void loadLogs();
@@ -179,6 +191,10 @@ export function NotificationManagement({ client, canEdit }: Props) {
           }
         }
       } catch (cause) {
+        if (isDefinitiveTestPushError(cause) && pendingSend.current) {
+          clearTestPushRequestId(adminId, pendingSend.current.memberId);
+          pendingSend.current = null;
+        }
         if (sendRequests.canCommit(request) && editAllowed.current) {
           if (isNoActiveSubscriptionsError(cause)) {
             setSelectedMember(current => current ? { ...current, pushEnabled: false } : null);

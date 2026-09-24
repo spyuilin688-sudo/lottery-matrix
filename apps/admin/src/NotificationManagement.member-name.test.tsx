@@ -38,7 +38,7 @@ it('shows the member nickname instead of the provider ID in notification managem
   const post = vi.fn();
 
   await act(async () => {
-    root.render(<NotificationManagement client={{ get, post }} canEdit={true} />);
+    root.render(<NotificationManagement client={{ get, post }} canEdit={true} adminId="admin-1" />);
   });
 
   const options = Array.from(host.querySelectorAll('option')).map((option) => option.textContent);

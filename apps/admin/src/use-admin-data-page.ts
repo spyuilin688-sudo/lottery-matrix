@@ -10,7 +10,7 @@ const defaults: Record<string, string> = {
 };
 const initialQuery = (table: string | null): AdminListQuery => ({ page: 1, keyword: '', status: 'all', startDate: '', endDate: '', sortBy: defaults[table ?? ''] ?? 'createdAt', sortDirection: 'desc', ...(table === 'subscriptions' ? { plan: 'all' } : {}) });
 
-export function useAdminDataPage(table: string | null, revision: number, client: Client, sessionKey: string) {
+export function useAdminDataPage(table: string | null, revision: number, client: Client, sessionKey: string, enabled = true) {
   const [selection, setSelection] = useState(() => ({ table, sessionKey, query: initialQuery(table) }));
   const query = selection.table === table && selection.sessionKey === sessionKey ? selection.query : initialQuery(table);
   const queryString = new URLSearchParams({ ...query, page: String(query.page) }).toString();
@@ -24,7 +24,7 @@ export function useAdminDataPage(table: string | null, revision: number, client:
   const [result, setResult] = useState<{ key: string; data?: AdminDataPage; error?: string } | null>(null);
 
   const refresh = async () => {
-    if (!table || !sessionKey) return;
+    if (!table || !sessionKey || !enabled) return;
     if (!mounted.current || identity.current !== key || getMethod.current !== client.get) throw new Error('列表重新載入已取消');
     const request = ++sequence.current;
     const current = () => mounted.current && identity.current === key && request === sequence.current && getMethod.current === client.get;
@@ -42,13 +42,13 @@ export function useAdminDataPage(table: string | null, revision: number, client:
 
   useEffect(() => {
     mounted.current = true;
-    const timer = window.setTimeout(() => { void refresh().catch(() => {}); }, query.keyword ? 300 : 0);
+    const timer = enabled ? window.setTimeout(() => { void refresh().catch(() => {}); }, query.keyword ? 300 : 0) : null;
     return () => {
       mounted.current = false;
       sequence.current += 1;
-      window.clearTimeout(timer);
+      if (timer !== null) window.clearTimeout(timer);
     };
-  }, [client.get, key]);
+  }, [client.get, key, enabled]);
 
   const current = result?.key === key ? result : null;
   const setQuery = (patch: Partial<AdminListQuery>) => {
@@ -60,7 +60,7 @@ export function useAdminDataPage(table: string | null, revision: number, client:
     query, setQuery, setPage: (page: number) => setQuery({ page }), refresh,
     items: (current?.data?.items ?? []).map(row => formatAdminRowForDisplay(table, row)), total: current?.data?.total ?? 0,
     currentPage: current?.data?.currentPage ?? query.page, totalPages: current?.data?.totalPages ?? query.page,
-    loading: Boolean(table && sessionKey) && current === null, error: current?.error ?? '',
+    loading: Boolean(table && sessionKey && enabled) && current === null, error: current?.error ?? '',
   };
 }
 

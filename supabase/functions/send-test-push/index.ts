@@ -95,6 +95,19 @@ const handler = createSendTestPushRuntime({
     return createSendTestPushHandler({
       serviceRoleKey,
       listSubscriptions,
+      async claimRequest(requestId, userId, adminId) {
+        const { data, error } = await supabase.rpc("admin_claim_test_push", {
+          p_request_id: requestId, p_user_id: userId, p_admin_id: adminId,
+        });
+        if (error || !data) throw error ?? new Error("TEST_PUSH_CLAIM_FAILED");
+        return data;
+      },
+      async finishRequest(requestId, userId, adminId, result) {
+        const { error } = await supabase.rpc("admin_finish_test_push", {
+          p_request_id: requestId, p_user_id: userId, p_admin_id: adminId, p_result: result,
+        });
+        if (error) throw error;
+      },
       sendPush,
       recordDelivery,
       markSuccess,

@@ -151,14 +151,25 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
     setEditError('');
     await runMutation({ kind: 'edit', id: item.id }, async (isCurrent) => {
       try {
-        const updated = await updateAdminTodo(client, item.id, editDraft.trim());
+        const updated = await updateAdminTodo(client, item.id, editDraft.trim(), item.revision);
         if (!isCurrent()) return;
         setItems((current) => current.map((candidate) => candidate.id === updated.id ? updated : candidate));
         setEditingId(null);
         setEditDraft('');
         setFeedback('代辦事項已更新');
       } catch (cause) {
-        if (isCurrent()) setEditError(formatAdminTodoError(cause, '儲存失敗，草稿已保留，請再試一次'));
+        if (isCurrent()) {
+          const message = formatAdminTodoError(cause, '儲存失敗，草稿已保留，請再試一次');
+          setEditError(message);
+          if (message === '代辦已被其他裝置更新，請確認最新內容後重試') {
+            try {
+              const latest = await listAdminTodos(client);
+              if (isCurrent()) setItems(latest);
+            } catch {
+              if (isCurrent()) setEditError('代辦已更新，但最新內容讀取失敗，請重新整理頁面');
+            }
+          }
+        }
       }
     });
   };

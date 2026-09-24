@@ -14,6 +14,7 @@ const snakeTodo = {
   admin_id: 'admin-1',
   author_name: '管理員一',
   content: '確認今日資料',
+  revision: 0,
   created_at: '2026-09-04T07:30:00.000Z',
 };
 
@@ -24,6 +25,7 @@ describe('admin todo client', () => {
       adminId: 'admin-1',
       authorName: '管理員一',
       content: '確認今日資料',
+      revision: 0,
       createdAt: '2026-09-04T07:30:00.000Z',
     });
   });
@@ -38,12 +40,12 @@ describe('admin todo client', () => {
 
     await expect(listAdminTodos(client)).resolves.toEqual([expect.objectContaining({ id: 'todo-1' })]);
     await expect(createAdminTodo(client, '確認今日資料')).resolves.toMatchObject({ id: 'todo-1' });
-    await expect(updateAdminTodo(client, 'todo-1', '已更新')).resolves.toMatchObject({ content: '已更新' });
+    await expect(updateAdminTodo(client, 'todo-1', '已更新', 0)).resolves.toMatchObject({ content: '已更新' });
     await expect(deleteAdminTodo(client, 'todo-1')).resolves.toEqual({ id: 'todo-1' });
 
     expect(client.get).toHaveBeenCalledWith('/api/todos');
     expect(client.post).toHaveBeenCalledWith('/api/todos', { content: '確認今日資料' });
-    expect(client.put).toHaveBeenCalledWith('/api/todos/todo-1', { content: '已更新' });
+    expect(client.put).toHaveBeenCalledWith('/api/todos/todo-1', { content: '已更新', expectedRevision: 0 });
     expect(client.delete).toHaveBeenCalledWith('/api/todos/todo-1');
   });
 });
