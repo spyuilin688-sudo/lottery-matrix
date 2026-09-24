@@ -138,7 +138,7 @@ test("390px 系統通知拒絕狀態使用實際狀態樣式並保留完整文�
 });
 
 for (const width of [320, 390, 430]) {
-  test(`${width}px 系統通知列的手機啟用按鈕可換行並保留觸控尺寸`, () => {
+  test(`${width}px 系統通知列的手機啟用按鈕使用緊湊高度並保留換行`, () => {
     const dom = new JSDOM(`<!doctype html>
       <style>${responsiveCss}\n${css}</style>
       <main class="notifications-screen notifications-screen-v2">
@@ -156,7 +156,7 @@ for (const width of [320, 390, 430]) {
     const button = dom.window.document.querySelector(".notification-push-enable");
     const style = dom.window.getComputedStyle(button);
 
-    assert.equal(style.minHeight, "44px");
+    assert.equal(style.minHeight, "26px");
     assert.equal(style.maxWidth, "100%");
     assert.equal(style.whiteSpace, "normal");
     assert.equal(button.closest('[role="status"]'), null);
