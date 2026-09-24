@@ -46,6 +46,8 @@ const paymentReversalDomainErrors = new Map<string, {
   }],
   ['P0002', { httpStatus: 500, messages: ['ADMIN_ACTOR_NOT_FOUND', 'PAYMENT_NOT_FOUND'] }],
   ['P0001', { httpStatus: 400, messages: ['PAYMENT_REVERSAL_CONFLICT', 'PAYMENT_NOT_CONFIRMED'] }],
+  ['PT409', { httpStatus: 409, messages: ['PAYMENT_ENTITLEMENT_CONFLICT'] }],
+  ['42501', { httpStatus: 403, messages: ['PAYMENT_REVERSAL_FORBIDDEN', 'ADMIN_BACKEND_REQUIRED'] }],
 ]);
 
 const permissionSettingsDomainErrors = new Map<string, {
@@ -86,7 +88,7 @@ async function readSupabaseDomainError(path: string, response: Response) {
   if (normalizedPath === 'rest/v1/rpc/admin_record_payment_reversal') {
     const domain = paymentReversalDomainErrors.get(code);
     return domain?.httpStatus === response.status && domain.messages.includes(message)
-      ? new SupabaseDomainError(message)
+      ? new SupabaseDomainError(message, code === 'PT409' || code === '42501' ? domain.httpStatus : 400)
       : null;
   }
   const domain = permissionSettingsDomainErrors.get(code);

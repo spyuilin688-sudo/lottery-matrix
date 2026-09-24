@@ -19,6 +19,18 @@ describe('getSupabaseConfig', () => {
 });
 
 describe('createSupabaseTransport', () => {
+  it.each([
+    ['PT409', 'PAYMENT_ENTITLEMENT_CONFLICT', 409],
+    ['42501', 'PAYMENT_REVERSAL_FORBIDDEN', 403],
+  ])('forwards the exact reversal error %s/%s to the administrator', async (code, message, status) => {
+    const transport = createSupabaseTransport(
+      { url: 'https://example.supabase.co', serviceRoleKey: 'test-key' },
+      async () => new Response(JSON.stringify({ code, message }), { status }),
+    );
+    await expect(transport.supabaseRequest('rpc/admin_record_payment_reversal'))
+      .rejects.toMatchObject({ message, statusCode: status });
+  });
+
   it('propagates an exact payment-reversal domain error through the real transport and admin service', async () => {
     const fetcher = vi.fn(async () => new Response(JSON.stringify({
       code: 'P0001',

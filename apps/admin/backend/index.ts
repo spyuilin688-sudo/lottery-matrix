@@ -191,6 +191,7 @@ const superGuard = requireSuperRole('僅超級管理員可管理管理員帳號'
 const transferPushGuard = requireSuperRole('僅超級管理員可管理匯款推播通知');
 const revenueResetGuard = requireSuperRole('僅超級管理員可重設收入');
 const permissionSwitchGuard = requireSuperRole('僅超級管理員可修改權限切換');
+const paymentReversalGuard = requireSuperRole('僅超級管理員可記錄沖銷');
 
 function adminInput(body: Record<string, unknown>) {
   const permissions = (body.permissions ?? {}) as PermissionInput;
@@ -698,7 +699,7 @@ const routes: Record<string, unknown> = {
     }
   }],
 
-  'PUT /api/payments/:id/reversal': [sessionGuard, moduleGuard('subscriptions', 'edit', 'edit'), async (ctx: Context) => {
+  'PUT /api/payments/:id/reversal': [sessionGuard, moduleGuard('subscriptions', 'edit', 'edit'), paymentReversalGuard, async (ctx: Context) => {
     try {
       const admin = await getAdmin(ctx);
       const body = bodyOf(ctx);

@@ -859,12 +859,28 @@ describe('admin core mutation operation permissions', () => {
 });
 
 describe('payment reversal route wiring', () => {
+  it('rejects an operations administrator even with subscription editing permission', async () => {
+    const route = 'PUT /api/payments/:id/reversal';
+    const context = await authenticate(route, sessionContext({ id: 'payment-1' }));
+    const roleGuard = routes[route][2] as (input: typeof context) => Promise<unknown>;
+    wiring.admin.role = '營運管理員';
+    wiring.supabaseRequest.mockClear();
+    try {
+      await expect(roleGuard(context)).resolves.toMatchObject({ status: 403 });
+      expect(wiring.supabaseRequest).not.toHaveBeenCalled();
+      wiring.admin.role = '超級管理員';
+      await expect(roleGuard(context)).resolves.toBeUndefined();
+    } finally {
+      wiring.admin.role = '超級管理員';
+    }
+  });
+
   it('uses only reversal fields from the body and the authenticated session actor', async () => {
     wiring.supabaseRequest.mockClear();
     wiring.supabaseRequest.mockResolvedValueOnce({ id: 'payment-1', status: 'chargeback' });
     const route = 'PUT /api/payments/:id/reversal';
     const context = await authenticate(route, sessionContext({ id: 'payment-1' }));
-    const routeHandler = routes[route][2] as (input: typeof context & { body?: unknown }) => Promise<unknown>;
+    const routeHandler = routes[route][3] as (input: typeof context & { body?: unknown }) => Promise<unknown>;
 
     await expect(routeHandler({
       ...context,
@@ -941,7 +957,7 @@ describe('payment reversal route wiring', () => {
     wiring.supabaseRequest.mockClear();
     const route = 'PUT /api/payments/:id/reversal';
     const context = await authenticate(route, sessionContext({ id: 'payment-1' }));
-    const routeHandler = routes[route][2] as (input: typeof context & { body?: unknown }) => Promise<unknown>;
+    const routeHandler = routes[route][3] as (input: typeof context & { body?: unknown }) => Promise<unknown>;
 
     await expect(routeHandler({
       ...context,

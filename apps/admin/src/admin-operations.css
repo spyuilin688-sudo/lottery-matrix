@@ -229,6 +229,13 @@
 .transferRow > div:first-child span { overflow-wrap: anywhere; }
 .transferPanel .transferRow:first-of-type { border-top: 0; }
 
+.subscriptionTabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin: 0 0 10px; padding: 4px; border: 1px solid #30333a; border-radius: 12px; background: #111419; }
+.subscriptionTabs [role="tab"] { min-width: 0; min-height: 44px; padding: 8px 4px; border: 0; border-bottom: 2px solid transparent; border-radius: 8px 8px 4px 4px; background: transparent; color: #a6a9b2; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.subscriptionTabs [role="tab"][aria-selected="true"] { border-bottom-color: #d8b65e; background: #211c12; color: #e7c46d; }
+.subscriptionTabs [role="tab"]:focus-visible { outline: 2px solid #e7c46d; outline-offset: -2px; }
+.subscriptionTabs ~ [role="tabpanel"] { min-width: 0; }
+#transfer-requests { scroll-margin-top: 56px; }
+
 .paymentReversalPanel { margin-top: 8px; padding: 0; overflow: clip; }
 .paymentReversalSummary { padding: 7px 10px; color: #ece7d8; cursor: pointer; font-size: 13px; font-weight: 600; line-height: 1.4; }
 .paymentReversalSummary::marker { color: #cbb675; }
@@ -246,7 +253,7 @@
 .paymentReversalList { display: grid; gap: 0; }
 .paymentReversalRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 6px 0; border-top: 1px solid #3a3f48; }
 .paymentReversalFacts { display: grid; min-width: 0; gap: 2px; }
-.paymentReversalFacts strong { font-size: 13px; }
+.paymentReversalFacts strong { font-size: 13px; overflow-wrap: anywhere; }
 .paymentReversalFacts span,
 .paymentReversalCount { color: #888d96; font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
 .paymentReversalActions { display: flex; flex-direction: row; align-items: center; justify-content: flex-end; gap: 4px; }

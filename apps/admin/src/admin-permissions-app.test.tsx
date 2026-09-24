@@ -115,6 +115,10 @@ function buttonWithText(container: HTMLElement, label: string) {
   return [...container.querySelectorAll('button')].find((button) => button.textContent?.includes(label));
 }
 
+function subscriptionTab(container: HTMLElement, name: '訂閱會員' | '付款紀錄' | '轉帳申請') {
+  return within(container).getByRole('tab', { name });
+}
+
 describe('administrator operation permission editing', () => {
   let container: HTMLDivElement;
   let root: ReturnType<typeof createRoot>;
@@ -153,6 +157,7 @@ describe('administrator operation permission editing', () => {
       await settle();
       expect(container.querySelector('#transfer-requests')).not.toBeNull();
       expect(container.querySelector('[aria-label="新轉帳手機通知"]')).not.toBeNull();
+      expect(subscriptionTab(container, '轉帳申請').getAttribute('aria-selected')).toBe('true');
       expect(app.api.get).toHaveBeenCalledWith(expect.stringContaining('/api/data/transferRequests?page=1&'));
     } finally { window.history.replaceState(null, '', '/'); }
   });
@@ -167,6 +172,7 @@ describe('administrator operation permission editing', () => {
       });
       await settle();
       expect(container.querySelector('#transfer-requests')).not.toBeNull();
+      expect(subscriptionTab(container, '轉帳申請').getAttribute('aria-selected')).toBe('true');
     } finally { window.history.replaceState(null, '', '/'); }
   });
 
@@ -175,6 +181,9 @@ describe('administrator operation permission editing', () => {
     await settle();
     await act(async () => buttonWithText(container, '訂閱管理')?.click());
     await settle();
+
+    expect(subscriptionTab(container, '訂閱會員').getAttribute('aria-selected')).toBe('true');
+    await act(async () => subscriptionTab(container, '付款紀錄').click());
 
     expect(app.api.get).toHaveBeenCalledWith(expect.stringContaining('/api/data/subscriptionRecords?page=1&'));
     const open = container.querySelector<HTMLButtonElement>('[aria-label="記錄沖銷 payment-1"]');
@@ -188,12 +197,50 @@ describe('administrator operation permission editing', () => {
     await act(async () => buttonWithText(container, '記錄已完成沖銷')?.click());
     const dialog = container.querySelector<HTMLElement>('[role="alertdialog"]');
     expect(dialog?.textContent).toContain('此操作只記錄外部已完成的款項沖銷');
+    expect(dialog?.textContent).toContain('方案與效期會依剩餘有效付款重新計算');
     await act(async () => buttonWithText(dialog as HTMLElement, '記錄已退款')?.click());
     await settle();
 
     expect(app.api.put).toHaveBeenCalledWith('/api/payments/payment-1/reversal', {
       status: 'refunded', reason: '銀行退款已完成',
     });
+    expect(app.api.get).toHaveBeenCalledWith(expect.stringContaining('/api/data/subscriptions?page=1&'));
+    expect(app.api.get.mock.calls.filter(([url]) => String(url).startsWith('/api/data/subscriptions?')).length).toBeGreaterThan(1);
+    expect(container.querySelector('[role="status"]')?.textContent).toContain('付款紀錄與會員訂閱已更新');
+  });
+
+  it('switches among three subscription tabs without mixing their controls', async () => {
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '訂閱管理')?.click());
+    await settle();
+
+    expect(subscriptionTab(container, '訂閱會員').getAttribute('aria-selected')).toBe('true');
+    expect(container.querySelector('[aria-label="篩選訂閱方案"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="記錄沖銷 payment-1"]')).toBeNull();
+    await act(async () => fireEvent.change(container.querySelector('[aria-label="篩選訂閱方案"]')!, { target: { value: 'monthly' } }));
+    await act(async () => fireEvent.keyDown(subscriptionTab(container, '訂閱會員'), { key: 'ArrowRight' }));
+    expect(document.activeElement).toBe(subscriptionTab(container, '付款紀錄'));
+    expect(subscriptionTab(container, '付款紀錄').getAttribute('aria-selected')).toBe('true');
+    expect(container.querySelector('[aria-label="篩選訂閱方案"]')).toBeNull();
+    expect(container.querySelector('[aria-label="記錄沖銷 payment-1"]')).not.toBeNull();
+    await act(async () => subscriptionTab(container, '轉帳申請').click());
+    expect(subscriptionTab(container, '轉帳申請').getAttribute('aria-selected')).toBe('true');
+    expect(container.querySelector('.transferPanel')).not.toBeNull();
+    expect(container.querySelector('[aria-label="記錄沖銷 payment-1"]')).toBeNull();
+    await act(async () => subscriptionTab(container, '訂閱會員').click());
+    expect(container.querySelector<HTMLSelectElement>('[aria-label="篩選訂閱方案"]')?.value).toBe('monthly');
+  });
+
+  it('allows an operations admin to read payments but not record reversals', async () => {
+    app.state.admin = { ...app.state.admin, role: '營運管理員', modulePermissions: { subscriptions: { view: true, edit: true } } };
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '訂閱管理')?.click());
+    await settle();
+    await act(async () => subscriptionTab(container, '付款紀錄').click());
+    expect(container.textContent).toContain('王小明');
+    expect(container.querySelector('[aria-label="記錄沖銷 payment-1"]')).toBeNull();
   });
 
   it('shows a payment read error instead of false empty or stale actions and recovers inline', async () => {
@@ -202,6 +249,7 @@ describe('administrator operation permission editing', () => {
     await settle();
     await act(async () => buttonWithText(container, '訂閱管理')?.click());
     await settle();
+    await act(async () => subscriptionTab(container, '付款紀錄').click());
 
     expect(container.querySelector('[role="alert"]')?.textContent).toContain('付款紀錄載入失敗');
     expect(container.textContent).not.toContain('目前沒有付款紀錄');
@@ -221,10 +269,12 @@ describe('administrator operation permission editing', () => {
 
     await act(async () => buttonWithText(container, '訂閱管理')?.click());
     await settle();
+    await act(async () => subscriptionTab(container, '付款紀錄').click());
     await act(async () => buttonWithText(container, '營運概覽')?.click());
     await settle();
     await act(async () => buttonWithText(container, '訂閱管理')?.click());
     await settle();
+    await act(async () => subscriptionTab(container, '付款紀錄').click());
     expect(container.querySelector('[aria-label="記錄沖銷 payment-1"]')).not.toBeNull();
 
     await act(async () => rejectOldRead(new Error('old subscriptions read failed')));

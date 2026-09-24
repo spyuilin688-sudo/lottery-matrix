@@ -29,9 +29,11 @@ type Props = {
   payments: PaymentRecord[] | null;
   loadError?: string;
   canEdit: boolean;
+  expanded?: boolean;
   confirm: (request: PaymentReversalConfirmation) => Promise<boolean>;
   onRecord: (id: string, status: PaymentReversalStatus, reason: string) => Promise<unknown>;
   onRefresh: () => Promise<unknown>;
+  onMemberRefresh?: () => Promise<unknown>;
 };
 
 const reasonMaxLength = 500;
@@ -59,6 +61,8 @@ function reasonLength(value: string) {
 function errorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : '';
   const symbolicMessages: Array<[string, string]> = [
+    ['PAYMENT_ENTITLEMENT_CONFLICT', '會員訂閱曾有其他調整，無法安全重算方案與效期；付款與訂閱均未變更，請先查明權益來源'],
+    ['PAYMENT_REVERSAL_FORBIDDEN', '只有超級管理員可以記錄沖銷'],
     ['PAYMENT_REVERSAL_CONFLICT', '這筆付款已記錄其他沖銷結果，無法改成不同結果'],
     ['PAYMENT_NOT_CONFIRMED', '只有已確認的付款可以記錄沖銷'],
     ['PAYMENT_NOT_FOUND', '找不到這筆付款紀錄，請重新載入後再試'],
@@ -73,7 +77,7 @@ function errorMessage(error: unknown) {
     || '沖銷記錄失敗，請確認資料後重試';
 }
 
-export function PaymentReversalPanel({ payments, loadError = '', canEdit, confirm, onRecord, onRefresh }: Props) {
+export function PaymentReversalPanel({ payments, loadError = '', canEdit, expanded = false, confirm, onRecord, onRefresh, onMemberRefresh }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [status, setStatus] = useState<PaymentReversalStatus>('refunded');
   const [reason, setReason] = useState('');
@@ -139,7 +143,9 @@ export function PaymentReversalPanel({ payments, loadError = '', canEdit, confir
             `結果：${label.result}`,
             `原因：${normalizedReason}`,
             '此操作只記錄外部已完成的款項沖銷，不會發送退款。',
-            '推薦成功人數與 Matrix 資格會依剩餘有效付款重新計算；訂閱日期不會變更。',
+            payment.status === 'confirmed'
+              ? '方案與效期會依剩餘有效付款重新計算；推薦成功人數與 Matrix 資格會依剩餘有效付款重新計算；若訂閱另有調整，系統會停止沖銷。'
+              : '這筆付款尚未開通會員方案；記錄沖銷不會改變會員訂閱。',
           ].join('；'),
           confirmLabel: `記錄${label.result}`,
           tone: 'danger',
@@ -150,16 +156,20 @@ export function PaymentReversalPanel({ payments, loadError = '', canEdit, confir
             setError('');
             setNotice('');
             await onRecord(payment.id, status, normalizedReason);
-            if (!mountedRef.current) return;
-            setCompletedStatuses((current) => ({ ...current, [payment.id]: status }));
-            setEditingId(null);
-            setReason('');
+            if (mountedRef.current) {
+              setCompletedStatuses((current) => ({ ...current, [payment.id]: status }));
+              setEditingId(null);
+              setReason('');
+            }
             try {
-              await onRefresh();
-              if (mountedRef.current) setNotice('沖銷已記錄，付款紀錄已更新');
+              const results = await Promise.allSettled([onRefresh(), onMemberRefresh?.()]);
+              if (results.some((result) => result.status === 'rejected')) throw new Error('資料重新載入失敗');
+              if (mountedRef.current) setNotice(onMemberRefresh ? '沖銷已記錄，付款紀錄與會員訂閱已更新' : '沖銷已記錄，付款紀錄已更新');
             } catch {
               if (mountedRef.current) {
-                setNotice('沖銷已記錄，但付款紀錄重新載入失敗；請使用頁面重新整理後確認最新狀態');
+                setNotice(onMemberRefresh
+                  ? '沖銷已記錄，但付款紀錄或會員訂閱重新載入失敗；請使用頁面重新整理後確認最新狀態'
+                  : '沖銷已記錄，但付款紀錄重新載入失敗；請使用頁面重新整理後確認最新狀態');
               }
             }
           } catch (cause) {
@@ -188,13 +198,13 @@ export function PaymentReversalPanel({ payments, loadError = '', canEdit, confir
   };
 
   return (
-    <details className="panel paymentReversalPanel" open={loadError ? true : undefined}>
+    <details className="panel paymentReversalPanel" open={loadError || expanded ? true : undefined}>
       <summary className="paymentReversalSummary">
         <span id="payment-reversal-title">付款紀錄與沖銷</span>
         <small>{loadError ? '讀取失敗' : payments === null ? '讀取中' : `${payments.length} 筆`}</small>
       </summary>
       <div className="paymentReversalBody" aria-labelledby="payment-reversal-title">
-        <p className="paymentReversalHelp">僅記錄已在外部完成的退款、刷退或交易取消；不執行款項移轉，也不變更訂閱日期。</p>
+        <p className="paymentReversalHelp">僅記錄已在外部完成的退款、刷退或交易取消；不執行款項移轉。已開通付款沖銷時，方案與效期會依剩餘有效付款重算。</p>
         {notice && <p className="paymentReversalNotice" role="status">{notice}</p>}
         <div className="paymentReversalList">
         {loadError ? (
