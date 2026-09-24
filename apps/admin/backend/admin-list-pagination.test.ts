@@ -3,11 +3,8 @@ import { listAdminMemberPage } from './admin-data';
 import { createSupabaseTransport } from './supabase';
 
 const member = { id: '11111111-1111-4111-8111-111111111111', auth_user_id: null, line_display_name: '找到的會員', current_plan: { name: '月費方案' } };
-function expectDisplayNameRpc(request: ReturnType<typeof vi.fn>, keyword: string) {
-  expect(request).toHaveBeenCalledWith('/rest/v1/rpc/admin_member_ids_by_display_name', {
-    method: 'POST',
-    body: JSON.stringify({ p_keyword: keyword }),
-  });
+function expectNoUnboundedNameLookup(request: ReturnType<typeof vi.fn>) {
+  expect(request.mock.calls.some(([path]) => String(path).includes('admin_member_ids_by_display_name'))).toBe(false);
   expect(request.mock.calls.some(([path]) => String(path).startsWith('/auth/v1/admin/users?'))).toBe(false);
   expect(request.mock.calls.some(([path]) => String(path).startsWith('/rest/v1/members?select=id,auth_user_id'))).toBe(false);
 }
@@ -30,13 +27,13 @@ test('search includes plan, nickname, referral and invitation before pagination 
   const requestPage = vi.fn().mockResolvedValue({ items: [], total: 0 });
   await listAdminMemberPage('users', { page: '1', keyword: '月費,(x)', status: 'all' }, { request, requestPage });
   const query = new URL(requestPage.mock.calls[0][0], 'https://test').searchParams;
-  expect(query.get('or')).toContain('line_display_name.imatch."月費,\\\\(x\\\\)"');
+  expect(query.get('or')).toContain('admin_member_display_name.imatch."月費,\\\\(x\\\\)"');
   expect(query.get('or')).toContain('referral_code.imatch.');
   expect(query.get('or')).toContain('invitation_code.imatch.');
   expect(query.get('or')).toContain('keyword_plan.not.is.null');
   expect(query.get('select')).toContain('keyword_plan:plans!members_current_plan_id_fkey()');
   expect(query.get('keyword_plan.name')).toBe('imatch.月費,\\(x\\)');
-  expectDisplayNameRpc(request, '月費,(x)');
+  expectNoUnboundedNameLookup(request);
 });
 
 test.each(['users', 'subscriptions'] as const)('%s active search includes legacy null status without weakening the status or keyword filters', async table => {
@@ -50,11 +47,11 @@ test.each(['users', 'subscriptions'] as const)('%s active search includes legacy
   // An allowlist plus NULL continues to exclude disabled and unknown statuses.
   expect(query.has('status')).toBe(false);
   expect(query.get('and')).toBe('(or(status.in.(active,啟用),status.is.null))');
-  expect(query.get('or')).toContain('line_display_name.imatch."月費,\\\\(x\\\\)"');
+  expect(query.get('or')).toContain('admin_member_display_name.imatch."月費,\\\\(x\\\\)"');
   expect(query.get('or')).toContain('keyword_plan.not.is.null');
   expect(query.get('select')).toContain('keyword_plan:plans!members_current_plan_id_fkey()');
   expect(query.get('keyword_plan.name')).toBe('imatch.月費,\\(x\\)');
-  expectDisplayNameRpc(request, '月費,(x)');
+  expectNoUnboundedNameLookup(request);
 });
 
 test.each([
@@ -95,7 +92,8 @@ test('an explicit disabled subscription filter overrides the default active grou
   expect(query.get('select')).toContain('current_plan:plans!members_current_plan_id_fkey!inner(name,price,duration_days)');
   expect(query.get('keyword_plan.name')).toBe('imatch.季費');
   expect(query.get('or')).toContain('keyword_plan.not.is.null');
-  expectDisplayNameRpc(request, '季費');
+  expect(query.get('or')).toContain('admin_member_display_name.imatch."季費"');
+  expectNoUnboundedNameLookup(request);
 });
 
 test.each([undefined, 'all'])('subscription status %s retains the default enabled-plan view', async status => {

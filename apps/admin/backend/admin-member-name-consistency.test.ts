@@ -58,7 +58,7 @@ it('uses memberDisplayName in transfer and payment display rows before provider 
   expect(payment.identityDisplay).toBe('LINE 會員 · LINE ID：line-user');
 });
 
-it('uses a targeted RPC to search transfer requests by Google nickname', async () => {
+it('filters transfer requests by Google nickname within the paged database query', async () => {
   const googleUser = {
     id: GOOGLE_AUTH_ID,
     user_metadata: { full_name: 'Google 搜尋會員' },
@@ -69,11 +69,6 @@ it('uses a targeted RPC to search transfer requests by Google nickname', async (
     }],
   };
   const request = vi.fn(async (path: string, init?: RequestInit) => {
-    if (path === '/rest/v1/rpc/admin_member_ids_by_display_name') {
-      expect(init?.method).toBe('POST');
-      expect(JSON.parse(String(init?.body))).toEqual({ p_keyword: 'Google 搜尋會員' });
-      return [{ member_id: GOOGLE_MEMBER_ID }];
-    }
     if (path === '/rest/v1/rpc/admin_member_auth_profiles') {
       expect(JSON.parse(String(init?.body))).toEqual({ p_auth_user_ids: [GOOGLE_AUTH_ID] });
       return [googleUser];
@@ -82,7 +77,9 @@ it('uses a targeted RPC to search transfer requests by Google nickname', async (
   });
   const requestPage = vi.fn(async (path: string) => {
     if (!path.startsWith('/rest/v1/transfer_requests?')) throw new Error(`unexpected page request: ${path}`);
-    expect(decodeURIComponent(path)).toContain(`member_id.in.(${GOOGLE_MEMBER_ID})`);
+    const query = new URL(path, 'https://supabase.invalid').searchParams;
+    expect(query.get('keyword_member.admin_member_display_name')).toBe('imatch.Google 搜尋會員');
+    expect(query.get('or')).toContain('keyword_member.not.is.null');
     return {
       total: 1,
       items: [{
@@ -113,6 +110,7 @@ it('uses a targeted RPC to search transfer requests by Google nickname', async (
   }, { request, requestPage });
 
   expect(request.mock.calls.some(([path]) => String(path).startsWith('/rest/v1/members?select=id,auth_user_id'))).toBe(false);
+  expect(request.mock.calls.some(([path]) => String(path).includes('admin_member_ids_by_display_name'))).toBe(false);
   expect(result.items[0]).toMatchObject({
     memberDisplayName: 'Google 搜尋會員',
     identityDisplay: 'Google ID：google-provider-1',

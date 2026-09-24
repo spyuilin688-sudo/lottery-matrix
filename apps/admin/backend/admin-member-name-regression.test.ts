@@ -35,8 +35,8 @@ it('uses the canonical Google full_name fallback in push-member status', async (
     if (url.includes('/rest/v1/members?')) {
       return jsonResponse([{ auth_user_id: USER_ID, line_user_id: null, line_display_name: null }]);
     }
-    if (url.includes('/auth/v1/admin/users/')) {
-      return jsonResponse({
+    if (url.includes('/rest/v1/rpc/admin_push_member_details')) {
+      return jsonResponse([{
         id: USER_ID,
         user_metadata: { full_name: 'Google 會員' },
         identities: [{
@@ -44,9 +44,9 @@ it('uses the canonical Google full_name fallback in push-member status', async (
           provider_id: 'google-user',
           identity_data: { full_name: 'Google 會員' },
         }],
-      });
+        push_enabled: false,
+      }]);
     }
-    if (url.includes('/rest/v1/member_push_subscriptions?')) return jsonResponse([]);
     return jsonResponse({}, 404);
   });
 
