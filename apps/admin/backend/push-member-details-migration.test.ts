@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 
 const db = new PGlite();
-const migration = new URL('../../../supabase/migrations/20260924224701_admin_push_member_details.sql', import.meta.url);
+const migration = new URL('../../../supabase/migrations/20260924225703_admin_push_member_details.sql', import.meta.url);
 const one = '11111111-1111-4111-8111-111111111111';
 const two = '22222222-2222-4222-8222-222222222222';
 
