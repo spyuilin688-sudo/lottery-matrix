@@ -2,6 +2,7 @@ import type { ExploreArtifact, TianyanArtifact } from '../../../backend/matrix-s
 import { createMatrixStatusEdgeHandler } from './handler.ts';
 import {
   createMatrixStatusCompactReader,
+  createMatrixPublicResultRevisionReader,
   createMatrixStatusEntitlementReader,
   createMatrixStatusIdentityReader,
   createMatrixStatusSourceReader,
@@ -72,6 +73,6 @@ const handler = createMatrixStatusEdgeHandler({
     if (!sourceItemId || source.validation == null) return null;
     return { itemId: sourceItemId, validation: source.validation };
   },
-});
+}, createMatrixPublicResultRevisionReader(loadConfig));
 
 Deno.serve(handler);

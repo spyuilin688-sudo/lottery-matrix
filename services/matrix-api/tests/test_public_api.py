@@ -505,6 +505,9 @@ class LatestCompletedRpc:
 
 class LatestCompletedResultClient:
     def __init__(self) -> None:
+        self.revision = "version-1"
+        self.revision_error = False
+        self.revise_during_chain = False
         self.rows = [
             {"lottery": "今彩539", "period": "115000231", "draw_date": "2026-09-23", "result_status": "confirmed"},
             {"lottery": "天天樂", "period": "12008", "draw_date": "2026-09-23", "result_status": "confirmed"},
@@ -528,6 +531,12 @@ class LatestCompletedResultClient:
 
     def rpc(self, name: str, args: dict):
         self.rpc_calls.append((name, dict(args)))
+        if name == "matrix_public_result_revision":
+            if self.revision_error:
+                raise RuntimeError("revision probe unavailable")
+            assert args == {}
+            return LatestCompletedRpc({lottery: {"drawRevision": self.revision, "generation": 1, "activeVersions": {}}
+                                       for lottery in ("今彩539", "天天樂", "大樂透", "六合彩")})
         if name == "matrix_watchdog_draw_days":
             day = str(args["p_start_date"])
             assert args == {"p_start_date": day, "p_end_date": day}
@@ -538,6 +547,9 @@ class LatestCompletedResultClient:
                 "六合彩": [day],
             })
         assert name == "matrix_watchdog_chain_state"
+        if self.revise_during_chain:
+            self.revise_during_chain = False
+            self.revision = "version-2"
         key = (str(args["p_lottery"]), str(args["p_draw_period"]))
         return LatestCompletedRpc(self.chain[key])
 
@@ -572,6 +584,53 @@ def test_latest_result_returns_only_completed_lotteries_from_latest_draw_date() 
         for call in repository.client.rpc_calls
         if call[0] == "matrix_watchdog_chain_state"
     )
+
+
+def test_latest_result_reuses_completed_draws_until_revision_changes() -> None:
+    from app.draw_read_cache import DrawReadCache
+
+    repository = InMemoryAnalysisRepository()
+    repository.client = LatestCompletedResultClient()
+    repository.completed_result_cache = DrawReadCache(ttl=86_400)
+
+    first = handle_api_request("GET", "/api/matrix/latest-result?cycleDate=2026-09-23", None, repository)
+    second = handle_api_request("GET", "/api/matrix/latest-result?cycleDate=2026-09-23", None, repository)
+    assert first == second
+    assert len(repository.client.table_calls) == 2
+    assert len([name for name, _ in repository.client.rpc_calls if name == "matrix_watchdog_chain_state"]) == 4
+    assert len([name for name, _ in repository.client.rpc_calls if name == "matrix_watchdog_draw_days"]) == 2
+
+    repository.client.revision = "version-2"  # Same-period draw or analysis correction.
+    repository.client.chain[("今彩539", "115000231")]["analysisComplete"] = False
+    corrected = handle_api_request("GET", "/api/matrix/latest-result?cycleDate=2026-09-23", None, repository)
+    assert corrected[0] == 200
+    assert {item["lottery"] for item in corrected[1]["items"]} == {"大樂透"}
+    assert len(repository.client.table_calls) == 4
+
+
+def test_latest_result_keeps_original_path_when_version_probe_fails() -> None:
+    from app.draw_read_cache import DrawReadCache
+
+    repository = InMemoryAnalysisRepository()
+    repository.client = LatestCompletedResultClient()
+    repository.client.revision_error = True
+    repository.completed_result_cache = DrawReadCache(ttl=86_400)
+    assert handle_api_request("GET", "/api/matrix/latest-result", None, repository)[0] == 200
+    assert handle_api_request("GET", "/api/matrix/latest-result", None, repository)[0] == 200
+    assert len(repository.client.table_calls) == 4
+
+
+def test_latest_result_does_not_publish_result_from_revision_changed_during_load() -> None:
+    from app.draw_read_cache import DrawReadCache
+
+    repository = InMemoryAnalysisRepository()
+    repository.client = LatestCompletedResultClient()
+    repository.client.revise_during_chain = True
+    repository.completed_result_cache = DrawReadCache(ttl=86_400)
+    assert handle_api_request("GET", "/api/matrix/latest-result", None, repository)[0] == 200
+    assert len(repository.client.table_calls) == 4  # Retry under the changed revision.
+    assert handle_api_request("GET", "/api/matrix/latest-result", None, repository)[0] == 200
+    assert len(repository.client.table_calls) == 4  # The stable revision is now cached.
 
 
 def test_latest_result_cycle_date_returns_canonical_due_lotteries() -> None:

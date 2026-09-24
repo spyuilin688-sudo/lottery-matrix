@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   createMatrixStatusCompactReader,
+  createMatrixPublicResultRevisionReader,
   createMatrixStatusIdentityReader,
   createMatrixStatusSourceReader,
   createMatrixStatusValidationReader,
@@ -97,6 +98,22 @@ describe('Matrix status source reader', () => {
       }),
     );
   });
+});
+
+it('reads public result revisions with the service credential', async () => {
+  const revision = Object.fromEntries(['今彩539', '天天樂', '六合彩', '大樂透'].map((lottery) => [lottery, {
+    drawRevision: 'revision-a', generation: 1, activeVersions: {},
+  }]));
+  const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify(revision), { status: 200 }));
+  await expect(createMatrixPublicResultRevisionReader(() => config, fetcher)()).resolves.toEqual(revision);
+  expect(fetcher).toHaveBeenCalledWith(
+    'https://project.supabase.co/rest/v1/rpc/matrix_public_result_revision',
+    expect.objectContaining({
+      method: 'POST',
+      headers: expect.objectContaining({ Authorization: 'Bearer service-role-key' }),
+      body: '{}',
+    }),
+  );
 });
 
 
