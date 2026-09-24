@@ -18,6 +18,11 @@ const handler = createVisitorVisitHandler({
     const { error } = await supabase.rpc('record_matrix_visit_edge', { p_source: source });
     if (error) throw error;
   },
+  async readStats() {
+    const { data, error } = await supabase.rpc('admin_visitor_stats');
+    if (error) throw error;
+    return data;
+  },
 });
 
 Deno.serve(handler);

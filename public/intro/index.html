@@ -13,7 +13,7 @@
     <meta property="og:url" content="https://matrixlottery.idv.tw/intro/" />
     <link rel="canonical" href="https://matrixlottery.idv.tw/intro/" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
-    <link rel="stylesheet" href="/intro/intro.css?v=8806ee07" />
+    <link rel="stylesheet" href="/intro/intro.css?v=visitor-stats-1" />
     <title>今彩539、天天樂、六合彩、大樂透版路介紹｜樂彩 Matrix</title>
   </head>
   <body>
@@ -58,8 +58,22 @@
 
       <section id="features" class="features-section" aria-labelledby="features-title">
         <div class="container">
-          <p class="section-kicker">Matrix 功能</p>
-          <h2 id="features-title">從號碼查找，<br class="mobile-break" />到版路探索。</h2>
+          <div class="features-intro">
+            <div class="features-intro-copy">
+              <p class="section-kicker">Matrix 功能</p>
+              <h2 id="features-title">從號碼查找，<br class="mobile-break" />到版路探索。</h2>
+            </div>
+            <dl class="visitor-stats" aria-label="網站造訪統計" aria-live="polite">
+              <div class="visitor-stat">
+                <dt>今日造訪</dt>
+                <dd id="today-visitor-count">—</dd>
+              </div>
+              <div class="visitor-stat">
+                <dt>累積造訪</dt>
+                <dd id="total-visitor-count">—</dd>
+              </div>
+            </dl>
+          </div>
 
           <div class="feature-list">
             <article class="feature feature-lead">
@@ -98,5 +112,6 @@
         <p>版路與探索結果依歷史資料及所選條件整理，僅供參考，不保證中獎或獲利。實際可用功能依目前帳號權限顯示。</p>
       </div>
     </footer>
+    <script src="/intro/visitor-stats.js?v=1" defer></script>
   </body>
 </html>

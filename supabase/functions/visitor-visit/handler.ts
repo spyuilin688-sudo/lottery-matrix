@@ -1,5 +1,6 @@
 type Dependencies = {
   recordVisit(source: string): Promise<void>;
+  readStats?(): Promise<unknown>;
 };
 
 const ALLOWED_ORIGINS = new Set([
@@ -24,7 +25,11 @@ function clientIp(request: Request) {
     || '';
 }
 
-export function createVisitorVisitHandler({ recordVisit }: Dependencies) {
+function isVisitorCount(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+}
+
+export function createVisitorVisitHandler({ recordVisit, readStats }: Dependencies) {
   return async (request: Request): Promise<Response> => {
     const origin = request.headers.get('Origin')?.trim() ?? '';
     if (!ALLOWED_ORIGINS.has(origin)) {
@@ -42,9 +47,24 @@ export function createVisitorVisitHandler({ recordVisit }: Dependencies) {
     }
     try {
       await recordVisit(ip);
-      return new Response(null, { status: 204, headers });
     } catch {
       return Response.json({ error: { code: 'VISITOR_RECORD_FAILED' } }, { status: 503, headers });
+    }
+
+    if (new URL(request.url).searchParams.get('stats') !== '1') {
+      return new Response(null, { status: 204, headers });
+    }
+    try {
+      if (!readStats) throw new Error('VISITOR_STATS_UNAVAILABLE');
+      const stats = await readStats() as Record<string, unknown> | null;
+      const todayVisitors = stats?.todayVisitors;
+      const totalVisitors = stats?.totalVisitors;
+      if (!isVisitorCount(todayVisitors) || !isVisitorCount(totalVisitors)) {
+        throw new Error('VISITOR_STATS_INVALID');
+      }
+      return Response.json({ todayVisitors, totalVisitors }, { status: 200, headers });
+    } catch {
+      return Response.json({ error: { code: 'VISITOR_STATS_UNAVAILABLE' } }, { status: 503, headers });
     }
   };
 }
