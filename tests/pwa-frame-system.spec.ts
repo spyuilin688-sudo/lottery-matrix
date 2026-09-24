@@ -42,10 +42,11 @@ for (const { screen, width } of cases) {
       const border = await panel.evaluate(element => getComputedStyle(element).borderTopWidth);
       if (border === '0px') continue; // Intentional layout wrappers do not receive a second outline.
       await expect(panel).toHaveCSS('border-top-width', '1px');
-      // Notebook entries and the approved profile information menus use tertiary frames.
+      // Notebook entries, the approved profile information menus, and the intentionally quieter Guide content card use tertiary frames.
       const notebookEntry = screen === 'notebook' && await panel.evaluate(element => element.classList.contains('notebook-entry'));
       const profileMenu = screen === 'profile' && await panel.evaluate(element => element.classList.contains('profile-menu'));
-      await expect(panel).toHaveCSS('border-top-color', notebookEntry || profileMenu ? colors.tertiary : colors.secondary);
+      const guidePreview = screen === 'guide' && await panel.evaluate(element => element.classList.contains('guide-preview'));
+      await expect(panel).toHaveCSS('border-top-color', notebookEntry || profileMenu || guidePreview ? colors.tertiary : colors.secondary);
       if (profileMenu) {
         await expect(panel).toHaveCSS('background-image', 'none');
         await expect(panel).toHaveCSS('background-color', 'rgb(2, 7, 12)');
