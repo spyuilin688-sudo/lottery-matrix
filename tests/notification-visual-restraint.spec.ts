@@ -16,7 +16,6 @@ for (const width of [320, 360, 390, 412, 430]) {
     // Use the real router and controls; no fixture request may reach a live backend.
     await page.route(/^https?:\/\//, async route => {
       const url = new URL(route.request().url());
-      if (['localhost', '127.0.0.1'].includes(url.hostname)) return route.continue();
       if (url.pathname.endsWith('/matrix_permission_settings')) return route.fulfill({ json: { subscriptionPurchaseVisible: false, registeredMemberFreeAccess: true, revision: 1 } });
       if (url.pathname.endsWith('/member_notification_settings_get')) return route.fulfill({ json: stored });
       if (url.pathname.endsWith('/member_notification_settings_save')) {
@@ -24,6 +23,7 @@ for (const width of [320, 360, 390, 412, 430]) {
         writes.push(value);
         return route.fulfill({ json: value });
       }
+      if (['localhost', '127.0.0.1'].includes(url.hostname)) return route.continue();
       return route.fulfill({ status: 503, json: { error: 'isolated_notification_visual_test' } });
     });
     await page.goto('/tests/pwa-frame-fixture.html?page=notifications');
