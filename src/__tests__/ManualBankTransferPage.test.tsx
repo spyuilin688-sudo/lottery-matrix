@@ -289,6 +289,18 @@ describe('Matrix Pro manual bank transfer', () => {
     expect(screen.queryByRole('region', { name: '轉帳資料' })).not.toBeInTheDocument();
   });
 
+  it('withholds receiving details until the current transfer request check completes', async () => {
+    const transferStatus = deferred<unknown>();
+    memberApi.fetchPendingTransferRequest.mockReturnValue(transferStatus.promise);
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+
+    await waitFor(() => expect(screen.queryByText('正在讀取會員資料，請稍候。')).not.toBeInTheDocument());
+    expect(screen.getByText('申請狀態載入中')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: '轉帳資料' })).not.toBeInTheDocument();
+    await act(async () => transferStatus.resolve(null));
+    expect(screen.getByRole('region', { name: '轉帳資料' })).toBeInTheDocument();
+  });
+
   it('keeps an existing pending request visible even if a new purchase is blocked', async () => {
     memberApi.fetchMemberProfile.mockResolvedValue({ planName: null, planExpiresAt: null, isLifetime: true });
     memberApi.fetchPendingTransferRequest.mockResolvedValue(pendingTransfer);
@@ -428,10 +440,12 @@ describe('Matrix Pro manual bank transfer', () => {
     memberApi.fetchPendingTransferRequest.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(null);
     render(<ManualTransferPage onNavigate={vi.fn()} />);
     expect(await screen.findByRole('alert')).toHaveTextContent('無法讀取轉帳申請');
+    expect(screen.queryByRole('region', { name: '轉帳資料' })).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12345' } });
     expect(screen.getByRole('button', { name: '提交' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: '重新載入申請狀態' }));
     await waitFor(() => expect(screen.getByRole('button', { name: '提交' })).toBeEnabled());
+    expect(screen.getByRole('region', { name: '轉帳資料' })).toBeInTheDocument();
   });
 
   it('reconciles a transport-uncertain submission before offering another submit', async () => {

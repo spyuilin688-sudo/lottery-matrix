@@ -786,13 +786,13 @@ function ManualTransferForm({ onNavigate, scope, planCode, initialAttempt }: { o
   const restriction = serverRestriction ?? (!attempt ? purchaseRestriction : null);
   const [lastFive, setLastFive] = useState(initialAttempt?.lastFive ?? "");
   const [pending, setPending] = useState<MemberTransferRequest | null>(null);
-  const showReceivingDetails = pending
-    ? pending.status === 'pending' || pending.status === 'confirmed'
-    : !serverRestriction && !purchaseRestriction;
   const [loading, setLoading] = useState(Boolean(plan));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(initialAttempt ? "尚未確認提交結果，請重試確認。" : null);
   const [statusUnresolved, setStatusUnresolved] = useState(false);
+  const showReceivingDetails = pending
+    ? pending.status === 'pending' || pending.status === 'confirmed'
+    : !loading && !statusUnresolved && !serverRestriction && !purchaseRestriction;
   const requestRevision = useRef(0);
   const submitInFlight = useRef(false);
 

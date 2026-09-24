@@ -1,4 +1,6 @@
-import { disablePushSubscription, fetchPushSubscriptionStatus, savePushSubscription } from './member-api';
+import { disablePushSubscription, fetchNotificationSettings, fetchPushSubscriptionStatus, savePushSubscription } from './member-api';
+import { getAlgorithmCacheScope } from './auth/algorithm-cache-scope';
+import { resolveWebPushPublicKey } from './push-public-key';
 
 export type PushStatus = { supported: boolean; permission: NotificationPermission; enabled: boolean };
 export type PushSubscriptionFailureStage =
@@ -8,6 +10,22 @@ export type PushSubscriptionFailureStage =
 type PushContext = { pushManager: PushManager };
 const SERVICE_WORKER_PATH = '/push-service-worker.js';
 const REGISTRATION_TIMEOUT_MS = 10_000;
+export const PUSH_SUBSCRIPTION_CHANGED_EVENT = 'matrix-push-subscription-changed';
+let pushMutation: Promise<void> = Promise.resolve();
+let pushOperationRevision = 0;
+
+// A late logout unsubscribe must finish before a new login can subscribe.
+function enqueuePushMutation<T>(operation: () => Promise<T>): Promise<T> {
+  const result = pushMutation.then(operation);
+  pushMutation = result.then(() => undefined, () => undefined);
+  return result;
+}
+
+function currentPushOperation(isSessionCurrent: () => boolean = () => true) {
+  const scope = getAlgorithmCacheScope();
+  const revision = pushOperationRevision;
+  return () => scope === getAlgorithmCacheScope() && revision === pushOperationRevision && isSessionCurrent();
+}
 
 export class PushSubscriptionError extends Error {
   readonly status: PushStatus;
@@ -167,6 +185,7 @@ function subscriptionInput(subscription: PushSubscription) {
 export async function getPushStatus(authenticated = true): Promise<PushStatus> {
   if (!supportsPushNotifications()) return unsupportedStatus();
   if (!authenticated) return { supported: true, permission: Notification.permission, enabled: false };
+  await pushMutation;
   const context = await getPushContext();
   if (!context) return unsupportedStatus();
   const permission = Notification.permission;
@@ -185,6 +204,8 @@ export function enablePushNotifications(publicKey: string, authenticated = false
   if (!supportsPushNotifications()) return Promise.resolve(unsupportedStatus());
   const permission = Notification.permission;
   if (!authenticated) return Promise.reject(new PushSubscriptionError({ supported: true, permission, enabled: false }));
+  const isCurrent = currentPushOperation();
+  // Keep this call in the original click handler's user gesture.
   const permissionRequest = permission === 'default'
     ? Notification.requestPermission()
     : Promise.resolve(permission);
@@ -196,7 +217,22 @@ export function enablePushNotifications(publicKey: string, authenticated = false
       return failure(resolvedPermission);
     }
     if (resolvedPermission !== 'granted') return { supported: true, permission: resolvedPermission, enabled: false };
+    return enqueuePushMutation(() => enableGrantedPushNotifications(publicKey, resolvedPermission, isCurrent));
+  })();
+}
 
+async function enableGrantedPushNotifications(
+  publicKey: string,
+  resolvedPermission: NotificationPermission,
+  isCurrent: () => boolean,
+  reuseEnabled = false,
+): Promise<PushStatus> {
+  const assertCurrent = () => {
+    if (!isCurrent() || (reuseEnabled && Notification.permission !== 'granted')) failure(resolvedPermission);
+  };
+  let createdSubscription: PushSubscription | null = null;
+  try {
+    assertCurrent();
     let registration: ServiceWorkerRegistration;
     try {
       const existingRegistration = await getRegisteredServiceWorker();
@@ -205,6 +241,7 @@ export function enablePushNotifications(publicKey: string, authenticated = false
     } catch {
       return failure(resolvedPermission, false, 'service-worker-registration');
     }
+    assertCurrent();
 
     const pushManager = registration?.pushManager;
     if (!pushManager || typeof pushManager.getSubscription !== 'function' || typeof pushManager.subscribe !== 'function') {
@@ -214,6 +251,7 @@ export function enablePushNotifications(publicKey: string, authenticated = false
     let input: ReturnType<typeof subscriptionInput>;
     try {
       let subscription = await pushManager.getSubscription();
+      assertCurrent();
       if (subscription) {
         let enabled: boolean;
         try {
@@ -221,15 +259,22 @@ export function enablePushNotifications(publicKey: string, authenticated = false
         } catch {
           return failure(resolvedPermission, false, 'supabase-save');
         }
+        assertCurrent();
+        if (enabled && reuseEnabled) return { supported: true, permission: resolvedPermission, enabled: true };
         if (!enabled) {
           if (!await subscription.unsubscribe()) return failure(resolvedPermission, false, 'browser-subscription');
+          assertCurrent();
           subscription = null;
         }
       }
-      subscription ??= await pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey),
-      });
+      if (!subscription) {
+        subscription = await pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey),
+        });
+        createdSubscription = subscription;
+      }
+      assertCurrent();
       input = subscriptionInput(subscription);
     } catch (error) {
       if (error instanceof PushSubscriptionError) throw error;
@@ -239,42 +284,74 @@ export function enablePushNotifications(publicKey: string, authenticated = false
 
     try {
       const { enabled } = await savePushSubscription(input);
+      assertCurrent();
       return { supported: true, permission: resolvedPermission, enabled };
     } catch {
       return failure(resolvedPermission, false, 'supabase-save');
     }
-  })();
-}
-
-export async function disablePushNotifications(): Promise<PushStatus> {
-  const context = await getPushContext();
-  if (!context) return unsupportedStatus();
-  const permission = Notification.permission;
-  try {
-    const subscription = await context.pushManager.getSubscription();
-    if (!subscription) return { supported: true, permission, enabled: false };
-    try {
-      await disablePushSubscription(subscription.endpoint);
-    } catch {
-      return failure(permission, true);
-    }
-    if (!await subscription.unsubscribe()) return failure(permission);
-    return { supported: true, permission, enabled: false };
-  } catch (error) {
-    if (error instanceof PushSubscriptionError) throw error;
-    return failure(permission);
-  }
-}
-
-export async function cleanupBrowserPushSubscription(): Promise<void> {
-  const context = await getPushContext();
-  if (!context) return;
-  const subscription = await context.pushManager.getSubscription();
-  if (!subscription) return;
-  try {
-    await disablePushSubscription(subscription.endpoint);
   } finally {
-    await subscription.unsubscribe();
+    // Never leave a newly created subscription attached to a superseded login.
+    if (createdSubscription && !isCurrent()) await createdSubscription.unsubscribe();
   }
 }
 
+export async function restoreBrowserPushSubscription(isSessionCurrent: () => boolean): Promise<void> {
+  if (!supportsPushNotifications() || Notification.permission !== 'granted') return;
+  const isCurrent = currentPushOperation(isSessionCurrent);
+  await enqueuePushMutation(async () => {
+    if (!isCurrent()) return;
+    const { settings } = await fetchNotificationSettings();
+    if (!isCurrent() || !Object.values(settings).some(Boolean)) return;
+    const status = await enableGrantedPushNotifications(
+      resolveWebPushPublicKey(import.meta.env.VITE_WEB_PUSH_PUBLIC_KEY),
+      Notification.permission,
+      isCurrent,
+      true,
+    );
+    if (!status.enabled) failure(status.permission, false, 'supabase-save');
+    if (isCurrent() && typeof window !== 'undefined') {
+      window.dispatchEvent(new Event(PUSH_SUBSCRIPTION_CHANGED_EVENT));
+    }
+  });
+}
+
+export function disablePushNotifications(): Promise<PushStatus> {
+  pushOperationRevision += 1;
+  const isCurrent = currentPushOperation();
+  return enqueuePushMutation(async () => {
+    const context = await getPushContext();
+    if (!context) return unsupportedStatus();
+    const permission = Notification.permission;
+    try {
+      const subscription = await context.pushManager.getSubscription();
+      if (!subscription) return { supported: true, permission, enabled: false };
+      if (!isCurrent()) return failure(permission);
+      try {
+        await disablePushSubscription(subscription.endpoint);
+      } catch {
+        return failure(permission, true);
+      }
+      if (!await subscription.unsubscribe()) return failure(permission);
+      return { supported: true, permission, enabled: false };
+    } catch (error) {
+      if (error instanceof PushSubscriptionError) throw error;
+      return failure(permission);
+    }
+  });
+}
+
+export function cleanupBrowserPushSubscription(): Promise<void> {
+  pushOperationRevision += 1;
+  const scope = getAlgorithmCacheScope();
+  return enqueuePushMutation(async () => {
+    const context = await getPushContext();
+    if (!context) return;
+    const subscription = await context.pushManager.getSubscription();
+    if (!subscription) return;
+    try {
+      if (scope === getAlgorithmCacheScope()) await disablePushSubscription(subscription.endpoint);
+    } finally {
+      await subscription.unsubscribe();
+    }
+  });
+}

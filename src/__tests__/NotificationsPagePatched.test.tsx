@@ -44,7 +44,7 @@ vi.mock("../push-subscription", async (importOriginal) => ({
 }));
 
 import { NotificationsPagePatched } from "../NotificationsPagePatched";
-import { PushSubscriptionError } from "../push-subscription";
+import { PUSH_SUBSCRIPTION_CHANGED_EVENT, PushSubscriptionError } from "../push-subscription";
 import { updateAlgorithmCacheSession } from "../auth/algorithm-cache-scope";
 import type { Session } from "@supabase/supabase-js";
 
@@ -109,6 +109,23 @@ function pushFailure(stage: "service-worker-registration" | "browser-subscriptio
 }
 
 describe("NotificationsPagePatched", () => {
+  it("updates phone notification status after login restoration and ignores the older pending check", async () => {
+    const oldStatus = deferred<{ supported: boolean; permission: NotificationPermission; enabled: boolean }>();
+    pushSubscription.getPushStatus.mockReturnValueOnce(oldStatus.promise)
+      .mockResolvedValue({ supported: true, permission: "granted", enabled: true });
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    await waitFor(() => expect(pushSubscription.getPushStatus).toHaveBeenCalledTimes(1));
+    act(() => { window.dispatchEvent(new Event(PUSH_SUBSCRIPTION_CHANGED_EVENT)); });
+    expect(await screen.findByText("手機通知已開啟")).toBeVisible();
+    await act(async () => {
+      oldStatus.resolve({ supported: true, permission: "granted", enabled: false });
+      await oldStatus.promise;
+    });
+    expect(screen.getByText("手機通知已開啟")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "開啟手機通知" })).not.toBeInTheDocument();
+    expect(memberApi.saveNotificationSettings).not.toHaveBeenCalled();
+  });
+
   it("discards a queued draft on logout instead of saving it on unmount", async () => {
     const view = render(<NotificationsPagePatched onNavigate={vi.fn()} />);
     await waitFor(() => expect(memberApi.fetchNotificationSettings).toHaveBeenCalledTimes(1));

@@ -21,7 +21,8 @@ vi.mock('../member-api', async () => {
   };
 });
 
-vi.mock('../push-subscription', () => ({
+vi.mock('../push-subscription', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../push-subscription')>(),
   disablePushNotifications: vi.fn(),
   enablePushNotifications: vi.fn(),
   getPushStatus: vi.fn(),

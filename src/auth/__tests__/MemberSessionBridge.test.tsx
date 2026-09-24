@@ -62,6 +62,63 @@ beforeEach(() => {
 });
 
 describe('MemberSessionBridge', () => {
+  it('restores push after bootstrap, once per logical session, and again after logout and login', async () => {
+    let finishBootstrap!: () => void;
+    const bootstrap = vi.fn().mockImplementationOnce(() => new Promise<void>((resolve) => { finishBootstrap = resolve; }))
+      .mockResolvedValue(undefined);
+    const restorePush = vi.fn().mockResolvedValue(undefined);
+    const { client, emit } = createClient({ access_token: accessTokenForSession('push-session', 'first') });
+    render(<MemberSessionBridge client={client as never} bootstrap={bootstrap} restorePush={restorePush}
+      cleanupPush={vi.fn().mockResolvedValue(undefined)} startTracking={noopStartTracking} />);
+    await waitFor(() => expect(bootstrap).toHaveBeenCalledTimes(1));
+    expect(restorePush).not.toHaveBeenCalled();
+    finishBootstrap();
+    await waitFor(() => expect(restorePush).toHaveBeenCalledTimes(1));
+    const isFirstSessionCurrent = restorePush.mock.calls[0][0];
+    expect(isFirstSessionCurrent()).toBe(true);
+    emit('TOKEN_REFRESHED', { access_token: accessTokenForSession('push-session', 'refreshed') });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(restorePush).toHaveBeenCalledTimes(1);
+    emit('SIGNED_OUT', null);
+    expect(isFirstSessionCurrent()).toBe(false);
+    emit('SIGNED_IN', { access_token: accessTokenForSession('new-push-session', 'first') });
+    expect(restorePush).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(restorePush).toHaveBeenCalledTimes(2));
+    expect(restorePush.mock.calls[1][0]()).toBe(true);
+  });
+
+  it('does not restore push when the pending bootstrap belongs to a signed-out session', async () => {
+    let finishBootstrap!: () => void;
+    const bootstrap = vi.fn(() => new Promise<void>((resolve) => { finishBootstrap = resolve; }));
+    const restorePush = vi.fn().mockResolvedValue(undefined);
+    const { client, emit } = createClient({ access_token: 'old-push-session' });
+    render(<MemberSessionBridge client={client as never} bootstrap={bootstrap} restorePush={restorePush}
+      cleanupPush={vi.fn().mockResolvedValue(undefined)} startTracking={noopStartTracking} />);
+    await waitFor(() => expect(bootstrap).toHaveBeenCalled());
+    emit('SIGNED_OUT', null);
+    finishBootstrap();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(restorePush).not.toHaveBeenCalled();
+  });
+
+  it('retries failed restoration when connectivity returns without repeating member bootstrap', async () => {
+    const bootstrap = vi.fn().mockResolvedValue(undefined);
+    const restorePush = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue(undefined);
+    const { client } = createClient({ access_token: 'retry-push-session' });
+    const { unmount } = render(<MemberSessionBridge client={client as never} bootstrap={bootstrap}
+      restorePush={restorePush} startTracking={noopStartTracking} />);
+    await waitFor(() => expect(restorePush).toHaveBeenCalledTimes(1));
+    window.dispatchEvent(new Event('online'));
+    await waitFor(() => expect(restorePush).toHaveBeenCalledTimes(2));
+    expect(bootstrap).toHaveBeenCalledTimes(1);
+    const isCurrent = restorePush.mock.calls[1][0];
+    unmount();
+    expect(isCurrent()).toBe(false);
+    window.dispatchEvent(new Event('online'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(restorePush).toHaveBeenCalledTimes(2);
+  });
+
   it('does not start member online tracking for an anonymous session', async () => {
     const { client } = createClient(null);
     const startTracking = vi.fn(() => vi.fn());

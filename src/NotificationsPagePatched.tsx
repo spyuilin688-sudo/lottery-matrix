@@ -14,6 +14,7 @@ import {
   enablePushNotifications,
   getPushStatus,
   PushSubscriptionError,
+  PUSH_SUBSCRIPTION_CHANGED_EVENT,
   type PushStatus,
 } from "./push-subscription";
 import { resolveWebPushPublicKey } from "./push-public-key";
@@ -384,6 +385,12 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     });
     return () => { active = false; };
   }, [pushCheckRevision]);
+
+  useEffect(() => {
+    const refreshPushStatus = () => setPushCheckRevision((revision) => revision + 1);
+    window.addEventListener(PUSH_SUBSCRIPTION_CHANGED_EVENT, refreshPushStatus);
+    return () => window.removeEventListener(PUSH_SUBSCRIPTION_CHANGED_EVENT, refreshPushStatus);
+  }, []);
 
   useEffect(() => {
     scheduleLatestSaveRef.current(SAVE_DEBOUNCE_MS);
