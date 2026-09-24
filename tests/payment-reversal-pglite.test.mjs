@@ -17,7 +17,7 @@ const paymentGuardMigration = readFileSync(new URL('../supabase/migrations/20260
 const grantEvidenceMigration = readFileSync(paymentGrantMigration, 'utf8');
 
 const referralMigration = readFileSync(
-  new URL('../supabase/migrations/20260905090000_allow_referral_code_after_payment.sql', import.meta.url),
+  new URL('../supabase/migrations/20260904183827_allow_referral_code_after_payment.sql', import.meta.url),
   'utf8',
 );
 const entitlementMigration = readFileSync(

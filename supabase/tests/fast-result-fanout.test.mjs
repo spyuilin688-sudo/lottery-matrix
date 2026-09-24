@@ -63,7 +63,7 @@ async function setup() {
     `);
     const enqueue = await migration('20260905205428_notification_fast_results.sql');
     const staged = await migration('20260912164917_two_stage_lottery_results.sql');
-    const trigger = await migration('20260921194000_event_driven_notification_dispatch.sql');
+    const trigger = await migration('20260921114248_event_driven_notification_dispatch.sql');
     await db.exec(functionDefinition(enqueue, 'private.notification_event_enqueue'));
     await db.exec(functionDefinition(staged, 'private.notification_fast_result_publish'));
     await db.exec(functionDefinition(trigger, 'private.notification_event_publish_after_insert'));

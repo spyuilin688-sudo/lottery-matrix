@@ -2,15 +2,15 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const sql = readFileSync(
-  new URL('../../../supabase/migrations/20260902064500_admin_revenue_reset_baseline.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20260902065226_admin_revenue_reset_baseline.sql', import.meta.url),
   'utf8',
 ).toLowerCase();
 const privilegeSql = readFileSync(
-  new URL('../../../supabase/migrations/20260902070030_limit_admin_revenue_settings_privileges.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20260902065309_limit_admin_revenue_settings_privileges.sql', import.meta.url),
   'utf8',
 ).toLowerCase();
 const resetRpcSql = readFileSync(
-  new URL('../../../supabase/migrations/20260902071500_admin_revenue_reset_rpc.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20260902070157_admin_revenue_reset_rpc.sql', import.meta.url),
   'utf8',
 ).toLowerCase();
 

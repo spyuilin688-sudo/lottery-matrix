@@ -27,7 +27,7 @@ before(async () => {
     create function cron.unschedule(bigint) returns boolean language plpgsql as $$ begin delete from cron.job where jobid=$1; return found; end $$;
     select cron.schedule('matrix-visitor-retention','* * * * *','select 1');`);
   await db.exec(read('./fixtures/matrix-analysis-tables.sql'));
-  for (const file of ['20260825060000_matrix_analysis_artifact_chunks.sql','20260903185906_matrix_analysis_run_lease.sql',
+  for (const file of ['20260824223022_matrix_analysis_artifact_chunks.sql','20260903185906_matrix_analysis_run_lease.sql',
     '20260905122413_create_static_matrix_card_publication.sql','20260905141003_repair_matrix_analysis_retention_and_recovery.sql']) await db.exec(read(`../migrations/${file}`));
   await db.exec('alter table public.lottery_draws drop column result_status');
   for (const file of ['20260912164917_two_stage_lottery_results.sql','20260912164938_matrix_order_analysis_reads.sql',

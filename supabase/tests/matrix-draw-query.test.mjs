@@ -54,7 +54,7 @@ before(async () => {
     [JSON.stringify([...fixture, ...fixture.filter((_, index) => index % 4 === 0)
       .map(draw => ({ ...draw, period: draw.period.padStart(9, '0') }))])]);
   await db.exec(await readFile(new URL('../migrations/20260914114420_matrix_draw_query_pagination.sql', import.meta.url), 'utf8'));
-  await db.exec(await readFile(new URL('../migrations/20260917002000_optimize_matrix_draw_query_read_path.sql', import.meta.url), 'utf8'));
+  await db.exec(await readFile(new URL('../migrations/20260916161309_optimize_matrix_draw_query_read_path.sql', import.meta.url), 'utf8'));
   await db.exec(await readFile(new URL('../migrations/20260920192323_matrix_draw_indexed_read_cache.sql', import.meta.url), 'utf8'));
 });
 after(async () => db.close());

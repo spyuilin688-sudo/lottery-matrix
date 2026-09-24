@@ -19,7 +19,7 @@ test('reconciling an official period removes the duplicate provisional analysis 
     // The real stage migration adds the column and the draw invalidation trigger.
     await db.exec('alter table public.lottery_draws drop column result_status');
     await db.exec(read('../migrations/20260912164917_two_stage_lottery_results.sql'));
-    await db.exec(read('../migrations/20260916090000_reconcile_confirmed_same_period_draws.sql'));
+    await db.exec(read('../migrations/20260915195954_reconcile_confirmed_same_period_draws.sql'));
     if (existsSync(fix)) await db.exec(readFileSync(fix, 'utf8'));
 
     for (const [period, date, status] of [

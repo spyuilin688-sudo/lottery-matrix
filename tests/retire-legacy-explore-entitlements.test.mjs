@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const migrationPath = new URL('../supabase/migrations/20260921073500_retire_legacy_explore_entitlements.sql', import.meta.url);
+const migrationPath = new URL('../supabase/migrations/20260921074825_retire_legacy_explore_entitlements.sql', import.meta.url);
 const sql = fs.readFileSync(migrationPath, 'utf8');
 
 test('retires the legacy public explore entitlement resolver', () => {

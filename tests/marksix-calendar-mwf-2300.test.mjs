@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const source = fs.readFileSync(
-  new URL('../supabase/migrations/20260922062500_marksix_calendar_mwf_2300.sql', import.meta.url),
+  new URL('../supabase/migrations/20260921222326_marksix_calendar_mwf_2300.sql', import.meta.url),
   'utf8',
 );
 

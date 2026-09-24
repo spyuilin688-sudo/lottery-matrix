@@ -11,8 +11,8 @@ const exploreEngineSource = readFileSync(new URL("../services/matrix-api/app/dom
 const exploreBatchSource = readFileSync(new URL("../services/matrix-api/app/services/explore_batches.py", import.meta.url), "utf8");
 const artifactBuilderSource = readFileSync(new URL("../services/matrix-api/app/services/artifact_builders.py", import.meta.url), "utf8");
 const workerSource = readFileSync(new URL("../services/matrix-api/app/worker.py", import.meta.url), "utf8");
-const exploreRangeMigration = readFileSync(new URL("../supabase/migrations/20260901100000_matrix_explore_v2_ranges.sql", import.meta.url), "utf8");
-const exploreV12RpcMigration = readFileSync(new URL("../supabase/migrations/20260902040000_matrix_explore_v12_rpc.sql", import.meta.url), "utf8");
+const exploreRangeMigration = readFileSync(new URL("../supabase/migrations/20260901115059_matrix_explore_v2_ranges.sql", import.meta.url), "utf8");
+const exploreV12RpcMigration = readFileSync(new URL("../supabase/migrations/20260902072734_matrix_explore_v12_rpc.sql", import.meta.url), "utf8");
 
 test("近10期只反轉顯示順序，最新期顯示在最下方", () => {
   assert.match(featureSource, /const displayedHistory = useMemo\(\(\) => \[\.\.\.history\]\.reverse\(\), \[history\]\);/);

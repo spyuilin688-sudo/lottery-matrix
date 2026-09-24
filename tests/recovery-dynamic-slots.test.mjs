@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {PGlite} from '@electric-sql/pglite';
 const sql=readFileSync(new URL('../supabase/migrations/20260920233444_recovery_dynamic_slots.sql',import.meta.url),'utf8');
-const primarySql=readFileSync(new URL('../supabase/migrations/20260921072423_dynamic_primary_worker_schedule.sql',import.meta.url),'utf8');
-const refreshSql=readFileSync(new URL('../supabase/migrations/20260921075225_refresh_watchdog_after_recovery.sql',import.meta.url),'utf8');
+const primarySql=readFileSync(new URL('../supabase/migrations/20260921074128_dynamic_primary_worker_schedule.sql',import.meta.url),'utf8');
+const refreshSql=readFileSync(new URL('../supabase/migrations/20260921075707_refresh_watchdog_after_recovery.sql',import.meta.url),'utf8');
 const dedupeSql=readFileSync(new URL('../supabase/migrations/20260922112435_dedupe_primary_recovery_dispatch.sql',import.meta.url),'utf8');
 const calendarTimebaseSql=readFileSync(new URL('../supabase/migrations/20260924051532_calendar_trigger_timebase.sql',import.meta.url),'utf8');
 async function fixture(){

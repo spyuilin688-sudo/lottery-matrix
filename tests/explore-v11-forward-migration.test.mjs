@@ -4,7 +4,7 @@ import test from "node:test";
 
 const migration = readFileSync(
   new URL(
-    "../supabase/migrations/20260902030000_matrix_explore_v11_draw_order_forward.sql",
+    "../supabase/migrations/20260901174618_matrix_explore_v11_draw_order_forward.sql",
     import.meta.url,
   ),
   "utf8",

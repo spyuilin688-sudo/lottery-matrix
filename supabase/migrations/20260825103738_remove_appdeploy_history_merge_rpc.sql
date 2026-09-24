@@ -1,0 +1,1 @@
+drop function if exists public.merge_appdeploy_lottery_draw_batch(jsonb);

@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const migration = new URL(
-  '../supabase/migrations/20260830144700_mobile_push_notifications.sql',
+  '../supabase/migrations/20260830095443_mobile_push_notifications.sql',
   import.meta.url,
 );
 

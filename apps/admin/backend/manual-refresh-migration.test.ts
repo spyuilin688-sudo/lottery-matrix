@@ -6,7 +6,7 @@ it('atomically claims bounded tasks, fences stale results and restricts RPCs', a
   const db = new PGlite();
   try {
     await db.exec('create role anon; create role authenticated; create role service_role bypassrls;');
-    await db.exec(readFileSync(new URL('../../../supabase/migrations/20260920100000_manual_refresh_jobs.sql', import.meta.url), 'utf8'));
+    await db.exec(readFileSync(new URL('../../../supabase/migrations/20260920102528_manual_refresh_jobs.sql', import.meta.url), 'utf8'));
     await db.exec('set role service_role');
     const id = '11111111-1111-4111-8111-111111111111';
     const next = '22222222-2222-4222-8222-222222222222';

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const target = new URL('../supabase/migrations/20260921184500_split_expiry_reminder_scan.sql', import.meta.url);
+const target = new URL('../supabase/migrations/20260921104200_split_expiry_reminder_scan.sql', import.meta.url);
 
 test('minute notification gate checks only configured bet reminders', () => {
   const sql = fs.readFileSync(target, 'utf8');

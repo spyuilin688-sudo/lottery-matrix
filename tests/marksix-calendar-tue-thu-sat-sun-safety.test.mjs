@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const target = new URL(
-  '../supabase/migrations/20260922054000_marksix_calendar_tue_thu_sat_sun_safety.sql',
+  '../supabase/migrations/20260921213733_marksix_calendar_tue_thu_sat_sun_safety.sql',
   import.meta.url,
 );
 

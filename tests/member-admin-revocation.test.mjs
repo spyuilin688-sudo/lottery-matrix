@@ -29,18 +29,18 @@ before(async () => {
     '20260813175127_admin_dashboard_advisor_fixes',
     '20260821005644_matrix_custom_status_configs',
     '20260821011026_matrix_custom_status_admin_read',
-    '20260821212800_matrix_custom_status_api_only_mutations',
+    '20260821012728_matrix_custom_status_api_only_mutations',
     '20260905114917_consolidate_matrix_custom_status_select_policy',
   ]) await db.exec(await migration(name));
-  const transfer = await migration('20260830060000_manual_bank_transfer');
+  const transfer = await migration('20260829223804_manual_bank_transfer');
   await db.exec(transfer.slice(0, transfer.indexOf('create or replace function public.member_pending_transfer_request')) + 'commit;');
   await db.exec(await migration('20260902213221_activation_code_generation_rules'));
   await db.exec(`
     create table public.admin_accounts(id uuid primary key, name text, status text, role text default '營運管理員');
   `);
-  await db.exec(await migration('20260903042000_admin_credential_login_schema'));
-  await db.exec(await migration('20260821194500_protect_last_super_admin'));
-  await db.exec(await migration('20260904050000_normalize_manual_transfer_review'));
+  await db.exec(await migration('20260902203534_admin_credential_login_schema'));
+  await db.exec(await migration('20260821102612_protect_last_super_admin'));
+  await db.exec(await migration('20260904034400_normalize_manual_transfer_review'));
   await db.exec(`
     grant all on all tables in schema public to service_role;
     grant execute on function public.member_transfer_request_submit(text,text) to authenticated;

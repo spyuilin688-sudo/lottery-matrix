@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const target = new URL(
-  '../supabase/migrations/20260921194000_event_driven_notification_dispatch.sql',
+  '../supabase/migrations/20260921114248_event_driven_notification_dispatch.sql',
   import.meta.url,
 );
 

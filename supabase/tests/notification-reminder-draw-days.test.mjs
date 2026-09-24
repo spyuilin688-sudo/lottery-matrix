@@ -21,7 +21,7 @@ before(async () => {
     create table public.lottery_draws(lottery text,period text,draw_date date);
   `);
   await db.exec(read('../migrations/20260823042016_create_member_notification_settings.sql'));
-  const defaults = read('../migrations/20260829090000_member_pwa_rpc.sql');
+  const defaults = read('../migrations/20260829181805_member_pwa_rpc.sql');
   await db.exec(defaults.match(/create or replace function private.default_member_notification_settings\(\)[\s\S]*?\$\$;/i)[0]);
   for (const file of [
     '20260904091705_notification_dispatch_schema.sql',

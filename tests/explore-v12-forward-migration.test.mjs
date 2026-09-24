@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const migration = readFileSync(
-  new URL("../supabase/migrations/20260902040000_matrix_explore_v12_rpc.sql", import.meta.url),
+  new URL("../supabase/migrations/20260902072734_matrix_explore_v12_rpc.sql", import.meta.url),
   "utf8",
 );
 

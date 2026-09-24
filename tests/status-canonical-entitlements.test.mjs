@@ -5,7 +5,7 @@ import fs from 'node:fs';
 const routes = fs.readFileSync(new URL('../backend/matrix-status-routes.ts', import.meta.url), 'utf8');
 const edge = fs.readFileSync(new URL('../supabase/functions/matrix-status/index.ts', import.meta.url), 'utf8');
 const reader = fs.readFileSync(new URL('../supabase/functions/matrix-status/source-reader.ts', import.meta.url), 'utf8');
-const migration = fs.readFileSync(new URL('../supabase/migrations/20260921172000_matrix_status_canonical_entitlements.sql', import.meta.url), 'utf8');
+const migration = fs.readFileSync(new URL('../supabase/migrations/20260921093104_matrix_status_canonical_entitlements.sql', import.meta.url), 'utf8');
 
 test('production Matrix status injects canonical Supabase entitlements', () => {
   assert.match(routes, /resolveEntitlements\(authorization\?: string\): Promise<MatrixEntitlements>/);

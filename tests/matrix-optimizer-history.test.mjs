@@ -16,7 +16,7 @@ async function fixture(){
  create table net.requests(url text,headers jsonb,body jsonb);
  create function net.http_post(url text,body jsonb,headers jsonb,timeout_milliseconds int) returns bigint language plpgsql as $$begin insert into net.requests values(url,headers,body);return 1;end$$;
  create table system_job_status(job_name text,lottery text,status text,started_at timestamptz,finished_at timestamptz);`);
- await db.exec(read('20260904103000_add_matrix_watchdog_leases.sql'));
+ await db.exec(read('20260904104229_add_matrix_watchdog_leases.sql'));
  await db.exec(read('20260910123745_admin_watchdog_status_store.sql'));
  await db.exec(migration);
  await db.exec(read('20260919181404_matrix_optimizer_cron_origin.sql'));

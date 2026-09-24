@@ -23,7 +23,7 @@ before(async () => {
     create schema storage;
     create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);`);
   await db.exec(read('./fixtures/matrix-analysis-tables.sql'));
-  await db.exec(read('../migrations/20260825060000_matrix_analysis_artifact_chunks.sql'));
+  await db.exec(read('../migrations/20260824223022_matrix_analysis_artifact_chunks.sql'));
   await db.exec(read('../migrations/20260903185906_matrix_analysis_run_lease.sql'));
   await db.exec(read('../migrations/20260905122413_create_static_matrix_card_publication.sql'));
   await db.exec(read('../migrations/20260905141003_repair_matrix_analysis_retention_and_recovery.sql'));

@@ -38,13 +38,13 @@ before(async () => {
       ('10000000-0000-0000-0000-000000000002','${userB}','active'),
       ('10000000-0000-0000-0000-000000000003','${disabledUser}','disabled');
   `);
-  for (const file of ['20260830144700_mobile_push_notifications.sql','20260830223000_fix_mobile_push_rpc_nullif.sql']) {
+  for (const file of ['20260830095443_mobile_push_notifications.sql','20260830141227_fix_mobile_push_rpc_nullif.sql']) {
     await db.exec(await readFile(new URL(file, migrations), 'utf8'));
   }
   for (const file of (await readdir(migrations)).filter(name => name.endsWith('_member_push_endpoint_security.sql')).sort()) {
     await db.exec(await readFile(new URL(file, migrations), 'utf8'));
   }
-  await db.exec(await readFile(new URL('20260921012052_enforce_active_member_notifications.sql', migrations), 'utf8'));
+  await db.exec(await readFile(new URL('20260921014842_enforce_active_member_notifications.sql', migrations), 'utf8'));
 });
 after(() => db.close());
 
