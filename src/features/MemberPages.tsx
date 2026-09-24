@@ -467,7 +467,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
           <SectionTitle>目前訂閱狀態</SectionTitle>
           <div className="subscription-status-content">
             <div className="subscription-plan"><span>目前方案</span><strong>{displayedPlanName}</strong><p>{memberProfile ? displayedPlanDescription : ""}</p></div>
-            <div className="subscription-expiry"><span>訂閱到期日</span><strong>{expiry?.date ?? ""}</strong><p>{expiry ? `剩餘 ${expiry.remainingDays} 天` : ""}</p></div>
+            <div className="subscription-expiry"><span>訂閱到期日</span><strong>{memberProfile?.isLifetime ? "無到期日" : expiry?.date ?? ""}</strong><p>{expiry ? `剩餘 ${expiry.remainingDays} 天` : ""}</p></div>
           </div>
           {subscriptionPurchaseVisible && <button type="button" className="subscription-entry" onClick={() => onNavigate("pro-plans")}>
             <span>訂閱方案／收費標準</span><ChevronRightIcon />
@@ -1347,9 +1347,9 @@ export function RefundPolicyPage({ onNavigate }: { onNavigate: Navigate }) {
     <LegalInfoDocument title="退款規範" onNavigate={onNavigate}>
       <LegalInfoSection title="一、適用範圍"><p>本退款規範適用於樂彩 Matrix 提供的 Matrix Pro 付費方案。</p></LegalInfoSection>
       <LegalInfoSection title="二、自動續訂"><p>自動續訂尚未開放，目前不會自動扣款或續訂。</p></LegalInfoSection>
-      <LegalInfoSection title="三、七日解除權與數位服務"><p>Matrix Pro 為付款後，提供使用權限的數位服務。</p><p>若付款流程已事先告知，並取得使用者同意立即提供數位內容或線上服務，且服務已開始提供，依法得排除七日解除權，不適用七日無條件解除。</p></LegalInfoSection>
+      <LegalInfoSection title="三、七日解除權與數位服務"><p>Matrix Pro 為付款後，提供使用權限的數位服務。</p><p>退款與七日解除權依實際交易情形及相關法令辦理。</p></LegalInfoSection>
       <LegalInfoSection title="四、可申請退款情形"><DetailList items={["重複付款。", "付款成功但 Matrix Pro 權限未開通。", "因 樂彩 Matrix 系統異常，致已購買的主要服務無法使用。", "其他依法應辦理退款的情形。"]} /></LegalInfoSection>
-      <LegalInfoSection title="五、不予退款情形"><DetailList items={["使用者已事先同意立即提供數位服務，且 Matrix Pro 權限已開通並開始使用，依法得排除七日解除權的情形。", "非屬本規範或法律規定應退款的情形。"]} /></LegalInfoSection>
+      <LegalInfoSection title="五、不予退款情形"><DetailList items={["非屬本規範或法律規定應退款的情形。"]} /></LegalInfoSection>
       <LegalInfoSection title="六、退款申請方式"><p>請寄送電子郵件至 <a href="mailto:matrix.lottery@gmail.com">matrix.lottery@gmail.com</a>，並提供會員帳號、付款日期、付款金額、訂單或交易資料及退款原因。</p></LegalInfoSection>
       <LegalInfoSection title="七、退款處理"><p>收到申請後，將依付款紀錄、權限開通狀態及服務使用情形進行核對。</p><p>符合退款條件者，退款方式及實際入帳時間，將依原付款方式與金流服務商作業時間辦理。</p></LegalInfoSection>
       <LegalInfoSection title="八、其他"><p>本規範如與中華民國法令的強制或禁止規定不同，依相關法令辦理。</p><p>樂彩 Matrix 保留退款申請資料核對、交易狀態確認及退款資格認定之權利；退款處理仍依中華民國相關法令及本退款規範辦理。</p></LegalInfoSection>

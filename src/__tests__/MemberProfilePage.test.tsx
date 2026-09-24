@@ -149,6 +149,22 @@ describe("ProfilePage member API", () => {
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
+  it("永久會員在我的頁面顯示無到期日", async () => {
+    memberApi.fetchMemberProfile.mockResolvedValue({
+      memberId: "member-lifetime",
+      lineUserId: "line-lifetime",
+      planName: "終身方案",
+      planExpiresAt: null,
+      isLifetime: true,
+    });
+    render(<ProfilePage onNavigate={vi.fn()} />);
+
+    expect(await screen.findByText("終身方案")).toBeInTheDocument();
+    const expiry = document.querySelector(".subscription-expiry");
+    expect(expiry).toHaveTextContent("無到期日");
+    expect(expiry).not.toHaveTextContent("剩餘");
+  });
+
   it("管理訂閱保留目前方案並隱藏購買入口", async () => {
     render(<SubscriptionManagementPage onNavigate={vi.fn()} />);
     expect(await screen.findByText("年費方案")).toBeInTheDocument();
