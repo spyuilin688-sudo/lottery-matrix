@@ -72,3 +72,28 @@ it('requests processing after result dispatch and leaves a failed wake-up to the
   expect(response.status).toBe(200);
   expect((await response.json()).processing).toEqual([{ lottery: '今彩539', status: 'retry-by-scheduled-worker' }]);
 });
+
+it('does not redispatch or restart processing when another request published the same result first', async () => {
+  const calls: string[] = [];
+  const handler = createPilioNotificationHandler({
+    dispatchToken: 'test-secret', now: () => new Date('2026-09-05T12:35:00Z'),
+    async isRecorded() { return false; },
+    async fetchPage() { return html; },
+    async publish() { calls.push('publish'); return { created: false }; },
+    async dispatch() { calls.push('dispatch'); },
+    async requestProcessing() { calls.push('process'); },
+  });
+
+  const response = await handler(request());
+
+  expect(response.status).toBe(200);
+  expect(calls).toEqual(['publish']);
+  expect(await response.json()).toMatchObject({
+    results: [
+      { lottery: '今彩539', status: 'already-recorded' },
+      { lottery: '大樂透', status: 'waiting-source' },
+    ],
+    dispatch: 'not-needed',
+    processing: [],
+  });
+});

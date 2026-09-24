@@ -398,19 +398,24 @@ export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
       const jobRow = jobRows[0];
       const drawRow = drawRows[0];
       const period = nullableString(drawRow?.period);
-      const analysisState = period ? await supabaseRequest<Record<string, unknown>>(supabase,
-        'rpc/matrix_watchdog_analysis_state',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ p_lottery: lottery, p_draw_period: period }),
-        },
-      ).catch(() => { unavailable = true; return null; }) : null;
       let chainState: Record<string, unknown> | null = null;
       try {
         if (period) chainState = await supabaseRequest<Record<string, unknown>>(supabase,
           'rpc/matrix_watchdog_chain_state', {method:'POST', body:JSON.stringify({p_lottery:lottery,p_draw_period:period})});
       } catch { /* Existing observations remain usable; missing evidence is UNKNOWN. */ }
+      const embeddedAnalysis = chainState?.analysis as Record<string, unknown> | null | undefined;
+      const analysisState = period && embeddedAnalysis && typeof embeddedAnalysis === 'object'
+        && !Array.isArray(embeddedAnalysis) && embeddedAnalysis.drawPeriod === period
+        && typeof embeddedAnalysis.status === 'string'
+        ? embeddedAnalysis
+        : period ? await supabaseRequest<Record<string, unknown>>(supabase,
+          'rpc/matrix_watchdog_analysis_state',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ p_lottery: lottery, p_draw_period: period }),
+          },
+        ).catch(() => { unavailable = true; return null; }) : null;
       const jobStatus = nullableString(jobRow?.status);
       const analysisStatus = nullableString(analysisState?.status);
       const visibleAnalysisStatus = (

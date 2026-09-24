@@ -38,8 +38,10 @@ export function createPilioNotificationHandler(dependencies: Dependencies) {
           continue;
         }
         const event = await dependencies.publish(result);
-        published = true;
-        acquired.push(result);
+        if (event.created) {
+          published = true;
+          acquired.push(result);
+        }
         results.push({ lottery: source.lottery, status: event.created ? "published" : "already-recorded" });
       } catch {
         results.push({ lottery: source.lottery, status: "failed" });

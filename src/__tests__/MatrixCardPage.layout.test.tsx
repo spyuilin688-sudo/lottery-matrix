@@ -18,6 +18,9 @@ vi.mock("../lottery-api", async (importOriginal) => ({
   fetchMatrixCardManifest: matrixCards.fetchMatrixCardManifest,
   matrixCardUrl: matrixCards.matrixCardUrl,
 }));
+vi.mock('../lib/supabase', () => ({
+  getSupabaseClient: () => { throw new Error('Realtime unavailable in layout fixtures'); },
+}));
 
 import { MatrixCardPage } from "../FeaturePages";
 import { AppDialogProvider } from "../dialog/AppDialog";

@@ -1,5 +1,5 @@
 import { DAILY_SORTED_ONLY_DESCRIPTION, supportsDrawOrder, useLotteryOrder } from "../use-lottery-order";
-import { subscribeLotteryRefresh } from "../lottery-data-refresh";
+import { subscribeMatrixCardRefresh } from "../matrix-card-refresh";
 import { useEffect, useRef, useState } from "react";
 import { DownloadIcon } from "@radix-ui/react-icons";
 import { type LotteryId } from "../Prototype";
@@ -22,18 +22,32 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
   useEffect(() => {
     let active = true;
     let revision = 0;
+    let publishedCard: MatrixCardManifest | null = null;
     setLoading(true);
     setLoadFailed(false);
     setManifest(null);
-    const refresh = () => {
+    const refresh = async (): Promise<boolean> => {
       const current = ++revision;
-      void fetchMatrixCardManifest(lottery)
-        .then((nextManifest) => { if (active && current === revision) { setManifest(nextManifest); setLoadFailed(false); } })
-        .catch(() => { if (active && current === revision) { setManifest(null); setLoadFailed(true); } })
-        .finally(() => { if (active && current === revision) setLoading(false); });
+      try {
+        const nextManifest = await fetchMatrixCardManifest(lottery);
+        if (!active || current !== revision) return false;
+        publishedCard = nextManifest;
+        setManifest(nextManifest);
+        setLoadFailed(false);
+        return true;
+      } catch {
+        if (active && current === revision) {
+          publishedCard = null;
+          setManifest(null);
+          setLoadFailed(true);
+        }
+        return false;
+      } finally {
+        if (active && current === revision) setLoading(false);
+      }
     };
-    refresh();
-    const unsubscribe = subscribeLotteryRefresh(lottery, refresh);
+    void refresh();
+    const unsubscribe = subscribeMatrixCardRefresh(lottery, refresh, () => publishedCard);
     return () => { active = false; unsubscribe(); };
   }, [lottery]);
 
