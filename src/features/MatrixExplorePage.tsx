@@ -2,6 +2,7 @@ import { DAILY_SORTED_ONLY_DESCRIPTION, supportsDrawOrder, useLotteryOrder } fro
 import { usePermissionSettings } from '../permission-settings';
 import { subscribeMatrixDataRevision } from "../matrix-data-revision";
 import { subscribeAlgorithmCacheScope } from "../auth/algorithm-cache-scope";
+import { useMemberSessionSnapshot } from '../auth/member-session-store';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronDownIcon, ChevronRightIcon, LockClosedIcon, MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { MATRIX_RESULTS_PER_PAGE, MatrixResultsPagination } from "./MatrixResultsPagination";
@@ -44,6 +45,9 @@ export function MatrixExplorePage({
     ? (["完整範圍"] as const)
     : (["標準範圍", "完整範圍"] as const);
   const permissionSettings = usePermissionSettings();
+  const memberSession = useMemberSessionSnapshot();
+  const sessionSettled = memberSession.status !== 'checking';
+  const hasMemberSession = memberSession.status === 'ready' && memberSession.session !== null;
   const [exploreAccess, setExploreAccess] = useState<MemberProfileResponse['exploreEntitlements']>();
   const [taipeiDay, setTaipeiDay] = useState(currentTaipeiDay);
   const observedTaipeiDay = useRef(taipeiDay);
@@ -222,6 +226,7 @@ export function MatrixExplorePage({
 
   useEffect(() => {
     if (!isExplore && !isTianyan && !isLockedAlgorithm) return;
+    if (!sessionSettled) return;
     let active = true;
     const dayChanged = profileTaipeiDay.current !== taipeiDay;
     profileTaipeiDay.current = taipeiDay;
@@ -233,11 +238,10 @@ export function MatrixExplorePage({
         : current === "七期" && allowed.period === "二期" ? "二期" : current);
       if (allowed.range !== "完整範圍") setExploreRange("標準範圍");
     };
-    void bootstrapMember()
-      .then(() => fetchMemberProfile())
+    void (hasMemberSession ? bootstrapMember().then(() => fetchMemberProfile()) : Promise.resolve(null))
       .then((profile) => {
         if (!active) return;
-        setExploreAccess(profile.exploreEntitlements);
+        setExploreAccess(profile?.exploreEntitlements);
         restrictExpiredAccess(profile);
         if (initializedDefaultsKey.current !== defaultsContextKey) {
           const defaults = getExploreEntryDefaults(profile);
@@ -258,7 +262,7 @@ export function MatrixExplorePage({
         }
       });
     return () => { active = false; };
-  }, [defaultsContextKey, isExplore, isLockedAlgorithm, isTianyan, taipeiDay]);
+  }, [defaultsContextKey, hasMemberSession, isExplore, isLockedAlgorithm, isTianyan, sessionSettled, taipeiDay]);
 
   const visibleResults = useMemo(() => {
     if (isLockedAlgorithm) {

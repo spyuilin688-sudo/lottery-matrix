@@ -3,7 +3,7 @@ import type { NumberBallLottery } from './NumberBall';
 import { MatrixApiError } from './matrix-api-client';
 import { getSupabaseClient } from './lib/supabase';
 import { readThroughCache, stableCacheKey } from './read-cache';
-import { getAlgorithmCacheScope, readAlgorithmCacheScope } from './auth/algorithm-cache-scope';
+import { getAlgorithmCacheScope, isGuestAlgorithmCacheSession, readAlgorithmCacheScope } from './auth/algorithm-cache-scope';
 import { getMatrixDataRevision, invalidateMatrixData } from './matrix-data-revision';
 import { lotteryReadCacheTtlMs } from './lottery-cache-policy';
 
@@ -639,7 +639,13 @@ async function cachedMatrixResultRpc<T extends { lottery: NumberBallLottery; ana
   });
   // The list RPC already checks current entitlement on a miss; a cache hit
   // needs a lightweight, server-authoritative check before exposing old rows.
-  if (!loadedFromServer) await authorizeCachedMatrixList(name, request);
+  if (!loadedFromServer) {
+    const publicGuestList = isGuestAlgorithmCacheSession()
+      && (request as { exploreRange?: string }).exploreRange === '標準範圍'
+      && ((name === 'matrix_explore_list' && explorePeriods === 2)
+        || (name === 'matrix_tianheng_list' && explorePeriods === 3));
+    if (!publicGuestList) await authorizeCachedMatrixList(name, request);
+  }
   // Cache hits must also verify the session before reaching a caller.
   assertCurrentSession();
   assertCurrentData();

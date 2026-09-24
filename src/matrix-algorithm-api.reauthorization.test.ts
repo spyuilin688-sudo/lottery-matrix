@@ -47,6 +47,45 @@ beforeEach(() => {
 });
 
 describe('authoritative Matrix list cache authorization', () => {
+  it.each([
+    ['探索二期', () => fetchExploreList({ ...commonRequest, explorePeriods: 2 as const })],
+    ['天衡三期', () => fetchTianhengList({ ...commonRequest, explorePeriods: 3 as const })],
+  ])('does not recheck public %s cache hits for a verified guest', async (_name, fetchList) => {
+    boundary.getSession.mockResolvedValue({ data: { session: null }, error: null });
+    boundary.rpc.mockImplementation(async (name: string) => name === 'matrix_status_entitlements'
+      ? { data: null, error: { code: '42501', message: 'FORBIDDEN' } }
+      : { data: { lottery: '今彩539', total: 1, items: [], duplicateStats: [] }, error: null });
+
+    expect((await fetchList()).total).toBe(1);
+    expect((await fetchList()).total).toBe(1);
+    expect(boundary.rpc).toHaveBeenCalledTimes(1);
+  });
+
+  it('still checks a signed-in member on a cached public list', async () => {
+    let disabled = false;
+    boundary.rpc.mockImplementation(async (name: string) => name === 'matrix_status_entitlements'
+      ? disabled ? { data: null, error: { code: '42501', message: 'FORBIDDEN' } } : { data: access(), error: null }
+      : { data: { lottery: '今彩539', total: 1, items: [], duplicateStats: [] }, error: null });
+    const request = { ...commonRequest, explorePeriods: 2 as const };
+    await fetchExploreList(request);
+    disabled = true;
+
+    await expect(fetchExploreList(request)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(boundary.rpc.mock.calls.map(([name]) => name)).toEqual(['matrix_explore_list', 'matrix_status_entitlements']);
+  });
+
+  it('does not treat a guest full-range list as public, even at two periods', async () => {
+    boundary.getSession.mockResolvedValue({ data: { session: null }, error: null });
+    boundary.rpc.mockImplementation(async (name: string) => name === 'matrix_status_entitlements'
+      ? { data: null, error: { code: '42501', message: 'FORBIDDEN' } }
+      : { data: { lottery: '今彩539', total: 1, items: [], duplicateStats: [] }, error: null });
+    const request = { ...commonRequest, explorePeriods: 2 as const, exploreRange: '完整範圍' as const };
+    await fetchExploreList(request);
+
+    await expect(fetchExploreList(request)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(boundary.rpc.mock.calls.map(([name]) => name)).toEqual(['matrix_explore_list', 'matrix_status_entitlements']);
+  });
+
   const cases = [
     ['探索', () => fetchExploreList({ ...commonRequest, explorePeriods: 13 as const })],
     ['天衡', () => fetchTianhengList({ ...commonRequest, explorePeriods: 13 as const })],

@@ -27,6 +27,10 @@ export function getAlgorithmCacheScope() {
   return generation;
 }
 
+export function isGuestAlgorithmCacheSession() {
+  return identity === null;
+}
+
 export function subscribeAlgorithmCacheScope(listener: () => void, options: { notifyOnInitialize?: boolean } = {}) {
   listeners.add(listener);
   if (options.notifyOnInitialize) initializationListeners.add(listener);

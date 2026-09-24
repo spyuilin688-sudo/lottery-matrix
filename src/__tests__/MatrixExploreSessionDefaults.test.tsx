@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { render } from '../../test/render-with-dialog';
 import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
+import { publishMemberSessionReady, resetMemberSessionStoreForTests } from '../auth/member-session-store';
 import { MatrixExplorePage } from '../features/MatrixExplorePage';
 
 const sdk = vi.hoisted(() => ({ profile: vi.fn() }));
@@ -61,8 +62,12 @@ const fullAccessProfile = {
   },
 };
 
+const session = { user: { id: 'member' }, access_token: 'member-session' };
+
 beforeEach(() => {
   updateAlgorithmCacheSession(null);
+  resetMemberSessionStoreForTests();
+  publishMemberSessionReady(null);
   sdk.profile.mockReset()
     .mockResolvedValueOnce(guestProfile)
     .mockResolvedValue(fullAccessProfile);
@@ -86,6 +91,8 @@ test.each([
     lineUserId: 'line-member',
     exploreEntitlements: { canUseSeven: true, canUseThirteen: false, canUseFullRange: true },
   }).mockResolvedValue(guestProfile);
+  publishMemberSessionReady(session as never);
+  updateAlgorithmCacheSession(session as never);
   render(<MatrixExplorePage title="Matrix 探索" onNavigate={vi.fn()} />);
   await waitFor(() => expect(sdk.profile).toHaveBeenCalledTimes(1));
   await waitFor(() => expect(screen.getByText('七期').closest('button')?.getAttribute('data-selected')).toBe('true'));
@@ -103,6 +110,8 @@ test('a visible page refreshes entitlements at Taipei midnight without a foregro
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-09-22T15:59:59.900Z'));
   sdk.profile.mockReset().mockResolvedValueOnce(fullAccessProfile).mockResolvedValue(guestProfile);
+  publishMemberSessionReady(session as never);
+  updateAlgorithmCacheSession(session as never);
   render(<MatrixExplorePage title="Matrix 探索" onNavigate={vi.fn()} />);
   await waitFor(() => expect(sdk.profile).toHaveBeenCalledTimes(1));
   vi.setSystemTime(new Date('2026-09-22T16:00:00.100Z'));
@@ -115,22 +124,20 @@ test.each([
   ['Matrix 天衡', '三期', '進階天衡設定'],
   ['Matrix 天樞', '三期', '進階天樞設定'],
 ] as const)('%s 在會員 session 初始化後重新選取最高可用期數與範圍', async (title, initialPeriod, advancedLabel) => {
+  sdk.profile.mockReset().mockResolvedValue(fullAccessProfile);
   await act(async () => {
     render(<MatrixExplorePage title={title} onNavigate={vi.fn()} />);
   });
 
-  await waitFor(() => expect(sdk.profile).toHaveBeenCalledTimes(1));
+  expect(sdk.profile).not.toHaveBeenCalled();
   expect(screen.getByText(initialPeriod).closest('button')?.getAttribute('data-selected')).toBe('true');
 
-  const session = {
-    user: { id: 'member' },
-    access_token: 'member-session',
-  };
   await act(async () => {
+    publishMemberSessionReady(session as never);
     updateAlgorithmCacheSession(session as any);
   });
 
-  await waitFor(() => expect(sdk.profile).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(sdk.profile).toHaveBeenCalledTimes(1));
   expect(screen.getByText('十三期').closest('button')?.getAttribute('data-selected')).toBe('true');
 
   fireEvent.click(screen.getByRole('button', { name: advancedLabel }));
