@@ -10,6 +10,7 @@ export { MatrixCardPage } from "./features/MatrixCardPage";
 export { MatrixGuidePage } from "./features/MatrixGuidePage";
 export { MatrixNotebookPage } from "./features/NotebookPages";
 export { NotificationsPage } from "./features/LegacyNotificationsPage";
-export { ProfilePage, PaymentHistoryPage, ProPlansPage, ManualTransferPage } from "./features/MemberPages";
+export { ProfilePage, ProPlansPage, ManualTransferPage } from "./features/MemberPages";
+export { PaymentHistoryPage } from "./features/PaymentHistoryPage";
 export { MatrixStatusPage } from "./features/MatrixStatusPages";
 export { FeaturePageRouter } from "./features/router";

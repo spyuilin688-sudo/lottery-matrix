@@ -619,10 +619,10 @@ describe('Matrix Pro manual bank transfer', () => {
     }]);
     render(<PaymentHistoryPage onNavigate={vi.fn()} />);
 
-    expect(document.querySelector('.payment-history-screen')).toBeInTheDocument();
+    expect(document.querySelector('.payment-ledger-screen')).toBeInTheDocument();
     expect(await screen.findByText('季費方案')).toBeInTheDocument();
     expect(screen.getByText('NT$4,580')).toBeInTheDocument();
-    expect(screen.getByText('已確認')).toBeInTheDocument();
+    expect(screen.getByText('✓ 已確認')).toBeInTheDocument();
     expect(screen.getByText(/2026/)).toBeInTheDocument();
   });
 

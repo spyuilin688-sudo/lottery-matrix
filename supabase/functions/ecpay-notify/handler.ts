@@ -3,8 +3,18 @@ import { quotaEvidence, type QuotaEvidence } from '../_shared/ecpay-quota.ts';
 
 type NotificationConfig = { merchantId: string; hashKey: string; hashIv: string };
 type PaidOrder = { merchantId: string; merchantTradeNo: string; tradeNo: string; amount: number };
+type RecordedOrder = { merchant_id: string; amount: number; trade_no: string | null;
+  status: string; quota_provider_status: string | null };
+
+export function matchesRecordedPaidOrder(order: PaidOrder, saved: RecordedOrder | null): boolean {
+  return saved?.merchant_id === order.merchantId && saved.amount === order.amount
+    && saved.trade_no === order.tradeNo && saved.quota_provider_status === '1'
+    && (saved.status === 'confirmed' || saved.status === 'refund_required');
+}
+
 type Dependencies = {
   config: NotificationConfig;
+  alreadyRecorded?(order: PaidOrder): Promise<boolean>;
   verifyPaid(order: PaidOrder): Promise<QuotaEvidence | false>;
   recordPaid(evidence: QuotaEvidence): Promise<unknown>;
   recordQuota?(evidence: QuotaEvidence): Promise<unknown>;
@@ -62,6 +72,7 @@ export function createEcpayNotifyHandler(dependencies: Dependencies) {
         await dependencies.recordQuota(quotaEvidence({ ...fields, TradeStatus: '0' }));
         return plain('1|OK',200);
       }
+      if (await dependencies.alreadyRecorded?.(order)) return plain('1|OK', 200);
       const verified = await dependencies.verifyPaid(order);
       if (!verified) return plain('RETRY', 503);
       // The paid evidence and membership grant share one database transaction.

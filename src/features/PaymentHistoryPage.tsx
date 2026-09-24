@@ -41,7 +41,7 @@ export function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
       content = <p role="status">{payments.status === "checking" ? "登入狀態確認中…" : "付款紀錄載入中…"}</p>;
       break;
     case "ready":
-      content = payments.history.length === 0 ? <p>目前沒有付款紀錄。</p> : (
+      content = payments.history.length === 0 ? <p>目前沒有付款紀錄。</p> : (<>
         <div className="payment-ledger-list">
           {payments.history.map((item) => {
             const statusLabel = paymentStatusLabels[item.status];
@@ -55,7 +55,10 @@ export function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
             );
           })}
         </div>
-      );
+        {payments.history.some((item) => item.status === 'pending' && item.accountLastFive === null)
+          && <button type="button" className="payment-ledger-refresh" disabled={payments.refreshing}
+            onClick={payments.refresh}>更新付款紀錄</button>}
+      </>);
       break;
   }
 

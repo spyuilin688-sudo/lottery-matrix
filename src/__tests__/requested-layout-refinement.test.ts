@@ -260,40 +260,39 @@ describe("requested responsive layout refinement", () => {
     expect(renewalCard.boxShadow).toBe("none");
   });
 
-  it("compacts payment history without changing its two-column information order", () => {
-    const style = mountStyles(readCss("src/feature-pages.css"));
+  it("keeps the active payment ledger in two columns with a touch-sized refresh control", () => {
+    const style = mountStyles(readCss("src/features/payment-history.css"));
     style.dataset.layoutContract = "payment-history-density";
     document.body.innerHTML = `
-      <main class="payment-history-screen">
+      <main class="payment-ledger-screen">
         <section class="panel detail-card">
-          <h2>付款紀錄</h2>
-          <div class="payment-history-list">
-            <article class="payment-history-item">
-              <strong>月費方案</strong><span>NT$1,880</span>
-              <time>2026/8/30 上午6:51:44</time><b>已確認</b>
+          <div class="payment-ledger-list">
+            <article class="payment-ledger-row">
+              <strong>月費方案</strong><span class="payment-ledger-amount">NT$1,880</span>
+              <time>2026/8/30 上午6:51:44</time><b class="payment-ledger-status">已確認</b>
             </article>
           </div>
+          <button class="payment-ledger-refresh">更新付款紀錄</button>
         </section>
       </main>`;
 
-    const card = getComputedStyle(document.querySelector(".payment-history-screen .detail-card")!);
-    const heading = getComputedStyle(document.querySelector(".payment-history-screen .detail-card h2")!);
-    const item = getComputedStyle(document.querySelector(".payment-history-item")!);
-    const name = getComputedStyle(document.querySelector(".payment-history-item strong")!);
-    const amount = getComputedStyle(document.querySelector(".payment-history-item > span")!);
-    const date = getComputedStyle(document.querySelector(".payment-history-item time")!);
-    const status = getComputedStyle(document.querySelector(".payment-history-item b")!);
+    const card = getComputedStyle(document.querySelector(".payment-ledger-screen .detail-card")!);
+    const item = getComputedStyle(document.querySelector(".payment-ledger-row")!);
+    const name = getComputedStyle(document.querySelector(".payment-ledger-row strong")!);
+    const amount = getComputedStyle(document.querySelector(".payment-ledger-row > span")!);
+    const date = getComputedStyle(document.querySelector(".payment-ledger-row time")!);
+    const status = getComputedStyle(document.querySelector(".payment-ledger-row b")!);
+    const refresh = getComputedStyle(document.querySelector(".payment-ledger-refresh")!);
 
     expect(card.padding).toBe("10px");
-    expect(heading.marginBottom).toBe("6px");
-    expect(heading.fontSize).toBe("15px");
     expect(item.gridTemplateColumns).toBe("minmax(0, 1fr) auto");
-    expect(item.padding).toBe("7px 9px");
-    expect(item.rowGap).toBe("2px");
-    expect(name.fontSize).toBe("13px");
-    expect(amount.fontSize).toBe("13px");
-    expect(date.fontSize).toBe("11px");
-    expect(status.fontSize).toBe("13px");
+    expect(item.padding).toBe("12px 8px");
+    expect(item.rowGap).toBe("3px");
+    expect(name.fontSize).toBe("15px");
+    expect(amount.fontSize).toBe("17px");
+    expect(date.fontSize).toBe("12px");
+    expect(status.fontSize).toBe("12px");
+    expect(refresh.minHeight).toBe("44px");
   });
 
   it("keeps notification bulk actions equal-width, fluid, and touch-sized", () => {
