@@ -590,8 +590,8 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
           }}>{saveBusy ? "儲存中…" : "重試儲存"}</button></div> : null}
           {notificationSettingsLoadUiState === "failed" ? <div className="notification-settings-load-error panel" role="alert"><span>通知設定載入失敗</span><button type="button" className="title-card-compact-action" aria-label="重新載入通知設定" onClick={() => { notificationSettingsLoadState.current = "loading"; setNotificationSettingsControlsBlocked(true); setNotificationSettingsLoadUiState("loading"); setNotificationSettingsReloadRevision((current) => current + 1); }}>重新載入</button></div> : null}
           <div className="notification-bulk-actions" role="group" aria-label="批次通知設定">
-            <button type="button" className="notification-bulk-enable primary-action branded-explore-action" disabled={notificationSettingsControlsBlocked} onClick={() => setAvailableNotifications(true)}><span>全部開啟</span></button>
-            <button type="button" className="notification-bulk-disable branded-explore-action" disabled={notificationSettingsControlsBlocked} onClick={() => setAvailableNotifications(false)}><span>全部關閉</span></button>
+            <button type="button" className="notification-bulk-enable primary-action" disabled={notificationSettingsControlsBlocked} onClick={() => setAvailableNotifications(true)}><span>全部開啟</span></button>
+            <button type="button" className="notification-bulk-disable" disabled={notificationSettingsControlsBlocked} onClick={() => setAvailableNotifications(false)}><span>全部關閉</span></button>
           </div>
           <div className="notification-list">
             <section className="notification-group" aria-label="一般通知">{PRIMARY_ROWS.map(renderRow)}</section>

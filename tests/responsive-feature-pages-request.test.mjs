@@ -78,7 +78,7 @@ test('通知頁使用 v2 緊密密度且右側動作固定欄對齊', () => {
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-list\s*\{[^}]*margin-inline:\s*0;/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-actions\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*56px 38px;[^}]*gap:\s*8px/s);
   assert.doesNotMatch(responsiveCss, /\.notification-row\s*\{[^}]*grid-template-columns:/s);
-  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-icon,[\s\S]*?width:\s*36px;[^}]*height:\s*36px/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-icon,[\s\S]*?width:\s*34px;[^}]*height:\s*34px/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-settings-toggle\s*\{[^}]*width:\s*56px;[^}]*height:\s*20px/s);
   assert.doesNotMatch(responsiveCss, /@media \(max-width: 360px\)[\s\S]*?notification-heading/);
   assert.match(css, /\.notification-row h2\s*\{[^}]*font-size:\s*14px;[^}]*line-height:\s*18px;/s);

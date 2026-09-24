@@ -86,7 +86,7 @@ test("通知設定面板使用確認的展開收合動態與 reduced-motion 降�
   assert.equal(dom.window.getComputedStyle(panel).gridTemplateRows, "minmax(0, 1fr)");
   assert.match(css, /grid-template-rows 220ms cubic-bezier\(\.2, \.8, \.2, 1\)/);
   assert.match(css, /opacity 140ms ease-out 40ms/);
-  assert.match(css, /transform 220ms cubic-bezier\(\.2, \.8, \.2, 1\)/);
+  assert.doesNotMatch(css, /notification-inline-settings(?:\[data-expanded="true"\])?\s*\{[^}]*transform/s);
   assert.match(css, /notification-settings-toggle svg[\s\S]*transition: transform 160ms cubic-bezier\(\.2, \.8, \.2, 1\)/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*opacity 80ms linear/);
 });
@@ -122,8 +122,8 @@ test("所有通知設定內容使用一致的緊湊寬度與置中排列", () =>
   assert.equal(dom.window.getComputedStyle(optionRow).gap, "4px");
   assert.equal(dom.window.getComputedStyle(choice).height, "auto");
   assert.equal(dom.window.getComputedStyle(choice).minHeight, "26px");
-  assert.equal(dom.window.getComputedStyle(choice).paddingTop, "6px");
-  assert.equal(dom.window.getComputedStyle(choice).paddingRight, "8px");
+  // jsdom does not resolve min() in padding; browser coverage checks the actual box.
+  assert.match(css, /notification-inline-option-row \.notification-choice\s*\{[^}]*padding:\s*6px min\(8px, 1\.5%\);/);
   assert.equal(dom.window.getComputedStyle(choice).gap, "4px");
   assert.equal(dom.window.getComputedStyle(choice).marginInline, "0px");
   assert.equal(dom.window.getComputedStyle(choice).fontSize, "11px");
