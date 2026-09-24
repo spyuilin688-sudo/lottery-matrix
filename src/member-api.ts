@@ -196,10 +196,11 @@ export async function saveNotificationSettings(settings: MemberNotificationSetti
   return normalizeMemberNotificationSettings(data);
 }
 
-export function submitTransferRequest(planCode: ManualTransferPlanCode, accountLastFive: string) {
+export function submitTransferRequest(planCode: ManualTransferPlanCode, accountLastFive: string, requestId?: string) {
   return memberRpc<MemberTransferRequest>('member_transfer_request_submit', {
     p_plan_code: planCode,
     p_account_last_five: accountLastFive,
+    ...(requestId ? { p_request_id: requestId } : {}),
   });
 }
 

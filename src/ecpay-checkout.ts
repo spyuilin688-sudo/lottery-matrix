@@ -14,7 +14,7 @@ const fieldNames = new Set([
 ]);
 
 /** Leave the member's browser in the same tab, as required by AioCheckOut/V5. */
-export async function beginEcpayCheckout(planCode: ManualTransferPlanCode): Promise<CheckoutResult> {
+export async function beginEcpayCheckout(planCode: ManualTransferPlanCode, options: { isCurrent?: () => boolean } = {}): Promise<CheckoutResult> {
   const scope = getAlgorithmCacheScope();
   const { data, error } = await getSupabaseClient().functions.invoke('ecpay-checkout', {
     body: { planCode, supportsPaymentInfo: true },
@@ -24,7 +24,11 @@ export async function beginEcpayCheckout(planCode: ManualTransferPlanCode): Prom
     const context = 'context' in error ? error.context : null;
     if (context instanceof Response && context.status === 409) {
       const payload = await context.json().catch(() => null);
-      if (payload?.error === 'MANUAL_TRANSFER_MODE') return 'manual';
+      if (scope !== getAlgorithmCacheScope()) throw new Error('MEMBER_SESSION_CHANGED');
+      if (payload?.error === 'MANUAL_TRANSFER_MODE') {
+        if (options.isCurrent?.() === false) throw new Error('CHECKOUT_PAGE_LEFT');
+        return 'manual';
+      }
     }
     throw new Error('ECPAY_CHECKOUT_FAILED');
   }
@@ -35,6 +39,7 @@ export async function beginEcpayCheckout(planCode: ManualTransferPlanCode): Prom
     || Object.keys(data.fields).some((key) => !fieldNames.has(key))) {
     throw new Error('ECPAY_CHECKOUT_INVALID');
   }
+  if (options.isCurrent?.() === false) throw new Error('CHECKOUT_PAGE_LEFT');
   const form = document.createElement('form');
   form.action = data.action;
   form.method = 'post';

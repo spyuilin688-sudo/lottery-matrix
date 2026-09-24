@@ -248,3 +248,98 @@ test('manual transfer paid review after upgrading to year keeps year and its exp
     assert.deepEqual(new Set(statuses.map(row => row.status)), new Set(['refund_required','confirmed']));
   } finally { await db.close(); }
 });
+
+test('retrying a reviewed manual request ID returns its final state without creating another request or payment', async () => {
+  for (const decision of ['confirmed', 'rejected']) {
+    const db = await setup();
+    try {
+      const requestId = '40000000-0000-4000-8000-000000000001';
+      const actorId = '30000000-0000-4000-8000-000000000003';
+      await db.exec(`set role authenticated; set request.jwt.claim.sub = '${userId}'`);
+      const submit = () => db.query('select public.member_transfer_request_submit($1,$2,$3) as result',
+        ['month', '12345', requestId]);
+      const { rows: [{ result: created }] } = await submit();
+      assert.equal(created.id, requestId);
+      assert.equal(created.status, 'pending');
+      await owner(db);
+      await db.query('insert into public.admin_accounts(id) values ($1)', [actorId]);
+      await service(db);
+      await db.query('select public.admin_review_transfer_request($1,$2,now(),$3,$4)',
+        [requestId, decision, actorId, '客服']);
+      const { rows: [prior] } = await db.query('select plan_expires_at from public.members where id=$1', [memberId]);
+      await owner(db);
+      await db.exec('update private.purchase_settings set visible=false');
+      await db.query('update public.plans set price=9999 where id=$1', [planId]);
+      await db.query("update public.members set status='停用' where id=$1", [memberId]);
+      await db.exec(`set role authenticated; set request.jwt.claim.sub = '${userId}'`);
+      await assert.rejects(submit(), /FORBIDDEN/);
+      await owner(db);
+      await db.query("update public.members set status='啟用' where id=$1", [memberId]);
+      await db.exec(`set role authenticated; set request.jwt.claim.sub = '${userId}'`);
+      const { rows: [{ result: retried }] } = await submit();
+      assert.deepEqual(retried, { ...created, status: decision });
+      await owner(db);
+      const { rows: [totals] } = await db.query(`select
+        (select count(*)::integer from public.transfer_requests) as requests,
+        (select count(*)::integer from public.payments) as payments,
+        (select plan_expires_at from public.members where id=$1) as expires_at`, [memberId]);
+      assert.equal(totals.requests, 1);
+      assert.equal(totals.payments, decision === 'confirmed' ? 1 : 0);
+      assert.equal(new Date(totals.expires_at).getTime(), new Date(prior.plan_expires_at).getTime());
+    } finally { await db.close(); }
+  }
+});
+
+test('manual request ID reuse with different inputs or another member conflicts without exposing the original', async () => {
+  const db = await setup();
+  try {
+    const requestId = '40000000-0000-4000-8000-000000000002';
+    const submit = (plan, lastFive) => db.query('select public.member_transfer_request_submit($1,$2,$3)',
+      [plan, lastFive, requestId]);
+    await db.exec(`set role authenticated; set request.jwt.claim.sub = '${userId}'`);
+    await submit('month', '12345');
+    await assert.rejects(submit('month', '54321'), /TRANSFER_REQUEST_CONFLICT/);
+    await assert.rejects(submit('quarter', '12345'), /TRANSFER_REQUEST_CONFLICT/);
+    const otherUserId = '00000000-0000-4000-8000-000000000002';
+    const otherMemberId = '10000000-0000-4000-8000-000000000002';
+    await owner(db);
+    await db.query(`insert into public.members(id,auth_user_id,status)
+      values ($1,$2,'啟用')`, [otherMemberId, otherUserId]);
+    await db.exec(`set role authenticated; set request.jwt.claim.sub = '${otherUserId}'`);
+    await assert.rejects(submit('month', '12345'), /TRANSFER_REQUEST_CONFLICT/);
+    await owner(db);
+    const { rows: [totals] } = await db.query(`select
+      (select count(*)::integer from public.transfer_requests) as requests,
+      (select count(*)::integer from public.payments) as payments`);
+    assert.deepEqual(totals, { requests: 1, payments: 0 });
+  } finally { await db.close(); }
+});
+
+test('manual submit overload requires a UUID and restricts execution to authenticated users', async () => {
+  const db = await setup();
+  try {
+    const requestId = '40000000-0000-4000-8000-000000000003';
+    await db.exec('set role anon');
+    await assert.rejects(db.query('select public.member_transfer_request_submit($1,$2,$3)',
+      ['month', '12345', requestId]), /permission denied/);
+    await db.exec(`set role authenticated; set request.jwt.claim.sub = '${userId}'`);
+    await assert.rejects(db.query('select public.member_transfer_request_submit($1,$2,$3)',
+      ['month', '12345', null]), /REQUEST_ID_REQUIRED/);
+    await assert.rejects(db.query('select public.member_transfer_request_submit($1,$2,$3)',
+      ['month', '12345', 'not-a-uuid']), /invalid input syntax for type uuid/);
+    await owner(db);
+    const { rows: [signature] } = await db.query(`select pronargs, pronargdefaults, proargnames
+      from pg_catalog.pg_proc
+      where oid='public.member_transfer_request_submit(text,text,uuid)'::regprocedure`);
+    assert.equal(signature.pronargs, 3);
+    assert.equal(signature.pronargdefaults, 0);
+    assert.deepEqual(signature.proargnames, ['p_plan_code','p_account_last_five','p_request_id']);
+    await db.exec(`set role authenticated; set request.jwt.claim.sub = '${userId}'`);
+    const { rows: [{ result: legacy }] } = await db.query(
+      'select public.member_transfer_request_submit($1,$2) as result', ['month', '12345']);
+    assert.ok(legacy.id);
+    await owner(db);
+    const { rows: [total] } = await db.query('select count(*)::integer as count from public.transfer_requests');
+    assert.equal(total.count, 1);
+  } finally { await db.close(); }
+});

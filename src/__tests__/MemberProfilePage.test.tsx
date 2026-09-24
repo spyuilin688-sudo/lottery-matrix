@@ -108,7 +108,7 @@ beforeEach(() => {
   supabase.getClient.mockClear();
   supabase.auth.onAuthStateChange.mockClear();
   supabase.auth.getSession.mockReset().mockResolvedValue({
-    data: { session: { access_token: "member-session", user: { user_metadata: { name: "LINE 會員" } } } },
+    data: { session: { access_token: "member-session", user: { id: "member-user", user_metadata: { name: "LINE 會員" } } } },
     error: null,
   });
   memberApi.fetchMemberProfile.mockReset().mockResolvedValue({
@@ -956,7 +956,7 @@ it("有效年費會員只能續購同級，月／季方案不會進入付款", a
   expect(screen.getByText("年費方案", { selector: ".renewal-card dd" })).toBeInTheDocument();
   expect(pay).toBeEnabled();
   fireEvent.click(pay);
-  await waitFor(() => expect(checkout.beginEcpayCheckout).toHaveBeenCalledWith("year"));
+  await waitFor(() => expect(checkout.beginEcpayCheckout).toHaveBeenCalledWith("year", { isCurrent: expect.any(Function) }));
   expect(onNavigate).toHaveBeenCalledWith("manual-transfer");
 });
 

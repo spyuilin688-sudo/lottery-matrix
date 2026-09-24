@@ -251,6 +251,14 @@ describe('member Supabase RPC', () => {
     ]);
   });
 
+  it('passes the stable request UUID to the three-argument transfer RPC', async () => {
+    const requestId = '95c6706c-0a3c-43ca-bec2-c8f098c25bc7';
+    await submitTransferRequest('month', '12345', requestId);
+    expect(supabase.rpc).toHaveBeenCalledWith('member_transfer_request_submit', {
+      p_plan_code: 'month', p_account_last_five: '12345', p_request_id: requestId,
+    });
+  });
+
   it('loads, saves, and disables only the authenticated member push subscription', async () => {
     const subscription = {
       endpoint: 'https://push.test/device',

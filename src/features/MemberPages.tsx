@@ -3,7 +3,7 @@ import { CheckIcon, ChevronRightIcon } from "@radix-ui/react-icons";
 import type { Session } from "@supabase/supabase-js";
 import { isActivationRedemptionError, redeemActivationCode, type ActivationRedemptionErrorCode } from "../activation/redeemActivationCode";
 import { bootstrapMember, fetchMemberProfile, fetchMemberReferralSummary, fetchPendingTransferRequest, submitMemberReferralCode, submitTransferRequest, type MemberProfileResponse, type MemberReferralSummary, type MemberTransferRequest, type ManualTransferPlanCode } from "../member-api";
-import { readManualTransferPlan, saveManualTransferPlan } from "../manual-transfer-selection";
+import { clearManualTransferAttempt, readManualTransferAttempt, readManualTransferPlan, reserveManualTransferAttempt, saveManualTransferPlan } from "../manual-transfer-selection";
 import { prepareLineLoginUrl, reconcilePendingLineLogoutPresence, shouldUseDirectLineBrowserLink, signInWithLine, signOutFromMatrix } from "../auth/line-auth";
 import { EcpayReviewLogin } from "../auth/EcpayReviewLogin";
 import { usePermissionSettings } from "../permission-settings";
@@ -652,10 +652,28 @@ function purchaseBlockReason(profile: MemberProfileResponse | null, error: boole
   return null;
 }
 
+let checkoutPending = false;
+const checkoutListeners = new Set<() => void>();
+const subscribeCheckout = (listener: () => void) => {
+  checkoutListeners.add(listener);
+  return () => { checkoutListeners.delete(listener); };
+};
+const getCheckoutPending = () => checkoutPending;
+const setCheckoutPending = (value: boolean) => {
+  checkoutPending = value;
+  checkoutListeners.forEach((listener) => listener());
+};
+
 export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
   const appDialog = useAppDialog();
   const paymentInFlight = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
   const [paymentStarting, setPaymentStarting] = useState(false);
+  const checkoutBusy = useSyncExternalStore(subscribeCheckout, getCheckoutPending, getCheckoutPending);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const { profile: renewalProfile, error: renewalProfileError } = useSubscriptionProfile();
   const plans = [
@@ -716,17 +734,19 @@ export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
     return memberExpiryInTaipei(new Date(renewedAt).toISOString())?.date ?? "暫時無法計算";
   }, [selected.days, renewalProfile, renewalProfileError, restriction]);
   const handlePayment = async () => {
-    if (paymentInFlight.current || restrictionRef.current) return;
+    if (paymentInFlight.current || checkoutPending || restrictionRef.current) return;
     paymentInFlight.current = true;
+    setCheckoutPending(true);
     const memberScope = getAlgorithmCacheScope();
+    const isCurrent = () => mounted.current && memberScope === getAlgorithmCacheScope();
     let submitted = false;
     try {
       if (!await appDialog.confirm({ title: `確認以${selected.name}進行付款？`, confirmLabel: "確認付款" })) return;
-      if (memberScope !== getAlgorithmCacheScope() || restrictionRef.current || selectedCodeRef.current !== selected.code) return;
+      if (!isCurrent() || restrictionRef.current || selectedCodeRef.current !== selected.code) return;
       setPaymentStarting(true);
       setPaymentError(null);
-      const result = await beginEcpayCheckout(selected.code);
-      if (memberScope !== getAlgorithmCacheScope()) return;
+      const result = await beginEcpayCheckout(selected.code, { isCurrent });
+      if (!isCurrent()) return;
       if (result === 'manual') {
         saveManualTransferPlan(selected.code);
         onNavigate("manual-transfer");
@@ -734,13 +754,14 @@ export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
         submitted = true;
       }
     } catch {
-      if (memberScope === getAlgorithmCacheScope()) {
+      if (isCurrent()) {
         setPaymentError('無法開啟付款頁面，請稍後再試。');
       }
     } finally {
+      setCheckoutPending(false);
       if (!submitted) {
         paymentInFlight.current = false;
-        setPaymentStarting(false);
+        if (mounted.current) setPaymentStarting(false);
       }
     }
   };
@@ -778,7 +799,7 @@ export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
             <strong data-active={false}>目前狀態：關閉</strong>
           </div>
         </section>
-        <button type="button" className="confirm-payment primary-action branded-explore-action" onClick={handlePayment} disabled={paymentStarting || Boolean(restriction)} aria-describedby={restriction ? "plan-purchase-restriction" : undefined}><span>{paymentStarting ? "正在開啟付款頁面…" : "確定付款"}</span></button>
+        <button type="button" className="confirm-payment primary-action branded-explore-action" onClick={handlePayment} disabled={checkoutBusy || paymentStarting || Boolean(restriction)} aria-describedby={restriction ? "plan-purchase-restriction" : undefined}><span>{checkoutBusy || paymentStarting ? "正在開啟付款頁面…" : "確定付款"}</span></button>
         {restriction && <p className="payment-note" id="plan-purchase-restriction" role="status">{restriction}</p>}
         {paymentError && <p className="payment-note" role="alert">{paymentError}</p>}
         {!restriction && <p className="payment-note">按下「確定付款」後，將進入目前提供的付款流程。</p>}
@@ -795,19 +816,27 @@ export const manualTransferPlans: Record<ManualTransferPlanCode, { name: string;
 
 export function ManualTransferPage({ onNavigate }: { onNavigate: Navigate }) {
   const scope = useMemberSessionScope();
-  const planCode = readManualTransferPlan();
-  return <ManualTransferForm key={`${scope}:${planCode}`} scope={scope} planCode={planCode} onNavigate={onNavigate} />;
+  const memberSession = useMemberSessionSnapshot();
+  const initialAttempt = readManualTransferAttempt();
+  const planCode = initialAttempt?.plan ?? readManualTransferPlan();
+  if (memberSession.status === 'checking' && !planCode) {
+    return <ProfileDetailShell title="銀行轉帳付款" onNavigate={onNavigate} className="manual-transfer-screen"><p role="status">登入狀態確認中…</p></ProfileDetailShell>;
+  }
+  return <ManualTransferForm key={`${scope}:${planCode}`} scope={scope} planCode={planCode} initialAttempt={initialAttempt} onNavigate={onNavigate} />;
 }
 
-function ManualTransferForm({ onNavigate, scope, planCode }: { onNavigate: Navigate; scope: number; planCode: ManualTransferPlanCode | null }) {
+function ManualTransferForm({ onNavigate, scope, planCode, initialAttempt }: { onNavigate: Navigate; scope: number; planCode: ManualTransferPlanCode | null; initialAttempt: ReturnType<typeof readManualTransferAttempt> }) {
   const plan = planCode ? manualTransferPlans[planCode] : null;
   const { profile, error: profileError } = useSubscriptionProfile();
-  const restriction = planCode ? purchaseBlockReason(profile, profileError, planCode) : null;
-  const [lastFive, setLastFive] = useState("");
+  const [attempt, setAttempt] = useState(initialAttempt);
+  const [serverRestriction, setServerRestriction] = useState<string | null>(null);
+  const restriction = serverRestriction ?? (planCode && !attempt ? purchaseBlockReason(profile, profileError, planCode) : null);
+  const [lastFive, setLastFive] = useState(initialAttempt?.lastFive ?? "");
   const [pending, setPending] = useState<MemberTransferRequest | null>(null);
   const [loading, setLoading] = useState(Boolean(plan));
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialAttempt ? "尚未確認提交結果，請重試確認。" : null);
+  const [statusUnresolved, setStatusUnresolved] = useState(false);
   const requestRevision = useRef(0);
   const submitInFlight = useRef(false);
 
@@ -815,41 +844,104 @@ function ManualTransferForm({ onNavigate, scope, planCode }: { onNavigate: Navig
     if (!plan) onNavigate("pro-plans");
   }, [onNavigate, plan]);
 
-  useEffect(() => {
+  const reloadPending = () => {
     if (!plan) return;
     const revision = ++requestRevision.current;
     const isCurrent = () => revision === requestRevision.current && scope === getAlgorithmCacheScope();
+    setLoading(true);
+    setError(null);
     void fetchPendingTransferRequest()
-      .then((value) => { if (isCurrent()) setPending(value); })
-      .catch(() => { if (isCurrent()) setError("無法讀取轉帳申請，請稍後再試。"); })
+      .then((value) => {
+        if (isCurrent()) {
+          setPending(value);
+          setStatusUnresolved(false);
+          const unresolved = readManualTransferAttempt();
+          if (value && unresolved?.requestId === value.id) {
+            clearManualTransferAttempt(value.id);
+            setAttempt(null);
+          }
+          if (!value && unresolved) setError("尚未確認提交結果，請重試確認。");
+        }
+      })
+      .catch(() => {
+        if (isCurrent()) {
+          setStatusUnresolved(true);
+          setError("無法讀取轉帳申請，請稍後再試。");
+        }
+      })
       .finally(() => { if (isCurrent()) setLoading(false); });
+  };
+
+  useEffect(() => {
+    reloadPending();
     return () => { requestRevision.current += 1; };
   }, [plan, scope]);
 
   if (!plan || !planCode) return null;
 
   const submit = async () => {
-    if (lastFive.length !== 5 || loading || submitInFlight.current || pending || restriction || scope !== getAlgorithmCacheScope()) return;
+    if (lastFive.length !== 5 || loading || statusUnresolved || submitInFlight.current || pending || restriction || scope !== getAlgorithmCacheScope()) return;
     const revision = ++requestRevision.current;
     const isCurrent = () => revision === requestRevision.current && scope === getAlgorithmCacheScope();
     submitInFlight.current = true;
     setSubmitting(true);
     setError(null);
+    let requestStarted = false;
+    let submittedRequestId: string | null = null;
     try {
-      const value = await submitTransferRequest(planCode, lastFive);
-      if (isCurrent()) setPending(value);
+      const requestId = reserveManualTransferAttempt(planCode, lastFive);
+      const captured = readManualTransferAttempt();
+      if (!captured || captured.requestId !== requestId) throw new Error('INVALID_TRANSFER_ATTEMPT');
+      submittedRequestId = requestId;
+      setAttempt(captured);
+      requestStarted = true;
+      const value = await submitTransferRequest(captured.plan, captured.lastFive, requestId);
+      if (!value || typeof value !== 'object' || value.id !== requestId || !['pending', 'confirmed', 'rejected'].includes(value.status)) {
+        throw new Error('INVALID_TRANSFER_RESPONSE');
+      }
+      if (isCurrent()) {
+        clearManualTransferAttempt(requestId);
+        setAttempt(null);
+        setPending(value);
+      }
     } catch (cause) {
       if (!isCurrent()) return;
-      const message = String((cause as { message?: unknown })?.message ?? cause);
-      if (message.includes("PENDING_TRANSFER_EXISTS")) {
-        try {
-          const value = await fetchPendingTransferRequest();
-          if (isCurrent()) setPending(value);
-        } catch {
-          if (isCurrent()) setError("無法讀取轉帳申請，請稍後再試。");
+      if (!requestStarted) {
+        setError("無法儲存申請狀態，請稍後再試。");
+        return;
+      }
+      const responseError = cause && typeof cause === 'object' ? cause as { code?: unknown; message?: unknown } : null;
+      const rejected = responseError?.message;
+      const rejectionCode = responseError?.code;
+      const rejectedText = rejectionCode === 'P0001' && rejected === "PLAN_DOWNGRADE_BLOCKED"
+        ? "目前方案無法購買較低方案，請重新選擇同級或升級方案。"
+        : rejectionCode === 'P0001' && rejected === "LIFETIME_PURCHASE_BLOCKED"
+          ? "永久會員無需再購買月／季／年方案。"
+          : rejectionCode === '42501' && rejected === "PURCHASE_DISABLED"
+            ? "目前無法購買方案，請稍後重新開啟方案頁。"
+            : null;
+      if (rejectedText) {
+        if (submittedRequestId) clearManualTransferAttempt(submittedRequestId);
+        setAttempt(null);
+        setServerRestriction(rejectedText);
+        return;
+      }
+      try {
+        const value = await fetchPendingTransferRequest();
+        if (isCurrent()) {
+          setPending(value);
+          setStatusUnresolved(false);
+          if (value && value.id === submittedRequestId) {
+            clearManualTransferAttempt(value.id);
+            setAttempt(null);
+          }
+          if (!value) setError("尚未確認提交結果，請重試確認。");
         }
-      } else {
-        setError("提交失敗，請稍後再試。 ");
+      } catch {
+        if (isCurrent()) {
+          setStatusUnresolved(true);
+          setError("無法讀取轉帳申請，請稍後再試。");
+        }
       }
     } finally {
       if (isCurrent()) {
@@ -887,13 +979,14 @@ function ManualTransferForm({ onNavigate, scope, planCode }: { onNavigate: Navig
           maxLength={5}
           value={lastFive}
           onChange={(event) => setLastFive(event.target.value.replace(/\D/g, "").slice(0, 5))}
-          disabled={Boolean(pending) || Boolean(restriction)}
+          disabled={Boolean(pending) || Boolean(restriction) || Boolean(attempt) || submitting}
         />
-        {restriction ? <p role="status">{restriction}</p> : null}
+        {restriction ? <p role={serverRestriction ? "alert" : "status"}>{restriction}</p> : null}
         {loading ? <p role="status">申請狀態載入中</p> : null}
-        {pending ? <p className="manual-transfer-pending"><strong>{pending.status === "pending" ? "待確認" : transferStatusLabels[pending.status]}</strong><span>已有待確認申請</span></p> : null}
+        {pending ? <p className="manual-transfer-pending"><strong>{transferStatusLabels[pending.status]}</strong><span>{pending.status === "pending" ? "已有待確認申請" : pending.status === "confirmed" ? "申請已確認" : "申請已退回"}</span></p> : null}
         {error ? <p role="alert">{error}</p> : null}
-        <button type="button" className="confirm-payment manual-transfer-submit" disabled={loading || submitting || Boolean(pending) || Boolean(restriction) || lastFive.length !== 5} onClick={() => void submit()}>{submitting ? "提交中" : "提交"}</button>
+        {statusUnresolved ? <button type="button" className="primary-action branded-explore-action" disabled={loading || submitting} onClick={reloadPending}><span>重新載入申請狀態</span></button> : null}
+        <button type="button" className="confirm-payment manual-transfer-submit" disabled={loading || statusUnresolved || submitting || Boolean(pending) || Boolean(restriction) || lastFive.length !== 5} onClick={() => void submit()}>{submitting ? "確認中" : attempt ? "重新確認申請" : "提交"}</button>
       </section>
     </ProfileDetailShell>
   );

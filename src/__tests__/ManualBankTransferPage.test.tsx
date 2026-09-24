@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import '@testing-library/jest-dom/vitest';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const memberApi = vi.hoisted(() => ({
@@ -19,7 +19,10 @@ vi.mock('../member-api', async (importOriginal) => ({
   ...await importOriginal<typeof import('../member-api')>(),
   ...memberApi,
 }));
-vi.mock('../manual-transfer-selection', () => selection);
+vi.mock('../manual-transfer-selection', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../manual-transfer-selection')>(),
+  ...selection,
+}));
 vi.mock('../ecpay-checkout', () => ecpay);
 vi.mock('../dialog/AppDialog', () => ({
   useAppDialog: () => ({ confirm: vi.fn().mockResolvedValue(true), alert: vi.fn() }),
@@ -40,7 +43,11 @@ function deferred<T>() {
 
 const pendingTransfer = { id: 'pending-1', planName: '月費方案', amount: 2880,
   accountLastFive: '54321', submittedAt: '2026-08-30T08:00:00Z', status: 'pending' };
-const switchMember = (member: string) => updateAlgorithmCacheSession({ access_token: member, user: { id: member } } as Session);
+const switchMember = (member: string) => {
+  const session = { access_token: member, user: { id: member } } as Session;
+  updateAlgorithmCacheSession(session);
+  publishMemberSessionReady(session);
+};
 
 function authenticatePaymentHistory() {
   publishMemberSessionReady({ access_token: 'payment-member', user: { id: 'payment-member' } } as Session);
@@ -48,7 +55,8 @@ function authenticatePaymentHistory() {
 
 describe('Matrix Pro manual bank transfer', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+    window.sessionStorage.clear();
     switchMember('member-a');
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-09-07T00:00:00Z'));
@@ -59,10 +67,10 @@ describe('Matrix Pro manual bank transfer', () => {
     selection.readManualTransferPlan.mockReturnValue('month');
     memberApi.fetchPendingTransferRequest.mockResolvedValue(null);
     memberApi.fetchMemberPaymentHistory.mockResolvedValue([]);
-    memberApi.submitTransferRequest.mockResolvedValue({
-      id: 'transfer-1', planName: '月費方案', amount: 2880,
+    memberApi.submitTransferRequest.mockImplementation(async (_plan, _lastFive, requestId) => ({
+      id: requestId, planName: '月費方案', amount: 2880,
       accountLastFive: '12345', submittedAt: '2026-08-30T08:00:00Z', status: 'pending',
-    });
+    }));
     ecpay.beginEcpayCheckout.mockResolvedValue('submitted');
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -157,7 +165,7 @@ describe('Matrix Pro manual bank transfer', () => {
     expect(screen.queryByText(/自動續訂未開放/)).not.toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole('button', { name: '確定付款' })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: '確定付款' }));
-    await waitFor(() => expect(ecpay.beginEcpayCheckout).toHaveBeenCalledExactlyOnceWith('month'));
+    await waitFor(() => expect(ecpay.beginEcpayCheckout).toHaveBeenCalledExactlyOnceWith('month', { isCurrent: expect.any(Function) }));
     expect(selection.saveManualTransferPlan).not.toHaveBeenCalled();
     expect(onNavigate).not.toHaveBeenCalledWith('manual-transfer');
   });
@@ -181,6 +189,29 @@ describe('Matrix Pro manual bank transfer', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('無法開啟付款頁面，請稍後再試。');
     expect(screen.getByRole('button', { name: '確定付款' })).toBeEnabled();
     expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it('keeps one checkout in flight across leaving and re-entering the plans page', async () => {
+    const oldCheckout = deferred<'manual'>();
+    ecpay.beginEcpayCheckout.mockReturnValueOnce(oldCheckout.promise).mockResolvedValue('manual');
+    const oldNavigate = vi.fn();
+    const first = render(<ProPlansPage onNavigate={oldNavigate} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: '確定付款' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: '確定付款' }));
+    await waitFor(() => expect(ecpay.beginEcpayCheckout).toHaveBeenCalledTimes(1));
+    first.unmount();
+
+    const newNavigate = vi.fn();
+    render(<ProPlansPage onNavigate={newNavigate} />);
+    expect(screen.getByRole('button', { name: '正在開啟付款頁面…' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: '正在開啟付款頁面…' }));
+    expect(ecpay.beginEcpayCheckout).toHaveBeenCalledTimes(1);
+    await act(async () => oldCheckout.resolve('manual'));
+    expect(oldNavigate).not.toHaveBeenCalledWith('manual-transfer');
+    expect(selection.saveManualTransferPlan).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: '確定付款' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: '確定付款' }));
+    await waitFor(() => expect(ecpay.beginEcpayCheckout).toHaveBeenCalledTimes(2));
   });
 
   it.each([
@@ -220,7 +251,7 @@ describe('Matrix Pro manual bank transfer', () => {
     expect(screen.getByLabelText('帳號末五碼')).toHaveValue('12345');
     fireEvent.click(screen.getByRole('button', { name: '提交' }));
 
-    await waitFor(() => expect(memberApi.submitTransferRequest).toHaveBeenCalledWith('month', '12345'));
+    await waitFor(() => expect(memberApi.submitTransferRequest).toHaveBeenCalledWith('month', '12345', expect.any(String)));
     expect(await screen.findByText('待確認')).toBeInTheDocument();
   });
 
@@ -316,7 +347,196 @@ describe('Matrix Pro manual bank transfer', () => {
     fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12345' } });
     fireEvent.click(screen.getByRole('button', { name: '提交' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('無法讀取轉帳申請，請稍後再試。');
-    expect(screen.getByRole('button', { name: '提交' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '重新確認申請' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '重新載入申請狀態' })).toBeEnabled();
+  });
+
+  it('blocks submission until a failed pending read is retried successfully', async () => {
+    memberApi.fetchPendingTransferRequest.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(null);
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('無法讀取轉帳申請');
+    fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12345' } });
+    expect(screen.getByRole('button', { name: '提交' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: '重新載入申請狀態' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: '提交' })).toBeEnabled());
+  });
+
+  it('reconciles a transport-uncertain submission before offering another submit', async () => {
+    memberApi.fetchPendingTransferRequest.mockResolvedValueOnce(null).mockResolvedValueOnce(pendingTransfer);
+    memberApi.submitTransferRequest.mockRejectedValueOnce(new Error('offline'));
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12345' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(await screen.findByText('已有待確認申請')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '重新確認申請' })).toBeDisabled();
+    expect(memberApi.submitTransferRequest).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries a lost response with the same request ID after a terminal review and shows its final status', async () => {
+    memberApi.fetchPendingTransferRequest.mockResolvedValue(null);
+    memberApi.submitTransferRequest.mockRejectedValueOnce(new Error('offline'))
+      .mockImplementationOnce(async (_plan, _lastFive, requestId) => ({ ...pendingTransfer, id: requestId, status: 'confirmed' }));
+    const first = render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12345' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('尚未確認提交結果');
+    expect(screen.getByLabelText('帳號末五碼')).toHaveValue('12345');
+    expect(screen.getByLabelText('帳號末五碼')).toBeDisabled();
+    expect(screen.getByRole('button', { name: '重新確認申請' })).toBeEnabled();
+    const firstId = memberApi.submitTransferRequest.mock.calls[0][2];
+    first.unmount();
+
+    const second = render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    expect(screen.getByLabelText('帳號末五碼')).toHaveValue('12345');
+    expect(screen.getByLabelText('帳號末五碼')).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: '重新確認申請' }));
+    expect(await screen.findByText('已確認')).toBeInTheDocument();
+    expect(memberApi.submitTransferRequest.mock.calls[1][2]).toBe(firstId);
+    expect(screen.queryByText('已有待確認申請')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '提交' })).toBeDisabled();
+    expect(screen.getByLabelText('帳號末五碼')).toBeDisabled();
+    second.unmount();
+  });
+
+  it('replays a locked request even when the member becomes lifetime before retry', async () => {
+    memberApi.fetchPendingTransferRequest.mockResolvedValue(null);
+    memberApi.submitTransferRequest.mockRejectedValueOnce(new Error('offline'))
+      .mockImplementationOnce(async (_plan, _lastFive, requestId) => ({ ...pendingTransfer, id: requestId, status: 'confirmed' }));
+    const first = render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12345' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    await screen.findByRole('alert');
+    const firstId = memberApi.submitTransferRequest.mock.calls[0][2];
+    first.unmount();
+
+    memberApi.fetchMemberProfile.mockResolvedValue({ planName: '終身方案', isLifetime: true });
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    expect(screen.getByLabelText('帳號末五碼')).toHaveValue('12345');
+    expect(screen.getByRole('button', { name: '重新確認申請' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: '重新確認申請' }));
+    expect(await screen.findByText('申請已確認')).toBeInTheDocument();
+    expect(memberApi.submitTransferRequest.mock.calls[1][2]).toBe(firstId);
+  });
+
+  it('resolves a lost response when the pending read matches its request ID', async () => {
+    memberApi.fetchPendingTransferRequest.mockResolvedValueOnce(null).mockImplementationOnce(async () => ({
+      ...pendingTransfer, id: memberApi.submitTransferRequest.mock.calls[0][2],
+    }));
+    memberApi.submitTransferRequest.mockRejectedValueOnce(new Error('offline'));
+    const first = render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12345' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(await screen.findByText('已有待確認申請')).toBeInTheDocument();
+    const firstId = memberApi.submitTransferRequest.mock.calls[0][2];
+    first.unmount();
+
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    expect(screen.getByLabelText('帳號末五碼')).toHaveValue('');
+    fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12345' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    await waitFor(() => expect(memberApi.submitTransferRequest).toHaveBeenCalledTimes(2));
+    expect(memberApi.submitTransferRequest.mock.calls[1][2]).not.toBe(firstId);
+  });
+
+  it('does not call the transfer RPC if the retry ID cannot be saved', async () => {
+    const setItem = vi.spyOn(Storage.prototype, 'setItem');
+    setItem.mockImplementation((key) => {
+      if (key.startsWith('matrix-manual-transfer-attempt:')) throw new Error('storage unavailable');
+    });
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12345' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('無法儲存申請狀態');
+    expect(memberApi.submitTransferRequest).not.toHaveBeenCalled();
+  });
+
+  it('releases a definitively blocked plan so the member can choose a valid plan', async () => {
+    memberApi.fetchPendingTransferRequest.mockResolvedValue(null);
+    memberApi.submitTransferRequest.mockRejectedValueOnce({
+      code: 'P0001', message: 'PLAN_DOWNGRADE_BLOCKED', details: null, hint: null,
+    });
+    const first = render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12345' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('無法購買較低方案');
+    expect(screen.getByRole('button', { name: '提交' })).toBeDisabled();
+    first.unmount();
+
+    selection.readManualTransferPlan.mockReturnValue('year');
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+    expect(screen.getByText('年費方案')).toBeInTheDocument();
+    expect(screen.getByLabelText('帳號末五碼')).toHaveValue('');
+  });
+
+  it.each([
+    ['empty response', null],
+    ['another request', { ...pendingTransfer, id: 'another-request' }],
+    ['unknown status', { ...pendingTransfer, status: 'unknown' }],
+  ])('keeps the same UUID after a successful HTTP response with %s', async (_case, result) => {
+    memberApi.fetchPendingTransferRequest.mockResolvedValue(null);
+    memberApi.submitTransferRequest.mockImplementationOnce(async (_plan, _lastFive, requestId) => (
+      _case === 'unknown status' ? { ...pendingTransfer, id: requestId, status: 'unknown' } : result
+    ))
+      .mockImplementationOnce(async (_plan, _lastFive, requestId) => ({ ...pendingTransfer, id: requestId, status: 'confirmed' }));
+    const first = render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12345' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('尚未確認提交結果');
+    const firstId = memberApi.submitTransferRequest.mock.calls[0][2];
+    first.unmount();
+
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    expect(screen.getByLabelText('帳號末五碼')).toHaveValue('12345');
+    fireEvent.click(screen.getByRole('button', { name: '重新確認申請' }));
+    expect(await screen.findByText('申請已確認')).toBeInTheDocument();
+    expect(memberApi.submitTransferRequest.mock.calls[1][2]).toBe(firstId);
+  });
+
+  it('keeps the original request after an auth rejection whose commit status is uncertain', async () => {
+    memberApi.fetchPendingTransferRequest.mockResolvedValue(null);
+    memberApi.submitTransferRequest.mockRejectedValueOnce({ code: '42501', message: 'FORBIDDEN', details: null, hint: null });
+    const first = render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12345' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('尚未確認提交結果');
+    const requestId = memberApi.submitTransferRequest.mock.calls[0][2];
+    first.unmount();
+
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    expect(screen.getByLabelText('帳號末五碼')).toHaveValue('12345');
+    fireEvent.click(screen.getByRole('button', { name: '重新確認申請' }));
+    await waitFor(() => expect(memberApi.submitTransferRequest).toHaveBeenCalledTimes(2));
+    expect(memberApi.submitTransferRequest.mock.calls[1][2]).toBe(requestId);
+  });
+
+  it('starts a fresh request for a new payer account after an acknowledged prior result', async () => {
+    memberApi.fetchPendingTransferRequest.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
+    memberApi.submitTransferRequest.mockImplementation(async (_plan, _lastFive, requestId) => ({ ...pendingTransfer, id: requestId }));
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '12345' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(await screen.findByText('已有待確認申請')).toBeInTheDocument();
+    cleanup();
+    render(<ManualTransferPage onNavigate={vi.fn()} />);
+    await waitFor(() => expect(screen.queryByText('申請狀態載入中')).not.toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('帳號末五碼'), { target: { value: '54321' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    await waitFor(() => expect(memberApi.submitTransferRequest).toHaveBeenCalledTimes(2));
+    expect(memberApi.submitTransferRequest.mock.calls[1][2]).not.toBe(memberApi.submitTransferRequest.mock.calls[0][2]);
   });
 
   it('returns to plans without exposing bank data when no plan was selected', async () => {
