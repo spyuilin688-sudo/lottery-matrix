@@ -7,6 +7,7 @@ const CACHE_PREFIX = 'matrix-result';
 const LOTTERY_QUERY_CACHE_PREFIX = 'lottery-query';
 const LOTTERY_HISTORY_CACHE_PREFIX = 'lottery-history';
 const LOTTERY_LATEST_CACHE_PREFIX = 'lottery-latest';
+const PUBLISHED_RESULT_CACHE_PREFIX = 'lottery-published-result';
 const MATRIX_STATUS_SUMMARY_CACHE_PREFIX = 'matrix-status-summary';
 const VERSION_PREFIX = 'matrix-result-period';
 
@@ -255,6 +256,24 @@ export function readLotteryLatestCache<T>(lottery: string, maxAgeMs: number): T 
 
 export function writeLotteryLatestCache<T>(lottery: string, value: T) {
   writeJsonStorage(lotteryLatestCacheKey(lottery), { savedAt: Date.now(), value } satisfies TimedLotteryCache<T>);
+}
+
+export function clearLotteryLatestCache(lottery: string) {
+  removeStorageItem(lotteryLatestCacheKey(lottery));
+}
+
+export function readPublishedResultCacheEntry<T>(cycleDate: string | undefined, maxAgeMs: number) {
+  return readTimedCache<T>(`${PUBLISHED_RESULT_CACHE_PREFIX}:${cycleDate ?? 'latest'}`, maxAgeMs);
+}
+
+export function writePublishedResultCache<T>(cycleDate: string | undefined, value: T) {
+  writeJsonStorage(`${PUBLISHED_RESULT_CACHE_PREFIX}:${cycleDate ?? 'latest'}`, {
+    savedAt: Date.now(), value,
+  } satisfies TimedLotteryCache<T>);
+}
+
+export function clearPublishedResultCache() {
+  storageKeys().filter(key => key.startsWith(`${PUBLISHED_RESULT_CACHE_PREFIX}:`)).forEach(removeStorageItem);
 }
 
 function buildLotteryHistoryCacheKey(lottery: string, drawPeriod: string, limit?: number) {

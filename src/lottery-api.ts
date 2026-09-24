@@ -7,6 +7,9 @@ import { isLotteryReadCacheFresh, lotteryReadCacheExpiresAt, lotteryReadCacheTtl
 import {
   getMatrixCurrentPeriod,
   clearMatrixLotteryData,
+  clearLotteryLatestCache,
+  clearPublishedResultCache,
+  readPublishedResultCacheEntry,
   readLotteryHistoryCacheEntry,
   readLotteryLatestCacheEntry,
   readLotteryQueryCacheEntry,
@@ -14,6 +17,7 @@ import {
   writeLotteryHistoryCache,
   writeLotteryLatestCache,
   writeLotteryQueryCache,
+  writePublishedResultCache,
 } from './matrix-result-cache';
 
 export const LOTTERY_API_BASE = RAILWAY_API_BASE;
@@ -54,6 +58,24 @@ function invalidateLotteryData(lottery: NumberBallLottery) {
   for (const key of historyRecords.keys()) {
     if (key.startsWith(`${lottery}:`)) historyRecords.delete(key);
   }
+}
+
+export function invalidatePublishedLotteryData(lottery: NumberBallLottery) {
+  clearReadCache('lottery:latest');
+  clearReadCache('lottery:published-result:');
+  clearLotteryLatestCache(lottery);
+  clearPublishedResultCache();
+  invalidateLotteryData(lottery);
+}
+
+export function revalidatePublishedLotteryData() {
+  for (const lottery of ['今彩539', '天天樂', '六合彩', '大樂透'] as const) {
+    clearLotteryLatestCache(lottery);
+    clearMatrixLotteryData(lottery);
+  }
+  clearReadCache('lottery:');
+  clearPublishedResultCache();
+  invalidateMatrixData();
 }
 
 export type LatestLotteryResult = {
@@ -433,18 +455,7 @@ function parseDueLotteries(values: unknown): NumberBallLottery[] {
   ).map(({ lottery }) => lottery);
 }
 
-export async function fetchLatestLotteryResultState(
-  cycleDate?: string,
-  signal?: AbortSignal,
-): Promise<LatestLotteryResultState> {
-  if (cycleDate !== undefined && !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(cycleDate)) {
-    throw new Error('Lottery API invalid cycle date');
-  }
-  const query = cycleDate ? `?cycleDate=${encodeURIComponent(cycleDate)}` : '';
-  const data = await requestJson<{ drawDate?: unknown; items?: unknown; dueLotteries?: unknown }>(
-    `/api/matrix/latest-result${query}`,
-    signal ? { signal } : undefined,
-  );
+function parsedLatestResultState(data: { drawDate?: unknown; items?: unknown; dueLotteries?: unknown }): LatestLotteryResultState {
   if (data.drawDate !== null && (typeof data.drawDate !== 'string' || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(data.drawDate))) {
     throw new Error('Lottery API invalid response: drawDate');
   }
@@ -453,6 +464,53 @@ export async function fetchLatestLotteryResultState(
     dueLotteries: parseDueLotteries(data.dueLotteries),
     items: parseLatestLotteryList(data.items, 'items'),
   };
+}
+
+function publishedResultCacheTtlMs(startedAt = Date.now()) {
+  return Math.min(15 * 60_000, ...(['今彩539', '天天樂', '六合彩', '大樂透'] as const)
+    .map(lottery => lotteryReadCacheTtlMs(lottery, 'latest', startedAt)));
+}
+
+export async function fetchLatestLotteryResultState(
+  cycleDate?: string,
+  signal?: AbortSignal,
+): Promise<LatestLotteryResultState> {
+  if (cycleDate !== undefined && !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(cycleDate)) {
+    throw new Error('Lottery API invalid cycle date');
+  }
+  const query = cycleDate ? `?cycleDate=${encodeURIComponent(cycleDate)}` : '';
+  // Today's due lotteries can change through a calendar override without a
+  // draw publication. Recheck dated homepage requests on each entry/retry.
+  if (cycleDate) {
+    return parsedLatestResultState(await requestJson<{ drawDate?: unknown; items?: unknown; dueLotteries?: unknown }>(
+      `/api/matrix/latest-result${query}`,
+      signal ? { signal } : undefined,
+    ));
+  }
+  let expiresAt = Infinity;
+  return readThroughCache(
+    stableCacheKey('lottery:published-result', { cycleDate }),
+    publishedResultCacheTtlMs(),
+    async ({ isCurrent }) => {
+      const stored = readPublishedResultCacheEntry<LatestLotteryResultState>(cycleDate, Infinity);
+      if (stored && Date.now() - stored.savedAt < publishedResultCacheTtlMs(stored.savedAt)) {
+        try {
+          const value = parsedLatestResultState(stored.value);
+          expiresAt = stored.savedAt + publishedResultCacheTtlMs(stored.savedAt);
+          return value;
+        } catch { /* Recheck damaged browser storage with the public API. */ }
+      }
+      const data = await requestJson<{ drawDate?: unknown; items?: unknown; dueLotteries?: unknown }>(
+        `/api/matrix/latest-result${query}`,
+        signal ? { signal } : undefined,
+      );
+      const value = parsedLatestResultState(data);
+      if (isCurrent()) writePublishedResultCache(cycleDate, value);
+      expiresAt = Date.now() + publishedResultCacheTtlMs();
+      return value;
+    },
+    { expiresAt: () => expiresAt },
+  );
 }
 
 export async function fetchLatestLotteryResult(signal?: AbortSignal): Promise<LatestLotteryResult[]> {

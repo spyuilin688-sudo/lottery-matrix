@@ -55,6 +55,63 @@ def test_latest_includes_correction_revision():
     assert payload['item']['period'] == '115000001'
 
 
+def test_latest_result_is_shared_until_publication_or_fallback(monkeypatch):
+    from app.draw_read_cache import DrawReadCache
+    from app.api_server import public_read_ttl_seconds
+    from app.repositories.analysis_repository import InMemoryAnalysisRepository
+    from test_public_api import LatestCompletedResultClient
+
+    clock = [0.0]
+    repository = InMemoryAnalysisRepository()
+    repository.client = LatestCompletedResultClient()
+    repository.draw_read_cache = DrawReadCache(ttl=300, clock=lambda: clock[0])
+    monkeypatch.setattr('app.api_server.public_read_ttl_seconds', lambda: 60)
+
+    first = handle_api_request('GET', '/api/matrix/latest-result', None, repository)
+    initial_reads = len(repository.client.table_calls)
+    initial_rpcs = len(repository.client.rpc_calls)
+    assert handle_api_request('GET', '/api/matrix/latest-result', None, repository) == first
+    assert len(repository.client.table_calls) == initial_reads
+    assert len(repository.client.rpc_calls) == initial_rpcs
+
+    repository.client.chain[('天天樂', '12008')]['analysisComplete'] = True
+    repository.client.chain[('天天樂', '12008')]['matrixStatusComplete'] = True
+    repository.draw_read_cache.invalidate()
+    updated = handle_api_request('GET', '/api/matrix/latest-result', None, repository)
+    assert {'lottery': '天天樂', 'period': '12008'} in updated[1]['items']
+    repository.client.rows[1]['period'] = '12009'
+    repository.client.chain[('天天樂', '12009')] = {'latestPeriod': '12009', 'analysisComplete': True, 'matrixStatusComplete': True}
+    clock[0] = 61
+    refreshed = handle_api_request('GET', '/api/matrix/latest-result', None, repository)
+    assert {'lottery': '天天樂', 'period': '12009'} in refreshed[1]['items']
+
+
+def test_latest_draw_and_history_share_one_revision_probe_between_users(monkeypatch):
+    from app.draw_read_cache import DrawReadCache
+    from app.api_server import _draw_query
+
+    repository = QueryRepository(None)
+    repository.revision = 'v1'
+    repository.draw_read_cache = DrawReadCache(ttl=300)
+    monkeypatch.setattr('app.api_server.public_read_ttl_seconds', lambda: 60)
+
+    def rpc(name, params):
+        repository.calls.append((name, params))
+        return SimpleNamespace(execute=lambda: SimpleNamespace(data={
+            'items': [draw(repository.revision)], 'revision': repository.revision,
+            'nextCursor': None,
+        }))
+
+    repository.rpc = rpc
+    assert _draw_query(repository, '今彩539', 'history', p_limit=500)['revision'] == 'v1'
+    assert _draw_query(repository, '今彩539', 'history', p_limit=500)['revision'] == 'v1'
+    assert [params['p_kind'] for _, params in repository.calls] == ['latest', 'history']
+    repository.revision = 'v2'
+    repository.draw_read_cache.invalidate()
+    assert _draw_query(repository, '今彩539', 'history', p_limit=500)['revision'] == 'v2'
+    assert [params['p_kind'] for _, params in repository.calls] == ['latest', 'history', 'latest', 'history']
+
+
 def test_tongxing_filters_in_database_and_preserves_pair_projection():
     repository = QueryRepository({'groups': [{'lockedEntry': draw(), 'predictedEntry': draw('115000002')}], 'revision': 'r1', 'nextCursor': None})
     body = {'lottery':'今彩539','numberOrder':'依號碼由小到大排序','numbers':['01'],'futureOffset':1,'pageSize':500}
@@ -147,6 +204,7 @@ def test_public_pages_share_cache_but_corrected_revision_forces_reload():
     assert _draw_query(repository, '今彩539', 'history', p_limit=500) == first
     assert len([p for _, p in repository.calls if p['p_kind'] == 'history']) == 1
     repository.revision = 'v2'
+    repository.draw_read_cache.invalidate()
     assert _draw_query(repository, '今彩539', 'history', p_limit=500)['revision'] == 'v2'
     with pytest.raises(HistoryChangedError):
         _draw_query(repository, '今彩539', 'history', p_limit=500, p_cursor={'offset': 1, 'revision': 'v1'})
@@ -201,5 +259,6 @@ def test_concurrent_history_requests_share_version_probe_and_retry_after_failure
                 assert job.result()['revision'] == 'v1'
     assert sum(p['p_kind'] == 'latest' for _, p in repository.calls) == 1
     repository.fail, repository.revision = False, 'v2'
+    repository.draw_read_cache.invalidate()
     assert _draw_query(repository, '今彩539', 'history', p_limit=500)['revision'] == 'v2'
     assert sum(p['p_kind'] == 'latest' for _, p in repository.calls) == 2

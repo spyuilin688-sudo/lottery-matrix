@@ -12,11 +12,13 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from os import environ
 from secrets import compare_digest
 from collections.abc import Callable
-from datetime import date
+from datetime import date, datetime, timedelta
 from typing import Any
-from threading import BoundedSemaphore
+from threading import BoundedSemaphore, Event, Thread
 from uuid import UUID
+from zoneinfo import ZoneInfo
 from app.draw_read_cache import DrawReadCache
+from app.public_result_updates import run_public_result_updates
 from app.manual_refresh import ManualRefreshCoordinator, SourceNotReady
 from app.fantasy5_crawler import run_fantasy5_crawler_once
 from urllib.parse import parse_qs, quote, unquote, urlsplit
@@ -56,6 +58,22 @@ PUBLIC_API_MAX_CONCURRENCY = 32
 SERVICE_NAME = "matrix-railway-api"
 CARD_PREFIX = "/api/matrix/cards/"
 _REFRESH_COORDINATOR = ManualRefreshCoordinator()
+_TAIPEI = ZoneInfo("Asia/Taipei")
+
+
+def public_read_ttl_seconds(now: datetime | None = None) -> int:
+    """Probe often during draw windows; share stable results until the next window."""
+    local = (now or datetime.now(_TAIPEI)).astimezone(_TAIPEI)
+    minute = local.hour * 60 + local.minute
+    if minute <= 70 or 9 * 60 + 20 <= minute <= 13 * 60 + 10 or minute >= 20 * 60 + 20:
+        return 30
+    next_start = local.replace(hour=9, minute=20, second=0, microsecond=0)
+    if local >= next_start:
+        next_start = local.replace(hour=20, minute=20, second=0, microsecond=0)
+    if local >= next_start:
+        next_start += timedelta(days=1)
+        next_start = next_start.replace(hour=9, minute=20)
+    return max(1, min(15 * 60, int((next_start - local).total_seconds())))
 
 
 def _service_version() -> str:
@@ -370,9 +388,11 @@ def _draw_query(repository: AnalysisRepository, lottery: str, kind: str, **param
         raise ValueError("INVALID_CURSOR")
     cache = getattr(repository, "draw_read_cache", None)
     if cache is not None and kind == "latest":
-        # Share only concurrent probes; never retain a version for later requests.
+        # One bounded probe per public API process, rather than one per visitor.
+        # Realtime publication invalidates sooner; the TTL covers missed events.
         key = json.dumps([lottery, "latest", params], sort_keys=True, ensure_ascii=False)
-        return cache.read(key, lambda: _execute_draw_query(repository, lottery, kind, **params), cache_result=False)
+        return cache.read(key, lambda: _execute_draw_query(repository, lottery, kind, **params),
+                          ttl=public_read_ttl_seconds())
     if cache is not None and kind in {"history", "tongxing"}:
         # Revalidate with a small latest-row response before reusing a large page.
         # Database revisions cover all history corrections and cross-process writers.
@@ -848,7 +868,14 @@ def handle_api_request(
                     raise ValueError("INVALID_CYCLE_DATE") from error
                 if cycle_date.isoformat() != cycle_values[0]:
                     raise ValueError("INVALID_CYCLE_DATE")
-            return 200, _latest_completed_results(repository, cycle_date)
+            cache = getattr(repository, "draw_read_cache", None)
+            # Calendar overrides are independent of draw/result revisions.
+            # Resolve due lotteries on every dated request.
+            if cycle_date is not None or cache is None or getattr(repository, "client", None) is None:
+                return 200, _latest_completed_results(repository, cycle_date)
+            key = json.dumps(["latest-result", cycle_date.isoformat() if cycle_date else None])
+            return 200, cache.read(key, lambda: _latest_completed_results(repository, cycle_date),
+                                   ttl=public_read_ttl_seconds())
         latest_prefix = "/api/matrix/latest/"
         years_prefix = "/api/matrix/history-years/"
         if method == "GET" and path.startswith(years_prefix):
@@ -1186,6 +1213,14 @@ def main() -> None:
     port = int(environ.get("PORT", "8000"))
     RailwayApiHandler.repository = create_repository()
     settings = load_settings()
+    publication_stop = Event()
+    publication_thread = Thread(
+        target=run_public_result_updates,
+        args=(settings.supabase_url, settings.supabase_secret_key,
+              RailwayApiHandler.repository.draw_read_cache, publication_stop),
+        name='public-result-updates', daemon=True,
+    )
+    publication_thread.start()
     RailwayApiHandler.security_monitor = SecurityMonitor(
         settings.supabase_url, settings.supabase_secret_key,
         enforce=environ.get("MATRIX_SECURITY_ENFORCE", "") == "true",
@@ -1196,6 +1231,8 @@ def main() -> None:
     try:
         server.serve_forever()
     finally:
+        publication_stop.set()
+        publication_thread.join(timeout=2)
         RailwayApiHandler.security_monitor.close()
         server.server_close()
 

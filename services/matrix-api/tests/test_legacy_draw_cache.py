@@ -89,7 +89,7 @@ def test_legacy_complete_result_is_reused_without_reloading_pages(database, kind
     probes = source.probes
     assert request(repository, kind) == first
     assert source.reads == reads
-    assert source.probes - probes == 1
+    assert source.probes == probes
     rows[0]['numbers'].append('39')
     fresh = request(repository, kind)[1]
     fresh_row = fresh['items'][0] if kind == 'history' else fresh['groups'][0]['lockedEntry']
@@ -103,6 +103,7 @@ def test_legacy_result_reloads_after_history_correction_and_does_not_cache_error
     source.revision = 'r2'
     source.rows[0] = {**source.rows[0], 'numbers': ['06', '07', '08', '09', '10'],
                       'sorted_numbers': ['06', '07', '08', '09', '10']}
+    repository.draw_read_cache.invalidate()
     source.fail_once = True
     assert request(repository, kind)[0] == 503
     corrected = request(repository, kind)
@@ -119,6 +120,7 @@ def test_legacy_history_rejects_revision_changed_during_table_pages(database):
     source.after_read = lambda: setattr(source, 'revision', 'r2')
     assert request(repository, 'history') == (409, {'error': 'DRAW_HISTORY_CHANGED'})
     source.after_read = lambda: None
+    repository.draw_read_cache.invalidate()
     assert request(repository, 'history')[0] == 200
 
 

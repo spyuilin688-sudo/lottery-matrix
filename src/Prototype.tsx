@@ -24,6 +24,7 @@ import { fetchLatestLotteryResultState, normalizePeriod, type LatestLotteryResul
 import { formatCountdown, formatNextDrawAt, nextCountdownSeconds, parseCountdown, secondsUntil } from "./countdown.mjs";
 import { fetchMatrixStatusSummaries, type MatrixStatusSummary } from "./matrix-status-api";
 import { subscribeMatrixDataRevision } from "./matrix-data-revision";
+import { subscribePublishedResultRefresh } from "./published-result-refresh";
 import { subscribeAlgorithmCacheScope } from "./auth/algorithm-cache-scope";
 import { withDeadline } from "./lib/api-resilience";
 import { HOME_REFRESH_INTERVAL_MS, homepageRefreshCycleAt, homepageRefreshCycleKey, millisecondsUntilNextHomepageRefreshWindow } from "./homepage-refresh-policy";
@@ -594,6 +595,11 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     }
     void refreshLatestDraw();
   }, [refreshLatestDraw, selected]);
+
+  useEffect(() => {
+    if (screen !== "home") return;
+    return subscribePublishedResultRefresh();
+  }, [screen]);
 
   useEffect(() => {
     if (screen !== "home") return;
