@@ -6,6 +6,7 @@ type Dependencies = {
 
 const ALLOWED_ORIGINS = new Set([
   'https://matrixlottery.idv.tw',
+  'https://supabasemax.spyuilin688.chatgpt.site',
 ]);
 
 function responseHeaders(origin: string) {
