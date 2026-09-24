@@ -10,6 +10,8 @@ import { Navigate } from "./navigation";
 import { HeaderSettingsButton } from "./BrandHeader";
 import { useTimedState, useLotteryHistoryState, getHistoryLimit, getHistoryOrder, FeatureShell, LOTTERIES, updateLookupInputValues, finalizeLookupInputValues, getDrawIssue, getHistoryDrawNumbers } from "./shared";
 
+const lookupNumberMax = (lottery: LotteryId) => lottery === "今彩539" || lottery === "天天樂" ? 39 : 49;
+
 export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const [lottery, setLottery] = useTimedState<LotteryId>("reference-lottery", "今彩539");
   const [range, setRange] = useTimedState("reference-range", "1000期");
@@ -86,6 +88,11 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   };
 
   const startReferenceSearch = async () => {
+    const maxNumber = lookupNumberMax(lottery);
+    if (inputs.some(value => value !== "" && Number(value) > maxNumber)) {
+      setInputs(inputs.map(value => Number(value) > maxNumber ? "" : value));
+      return;
+    }
     const revision = ++queryRevision.current;
     appliedRequest.current = null;
     const normalized = inputs.map(normalizeLookupNumber);
@@ -173,10 +180,10 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
       <section className="reference-search" aria-label="探索號碼">
         <div>
           {inputs.map((v, i) => (
-            <input key={i} value={v} aria-label={`探索號碼 ${i + 1}`} inputMode="numeric" pattern="(0[1-9]|[1-4][0-9])" maxLength={2} data-filled={Boolean(v)}
+            <input key={i} value={v} aria-label={`探索號碼 ${i + 1}`} inputMode="numeric" pattern={lookupNumberMax(lottery) === 39 ? "(0[1-9]|[1-2][0-9]|3[0-9])" : "(0[1-9]|[1-4][0-9])"} maxLength={2} data-filled={Boolean(v)}
               onClick={(event) => event.currentTarget.select()}
               onChange={(event) => setInputs(updateLookupInputValues(inputs, i, event.target.value))}
-              onBlur={() => setInputs(finalizeLookupInputValues(inputs, i))}
+              onBlur={() => setInputs(finalizeLookupInputValues(inputs, i).map((value, index) => index === i && Number(value) > lookupNumberMax(lottery) ? "" : value))}
             />
           ))}
           <button type="button" className="gold-button branded-explore-action" onClick={startReferenceSearch}><MagnifyingGlassIcon />開始探索</button>

@@ -28,7 +28,7 @@ function jsonResponse(body: unknown) {
 }
 
 describe('lottery-api response validation', () => {
-  it('adds one request id and retries a transient read response once', async () => {
+  it('keeps public GET headers simple while retrying a transient read response once', async () => {
     const draw = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
     const fetcher = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response(null, { status: 503 }))
@@ -40,8 +40,21 @@ describe('lottery-api response validation', () => {
     const requestIds = fetcher.mock.calls.map(([, init]) => (
       new Headers(init?.headers).get('X-Request-ID')
     ));
-    expect(requestIds[0]).toMatch(/^[0-9a-f-]{36}$/);
-    expect(requestIds[1]).toBe(requestIds[0]);
+    expect(requestIds).toEqual([null, null]);
+    expect(fetcher.mock.calls.every(([, init]) => new Headers(init?.headers).get('Accept') === 'application/json')).toBe(true);
+  });
+
+  it('preserves the existing request id on TongXing POST', async () => {
+    const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) =>
+      jsonResponse(String(url).includes('/latest/')
+        ? { period: '115000207', numbers: ['01', '02', '03', '04', '05'] }
+        : { groups: [], nextCursor: null }));
+    await fetchTongXing({
+      lottery: '今彩539', numberOrder: '依號碼由小到大排序', numbers: ['01', '02'], futureOffset: 1,
+    });
+    const post = fetcher.mock.calls.find(([url]) => String(url).includes('/tongxing'));
+    expect(post).toBeDefined();
+    expect(new Headers(post?.[1]?.headers).get('X-Request-ID')).toMatch(/^[0-9a-f-]{36}$/);
   });
 
   it('stops a stalled Railway read at the shared deadline', async () => {

@@ -118,7 +118,7 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   subscriptionRecords: {
-    path: '/rest/v1/payments?select=id,member_id,plan_id,amount,paid_at,status,reversed_at,reversal_reason,reversed_by,reversed_by_name,plan:plans(name),member:members(auth_user_id,line_user_id,line_display_name)&order=paid_at.desc.nullslast,id.asc',
+    path: '/rest/v1/payments?select=id,member_id,plan_id,transfer_request_id,amount,paid_at,status,reversed_at,reversal_reason,reversed_by,reversed_by_name,plan:plans(name),member:members(auth_user_id,line_user_id,line_display_name)&order=paid_at.desc.nullslast,id.asc',
     map: (row) => ({
       id: String(row.id),
       memberId: row.member_id,
@@ -127,6 +127,7 @@ const definitions: Record<string, TableDefinition> = {
       lineDisplayName: (row.member as Row | null)?.line_display_name ?? null,
       planId: row.plan_id,
       planName: (row.plan as Row | null)?.name ?? null,
+      transferRequestId: row.transfer_request_id ?? null,
       amount: row.amount,
       paidAt: row.paid_at,
       status: row.status,
@@ -372,7 +373,7 @@ const pageDefinitions: Record<string, PageDefinition> = {
   },
   subscriptionRecords: {
     pageSize: 30,
-    columns: { id: 'id', memberId: 'member_id', planId: 'plan_id', lineDisplayName: 'member(line_display_name)', planName: 'plan(name)', amount: 'amount', paidAt: 'paid_at', status: 'status', reversedAt: 'reversed_at', reversalReason: 'reversal_reason', reversedByName: 'reversed_by_name' },
+    columns: { id: 'id', memberId: 'member_id', planId: 'plan_id', transferRequestId: 'transfer_request_id', lineDisplayName: 'member(line_display_name)', planName: 'plan(name)', amount: 'amount', paidAt: 'paid_at', status: 'status', reversedAt: 'reversed_at', reversalReason: 'reversal_reason', reversedByName: 'reversed_by_name' },
     dates: ['paidAt', 'reversedAt'], keywords: ['status', 'reversal_reason', 'reversed_by_name'], numeric: ['amount'], identifiers: ['member_id', 'plan_id'],
     statuses: ['pending', 'confirmed', 'refund_required', 'rejected', 'refunded', 'chargeback', 'cancelled'],
     relations: [{ alias: 'keyword_member', relation: 'members', field: 'line_display_name' }, { alias: 'keyword_plan', relation: 'plans', field: 'name' }],

@@ -95,6 +95,39 @@ describe('data page request failures are not normal empty data', () => {
     expect(screen.getByRole('button', { name: '重新載入 Matrix 同星資料' })).toBeEnabled();
   });
 
+  test.each(['今彩539', '天天樂'] as const)('%s 的同星不送出 40–49 的號碼', async lottery => {
+    render(<FeaturePageRouter screen="tongxing" onNavigate={vi.fn()} />);
+    fireEvent.change(screen.getByRole('combobox', { name: '彩種' }), { target: { value: lottery } });
+    fireEvent.change(screen.getByRole('textbox', { name: '號碼 1' }), { target: { value: '40' } });
+    fireEvent.change(screen.getByRole('textbox', { name: '號碼 2' }), { target: { value: '41' } });
+    fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+    expect(lotteryApi.fetchTongXing).not.toHaveBeenCalled();
+  });
+
+  test.each(['今彩539', '天天樂'] as const)('%s 的號碼對照不送出 40–49 的號碼', async lottery => {
+    render(<FeaturePageRouter screen="reference" onNavigate={vi.fn()} />);
+    fireEvent.change(screen.getByRole('combobox', { name: '彩種' }), { target: { value: lottery } });
+    fireEvent.change(screen.getByRole('textbox', { name: '探索號碼 1' }), { target: { value: '49' } });
+    fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+    expect(lotteryApi.fetchNumberReference).not.toHaveBeenCalled();
+  });
+
+  test.each(['今彩539', '天天樂'] as const)('%s 保留 39 號查詢', async lottery => {
+    render(<FeaturePageRouter screen="reference" onNavigate={vi.fn()} />);
+    fireEvent.change(screen.getByRole('combobox', { name: '彩種' }), { target: { value: lottery } });
+    fireEvent.change(screen.getByRole('textbox', { name: '探索號碼 1' }), { target: { value: '39' } });
+    fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+    expect(lotteryApi.fetchNumberReference).toHaveBeenCalledWith(expect.objectContaining({ lottery, numbers: ['39'] }));
+  });
+
+  test.each(['六合彩', '大樂透'] as const)('%s 保留 49 號查詢', async lottery => {
+    render(<FeaturePageRouter screen="reference" onNavigate={vi.fn()} />);
+    fireEvent.change(screen.getByRole('combobox', { name: '彩種' }), { target: { value: lottery } });
+    fireEvent.change(screen.getByRole('textbox', { name: '探索號碼 1' }), { target: { value: '49' } });
+    fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+    expect(lotteryApi.fetchNumberReference).toHaveBeenCalledWith(expect.objectContaining({ lottery, numbers: ['49'] }));
+  });
+
   test('號碼對照單 API 失敗時顯示 error + retry', async () => {
     lotteryApi.fetchNumberReference.mockRejectedValueOnce(new Error('reference offline'));
     render(<FeaturePageRouter screen="reference" onNavigate={vi.fn()} />);

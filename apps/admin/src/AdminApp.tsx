@@ -229,6 +229,7 @@ const paymentRecord = (row: Row): PaymentRecord => ({
   identityDisplay: typeof row.identityDisplay === "string" ? row.identityDisplay : null,
   planId: typeof row.planId === "string" ? row.planId : null,
   planName: typeof row.planName === "string" ? row.planName : null,
+  transferRequestId: typeof row.transferRequestId === "string" ? row.transferRequestId : null,
   amount: Number(row.amount ?? 0),
   paidAt: typeof row.paidAt === "string" ? row.paidAt : null,
   status: String(row.status ?? ""),
@@ -290,6 +291,9 @@ function AdminApp() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [drawer, setDrawer] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const drawerPanel = useRef<HTMLElement>(null);
+  const drawerWasOpen = useRef(false);
   const [form, setForm] = useState<Record<string, string>>({});
   const [showForm, setShowForm] = useState(false);
   const [adminForm, setAdminForm] = useState<AdminForm>(defaultAdmin());
@@ -361,7 +365,7 @@ function AdminApp() {
     const name = activeRef.current;
     return () => mounted.current && view === viewVersion.current && adminId === adminIdRef.current && name === activeRef.current && (!trackRead || read === loadVersion.current);
   };
-  const load = async (name = activeRef.current, expectedAdminId = adminIdRef.current) => {
+  const load = async (name = activeRef.current, expectedAdminId = adminIdRef.current, refreshPlans = true) => {
     if (!mounted.current || !signedRef.current || name !== activeRef.current || expectedAdminId !== adminIdRef.current) return false;
     const version = ++loadVersion.current;
     loadPending.current = true;
@@ -371,12 +375,12 @@ function AdminApp() {
     setBusy(true);
     setError("");
     setDash(null);
-    setPlans([]);
+    if (refreshPlans || name !== "訂閱管理") setPlans([]);
     try {
       if (name === "營運概覽" || name === "收入報表") {
         const result = await api.get("/api/dashboard");
         if (current()) setDash(result.data);
-      } else if (name === "訂閱管理") {
+      } else if (name === "訂閱管理" && refreshPlans) {
         const options: Row[] = [];
         let page = 1;
         let totalPages = 1;
@@ -444,6 +448,39 @@ function AdminApp() {
   useEffect(() => () => {
     if (activationCopyFeedbackTimer.current !== null) window.clearTimeout(activationCopyFeedbackTimer.current);
   }, []);
+  useEffect(() => {
+    if (drawer) drawerPanel.current?.querySelector<HTMLButtonElement>("nav button")?.focus();
+    else if (drawerWasOpen.current) menuButton.current?.focus();
+    drawerWasOpen.current = drawer;
+  }, [drawer]);
+  useEffect(() => {
+    if (!drawer) return;
+    const handleDrawerKey = (event: globalThis.KeyboardEvent) => {
+      if (window.matchMedia?.("(min-width: 761px)").matches) return;
+      if (event.key === "Escape") { event.preventDefault(); setDrawer(false); return; }
+      if (event.key !== "Tab") return;
+      const side = drawerPanel.current;
+      const first = side?.querySelector<HTMLButtonElement>(".sideClose");
+      const firstNav = side?.querySelector<HTMLButtonElement>("nav button");
+      const last = side?.querySelector<HTMLButtonElement>("nav button:last-child");
+      if (!side || !first || !firstNav || !last) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && document.activeElement === firstNav) {
+        event.preventDefault();
+        first.focus();
+      } else if (!side.contains(document.activeElement)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      }
+    };
+    window.addEventListener("keydown", handleDrawerKey);
+    return () => window.removeEventListener("keydown", handleDrawerKey);
+  }, [drawer]);
   const clearActivationSelection = () => {
     if (activationCopyFeedbackTimer.current !== null) window.clearTimeout(activationCopyFeedbackTimer.current);
     activationCopyFeedbackTimer.current = null;
@@ -787,11 +824,14 @@ function AdminApp() {
   return (
     <div className="shell">
       {drawer && <button className="drawerBackdrop" aria-label="關閉功能選單" onClick={() => setDrawer(false)} />}
-      <aside className={drawer ? "side open" : "side"}>
-        <div className="sideTitle">
-          樂彩 Matrix<small>營運後台</small>
+      <aside ref={drawerPanel} className={drawer ? "side open" : "side"}>
+        <div className="sideHeader">
+          <div className="sideTitle">
+            樂彩 Matrix<small>營運後台</small>
+          </div>
+          <button className="sideClose" type="button" aria-label="關閉功能選單" onClick={() => setDrawer(false)}><span aria-hidden="true">×</span></button>
         </div>
-        <nav>
+        <nav id="admin-navigation" aria-label="管理功能">
           {modules.filter(([n]) => n !== "管理員權限" || moduleCan("admins", "view", "view")).map(([n, I], i) => (
             <button
               key={n}
@@ -808,7 +848,7 @@ function AdminApp() {
       </aside>
       <main>
         <header>
-          <button className="menu" onClick={() => setDrawer(!drawer)}>
+          <button ref={menuButton} className="menu" type="button" aria-label={drawer ? "關閉功能選單" : "開啟功能選單"} aria-controls="admin-navigation" aria-expanded={drawer} onClick={() => setDrawer(!drawer)}>
             <Menu size={22} />
           </button>
           <div>
@@ -925,7 +965,7 @@ function AdminApp() {
                         throw cause;
                       }
                       if (!current()) return;
-                      await load("訂閱管理");
+                      await load("訂閱管理", adminIdRef.current, false);
                     } finally {
                       if (current()) setBusy(false);
                     }
@@ -947,7 +987,7 @@ function AdminApp() {
                     try {
                       await api.put(`/api/transfer-requests/${id}`, { decision });
                       if (!current()) return;
-                      await load("訂閱管理");
+                      await load("訂閱管理", adminIdRef.current, false);
                     } catch (e) {
                       if (current()) setError(e instanceof Error ? e.message : "轉帳審核失敗");
                     } finally {
@@ -1319,7 +1359,7 @@ function SubscriptionManager({
       </section>
       <section id="subscription-payments" role="tabpanel" aria-labelledby="subscription-tab-payments" hidden={activeTab !== 'payments'}>
       {activeTab === 'payments' && <>
-      <AdminListControls page={paymentPage} showError={false} name="付款紀錄" statuses={[["confirmed", "已付款"], ["refund_required", "需退款處理"], ["refunded", "已退款"], ["chargeback", "已刷退"], ["cancelled", "已取消"]]} sorts={[["paidAt", "付款時間"], ["amount", "付款金額"]]} />
+      <AdminListControls page={paymentPage} showError={false} name="付款紀錄" statuses={[["confirmed", "已付款"], ["refund_required", "需退款處理"], ["refunded", "已退款"], ["chargeback", "已刷退"], ["cancelled", "已取消"]]} sorts={[["paidAt", "紀錄時間"], ["amount", "付款金額"]]} />
       <PaymentReversalPanel
         key={JSON.stringify(paymentPage.query)}
         payments={paymentPage.loading || paymentPage.error ? null : paymentPage.items.map(paymentRecord)}

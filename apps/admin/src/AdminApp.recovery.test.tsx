@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { existsSync, readFileSync } from 'node:fs';
 import AdminApp from './AdminApp';
 const dashboard = {
   todayVisitors: 0, monthVisitors: 0, totalVisitors: 0, totalUsers: 0,
@@ -12,6 +13,46 @@ const client = vi.hoisted(()=>({get:vi.fn(),post:vi.fn(),put:vi.fn(),delete:vi.f
 vi.mock('@appdeploy/client',()=>({api:client,auth:{signIn:vi.fn(),signOut:vi.fn()}}));
 afterEach(()=>{cleanup();vi.clearAllMocks();});
 describe('AdminApp weak-network bootstrap',()=>{
+  it('labels and restores focus to the mobile drawer control when closing the navigation', async () => {
+    const adminCss = readFileSync(existsSync('apps/admin/src/admin.css') ? 'apps/admin/src/admin.css' : 'src/admin.css', 'utf8');
+    expect(adminCss).toMatch(/@media\s*\(max-width:760px\)\s*\{\.side\{[^}]*height:100dvh;visibility:hidden/);
+    expect(adminCss).toMatch(/\.side\.open\{visibility:visible\}/);
+    client.get.mockImplementation(async (path: string) => {
+      if (path === '/api/bootstrap') return { data: { admin: { id: 'admin-1', name: 'Owner', role: '超級管理員' } } };
+      if (path === '/api/dashboard') return { data: dashboard };
+      return { data: { items: [], total: 0, currentPage: 1, totalPages: 1 } };
+    });
+    const { container } = render(<AdminApp />);
+    const menu = await screen.findByRole('button', { name: '開啟功能選單' });
+    expect(menu.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(menu);
+    expect(menu.getAttribute('aria-expanded')).toBe('true');
+    expect(document.activeElement).toBe(container.querySelector('.side nav button'));
+    fireEvent.click(container.querySelector('.drawerBackdrop')!);
+    expect(menu.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(menu);
+    fireEvent.click(menu);
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(menu.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(menu);
+    fireEvent.click(menu);
+    const side = container.querySelector('aside')!;
+    const close = within(side).getByRole('button', { name: '關閉功能選單' });
+    const navButtons = [...side.querySelectorAll<HTMLButtonElement>('nav button')];
+    const firstNav = navButtons[0];
+    const lastNav = navButtons[navButtons.length - 1];
+    lastNav.focus();
+    fireEvent.keyDown(window, { key: 'Tab' });
+    expect(document.activeElement).toBe(close);
+    fireEvent.keyDown(window, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(lastNav);
+    firstNav.focus();
+    fireEvent.keyDown(window, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(close);
+    fireEvent.click(close);
+    expect(menu.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(menu);
+  });
   it('requests only the visible subscription tab and reloads it when revisited', async () => {
     window.location.hash = '';
     client.get.mockImplementation(async (path: string) => {
@@ -32,6 +73,44 @@ describe('AdminApp weak-network bootstrap',()=>{
     await waitFor(() => expect(calls('transferRequests')).toBe(1));
     fireEvent.click(screen.getByRole('tab', { name: '訂閱會員' }));
     await waitFor(() => expect(calls('subscriptions')).toBe(2));
+  });
+  it('refreshes reviewed transfer requests without rereading the unchanged plan catalogue', async () => {
+    client.get.mockImplementation(async (path: string) => {
+      if (path === '/api/bootstrap') return { data: { admin: { id: 'admin-1', name: 'Owner', role: '超級管理員' } } };
+      if (path === '/api/dashboard') return { data: dashboard };
+      if (path.startsWith('/api/data/transferRequests?')) return { data: { items: [{
+        id: 'transfer-1', identityDisplay: '測試會員', planName: '月費', amount: 100, accountLastFive: '12345', status: 'pending',
+      }], total: 1, currentPage: 1, totalPages: 1 } };
+      return { data: { items: [], total: 0, currentPage: 1, totalPages: 1 } };
+    });
+    client.put.mockResolvedValue({ data: {} });
+    render(<AdminApp />);
+    fireEvent.click(await screen.findByRole('button', { name: /訂閱管理/ }));
+    await waitFor(() => expect(client.get.mock.calls.filter(([path]) => path.startsWith('/api/data/plans?'))).toHaveLength(1));
+    fireEvent.click(screen.getByRole('tab', { name: '轉帳申請' }));
+    fireEvent.click(await screen.findByRole('button', { name: '確認', exact: true }));
+    fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: '確認通過' }));
+    await waitFor(() => expect(client.put).toHaveBeenCalledWith('/api/transfer-requests/transfer-1', { decision: 'confirmed' }));
+    await waitFor(() => expect(client.get.mock.calls.filter(([path]) => path.startsWith('/api/data/transferRequests?'))).toHaveLength(2));
+    expect(client.get.mock.calls.filter(([path]) => path.startsWith('/api/data/plans?'))).toHaveLength(1);
+  });
+  it('labels a transfer payment by report time while retaining provider payment time', async () => {
+    client.get.mockImplementation(async (path: string) => {
+      if (path === '/api/bootstrap') return { data: { admin: { id: 'admin-1', name: 'Owner', role: '超級管理員' } } };
+      if (path === '/api/dashboard') return { data: dashboard };
+      if (path.startsWith('/api/data/subscriptionRecords?')) return { data: { items: [
+        { id: 'manual-1', memberId: 'member-1', transferRequestId: 'transfer-1', paidAt: '2026-09-24T10:00:00Z', amount: 100, status: 'confirmed' },
+        { id: 'provider-1', memberId: 'member-2', transferRequestId: null, paidAt: '2026-09-24T11:00:00Z', amount: 200, status: 'confirmed' },
+      ], total: 2, currentPage: 1, totalPages: 1 } };
+      return { data: { items: [], total: 0, currentPage: 1, totalPages: 1 } };
+    });
+    const { container } = render(<AdminApp />);
+    fireEvent.click(await screen.findByRole('button', { name: /訂閱管理/ }));
+    fireEvent.click(screen.getByRole('tab', { name: '付款紀錄' }));
+    await waitFor(() => expect(container.querySelectorAll('.paymentReversalRow')).toHaveLength(2));
+    const rows = [...container.querySelectorAll('.paymentReversalRow')];
+    expect(rows[0].textContent).toContain('回報時間');
+    expect(rows[1].textContent).toContain('付款時間');
   });
   it('reuses the revenue reset identity after an uncertain response and creates a new one after success', async () => {
     client.get.mockImplementation(async (path: string) => {

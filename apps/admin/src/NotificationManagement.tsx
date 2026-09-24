@@ -146,10 +146,12 @@ export function NotificationManagement({ client, canEdit, adminId }: Props) {
   }, [search, composing, memberQuery.keyword]);
 
   const changeSearch = (value: string) => {
-    memberRequests.begin();
+    const keyword = value.trim();
+    const sameQuery = memberQuery.page === 1 && memberQuery.keyword === keyword;
+    if (!sameQuery) memberRequests.begin();
     setSearch(value);
-    setMembersLoading(true);
-    if (!value.trim() || value.trim() === memberQuery.keyword) setMemberQuery({ page: 1, keyword: value.trim() });
+    if (!sameQuery) setMembersLoading(true);
+    if ((!keyword || keyword === memberQuery.keyword) && !sameQuery) setMemberQuery({ page: 1, keyword });
   };
 
   const changePage = (page: number) => {
@@ -235,6 +237,7 @@ export function NotificationManagement({ client, canEdit, adminId }: Props) {
               onCompositionEnd={() => setComposing(false)}
               onKeyDown={event => {
                 if (event.key === 'Enter' && !event.nativeEvent.isComposing && !composing) {
+                  if (memberQuery.page === 1 && memberQuery.keyword === search.trim() && !membersError) return;
                   memberRequests.begin();
                   setMemberQuery({ page: 1, keyword: search.trim() });
                 }
@@ -321,7 +324,7 @@ export function NotificationManagement({ client, canEdit, adminId }: Props) {
       <section className="panel notificationLogs" aria-labelledby="delivery-log-title">
         <div className="notificationSectionHeader">
           <h2 id="delivery-log-title">發送紀錄</h2>
-          <span>最新 {logs.length} 筆紀錄</span>
+          <span>最新 {logs.length} 筆紀錄{logs.length === 200 ? '（只顯示最近 200 筆）' : ''}</span>
         </div>
         {logsError && (
           <div className="error notificationRecovery" role="alert">

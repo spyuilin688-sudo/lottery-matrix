@@ -8,6 +8,7 @@ const order: QuotaOrder = { merchantId: '3002607', merchantTradeNo: 'M2609231030
 const paid: QuotaEvidence = {
   ...order, state: 'occupied', paymentType: 'Credit_CreditCard', providerStatus: '1',
   occurredAt: '2026-09-23T02:30:00.000Z', tradeNo: '2609231234567890',
+  paidAt: '2026-09-23T02:30:00.000Z',
 };
 const request = (token?: string, method = 'POST') => new Request('https://example/functions/v1/ecpay-recover', {
   method, headers: token ? { 'x-matrix-dispatch-token': token } : {},
@@ -35,7 +36,7 @@ describe('scheduled ECPay payment recovery', () => {
   });
 
   it('never grants an issued but unpaid order and backs off all provider queries on 403', async () => {
-    const issued: QuotaEvidence = { ...paid, paymentType: 'ATM_TAISHIN', providerStatus: '0' };
+    const issued: QuotaEvidence = { ...paid, paymentType: 'ATM_TAISHIN', providerStatus: '0', paidAt: null };
     const record = vi.fn();
     const handler = createEcpayRecoveryHandler({ token: 'secret', claim: async () => [order],
       query: async () => issued, record, backoff: vi.fn() });

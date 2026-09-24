@@ -2,8 +2,13 @@ vi.mock('./permission-settings', () => ({ readPermissionSettings: vi.fn(async ()
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const rpc = vi.fn();
+const entitlementsRpc = vi.fn();
 const getSession = vi.fn();
-vi.mock('./lib/supabase', () => ({ getSupabaseClient: () => ({ rpc, auth: { getSession } }) }));
+vi.mock('./lib/supabase', () => ({ getSupabaseClient: () => ({
+  rpc: (name: string, request?: unknown) => name === 'matrix_status_entitlements'
+    ? entitlementsRpc() : rpc(name, request),
+  auth: { getSession },
+}) }));
 
 import { invalidateMatrixData } from './matrix-data-revision';
 import { updateAlgorithmCacheSession } from './auth/algorithm-cache-scope';
@@ -13,6 +18,10 @@ import { fetchExploreList, fetchExploreValidation } from './matrix-algorithm-api
 
 beforeEach(() => {
   rpc.mockReset();
+  entitlementsRpc.mockReset().mockResolvedValue({ data: {
+    canUseSeven: true, canUseThirteen: true, canUseFullRange: true,
+    canUseTianyan: true, canUseTiangong: true,
+  }, error: null });
   resetReadCacheForTests();
   getSession.mockResolvedValue({ data: { session: { user: { id: 'account-a' }, access_token: 'session-a' } }, error: null });
 });
@@ -259,6 +268,7 @@ describe('algorithm data revision', () => {
 
     expect(getSession).toHaveBeenCalledTimes(1);
     expect(rpc).toHaveBeenCalledTimes(1);
+    expect(entitlementsRpc).toHaveBeenCalledTimes(1);
   });
 });
 

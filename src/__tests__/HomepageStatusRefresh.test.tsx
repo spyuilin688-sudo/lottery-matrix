@@ -52,7 +52,7 @@ beforeEach(() => {
     resultStatus: 'confirmed',
   });
 });
-afterEach(() => { vi.useRealTimers(); });
+afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
 test('讀取失敗不可顯示成沉寂；下一次更新可恢復', async () => {
   api.fetchMatrixStatusSummaries.mockRejectedValue(new Error('offline'));
@@ -63,6 +63,122 @@ test('讀取失敗不可顯示成沉寂；下一次更新可恢復', async () =>
   api.fetchMatrixStatusSummaries.mockImplementation(async () => response());
   await act(async () => { await vi.advanceTimersByTimeAsync(10 * 60_000); });
   expect(screen.getByRole('button', { name: '今彩539 啟動' })).toBeInTheDocument();
+});
+
+test('非開獎時段狀態讀取失敗，恢復連線只重讀失敗的彩種', async () => {
+  vi.setSystemTime(new Date('2026-09-22T17:01:00Z'));
+  api.fetchMatrixStatusSummaries.mockImplementationOnce(async () => ({
+    kind: 'status-summary-batch',
+    items: response().items.map(item => item.lottery === '今彩539'
+      ? { ...item, status: 504, body: { error: { code: 'TIMEOUT' } } }
+      : item),
+  }));
+  mount(); await flush();
+  expect(screen.getByRole('button', { name: '今彩539 讀取失敗' })).toBeInTheDocument();
+  api.fetchMatrixStatusSummaries.mockClear();
+  api.fetchLatestLotteryResultState.mockClear();
+  api.refreshLatestDraw.mockClear();
+  await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+  expect(api.fetchMatrixStatusSummaries).not.toHaveBeenCalled();
+  act(() => { window.dispatchEvent(new Event('online')); });
+  await flush();
+  expect(api.fetchMatrixStatusSummaries).toHaveBeenCalledWith(['今彩539'], expect.any(AbortSignal));
+  expect(api.fetchLatestLotteryResultState).not.toHaveBeenCalled();
+  expect(api.refreshLatestDraw).not.toHaveBeenCalled();
+  expect(screen.getByRole('button', { name: '今彩539 啟動' })).toBeInTheDocument();
+});
+
+test('非開獎時段讀取開獎結果失敗，恢復連線只重讀該資料', async () => {
+  vi.setSystemTime(new Date('2026-09-22T17:01:00Z'));
+  api.fetchLatestLotteryResultState.mockRejectedValueOnce(new Error('offline'));
+  mount(); await flush();
+  api.fetchMatrixStatusSummaries.mockClear();
+  api.fetchLatestLotteryResultState.mockClear();
+  api.refreshLatestDraw.mockClear();
+  act(() => { window.dispatchEvent(new Event('online')); });
+  await flush();
+  expect(api.fetchLatestLotteryResultState).toHaveBeenCalledTimes(1);
+  expect(api.fetchMatrixStatusSummaries).not.toHaveBeenCalled();
+  expect(api.refreshLatestDraw).not.toHaveBeenCalled();
+  api.fetchLatestLotteryResultState.mockClear();
+  act(() => { window.dispatchEvent(new Event('online')); });
+  await flush();
+  expect(api.fetchLatestLotteryResultState).not.toHaveBeenCalled();
+});
+
+test('非開獎時段補查已排隊時，資料失效應優先重讀四彩與開獎資料', async () => {
+  vi.setSystemTime(new Date('2026-09-22T17:01:00Z'));
+  api.fetchMatrixStatusSummaries.mockImplementationOnce(async () => ({
+    kind: 'status-summary-batch',
+    items: response().items.map(item => item.lottery === '今彩539'
+      ? { ...item, status: 504, body: { error: { code: 'TIMEOUT' } } }
+      : item),
+  }));
+  mount(); await flush();
+  api.fetchMatrixStatusSummaries.mockClear();
+  api.fetchLatestLotteryResultState.mockClear();
+  api.refreshLatestDraw.mockClear();
+
+  act(() => {
+    window.dispatchEvent(new Event('online'));
+    invalidateMatrixData();
+  });
+  await flush();
+
+  expect(api.fetchMatrixStatusSummaries).toHaveBeenCalledTimes(1);
+  expect(api.fetchMatrixStatusSummaries).toHaveBeenCalledWith(lotteries, expect.any(AbortSignal));
+  expect(api.fetchLatestLotteryResultState).toHaveBeenCalledTimes(1);
+  expect(api.refreshLatestDraw).toHaveBeenCalledTimes(1);
+  for (const lottery of lotteries) {
+    expect(screen.getByRole('button', { name: `${lottery} 啟動` })).toBeInTheDocument();
+  }
+});
+
+test('非開獎時段背景分頁收到資料失效，回到前景會完成四彩重新整理', async () => {
+  vi.setSystemTime(new Date('2026-09-22T17:01:00Z'));
+  let visibility: DocumentVisibilityState = 'visible';
+  vi.spyOn(document, 'visibilityState', 'get').mockImplementation(() => visibility);
+  mount(); await flush();
+  api.fetchMatrixStatusSummaries.mockClear();
+  api.fetchLatestLotteryResultState.mockClear();
+  visibility = 'hidden';
+  act(() => { invalidateMatrixData(); });
+  expect(api.fetchMatrixStatusSummaries).not.toHaveBeenCalled();
+  visibility = 'visible';
+  act(() => { document.dispatchEvent(new Event('visibilitychange')); });
+  await flush();
+
+  expect(api.fetchMatrixStatusSummaries).toHaveBeenCalledWith(lotteries, expect.any(AbortSignal));
+  for (const lottery of lotteries) {
+    expect(screen.getByRole('button', { name: `${lottery} 啟動` })).toBeInTheDocument();
+  }
+});
+
+test('非開獎時段首次進入背景頁面，回到前景會讀取四彩', async () => {
+  vi.setSystemTime(new Date('2026-09-22T17:01:00Z'));
+  let visibility: DocumentVisibilityState = 'hidden';
+  vi.spyOn(document, 'visibilityState', 'get').mockImplementation(() => visibility);
+  mount(); await flush();
+  expect(api.fetchMatrixStatusSummaries).not.toHaveBeenCalled();
+  visibility = 'visible';
+  act(() => { document.dispatchEvent(new Event('visibilitychange')); });
+  await flush();
+
+  expect(api.fetchMatrixStatusSummaries).toHaveBeenCalledWith(lotteries, expect.any(AbortSignal));
+  for (const lottery of lotteries) {
+    expect(screen.getByRole('button', { name: `${lottery} 啟動` })).toBeInTheDocument();
+  }
+});
+
+test('首次讀取尚未結束時前景事件不再發一次相同的完整請求', async () => {
+  vi.setSystemTime(new Date('2026-09-22T17:01:00Z'));
+  let resolveFirst!: (value: ReturnType<typeof response>) => void;
+  api.fetchMatrixStatusSummaries.mockImplementationOnce(() => new Promise(resolve => { resolveFirst = resolve; }));
+  mount(); await flush();
+  act(() => { window.dispatchEvent(new Event('focus')); });
+  await flush();
+  expect(api.fetchMatrixStatusSummaries).toHaveBeenCalledTimes(1);
+  await act(async () => { resolveFirst(response()); });
 });
 
 test('開獎資料失效時重新讀取四彩種，連續失效通知合併處理', async () => {

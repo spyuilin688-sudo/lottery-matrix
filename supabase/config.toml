@@ -6,3 +6,7 @@ verify_jwt = false
 
 [functions.ecpay-recover]
 verify_jwt = false
+
+[functions.admin-api]
+# The owner auth config is public; protected routes verify admin sessions in the handler.
+verify_jwt = false

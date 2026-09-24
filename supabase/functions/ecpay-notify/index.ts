@@ -2,7 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.112.3';
 import { createEcpayNotifyHandler } from './handler.ts';
 import { queryEcpayPaid } from './query.ts';
-import { quotaRecordParams } from '../_shared/ecpay-quota.ts';
+import { paidRecordParams, quotaRecordParams } from '../_shared/ecpay-quota.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -26,17 +26,12 @@ const handler = createEcpayNotifyHandler({
     if (environment !== 'stage' && environment !== 'production') throw new Error('SERVER_CONFIG_MISSING');
     return queryEcpayPaid({ ...config, environment }, order);
   },
-  async recordPaid(order) {
+  async recordPaid(evidence) {
     if (!supabaseUrl || !serviceRoleKey) throw new Error('SERVER_CONFIG_MISSING');
     const client = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const { error } = await client.rpc('ecpay_payment_confirm', {
-      p_merchant_trade_no: order.merchantTradeNo,
-      p_merchant_id: order.merchantId,
-      p_trade_no: order.tradeNo,
-      p_amount: order.amount,
-    });
+    const { error } = await client.rpc('ecpay_paid_reconcile',paidRecordParams(evidence));
     if (error) throw new Error('PAYMENT_CONFIRM_FAILED');
   },
 });

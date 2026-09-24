@@ -40,6 +40,7 @@ type BottomNavCallbacks = {
 };
 
 const LOTTERIES: LotteryId[] = ["今彩539", "天天樂", "六合彩", "大樂透"];
+const lookupNumberMax = (lottery: LotteryId) => lottery === "今彩539" || lottery === "天天樂" ? 39 : 49;
 
 function BottomNavigationPortal({ onNavigate, onQuickOpen, quickActive }: { onNavigate: Navigate } & BottomNavCallbacks) {
   const [host, setHost] = useState<HTMLElement | null>(null);
@@ -160,10 +161,10 @@ function updateLookupInputValues(values: string[], index: number, rawValue: stri
   return values.map((value, valueIndex) => valueIndex === index ? candidate : value);
 }
 
-function finalizeLookupInputValues(values: string[], index: number) {
+function finalizeLookupInputValues(values: string[], index: number, lottery: LotteryId) {
   const raw = values[index];
   const number = Number(raw);
-  const formatted = raw !== "" && number >= 1 && number <= 49 ? String(number).padStart(2, "0") : "";
+  const formatted = raw !== "" && number >= 1 && number <= lookupNumberMax(lottery) ? String(number).padStart(2, "0") : "";
   const duplicate = formatted && values.some((value, valueIndex) => valueIndex !== index && normalizeLookupNumber(value) === formatted);
   return values.map((value, valueIndex) => valueIndex === index ? duplicate ? "" : formatted : value);
 }
@@ -191,13 +192,13 @@ function PatchedDrawHistoryPage({
   const [page, setPage] = useState(1);
   const historyListRef = useRef<HTMLDivElement>(null);
   const focusHistoryAfterPageChange = useRef(false);
-  const { data: selectedLotteryLatest } = useLotteryHistory(lottery, 1);
   const { data: history, loadState: historyLoadState, reload: reloadHistory } = useLotteryHistory(appliedHistorySettings.lottery, getHistoryLimit(appliedHistorySettings.range));
   const historyOrder = getHistoryOrder(appliedHistorySettings.numberOrder);
   const filteredHistory = useMemo(() => filterHistoryRecords(history, appliedFilters), [history, appliedFilters]);
   const paginatedHistory = useMemo(() => paginateHistory(filteredHistory, page), [filteredHistory, page]);
   const historyWeekGroups = useMemo(() => groupHistoryByCalendarWeek(paginatedHistory.items), [paginatedHistory.items]);
-  const latestSelectedDate = getDrawDate(selectedLotteryLatest[0] ?? { numbers: [] });
+  const latestSelectedDate = lottery === appliedHistorySettings.lottery
+    ? getDrawDate(history[0] ?? { numbers: [] }) : "";
   const [yearMetadata, setYearMetadata] = useState<{ lottery: LotteryId; years: string[] } | null>(null);
   const [yearError, setYearError] = useState(false);
   const [yearRevision, setYearRevision] = useState(0);
@@ -367,8 +368,9 @@ function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickA
   }), [appliedLottery]);
 
   const handleSearch = async () => {
-    const hasInvalidValue = values.some((value) => value !== "" && !/^(0[1-9]|[1-4][0-9])$/.test(value));
-    if (hasInvalidValue) { setValues(values.map((value) => /^(0[1-9]|[1-4][0-9])$/.test(value) ? value : "")); return; }
+    const isValidValue = (value: string) => /^(0[1-9]|[1-4][0-9])$/.test(value) && Number(value) <= lookupNumberMax(lottery);
+    const hasInvalidValue = values.some((value) => value !== "" && !isValidValue(value));
+    if (hasInvalidValue) { setValues(values.map((value) => isValidValue(value) ? value : "")); return; }
     const normalizedValues = values.map(normalizeLookupNumber).filter(Boolean);
     if (normalizedValues.length < 2) {
       await appDialog.alert({ title: "請至少輸入兩個號碼" });
@@ -419,7 +421,7 @@ function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickA
   const tongxingSettings = (
     <section className="tongxing-query tongxing-panel-scope tool-settings-panel" data-floating={settingsFloating} role={settingsFloating ? "dialog" : "region"} aria-label="同星探索設定" hidden={!settingsExpanded}>
       <div className="query-selects tool-settings-primary-row"><div className="select-box native-select"><select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div><div className="select-box native-select tongxing-order-select"><select aria-label="號碼順序" aria-description={!supportsDrawOrder(lottery) ? DAILY_SORTED_ONLY_DESCRIPTION : undefined} value={order} onChange={(event) => setOrder(event.target.value)}><option value="依號碼由小到大排序">依號碼由小到大排序</option><option value="依實際開獎順序排序" disabled={!supportsDrawOrder(lottery)}>依實際開獎順序排序</option></select><ChevronDownIcon aria-hidden="true" /></div></div>
-      <div className="same-star-fields">{values.map((value, index) => <input key={index} aria-label={`號碼 ${index + 1}`} value={value} inputMode="numeric" pattern="(0[1-9]|[1-4][0-9])" maxLength={2} onClick={(event) => event.currentTarget.select()} onChange={(event) => setValues(updateLookupInputValues(values, index, event.target.value))} onBlur={() => setValues(finalizeLookupInputValues(values, index))} />)}<span>之後下</span><div className="select-box native-select same-star-period-select"><select aria-label="之後期數" value={period} onChange={(event) => setPeriod(event.target.value)}>{Array.from({ length: 30 }, (_, index) => `${index + 1}期`).map((item) => <option value={item} key={item}>{item}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div><span>開出</span></div>
+      <div className="same-star-fields">{values.map((value, index) => <input key={index} aria-label={`號碼 ${index + 1}`} value={value} inputMode="numeric" pattern={lookupNumberMax(lottery) === 39 ? "(0[1-9]|[1-2][0-9]|3[0-9])" : "(0[1-9]|[1-4][0-9])"} maxLength={2} onClick={(event) => event.currentTarget.select()} onChange={(event) => setValues(updateLookupInputValues(values, index, event.target.value))} onBlur={() => setValues(finalizeLookupInputValues(values, index, lottery))} />)}<span>之後下</span><div className="select-box native-select same-star-period-select"><select aria-label="之後期數" value={period} onChange={(event) => setPeriod(event.target.value)}>{Array.from({ length: 30 }, (_, index) => `${index + 1}期`).map((item) => <option value={item} key={item}>{item}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div><span>開出</span></div>
       <button type="button" className="primary-action branded-explore-action" onClick={handleSearch}><MagnifyingGlassIcon /><span>開始探索</span></button>
     </section>
   );

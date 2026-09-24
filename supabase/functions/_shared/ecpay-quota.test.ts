@@ -7,7 +7,8 @@ const order = { merchantId: config.merchantId, merchantTradeNo: 'M26092310300012
 const fields = {
   MerchantID: order.merchantId, MerchantTradeNo: order.merchantTradeNo,
   TradeNo: '2609231234567890', TradeAmt: '2880', TradeStatus: '1',
-  PaymentType: 'Credit_CreditCard', TradeDate: '2026/09/23 10:30:00',
+  PaymentType: 'Credit_CreditCard', TradeDate: '2026/09/23 23:59:00',
+  PaymentDate: '2026/09/24 00:01:00',
 };
 async function response(overrides: Record<string, string> = {}) {
   const values = { ...fields, ...overrides };
@@ -32,7 +33,9 @@ describe('verified ECPay quota evidence', () => {
     const result = await queryEcpayQuota(config, order, async () => response({ TradeStatus, PaymentType }));
     expect(result.state).toBe(state);
     expect(result.amount).toBe(2880);
-    expect(result.occurredAt).toBe(state === 'occupied' ? '2026-09-23T02:30:00.000Z' : null);
+    expect(result.occurredAt).toBe(state === 'occupied'
+      ? (TradeStatus === '0' ? '2026-09-23T15:59:00.000Z' : '2026-09-23T16:01:00.000Z')
+      : null);
   });
   it('requires matching signed number-issuance evidence before counting an unpaid ATM order', async () => {
     const urls: string[] = [];
@@ -53,7 +56,7 @@ describe('verified ECPay quota evidence', () => {
       async () => response({ TradeStatus: '99' }),
       async () => response({ TradeAmt: '1' }),
       async () => response({ MerchantID: '9999999' }),
-      async () => response({ TradeDate: '2026/02/30 10:30:00' }),
+      async () => response({ PaymentDate: '2026/02/30 10:30:00' }),
     ]) await expect(queryEcpayQuota(config, order, fetcher)).rejects.toThrow();
   });
   it('rejects forged or duplicated response fields', async () => {
@@ -65,5 +68,34 @@ describe('verified ECPay quota evidence', () => {
   it('recognises signed ATM and CVS number notifications without treating them as payments', () => {
     expect(quotaEvidence({ ...fields, PaymentType: 'ATM_TAISHIN', TradeStatus: '0' }).state).toBe('occupied');
     expect(quotaEvidence({ ...fields, PaymentType: 'CVS_CVS', TradeStatus: '0' }).state).toBe('occupied');
+  });
+  it('counts paid credit at the payment date and issued offline orders at the trade date', async () => {
+    const credit = await queryEcpayQuota(config, order, async () => response());
+    expect(credit.occurredAt).toBe('2026-09-23T16:01:00.000Z');
+    expect(credit.paidAt).toBe('2026-09-23T16:01:00.000Z');
+    const offline = quotaEvidence({ ...fields, PaymentType: 'ATM_TAISHIN', TradeStatus: '0' });
+    expect(offline.occurredAt).toBe('2026-09-23T15:59:00.000Z');
+    expect(offline.paidAt).toBeNull();
+    const laterPaid = quotaEvidence({ ...fields, PaymentType: 'ATM_TAISHIN' });
+    expect(laterPaid.occurredAt).toBe('2026-09-23T15:59:00.000Z');
+    expect(laterPaid.paidAt).toBe('2026-09-23T16:01:00.000Z');
+    expect(() => quotaEvidence({ ...fields, PaymentDate: '2026/02/30 12:00:00' })).toThrow('INVALID_PROVIDER_DATE');
+  });
+  it('verifies a first offline issuance only once, then checks only payment status for known issuance', async () => {
+    const urls: string[] = [];
+    const knownOrder = { ...order, quotaState: 'occupied' as const, quotaProviderStatus: '0',
+      quotaPaymentType: 'ATM_TAISHIN', quotaTradeNo: fields.TradeNo };
+    const result = await queryEcpayQuota(config, knownOrder, async (url) => {
+      urls.push(String(url));
+      return response({ TradeStatus: '0', PaymentType: 'ATM_TAISHIN' });
+    });
+    expect(result.state).toBe('occupied');
+    expect(urls).toEqual(['https://payment-stage.ecpay.com.tw/Cashier/QueryTradeInfo/V5']);
+    const mismatchedUrls: string[] = [];
+    await expect(queryEcpayQuota(config, knownOrder, async (url) => {
+      mismatchedUrls.push(String(url));
+      return response({ TradeStatus: '0', PaymentType: 'ATM_TAISHIN', TradeNo: 'DIFFERENT' });
+    })).rejects.toThrow();
+    expect(mismatchedUrls).toEqual(['https://payment-stage.ecpay.com.tw/Cashier/QueryTradeInfo/V5']);
   });
 });

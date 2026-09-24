@@ -10,6 +10,7 @@ export type PaymentRecord = {
   identityDisplay?: string | null;
   planId?: string | null;
   planName?: string | null;
+  transferRequestId?: string | null;
   amount: number;
   paidAt?: string | null;
   status: string;
@@ -228,7 +229,7 @@ export function PaymentReversalPanel({ payments, loadError = '', canEdit, expand
                 <strong>{payment.identityDisplay || "—"}</strong>
                 <span>{payment.planName || payment.planId || '未標示方案'} · NT${Number(payment.amount).toLocaleString('en-US')}</span>
                 <span>付款 {payment.id}</span>
-                {payment.paidAt && <span>付款時間 {formatAdminDateTime(payment.paidAt)}</span>}
+                {payment.paidAt && <span>{payment.transferRequestId ? '回報時間' : '付款時間'} {formatAdminDateTime(payment.paidAt)}</span>}
                 {payment.reversalReason && (
                   <span>沖銷原因 {payment.reversalReason}{payment.reversedByName ? `／${payment.reversedByName}` : ''}</span>
                 )}

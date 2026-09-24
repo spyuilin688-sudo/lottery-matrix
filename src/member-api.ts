@@ -52,7 +52,7 @@ export type MemberPaymentHistoryItem = {
   id: string;
   planName: string;
   amount: number;
-  accountLastFive?: string;
+  accountLastFive?: string | null;
   submittedAt: string;
   paidAt?: string | null;
   status: PaymentStatus;

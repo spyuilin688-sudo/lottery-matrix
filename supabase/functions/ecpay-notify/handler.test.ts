@@ -13,6 +13,12 @@ const payment = {
   PaymentType: 'Credit_CreditCard',
   TradeDate: '2026/09/23 10:30:00',
 };
+const verified = {
+  merchantId: payment.MerchantID, merchantTradeNo: payment.MerchantTradeNo,
+  tradeNo: payment.TradeNo, amount: 2880, state: 'occupied' as const,
+  paymentType: 'Credit_CreditCard', providerStatus: '1',
+  occurredAt: '2026-09-23T02:30:00.000Z', paidAt: '2026-09-23T02:30:00.000Z',
+};
 
 async function signedRequest(fields: Record<string, string> = payment) {
   const mac = await createEcpayCheckMacValue(fields, config.hashKey, config.hashIv);
@@ -27,20 +33,21 @@ describe('ECPay payment notification', () => {
   it('keeps unknown payment methods unresolved without blocking a verified paid membership', async () => {
     const recordPaid = vi.fn().mockResolvedValue(undefined);
     const recordQuota = vi.fn().mockResolvedValue(undefined);
-    const handler = createEcpayNotifyHandler({ config, verifyPaid: async () => true, recordPaid, recordQuota });
+    const handler = createEcpayNotifyHandler({ config, verifyPaid: async () => ({ ...verified, state: 'reserved',
+      paymentType: 'NewMethod', occurredAt: null }), recordPaid, recordQuota });
     expect((await handler(await signedRequest({ ...payment, PaymentType: 'NewMethod' }))).status).toBe(200);
-    expect(recordQuota).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ state: 'reserved', providerStatus: '1' }));
-    expect(recordPaid).toHaveBeenCalledOnce();
+    expect(recordQuota).not.toHaveBeenCalled();
+    expect(recordPaid).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ state: 'reserved', providerStatus: '1' }));
   });
-  it('records verified paid quota before membership activation and acknowledges repeated callbacks', async () => {
+  it('records verified paid quota and membership atomically and acknowledges repeated callbacks', async () => {
     const events: string[] = [];
     const handler = createEcpayNotifyHandler({
-      config, verifyPaid: async () => { events.push('verified'); return true; },
-      recordQuota: async (value) => { expect(value.state).toBe('occupied'); events.push('quota'); },
-      recordPaid: async () => { events.push('membership'); },
+      config, verifyPaid: async () => { events.push('verified'); return verified; },
+      recordQuota: async () => { throw new Error('paid receipt belongs in one transaction'); },
+      recordPaid: async (value) => { expect(value.paidAt).toBe(verified.paidAt); events.push('quota+membership'); },
     });
     for (let i=0;i<2;i++) expect((await handler(await signedRequest())).status).toBe(200);
-    expect(events).toEqual(['verified','quota','membership','verified','quota','membership']);
+    expect(events).toEqual(['verified','quota+membership','verified','quota+membership']);
   });
   it('records issued ATM/CVS quota without activating a membership', async () => {
     const recorded: unknown[] = [];
@@ -59,7 +66,7 @@ describe('ECPay payment notification', () => {
   it('retries a failed quota write and ignores a simulated issuance', async () => {
     const handler = createEcpayNotifyHandler({
       config, recordQuota: async () => { throw new Error('write failed'); },
-      recordPaid: async () => {}, verifyPaid: async () => true,
+      recordPaid: async () => {}, verifyPaid: async () => verified,
     });
     expect((await handler(await signedRequest({ ...payment, RtnCode: '2', PaymentType: 'ATM_TAISHIN' }))).status).toBe(503);
     expect((await handler(await signedRequest({ ...payment, RtnCode: '2', PaymentType: 'ATM_TAISHIN', SimulatePaid: '1' }))).status).toBe(200);
@@ -68,30 +75,25 @@ describe('ECPay payment notification', () => {
     const recorded: unknown[] = [];
     const handler = createEcpayNotifyHandler({
       config, recordQuota: async (value) => { recorded.push(value); },
-      recordPaid: async () => {}, verifyPaid: async () => true,
+      recordPaid: async () => {}, verifyPaid: async () => verified,
     });
     expect((await handler(await signedRequest({ ...payment, RtnCode: '2' }))).status).toBe(400);
     expect(recorded).toEqual([]);
   });
   it('acknowledges a signed real payment only after recording it', async () => {
     const recordPaid = vi.fn().mockResolvedValue(undefined);
-    const verifyPaid = vi.fn().mockResolvedValue(true);
+    const verifyPaid = vi.fn().mockResolvedValue(verified);
     const handler = createEcpayNotifyHandler({ config, recordPaid, verifyPaid });
     const response = await handler(await signedRequest());
     expect(response.status).toBe(200);
     expect(await response.text()).toBe('1|OK');
-    expect(recordPaid).toHaveBeenCalledExactlyOnceWith({
-      merchantId: config.merchantId,
-      merchantTradeNo: payment.MerchantTradeNo,
-      tradeNo: payment.TradeNo,
-      amount: 2880,
-    });
+    expect(recordPaid).toHaveBeenCalledExactlyOnceWith(verified);
     expect(verifyPaid).toHaveBeenCalledOnce();
   });
 
   it('acknowledges a fully recorded refund obligation, including a repeated provider notification', async () => {
     const recordPaid = vi.fn().mockResolvedValue({ status: 'refund_required' });
-    const handler = createEcpayNotifyHandler({ config, recordPaid, verifyPaid: vi.fn().mockResolvedValue(true) });
+    const handler = createEcpayNotifyHandler({ config, recordPaid, verifyPaid: vi.fn().mockResolvedValue(verified) });
     for (let attempt = 0; attempt < 2; attempt++) {
       const response = await handler(await signedRequest());
       expect(response.status).toBe(200);
@@ -128,7 +130,7 @@ describe('ECPay payment notification', () => {
   });
 
   it('does not acknowledge a failed database update, allowing the notification to retry', async () => {
-    const handler = createEcpayNotifyHandler({ config, recordPaid: vi.fn().mockRejectedValue(new Error('db unavailable')), verifyPaid: vi.fn().mockResolvedValue(true) });
+    const handler = createEcpayNotifyHandler({ config, recordPaid: vi.fn().mockRejectedValue(new Error('db unavailable')), verifyPaid: vi.fn().mockResolvedValue(verified) });
     expect((await handler(await signedRequest())).status).toBe(503);
   });
 

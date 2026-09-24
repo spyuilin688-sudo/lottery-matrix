@@ -5,8 +5,8 @@ type NotificationConfig = { merchantId: string; hashKey: string; hashIv: string 
 type PaidOrder = { merchantId: string; merchantTradeNo: string; tradeNo: string; amount: number };
 type Dependencies = {
   config: NotificationConfig;
-  verifyPaid(order: PaidOrder): Promise<boolean>;
-  recordPaid(order: PaidOrder): Promise<unknown>;
+  verifyPaid(order: PaidOrder): Promise<QuotaEvidence | false>;
+  recordPaid(evidence: QuotaEvidence): Promise<unknown>;
   recordQuota?(evidence: QuotaEvidence): Promise<unknown>;
 };
 
@@ -62,11 +62,10 @@ export function createEcpayNotifyHandler(dependencies: Dependencies) {
         await dependencies.recordQuota(quotaEvidence({ ...fields, TradeStatus: '0' }));
         return plain('1|OK',200);
       }
-      if (!await dependencies.verifyPaid(order)) return plain('RETRY', 503);
-      if (dependencies.recordQuota) {
-        await dependencies.recordQuota(quotaEvidence({ ...fields, TradeStatus: '1' }));
-      }
-      await dependencies.recordPaid(order);
+      const verified = await dependencies.verifyPaid(order);
+      if (!verified) return plain('RETRY', 503);
+      // The paid evidence and membership grant share one database transaction.
+      await dependencies.recordPaid(verified);
       return plain('1|OK', 200);
     } catch {
       return plain('RETRY', 503);

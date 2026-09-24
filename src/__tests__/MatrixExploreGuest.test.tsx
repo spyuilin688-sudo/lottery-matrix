@@ -3,7 +3,7 @@ import { render } from '../../test/render-with-dialog';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { MatrixExplorePage } from '../features/MatrixExplorePage';
-import { fetchExploreList, fetchExploreValidation, fetchTianhengList, fetchTianhengValidation, fetchTianyanList, fetchTiangongList } from '../matrix-algorithm-api';
+import { fetchExploreList, fetchExploreValidation, fetchTianhengList, fetchTianhengValidation, fetchTianyanList, fetchTiangongList, type ExploreListRequest } from '../matrix-algorithm-api';
 import { resetReadCacheForTests } from '../read-cache';
 import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
 
@@ -50,6 +50,28 @@ test('未登入二期探索可以顯示 RPC 結果', async () => {
   expect(await screen.findByText('22.26')).toBeTruthy();
   expect(sdk.rpc).toHaveBeenCalledWith('matrix_explore_list', { p_request: expect.objectContaining({ explorePeriods: 2, exploreRange: '標準範圍', ruleCount: 2 }) });
   expect(screen.queryByRole('alert')).toBeNull();
+});
+
+test('會員停權後重用清單快取遭拒時，已顯示的探索結果也清空', async () => {
+  const session = { user: { id: 'member' }, access_token: 'member-session' };
+  updateAlgorithmCacheSession(session as never);
+  sdk.getSession.mockResolvedValue({ data: { session }, error: null });
+  sdk.profile.mockResolvedValue({ exploreEntitlements: {
+    canUseSeven: true, canUseThirteen: true, canUseFullRange: true,
+  } });
+  await start();
+  expect(await screen.findByText('22.26')).toBeTruthy();
+  const request = sdk.rpc.mock.calls.find(([name]) => name === 'matrix_explore_list')?.[1]?.p_request as ExploreListRequest;
+  sdk.rpc.mockImplementation(async (name: string) => name === 'matrix_status_entitlements'
+    ? { data: null, error: { code: '42501', message: 'FORBIDDEN' } }
+    : { data: response, error: null });
+
+  await act(async () => {
+    await expect(fetchExploreList(request)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  });
+
+  expect(screen.queryByText('22.26')).toBeNull();
+  expect(document.querySelector('.result-count')).toBeNull();
 });
 
 test('訪客可以讀取二期探索驗證過程', async () => {
