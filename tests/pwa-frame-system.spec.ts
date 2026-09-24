@@ -42,9 +42,18 @@ for (const { screen, width } of cases) {
       const border = await panel.evaluate(element => getComputedStyle(element).borderTopWidth);
       if (border === '0px') continue; // Intentional layout wrappers do not receive a second outline.
       await expect(panel).toHaveCSS('border-top-width', '1px');
-      // PR #688 gives notebook list entries a quieter tertiary frame.
+      // Notebook entries and the approved profile information menus use tertiary frames.
       const notebookEntry = screen === 'notebook' && await panel.evaluate(element => element.classList.contains('notebook-entry'));
-      await expect(panel).toHaveCSS('border-top-color', notebookEntry ? colors.tertiary : colors.secondary);
+      const profileMenu = screen === 'profile' && await panel.evaluate(element => element.classList.contains('profile-menu'));
+      await expect(panel).toHaveCSS('border-top-color', notebookEntry || profileMenu ? colors.tertiary : colors.secondary);
+      if (profileMenu) {
+        await expect(panel).toHaveCSS('background-image', 'none');
+        await expect(panel).toHaveCSS('background-color', 'rgb(2, 7, 12)');
+        await expect(panel.locator('.section-title > span')).toHaveCSS('opacity', '0.78');
+        for (const chevron of await panel.locator('.profile-menu-rows button svg').all()) {
+          await expect(chevron).toHaveCSS('opacity', '0.72');
+        }
+      }
       await expect(panel).toHaveCSS('border-radius', '8px');
       await expect(panel).toHaveCSS('box-shadow', 'none');
     }

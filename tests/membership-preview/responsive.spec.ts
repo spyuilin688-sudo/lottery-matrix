@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const membershipWidths = [320, 360, 390, 430];
+const membershipWidths = [320, 360, 375, 390, 412, 430];
 const paidScenarios = [
   { state: "year", planName: "年費方案" },
   { state: "long", planName: "年費方案" },
@@ -36,6 +36,23 @@ for (const { state, planName } of paidScenarios) {
       await expect(profile.locator(".subscription-plan strong")).toHaveText(planName);
       await expect(description).toHaveText("Matrix Pro 權限");
       await page.evaluate(() => document.fonts.ready);
+
+      const menus = profile.locator('.profile-menu');
+      await expect(menus).toHaveCount(5);
+      for (const menu of await menus.all()) {
+        await expect(menu).toHaveCSS('background-image', 'none');
+        await expect(menu).toHaveCSS('background-color', 'rgb(2, 7, 12)');
+        await expect(menu).toHaveCSS('border-top-color', 'rgb(138, 113, 63)');
+        await expect(menu.locator('.section-title > span')).toHaveCSS('opacity', '0.78');
+        const box = await menu.boundingBox();
+        expect(box!.x).toBeGreaterThanOrEqual(0);
+        expect(box!.x + box!.width).toBeLessThanOrEqual(width);
+        for (const chevron of await menu.locator('.profile-menu-rows button svg').all()) {
+          await expect(chevron).toHaveCSS('opacity', '0.72');
+          await expect(chevron).toHaveCSS('width', '16px');
+          await expect(chevron).toHaveCSS('height', '16px');
+        }
+      }
 
       const stack = profile.locator(".membership-card-stack");
       await expect(stack).toHaveCount(1);
