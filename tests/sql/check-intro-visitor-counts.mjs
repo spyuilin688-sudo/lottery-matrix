@@ -15,6 +15,8 @@ try {
   await db.exec(migration('_matrix_visitor_counts.sql'));
   await db.exec(migration('_secure_visitor_counting.sql'));
   await db.exec(migration('_intro_only_visitor_counting.sql'));
+  const idleMigration = readdirSync('supabase/migrations').find((file) => file.endsWith('_skip_same_day_intro_visitor_write.sql'));
+  if (idleMigration) await db.exec(readFileSync(`supabase/migrations/${idleMigration}`, 'utf8'));
 
   const visit = (hash, at) => db.query('select private.record_matrix_intro_visit($1,$2::timestamptz)', [hash, at]);
   const count = async (type, day) => Number((await db.query('select visitors from private.matrix_intro_visitor_counts where period_type=$1 and period_start=$2::date', [type, day])).rows[0]?.visitors ?? 0);
@@ -22,12 +24,21 @@ try {
   const b = 'b'.repeat(64);
 
   await visit(a, '2026-09-24T15:00:00Z');
+  await db.exec(`create temp table intro_update_audit (id integer);
+    create function private.count_intro_updates() returns trigger language plpgsql as $$
+    begin insert into intro_update_audit values (1); return new; end $$;
+    create trigger count_intro_updates after update on private.matrix_intro_visitor_identifiers
+      for each row execute function private.count_intro_updates();`);
   await visit(a, '2026-09-24T15:30:00Z');
+  assert.equal((await db.query('select count(*)::int n from intro_update_audit')).rows[0].n, 0,
+    'a repeat visit on the same Taipei day must not rewrite the visitor row');
   await visit(b, '2026-09-24T15:45:00Z');
   assert.equal(await count('day', '2026-09-24'), 2, 'an intro visitor counts once per Taipei day');
   assert.equal(await count('total', '1970-01-01'), 2);
 
   await visit(a, '2026-09-24T16:00:00Z');
+  assert.equal((await db.query('select count(*)::int n from intro_update_audit')).rows[0].n, 1,
+    'crossing Taipei midnight must record the new visitor day');
   assert.equal(await count('day', '2026-09-25'), 1, 'Taipei midnight starts a new day');
   assert.equal(await count('total', '1970-01-01'), 2, 'returning intro visitors are not new cumulative visitors');
 
