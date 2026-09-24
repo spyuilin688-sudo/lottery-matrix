@@ -10,6 +10,8 @@ const payment = {
   TradeAmt: '2880',
   RtnCode: '1',
   SimulatePaid: '0',
+  PaymentType: 'Credit_CreditCard',
+  TradeDate: '2026/09/23 10:30:00',
 };
 
 async function signedRequest(fields: Record<string, string> = payment) {
@@ -22,6 +24,55 @@ async function signedRequest(fields: Record<string, string> = payment) {
 }
 
 describe('ECPay payment notification', () => {
+  it('keeps unknown payment methods unresolved without blocking a verified paid membership', async () => {
+    const recordPaid = vi.fn().mockResolvedValue(undefined);
+    const recordQuota = vi.fn().mockResolvedValue(undefined);
+    const handler = createEcpayNotifyHandler({ config, verifyPaid: async () => true, recordPaid, recordQuota });
+    expect((await handler(await signedRequest({ ...payment, PaymentType: 'NewMethod' }))).status).toBe(200);
+    expect(recordQuota).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ state: 'reserved', providerStatus: '1' }));
+    expect(recordPaid).toHaveBeenCalledOnce();
+  });
+  it('records verified paid quota before membership activation and acknowledges repeated callbacks', async () => {
+    const events: string[] = [];
+    const handler = createEcpayNotifyHandler({
+      config, verifyPaid: async () => { events.push('verified'); return true; },
+      recordQuota: async (value) => { expect(value.state).toBe('occupied'); events.push('quota'); },
+      recordPaid: async () => { events.push('membership'); },
+    });
+    for (let i=0;i<2;i++) expect((await handler(await signedRequest())).status).toBe(200);
+    expect(events).toEqual(['verified','quota','membership','verified','quota','membership']);
+  });
+  it('records issued ATM/CVS quota without activating a membership', async () => {
+    const recorded: unknown[] = [];
+    const handler = createEcpayNotifyHandler({
+      config, recordQuota: async (value) => { recorded.push(value); },
+      recordPaid: async () => { throw new Error('issuance is not paid'); },
+      verifyPaid: async () => { throw new Error('issuance is not paid'); },
+    });
+    for (const [RtnCode, PaymentType] of [['2','ATM_TAISHIN'],['10100073','CVS_CVS']]) {
+      const response = await handler(await signedRequest({ ...payment, RtnCode, PaymentType }));
+      expect(response.status).toBe(200);
+    }
+    expect(recorded).toHaveLength(2);
+    expect(recorded[0]).toMatchObject({ state: 'occupied', amount: 2880, paymentType: 'ATM_TAISHIN', providerStatus: '0' });
+  });
+  it('retries a failed quota write and ignores a simulated issuance', async () => {
+    const handler = createEcpayNotifyHandler({
+      config, recordQuota: async () => { throw new Error('write failed'); },
+      recordPaid: async () => {}, verifyPaid: async () => true,
+    });
+    expect((await handler(await signedRequest({ ...payment, RtnCode: '2', PaymentType: 'ATM_TAISHIN' }))).status).toBe(503);
+    expect((await handler(await signedRequest({ ...payment, RtnCode: '2', PaymentType: 'ATM_TAISHIN', SimulatePaid: '1' }))).status).toBe(200);
+  });
+  it('rejects a successful-issuance code paired with the wrong payment method', async () => {
+    const recorded: unknown[] = [];
+    const handler = createEcpayNotifyHandler({
+      config, recordQuota: async (value) => { recorded.push(value); },
+      recordPaid: async () => {}, verifyPaid: async () => true,
+    });
+    expect((await handler(await signedRequest({ ...payment, RtnCode: '2' }))).status).toBe(400);
+    expect(recorded).toEqual([]);
+  });
   it('acknowledges a signed real payment only after recording it', async () => {
     const recordPaid = vi.fn().mockResolvedValue(undefined);
     const verifyPaid = vi.fn().mockResolvedValue(true);

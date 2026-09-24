@@ -6,7 +6,7 @@
 2. 瀏覽器在原分頁將簽章欄位 POST 到綠界 `AioCheckOut/V5`；`ChoosePayment=ALL` 顯示該特店已開通的付款方式。沒有自動續訂。
 3. 綠界 POST 付款結果到 `ecpay-notify`；後端驗證檢查碼，再用 `QueryTradeInfo/V5` 向綠界查詢確認已付款。瀏覽器返回頁面不會自行開通會員。
 4. 資料庫在同一交易中記帳、延長會員期限；同一訂單重複通知不會重複延長。會員付款紀錄包含綠界和原有人工轉帳。
-5. 特店額度用滿時，將 `ECPAY_PAYMENT_MODE` 改為 `manual`；原方案按鈕改走既有人工轉帳表單。設定為 `ecpay` 才會產生綠界訂單。未設定也維持人工模式。
+5. `ECPAY_PAYMENT_MODE=ecpay` 時，依核對結果及 30 日 NT$200,000 上限自動判斷；確認不足才改走既有人工轉帳表單。僅待確認保留影響額度時先核對，失敗維持暫時無法付款。仍可設為 `manual` 強制人工模式；未設定也維持人工模式。部署與核對細節見 [ECPAY_QUOTA_RECONCILIATION.md](./ECPAY_QUOTA_RECONCILIATION.md)。
 
 ## 啟用順序
 

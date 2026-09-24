@@ -1,4 +1,5 @@
 import { verifyEcpayCheckMacValue } from '../_shared/ecpay.ts';
+import { quotaEvidence, type QuotaEvidence } from '../_shared/ecpay-quota.ts';
 
 type NotificationConfig = { merchantId: string; hashKey: string; hashIv: string };
 type PaidOrder = { merchantId: string; merchantTradeNo: string; tradeNo: string; amount: number };
@@ -6,6 +7,7 @@ type Dependencies = {
   config: NotificationConfig;
   verifyPaid(order: PaidOrder): Promise<boolean>;
   recordPaid(order: PaidOrder): Promise<unknown>;
+  recordQuota?(evidence: QuotaEvidence): Promise<unknown>;
 };
 
 function plain(body: string, status: number) {
@@ -36,7 +38,13 @@ export function createEcpayNotifyHandler(dependencies: Dependencies) {
         return plain('INVALID_NOTIFICATION', 400);
       }
       // Green World uses RtnCode=1 even for a simulated payment; it is never a real purchase.
-      if (fields.SimulatePaid === '1' || fields.RtnCode !== '1') return plain('1|OK', 200);
+      if (fields.SimulatePaid === '1') return plain('1|OK', 200);
+      const issued = fields.RtnCode === '2' || fields.RtnCode === '10100073';
+      if (fields.RtnCode !== '1' && !issued) return plain('1|OK', 200);
+      if (issued && !(
+        (fields.RtnCode === '2' && /^ATM_/.test(fields.PaymentType ?? ''))
+        || (fields.RtnCode === '10100073' && /^(CVS|BARCODE)_/.test(fields.PaymentType ?? ''))
+      )) return plain('INVALID_NOTIFICATION',400);
       const amount = Number(fields.TradeAmt);
       if (!/^[A-Za-z0-9]{1,20}$/.test(fields.MerchantTradeNo ?? '')
         || !/^[A-Za-z0-9]{1,20}$/.test(fields.TradeNo ?? '')
@@ -49,7 +57,15 @@ export function createEcpayNotifyHandler(dependencies: Dependencies) {
         tradeNo: fields.TradeNo,
         amount,
       };
+      if (issued) {
+        if (!dependencies.recordQuota) return plain('RETRY',503);
+        await dependencies.recordQuota(quotaEvidence({ ...fields, TradeStatus: '0' }));
+        return plain('1|OK',200);
+      }
       if (!await dependencies.verifyPaid(order)) return plain('RETRY', 503);
+      if (dependencies.recordQuota) {
+        await dependencies.recordQuota(quotaEvidence({ ...fields, TradeStatus: '1' }));
+      }
       await dependencies.recordPaid(order);
       return plain('1|OK', 200);
     } catch {

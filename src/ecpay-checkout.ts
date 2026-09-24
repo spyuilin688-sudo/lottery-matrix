@@ -10,14 +10,14 @@ const checkoutUrls = new Set([
 const fieldNames = new Set([
   'MerchantID', 'MerchantTradeNo', 'MerchantTradeDate', 'PaymentType',
   'TotalAmount', 'TradeDesc', 'ItemName', 'ReturnURL', 'ClientBackURL',
-  'ChoosePayment', 'EncryptType', 'CheckMacValue',
+  'ChoosePayment', 'EncryptType', 'CheckMacValue', 'PaymentInfoURL',
 ]);
 
 /** Leave the member's browser in the same tab, as required by AioCheckOut/V5. */
 export async function beginEcpayCheckout(planCode: ManualTransferPlanCode): Promise<CheckoutResult> {
   const scope = getAlgorithmCacheScope();
   const { data, error } = await getSupabaseClient().functions.invoke('ecpay-checkout', {
-    body: { planCode },
+    body: { planCode, supportsPaymentInfo: true },
   });
   if (scope !== getAlgorithmCacheScope()) throw new Error('MEMBER_SESSION_CHANGED');
   if (error) {

@@ -21,13 +21,14 @@ describe('one-time ECPay browser redirect', () => {
       expect(this.target).toBe('_self');
       expect(new FormData(this).get('CheckMacValue')).toBe('A'.repeat(64));
       expect(new FormData(this).get('TotalAmount')).toBe('2880');
+      expect(new FormData(this).get('PaymentInfoURL')).toBe('https://example.supabase.co/functions/v1/ecpay-notify');
     });
     invoke.mockResolvedValue({ data: {
       action: 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5',
-      fields: { MerchantID: '3002607', TotalAmount: 2880, CheckMacValue: 'A'.repeat(64) },
+      fields: { MerchantID: '3002607', TotalAmount: 2880, PaymentInfoURL: 'https://example.supabase.co/functions/v1/ecpay-notify', CheckMacValue: 'A'.repeat(64) },
     }, error: null });
     expect(await beginEcpayCheckout('month')).toBe('submitted');
-    expect(invoke).toHaveBeenCalledWith('ecpay-checkout', { body: { planCode: 'month' } });
+    expect(invoke).toHaveBeenCalledWith('ecpay-checkout', { body: { planCode: 'month', supportsPaymentInfo: true } });
     expect(submit).toHaveBeenCalledOnce();
   });
 

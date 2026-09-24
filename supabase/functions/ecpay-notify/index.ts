@@ -2,6 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.112.3';
 import { createEcpayNotifyHandler } from './handler.ts';
 import { queryEcpayPaid } from './query.ts';
+import { quotaRecordParams } from '../_shared/ecpay-quota.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -13,6 +14,14 @@ const config = {
 };
 const handler = createEcpayNotifyHandler({
   config,
+  async recordQuota(evidence) {
+    if (!supabaseUrl || !serviceRoleKey) throw new Error('SERVER_CONFIG_MISSING');
+    const client = createClient(supabaseUrl,serviceRoleKey,{
+      auth: { persistSession: false,autoRefreshToken: false },
+    });
+    const { error } = await client.rpc('ecpay_quota_record',quotaRecordParams(evidence));
+    if (error) throw new Error('QUOTA_RECORD_FAILED');
+  },
   async verifyPaid(order) {
     if (environment !== 'stage' && environment !== 'production') throw new Error('SERVER_CONFIG_MISSING');
     return queryEcpayPaid({ ...config, environment }, order);
