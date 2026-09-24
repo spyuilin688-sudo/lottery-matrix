@@ -193,10 +193,10 @@ describe("notification visual refinement", () => {
     expect(rule('.notifications-screen-v2 .notification-settings-toggle[aria-expanded="true"]')).toContain("color: var(--pwa-frame-secondary);");
     expect(rule(".notifications-screen-v2 .notification-settings-toggle")).toContain("width: 56px;");
     expect(rule(".notifications-screen-v2 .notification-settings-toggle")).toContain("height: 20px;");
-    expect(rule(".notifications-screen-v2 .notification-actions > .notification-settings-toggle")).toContain("height: 44px;");
+    expect(rule(".notifications-screen-v2 .notification-actions > .notification-settings-toggle")).toContain("height: 32px;");
     expect(rule(".notifications-screen-v2 .notification-actions > .notification-settings-toggle::before")).toContain("height: 20px;");
     expect(rule(".notifications-screen-v2 .notification-actions > .toggle")).toContain("width: 38px;");
-    expect(rule(".notifications-screen-v2 .notification-actions > .toggle")).toContain("height: 44px;");
+    expect(rule(".notifications-screen-v2 .notification-actions > .toggle")).toContain("height: 32px;");
     expect(rule(".notifications-screen-v2 .toggle::before")).toContain("height: 18px;");
     expect(rule(".notifications-screen-v2 .toggle span")).toContain("width: 14px;");
     expect(rule(".notifications-screen-v2 .notification-grid-row")).toContain("grid-template-columns: repeat(4, minmax(0, 1fr));");

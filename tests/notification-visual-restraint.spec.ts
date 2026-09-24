@@ -81,13 +81,14 @@ for (const width of [320, 360, 390, 412, 430]) {
       }
       for (const toggle of await screen.locator('.notification-actions > .toggle').all()) {
         await expect(toggle).toHaveCSS('width', '38px');
-        await expect(toggle).toHaveCSS('height', '44px');
-        expect(await toggle.evaluate(el => [getComputedStyle(el, '::before').width, getComputedStyle(el, '::before').height])).toEqual(['38px', '18px']);
+        await expect(toggle).toHaveCSS('height', '32px');
+        expect(await toggle.evaluate(el => [getComputedStyle(el, '::before').width, getComputedStyle(el, '::before').height, getComputedStyle(el, '::before').top])).toEqual(['38px', '18px', '7px']);
+        await expect(toggle.locator('span')).toHaveCSS('top', '9px');
       }
       for (const setting of await screen.locator('.notification-actions > .notification-settings-toggle').all()) {
         await expect(setting).toHaveCSS('width', '56px');
-        await expect(setting).toHaveCSS('height', '44px');
-        expect(await setting.evaluate(el => getComputedStyle(el, '::before').height)).toBe('20px');
+        await expect(setting).toHaveCSS('height', '32px');
+        expect(await setting.evaluate(el => [getComputedStyle(el, '::before').height, getComputedStyle(el, '::before').top])).toEqual(['20px', '6px']);
       }
       if (key !== 'collapsed') {
         await row(key).locator('.notification-settings-toggle').click();
