@@ -99,9 +99,8 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 
 @media (max-width: 600px) {
-  .brand-logo { width: 82px; }
-  .site-nav { display: none; }
-  .hero { row-gap: 24px; padding-block: 24px 34px; }
+  .site-header { display: none; }
+  .hero { row-gap: 24px; padding-block: 30px 34px; }
   .hero h1 { font-size: clamp(30px, 8.5vw, 36px); line-height: 1.27; }
   .hero-lead { margin-top: 16px; font-size: 15px; line-height: 1.75; }
   .hero-actions { gap: 12px; margin-top: 22px; }
