@@ -13,7 +13,7 @@ const transport = (rows: unknown[]) => ({
 });
 
 describe('requireAdmin', () => {
-  it('matches an AppDeploy login email to an enabled Supabase admin account', async () => {
+  it('matches a verified login email to an enabled Supabase admin account', async () => {
     const api = transport([{
       id: 'a1',
       account: 'owner@example.com',

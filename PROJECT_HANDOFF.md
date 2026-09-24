@@ -16,14 +16,14 @@
 | 項目 | 目前位置與用途 |
 | --- | --- |
 | PWA | Cloudflare Pages，https://matrixlottery.idv.tw/ |
-| 管理後台 | https://matrixlottery.idv.tw/admin/；來源位於 `apps/admin/`，正式後端為 Supabase `admin-api` Edge Function。AppDeploy 不再列為正式管理後台服務 |
+| 管理後台 | Cloudflare Pages，https://matrixlottery.idv.tw/admin/；前端位於 `apps/admin/`，正式後端為 Supabase `admin-api` Edge Function |
 | 公開資料 API | Railway project `lottery-matrix-production`、service `matrix-public-api`；網址維持 `https://heartfelt-generosity-production-9f2b.up.railway.app`；latest、history、cards、同星與號碼對照單相容 API |
 | 爬蟲與背景分析 | Railway Python 服務，來源位於 `services/matrix-api/`；天天樂定時爬蟲為 Railway `fantasy5-crawler`；GitHub workflow 僅供手動備援；Railway 獨立服務執行補救與分析 |
 | 會員、登入、通知、開獎及演算結果 | Supabase 專案 `wcimzbbapfrdotjsfyxa`；PWA 的探索、天衍、天工使用 Supabase RPC |
 
 API 執行方式見 [services/matrix-api/README.md](services/matrix-api/README.md)。正式 Railway service settings 是目前部署設定的權威來源；Railway 已將舊 custom `railway.json`／`railway.toml` Config-as-Code 標為 deprecated，因此 production 服務不再綁定 custom config file path。Repository 既有 `railway*.json` 僅保留 legacy/manual 相容用途，後續若要版本化整個 Railway project，應另以 `.railway/railway.ts` IaC 經 pull/plan 驗證後遷移，不得同時雙重管理。正式 runtime start command 使用 `uv run --no-dev --no-sync`，依賴安裝與 bytecode 準備留在 Railpack build 階段。
 
-2026-09-22 讀回 AppDeploy 帳號清單時，既有樂彩／預覽 apps 均為 `deleted`。Repository 根目錄 `backend/` 仍有被 PWA 與 Supabase Edge Function 直接引用的共用 TypeScript 模組，因此不能整批視為 legacy；本次僅移除已無 production import 的 AppDeploy root entrypoint、舊 AppDeploy Matrix storage adapter、舊 realtime adapter 與空 `cron.json`。`apps/admin/backend/` 的 `@appdeploy/sdk` 介面由 Supabase `admin-api` import map 映射到 Edge runtime，不能依套件名稱誤判為舊 AppDeploy 部署。 PWA 的會員 bootstrap／profile／notification／online 已由 `src/member-api.ts` 與 `src/member-online-api.ts` 直接呼叫 Supabase RPC；舊 root AppDeploy member HTTP helper 同步退役。
+管理後台的 UI 由 Cloudflare Pages 提供，API 由 Supabase `admin-api` Edge Function 執行；`apps/admin/backend/index.ts` 直接匯入 `supabase/functions/admin-api/runtime.ts`。部署平台以這些現行入口與設定為準，不要由歷史計畫、資料庫遷移名稱或過期測試推斷。Repository 根目錄 `backend/` 仍有被 PWA 與 Supabase Edge Function 直接引用的共用 TypeScript 模組，不能整批視為退役程式。PWA 的會員 bootstrap／profile／notification／online 由 `src/member-api.ts` 與 `src/member-online-api.ts` 呼叫 Supabase RPC。
 
 以下為 2026-09-22 讀回的 Railway project `lottery-matrix-production` production 服務：
 

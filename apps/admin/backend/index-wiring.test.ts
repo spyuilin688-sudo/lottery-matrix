@@ -119,7 +119,7 @@ const sdk = vi.hoisted(() => {
   };
 });
 
-vi.mock('@appdeploy/sdk', () => sdk);
+vi.mock('../../../supabase/functions/admin-api/runtime.ts', () => sdk);
 vi.mock('./worker-api', () => ({ createWorkerApi: wiring.createWorkerApi, getWorkerConfig: wiring.getWorkerConfig, PRODUCTION_RAILWAY_API_BASE: 'https://public-api.example' }));
 vi.mock('./supabase', () => ({
   createSupabaseTransport: wiring.createSupabaseTransport,
@@ -723,7 +723,7 @@ describe('admin todo route wiring', () => {
 });
 
 describe('admin formal system notification route wiring', () => {
-  it('loads the notification ingest configuration only from AppDeploy secrets', async () => {
+  it('loads the notification ingest configuration from server-only Edge secrets', async () => {
     expect(wiring.createNotificationEvents).toHaveBeenCalledTimes(1);
     const loadConfig = wiring.createNotificationEvents.mock.calls[0][0];
     await expect(loadConfig()).resolves.toEqual({

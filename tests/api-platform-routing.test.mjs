@@ -32,7 +32,7 @@ test('routes member, LINE and completed Matrix results to Supabase', async () =>
   assert.match(online, /member_online_start/);
 });
 
-test('does not ship the legacy non-admin AppDeploy app in the PWA runtime', async () => {
+test('does not ship the retired non-admin API endpoint in the PWA runtime', async () => {
   const runtimeFiles = [
     'src/lottery-api.ts',
     'src/matrix-api-client.ts',
@@ -43,5 +43,5 @@ test('does not ship the legacy non-admin AppDeploy app in the PWA runtime', asyn
     'src/main.tsx',
   ];
   const runtime = (await Promise.all(runtimeFiles.map(read))).join('\n');
-  assert.doesNotMatch(runtime, /app-snsxet|api-v2\.appdeploy\.ai/);
+  assert.doesNotMatch(runtime, /app-snsxet|api-v2\./);
 });

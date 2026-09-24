@@ -17,7 +17,7 @@ const heartbeat = {
   error: 'STATUS_UNAVAILABLE',
 } as const;
 
-type AppDeployDatabaseContract = {
+type DatabaseContract = {
   list<T>(table: string, options: { limit: number }): Promise<{
     items: Array<Omit<T, 'id'> & { id: string }>;
     nextToken?: string;
@@ -31,13 +31,13 @@ function createDatabase(items: Record<string, unknown>[] = []) {
   const add = vi.fn(async (): Promise<(string | null)[]> => ['created-id']);
   const update = vi.fn(async () => [true]);
   return {
-    list: list as typeof list & AppDeployDatabaseContract['list'],
+    list: list as typeof list & DatabaseContract['list'],
     add,
     update,
   };
 }
 
-function createAppDeployContractDatabase(): AppDeployDatabaseContract {
+function createContractDatabase(): DatabaseContract {
   return {
     list: async <T,>() => ({ items: [] as Array<Omit<T, 'id'> & { id: string }> }),
     add: async () => ['created-id'],
@@ -56,8 +56,8 @@ describe('watchdog status store', () => {
       expect.objectContaining({ actions: [{ lottery: '今彩539', target: 'railway', reasons: ['card-missing'], outcome: 'accepted' }] }),
     ]);
   });
-  it('accepts the exact AppDeploy list record contract', () => {
-    expect(createWatchdogStatusStore(createAppDeployContractDatabase())).toBeDefined();
+  it('accepts the exact list record contract', () => {
+    expect(createWatchdogStatusStore(createContractDatabase())).toBeDefined();
   });
 
   it('adds one bounded singleton record when the table is empty', async () => {
@@ -147,7 +147,7 @@ describe('watchdog status store', () => {
     await expect(createWatchdogStatusStore(writeFailure).save(heartbeat)).rejects.toThrow('WATCHDOG_STATUS_WRITE_FAILED');
   });
 
-  it('treats unsuccessful AppDeploy add and update results as safe write failures', async () => {
+  it('treats unsuccessful add and update results as safe write failures', async () => {
     const addFailure = createDatabase();
     addFailure.add.mockResolvedValue([null]);
     const updateFailure = createDatabase([{ id: 'heartbeat-1', ...heartbeat }]);

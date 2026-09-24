@@ -44,7 +44,7 @@ const check = async (body: unknown, httpStatus = 200) => {
   const result = await createConnectionStatus({
     supabase: { selectRows: async () => [] },
     loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'server-secret' }),
-    getWorkerStatus: async () => ({ ok: false, reason: 'APPDEPLOY_CONFIG_MISSING', health: null, jobs: null }),
+    getWorkerStatus: async () => ({ ok: false, reason: 'SUPABASE_RAILWAY_CONFIG_MISSING', health: null, jobs: null }),
     now: () => new Date('2026-09-13T12:00:00Z'),
     fetcher,
     requestTimeoutMs: 25,

@@ -142,7 +142,7 @@ results and downstream work are verified complete.
 
 `lottery_draws` stores historical draws. History is not capped at 80 records. The public history API paginates Supabase reads so 1000/3000/5000-period number-reference queries are not silently truncated.
 
-Matrix background analysis writes its run/artifact data to the existing Supabase Matrix analysis tables. Matrix Explore is read by the PWA through the existing Supabase RPCs `matrix_explore_list` and `matrix_explore_validation`; the current administrator UI is served at `/admin/`; ownership of the old live AppDeploy endpoint remains unverified.
+Matrix background analysis writes its run/artifact data to the existing Supabase Matrix analysis tables. Matrix Explore is read by the PWA through the existing Supabase RPCs `matrix_explore_list` and `matrix_explore_validation`; the current administrator UI is served at `/admin/`; the admin API is the Supabase `admin-api` Edge Function.
 
 ## Algorithm specification and runtime versions
 

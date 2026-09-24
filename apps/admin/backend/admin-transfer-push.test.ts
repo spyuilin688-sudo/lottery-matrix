@@ -13,8 +13,8 @@ const routeDeps = vi.hoisted(() => ({
   fetcher: vi.fn<typeof fetch>(),
   getAdminFromHeaders: vi.fn(),
 }));
-// Admin CI runs without the repository-root Vitest SDK alias.
-vi.mock('@appdeploy/sdk', () => import('../../../test/appdeploy-sdk'));
+// The isolated admin test supplies the same runtime seam as the Edge entrypoint.
+vi.mock('../../../supabase/functions/admin-api/runtime.ts', () => import('../../../test/admin-runtime-test-adapter'));
 vi.mock('./admin-credential-auth', () => ({
   createAdminCredentialAuth: () => ({ getAdminFromHeaders: routeDeps.getAdminFromHeaders }),
 }));
@@ -26,7 +26,7 @@ vi.mock('./supabase', async (original) => {
   };
 });
 
-// The SDK test adapter exposes the registered route handlers as the router result.
+// The Edge runtime test adapter exposes registered route handlers as the router result.
 import { handler } from './index';
 type Context = { params: Record<string, string>; body?: unknown; query?: Record<string, string>; event?: Record<string, unknown>; admin?: unknown };
 type Result = { body: unknown; statusCode: number };

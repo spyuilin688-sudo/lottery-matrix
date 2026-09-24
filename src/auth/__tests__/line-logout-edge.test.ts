@@ -29,17 +29,17 @@ function assertNoDuplicateLineRoute(source: string) {
 }
 
 describe('LINE logout ownership contracts', () => {
-  it('does not register a duplicate AppDeploy LINE logout route', () => {
+  it('does not register a duplicate LINE logout route in shared backend modules', () => {
     assertNoDuplicateLineRoute(backendSources());
   });
 
-  it('rejects a renamed inline AppDeploy LINE logout route', () => {
+  it('rejects a renamed inline LINE logout route', () => {
     const renamedInlineRoute = `${backendSources()}\nconst renamedRoutes = { 'POST /api/auth/line/logout': [] };`;
 
     expect(() => assertNoDuplicateLineRoute(renamedInlineRoute)).toThrow();
   });
 
-  it('does not retain the retired root AppDeploy backend entrypoint', () => {
+  it('does not retain the retired root backend entrypoint', () => {
     expect(existsSync(new URL('../../../backend/index.ts', import.meta.url))).toBe(false);
   });
 });

@@ -19,7 +19,7 @@ const watchdogLeaseMigration = readFileSync(
   'utf8',
 );
 
-test('retired AppDeploy cron stays removed while the shared watchdog handler remains available to Supabase', () => {
+test('retired admin cron stays removed while the shared watchdog handler remains available to Supabase', () => {
   assert.equal(existsSync(new URL('../apps/admin/cron.json', import.meta.url)), false);
   assert.match(backend, /export async function matrixIndependentWatchdog/);
 });

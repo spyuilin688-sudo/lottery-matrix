@@ -10,7 +10,7 @@ const dashboard = {
   userGrowth: [], revenueGrowth: [],
 };
 const client = vi.hoisted(()=>({get:vi.fn(),post:vi.fn(),put:vi.fn(),delete:vi.fn()}));
-vi.mock('@appdeploy/client',()=>({api:client,auth:{signIn:vi.fn(),signOut:vi.fn()}}));
+vi.mock('./admin-platform-client',()=>({api:client,auth:{signIn:vi.fn(),signOut:vi.fn()}}));
 afterEach(()=>{cleanup();vi.clearAllMocks();});
 describe('AdminApp weak-network bootstrap',()=>{
   it('labels and restores focus to the mobile drawer control when closing the navigation', async () => {

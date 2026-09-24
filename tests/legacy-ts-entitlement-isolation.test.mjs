@@ -5,7 +5,7 @@ import fs from 'node:fs';
 const statusRoutes = fs.readFileSync(new URL('../backend/matrix-status-routes.ts', import.meta.url), 'utf8');
 const entitlements = fs.readFileSync(new URL('../backend/matrix-entitlements.ts', import.meta.url), 'utf8');
 
-test('retired AppDeploy backend entrypoint stays absent', () => {
+test('retired root backend entrypoint stays absent', () => {
   assert.equal(fs.existsSync(new URL('../backend/index.ts', import.meta.url)), false);
 });
 

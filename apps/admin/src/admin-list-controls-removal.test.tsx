@@ -23,7 +23,7 @@ const dashboard = {
   revenueGrowth: [],
 };
 
-vi.mock('@appdeploy/client', () => ({
+vi.mock('./admin-platform-client', () => ({
   auth: { signIn: vi.fn(), signOut: vi.fn() },
   api: {
     get: vi.fn(async (path: string) => {

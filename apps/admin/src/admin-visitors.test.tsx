@@ -2,7 +2,7 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { expect, it, vi } from 'vitest';
-vi.mock('@appdeploy/client', () => ({
+vi.mock('./admin-platform-client', () => ({
   auth: { signIn: vi.fn(), signOut: vi.fn() },
   api: { get: vi.fn(async (path: string) => ({ data: path === '/api/bootstrap'
     ? { admin: { id: 'admin', role: '超級管理員', name: '管理員' } }

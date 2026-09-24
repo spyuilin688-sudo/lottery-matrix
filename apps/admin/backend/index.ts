@@ -3,7 +3,7 @@ import { createOptimizerRunner, type OptimizerScope } from './matrix-optimizer-r
 import { createRailwayEvidenceCollector } from './matrix-railway-evidence';
 import { createSecurityMonitor } from './security-monitor';
 import { listMemberLoginHistory, normalizeIpAddress } from './member-login-history';
-import { db, error, json, requireAuth, router, secrets } from '@appdeploy/sdk';
+import { db, error, json, requireAuth, router, secrets } from '../../../supabase/functions/admin-api/runtime.ts';
 import {
   AdminAccessError,
   requireAdmin,

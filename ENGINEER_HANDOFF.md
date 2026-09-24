@@ -7,7 +7,7 @@
 ## 正式產品
 
 - PWA：Cloudflare Pages，https://matrixlottery.idv.tw/
-- 管理後台：同一正式站的 `/admin/`
+- 管理後台：同一 Cloudflare Pages 正式站的 `/admin/`；API 為 Supabase `admin-api` Edge Function
 - 前端：React + TypeScript + Vite
 - 會員、權限、通知、開獎資料與 Matrix 演算結果：Supabase
 - 公開開獎相容 API、爬蟲、分析與補救服務：Railway Python 服務
@@ -46,7 +46,7 @@ PWA
   -> Matrix result tables / artifacts
 ```
 
-Matrix 探索、天衡、天樞、天衍、天工與 Matrix 狀態的正式權限與資料來源須以現行 RPC、Edge Function 及 migration 為準，不得回接已退役的舊 AppDeploy Matrix route。
+Matrix 探索、天衡、天樞、天衍、天工與 Matrix 狀態的正式權限與資料來源須以現行 RPC、Edge Function 及 migration 為準。
 
 ### 管理後台
 
@@ -57,7 +57,7 @@ Matrix 探索、天衡、天樞、天衍、天工與 Matrix 狀態的正式權�
   -> Supabase / Railway service evidence
 ```
 
-管理後台目前不是舊 preview-only AppDeploy UI。任何管理功能修改都要同步檢查 `apps/admin/`、`supabase/functions/admin-api/`、對應 RPC／migration 及 scoped tests。
+管理後台的前端部署在 Cloudflare Pages，API 部署在 Supabase `admin-api` Edge Function。任何管理功能修改都要同步檢查 `apps/admin/`、`supabase/functions/admin-api/`、對應 RPC／migration 及 scoped tests。
 
 ### Railway 背景工作
 
