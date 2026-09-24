@@ -3,7 +3,7 @@ import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseClient } from '../lib/supabase';
 import { bootstrapMember } from '../member-api';
 import { clearLineAuthEphemeralState, rememberLineProviderToken } from './line-provider-token';
-import { cleanupBrowserPushSubscription } from '../push-subscription';
+import { cleanupBrowserPushSubscription, restoreBrowserPushSubscription } from '../push-subscription';
 import { startMemberOnlineTracking } from '../member-online';
 import { postMemberOnline } from '../member-online-api';
 import { withDeadline } from '../lib/api-resilience';
@@ -23,6 +23,7 @@ type Props = {
   client?: SupabaseClient;
   bootstrap?: () => Promise<unknown>;
   cleanupPush?: () => Promise<void>;
+  restorePush?: typeof restoreBrowserPushSubscription;
   startTracking?: typeof startMemberOnlineTracking;
 };
 
@@ -30,6 +31,7 @@ export function MemberSessionBridge({
   client = getSupabaseClient(),
   bootstrap = bootstrapMember,
   cleanupPush = cleanupBrowserPushSubscription,
+  restorePush = restoreBrowserPushSubscription,
   startTracking = startMemberOnlineTracking,
 }: Props) {
   useEffect(() => {
@@ -40,8 +42,10 @@ export function MemberSessionBridge({
     let currentSessionIdentity: string | null = null;
     let sessionGeneration = 0;
     let bootstrappedGeneration: number | null = null;
+    let restoredPushGeneration: number | null = null;
     let stopTracking: (() => void) | null = null;
     const processingGenerations = new Set<number>();
+    const restoringPushGenerations = new Set<number>();
     const pendingTimers = new Set<ReturnType<typeof setTimeout>>();
 
     const stopMemberOnlineTracking = () => {
@@ -50,14 +54,31 @@ export function MemberSessionBridge({
       stop?.();
     };
 
+    const restoreSessionPush = async (identity: string, generation: number) => {
+      const isCurrent = () => active && currentSessionIdentity === identity && sessionGeneration === generation;
+      if (!isCurrent() || restoredPushGeneration === generation || restoringPushGenerations.has(generation)) return;
+      restoringPushGenerations.add(generation);
+      try {
+        await restorePush(isCurrent);
+        if (isCurrent()) restoredPushGeneration = generation;
+      } catch {
+        // Retry on a later auth/online event; never block login or prompt for permission.
+      } finally {
+        restoringPushGenerations.delete(generation);
+      }
+    };
+
     const bootstrapSession = async (identity: string, generation: number) => {
       if (
         !active
         || currentSessionIdentity !== identity
         || sessionGeneration !== generation
-        || bootstrappedGeneration === generation
         || processingGenerations.has(generation)
       ) {
+        return;
+      }
+      if (bootstrappedGeneration === generation) {
+        await restoreSessionPush(identity, generation);
         return;
       }
 
@@ -79,6 +100,7 @@ export function MemberSessionBridge({
       if (!stopTracking) {
         stopTracking = startTracking(postMemberOnline);
       }
+      await restoreSessionPush(identity, generation);
     };
 
     const queueBootstrap = (identity: string, generation: number) => {
@@ -96,6 +118,7 @@ export function MemberSessionBridge({
         currentSessionIdentity = identity;
         sessionGeneration += 1;
         bootstrappedGeneration = null;
+        restoredPushGeneration = null;
         stopMemberOnlineTracking();
       }
 
@@ -144,6 +167,11 @@ export function MemberSessionBridge({
     const uninstallRefresh = installMemberSessionRefresh(readCurrentSession);
     void readCurrentSession().catch(() => undefined);
 
+    const handleOnline = () => {
+      if (currentSessionIdentity) queueBootstrap(currentSessionIdentity, sessionGeneration);
+    };
+    window.addEventListener('online', handleOnline);
+
     const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
       if (event === 'INITIAL_SESSION' && !session && (!initialReadSettled || initialReadFailed)) return;
 
@@ -177,9 +205,10 @@ export function MemberSessionBridge({
       pendingTimers.clear();
       stopMemberOnlineTracking();
       uninstallRefresh();
+      window.removeEventListener('online', handleOnline);
       subscription.unsubscribe();
     };
-  }, [bootstrap, cleanupPush, client, startTracking]);
+  }, [bootstrap, cleanupPush, restorePush, client, startTracking]);
 
   return null;
 }
