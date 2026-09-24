@@ -8,6 +8,13 @@ const secretReader = (values: Record<string, string>) => ({
 });
 
 describe('getSupabaseConfig', () => {
+  it('reads the two required secrets without listing all secret names for every database call', async () => {
+    const reader = secretReader({ SUPABASE_URL: 'https://example.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'key' });
+    await expect(getSupabaseConfig(reader)).resolves.toEqual({ url: 'https://example.supabase.co', serviceRoleKey: 'key' });
+    expect(reader.listSecretNames).not.toHaveBeenCalled();
+    expect(reader.readSecret).toHaveBeenCalledTimes(2);
+  });
+
   it('fails closed when a required backend secret is missing', async () => {
     await expect(getSupabaseConfig(secretReader({
       SUPABASE_URL: 'https://example.supabase.co',
@@ -16,9 +23,52 @@ describe('getSupabaseConfig', () => {
       statusCode: 503,
     });
   });
+
+  it('shares overlapping secret reads and reads again on the next request for rotation', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    let key = 'first-key';
+    const reader = secretReader({});
+    reader.readSecret.mockImplementation(async (name: string) => {
+      await gate;
+      return name === 'SUPABASE_URL' ? 'https://example.supabase.co' : key;
+    });
+    const first = getSupabaseConfig(reader);
+    const overlapping = getSupabaseConfig(reader);
+    release();
+    expect(await Promise.all([first, overlapping])).toEqual([
+      { url: 'https://example.supabase.co', serviceRoleKey: 'first-key' },
+      { url: 'https://example.supabase.co', serviceRoleKey: 'first-key' },
+    ]);
+    expect(reader.readSecret).toHaveBeenCalledTimes(2);
+    key = 'rotated-key';
+    await expect(getSupabaseConfig(reader)).resolves.toMatchObject({ serviceRoleKey: 'rotated-key' });
+    expect(reader.readSecret).toHaveBeenCalledTimes(4);
+  });
+
+  it('retries missing configuration after it is restored', async () => {
+    let key: string | null = null;
+    const reader = secretReader({});
+    reader.readSecret.mockImplementation(async name => name === 'SUPABASE_URL' ? 'https://example.supabase.co' : key);
+    await expect(getSupabaseConfig(reader)).rejects.toMatchObject({ code: 'CONFIG_MISSING' });
+    key = 'restored-key';
+    await expect(getSupabaseConfig(reader)).resolves.toMatchObject({ serviceRoleKey: 'restored-key' });
+  });
 });
 
 describe('createSupabaseTransport', () => {
+  it.each([
+    ['P0002', 'ACTIVATION_CODE_NOT_FOUND', 500, 404],
+    ['42501', 'REDEEMED_ACTIVATION_CODE_DELETE_FORBIDDEN', 403, 403],
+  ])('forwards the exact activation deletion error %s/%s', async (code, message, responseStatus, expectedStatus) => {
+    const transport = createSupabaseTransport(
+      { url: 'https://example.supabase.co', serviceRoleKey: 'test-key' },
+      async () => new Response(JSON.stringify({ code, message }), { status: responseStatus }),
+    );
+    await expect(transport.supabaseRequest('rpc/admin_delete_activation_code'))
+      .rejects.toMatchObject({ message, statusCode: expectedStatus });
+  });
+
   it.each([
     ['PT409', 'PAYMENT_ENTITLEMENT_CONFLICT', 409],
     ['42501', 'PAYMENT_REVERSAL_FORBIDDEN', 403],

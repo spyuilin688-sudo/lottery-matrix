@@ -248,32 +248,6 @@ async function enrichLoginRecords(items: Array<Row & { id: string }>, api: Reque
   return items.map((item, index) => ({ ...item, estimatedRegion: ips[index] ? locations.get(ips[index]!) || null : null }));
 }
 
-async function googleMemberNameClauses(table: string, keyword: string, api: Requester) {
-  if (!keyword || keyword.length > 200 || !['users', 'subscriptions', 'subscriptionRecords', 'transferRequests', 'activationCodes'].includes(table)) {
-    return [];
-  }
-  try {
-    const rows = await api.request<Row[]>('/rest/v1/rpc/admin_member_ids_by_display_name', {
-      method: 'POST',
-      body: JSON.stringify({ p_keyword: keyword }),
-    });
-    const memberIds = [...new Set((Array.isArray(rows) ? rows : [])
-      .map((row) => String(row.member_id ?? ''))
-      .filter((id) => UUID_PATTERN.test(id)))];
-    if (!memberIds.length) return [];
-    const field = table === 'users' || table === 'subscriptions'
-      ? 'id'
-      : table === 'activationCodes'
-        ? 'redeemed_by_member_id'
-        : 'member_id';
-    return [`${field}.in.(${memberIds.join(',')})`];
-  } catch {
-    // Display-name matching is supplemental. Preserve the existing DB-backed
-    // keyword search if the private lookup RPC is temporarily unavailable.
-    return [];
-  }
-}
-
 async function enrichProviderIdentities(items: Array<Row & { id: string }>, api: Requester) {
   if (!items.length) return [];
   const ids = [...new Set(items.filter(item => item.authUserId && (!item.lineUserId || !String(item.lineDisplayName ?? '').trim()))
@@ -355,8 +329,8 @@ const memberColumns = {
   lastOnlineAt: 'last_online_at', referralCode: 'referral_code', invitationCode: 'invitation_code',
 };
 const pageDefinitions: Record<string, PageDefinition> = {
-  users: { pageSize: 15, columns: memberColumns, dates: ['registeredAt', 'planStartedAt', 'planExpiresAt', 'lastOnlineAt'], keywords: ['line_display_name', 'referral_code', 'invitation_code'], identifiers: ['auth_user_id'], relations: [{ alias: 'keyword_plan', relation: 'plans!members_current_plan_id_fkey', field: 'name' }] },
-  subscriptions: { pageSize: 30, columns: memberColumns, dates: ['planStartedAt', 'planExpiresAt', 'registeredAt', 'lastOnlineAt'], keywords: ['line_display_name', 'referral_code', 'invitation_code'], identifiers: ['auth_user_id'], relations: [{ alias: 'keyword_plan', relation: 'plans!members_current_plan_id_fkey', field: 'name' }] },
+  users: { pageSize: 15, columns: memberColumns, dates: ['registeredAt', 'planStartedAt', 'planExpiresAt', 'lastOnlineAt'], keywords: ['admin_member_display_name', 'referral_code', 'invitation_code'], identifiers: ['auth_user_id'], relations: [{ alias: 'keyword_plan', relation: 'plans!members_current_plan_id_fkey', field: 'name' }] },
+  subscriptions: { pageSize: 30, columns: memberColumns, dates: ['planStartedAt', 'planExpiresAt', 'registeredAt', 'lastOnlineAt'], keywords: ['admin_member_display_name', 'referral_code', 'invitation_code'], identifiers: ['auth_user_id'], relations: [{ alias: 'keyword_plan', relation: 'plans!members_current_plan_id_fkey', field: 'name' }] },
   loginRecords: {
     pageSize: 10, columns: { id: 'id', account: 'account', loginAt: 'login_at', logoutAt: 'logout_at', onlineMinutes: 'online_minutes', ip: 'ip', device: 'device' },
     dates: ['loginAt', 'logoutAt'], keywords: ['account', 'ip', 'device'], numeric: ['online_minutes'], identifiers: ['admin_id'],
@@ -366,7 +340,7 @@ const pageDefinitions: Record<string, PageDefinition> = {
     columns: { id: 'id', batchId: 'batch_id', code: 'code', durationType: 'duration_type', createdAt: 'created_at', expiresAt: 'expires_at', redeemedAt: 'redeemed_at', status: 'status', redeemedByMemberId: 'redeemed_member(id)', redeemedByLineDisplayName: 'redeemed_member(line_display_name)' },
     dates: ['createdAt', 'expiresAt', 'redeemedAt'], keywords: ['code', 'duration_type', 'status'], identifiers: ['batch_id'],
     statuses: ['unused', 'used', 'expired'],
-    relations: [{ alias: 'keyword_member', relation: 'members!activation_codes_redeemed_by_member_id_fkey', field: 'line_display_name' }],
+    relations: [{ alias: 'keyword_member', relation: 'members!activation_codes_redeemed_by_member_id_fkey', field: 'admin_member_display_name' }],
   },
   auditLogs: {
     pageSize: 30,
@@ -378,14 +352,14 @@ const pageDefinitions: Record<string, PageDefinition> = {
     columns: { id: 'id', memberId: 'member_id', planId: 'plan_id', transferRequestId: 'transfer_request_id', lineDisplayName: 'member(line_display_name)', planName: 'plan(name)', amount: 'amount', paidAt: 'paid_at', status: 'status', reversedAt: 'reversed_at', reversalReason: 'reversal_reason', reversedByName: 'reversed_by_name' },
     dates: ['paidAt', 'reversedAt'], keywords: ['status', 'reversal_reason', 'reversed_by_name'], numeric: ['amount'], identifiers: ['member_id', 'plan_id'],
     statuses: ['pending', 'confirmed', 'refund_required', 'rejected', 'refunded', 'chargeback', 'cancelled'],
-    relations: [{ alias: 'keyword_member', relation: 'members', field: 'line_display_name' }, { alias: 'keyword_plan', relation: 'plans', field: 'name' }],
+    relations: [{ alias: 'keyword_member', relation: 'members', field: 'admin_member_display_name' }, { alias: 'keyword_plan', relation: 'plans', field: 'name' }],
   },
   transferRequests: {
     pageSize: 30,
     columns: { id: 'id', memberId: 'member_id', planId: 'plan_id', lineDisplayName: 'member(line_display_name)', planName: 'plan(name)', amount: 'amount', transferredAt: 'transferred_at', submittedAt: 'submitted_at', accountLastFive: 'account_last_five', status: 'status' },
     dates: ['submittedAt', 'transferredAt'], keywords: ['account_last_five', 'status'], numeric: ['amount'], identifiers: ['member_id', 'plan_id'],
     statuses: ['pending', 'confirmed', 'rejected'],
-    relations: [{ alias: 'keyword_member', relation: 'members', field: 'line_display_name' }, { alias: 'keyword_plan', relation: 'plans', field: 'name' }],
+    relations: [{ alias: 'keyword_member', relation: 'members', field: 'admin_member_display_name' }, { alias: 'keyword_plan', relation: 'plans', field: 'name' }],
   },
   admins: {
     pageSize: 30,
@@ -413,7 +387,6 @@ function applyAdminPageFilters(
   table: string,
   query: AdminPageQuery,
   filterStatus = true,
-  extraKeywordClauses: string[] = [],
   currentDate = new Date(),
 ) {
   const config = pageDefinitions[table];
@@ -455,7 +428,7 @@ function applyAdminPageFilters(
   }
   if (!keyword) return;
   const pattern = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const clauses = [...config.keywords.map(field => `${field}.imatch.${JSON.stringify(pattern)}`), ...extraKeywordClauses];
+  const clauses = config.keywords.map(field => `${field}.imatch.${JSON.stringify(pattern)}`);
   if (UUID_PATTERN.test(keyword)) {
     clauses.push(...['id', ...(config.identifiers ?? [])].map(field => `${field}.eq.${keyword}`));
   }
@@ -499,9 +472,7 @@ export async function listAdminTablePage(table: string, query: AdminPageQuery, a
   if (table === 'loginRecords') return listAdminLoginRecordPage(query, api);
   const page = parsePage(query, pageDefinitions[table].pageSize);
   const url = new URL(definition.path, 'https://supabase.invalid');
-  const keyword = String(query.keyword ?? '').trim();
-  const googleNameClauses = await googleMemberNameClauses(table, keyword, api);
-  applyAdminPageFilters(url, table, query, true, googleNameClauses, currentDate);
+  applyAdminPageFilters(url, table, query, true, currentDate);
   const result = await readAdminPage(url, page, pageDefinitions[table].pageSize, api);
   const items = result.items.map(row => definition.map(row, currentDate));
   if (['subscriptionRecords', 'transferRequests', 'activationCodes'].includes(table)) {
@@ -554,8 +525,7 @@ export async function listAdminMemberPage(
     // from the keyword OR group so searching cannot replace either filter.
     url.searchParams.set('and', '(or(status.in.(active,啟用),status.is.null))');
   }
-  const googleNameClauses = await googleMemberNameClauses(table, keyword, api);
-  applyAdminPageFilters(url, table, query, false, googleNameClauses);
+  applyAdminPageFilters(url, table, query, false);
   const result = await readAdminPage(url, page, pageSize, api);
   const items = await enrichMembers(result.items.map(row => definition.map(row, currentDate)), api, currentDate, true);
   return { ...result, items };
@@ -851,25 +821,26 @@ export function createAdminData(transport: WriteTransport) {
   }
 
   async function deleteActivationCode(id: string, actor: AdminActor) {
-    const [activationCode] = await transport.selectRows<Row>(
-      'activation_codes',
-      `select=id,status,redeemed_at,redeemed_by_member_id&id=eq.${encodeURIComponent(id)}`,
-    );
-    if (!activationCode) throw new AdminDataError('找不到啟動碼', 404);
-    const redeemed = activationCode.status === 'used'
-      || Boolean(activationCode.redeemed_at)
-      || Boolean(activationCode.redeemed_by_member_id);
-    if (redeemed && actor.role !== '超級管理員') {
-      throw new AdminDataError('已兌換的啟動碼僅限超級管理員刪除', 403);
+    try {
+      return await transport.supabaseRequest<{ deleted: boolean }>('rpc/admin_delete_activation_code', {
+        method: 'POST',
+        body: JSON.stringify({
+          p_code_id: id,
+          p_actor_id: actor.id,
+          p_actor_name: actor.name || actor.account,
+        }),
+      });
+    } catch (error) {
+      if (error instanceof Error && 'statusCode' in error) {
+        if (error.message === 'ACTIVATION_CODE_NOT_FOUND' && error.statusCode === 404) {
+          throw new AdminDataError('找不到啟動碼', 404);
+        }
+        if (error.message === 'REDEEMED_ACTIVATION_CODE_DELETE_FORBIDDEN' && error.statusCode === 403) {
+          throw new AdminDataError('已兌換的啟動碼僅限超級管理員刪除', 403);
+        }
+      }
+      throw error;
     }
-    return transport.supabaseRequest<{ deleted: boolean }>('rpc/admin_delete_activation_code', {
-      method: 'POST',
-      body: JSON.stringify({
-        p_code_id: id,
-        p_actor_id: actor.id,
-        p_actor_name: actor.name || actor.account,
-      }),
-    });
   }
 
   async function generateActivationCodeBatch(durationType: string, quantity: number, actor: AdminActor, requestId?: string) {
