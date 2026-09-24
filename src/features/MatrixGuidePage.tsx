@@ -28,7 +28,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       title: "新手入門",
       summary: "樂彩 Matrix 提供公開的開獎資料查詢、整理、比對、驗證及探索功能，支援今彩539、天天樂、六合彩及大樂透。",
       blocks: [
-        { title: "開始使用", items: ["使用 LINE 或 Google 登入後進入首頁。", "切換彩種，查看最新開獎資訊、下次開獎時間與 Matrix 狀態。", "依需求使用 Matrix Core (Matrix 探索、Matrix 天衡、Matrix 天樞、Matrix 天衍、Matrix 天工)、Matrix 同星、號碼對照單、連碰立柱計算機、Matrix 牌單及 Matrix 指南。"] },
+        { title: "開始使用", items: ["可先進入首頁；需使用會員功能時，前往「我的」使用 LINE 或 Google 登入。", "切換彩種，查看最新開獎資訊、下次開獎時間與 Matrix 狀態。", "依需求使用 Matrix Core (Matrix 探索、Matrix 天衡、Matrix 天樞、Matrix 天衍、Matrix 天工)、Matrix 同星、號碼對照單、連碰立柱計算機、Matrix 牌單及 Matrix 指南。"] },
         { title: "基本導覽", items: ["底部導覽固定為首頁、快捷、計算機、我的。", "首頁：查看四彩種最新資訊與主要功能入口。", "Matrix 狀態：查看四彩種目前觸發的狀態與相關資訊。", "快捷：點擊底部「快捷」開啟目前設定的功能；在首頁設定按鈕連續點擊兩下可變更快捷設定。", "通知設定：前往「我的」的「系統相關」，設定各類型的推播通知。", ...(subscriptionPurchaseVisible ? ["我的：查看 Matrix Pro 訂閱、推薦、系統及法律資訊。"] : [])] },
         ...(subscriptionPurchaseVisible ? [{ title: "Matrix Pro", items: ["Matrix Pro 提供更多探索功能及會員權限。", "功能開放內容依目前會員狀態顯示。"] }] : []),
         { title: "結果說明", items: ["探索結果依歷史資料與所選條件產生，僅供參考，不代表中獎、獲利或任何結果之保證。"] },
@@ -170,7 +170,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
     },
     {
       title: "帳號與安全",
-      summary: "使用 LINE 或 Google 授權登入，會員資料、筆記、通知、設定與 Matrix Pro 權益會依目前登入的帳號同步。",
+      summary: "使用 LINE 或 Google 授權登入，會員資料、通知設定與 Matrix Pro 權益依目前登入的帳號同步；Matrix 筆記本資料儲存在目前裝置，並依登入帳號區分。",
       blocks: [
         { title: "登入規則", items: ["一個帳號僅允許一個有效 Session。", "新裝置登入時，舊裝置會自動登出。", "系統將定期驗證登入狀態。", "會員資料與權益依目前登入的帳號同步。"] },
         { title: "安全機制", items: ["使用裝置驗證與資料加密保護。", "若帳號在其他裝置登入，目前裝置會自動登出。"] },
