@@ -60,50 +60,77 @@ describe('visitor visit handler', () => {
     expect(recordVisit).not.toHaveBeenCalled();
   });
 
-  it('records an intro visitor before returning only today and total counts', async () => {
+  it('records intro visits separately from the main site before returning intro-only counts', async () => {
     const calls: string[] = [];
-    const recordVisit = vi.fn(async () => { calls.push('visit'); });
-    const readStats = vi.fn(async () => {
-      calls.push('stats');
-      return { todayVisitors: 18, monthVisitors: 123, totalVisitors: 400 };
+    const recordVisit = vi.fn();
+    const recordIntroVisit = vi.fn(async () => { calls.push('intro-visit'); });
+    const readIntroStats = vi.fn(async () => {
+      calls.push('intro-stats');
+      return { todayVisitors: 1, totalVisitors: 1 };
     });
-    const handler = createVisitorVisitHandler({ recordVisit, readStats });
+    const handler = createVisitorVisitHandler({ recordVisit, recordIntroVisit, readIntroStats });
 
     const response = await handler(request({ withStats: true }));
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ todayVisitors: 18, totalVisitors: 400 });
+    expect(await response.json()).toEqual({ todayVisitors: 1, totalVisitors: 1 });
     expect(response.headers.get('Cache-Control')).toBe('no-store');
-    expect(calls).toEqual(['visit', 'stats']);
+    expect(calls).toEqual(['intro-visit', 'intro-stats']);
+    expect(recordVisit).not.toHaveBeenCalled();
   });
 
-  it('keeps normal PWA visits write-only, even with the stats dependency', async () => {
+  it('uses the gateway address for the intro count when forwarded headers disagree', async () => {
+    const recordVisit = vi.fn();
+    const recordIntroVisit = vi.fn().mockResolvedValue(undefined);
+    const readIntroStats = vi.fn().mockResolvedValue({ todayVisitors: 1, totalVisitors: 1 });
+    const handler = createVisitorVisitHandler({ recordVisit, recordIntroVisit, readIntroStats });
+    const response = await handler(new Request(`${endpoint}?stats=1`, {
+      method: 'POST',
+      headers: {
+        Origin: 'https://matrixlottery.idv.tw',
+        'X-Forwarded-For': '203.0.113.7',
+        'CF-Connecting-IP': '198.51.100.8',
+      },
+    }));
+
+    expect(response.status).toBe(200);
+    expect(recordIntroVisit).toHaveBeenCalledWith('198.51.100.8');
+    expect(recordVisit).not.toHaveBeenCalled();
+  });
+
+  it('keeps normal PWA visits write-only and never records an intro visit', async () => {
     const recordVisit = vi.fn().mockResolvedValue(undefined);
-    const readStats = vi.fn();
-    const handler = createVisitorVisitHandler({ recordVisit, readStats });
+    const recordIntroVisit = vi.fn();
+    const readIntroStats = vi.fn();
+    const handler = createVisitorVisitHandler({ recordVisit, recordIntroVisit, readIntroStats });
 
     const response = await handler(request());
 
     expect(response.status).toBe(204);
-    expect(readStats).not.toHaveBeenCalled();
+    expect(recordVisit).toHaveBeenCalledOnce();
+    expect(recordIntroVisit).not.toHaveBeenCalled();
+    expect(readIntroStats).not.toHaveBeenCalled();
   });
 
   it('does not expose counts to other origins', async () => {
     const recordVisit = vi.fn();
-    const readStats = vi.fn();
-    const handler = createVisitorVisitHandler({ recordVisit, readStats });
+    const recordIntroVisit = vi.fn();
+    const readIntroStats = vi.fn();
+    const handler = createVisitorVisitHandler({ recordVisit, recordIntroVisit, readIntroStats });
 
     const response = await handler(request({ origin: 'https://untrusted.example', withStats: true }));
 
     expect(response.status).toBe(403);
     expect(recordVisit).not.toHaveBeenCalled();
-    expect(readStats).not.toHaveBeenCalled();
+    expect(recordIntroVisit).not.toHaveBeenCalled();
+    expect(readIntroStats).not.toHaveBeenCalled();
   });
 
   it('returns an unavailable state when reading the aggregate fails', async () => {
     const recordVisit = vi.fn().mockResolvedValue(undefined);
-    const readStats = vi.fn().mockRejectedValue(new Error('database unavailable'));
-    const handler = createVisitorVisitHandler({ recordVisit, readStats });
+    const recordIntroVisit = vi.fn().mockResolvedValue(undefined);
+    const readIntroStats = vi.fn().mockRejectedValue(new Error('database unavailable'));
+    const handler = createVisitorVisitHandler({ recordVisit, recordIntroVisit, readIntroStats });
 
     const response = await handler(request({ withStats: true }));
 
