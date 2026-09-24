@@ -9,6 +9,7 @@ export default defineConfig({
       "supabase/functions/_shared/**/*.test.ts",
       "supabase/functions/ecpay-checkout/**/*.test.ts",
       "supabase/functions/ecpay-notify/**/*.test.ts",
+      "supabase/functions/ecpay-recover/**/*.test.ts",
       "supabase/functions/line-logout/**/*.test.ts",
       "supabase/functions/native-notification-dispatch/**/*.test.ts",
       "supabase/functions/notification-dispatch/**/*.test.ts",

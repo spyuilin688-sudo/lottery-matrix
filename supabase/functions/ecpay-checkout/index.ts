@@ -54,8 +54,11 @@ const handler = createEcpayCheckoutHandler({
         await reconcileQuotaBatch(data as QuotaOrder[], {
           query: order => queryEcpayQuota(queryConfig,order),
           async record(evidence) {
-            const { error: recordError } = await client.rpc('ecpay_quota_record',quotaRecordParams(evidence));
-            if (recordError) throw new Error('QUOTA_RECORD_FAILED');
+            const paid = evidence.providerStatus === '1';
+            const { error: recordError } = await client.rpc(
+              paid ? 'ecpay_paid_reconcile' : 'ecpay_quota_record',quotaRecordParams(evidence)
+            );
+            if (recordError) throw new Error(paid ? 'PAYMENT_CONFIRM_FAILED' : 'QUOTA_RECORD_FAILED');
           },
           async backoff() {
             const { error: backoffError } = await client.rpc('ecpay_quota_query_backoff',{ p_merchant_id: merchantId });

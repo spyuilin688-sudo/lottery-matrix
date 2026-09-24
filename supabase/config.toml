@@ -3,3 +3,6 @@ verify_jwt = true
 
 [functions.ecpay-notify]
 verify_jwt = false
+
+[functions.ecpay-recover]
+verify_jwt = false
