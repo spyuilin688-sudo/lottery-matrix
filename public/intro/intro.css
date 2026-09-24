@@ -29,13 +29,11 @@ ul { margin: 0; padding: 0; list-style: none; }
 .skip-link { position: absolute; z-index: 10; top: -80px; left: 16px; padding: 10px 14px; background: var(--gold-light); color: var(--background); }
 .skip-link:focus { top: 10px; }
 
-.site-header { border-bottom: 1px solid rgba(196, 145, 69, .32); }
-.header-inner { display: flex; align-items: center; justify-content: space-between; min-height: 70px; gap: 24px; }
-.brand { display: inline-flex; flex-shrink: 0; align-items: center; gap: 7px; min-height: 44px; }
-.brand-mark, .brand-wordmark { display: block; flex-shrink: 0; background-image: url('/intro/lottery-matrix-logo.jpg'); background-repeat: no-repeat; mix-blend-mode: screen; }
-.brand-mark { width: 42px; height: 42px; background-size: 253% auto; background-position: center 17%; }
-.brand-wordmark { width: 136px; height: 38px; background-size: 112% auto; background-position: center 80%; }
-.site-nav { display: flex; align-items: center; gap: clamp(16px, 2.8vw, 36px); font-size: 13px; }
+.site-header { border-bottom: 1px solid rgba(196, 145, 69, .32); background: #000; }
+.header-inner { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding-block: 8px; }
+.brand { flex-shrink: 0; }
+.brand-logo { display: block; width: 168px; height: auto; }
+.site-nav { display: flex; align-items: center; gap: clamp(16px, 2.8vw, 36px); padding-bottom: 12px; font-size: 13px; }
 .site-nav a { color: var(--muted); transition: color .18s ease; }
 .site-nav a:hover { color: var(--gold-light); }
 .site-nav .header-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--gold-light); }
@@ -99,10 +97,8 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 
 @media (max-width: 600px) {
-  .header-inner { min-height: 62px; }
-  .brand { gap: 5px; }
-  .brand-mark { width: 35px; height: 35px; }
-  .brand-wordmark { width: 116px; height: 35px; }
+  .header-inner { gap: 12px; }
+  .brand-logo { width: min(43vw, 152px); }
   .site-nav > a:not(.header-link) { display: none; }
   .hero { gap: 30px; padding-block: 39px 50px; }
   .hero h1 { margin-top: 13px; font-size: clamp(30px, 8vw, 36px); line-height: 1.29; }
