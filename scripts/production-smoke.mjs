@@ -59,12 +59,40 @@ export function evaluateSmokeResponse(name, url, status) {
   }
 }
 
+function htmlBuildAssets(html, baseUrl) {
+  const assets = new Set();
+  for (const match of html.matchAll(/<(?:script|link)\b[^>]*\b(?:src|href)\s*=\s*["']([^"']+)["']/gi)) {
+    const asset = new URL(match[1], baseUrl);
+    if (asset.origin === new URL(baseUrl).origin && /^\/assets\/.*\.(?:css|m?js)$/.test(asset.pathname)) {
+      assets.add(asset.pathname);
+    }
+  }
+  if (assets.size === 0) throw new Error(`PWA asset version check found no build assets: ${baseUrl}`);
+  return [...assets].sort();
+}
+
+function workerBuildAssets(source, url) {
+  const assignment = source.match(/\bconst BUILD_ASSET_PATHS\s*=\s*(\[[\s\S]*?\]);/);
+  if (!assignment) throw new Error(`PWA asset version check found no worker asset list: ${url}`);
+  let assets;
+  try {
+    assets = JSON.parse(assignment[1]);
+  } catch {
+    throw new Error(`PWA asset version check found an invalid worker asset list: ${url}`);
+  }
+  if (!Array.isArray(assets) || !assets.every((asset) => typeof asset === 'string')) {
+    throw new Error(`PWA asset version check found an invalid worker asset list: ${url}`);
+  }
+  return new Set(assets);
+}
+
 export async function runProductionSmoke({ env = process.env, fetchImpl = globalThis.fetch } = {}) {
   if (typeof fetchImpl !== "function") {
     throw new Error("Global fetch is unavailable; Node.js 18+ is required");
   }
 
   const targets = collectSmokeTargets(env);
+  let pwaHtml;
 
   for (const target of targets) {
     let response;
@@ -84,8 +112,39 @@ export async function runProductionSmoke({ env = process.env, fetchImpl = global
     }
 
     evaluateSmokeResponse(target.name, target.url, response.status);
+    if (target.name === 'PWA') pwaHtml = await response.text();
     console.log(`[smoke] ${target.name}: HTTP ${response.status} ${target.url}`);
   }
+
+  const pwaUrl = targets.find(({ name }) => name === 'PWA').url;
+  const readPwa = async (pathname) => {
+    const url = new URL(pathname, pwaUrl).href;
+    let response;
+    try {
+      response = await fetchImpl(url, {
+        method: 'GET', redirect: 'follow', cache: 'no-store',
+        signal: AbortSignal.timeout(10_000),
+        headers: { 'cache-control': 'no-cache', 'user-agent': 'matrix-lottery-production-smoke/1.0' },
+      });
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new Error(`PWA smoke request failed: ${url} (${detail})`);
+    }
+    evaluateSmokeResponse('PWA', url, response.status);
+    return { url, body: await response.text() };
+  };
+  const index = await readPwa('/index.html');
+  const worker = await readPwa('/push-service-worker.js');
+  const rootAssets = htmlBuildAssets(pwaHtml, pwaUrl);
+  const indexAssets = htmlBuildAssets(index.body, index.url);
+  if (rootAssets.join('\0') !== indexAssets.join('\0')) {
+    throw new Error('PWA asset version mismatch between / and /index.html');
+  }
+  const workerAssets = workerBuildAssets(worker.body, worker.url);
+  if (rootAssets.some((asset) => !workerAssets.has(asset))) {
+    throw new Error('PWA asset version mismatch between HTML and push-service-worker.js');
+  }
+  console.log(`[smoke] PWA asset version: ${rootAssets.length} HTML assets match the service worker`);
 }
 
 const invokedPath = process.argv[1] ? path.resolve(process.argv[1]) : "";
@@ -95,4 +154,3 @@ if (invokedPath && invokedPath === fileURLToPath(import.meta.url)) {
     process.exitCode = 1;
   });
 }
-

@@ -105,6 +105,21 @@ describe('listAdminTable', () => {
     expect(api.request).toHaveBeenCalledWith(expect.stringContaining('transfer_request_id'));
   });
 
+  it('maps linked ECPay trade identifiers separately from manual transfer origin', async () => {
+    const api = { request: fixtureRequest(async () => [
+      { id: 'ecpay-payment', member_id: 'member-1', ecpay_order: { merchant_trade_no: 'ORDER123', trade_no: 'TRADE456' } },
+      { id: 'bank-payment', member_id: 'member-2', transfer_request_id: 'transfer-2', ecpay_order: null },
+    ]) };
+    const result = await listAdminTable('subscriptionRecords', api);
+    expect(result.items[0]).toMatchObject({
+      ecpayMerchantTradeNo: 'ORDER123', ecpayTradeNo: 'TRADE456', transferRequestId: null,
+    });
+    expect(result.items[1]).toMatchObject({
+      ecpayMerchantTradeNo: null, ecpayTradeNo: null, transferRequestId: 'transfer-2',
+    });
+    expect(api.request).toHaveBeenCalledWith(expect.stringContaining('ecpay_order:ecpay_orders!payments_ecpay_order_id_fkey(merchant_trade_no,trade_no)'));
+  });
+
   it('maps the activation-code redeemer member ID for provider-neutral administration', async () => {
     const api = { request: fixtureRequest(async () => [{
       id: 'code-1', batch_id: 'batch-1', code: 'ABCD-EFGH-IJKL-MNOP', duration_type: '30_days',

@@ -73,6 +73,18 @@ function change(element: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElem
 }
 
 describe('PaymentReversalPanel', () => {
+  it('shows ECPay identifiers and the origin of bank transfers in payment history', async () => {
+    await renderPanel({ payments: [
+      { ...payment, ecpayMerchantTradeNo: 'ORDER123', ecpayTradeNo: 'TRADE456' },
+      { ...payment, id: 'bank-payment', transferRequestId: 'transfer-2' },
+    ] });
+    const [ecpay, bank] = container.querySelectorAll('.paymentReversalRow');
+    expect(ecpay.textContent).toContain('綠界商店訂單 ORDER123');
+    expect(ecpay.textContent).toContain('綠界交易編號 TRADE456');
+    expect(bank.textContent).toContain('人工匯款');
+    expect(bank.textContent).toContain('匯款回報 transfer-2');
+  });
+
   it('labels paid orders needing a refund and records a refund only after confirmation', async () => {
     const onRecord = vi.fn(async () => undefined);
     await renderPanel({ payments: [{ ...payment, status: 'refund_required' }], onRecord });

@@ -68,6 +68,9 @@ describe('ECPay payment notification', () => {
       trade_no: order.tradeNo, status: 'confirmed', quota_provider_status: '1' };
     expect(matchesRecordedPaidOrder(order, saved)).toBe(true);
     expect(matchesRecordedPaidOrder(order, { ...saved, status: 'refund_required' })).toBe(true);
+    for (const status of ['refunded', 'chargeback', 'cancelled']) {
+      expect(matchesRecordedPaidOrder(order, { ...saved, status })).toBe(true);
+    }
     for (const unverified of [null,
       { ...saved, merchant_id: 'another-merchant' },
       { ...saved, amount: 2881 },
