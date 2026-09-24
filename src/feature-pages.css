@@ -1276,7 +1276,19 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .support-contact-card { display: grid; padding: 18px 14px; gap: 12px; }
 .support-contact-card a { display: block; min-height: 48px; padding: 13px 12px; border: 1px solid var(--pwa-frame-tertiary); border-radius: var(--pwa-frame-radius); background: var(--pwa-control-surface); color: #efc95e; font-size: 14px; line-height: 1.5; text-align: center; text-decoration: none; overflow-wrap: anywhere; }
 .plan-carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; }
-.plan-card { position: relative; scroll-snap-align: center; border: 1px solid var(--pwa-frame-secondary); border-radius: var(--pwa-frame-radius); background: linear-gradient(150deg, rgba(12, 19, 24, .98), rgba(3, 8, 12, .99)); color: #d7d0c5; text-align: left; }
+.plan-card { position: relative; isolation: isolate; scroll-snap-align: center; border: 1px solid var(--pwa-frame-secondary); border-radius: var(--pwa-frame-radius); background: linear-gradient(150deg, rgba(12, 19, 24, .98), rgba(3, 8, 12, .99)); color: #d7d0c5; text-align: left; }
+/* One quiet texture for every plan; keep the price, copy and tool icons clear. */
+.pro-plans-screen .plan-card::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(135deg, transparent 0 5px, var(--pwa-frame-secondary) 5px 6px, transparent 6px 10px);
+  mask-image: linear-gradient(115deg, transparent 58%, #000 100%);
+  opacity: .07;
+  pointer-events: none;
+}
 .plan-card[data-current="true"] { border-color: var(--pwa-frame-secondary); box-shadow: none; }
 .plan-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .plan-name { display: block; padding-top: 2px; color: #ece7df; font-size: 18px; font-weight: 650; white-space: nowrap; }
@@ -1305,7 +1317,22 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .auto-renew-setting strong[data-active="true"] { color: #e5c36e; }
 .confirm-payment:not(.branded-explore-action) { width: 100%; min-height: 48px; border: 1px solid var(--pwa-frame-primary); border-radius: var(--pwa-frame-radius); background: var(--pwa-control-selected); color: var(--pwa-frame-secondary); font-size: 16px; font-weight: 750; box-shadow: none; }
 .payment-note { margin: 0; color: #9f988e; font-size: 11px; text-align: center; }
-.about-matrix-card { padding: 18px 16px; }
+.about-matrix-card { position: relative; isolation: isolate; padding: 18px 16px; }
+/* Decorative M silhouettes stay behind content and never receive pointer events. */
+.about-matrix-card::before,
+.activation-code-screen .referral-summary-card::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 48%;
+  background: linear-gradient(125deg, transparent 12%, var(--pwa-frame-secondary));
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M0 0H26L50 58 74 0H100V100H78V40L57 100H43L22 40V100H0Z'/%3E%3C/svg%3E") right bottom / contain no-repeat;
+  opacity: .06;
+  pointer-events: none;
+}
 .about-matrix-card p { margin: 0 0 14px; color: #c9c2b8; font-size: 13px; line-height: 1.85; }
 .about-matrix-card .about-welcome { color: #f0d382; font-size: 17px; font-weight: 650; }
 .about-matrix-card h2 { margin: 24px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--pwa-frame-divider); color: #e5c36e; font-size: 16px; font-weight: 650; }
@@ -2479,6 +2506,10 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   min-width: 0;
   padding: 0;
   gap: 12px;
+}
+.activation-code-screen .referral-summary-card {
+  position: relative;
+  isolation: isolate;
 }
 .referral-summary-card h2,
 .referral-input-card h2,
