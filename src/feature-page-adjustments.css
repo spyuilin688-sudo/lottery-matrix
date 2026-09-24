@@ -612,9 +612,9 @@
 .matrix-guide-screen .guide-category-strip {
   display: flex;
   max-height: none;
-  margin: 8px 4px 6px;
+  margin: 0 4px 6px;
   padding: 3px 0;
-  gap: 6px;
+  gap: 5px;
   border-top: 1px solid var(--pwa-frame-divider);
   border-bottom: 1px solid var(--pwa-frame-divider);
   border-radius: 0;
@@ -639,17 +639,17 @@
   flex: 0 0 auto;
   width: max-content;
   min-height: 30.888px;
-  padding: 5.616px 11.232px;
+  padding: 5px 9px;
   grid-template-columns: auto auto;
   align-items: center;
-  gap: 5.616px;
+  gap: 5px;
   border: 1px solid var(--pwa-frame-tertiary);
   border-radius: var(--pwa-frame-radius);
   background: var(--pwa-control-surface);
   color: #d4cdc2;
   white-space: nowrap;
-  font-size: 16.848px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   line-height: 1.25;
   text-align: left;
   scroll-snap-align: start;
@@ -668,6 +668,7 @@
   border-color: var(--pwa-frame-secondary);
   background: var(--pwa-control-selected);
   color: var(--pwa-frame-secondary);
+  font-weight: 700;
   box-shadow: none;
 }
 
@@ -684,7 +685,7 @@
   min-height: 0;
   margin-top: 0;
   padding: 14px;
-
+  border-color: var(--pwa-frame-tertiary);
 }
 
 .matrix-guide-screen .guide-preview header {
@@ -715,10 +716,10 @@
 .matrix-guide-screen .guide-preview .guide-summary {
   margin: 10px 0 0;
   padding-bottom: 6px;
-  border-bottom: 1px solid var(--pwa-frame-divider);
+  border-bottom: 1px solid color-mix(in srgb, var(--pwa-frame-divider) 60%, transparent);
   color: #d4cdc2;
   font-size: 13px;
-  line-height: 1.75;
+  line-height: 1.68;
 }
 
 .matrix-guide-screen .guide-detail-list {
@@ -728,7 +729,7 @@
 
 .matrix-guide-screen .guide-detail-block {
   padding: 8px 0;
-  border-bottom: 1px solid var(--pwa-frame-divider);
+  border-bottom: 1px solid color-mix(in srgb, var(--pwa-frame-divider) 60%, transparent);
 }
 
 .matrix-guide-screen .guide-detail-block:last-child {
@@ -770,7 +771,7 @@
   height: 4px;
   margin-top: .65em;
   border-radius: 50%;
-  background: #c49145;
+  background: var(--pwa-frame-tertiary);
   content: "";
 }
 

@@ -108,7 +108,7 @@ test("Matrix Guide keeps its content card compact without fixed empty height", (
   assert.match(guideAdjustmentsCss, /\.matrix-guide-screen \.guide-detail-block\s*\{[^}]*padding:\s*8px 0;/s);
   assert.match(guideAdjustmentsCss, /\.matrix-guide-screen \.guide-detail-block h3\s*\{[^}]*margin:\s*0 0 6px;/s);
   assert.match(guideAdjustmentsCss, /\.matrix-guide-screen \.guide-detail-block ul\s*\{[^}]*gap:\s*5px;/s);
-  assert.match(guideAdjustmentsCss, /\.matrix-guide-screen \.guide-category-strip\s*\{[^}]*margin:\s*8px 4px 6px;/s);
+  assert.match(guideAdjustmentsCss, /\.matrix-guide-screen \.guide-category-strip\s*\{[^}]*margin:\s*0 4px 6px;/s);
 });
 
 test("Matrix Guide uses the same restrained gold system for its chapter controls and content", () => {
@@ -117,9 +117,9 @@ test("Matrix Guide uses the same restrained gold system for its chapter controls
   assert.match(guideAdjustmentsCss, /\.matrix-guide-screen \.guide-category-strip \.guide-category-card\[data-selected="true"\]\s*\{[^}]*border-color:\s*var\(--pwa-frame-secondary\);[^}]*background:\s*var\(--pwa-control-selected\);[^}]*color:\s*var\(--pwa-frame-secondary\);[^}]*box-shadow:\s*none;/s);
   assert.match(guideAdjustmentsCss, /\.matrix-guide-screen \.guide-preview h2\s*\{[^}]*color:\s*#f4ce67;/s);
   assert.match(guideAdjustmentsCss, /\.matrix-guide-screen \.guide-preview header > span\s*\{[^}]*border:\s*1px solid var\(--pwa-frame-tertiary\);[^}]*border-radius:\s*50%;[^}]*color:\s*#c49145;/s);
-  assert.match(guideAdjustmentsCss, /\.matrix-guide-screen \.guide-preview \.guide-summary\s*\{[^}]*border-bottom:\s*1px solid var\(--pwa-frame-divider\);[^}]*color:\s*#d4cdc2;/s);
-  assert.match(guideAdjustmentsCss, /\.matrix-guide-screen \.guide-detail-block\s*\{[^}]*border-bottom:\s*1px solid var\(--pwa-frame-divider\);/s);
+  assert.match(guideAdjustmentsCss, /\.matrix-guide-screen \.guide-preview \.guide-summary\s*\{[^}]*border-bottom:\s*1px solid color-mix\(in srgb, var\(--pwa-frame-divider\) 60%, transparent\);[^}]*color:\s*#d4cdc2;/s);
+  assert.match(guideAdjustmentsCss, /\.matrix-guide-screen \.guide-detail-block\s*\{[^}]*border-bottom:\s*1px solid color-mix\(in srgb, var\(--pwa-frame-divider\) 60%, transparent\);/s);
   assert.match(guideAdjustmentsCss, /\.matrix-guide-screen \.guide-detail-block h3\s*\{[^}]*color:\s*#c49145;/s);
-  assert.match(guideAdjustmentsCss, /\.matrix-guide-screen \.guide-detail-block li::before\s*\{[^}]*background:\s*#c49145;/s);
+  assert.match(guideAdjustmentsCss, /\.matrix-guide-screen \.guide-detail-block li::before\s*\{[^}]*background:\s*var\(--pwa-frame-tertiary\);/s);
   assert.match(guideAdjustmentsCss, /\.matrix-guide-screen \.guide-detail-block ul\s*\{[^}]*color:\s*#bbb4aa;/s);
 });
