@@ -16,11 +16,20 @@ function request(body: unknown, authorization = 'Bearer user-token') {
   return new Request('https://example.supabase.co/functions/v1/ecpay-checkout', {
     method: 'POST',
     headers: { Authorization: authorization, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ supportsPaymentInfo: true, ...(body as object) }),
   });
 }
 
 describe('ECPay one-time checkout', () => {
+  it('keeps old cached clients compatible while their missing issuance notifications can be reconciled', async () => {
+    const handler = createEcpayCheckoutHandler({
+      config, getAuthenticatedMember: async () => 'member-uuid',
+      createOrder: async () => ({ merchantTradeNo: 'M2609231030001234567',planName: '月費方案',amount: 2880 }),
+    });
+    const response = await handler(request({ planCode: 'month', supportsPaymentInfo: false }));
+    expect(response.status).toBe(200);
+    expect((await response.json()).fields).not.toHaveProperty('PaymentInfoURL');
+  });
   it('uses the server-owned plan amount and signs a stage checkout for the signed-in member', async () => {
     const createOrder = vi.fn().mockResolvedValue({
       merchantTradeNo: 'M2609231030001234567', planName: '月費方案', amount: 2880,
@@ -38,6 +47,7 @@ describe('ECPay one-time checkout', () => {
     expect(body.fields.MerchantID).toBe(config.merchantId);
     expect(body.fields.ChoosePayment).toBe('ALL');
     expect(body.fields.ReturnURL).toBe('https://example.supabase.co/functions/v1/ecpay-notify');
+    expect(body.fields.PaymentInfoURL).toBe('https://example.supabase.co/functions/v1/ecpay-notify');
     expect(body.fields.ClientBackURL).toBe(config.clientBackUrl);
     expect(await verifyEcpayCheckMacValue(body.fields, body.fields.CheckMacValue, config.hashKey, config.hashIv)).toBe(true);
     expect(createOrder).toHaveBeenCalledOnce();

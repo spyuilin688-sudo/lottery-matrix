@@ -1,4 +1,5 @@
 import { createEcpayCheckMacValue, createMerchantTradeNo } from '../_shared/ecpay.ts';
+import type { QuotaResult } from './quota.ts';
 
 type CheckoutConfig = {
   merchantId: string;
@@ -10,11 +11,10 @@ type CheckoutConfig = {
   paymentMode: 'ecpay' | 'manual' | 'invalid';
 };
 
-type Order = { merchantTradeNo: string; planName: string; amount: number };
 type Dependencies = {
   config: CheckoutConfig;
   getAuthenticatedMember(authorization: string): Promise<string | null>;
-  createOrder(planCode: string, memberId: string, merchantTradeNo: string): Promise<Order>;
+  createOrder(planCode: string, memberId: string, merchantTradeNo: string): Promise<QuotaResult>;
 };
 
 const cors = {
@@ -55,9 +55,11 @@ export function createEcpayCheckoutHandler(dependencies: Dependencies) {
     const authorization = request.headers.get('Authorization') ?? '';
     if (!/^Bearer\s+\S+$/.test(authorization)) return json({ error: 'AUTH_REQUIRED' }, 401);
     let planCode: string;
+    let supportsPaymentInfo = false;
     try {
       const body = await request.json();
       planCode = body?.planCode;
+      supportsPaymentInfo = body?.supportsPaymentInfo === true;
     } catch {
       return json({ error: 'INVALID_REQUEST' }, 400);
     }
@@ -66,6 +68,8 @@ export function createEcpayCheckoutHandler(dependencies: Dependencies) {
       const memberId = await dependencies.getAuthenticatedMember(authorization);
       if (!memberId) return json({ error: 'AUTH_REQUIRED' }, 401);
       const order = await dependencies.createOrder(planCode, memberId, createMerchantTradeNo());
+      if ('manual' in order && order.manual === true) return json({ error: 'MANUAL_TRANSFER_MODE' }, 409);
+      if (!('merchantTradeNo' in order)) throw new Error('INVALID_SERVER_ORDER');
       if (!/^[A-Za-z0-9]{1,20}$/.test(order.merchantTradeNo)
         || !Number.isSafeInteger(order.amount) || order.amount <= 0 || !order.planName) {
         throw new Error('INVALID_SERVER_ORDER');
@@ -79,6 +83,9 @@ export function createEcpayCheckoutHandler(dependencies: Dependencies) {
         TradeDesc: 'Matrix Pro',
         ItemName: order.planName,
         ReturnURL: `${config.supabaseUrl.replace(/\/$/, '')}/functions/v1/ecpay-notify`,
+        // Older cached clients reject unknown signed fields. Their orders are
+        // still covered by reconciliation; newer clients also receive issuance callbacks.
+        ...(supportsPaymentInfo ? { PaymentInfoURL: `${config.supabaseUrl.replace(/\/$/, '')}/functions/v1/ecpay-notify` } : {}),
         ClientBackURL: config.clientBackUrl,
         ChoosePayment: 'ALL',
         EncryptType: 1,

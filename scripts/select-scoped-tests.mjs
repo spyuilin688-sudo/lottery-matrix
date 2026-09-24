@@ -10,6 +10,17 @@ const PYTHON_ROOT = 'services/matrix-api';
 const SOURCE = /\.(?:[cm]?[jt]sx?|css|html|py|json|ya?ml)$/;
 const TEST = /(?:\.test\.(?:[cm]?[jt]sx?)|\.spec\.tsx?|(?:^|\/)test_[^/]+\.py)$/;
 
+// This leaf payment helper is imported by the shared page router. Its focused
+// unit/flow tests cover changes without selecting every unrelated screen test.
+// Direct imports/reads and separately changed tests still select themselves.
+const FOCUSED_SOURCE_OWNERS = {
+  'src/ecpay-checkout.ts': [
+    'src/__tests__/EcpayCheckout.test.ts',
+    'src/__tests__/ManualBankTransferPage.test.tsx',
+    'tests/manual-bank-transfer.spec.ts',
+  ],
+};
+
 // Navigation to / has no static module import. These are the actual screen owners
 // exercised by each focused browser spec, not a directory-wide browser fallback.
 const BROWSER_OWNERS = {
@@ -164,7 +175,11 @@ export function selectTests(files, changed) {
       }
     }
     visit(file);
-    const related = paths.filter(changedFile => reached.has(changedFile) || CONFIG_OWNERS[changedFile]?.includes(file));
+    const related = paths.filter(changedFile => {
+      const owners = FOCUSED_SOURCE_OWNERS[changedFile];
+      if (owners) return owners.includes(file) || graph.get(file)?.imports.has(changedFile) || graph.get(file)?.reads.has(changedFile);
+      return reached.has(changedFile) || CONFIG_OWNERS[changedFile]?.includes(file);
+    });
     if (related.length) { groups[group].push(file); reasons[file] = related; }
   }
   for (const group of GROUPS) groups[group].sort();

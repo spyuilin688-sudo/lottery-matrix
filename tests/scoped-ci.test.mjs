@@ -61,6 +61,23 @@ test('imports are transitive, source text reads do not execute the inspected mod
   assert.deepEqual(plan.groups.node, []);
   assert.deepEqual(selectTests(files, ['src/client.ts']).groups.node, ['tests/client-source.test.mjs']);
 });
+test('checkout helper changes select payment coverage without pulling unrelated screens through the app router', () => {
+  const checkoutFiles = new Map([
+    ['src/ecpay-checkout.ts', 'export const checkout = () => {};'],
+    ['src/features/MemberPages.tsx', "import { checkout } from '../ecpay-checkout';"],
+    ['src/router.ts', "import './features/MemberPages';"],
+    ['src/__tests__/EcpayCheckout.test.ts', "import '../ecpay-checkout';"],
+    ['src/__tests__/ManualBankTransferPage.test.tsx', "import '../router';"],
+    ['src/__tests__/UnrelatedScreen.test.tsx', "import '../router';"],
+    ['tests/manual-bank-transfer.spec.ts', "import '../src/router';"],
+    ['tests/other-screen.spec.ts', "import '../src/router';"],
+  ]);
+  const plan = selectTests(checkoutFiles, ['src/ecpay-checkout.ts']);
+  assert.deepEqual(plan.groups.vitest, ['src/__tests__/EcpayCheckout.test.ts', 'src/__tests__/ManualBankTransferPage.test.tsx']);
+  assert.deepEqual(plan.groups.playwright, ['tests/manual-bank-transfer.spec.ts']);
+  assert.ok(selectTests(checkoutFiles, ['src/features/MemberPages.tsx']).groups.vitest.includes('src/__tests__/UnrelatedScreen.test.tsx'));
+  assert.ok(selectTests(checkoutFiles, ['src/ecpay-checkout.ts', 'tests/other-screen.spec.ts']).groups.playwright.includes('tests/other-screen.spec.ts'));
+});
 
 test('deleted fixtures and modules still select their surviving consumers', () => {
   const remaining = new Map(files);
