@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { setup, service, owner, userId, memberId, planId, merchant } from './helpers/ecpay-db.mjs';
 
-const migration = new URL('../supabase/migrations/20260923234853_ecpay_quota_reconciliation.sql', import.meta.url);
+const migration = new URL('../supabase/migrations/20260924001807_ecpay_quota_reconciliation.sql', import.meta.url);
 async function create(db, number = 'NEWCHECKOUT') {
   return db.query('select public.ecpay_order_create_with_quota($1,$2,$3,$4) as result', [userId, 'month', number, merchant]);
 }
