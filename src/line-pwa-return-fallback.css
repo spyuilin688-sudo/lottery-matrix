@@ -34,7 +34,7 @@
   padding: 8px 16px;
   border: 1px solid var(--pwa-frame-tertiary);
   border-radius: var(--pwa-frame-radius);
-  color: var(--lottery-neutral-950);
+  color: var(--lottery-text-primary);
   background: var(--pwa-control-surface);
   font-size: 16px;
   font-weight: 700;
