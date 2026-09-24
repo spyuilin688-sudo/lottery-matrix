@@ -1230,9 +1230,13 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .profile-mark { display: grid; width: 58px; height: 58px; place-items: center; border: 1px solid #aa751b; border-radius: 50%; color: #e6af2b; }
 .profile-mark svg { width: 28px; height: 28px; }
 
-.profile-menu { overflow: hidden;
-  padding: 6px 10px 0; }
-.profile-menu .section-title { margin-bottom: 8px;
+.profile-screen .profile-menu {
+  overflow: hidden;
+  padding: 6px 10px 0;
+  background: var(--pwa-control-surface);
+  border-color: var(--pwa-frame-tertiary);
+}
+.profile-menu .section-title {
   height: 26px;
   margin: 0;
   gap: 6px;
@@ -2025,8 +2029,9 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   outline-offset: 2px;
 }
 
-.profile-menu .section-title > span {
+.profile-screen .profile-menu .section-title > span {
   flex: 0 0 4px;
+  opacity: .78;
 }
 .profile-menu-rows {
   border-top: 1px solid var(--pwa-frame-divider);
@@ -2040,12 +2045,13 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   background: rgba(48, 39, 28, .72);
   content: "";
 }
-.profile-menu-rows button svg {
+.profile-screen .profile-menu-rows button svg {
   width: 16px;
   height: 16px;
   align-self: center;
   justify-self: end;
   color: #b98a31;
+  opacity: .72;
 }
 .pro-plans-checkout {
   display: grid;
