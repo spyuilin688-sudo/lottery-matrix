@@ -37,7 +37,7 @@ test('notification consolidation keeps the accepted geometry, typography and sel
   assert.doesNotMatch(read(file), /\.notification-time-select[^{}]*::(?:before|after)/);
   const selected = rule(file, '.notifications-screen-v2 .notification-time-select:has(select option:checked:not([value=""]))');
   assert.equal(selected.background, 'var(--pwa-control-selected)');
-  assert.equal(selected['border-color'], 'var(--pwa-frame-secondary)');
+  assert.equal(selected['border-color'], 'var(--pwa-frame-tertiary)');
   assert.equal(rule(file, '.notifications-screen-v2 .notification-time-select select').color, '#D8C38D');
   assert.equal(rule(file, '.notifications-screen-v2 .notification-time-select select:has(option:checked[value=""])').color, 'var(--lottery-neutral-400)');
 });

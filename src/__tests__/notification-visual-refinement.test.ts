@@ -65,7 +65,7 @@ describe("notification visual refinement", () => {
     const disabledControl = document.querySelector("[data-notification-key=collision] .toggle")! as HTMLButtonElement;
 
     expect(title.color).toBe("rgba(242, 242, 242, 0.82)");
-    expect(icon.filter).toBe("brightness(.88) saturate(.76)");
+    expect(icon.filter).toBe("brightness(.82) saturate(.66)");
     expect(disabledControl.disabled).toBe(true);
   });
 
@@ -88,16 +88,15 @@ describe("notification visual refinement", () => {
         </article>
       </main>`;
 
-    const groupDivider = getComputedStyle(document.querySelector(".notification-group .notification-row + .notification-row")!);
-    const inlineDivider = getComputedStyle(document.querySelector(".notification-inline-settings-content")!);
     const normalActions = getComputedStyle(document.querySelector("[data-notification-key=result] .notification-actions")!);
     const normalSetting = getComputedStyle(document.querySelector("[data-notification-key=result] .notification-settings-toggle")!);
     const systemActions = getComputedStyle(document.querySelector("[data-notification-key=system] .notification-actions")!);
     const systemSetting = getComputedStyle(document.querySelector("[data-notification-key=system] .notification-settings-toggle")!);
     const systemTitle = getComputedStyle(document.querySelector("[data-notification-key=system] .notification-title")!);
 
-    expect(groupDivider.borderTopStyle).toBe("solid");
-    expect(inlineDivider.borderTopColor).toBe("rgba(170, 119, 46, 0.24)");
+    // jsdom does not resolve color-mix tokens in border shorthands; verify the owner.
+    expect(readCss("src/feature-page-adjustments.css")).toMatch(/\.notification-group \.notification-row \+ \.notification-row\s*\{[^}]*border-top: 1px solid var\(--pwa-frame-divider\)/s);
+    expect(readCss("src/feature-page-adjustments.css")).toMatch(/\.notification-inline-settings-content\s*\{[^}]*border-top: 1px solid var\(--pwa-frame-divider\)/s);
     expect(normalActions.gridTemplateColumns).toBe("56px 38px");
     expect(normalActions.gap).toBe("8px");
     expect(normalSetting.width).toBe("56px");
@@ -124,7 +123,7 @@ describe("notification visual refinement", () => {
       <main class="notifications-screen-v2">
         <div class="notification-title"><h2><span>選號提醒</span></h2></div>
         <div class="notification-bulk-actions">
-          <button class="primary-action branded-explore-action notification-bulk-enable"><span>全部開啟</span></button>
+          <button class="primary-action notification-bulk-enable"><span>全部開啟</span></button>
           <button class="notification-bulk-disable">全部關閉</button>
         </div>
       </main>`;
@@ -139,11 +138,12 @@ describe("notification visual refinement", () => {
     expect(enable.height).toBe("29px");
     expect(disable.height).toBe("29px");
     expect(css).not.toMatch(/\.notification-bulk-enable\s*\{[^}]*background:\s*var\(--lottery-gold-600\)/s);
-    expect(source).toMatch(/className="notification-bulk-enable primary-action branded-explore-action"/);
-    expect(source).toMatch(/className="notification-bulk-disable branded-explore-action"/);
+    expect(source).toContain('className="notification-bulk-enable primary-action"');
+    expect(source).not.toContain("branded-explore-action");
+    expect(source).toContain('className="notification-bulk-disable"');
     expect(css).not.toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*#160f08/s);
-    expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*border:\s*1px solid rgba\(216, 195, 141, \.72\)/s);
-    expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*color:\s*#D8C38D/s);
+    expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*border:\s*1px solid var\(--pwa-frame-tertiary\)/s);
+    expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*color:\s*var\(--lottery-text-secondary\)/s);
   });
 
   it("compacts and softens notification time choices", () => {
@@ -168,10 +168,46 @@ describe("notification visual refinement", () => {
     expect(getComputedStyle(document.querySelectorAll(".notification-grid-time-row")[1]).marginBlockStart).toBe("1px");
 
     const css = readCss("src/feature-page-adjustments.css");
-    expect(css).toMatch(/\.notification-time-select::before\s*\{[^}]*background:\s*#344A66/s);
-    expect(css).toMatch(/\.notification-time-select::after\s*\{[^}]*background:\s*#101C2C/s);
-    expect(css).toMatch(/\.notification-time-select:focus-within::before,[\s\S]*#D8C38D/s);
+    expect(css).toMatch(/\.notification-time-select:has\(select option:checked:not\(\[value=""\]\)\)\s*\{[^}]*background: var\(--pwa-control-selected\);[^}]*border-color: var\(--pwa-frame-tertiary\)/s);
+    expect(css).toMatch(/\.notification-bet-grid \.notification-time-select\.native-select:focus-within\s*\{[^}]*border-color: var\(--pwa-frame-primary\)/s);
     expect(css).toMatch(/select:has\(option:checked\[value=""\]\)\s*\{[^}]*color:\s*var\(--lottery-neutral-400\)/s);
     expect(css).toMatch(/\.notification-inline-settings-content:has\(\.notification-bet-grid\)\s*\{[^}]*padding:\s*5px 4px 6px/s);
   });
+  it("keeps icons restrained, disclosures still, and compact controls touchable", () => {
+    const css = readCss("src/feature-page-adjustments.css");
+    const rule = (selector: string) => {
+      const start = css.indexOf(selector + " {");
+      expect(start).toBeGreaterThanOrEqual(0);
+      return css.slice(start + selector.length + 2).split("}")[0];
+    };
+    expect(rule(".notifications-screen-v2 .notification-icon img")).toContain("width: 34px;");
+    expect(rule(".notifications-screen-v2 .notification-icon img")).toContain("height: 34px;");
+    expect(css).toContain("filter: brightness(.88) saturate(.74);");
+    for (const selector of [".notifications-screen-v2 .notification-inline-settings", '.notifications-screen-v2 .notification-inline-settings[data-expanded="true"]']) {
+      expect(rule(selector)).not.toMatch(/transform|translate|scale|blur/);
+      expect(rule(selector)).toContain("grid-template-rows");
+      expect(rule(selector)).toContain("opacity");
+      expect(rule(selector)).toContain("visibility");
+    }
+    expect(rule(".notifications-screen-v2 .notification-settings-toggle")).toContain("color: var(--lottery-label);");
+    expect(rule('.notifications-screen-v2 .notification-settings-toggle[aria-expanded="true"]')).toContain("color: var(--pwa-frame-secondary);");
+    expect(rule(".notifications-screen-v2 .notification-settings-toggle")).toContain("width: 56px;");
+    expect(rule(".notifications-screen-v2 .notification-settings-toggle")).toContain("height: 20px;");
+    expect(rule(".notifications-screen-v2 .notification-actions > .notification-settings-toggle")).toContain("height: 44px;");
+    expect(rule(".notifications-screen-v2 .notification-actions > .notification-settings-toggle::before")).toContain("height: 20px;");
+    expect(rule(".notifications-screen-v2 .notification-actions > .toggle")).toContain("width: 38px;");
+    expect(rule(".notifications-screen-v2 .notification-actions > .toggle")).toContain("height: 44px;");
+    expect(rule(".notifications-screen-v2 .toggle::before")).toContain("height: 18px;");
+    expect(rule(".notifications-screen-v2 .toggle span")).toContain("width: 14px;");
+    expect(rule(".notifications-screen-v2 .notification-grid-row")).toContain("grid-template-columns: repeat(4, minmax(0, 1fr));");
+    expect(rule(".notifications-screen-v2 .notification-grid-row")).toContain("gap: 4px;");
+  });
+
+  it("uses quiet choice borders and label text while retaining gold checkboxes", () => {
+    const css = readCss("src/feature-page-adjustments.css");
+    expect(css).toMatch(/\.notification-inline-option-row \.notification-choice\s*\{[^}]*border: 1px solid var\(--pwa-frame-divider\)/s);
+    expect(css).toMatch(/\.notification-choice:has\(input:checked\)\s*\{[^}]*border-color: var\(--pwa-frame-tertiary\);[^}]*background: var\(--pwa-control-selected\);[^}]*color: var\(--lottery-label\)/s);
+    expect(css).toMatch(/input\[type="radio"\]\s*\{[^}]*width: 12px;[^}]*height: 12px;[^}]*accent-color: #d99b00/s);
+  });
+
 });

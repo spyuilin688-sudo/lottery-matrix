@@ -6,7 +6,7 @@ import { ruleBodies } from "./helpers/css-rules.mjs";
 
 const css = readFileSync(new URL("../src/feature-page-adjustments.css", import.meta.url), "utf8");
 
-test("全部關閉維持共用探索按鈕的次要邊框層級", () => {
+test("全部關閉維持次要按鈕的低亮度邊框層級", () => {
   const base = ruleBodies(css, /^\.notifications-screen-v2 \.notification-bulk-disable$/);
   assert.equal(base.length, 1);
   assert.match(base[0], /border:\s*1px solid var\(--pwa-frame-tertiary\);/);
@@ -33,10 +33,10 @@ test("Matrix 摘星停用列的設定與關閉開關提高一級亮度", () => {
 
 test("通知圖示降低亮度，讓名稱維持每列主閱讀點", () => {
   const icon = ruleBodies(css, /^\.notifications-screen-v2 \.notification-icon img$/);
-  assert.ok(icon.some((body) => /filter:\s*brightness\(\.92\) saturate\(\.86\);/.test(body)));
+  assert.ok(icon.some((body) => /filter:\s*brightness\(\.88\) saturate\(\.74\);/.test(body)));
 
   const disabledIcon = ruleBodies(css, /^\.notifications-screen-v2 \.notification-row:has\(\.toggle:disabled\) \.notification-icon img$/);
-  assert.ok(disabledIcon.some((body) => /filter:\s*brightness\(\.88\) saturate\(\.76\);/.test(body)));
+  assert.ok(disabledIcon.some((body) => /filter:\s*brightness\(\.82\) saturate\(\.66\);/.test(body)));
 });
 
 test("通知標籤與專用位移樣式已移除", () => {

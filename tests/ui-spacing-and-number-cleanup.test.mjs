@@ -22,7 +22,7 @@ test('notification controls use the approved compact spacing and larger option t
   assert.match(css, /\.notifications-screen-v2 \.notification-time-select select\s*\{[^}]*font-size:\s*clamp\(10px,\s*3vw,\s*12px\);/s);
   assert.match(css, /\.notifications-screen-v2 \.notification-grid-lottery-row label,\s*\.notifications-screen-v2 \.notification-grid-status-row label\s*\{[^}]*margin-inline:\s*8px;/s);
   assert.match(css, /\.notifications-screen-v2 input\[type="checkbox"\],[\s\S]*?width:\s*12px;[^}]*height:\s*12px;/s);
-  assert.match(css, /\.notifications-screen-v2 \.notification-inline-option-row \.notification-choice\s*\{[^}]*padding:\s*6px 8px;[^}]*gap:\s*4px;/s);
+  assert.match(css, /\.notifications-screen-v2 \.notification-inline-option-row \.notification-choice\s*\{[^}]*padding:\s*6px min\(8px, 1\.5%\);[^}]*gap:\s*4px;/s);
 });
 
 test('Matrix status lottery labels have no checkbox', () => {

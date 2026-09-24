@@ -104,8 +104,8 @@
 
 .notifications-screen-v2 .notification-icon,
 .notifications-screen-v2 .notification-icon img {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
 }
 
 .notifications-screen-v2 .notification-icon {
@@ -117,7 +117,7 @@
 .notifications-screen-v2 .notification-icon img {
   display: block;
   object-fit: contain;
-  filter: brightness(.92) saturate(.86);
+  filter: brightness(.88) saturate(.74);
 }
 
 .notifications-screen-v2 .notification-title {
@@ -178,7 +178,7 @@
 }
 
 .notifications-screen-v2 .notification-row:has(.toggle:disabled) .notification-icon img {
-  filter: brightness(.88) saturate(.76);
+  filter: brightness(.82) saturate(.66);
 }
 
 .notifications-screen-v2 .notification-actions {
@@ -204,11 +204,15 @@
   border: 1px solid var(--pwa-frame-tertiary);
   border-radius: var(--pwa-frame-radius);
   background: var(--pwa-control-surface);
-  color: #d2aa56;
+  color: var(--lottery-label);
   font-size: clamp(8px, 2.4vw, 10px);
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
+}
+
+.notifications-screen-v2 .notification-settings-toggle[aria-expanded="true"] {
+  color: var(--pwa-frame-secondary);
 }
 
 .notifications-screen-v2 .notification-settings-toggle:active {
@@ -328,11 +332,9 @@
   background: rgba(1, 8, 13, .72);
   opacity: 0;
   visibility: hidden;
-  transform: translateY(-4px);
   transition:
     grid-template-rows 180ms cubic-bezier(.2, .8, .2, 1),
     opacity 100ms ease-out,
-    transform 180ms cubic-bezier(.2, .8, .2, 1),
     visibility 0s linear 180ms;
 }
 
@@ -340,11 +342,9 @@
   grid-template-rows: minmax(0, 1fr);
   opacity: 1;
   visibility: visible;
-  transform: translateY(0);
   transition:
     grid-template-rows 220ms cubic-bezier(.2, .8, .2, 1),
     opacity 140ms ease-out 40ms,
-    transform 220ms cubic-bezier(.2, .8, .2, 1),
     visibility 0s linear;
 }
 
@@ -414,7 +414,7 @@
   align-items: center;
   justify-content: center;
   gap: 3px;
-  border: 1px solid var(--pwa-frame-tertiary);
+  border: 1px solid var(--pwa-frame-divider);
   border-radius: var(--pwa-frame-radius);
   background: var(--pwa-control-surface);
   color: var(--lottery-text-secondary);
@@ -433,9 +433,9 @@
 }
 
 .notifications-screen-v2 .notification-choice:has(input:checked) {
-  border-color: var(--pwa-frame-secondary);
+  border-color: var(--pwa-frame-tertiary);
   background: var(--pwa-control-selected);
-  color: var(--pwa-frame-secondary);
+  color: var(--lottery-label);
 }
 
 .notifications-screen-v2 .notification-choice span {
@@ -446,7 +446,7 @@
   width: calc((100% - 12px) / 4);
   height: auto;
   min-height: 26px;
-  padding: 6px 8px;
+  padding: 6px min(8px, 1.5%);
   flex: 0 0 calc((100% - 12px) / 4);
   gap: 4px;
   margin-inline: 0;
@@ -504,7 +504,12 @@
 
 .notifications-screen-v2 .notification-time-select:has(select option:checked:not([value=""])) {
   background: var(--pwa-control-selected);
-  border-color: var(--pwa-frame-secondary);
+  border-color: var(--pwa-frame-tertiary);
+}
+
+/* Focus must outrank the selected-time rule above. */
+.notifications-screen-v2 .notification-bet-grid .notification-time-select.native-select:focus-within {
+  border-color: var(--pwa-frame-primary);
 }
 
 .notifications-screen-v2 .notification-time-select select:has(option:checked[value=""]) {
@@ -816,8 +821,8 @@
 
 
 @media (prefers-reduced-motion: reduce) {
-  .notifications-screen-v2 .notification-inline-settings {
-    transform: none;
+  .notifications-screen-v2 .notification-inline-settings,
+  .notifications-screen-v2 .notification-inline-settings[data-expanded="true"] {
     transition: opacity 80ms linear;
   }
 
