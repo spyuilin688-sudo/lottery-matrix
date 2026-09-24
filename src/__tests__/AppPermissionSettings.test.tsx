@@ -23,7 +23,7 @@ import { useSubscriptionPurchaseVisible } from '../subscription-purchase-visibil
 import App from '../App';
 afterEach(() => vi.useRealTimers());
 
-test('App reads permission settings on mount, uses the five-minute idle fallback and stops refreshes on unmount', async () => {
+test('App reads permission settings on mount, uses the 12-hour idle fallback and stops refreshes on unmount', async () => {
   vi.useFakeTimers();
   let visible = true;
   let revision = 100;
@@ -37,7 +37,9 @@ test('App reads permission settings on mount, uses the five-minute idle fallback
   visible = false; revision++;
   await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
   expect(screen.queryByRole('button', { name: '訂閱方案／收費標準' })).not.toBeNull();
-  await act(async () => { await vi.advanceTimersByTimeAsync(4 * 60_000 + 30_000); });
+  await act(async () => { await vi.advanceTimersByTimeAsync(12 * 60 * 60_000 - 30_001); });
+  expect(screen.queryByRole('button', { name: '訂閱方案／收費標準' })).not.toBeNull();
+  await act(async () => { await vi.advanceTimersByTimeAsync(1); });
   expect(screen.queryByRole('button', { name: '訂閱方案／收費標準' })).toBeNull();
   view.unmount();
   const previousRequests = rpc.mock.calls.length;
