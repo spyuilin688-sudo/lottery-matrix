@@ -17,6 +17,7 @@ type AuthUser = {
   id?: unknown;
   user_metadata?: Record<string, unknown> | null;
   identities?: AuthIdentity[] | null;
+  push_enabled?: boolean;
 };
 
 export type PushMemberQuery = { page?: unknown; keyword?: unknown; userId?: unknown };
@@ -126,13 +127,8 @@ export function createPushNotifications(
   };
   const supabase = createSupabaseTransport(configOrLoader, transportFetcher);
 
-  async function enrichMember(row: Row): Promise<MemberPushStatus> {
+  function enrichMember(row: Row, authUser: AuthUser): MemberPushStatus {
     const userId = String(row.auth_user_id ?? '');
-    const [authUser, subscriptions] = await Promise.all([
-      supabase.request<AuthUser>(`/auth/v1/admin/users/${encodeURIComponent(userId)}`),
-      // Existence, not a device scan: one recipient may have many devices.
-      supabase.request<Row[]>(`/rest/v1/member_push_subscriptions?select=id&enabled=eq.true&user_id=eq.${encodeURIComponent(userId)}&limit=1`),
-    ]);
     const identity = lineIdentity(authUser);
     const providerIdentity = providerIdentityFromAuthUser(row.line_user_id, authUser);
     return {
@@ -142,8 +138,22 @@ export function createPushNotifications(
       identityDisplay: providerIdentity ? `${providerIdentity.label}：${providerIdentity.value}` : null,
       displayName: memberDisplayNameFromAuthUser(row.line_display_name, authUser),
       pictureUrl: optionalString(authUser?.user_metadata?.picture) ?? optionalString(identity?.picture),
-      pushEnabled: subscriptions.length > 0,
+      pushEnabled: authUser.push_enabled === true,
     };
+  }
+
+  async function enrichPage(rows: Row[]): Promise<MemberPushStatus[]> {
+    if (!rows.length) return [];
+    const userIds = [...new Set(rows.map(row => String(row.auth_user_id ?? '')))];
+    const details = await supabase.request<AuthUser[]>('/rest/v1/rpc/admin_push_member_details', {
+      method: 'POST', body: JSON.stringify({ p_auth_user_ids: userIds }),
+    });
+    const byId = new Map(details.map(user => [String(user.id ?? ''), user]));
+    return rows.map(row => {
+      const user = byId.get(String(row.auth_user_id ?? ''));
+      if (!user || typeof user.push_enabled !== 'boolean') throw new PushNotificationsError('UNAVAILABLE', 503);
+      return enrichMember(row, user);
+    });
   }
 
   return {
@@ -160,10 +170,7 @@ export function createPushNotifications(
             method: 'POST', body: JSON.stringify({ p_keyword: keyword, p_page: page }),
           },
         );
-        const items: MemberPushStatus[] = [];
-        for (let start = 0; start < result.items.length; start += 5) {
-          items.push(...await Promise.all(result.items.slice(start, start + 5).map(enrichMember)));
-        }
+        const items = await enrichPage(result.items);
         return { ...result, items };
       }
       const url = new URL('/rest/v1/members?select=auth_user_id%2Cline_user_id%2Cline_display_name&order=auth_user_id.asc', 'https://supabase.invalid');
@@ -186,11 +193,7 @@ export function createPushNotifications(
       const totalPages = Math.max(1, Math.ceil(result.total / PAGE_SIZE));
       const currentPage = Math.min(page, totalPages);
       if (currentPage !== page) result = await read(currentPage);
-      // Limit simultaneous Auth requests; every lookup belongs to this page.
-      const items: MemberPushStatus[] = [];
-      for (let start = 0; start < result.items.length; start += 5) {
-        items.push(...await Promise.all(result.items.slice(start, start + 5).map(enrichMember)));
-      }
+      const items = await enrichPage(result.items);
       return { items, total: result.total, currentPage, totalPages: Math.max(1, Math.ceil(result.total / PAGE_SIZE)) };
     },
 

@@ -301,29 +301,37 @@ describe('authorized Supabase writes', () => {
         p_actor_name: '管理員',
       }),
     });
-    expect(selectRows).toHaveBeenCalledWith(
-      'activation_codes',
-      'select=id,status,redeemed_at,redeemed_by_member_id&id=eq.code-1',
-    );
+    expect(selectRows).not.toHaveBeenCalled();
     expect(deleteRows).not.toHaveBeenCalled();
     expect(insertRows).not.toHaveBeenCalled();
   });
 
   it('rejects deleting a redeemed activation code for a non-super administrator', async () => {
-    const supabaseRequest = vi.fn();
+    const supabaseRequest = vi.fn(async () => { throw Object.assign(new Error('REDEEMED_ACTIVATION_CODE_DELETE_FORBIDDEN'), { statusCode: 403 }); });
+    const selectRows = vi.fn();
     const data = createAdminData({
       insertRows: vi.fn(),
-      selectRows: vi.fn(async () => [{
-        id: 'code-used', status: 'used', redeemed_at: '2026-09-05T01:00:00Z', redeemed_by_member_id: 'member-1',
-      }]),
+      selectRows,
       updateRows: vi.fn(),
       deleteRows: vi.fn(),
       supabaseRequest,
     });
 
     await expect(data.deleteActivationCode('code-used', { ...actor, role: '營運管理員' }))
-      .rejects.toMatchObject({ statusCode: 403 });
-    expect(supabaseRequest).not.toHaveBeenCalled();
+      .rejects.toMatchObject({ statusCode: 403, message: '已兌換的啟動碼僅限超級管理員刪除' });
+    expect(supabaseRequest).toHaveBeenCalledTimes(1);
+    expect(selectRows).not.toHaveBeenCalled();
+  });
+
+  it('reports a missing activation code from the atomic delete without a separate read', async () => {
+    const selectRows = vi.fn();
+    const data = createAdminData({
+      insertRows: vi.fn(), selectRows, updateRows: vi.fn(), deleteRows: vi.fn(),
+      supabaseRequest: vi.fn(async () => { throw Object.assign(new Error('ACTIVATION_CODE_NOT_FOUND'), { statusCode: 404 }); }),
+    });
+    await expect(data.deleteActivationCode('missing', actor))
+      .rejects.toMatchObject({ statusCode: 404, message: '找不到啟動碼' });
+    expect(selectRows).not.toHaveBeenCalled();
   });
 
   it('allows a super administrator to delete a redeemed activation code', async () => {

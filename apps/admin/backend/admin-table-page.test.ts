@@ -11,11 +11,8 @@ const tables = [
   ['plans', 30, 'price', 'price'],
 ] as const;
 
-function expectDisplayNameRpc(request: ReturnType<typeof vi.fn>, keyword: string) {
-  expect(request).toHaveBeenCalledWith('/rest/v1/rpc/admin_member_ids_by_display_name', {
-    method: 'POST',
-    body: JSON.stringify({ p_keyword: keyword }),
-  });
+function expectNoUnboundedNameLookup(request: ReturnType<typeof vi.fn>) {
+  expect(request.mock.calls.some(([path]) => String(path).includes('admin_member_ids_by_display_name'))).toBe(false);
   expect(request.mock.calls.some(([path]) => String(path).startsWith('/auth/v1/admin/users?'))).toBe(false);
   expect(request.mock.calls.some(([path]) => String(path).startsWith('/rest/v1/members?select=id,auth_user_id'))).toBe(false);
 }
@@ -47,14 +44,14 @@ test.each(['activationCodes', 'subscriptionRecords', 'transferRequests'])('%s se
   await listAdminTablePage(table, { keyword: '月費,(x)', status: table === 'activationCodes' ? 'used' : 'confirmed' }, { request, requestPage });
   const query = new URL(requestPage.mock.calls[0][0], 'https://test').searchParams;
   expect(query.get('or')).toContain('keyword_member.not.is.null');
-  expect(query.get('keyword_member.line_display_name')).toBe('imatch.月費,\\(x\\)');
+  expect(query.get('keyword_member.admin_member_display_name')).toBe('imatch.月費,\\(x\\)');
   expect(query.get('select')).toContain('keyword_member:members');
   expect(query.get('status')).toBe(table === 'activationCodes' ? 'eq.used' : 'eq.confirmed');
   if (table !== 'activationCodes') {
     expect(query.get('or')).toContain('keyword_plan.not.is.null');
     expect(query.get('keyword_plan.name')).toBe('imatch.月費,\\(x\\)');
   }
-  expectDisplayNameRpc(request, '月費,(x)');
+  expectNoUnboundedNameLookup(request);
 });
 
 test('payment records allow filtering orders that require a refund', async () => {
@@ -175,5 +172,5 @@ test('subscription name search keeps its eligible current plan separate from the
   expect(query.get('is_lifetime')).toBe('eq.false');
   expect(query.get('and')).toBe('(or(status.in.(active,啟用),status.is.null))');
   expect(query.get('or')).toContain('keyword_plan.not.is.null');
-  expectDisplayNameRpc(request, '季費');
+  expectNoUnboundedNameLookup(request);
 });

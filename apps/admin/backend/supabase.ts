@@ -4,7 +4,6 @@ export type SupabaseConfig = {
 };
 
 export type SecretReader = {
-  listSecretNames(): Promise<string[]>;
   readSecret(name: string): Promise<string | null | undefined>;
 };
 
@@ -64,10 +63,16 @@ const adminMutationConflictMessages: Record<string, readonly string[]> = {
   'rest/v1/rpc/admin_update_subscription_guarded': ['ADMIN_REQUEST_CONFLICT', 'SUBSCRIPTION_CONFLICT'],
 };
 
+const activationDeleteErrors = new Map([
+  ['P0002:ACTIVATION_CODE_NOT_FOUND', { upstream: 500, status: 404 }],
+  ['42501:REDEEMED_ACTIVATION_CODE_DELETE_FORBIDDEN', { upstream: 403, status: 403 }],
+]);
+
 async function readSupabaseDomainError(path: string, response: Response) {
   const normalizedPath = path.replace(/^\/+/, '').split('?')[0];
   if (normalizedPath !== 'rest/v1/rpc/admin_record_payment_reversal'
     && normalizedPath !== 'rest/v1/rpc/admin_matrix_permission_settings_update'
+    && normalizedPath !== 'rest/v1/rpc/admin_delete_activation_code'
     && !(normalizedPath in adminMutationConflictMessages)) return null;
 
   let body: unknown;
@@ -85,6 +90,10 @@ async function readSupabaseDomainError(path: string, response: Response) {
       ? new SupabaseDomainError(message, 409)
       : null;
   }
+  if (normalizedPath === 'rest/v1/rpc/admin_delete_activation_code') {
+    const domain = activationDeleteErrors.get(`${code}:${message}`);
+    return domain?.upstream === response.status ? new SupabaseDomainError(message, domain.status) : null;
+  }
   if (normalizedPath === 'rest/v1/rpc/admin_record_payment_reversal') {
     const domain = paymentReversalDomainErrors.get(code);
     return domain?.httpStatus === response.status && domain.messages.includes(message)
@@ -97,25 +106,30 @@ async function readSupabaseDomainError(path: string, response: Response) {
     : null;
 }
 
-export async function getSupabaseConfig(secretReader: SecretReader): Promise<SupabaseConfig> {
-  const names = await secretReader.listSecretNames();
-  const required = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
-  if (!required.every((name) => names.includes(name))) {
-    throw new BackendIntegrationError('CONFIG_MISSING', 'Supabase backend configuration is incomplete');
-  }
+const pendingConfigReads = new WeakMap<SecretReader, Promise<SupabaseConfig>>();
 
-  const [url, serviceRoleKey] = await Promise.all([
-    secretReader.readSecret('SUPABASE_URL'),
-    secretReader.readSecret('SUPABASE_SERVICE_ROLE_KEY'),
-  ]);
-  if (!url?.trim() || !serviceRoleKey?.trim()) {
-    throw new BackendIntegrationError('CONFIG_MISSING', 'Supabase backend configuration is incomplete');
-  }
-
-  return {
-    url: url.trim().replace(/\/+$/, ''),
-    serviceRoleKey: serviceRoleKey.trim(),
-  };
+export function getSupabaseConfig(secretReader: SecretReader): Promise<SupabaseConfig> {
+  const pending = pendingConfigReads.get(secretReader);
+  if (pending) return pending;
+  const read = (async () => {
+    try {
+      const [url, serviceRoleKey] = await Promise.resolve().then(() => Promise.all([
+        secretReader.readSecret('SUPABASE_URL'),
+        secretReader.readSecret('SUPABASE_SERVICE_ROLE_KEY'),
+      ]));
+      if (!url?.trim() || !serviceRoleKey?.trim()) {
+        throw new BackendIntegrationError('CONFIG_MISSING', 'Supabase backend configuration is incomplete');
+      }
+      return {
+        url: url.trim().replace(/\/+$/, ''),
+        serviceRoleKey: serviceRoleKey.trim(),
+      };
+    } finally {
+      pendingConfigReads.delete(secretReader);
+    }
+  })();
+  pendingConfigReads.set(secretReader, read);
+  return read;
 }
 
 export function createSupabaseTransport(
