@@ -5,6 +5,7 @@ const memberApi = vi.hoisted(() => ({
   disablePushSubscription: vi.fn(),
   fetchPushSubscriptionStatus: vi.fn(),
   savePushSubscription: vi.fn(),
+  fetchNotificationSettings: vi.fn(),
 }));
 
 const supabase = vi.hoisted(() => ({
@@ -21,7 +22,11 @@ import {
   getPushStatus,
   PushSubscriptionError,
   registerPushServiceWorker,
+  restoreBrowserPushSubscription,
+  PUSH_SUBSCRIPTION_CHANGED_EVENT,
 } from './push-subscription';
+import { updateAlgorithmCacheSession } from './auth/algorithm-cache-scope';
+import type { Session } from '@supabase/supabase-js';
 
 const requestPermission = vi.fn<() => Promise<NotificationPermission>>();
 const subscribe = vi.fn();
@@ -67,6 +72,10 @@ beforeEach(() => {
   vi.resetAllMocks();
   memberApi.fetchPushSubscriptionStatus.mockResolvedValue({ enabled: false });
   memberApi.savePushSubscription.mockResolvedValue({ enabled: true });
+  memberApi.fetchNotificationSettings.mockResolvedValue({
+    settings: { bet: true, result: false, status: false, card: false, collision: false, expiry: false, system: false },
+    selectedOptions: {}, betTimes: {}, statusOptions: {}, collisionOptions: {},
+  });
   memberApi.disablePushSubscription.mockResolvedValue({
     disabled: true,
     endpoint: 'https://push.test/device',
@@ -101,6 +110,137 @@ async function expectFixedFailure(
 }
 
 describe('PWA push subscriptions', () => {
+  it('restores a missing subscription with granted permission even when only a non-system category is enabled', async () => {
+    installSupportedPushApi('granted');
+    getSubscription.mockResolvedValue(null);
+    const changed = vi.fn();
+    window.addEventListener(PUSH_SUBSCRIPTION_CHANGED_EVENT, changed);
+    try {
+      await restoreBrowserPushSubscription(() => true);
+    } finally {
+      window.removeEventListener(PUSH_SUBSCRIPTION_CHANGED_EVENT, changed);
+    }
+
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(requestPermission).not.toHaveBeenCalled();
+    expect(subscribe).toHaveBeenCalledTimes(1);
+    expect(memberApi.savePushSubscription).toHaveBeenCalledWith({
+      endpoint: 'https://push.test/device', p256dh: 'p256dh-value', auth: 'auth-value',
+    });
+  });
+
+  it.each(['default', 'denied'] as const)('never prompts for permission during automatic restoration with %s permission', async (permission) => {
+    installSupportedPushApi(permission);
+    await restoreBrowserPushSubscription(() => true);
+    expect(requestPermission).not.toHaveBeenCalled();
+    expect(memberApi.fetchNotificationSettings).not.toHaveBeenCalled();
+    expect(subscribe).not.toHaveBeenCalled();
+    expect(memberApi.savePushSubscription).not.toHaveBeenCalled();
+  });
+
+  it('does not restore when every saved notification category is off', async () => {
+    installSupportedPushApi('granted');
+    memberApi.fetchNotificationSettings.mockResolvedValue({
+      settings: { bet: false, result: false, status: false, card: false, collision: false, expiry: false, system: false },
+      selectedOptions: {}, betTimes: {}, statusOptions: {}, collisionOptions: {},
+    });
+    await restoreBrowserPushSubscription(() => true);
+    expect(subscribe).not.toHaveBeenCalled();
+    expect(memberApi.savePushSubscription).not.toHaveBeenCalled();
+  });
+
+  it('keeps an already enabled endpoint without rotating or rewriting it during restoration', async () => {
+    installSupportedPushApi('granted');
+    memberApi.fetchPushSubscriptionStatus.mockResolvedValue({ enabled: true });
+    await restoreBrowserPushSubscription(() => true);
+    expect(memberApi.fetchPushSubscriptionStatus).toHaveBeenCalledWith('https://push.test/device');
+    expect(unsubscribe).not.toHaveBeenCalled();
+    expect(subscribe).not.toHaveBeenCalled();
+    expect(memberApi.savePushSubscription).not.toHaveBeenCalled();
+  });
+
+  it('does not continue restoration after sign-out while preferences are loading', async () => {
+    installSupportedPushApi('granted');
+    let current = true;
+    memberApi.fetchNotificationSettings.mockImplementation(async () => {
+      current = false;
+      return { settings: { system: true } };
+    });
+    await restoreBrowserPushSubscription(() => current);
+    expect(getSubscription).not.toHaveBeenCalled();
+    expect(memberApi.savePushSubscription).not.toHaveBeenCalled();
+  });
+
+  it('does not subscribe if permission is revoked while restoration is pending', async () => {
+    installSupportedPushApi('granted');
+    memberApi.fetchNotificationSettings.mockImplementation(async () => {
+      installSupportedPushApi('default');
+      return { settings: { system: true } };
+    });
+    await expect(restoreBrowserPushSubscription(() => true)).rejects.toBeInstanceOf(PushSubscriptionError);
+    expect(requestPermission).not.toHaveBeenCalled();
+    expect(subscribe).not.toHaveBeenCalled();
+  });
+
+  it('does not announce successful restoration after a save failure and permits a later retry', async () => {
+    installSupportedPushApi('granted');
+    getSubscription.mockResolvedValue(null);
+    memberApi.savePushSubscription.mockRejectedValueOnce(new Error('offline'));
+    const changed = vi.fn();
+    window.addEventListener(PUSH_SUBSCRIPTION_CHANGED_EVENT, changed);
+    try {
+      await expect(restoreBrowserPushSubscription(() => true)).rejects.toBeInstanceOf(PushSubscriptionError);
+      expect(changed).not.toHaveBeenCalled();
+      await restoreBrowserPushSubscription(() => true);
+      expect(changed).toHaveBeenCalledTimes(1);
+      expect(memberApi.savePushSubscription).toHaveBeenCalledTimes(2);
+    } finally {
+      window.removeEventListener(PUSH_SUBSCRIPTION_CHANGED_EVENT, changed);
+    }
+  });
+
+  it('waits for old logout cleanup before restoring the new login subscription', async () => {
+    installSupportedPushApi('granted');
+    let finishDisable!: () => void;
+    memberApi.disablePushSubscription.mockReturnValue(new Promise<void>((resolve) => { finishDisable = resolve; }));
+    getSubscription.mockResolvedValueOnce(subscription).mockResolvedValue(null);
+    const cleanup = cleanupBrowserPushSubscription();
+    await vi.waitFor(() => expect(memberApi.disablePushSubscription).toHaveBeenCalled());
+    const restore = restoreBrowserPushSubscription(() => true);
+    await Promise.resolve();
+    expect(subscribe).not.toHaveBeenCalled();
+    finishDisable();
+    await Promise.all([cleanup, restore]);
+    expect(unsubscribe.mock.invocationCallOrder[0]).toBeLessThan(subscribe.mock.invocationCallOrder[0]);
+    expect(memberApi.savePushSubscription).toHaveBeenCalledTimes(1);
+  });
+
+  it('discards a subscription created for a session that changed before the browser returned it', async () => {
+    installSupportedPushApi('granted');
+    getSubscription.mockResolvedValue(null);
+    let finishSubscribe!: (value: PushSubscription) => void;
+    subscribe.mockReturnValue(new Promise<PushSubscription>((resolve) => { finishSubscribe = resolve; }));
+    const restore = restoreBrowserPushSubscription(() => true).catch((error: unknown) => error);
+    await vi.waitFor(() => expect(subscribe).toHaveBeenCalled());
+    updateAlgorithmCacheSession({ access_token: 'other-session', user: { id: 'other-member' } } as Session);
+    finishSubscribe(subscription);
+    await restore;
+    expect(memberApi.savePushSubscription).not.toHaveBeenCalled();
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels pending permission enablement when logout cleanup starts', async () => {
+    let grantPermission!: (value: NotificationPermission) => void;
+    requestPermission.mockReturnValue(new Promise<NotificationPermission>((resolve) => { grantPermission = resolve; }));
+    getSubscription.mockResolvedValue(null);
+    const enable = enablePushNotifications('BElong-key', true).catch((error: unknown) => error);
+    await cleanupBrowserPushSubscription();
+    grantPermission('granted');
+    await enable;
+    expect(subscribe).not.toHaveBeenCalled();
+    expect(memberApi.savePushSubscription).not.toHaveBeenCalled();
+  });
+
   it('registers the PWA worker without Notification or PushManager', async () => {
     Object.defineProperty(globalThis, 'Notification', { configurable: true, value: undefined });
     getRegistration.mockResolvedValue(undefined);
@@ -659,4 +799,3 @@ describe('PWA push subscriptions', () => {
     expect(unsubscribe).toHaveBeenCalledTimes(1);
   });
 });
-
