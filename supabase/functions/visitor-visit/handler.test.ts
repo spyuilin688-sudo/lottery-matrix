@@ -35,14 +35,14 @@ describe('visitor visit handler', () => {
     expect(recordVisit).not.toHaveBeenCalled();
   });
 
-  it('supports CORS preflight without recording a visit', async () => {
+  it.each(['https://matrixlottery.idv.tw', 'https://supabasemax.spyuilin688.chatgpt.site'])('supports CORS preflight for %s without recording a visit', async (origin) => {
     const recordVisit = vi.fn();
     const handler = createVisitorVisitHandler({ recordVisit });
 
-    const response = await handler(request({ method: 'OPTIONS' }));
+    const response = await handler(request({ method: 'OPTIONS', origin }));
 
     expect(response.status).toBe(204);
-    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://matrixlottery.idv.tw');
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe(origin);
     expect(recordVisit).not.toHaveBeenCalled();
   });
 
@@ -60,7 +60,7 @@ describe('visitor visit handler', () => {
     expect(recordVisit).not.toHaveBeenCalled();
   });
 
-  it('records intro visits separately from the main site before returning intro-only counts', async () => {
+  it.each(['https://matrixlottery.idv.tw', 'https://supabasemax.spyuilin688.chatgpt.site'])('records intro visits from %s separately from the main site before returning intro-only counts', async (origin) => {
     const calls: string[] = [];
     const recordVisit = vi.fn();
     const recordIntroVisit = vi.fn(async () => { calls.push('intro-visit'); });
@@ -70,9 +70,10 @@ describe('visitor visit handler', () => {
     });
     const handler = createVisitorVisitHandler({ recordVisit, recordIntroVisit, readIntroStats });
 
-    const response = await handler(request({ withStats: true }));
+    const response = await handler(request({ withStats: true, origin }));
 
     expect(response.status).toBe(200);
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe(origin);
     expect(await response.json()).toEqual({ todayVisitors: 1, totalVisitors: 1 });
     expect(response.headers.get('Cache-Control')).toBe('no-store');
     expect(calls).toEqual(['intro-visit', 'intro-stats']);
