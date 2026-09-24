@@ -128,8 +128,11 @@ test('calendar helpers recognize Taipei midnight, leap dates and inclusive year 
   expect(adminBusinessDateRange('', '2026-12-31')).toEqual({ start: null, endExclusive: '2026-12-31T16:00:00.000Z' });
 });
 
-test.each(['users', 'subscriptions', 'loginRecords'])('%s fills a capped UI page without losing rows between numbered pages', async table => {
-  const pageSize = table === 'loginRecords' ? 10 : 30;
+test.each([
+  ['users', 15, 5],
+  ['subscriptions', 30, 3],
+  ['loginRecords', 10, 7],
+] as const)('%s fills a capped UI page without losing rows between numbered pages', async (table, pageSize, totalPages) => {
   const rows = Array.from({ length: 65 }, (_, index) => ({ id: String(index), auth_user_id: null, ip: null }));
   const requestPage = vi.fn(async (path: string) => {
     const query = new URL(path, 'https://test').searchParams;
@@ -141,10 +144,11 @@ test.each(['users', 'subscriptions', 'loginRecords'])('%s fills a capped UI page
     ? await listAdminLoginRecordPage({ page: 2 }, api)
     : await listAdminMemberPage(table, { page: 2 }, api);
   expect(result.items.map(row => row.id)).toEqual(rows.slice(pageSize, pageSize * 2).map(row => row.id));
+  expect(result).toMatchObject({ currentPage: 2, total: 65, totalPages });
 });
 
 test.each(['users', 'subscriptions', 'loginRecords', 'activationCodes', 'auditLogs', 'subscriptionRecords', 'transferRequests', 'admins', 'plans'])('%s keeps pages beyond 100000 accessible and rejects only unsafe page arithmetic', async table => {
-  const pageSize = ['activationCodes', 'loginRecords'].includes(table) ? 10 : 30;
+  const pageSize = table === 'users' ? 15 : ['activationCodes', 'loginRecords'].includes(table) ? 10 : 30;
   for (const page of [100001, Math.floor(Number.MAX_SAFE_INTEGER / pageSize)]) {
     const total = (page - 1) * pageSize + 1;
     const requestPage = vi.fn().mockResolvedValue({ items: [{ id: 'last' }], total });
