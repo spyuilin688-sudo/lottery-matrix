@@ -81,6 +81,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .feature { min-width: 0; padding: 25px 0 31px; border-top: 1px solid var(--line); }
 .feature h3 { font-size: 22px; font-weight: 650; letter-spacing: -.035em; line-height: 1.35; }
 .feature p { max-width: 550px; margin-top: 9px; color: var(--muted); font-size: 14px; line-height: 1.75; }
+.feature-emphasis { color: var(--text); font-weight: 650; }
 .feature-lead { border-top-color: var(--gold); }
 .feature-lead h3 { color: var(--gold-light); }
 .feature-lead p { font-size: 15px; }
@@ -116,9 +117,9 @@ ul { margin: 0; padding: 0; list-style: none; }
   .features-lead { font-size: 14px; }
   .feature-list { grid-template-columns: 1fr; margin-top: 28px; }
   .feature { padding: 22px 0 24px; }
+  .feature:nth-child(even) { border-top-color: transparent; }
   .feature h3 { font-size: 21px; }
-  .feature p { margin-top: 7px; font-size: 14px; line-height: 1.7; }
-  .feature-lead p { font-size: 14px; }
+  .feature p { margin-top: 7px; font-size: 15px; line-height: 1.7; }
   .features-action { margin-top: 2px; padding-top: 24px; }
   .footer-inner { display: block; }
   .footer-inner p { margin-top: 7px; }
