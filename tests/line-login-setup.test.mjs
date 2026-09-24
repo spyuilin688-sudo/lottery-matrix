@@ -39,7 +39,8 @@ test("LINE operator guide locks required configuration and secret-safety invaria
   assert.match(guide, /does not trap the member in a\s+local Supabase session/i);
   assert.match(guide, /continues to\s+the bounded local sign-out/i);
   assert.match(guide, /recoverable\/uncertain state/i);
-  assert.match(guide, /There is no AppDeploy-compatible\s+`POST \/api\/auth\/line\/logout` route/i);
+  assert.match(guide, /There is no separate\s+`POST \/api\/auth\/line\/logout` route/i);
+  assert.match(guide, /CORS allowlist is separately fixed to exactly\s+`https:\/\/matrixlottery\.idv\.tw`/i);
   assert.doesNotMatch(guide, /LINE_CHANNEL_SECRET\s*=\s*\S+/);
   assert.doesNotMatch(guide, /LINE_CHANNEL_ID\s*=\s*\S+/);
   assert.doesNotMatch(guide, /LINE Channel secret\s*[:=]\s*\S+/i);

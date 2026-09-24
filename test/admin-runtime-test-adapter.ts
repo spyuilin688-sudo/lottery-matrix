@@ -1,5 +1,5 @@
 const unavailable = async () => {
-  throw new Error('APPDEPLOY_SDK_TEST_ADAPTER_NOT_CONFIGURED');
+  throw new Error('ADMIN_RUNTIME_TEST_ADAPTER_NOT_CONFIGURED');
 };
 
 export const db = {

@@ -52,7 +52,7 @@ const app = vi.hoisted(() => {
   };
 });
 
-vi.mock('@appdeploy/client', () => app);
+vi.mock('./admin-platform-client', () => app);
 import AdminApp from './AdminApp';
 
 async function openEditor() {

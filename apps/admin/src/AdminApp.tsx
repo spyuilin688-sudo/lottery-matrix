@@ -7,7 +7,7 @@ import { AdminListControls } from "./AdminListControls";
 import { readAdminDataPage } from "./admin-table-pagination";
 import { adminBusinessDateKey } from "../shared/admin-business-time";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { api, auth } from "@appdeploy/client";
+import { api, auth } from "./admin-platform-client";
 import {
   BarChart3,
   ListTodo,

@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({ get: vi.fn(async (url: string) => {
   ] } };
   return { data: { items: [] } };
 }), post: vi.fn(), put: vi.fn(), delete: vi.fn() }));
-vi.mock('@appdeploy/client', () => ({ api: mocks, auth: { signIn: vi.fn(), signOut: vi.fn() } }));
+vi.mock('./admin-platform-client', () => ({ api: mocks, auth: { signIn: vi.fn(), signOut: vi.fn() } }));
 import AdminApp from './AdminApp';
 import { matrixStorageFixture } from '../backend/matrix-storage-status.fixture';
 beforeEach(() => vi.clearAllMocks());

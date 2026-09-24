@@ -3,7 +3,7 @@ import type { MatrixAlgorithmType, MatrixLottery, MatrixNumberOrder } from './ma
 /**
  * Compatibility types only.
  * Matrix 探索的實際計算已移至 Railway Worker，結果由 Supabase RPC 提供給前端。
- * 此檔不得再加入 AppDeploy 探索計算或儲存邏輯。
+ * 此檔不得再加入 Matrix 探索計算或儲存邏輯。
  */
 export type ExploreArtifactRow = {
   id: string;

@@ -18,7 +18,7 @@ function status(overrides: Record<string, unknown> = {}) {
   });
   return { fetcher, service: createConnectionStatus({
     supabase: { selectRows: async () => [] }, loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'server-secret' }),
-    getWorkerStatus: async () => ({ ok: false, reason: 'APPDEPLOY_CONFIG_MISSING', health: null, jobs: null }),
+    getWorkerStatus: async () => ({ ok: false, reason: 'SUPABASE_RAILWAY_CONFIG_MISSING', health: null, jobs: null }),
     fetcher, now: () => new Date('2026-09-13T10:05:00Z'), requestTimeoutMs: 100,
   }) };
 }

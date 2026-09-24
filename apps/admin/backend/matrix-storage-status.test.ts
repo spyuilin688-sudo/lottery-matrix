@@ -7,7 +7,7 @@ const check = async (fetcher: typeof fetch) => {
   const result = await createConnectionStatus({
     supabase: { selectRows: async () => [] },
     loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'private-service-key' }),
-    getWorkerStatus: async () => ({ ok: false, reason: 'APPDEPLOY_CONFIG_MISSING', health: null, jobs: null }),
+    getWorkerStatus: async () => ({ ok: false, reason: 'SUPABASE_RAILWAY_CONFIG_MISSING', health: null, jobs: null }),
     fetcher, requestTimeoutMs: 25,
   }).get();
   return result.items.find(item => item.id === 'matrix-storage');

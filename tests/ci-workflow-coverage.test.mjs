@@ -45,7 +45,7 @@ test('runtime commit atomicity, protected file integrity, and production build r
   assert.match(runtime, /run: node scripts\/check-runtime-commit-integrity\.mjs "\$SCOPE_BASE_SHA" "\$SCOPE_HEAD_SHA"/);
   assert.equal(packageJson.scripts?.prebuild, 'npm run check:runtime');
   assert.match(runtime, /run: npm run build/);
-  assert.equal([...workflow.matchAll(/^\s*run:\s*npm run build\s*$/gm)].length, 1);
+  assert.equal([...runtime.matchAll(/^\s*run:\s*npm run build\s*$/gm)].length, 1);
   assert.doesNotMatch(runtime, /^\s*run:\s*npm run check:runtime\s*$/m);
 });
 
@@ -76,7 +76,7 @@ test('admin build modes are not repeated and Python uses the selected plan', () 
   const admin = job('admin');
   assert.doesNotMatch(admin, /\n    if:/);
   assert.match(admin, /working-directory: apps\/admin/);
-  assert.match(admin, /run: APPDEPLOY_CI_EXTERNALS=true npm run build/);
+  assert.match(admin, /run: npm run build/);
   assert.doesNotMatch(admin, /run: npm run build:pages/);
   assert.match(packageJson.scripts?.build ?? '', /npm run build:admin:pages/);
   assert.match(admin, /--run admin/);

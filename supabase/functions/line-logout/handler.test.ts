@@ -6,7 +6,6 @@ const user = {
 };
 
 const allowedOrigins = [
-  'https://matrix-un0kjz.v2.appdeploy.ai',
   'https://matrixlottery.idv.tw',
 ] as const;
 
@@ -26,7 +25,7 @@ function request(
     'Content-Type': 'application/json',
   });
   if (options.origin !== null) {
-    headers.set('Origin', options.origin ?? allowedOrigins[1]);
+    headers.set('Origin', options.origin ?? allowedOrigins[0]);
   }
   if (options.requestId) headers.set('X-Request-ID', options.requestId);
   return new Request('https://project.supabase.co/functions/v1/line-logout', {
@@ -46,7 +45,7 @@ function streamingRequest(
     headers: {
       Authorization: 'Bearer supabase-user-jwt',
       'Content-Type': 'application/json',
-      Origin: allowedOrigins[1],
+      Origin: allowedOrigins[0],
       'X-Request-ID': requestId,
     },
     body,
@@ -84,7 +83,7 @@ describe('LINE logout Edge Function handler', () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ ok: true });
-    expect(response.headers.get('Access-Control-Allow-Origin')).toBe(allowedOrigins[1]);
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe(allowedOrigins[0]);
     expect(fetcher).toHaveBeenCalledTimes(3);
     expect(String(fetcher.mock.calls[0]?.[0])).toContain('/oauth2/v2.1/verify?access_token=provider-token');
     expect(String(fetcher.mock.calls[1]?.[0])).toContain('/oauth2/v2.1/userinfo');

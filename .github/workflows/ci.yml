@@ -165,7 +165,7 @@ jobs:
         run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run admin
       - name: Admin build
         working-directory: apps/admin
-        run: APPDEPLOY_CI_EXTERNALS=true npm run build
+        run: npm run build
 
   matrix-api:
     needs: scope

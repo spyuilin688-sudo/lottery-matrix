@@ -1,8 +1,14 @@
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createAdminApiClient } from './admin-platform-client';
 import { loadAdminBootstrap } from './admin-recovery';
 
 describe('Cloudflare admin API client', () => {
+  it('uses the local Supabase admin client as the admin page entrypoint', () => {
+    const source = readFileSync(new URL('./AdminApp.tsx', import.meta.url), 'utf8');
+    expect(source).toContain('from "./admin-platform-client"');
+  });
+
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();

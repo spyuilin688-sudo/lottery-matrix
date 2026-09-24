@@ -29,13 +29,15 @@ test('engineering handoff describes the current production architecture instead 
 });
 
 
-test('dormant AppDeploy entrypoints, adapters, and cron ownership stay removed', () => {
+test('dormant backend entrypoints, adapters, and cron ownership stay removed', () => {
   for (const path of [
     'backend/index.ts',
     'backend/matrix-analysis-store.ts',
     'backend/matrix-result-store.ts',
     'backend/realtime-subscribers.ts',
     'backend/realtime.ts',
+    'apps/admin/backend/realtime-subscribers.ts',
+    'apps/admin/backend/realtime.ts',
     'backend/member-online.ts',
     'backend/member-profile-store.ts',
     'backend/member-profile-routes.ts',
@@ -47,22 +49,23 @@ test('dormant AppDeploy entrypoints, adapters, and cron ownership stay removed',
     'cron.json',
     'apps/admin/cron.json',
   ]) {
-    assert.equal(exists(path), false, `retired AppDeploy source returned: ${path}`);
+    assert.equal(exists(path), false, `retired backend source returned: ${path}`);
   }
 });
 
-test('canonical handoff docs do not direct engineers back to a live legacy AppDeploy endpoint', () => {
+test('canonical handoff docs identify the current hosting and API owners', () => {
+  const agentInstructions = readFileSync(new URL('AGENTS.md', repoRoot), 'utf8');
   const projectHandoff = readFileSync(new URL('PROJECT_HANDOFF.md', repoRoot), 'utf8');
   const railwayReadme = readFileSync(new URL('services/matrix-api/README.md', repoRoot), 'utf8');
 
-  assert.match(projectHandoff, /AppDeploy 帳號清單/);
-  assert.match(projectHandoff, /既有樂彩／預覽 apps 均為 `deleted`/);
-  assert.doesNotMatch(projectHandoff, /舊 AppDeploy `matrix-sanqwn` 網址仍可連線/);
-  assert.doesNotMatch(railwayReadme, /old AppDeploy endpoint remains reachable/);
+  assert.match(agentInstructions, /管理後台 API 的正式執行入口是 Supabase `admin-api` Edge Function/);
+  assert.match(projectHandoff, /Cloudflare Pages，https:\/\/matrixlottery\.idv\.tw\/admin\//);
+  assert.match(projectHandoff, /Supabase `admin-api` Edge Function/);
+  assert.match(railwayReadme, /the admin API is the Supabase `admin-api` Edge Function/);
 });
 
 
-test('active shared backend owners remain after AppDeploy cleanup', () => {
+test('active shared backend owners remain after retired code cleanup', () => {
   for (const path of [
     'backend/matrix-member-auth.ts',
     'backend/matrix-status-routes.ts',

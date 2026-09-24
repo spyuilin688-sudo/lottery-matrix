@@ -6,7 +6,7 @@ const json = (body: unknown) => Response.json(body);
 const fixture = (fetcher: typeof fetch) => createConnectionStatus({
   supabase: { selectRows: async () => [] },
   loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'private-service-key' }),
-  getWorkerStatus: async () => ({ ok: false, reason: 'APPDEPLOY_CONFIG_MISSING', health: null, jobs: null }),
+  getWorkerStatus: async () => ({ ok: false, reason: 'SUPABASE_RAILWAY_CONFIG_MISSING', health: null, jobs: null }),
   fetcher,
   requestTimeoutMs: 20,
 });

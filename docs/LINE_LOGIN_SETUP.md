@@ -1,8 +1,8 @@
 # LINE Login operator setup
 
 This guide records the required configuration for the existing API-only LINE
-Login integration. It does not create credentials, change Supabase, change
-AppDeploy, deploy the PWA, or establish that live LINE Login works.
+Login integration. It does not create credentials, change Supabase, deploy the
+PWA, or establish that live LINE Login works.
 
 ## 1. Store server-only credentials
 
@@ -10,7 +10,7 @@ In the Supabase Edge Function secret store, configure the server-only secret nam
 `LINE_CHANNEL_ID` and `LINE_CHANNEL_SECRET`. Keep both out of Git, frontend
 build output, browser storage, responses, and logs. Do not place credential
 values in this document, source files, tests, or client-side configuration.
-The AppDeploy backend does not own LINE revoke and must not load these secrets.
+The admin API does not own LINE revoke and must not load these secrets.
 
 ## 2. Configure the Supabase Custom OAuth2 provider
 
@@ -40,15 +40,14 @@ construct, replace, or otherwise guess that callback URL.
 
 In the Supabase redirect allowlist, enter exactly the production normalized
 origin root for the PWA: use the actual production deployment's origin root
-(the normalized root derived from its `window.location.origin`). The repository
-does not authoritatively define that production origin, so obtain it from the
-actual production PWA deployment rather than substituting an example value.
+(the normalized root derived from its `window.location.origin`). The production
+PWA origin is `https://matrixlottery.idv.tw`; verify it against the live
+deployment when configuring this allowlist.
 
 The allowlist entry is the root only: no paths, queries, fragments, or external
 origins. Do not allow preview, local-development, or third-party return URLs.
 
 The `line-logout` Edge Function CORS allowlist is separately fixed to exactly
-`https://matrix-un0kjz.v2.appdeploy.ai` and
 `https://matrixlottery.idv.tw`. Unknown browser origins are rejected with
 `ORIGIN_NOT_ALLOWED`; an invocation without `Origin` remains available for
 server-to-server operation.
@@ -57,7 +56,7 @@ server-to-server operation.
 
 The canonical server-side revoke owner is the Supabase Edge Function named
 `line-logout`, invoked by the client through
-`supabase.functions.invoke('line-logout')`. There is no AppDeploy-compatible
+`supabase.functions.invoke('line-logout')`. There is no separate
 `POST /api/auth/line/logout` route. The Edge Function authenticates the Supabase
 bearer, verifies the LINE token's Channel, binds LINE userinfo to the verified
 `custom:line` identity, and only then submits LINE revoke. Auth, verify,

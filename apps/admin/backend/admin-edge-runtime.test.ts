@@ -11,6 +11,13 @@ describe('Supabase admin Edge runtime', () => {
       .toBe('../../../apps/admin/shared/admin-business-time.ts');
   });
 
+  it('imports the Supabase Edge runtime directly without a retired platform alias', () => {
+    const source = readFileSync(new URL('./index.ts', import.meta.url), 'utf8');
+    const importMap = JSON.parse(readFileSync(new URL('../../../supabase/functions/admin-api/deno.json', import.meta.url), 'utf8'));
+    expect(source).toContain("from '../../../supabase/functions/admin-api/runtime.ts'");
+    expect(Object.values(importMap.imports)).not.toContain('./runtime.ts');
+  });
+
   it('resolves the shared manual refresh DTO in the deployed Edge bundle', () => {
     const importMap = JSON.parse(readFileSync(new URL('../../../supabase/functions/admin-api/deno.json', import.meta.url), 'utf8'));
     expect(importMap.imports['../../../apps/admin/shared/manual-refresh']).toBe('../../../apps/admin/shared/manual-refresh.ts');

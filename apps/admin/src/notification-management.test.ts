@@ -62,7 +62,7 @@ describe('notification management client', () => {
     expect(formatNotificationError(new Error('private upstream detail'))).toBe('發送失敗，請稍後再試');
   });
 
-  it('understands the AppDeploy adapter string error envelopes', () => {
+  it('understands the admin API string error envelopes', () => {
     expect(formatNotificationError({ response: { data: { error: 'NO_ACTIVE_SUBSCRIPTIONS' } } }))
       .toBe('此會員目前沒有有效的推播訂閱');
     expect(formatNotificationError({ body: { error: 'INVALID_MEMBER_ID' }, statusCode: 400 }))

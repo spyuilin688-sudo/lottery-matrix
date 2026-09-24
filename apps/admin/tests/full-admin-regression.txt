@@ -2,7 +2,7 @@
 
 ## Test 1 - 管理員登入並修改自己的名稱 [sanity]
 Viewport: desktop
-Covers: AppDeploy Auth, GET /api/bootstrap, PUT /api/me/name, Supabase admin_accounts, audit_logs
+Covers: Supabase admin authentication, GET /api/bootstrap, PUT /api/me/name, Supabase admin_accounts, audit_logs
 Description: 驗證啟用中的管理員可登入並修改自己的名稱，重新整理後仍保留修改結果。
 
 Steps:
@@ -59,20 +59,20 @@ Expected: 轉帳申請卡片使用緊湊間距，手機寬度下「確認」與�
 
 ## Test 5 - 概覽卡片、手機選單與分組系統狀態
 Viewport: mobile
-Covers: compact overview and revenue cards, mobile drawer backdrop, GET /api/system-status, POST /api/system-status/:id/retry, POST /api/system-status/:id/refresh, grouped AppDeploy/Supabase/GitHub/Railway status rows, watchdog heartbeat, GitHub read-only workflow check, segmented logical schedule, four lottery cron statuses, permission-gated crawler refresh, fault isolation
+Covers: compact overview and revenue cards, mobile drawer backdrop, GET /api/system-status, POST /api/system-status/:id/retry, POST /api/system-status/:id/refresh, grouped Supabase/GitHub/Railway/TinyFish status rows, watchdog heartbeat, GitHub read-only workflow check, dynamic recovery schedule, four lottery cron statuses, permission-gated crawler refresh, fault isolation
 Description: 驗證概覽與收入卡片縮減後內容仍完整；手機選單可點擊外部收合，系統狀態依固定部署位置分組，Railway 可重新呼叫，且僅具系統設定編輯權限的超級管理員可手動更新停止的爬蟲。
 
 Steps:
 1. 查看「營運概覽」與「收入報表」的統計卡片
 2. 點擊左上角選單，確認側欄不超過 220px，再點擊側欄外區域
 3. 重新開啟選單並進入「系統設定」
-4. 分別以 320px、390px、430px 寬度查看 AppDeploy、Supabase、GitHub、Railway 群組，確認空群組不顯示、header 維持全寬單欄且每組顯示正常數／總數；再以 761px 確認切回桌面排列
-5. 檢查 AppDeploy 獨立監控心跳的完成時間、實體每 6 分鐘與 Logical `6×50、10×60、30×18`
+4. 分別以 320px、390px、430px 寬度查看 Supabase、GitHub、Railway、TinyFish 群組，確認空群組不顯示、header 維持全寬單欄且每組顯示正常數／總數；再以 761px 確認切回桌面排列
+5. 檢查 Supabase 自動監控心跳的完成時間，以及目前的動態復原時槽
 6. 檢查 GitHub 群組將 API 連線健康與 workflow 名稱／路徑／狀態、最近執行狀態／結果／建立與更新時間分開顯示；沒有 run 時顯示「尚無執行紀錄」，且沒有 dispatch 或 retry 操作
 7. 讓 Railway Worker 呈現異常，點擊「重新呼叫 Railway」，確認 live 成功訊息與焦點位置，再點擊頁面上方的「重新檢查全部服務」
 8. 讓其中一個 crawler 排程呈現 failed；分別以營運管理員／查看人員與超級管理員檢查「手動更新開獎資料」並由超級管理員執行，另模擬更新成功但狀態重新讀取失敗
 
-Expected: 概覽與收入統計卡片高度縮減且標籤、數值不碰撞；點擊外部後選單自動收合；群組順序固定為 AppDeploy→Supabase→GitHub→Railway，每列顯示名稱、用途、Endpoint、狀態、檢查時間與回應時間；320／390／430px 下 header 為全寬單欄、按鈕全寬且長 endpoint 與名稱不溢出，761px 才切回桌面排列；心跳明確顯示 completedAt 與兩種排程；GitHub API 健康與最近 workflow 執行結果清楚分開且保持唯讀；Railway 重試只更新對應狀態並透過 live region 宣告結果；Railway 或 crawler 操作成功後焦點移到該列，該列消失時移到系統狀態 section，更新成功但重新讀取失敗也維持穩定焦點，請求失敗時原按鈕保有焦點；營運管理員與查看人員沒有 crawler 手動更新按鈕，超級管理員執行後顯示更新期別並重新檢查狀態；正常項目沒有多餘操作。
+Expected: 概覽與收入統計卡片高度縮減且標籤、數值不碰撞；點擊外部後選單自動收合；群組順序固定為 Supabase→GitHub→Railway→TinyFish，每列顯示名稱、用途、Endpoint、狀態、檢查時間與回應時間；320／390／430px 下 header 為全寬單欄、按鈕全寬且長 endpoint 與名稱不溢出，761px 才切回桌面排列；心跳明確顯示 completedAt 與目前時槽；GitHub API 健康與最近 workflow 執行結果清楚分開且保持唯讀；Railway 重試只更新對應狀態並透過 live region 宣告結果；Railway 或 crawler 操作成功後焦點移到該列，該列消失時移到系統狀態 section，更新成功但重新讀取失敗也維持穩定焦點，請求失敗時原按鈕保有焦點；營運管理員與查看人員沒有 crawler 手動更新按鈕，超級管理員執行後顯示更新期別並重新檢查狀態；正常項目沒有多餘操作。
 
 ## Test 6 - 超級管理員重設收入
 Viewport: desktop and mobile

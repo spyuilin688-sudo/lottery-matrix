@@ -66,7 +66,7 @@
 | Feature page startup/recovery | `Prototype`, `features/router` and `FeaturePageLoadBoundary` | This contract and the user's request to restore startup loading (2026-09-06) | Feature-page code loads at startup; page render errors retain explicit reload and home actions | Production import-graph check, immediate first-navigation test and boundary component tests |
 | Payment history access/recovery | `features/use-payment-history.ts` and `PaymentHistoryPage` | User-approved guest, empty and failure states; existing member payment RPC authorization | Check session before reading, guest action returns to profile, session changes invalidate private results, real failures remain retryable | `src/__tests__/PaymentHistoryAccess.test.tsx` and `DataPageFailureStates.test.tsx` |
 | Matrix status triggers | `MatrixStatusPage` and the Matrix status Edge response | Approved Matrix status design (2026-09-04) | Compact status-category cards, one card per trigger, Explore-style result rows, server-projected locked rows | Component tests at 320/360px plus route projection tests |
-| Admin todos | Existing AppDeploy admin `AdminApp` | Approved admin todo design (2026-09-04) | All administrators create; owner edits/deletes; super administrator may delete any item | Service, route, component and narrow-viewport tests |
+| Admin todos | Cloudflare Pages admin `AdminApp`, Supabase `admin-api` | Approved admin todo design (2026-09-04) | All administrators create; owner edits/deletes; super administrator may delete any item | Service, route, component and narrow-viewport tests |
 
 ## Form behavior
 
@@ -104,7 +104,7 @@ Every reachable product overflow surface keeps its existing overflow and touch b
 
 ## Authentication and sensitive-value handling
 
-Supabase access token, refresh token and user data may persist through the sanitized Supabase auth storage so the member session can survive a reload. LINE `provider_token` and `provider_refresh_token` are stripped before persistence; the provider access token exists only in the current browser page-process memory and the canonical Supabase `line-logout` Edge Function handles it only in request memory. The AppDeploy backend neither exposes a LINE logout route nor loads LINE Channel credentials. Neither provider credential is logged, returned from the revoke endpoint, bundled as configuration or stored in browser persistence.
+Supabase access token, refresh token and user data may persist through the sanitized Supabase auth storage so the member session can survive a reload. LINE `provider_token` and `provider_refresh_token` are stripped before persistence; the provider access token exists only in the current browser page-process memory and the canonical Supabase `line-logout` Edge Function handles it only in request memory. The admin API neither exposes a separate LINE logout route nor loads LINE Channel credentials. Neither provider credential is logged, returned from the revoke endpoint, bundled as configuration or stored in browser persistence.
 
 A reload discards the page-process provider token. When logout cannot obtain that token, no LINE revoke is claimed, but bounded presence/push cleanup and Supabase local sign-out remain available. LINE revoke is best effort: the client first performs a bounded session read, then runs revoke and the two cleanup operations concurrently before local sign-out. A local sign-out timeout is reconciled against the current session; a confirmed remaining session is failure, an unreadable result is uncertain, and neither state is reported as signed out.
 

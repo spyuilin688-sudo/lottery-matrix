@@ -81,7 +81,6 @@ describe('connection status', () => {
     expect(result.items).toHaveLength(72);
     expect(result.items.every((item) => item.location && item.endpoint && item.group)).toBe(true);
     expect(result.items.map((item) => item.id)).not.toEqual(expect.arrayContaining([
-      'api-appdeploy',
       'health-api',
       'matrix-coverage-api',
       'matrix-audit-api',
@@ -96,7 +95,7 @@ describe('connection status', () => {
     );
   });
 
-  it('rejects retries for removed legacy AppDeploy status items', async () => {
+  it('rejects retries for removed legacy status items', async () => {
     const fetcher = vi.fn(async () => response({ ok: true }));
     const status = createConnectionStatus({
       supabase: { selectRows: vi.fn(async () => []) },

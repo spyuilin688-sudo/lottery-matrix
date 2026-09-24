@@ -3,7 +3,7 @@ import {act} from 'react';
 import {createRoot, type Root} from 'react-dom/client';
 import {afterEach, expect, it, vi} from 'vitest';
 const mocks = vi.hoisted(() => ({get:vi.fn(),post:vi.fn()}));
-vi.mock('@appdeploy/client', () => ({api:mocks, auth:{}}));
+vi.mock('./admin-platform-client', () => ({api:mocks, auth:{}}));
 import {SystemSettings} from './AdminApp';
 const id = 'cron-matrix-fantasy5-refresh-v2';
 const requestId = '11111111-1111-4111-8111-111111111111';

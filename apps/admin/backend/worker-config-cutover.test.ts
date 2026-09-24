@@ -14,7 +14,7 @@ const health = {
   adminApi: { status: 'ok' },
 } as const;
 
-describe('Supabase admin Railway configuration after AppDeploy cutover', () => {
+describe('Supabase admin Railway configuration', () => {
   it('keeps the public Railway URL available when the optional Edge secrets are absent', async () => {
     const config = await getWorkerConfig({
       listSecretNames: async () => [],
@@ -70,6 +70,6 @@ describe('Supabase admin Railway configuration after AppDeploy cutover', () => {
       ok: false,
       error: 'Supabase 尚未完成 Railway 管理 API 設定',
     });
-    expect(JSON.stringify(result)).not.toContain('AppDeploy');
+    expect(JSON.stringify(result)).toContain('Supabase');
   });
 });
