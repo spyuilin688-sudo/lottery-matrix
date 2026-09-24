@@ -1,12 +1,15 @@
 // Test-only host: render the actual production router and intercept every remote request in the spec.
 import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import type { Session } from '@supabase/supabase-js';
 import { FeaturePageRouter, type ScreenId } from '../src/FeaturePagesPatched';
 import { AppDialogProvider } from '../src/dialog/AppDialog';
 import { MobileDeviceProvider } from '../src/mobile/Device';
 import { KeyboardProvider } from '../src/mobile/Keyboard';
 import { MobileScroll } from '../src/mobile/MobileScroll';
 import { getSupabaseClient } from '../src/lib/supabase';
+import { publishMemberSessionReady } from '../src/auth/member-session-store';
+import { updateAlgorithmCacheSession } from '../src/auth/algorithm-cache-scope';
 import { refreshPermissionSettings } from '../src/permission-settings';
 import '@fontsource/roboto/latin-500.css';
 import '@fontsource/roboto/latin-700.css';
@@ -27,16 +30,19 @@ import '../src/feature-page-adjustments.css';
 import '../src/number-reference-visual-refinement.css';
 import '../src/line-pwa-return-fallback.css';
 
-getSupabaseClient().auth.getSession = async () => ({ data: { session: {
+const fixtureSession: Session = {
   access_token: 'pwa-frame-fixture-only', refresh_token: 'fixture-only',
   token_type: 'bearer', expires_in: 3600,
   user: { id: '00000000-0000-4000-8000-000000000915', aud: 'authenticated',
     app_metadata: { provider: 'custom:line' }, user_metadata: { name: 'Frame verification' },
     created_at: '2026-09-15T00:00:00Z' },
-} }, error: null });
+};
+getSupabaseClient().auth.getSession = async () => ({ data: { session: fixtureSession }, error: null });
 getSupabaseClient().auth.onAuthStateChange = () => ({ data: { subscription: {
   id: 'pwa-frame-fixture', callback: () => {}, unsubscribe() {},
 } } });
+updateAlgorithmCacheSession(fixtureSession);
+publishMemberSessionReady(fixtureSession);
 void refreshPermissionSettings().catch(() => {});
 
 function Fixture() {

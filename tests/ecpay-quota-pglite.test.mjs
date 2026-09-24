@@ -133,3 +133,55 @@ test('unqueryable old orders cannot monopolize later reconciliation batches', as
     assert.equal(second.some(order => order.merchantTradeNo === 'GOOD6'), true);
   } finally { await db.close(); }
 });
+
+test('rate-limit backoff holds the same merchant advisory lock as reconciliation claims', async () => {
+  const db = await setup(migration);
+  try {
+    await service(db);
+    const lockedKey = async (sql) => {
+      await db.exec('begin');
+      try {
+        await db.query(sql, [merchant]);
+        const { rows } = await db.query(`select classid, objid, objsubid, mode
+          from pg_catalog.pg_locks where locktype='advisory' and granted`);
+        assert.equal(rows.length, 1, 'RPC must hold one transaction-scoped advisory lock');
+        return rows[0];
+      } finally { await db.exec('rollback'); }
+    };
+    const claimLock = await lockedKey('select public.ecpay_quota_reconcile_claim($1)');
+    const backoffLock = await lockedKey('select public.ecpay_quota_query_backoff($1)');
+    assert.deepEqual(backoffLock, claimLock);
+  } finally { await db.close(); }
+});
+
+test('rate-limit backoff rejects invalid merchant identifiers before creating a throttle row', async () => {
+  const db = await setup(migration);
+  try {
+    await service(db);
+    for (const invalid of [null, '', 'not-a-merchant']) {
+      await assert.rejects(db.query('select public.ecpay_quota_query_backoff($1)', [invalid]), /INVALID_ORDER/);
+    }
+    const { rows } = await db.query('select count(*)::integer as count from public.ecpay_quota_reconciliation');
+    assert.equal(rows[0].count, 0);
+  } finally { await db.close(); }
+});
+
+test('rate-limit backoff preserves a later expiry and blocks new claims', async () => {
+  const db = await setup(migration);
+  try {
+    await service(db);
+    await db.query('select public.ecpay_quota_query_backoff($1)', [merchant]);
+    await owner(db);
+    await db.query(`update public.ecpay_quota_reconciliation
+      set retry_after = now() + interval '45 minutes' where merchant_id=$1`, [merchant]);
+    await service(db);
+    await db.query('select public.ecpay_quota_query_backoff($1)', [merchant]);
+    const { rows: [lease] } = await db.query(`select retry_after > now() + interval '44 minutes' as preserved
+      from public.ecpay_quota_reconciliation where merchant_id=$1`, [merchant]);
+    assert.equal(lease.preserved, true);
+    const { rows: [claim] } = await db.query('select public.ecpay_quota_reconcile_claim($1) as orders', [merchant]);
+    assert.deepEqual(claim.orders, []);
+    await db.exec('set role authenticated');
+    await assert.rejects(db.query('select public.ecpay_quota_query_backoff($1)', [merchant]), /permission denied/);
+  } finally { await db.close(); }
+});
