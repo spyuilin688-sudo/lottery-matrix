@@ -69,6 +69,9 @@ ul { margin: 0; padding: 0; list-style: none; }
 .lottery-list li::before { content: ""; width: 3px; height: 23px; margin-right: 11px; background: var(--gold); }
 .lottery-list strong { font-size: 17px; font-weight: 650; letter-spacing: -.025em; white-space: nowrap; }
 
+.intro-illustration { margin-block: 0 clamp(40px, 6vw, 72px); }
+.intro-illustration img { display: block; width: min(100%, 760px); height: auto; margin-inline: auto; }
+
 .features-section { padding-block: 82px 92px; border-top: 1px solid rgba(196, 145, 69, .34); background: var(--surface); }
 .features-section h2 { margin-top: 10px; font-size: clamp(30px, 3.5vw, 40px); font-weight: 650; letter-spacing: -.045em; line-height: 1.4; }
 .mobile-break { display: none; }
