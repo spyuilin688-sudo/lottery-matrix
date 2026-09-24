@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, expect, test, vi } from 'vitest';
 
+vi.unmock('../published-result-refresh');
+
 const realtime = vi.hoisted(() => {
   const listeners: Record<string, (event: unknown) => void> = {};
   const state: { status?: (status: string) => void } = {};
