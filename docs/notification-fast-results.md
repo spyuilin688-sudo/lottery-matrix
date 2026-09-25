@@ -6,13 +6,13 @@
 
 ## 快速來源與開獎通知
 
-既有檢查時段不變，每分鐘一次（Asia/Taipei，含結束分鐘）：
+目前快速抓取時段如下，每分鐘一次（Asia/Taipei，含結束分鐘）：
 
 | 彩種 | 時段 | 來源 |
 | --- | --- | --- |
-| 今彩539 | 20:35–20:40 | https://www.pilio.idv.tw/lto539/list.asp |
-| 大樂透 | 20:55–21:00 | https://www.pilio.idv.tw/ltobig/list.asp |
-|六合彩 | 21:35–21:40 | https://www.pilio.idv.tw/ltohk/list.asp |
+| 今彩539 | 20:34–21:00 | https://www.pilio.idv.tw/lto539/list.asp |
+| 大樂透 | 20:34–21:00 | https://www.pilio.idv.tw/ltobig/list.asp |
+|六合彩 | 21:34–22:00 | https://www.pilio.idv.tw/ltohk/list.asp |
 
 只接受頁面第一筆開獎資料，日期必須是台北當日。日期不符、號碼未齊、重複或超出範圍都不發送。六碼彩種須同時取得特別號，儲存時特別號置於第七碼；來源沒有提供落球順序，不推算。
 
