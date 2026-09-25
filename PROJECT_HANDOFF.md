@@ -66,6 +66,7 @@ Railway 樣本中至少兩筆不同時間的不同執行均為 `already-acquired
 - Manifest：`public/manifest.webmanifest`，由 `index.html` 引用；包含圖示、`start_url`、`scope`、`display: fullscreen` 與既有啟動設定。
 - Service Worker：`public/push-service-worker.js`；`src/pwa-lifecycle.tsx` 與 `src/push-subscription.ts` 使用同一路徑註冊。
 - `scripts/pwa-build-version.mjs` 將建置指紋寫入 Service Worker；安裝及更新互動由既有 PWA lifecycle 管理。
+- `public/_headers` 是 Cloudflare Pages 的 PWA 入口快取政策 owner：`/`、`/index.html`、`/push-service-worker.js` 使用 HTTP／CDN `no-store`，避免保留舊版入口或更新程式。離線支援仍由既有版本化 Service Worker Cache Storage 管理；不清除會員儲存，不變更 hashed assets、API 或管理後台的快取政策。部署後須讀回正式站 response headers，不能只以 repository 設定判定生效。
 - LINE OAuth 與實體手機返回 PWA 的限制見 `docs/LINE_LOGIN_SETUP.md` 與 `UX-CONTRACT.md`；桌面或程式測試不代表 Android／iOS 實機驗證。
 
 ## 安裝、執行與建置

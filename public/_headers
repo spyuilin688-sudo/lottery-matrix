@@ -1,0 +1,16 @@
+# Mutable PWA entrypoints must not retain a previous release in HTTP/CDN caches.
+# Offline support remains owned by the versioned Service Worker Cache Storage.
+/
+  Cache-Control: no-store
+  CDN-Cache-Control: no-store
+  Cloudflare-CDN-Cache-Control: no-store
+
+/index.html
+  Cache-Control: no-store
+  CDN-Cache-Control: no-store
+  Cloudflare-CDN-Cache-Control: no-store
+
+/push-service-worker.js
+  Cache-Control: no-store
+  CDN-Cache-Control: no-store
+  Cloudflare-CDN-Cache-Control: no-store
