@@ -138,6 +138,7 @@ describe("ProfilePage member API", () => {
     expect(screen.getByText("目前訂閱狀態")).toBeInTheDocument();
     expect(document.querySelector(".subscription-status-card")).toBeInTheDocument();
     expect(await screen.findByText("年費方案")).toBeInTheDocument();
+    expect(document.querySelector(".subscription-status-card")).toHaveAttribute("data-plan-tier", "yearly");
     const artwork = document.querySelector(".membership-reference-art")!;
     expect(artwork).toHaveAttribute("data-subscription-visible", "true");
     const [, artworkTop, , artworkHeight] = artwork.querySelector("svg")!.getAttribute("viewBox")!.split(" ").map(Number);
@@ -163,6 +164,7 @@ describe("ProfilePage member API", () => {
     render(<ProfilePage onNavigate={vi.fn()} />);
 
     expect(await screen.findByText("終身方案")).toBeInTheDocument();
+    expect(document.querySelector(".subscription-status-card")).toHaveAttribute("data-plan-tier", "lifetime");
     const expiry = document.querySelector(".subscription-expiry");
     expect(expiry).toHaveTextContent("無到期日");
     expect(expiry).not.toHaveTextContent("剩餘");
@@ -762,6 +764,7 @@ describe("ProfilePage member API", () => {
     render(<ProfilePage onNavigate={vi.fn()} />);
 
     expect(await screen.findByText("免費會員")).toBeInTheDocument();
+    expect(document.querySelector(".subscription-status-card")).toHaveAttribute("data-plan-tier", "free");
     expect(screen.getByText("核心功能體驗")).toBeInTheDocument();
     expect(screen.queryByText("享有所有 Matrix Pro 功能")).not.toBeInTheDocument();
     expect(screen.queryByText(/剩餘 .* 天/)).not.toBeInTheDocument();
@@ -780,6 +783,7 @@ describe("ProfilePage member API", () => {
     render(<ProfilePage onNavigate={vi.fn()} />);
 
     expect(await screen.findByText("終身方案")).toBeInTheDocument();
+    expect(document.querySelector(".subscription-status-card")).toHaveAttribute("data-plan-tier", "lifetime");
     expect(screen.queryByText("2027/07/23")).not.toBeInTheDocument();
     expect(screen.queryByText(/剩餘 .* 天/)).not.toBeInTheDocument();
   });
@@ -800,8 +804,29 @@ describe("ProfilePage member API", () => {
 
     await act(async () => { await Promise.resolve(); });
     expect(screen.getByText("2026/09/13")).toBeInTheDocument();
+    expect(document.querySelector(".subscription-status-card")).toHaveAttribute("data-plan-tier", "monthly");
     expect(screen.getByText("剩餘 1 天")).toBeInTheDocument();
     vi.useRealTimers();
+  });
+
+  it.each([
+    ["季費方案", "quarterly"],
+    ["終身方案", "lifetime"],
+    ["終生方案", "lifetime"],
+  ])("%s 保留原方案文字並映射到 %s 視覺", async (planName, tier) => {
+    memberApi.fetchMemberProfile.mockResolvedValueOnce({
+      memberId: "member-plan",
+      lineUserId: "line-plan",
+      planName,
+      planExpiresAt: null,
+      isLifetime: false,
+    });
+    render(<ProfilePage onNavigate={vi.fn()} />);
+
+    expect(await screen.findByText(planName, { selector: ".subscription-plan strong" })).toBeInTheDocument();
+    expect(document.querySelector(".subscription-status-card")).toHaveAttribute("data-plan-tier", tier);
+    expect(document.querySelector(".subscription-status-stage > .subscription-status-emblem[aria-hidden='true']")).not.toBeNull();
+    expect(document.querySelector(".subscription-status-stage > .subscription-status-content > .subscription-plan + .subscription-expiry")).not.toBeNull();
   });
 
   it("登出前先確認，取消時不呼叫登出 API", async () => {

@@ -24,6 +24,7 @@ import { FeatureShell, SectionTitle } from "./shared";
 import { MATRIX_PRO_COMMON_FEATURES } from "../matrix-pro-copy";
 import { beginEcpayCheckout } from "../ecpay-checkout";
 
+type SubscriptionVisualTier = "free" | "monthly" | "quarterly" | "yearly" | "lifetime";
 
 /** Keep the approved raster artwork intact; mask sample text and the sample photo.
  *  All visible member data and interactive labels are rendered by ProfilePage.
@@ -59,7 +60,6 @@ function MembershipArtwork({ showSubscription, maskAuthPill }: { showSubscriptio
           </clipPath>
           <clipPath id={informationClipId} clipPathUnits="userSpaceOnUse">
             <rect x="86" y="522" width="222" height="214" />
-            <rect x="800" y="534" width="39" height="196" />
           </clipPath>
         </defs>
         <image href={source} width="1563" height="1006" mask={`url(#${maskId})`} />
@@ -263,6 +263,11 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   const expiry = memberProfile?.isLifetime ? null : memberExpiryInTaipei(memberProfile?.planExpiresAt ?? null);
   const displayedPlanName = memberProfile ? memberProfile.planName ?? "免費會員" : "";
   const displayedPlanDescription = displayedPlanName === "免費會員" ? "核心功能體驗" : "Matrix Pro 權限";
+  const subscriptionVisualTier: SubscriptionVisualTier = memberProfile?.isLifetime ? "lifetime"
+    : displayedPlanName.includes("月費") ? "monthly"
+      : displayedPlanName.includes("季費") ? "quarterly"
+        : displayedPlanName.includes("年費") ? "yearly"
+          : displayedPlanName.includes("終身") || displayedPlanName.includes("終生") ? "lifetime" : "free";
   const handleAuthAction = async () => {
     if (authRetrying || authState === "initializing" || authState === "signing-in" || authState === "signing-out") return;
     if (authState === "degraded") {
@@ -463,11 +468,14 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
             }</span></button>}
           </div> : null}
         </section>
-        <section className="panel membership-card subscription-status-card">
+        <section className="panel membership-card subscription-status-card" data-plan-tier={subscriptionVisualTier}>
           <SectionTitle>目前訂閱狀態</SectionTitle>
-          <div className="subscription-status-content">
-            <div className="subscription-plan"><span>目前方案</span><strong>{displayedPlanName}</strong><p>{memberProfile ? displayedPlanDescription : ""}</p></div>
-            <div className="subscription-expiry"><span>訂閱到期日</span><strong>{memberProfile?.isLifetime ? "無到期日" : expiry?.date ?? ""}</strong><p>{expiry ? `剩餘 ${expiry.remainingDays} 天` : ""}</p></div>
+          <div className="subscription-status-stage">
+            <div className="subscription-status-emblem" aria-hidden="true" />
+            <div className="subscription-status-content">
+              <div className="subscription-plan"><span>目前方案</span><strong>{displayedPlanName}</strong><p>{memberProfile ? displayedPlanDescription : ""}</p></div>
+              <div className="subscription-expiry"><span>訂閱到期日</span><strong>{memberProfile?.isLifetime ? "無到期日" : expiry?.date ?? ""}</strong><p>{expiry ? `剩餘 ${expiry.remainingDays} 天` : ""}</p></div>
+            </div>
           </div>
           {subscriptionPurchaseVisible && <button type="button" className="subscription-entry" onClick={() => onNavigate("pro-plans")}>
             <span>訂閱方案／收費標準</span><ChevronRightIcon />

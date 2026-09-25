@@ -994,6 +994,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .membership-reference-art > .subscription-information-art {
   top: calc(var(--membership-profile-height) + var(--subscription-content-shift));
+  z-index: 1;
 }
 .membership-reference-art > .subscription-heading-mark {
   position: absolute;
@@ -1147,18 +1148,66 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .subscription-status-card > .section-title > span { display: none; }
 .subscription-status-card > .section-title::before,
 .subscription-status-card > .section-title::after { display: none; }
+.subscription-status-stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: 14.8cqw minmax(0, 1fr);
+  column-gap: 3.2cqw;
+  align-items: start;
+  min-width: 0;
+  margin: 0 12.14cqw 0 16.9cqw;
+  padding: 2.2cqw 2.8cqw 2.4cqw 0;
+  overflow: hidden;
+  border-radius: 16px;
+}
+.subscription-status-emblem {
+  width: 12.2cqw;
+  height: 12.2cqw;
+  align-self: start;
+  justify-self: start;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+.subscription-status-card[data-plan-tier="free"] .subscription-status-stage {
+  background: linear-gradient(180deg, rgba(199, 155, 70, .08), rgba(199, 155, 70, .02)),
+    linear-gradient(90deg, rgba(255, 215, 128, .05), transparent 45%), #050b10;
+}
+.subscription-status-card[data-plan-tier="monthly"] .subscription-status-stage {
+  background: linear-gradient(135deg, rgba(215, 169, 79, .15), transparent 48%),
+    linear-gradient(180deg, rgba(255, 216, 146, .05), rgba(0, 0, 0, 0)), #071018;
+}
+.subscription-status-card[data-plan-tier="quarterly"] .subscription-status-stage {
+  background: linear-gradient(135deg, rgba(225, 182, 95, .16), transparent 52%),
+    linear-gradient(90deg, rgba(255, 226, 160, .05), transparent 60%), #07121b;
+}
+.subscription-status-card[data-plan-tier="yearly"] .subscription-status-stage {
+  background: radial-gradient(circle at 82% 20%, rgba(241, 198, 107, .22), transparent 34%),
+    linear-gradient(135deg, rgba(241, 198, 107, .14), transparent 58%), #09131c;
+}
+.subscription-status-card[data-plan-tier="lifetime"] .subscription-status-stage {
+  background: radial-gradient(circle at 85% 18%, rgba(255, 217, 120, .28), transparent 36%),
+    radial-gradient(circle at 22% 80%, rgba(224, 184, 94, .12), transparent 32%),
+    linear-gradient(135deg, rgba(255, 217, 120, .16), transparent 58%), #0a0f16;
+}
+[data-plan-tier="free"] .subscription-status-emblem { background-image: url("/assets/lottery/membership/subscription/free-crown.svg"); }
+[data-plan-tier="monthly"] .subscription-status-emblem { background-image: url("/assets/lottery/membership/subscription/monthly-crown.svg"); }
+[data-plan-tier="quarterly"] .subscription-status-emblem { background-image: url("/assets/lottery/membership/subscription/quarterly-crown.svg"); }
+[data-plan-tier="yearly"] .subscription-status-emblem { background-image: url("/assets/lottery/membership/subscription/yearly-crown.svg"); }
+[data-plan-tier="lifetime"] .subscription-status-emblem { background-image: url("/assets/lottery/membership/subscription/lifetime-crown.svg"); }
 .subscription-status-content {
   display: grid;
-  grid-template-columns: 29.4cqw 29cqw;
-  column-gap: 8.03cqw;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 2.2cqw;
   min-width: 0;
-  min-height: 12.55cqw;
-  margin: 0 12.14cqw 0 21.43cqw;
+  min-height: 0;
+  margin: 0;
 }
 .subscription-status-content > div {
   min-width: 0;
 }
 .subscription-status-content .subscription-expiry {
+  margin-top: .8cqw;
   padding: 0;
   border: 0;
 }
@@ -1187,6 +1236,11 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .subscription-status-content .subscription-plan p {
   white-space: nowrap;
 }
+.subscription-status-card[data-plan-tier="free"] .subscription-plan strong { color: #d7ae5d; }
+.subscription-status-card[data-plan-tier="monthly"] .subscription-plan strong { color: #e6bb64; }
+.subscription-status-card[data-plan-tier="quarterly"] .subscription-plan strong { color: #efc56b; }
+.subscription-status-card[data-plan-tier="yearly"] .subscription-plan strong { color: #f6cf72; }
+.subscription-status-card[data-plan-tier="lifetime"] .subscription-plan strong { color: #ffd978; }
 .subscription-entry {
   display: grid;
   box-sizing: border-box;
