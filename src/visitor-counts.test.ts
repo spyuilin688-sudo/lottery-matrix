@@ -22,12 +22,64 @@ it('records reopening the visible app and removes its listener on cleanup', asyn
   const stop = installVisitorTracking();
   await vi.waitFor(() => expect(invoke).toHaveBeenCalledTimes(1));
   await recordVisitor();
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+  document.dispatchEvent(new Event('visibilitychange'));
+  await new Promise((resolve) => setTimeout(resolve, 1_550));
   vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
   document.dispatchEvent(new Event('visibilitychange'));
   await vi.waitFor(() => expect(invoke).toHaveBeenCalledTimes(2));
   await recordVisitor();
   stop(); document.dispatchEvent(new Event('visibilitychange'));
   expect(invoke).toHaveBeenCalledTimes(2);
+});
+
+it('shares one request for repeated visible events and ignores a short hidden bounce', async () => {
+  vi.useFakeTimers();
+  let resolveVisit!: (result: { error: null }) => void;
+  invoke.mockImplementationOnce(() => new Promise(resolve => { resolveVisit = resolve; }));
+  let visibility = 'visible';
+  vi.spyOn(document, 'visibilityState', 'get').mockImplementation(() => visibility as DocumentVisibilityState);
+  const stop = installVisitorTracking();
+  document.dispatchEvent(new Event('visibilitychange'));
+  expect(invoke).toHaveBeenCalledTimes(1);
+  resolveVisit({ error: null });
+  await Promise.resolve(); await Promise.resolve();
+  document.dispatchEvent(new Event('visibilitychange'));
+  expect(invoke).toHaveBeenCalledTimes(1);
+  visibility = 'hidden'; document.dispatchEvent(new Event('visibilitychange'));
+  visibility = 'visible'; document.dispatchEvent(new Event('visibilitychange'));
+  expect(invoke).toHaveBeenCalledTimes(1);
+  visibility = 'hidden'; document.dispatchEvent(new Event('visibilitychange'));
+  await vi.advanceTimersByTimeAsync(2_000);
+  visibility = 'visible'; document.dispatchEvent(new Event('visibilitychange'));
+  expect(invoke).toHaveBeenCalledTimes(2);
+  stop();
+});
+
+it('records return from a pagehide lifecycle with no visibilitychange', async () => {
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+  const stop = installVisitorTracking();
+  await recordVisitor();
+  window.dispatchEvent(new Event('pagehide'));
+  window.dispatchEvent(new Event('pageshow'));
+  expect(invoke).toHaveBeenCalledTimes(2);
+  stop();
+  window.dispatchEvent(new Event('pageshow'));
+  expect(invoke).toHaveBeenCalledTimes(2);
+});
+
+it('records a BFCache return even when background timers were frozen', async () => {
+  let visibility: DocumentVisibilityState = 'visible';
+  vi.spyOn(document, 'visibilityState', 'get').mockImplementation(() => visibility);
+  const stop = installVisitorTracking();
+  await recordVisitor();
+  visibility = 'hidden';
+  document.dispatchEvent(new Event('visibilitychange'));
+  window.dispatchEvent(new Event('pagehide'));
+  visibility = 'visible';
+  window.dispatchEvent(new Event('pageshow'));
+  expect(invoke).toHaveBeenCalledTimes(2);
+  stop();
 });
 
 it('does not count development or browser test sessions', async () => {

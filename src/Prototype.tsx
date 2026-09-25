@@ -564,7 +564,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   const latestDrawRefreshRef = useRef(refreshLatestDraw);
   const selectedRefreshMounted = useRef(false);
   const completedHomeRefreshCycles = useRef(new Set<string>());
-  const homepageSessionInvalidator = useRef<(() => void) | null>(null);
+  const homepageSessionInvalidator = useRef<((ownerChanged: boolean) => void) | null>(null);
   selectedRef.current = selected;
   latestDrawRefreshRef.current = refreshLatestDraw;
 
@@ -586,7 +586,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   useEffect(() => subscribeAlgorithmCacheScope(() => {
     setMatrixStatuses(MATRIX_STATUS_BY_LOTTERY);
     setMatrixStatusLoads(loadingStatusStates());
-    homepageSessionInvalidator.current?.();
+    homepageSessionInvalidator.current?.(true);
   }, { notifyOnInitialize: true }), []);
   useEffect(() => {
     if (!selectedRefreshMounted.current) {
@@ -612,6 +612,9 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     let pendingFullRefresh = false;
     let firstRefresh = true;
     let refreshInFlight = false;
+    let wasHidden = document.visibilityState === "hidden";
+    let wasBlurred = false;
+    let wasOffline = false;
     const failedStatuses = new Set<LotteryId>();
     let failedLatestResult = false;
     let failedLatestDraw = false;
@@ -706,6 +709,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     };
 
     const refresh = async (forceAll: boolean, failedOnly = false) => {
+      if (refreshInFlight) return;
       if (!active || document.visibilityState === "hidden") {
         scheduleNext();
         return;
@@ -713,7 +717,6 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       if (forceAll && !failedOnly) pendingFullRefresh = false;
       refreshInFlight = true;
       const current = ++generation;
-      request?.abort();
       request = new AbortController();
       const signal = request.signal;
       const cycle = homepageRefreshCycleAt(new Date());
@@ -795,9 +798,10 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
         // Keep the last valid UI snapshot. Active pending windows retry on the
         // shared ten-minute fallback; outside a window no network poll runs.
       } finally {
-        if (active && current === generation) {
+        if (active && request?.signal === signal) {
           refreshInFlight = false;
-          scheduleNext();
+          if (pendingFullRefresh) queueRefresh(true);
+          else scheduleNext();
         }
       }
     };
@@ -806,6 +810,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       if (!active) return;
       if (forceAll && !failedOnly) pendingFullRefresh = true;
       if (document.visibilityState === "hidden") return;
+      if (refreshInFlight) return;
       if (pendingFullRefresh || firstRefresh) {
         forceAll = true;
         failedOnly = false;
@@ -830,11 +835,15 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       }, 0);
     };
 
-    const invalidate = () => {
+    const invalidate = (ownerChanged = false) => {
       const cycle = homepageRefreshCycleAt(new Date());
       if (cycle) completedHomeRefreshCycles.current.delete(homepageRefreshCycleKey(cycle));
       generation += 1;
-      request?.abort();
+      if (ownerChanged) {
+        request?.abort();
+        request = undefined;
+        refreshInFlight = false;
+      }
       setMatrixStatuses(MATRIX_STATUS_BY_LOTTERY);
       setMatrixStatusLoads(loadingStatusStates());
       queueRefresh(true);
@@ -842,9 +851,24 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
 
     homepageSessionInvalidator.current = invalidate;
     void refresh(true);
-    const unsubscribe = subscribeMatrixDataRevision(invalidate);
-    const wake = () => {
+    const unsubscribe = subscribeMatrixDataRevision(() => invalidate());
+    const wake = (event: Event) => {
+      if (event.type === "visibilitychange") {
+        if (document.visibilityState === "hidden") { wasHidden = true; return; }
+        if (!wasHidden) return;
+        wasHidden = false;
+        wasBlurred = false;
+      } else if (event.type === "focus") {
+        if (!wasBlurred) return;
+        wasBlurred = false;
+        wasHidden = false;
+      } else if (event.type === "online") {
+        if (!wasOffline) return;
+        wasOffline = false;
+      }
       if (document.visibilityState === "hidden") return;
+      wasHidden = false;
+      wasBlurred = false;
       if (pendingFullRefresh || firstRefresh) {
         if (firstRefresh && !pendingFullRefresh && refreshInFlight) return;
         queueRefresh(true);
@@ -859,6 +883,10 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       queueRefresh(false);
     };
     document.addEventListener("visibilitychange", wake);
+    const blur = () => { wasBlurred = true; };
+    const offline = () => { wasOffline = true; };
+    window.addEventListener("blur", blur);
+    window.addEventListener("offline", offline);
     window.addEventListener("online", wake);
     window.addEventListener("focus", wake);
 
@@ -871,6 +899,8 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       unsubscribe();
       if (homepageSessionInvalidator.current === invalidate) homepageSessionInvalidator.current = null;
       document.removeEventListener("visibilitychange", wake);
+      window.removeEventListener("blur", blur);
+      window.removeEventListener("offline", offline);
       window.removeEventListener("online", wake);
       window.removeEventListener("focus", wake);
     };

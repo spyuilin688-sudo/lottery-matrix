@@ -396,7 +396,7 @@ describe('LINE auth helper', () => {
     await vi.waitFor(() => expect(post).toHaveBeenCalledWith(
       '/api/member-online/end',
       { sessionId: 'session-backgrounding' },
-    ));
+    ), { timeout: 2_500 });
 
     const signOut = vi.fn().mockResolvedValue({ error: null });
     const { client } = createClient({ session: null, signOut });
