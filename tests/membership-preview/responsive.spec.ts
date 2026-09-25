@@ -69,7 +69,7 @@ for (const { state, planName, tier, description: expectedDescription } of member
       expect(planBox).not.toBeNull();
       expect(expiryBox).not.toBeNull();
       expect(emblemBox).not.toBeNull();
-      // Keep the visible information together; spare card width must not widen the middle gap.
+      // A layout: crown and plan stay together on the left; expiry text aligns to the right inset.
       expect(Math.abs(expiryBox!.y - planBox!.y)).toBeLessThanOrEqual(0.5);
       expect(planBox!.x + planBox!.width + 8).toBeLessThanOrEqual(expiryBox!.x + 0.5);
       expect(emblemBox!.x + emblemBox!.width).toBeLessThanOrEqual(planBox!.x + 0.5);
@@ -89,13 +89,16 @@ for (const { state, planName, tier, description: expectedDescription } of member
         return {
           planRight: Math.max(...planText.map((box) => box.right)),
           expiryLeft: Math.min(...expiryText.map((box) => box.left)),
-          expiryLeftEdges: expiryText.map((box) => box.left),
+          expiryRightEdges: expiryText.map((box) => box.right),
+          stageRight: card.querySelector(".subscription-status-stage")!.getBoundingClientRect().right,
         };
       });
       const middleGap = textBounds.expiryLeft - textBounds.planRight;
-      expect(middleGap).toBeGreaterThanOrEqual(15.5);
-      expect(middleGap).toBeLessThanOrEqual(24.5);
-      expect(Math.max(...textBounds.expiryLeftEdges) - Math.min(...textBounds.expiryLeftEdges)).toBeLessThanOrEqual(0.5);
+      expect(middleGap).toBeGreaterThanOrEqual(8);
+      for (const right of textBounds.expiryRightEdges) {
+        expect(Math.abs(right - textBounds.stageRight)).toBeLessThanOrEqual(0.5);
+      }
+      expect(planBox!.x - (emblemBox!.x + emblemBox!.width)).toBeLessThanOrEqual(12);
 
       const menus = profile.locator('.profile-menu');
       await expect(menus).toHaveCount(5);
@@ -172,7 +175,7 @@ for (const { state, planName, tier, description: expectedDescription } of member
           .map((node) => node.getBoundingClientRect().bottom));
       });
       expect(contentLastLineBottom + 8).toBeLessThanOrEqual(entryBox!.y + 0.5);
-      expect(entryBox!.y - contentLastLineBottom).toBeLessThanOrEqual(24);
+      expect(entryBox!.y - contentLastLineBottom).toBeLessThanOrEqual(12);
       expect(descriptionBox.top).toBeGreaterThanOrEqual(cardBoxes[1].top - 0.5);
       expect(descriptionBox.bottom).toBeLessThanOrEqual(cardBoxes[1].bottom + 0.5);
       expect(descriptionBox.left).toBeGreaterThanOrEqual(cardBoxes[1].left - 0.5);
