@@ -1143,7 +1143,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .subscription-status-stage {
   position: relative;
   display: grid;
-  grid-template-columns: 14.64cqw minmax(0, 1fr);
+  grid-template-columns: 17.568cqw minmax(0, 1fr);
   align-items: center;
   min-width: 0;
   /* Compensate for the artwork's 10px extension before applying the inner inset. */
@@ -1151,8 +1151,8 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   padding: 2.2cqw 8px 0 14px;
 }
 .subscription-status-emblem {
-  width: 14.64cqw;
-  height: 14.64cqw;
+  width: 17.568cqw;
+  height: 17.568cqw;
   justify-self: start;
   background-repeat: no-repeat;
   background-position: center;
@@ -1181,21 +1181,21 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 [data-plan-tier="lifetime"] .subscription-status-emblem { background-image: url("/assets/lottery/membership/subscription/lifetime-crown.svg"); }
 .subscription-status-content {
   display: grid;
-  grid-template-columns: max-content max-content;
-  column-gap: 6px;
-  justify-content: center;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
   align-items: start;
   min-width: 0;
   min-height: 0;
   margin: 0;
+  padding-left: 5px;
   text-align: left;
 }
 .subscription-status-content > div {
   min-width: 0;
 }
 .subscription-status-content .subscription-expiry {
+  align-self: stretch;
   margin-top: 0;
-  padding: 0 0 0 5px;
+  padding: 0 0 0 10px;
   border-left: 1px solid var(--pwa-frame-divider);
   text-align: left;
 }
