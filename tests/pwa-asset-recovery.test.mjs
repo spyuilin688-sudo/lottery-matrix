@@ -53,12 +53,16 @@ async function harness({ version = 'new', stores = new Map(), offline = false, b
   const source = (await readFile(new URL(legacy ? './fixtures/pwa-cache-before-540.js' : '../public/push-service-worker.js', import.meta.url), 'utf8'))
     .replaceAll('__BUILD_ID__', version)
     .replace(/const BUILD_ASSET_PATHS = .*?;/, `const BUILD_ASSET_PATHS = ["/assets/${version}.css", "/assets/${version}.js"];`);
-  vm.runInNewContext(source, { URL, Request, Response, setTimeout, clearTimeout, caches, fetch: network, self: {
+  const scope = { URL, Request, Response, setTimeout, clearTimeout, caches, fetch: network,
     location: { origin },
     addEventListener: (type, handler) => handlers.set(type, handler),
     skipWaiting: async () => actions.push('skipWaiting'),
     clients: { claim: async () => actions.push('claim'), matchAll: async () => [] },
-  } });
+  };
+  // A classic worker's self is its global scope. Separate objects hide globals
+  // that accidentally overwrite native methods such as self.skipWaiting.
+  scope.self = scope;
+  vm.runInNewContext(source, scope);
   async function dispatch(type, request) {
     const waits = []; let result;
     handlers.get(type)({ request, waitUntil: p => waits.push(p), respondWith: p => { result = p; } });

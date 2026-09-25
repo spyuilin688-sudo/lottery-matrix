@@ -186,7 +186,9 @@ async function claimClients() {
   }
 }
 
-async function skipWaiting() {
+// Classic worker declarations share self's global scope. Do not shadow the
+// native skipWaiting method, or updates remain installed without activating.
+async function activatePreparedWorker() {
   try {
     if (typeof self.skipWaiting === "function") await self.skipWaiting();
   } catch {
@@ -517,7 +519,7 @@ self.addEventListener("message", (event) => {
 });
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(precacheAppShell().then(skipWaiting).catch(async error => {
+  event.waitUntil(precacheAppShell().then(activatePreparedWorker).catch(async error => {
     try {
       const cache = await openStaticCache();
       // A reinstall may share an existing complete generation. Keep it intact.
