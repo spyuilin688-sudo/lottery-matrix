@@ -417,6 +417,19 @@ describe('PWA push subscriptions', () => {
     expect(register).not.toHaveBeenCalled();
   });
 
+  it('reports a failed worker update while preserving its rejection and the existing registration', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const failure = new TypeError('Failed to update a ServiceWorker: script fetch failed');
+    getRegistration.mockResolvedValue({ active: { state: 'activated' }, update: updateRegistration });
+    updateRegistration.mockRejectedValue(failure);
+    try {
+      await expect(registerPushServiceWorker()).rejects.toBe(failure);
+      expect(warn).toHaveBeenCalledWith('PWA_WORKER_UPDATE_FAILED', failure.message);
+      expect(register).not.toHaveBeenCalled();
+      expect(subscribe).not.toHaveBeenCalled();
+    } finally { warn.mockRestore(); }
+  });
+
   it('waits for an installing update to control the page before resolving', async () => {
     const listeners = new Set<EventListener>();
     const oldController = {} as ServiceWorker;
