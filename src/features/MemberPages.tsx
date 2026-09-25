@@ -466,8 +466,8 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
         <section className="panel membership-card subscription-status-card" data-plan-tier={subscriptionVisualTier}>
           <SectionTitle>目前訂閱狀態</SectionTitle>
           <div className="subscription-status-stage">
+            <div className="subscription-status-emblem" aria-hidden="true" />
             <div className="subscription-status-content">
-              <div className="subscription-status-emblem" aria-hidden="true" />
               <div className="subscription-plan"><span>目前方案</span><strong>{displayedPlanName}</strong><p>{memberProfile ? displayedPlanDescription : ""}</p></div>
               <div className="subscription-expiry"><span>訂閱到期日</span><strong>{memberProfile?.isLifetime ? "無到期日" : expiry?.date ?? ""}</strong><p>{expiry ? `剩餘 ${expiry.remainingDays} 天` : ""}</p></div>
             </div>

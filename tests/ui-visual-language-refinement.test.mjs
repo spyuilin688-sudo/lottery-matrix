@@ -109,7 +109,7 @@ test("approved A+B membership cards place plan and expiry side by side without a
   assert.match(memberSource, /<rect x="800" y="534" width="39" height="196" fill="black" \/>/);
   assert.match(memberSource, /<rect x="86" y="522" width="222" height="214" fill="black" \/>/);
   assert.doesNotMatch(memberSource, /informationClipId|subscription-information-art/);
-  assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content", "grid-template-columns"), "12.2cqw minmax(0, 1fr) max-content");
+  assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content", "grid-template-columns"), "max-content max-content");
   assert.doesNotMatch(canonicalFeatureCss, /grid-template-columns:\s*29\.4cqw\s+29cqw/);
   for (const tier of ["free", "monthly", "quarterly", "yearly", "lifetime"]) {
     assert.match(canonicalFeatureCss, new RegExp(`\\.subscription-status-card\\[data-plan-tier="${tier}"\\]\\s+\\.subscription-status-stage\\s*\\{[^}]*background:`));
