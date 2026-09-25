@@ -14,19 +14,17 @@ afterEach(() => {
   window.history.replaceState({}, '', '/');
 });
 
-test('免費模式教學區分訪客基本查詢與 LINE 新會員 48 小時權限', async () => {
+test('首次提示僅提供授權條款與單一同意按鈕', async () => {
   window.localStorage.removeItem(FIRST_VISIT_GUIDE_SEEN_KEY);
   window.history.replaceState({}, '', '/');
   const onNavigate = vi.fn();
 
   render(<FirstVisitGuide enabled onNavigate={onNavigate} />);
 
-  const dialog = await screen.findByRole('dialog', { name: '使用教學' });
-  expect(dialog.textContent).toContain('探索二期、天衡三期基本查詢可直接使用');
-  expect(dialog.textContent).toContain('新註冊 LINE 會員可於註冊後 48 小時內使用 Matrix 探索、天衡、天樞十三期及完整範圍');
-  expect(dialog.textContent).not.toContain('天衍 2 天');
-  expect(dialog.textContent).not.toContain('天工 1 天');
-  const start = screen.getByRole('button', { name: '開始使用' });
-  fireEvent.click(start);
+  const dialog = await screen.findByRole('dialog', { name: '【使用者授權條款與免責聲明】' });
+  expect(dialog.textContent).toContain('歡迎使用 Matrix 數據分析系統。');
+  expect(dialog.textContent).toContain('《隱私權政策》');
+  const consent = screen.getByRole('button', { name: '同意條款並進入系統' });
+  fireEvent.click(consent);
   expect(onNavigate).not.toHaveBeenCalled();
 });

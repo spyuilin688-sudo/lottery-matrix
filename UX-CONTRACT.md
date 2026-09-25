@@ -4,7 +4,7 @@
 
 - 獨立權限管理網站提供「顯示訂閱購買」與「註冊會員免費使用」兩個獨立開關。
 - 購買關閉時，「我的」保留目前訂閱狀態、既有方案與到期日及其金框；隱藏購買入口、付款紀錄及退款規範，空的會員相關群組一併收起。「管理訂閱」保留目前方案與到期日並隱藏購買入口；router 不掛載方案／轉帳／付款紀錄／退款規範頁。設定未知或讀取失敗時保持購買入口隱藏；開啟同一開關即可恢復。關閉期間伺服器不建立新的訂單或轉帳申請，既有已付款訂單仍可由回呼完成記錄。
-- 同一「顯示訂閱購買」開關同步控制指定文案與篇章：關閉時使用查詢文案、隱藏指定段落；開啟時恢復原文與篇章。範圍詳見 `docs/PERMISSION_SWITCHES.md`，不與免費權限開關連動。已開啟的首次提示同步更新；指南隱藏第 14 類時保留其他類別原編號，若正停留在第 14 類則回到第 01 類。
+- 同一「顯示訂閱購買」開關同步控制指定文案與篇章：關閉時使用查詢文案、隱藏指定段落；開啟時恢復原文與篇章。範圍詳見 `docs/PERMISSION_SWITCHES.md`，不與免費權限開關連動。首次授權條款使用固定文案；指南隱藏第 14 類時保留其他類別原編號，若正停留在第 14 類則回到第 01 類。
 - PWA 啟動、回到前景及前景每 30 秒重讀設定；演算法快取使用前重新確認設定版本，變更時清除既有結果。
 - 免費使用適用所有既有與未來的有效註冊會員，只增加天衍、天工、探索七期／十三期／完整範圍。訪客、缺少會員資料、停用會員不取得此權限。
 - 訪客不登入即可使用 Matrix 探索二期與 Matrix 天衡三期的標準範圍清單及版路驗證；探索七期／十三期、天衡十三期、完整範圍及其他 Matrix 權限仍依既有規則。
@@ -202,17 +202,17 @@ The production build stamps `push-service-worker.js` with a fingerprint derived 
 - No existing application-page geometry, shortcuts, provider scopes or Supabase
   allowlist changes.
 
-## First-visit registration guide and LINE trials — 2026-09-08
+## First-visit consent and LINE trials — updated 2026-09-26
 
-- After the existing startup screen, first-time visitors to the origin root see
-  the canonical `AppDialog` explaining free registration through `我的` →
-  `LINE 登入`, Pro algorithms, and the home-page `Matrix Core` exploration entry.
-- `免費註冊` opens the existing profile page. `知道了` and Escape dismiss the
-  guide. The shared modal retains its existing focus, keyboard and visual rules.
-- The `matrix-first-visit-guide-seen` browser key suppresses future displays on
-  the same browser. Storage failure falls back to the current mount's memory;
-  React StrictMode must not enqueue duplicate dialogs. OAuth callbacks and
-  non-root pages do not open this guide.
+- After the existing startup screen, visitors to the origin root who have not
+  accepted `matrix-first-visit-consent-v1` see the canonical `AppDialog` with the
+  user-provided `【使用者授權條款與免責聲明】` text, independent of purchase/free switches.
+- The only action is `同意條款並進入系統`. Escape and outside clicks do not
+  dismiss it; the underlying page is blurred by the existing overlay. Record
+  acceptance in browser storage only after the action. The old guide-seen key
+  does not count as consent. Storage failure falls back to the current mount's
+  memory; React StrictMode must not enqueue duplicate dialogs. OAuth callbacks
+  and non-root pages do not open the consent dialog.
 - A new member with a verified LINE identity receives Matrix Explore,
   Tianheng and Tianshu thirteen-period plus full-range access for 48 elapsed
   hours, starting at server-side member creation. Repeated login does not

@@ -2,159 +2,71 @@
 import '@testing-library/jest-dom/vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { StrictMode, useState } from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import Prototype from '../Prototype';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { AppDialogProvider } from '../dialog/AppDialog';
-import { MobileDeviceProvider } from '../mobile/Device';
-import { KeyboardProvider } from '../mobile/Keyboard';
-import type { ScreenId } from '../features/navigation';
-import { FirstVisitGuide } from './FirstVisitGuide';
-import { publishMemberSessionReady } from '../auth/member-session-store';
-
-vi.mock('../useLatestLotteryDraw', () => ({ useLatestLotteryDraw: () => ({ data: null }) }));
-vi.mock('../matrix-status-api', () => ({ fetchMatrixStatus: async () => { throw new Error('offline status'); } }));
-const subscriptionPurchaseVisibleMock = vi.hoisted(() => vi.fn(() => true));
-vi.mock('../subscription-purchase-visibility', () => ({ useSubscriptionPurchaseVisible: subscriptionPurchaseVisibleMock }));
-
-vi.stubGlobal('ResizeObserver', class {
-  observe() {}
-  disconnect() {}
-  unobserve() {}
-});
+import { FIRST_VISIT_GUIDE_SEEN_KEY, FirstVisitGuide } from './FirstVisitGuide';
 
 beforeEach(() => {
-  subscriptionPurchaseVisibleMock.mockReturnValue(true);
-  publishMemberSessionReady(null);
-  window.localStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, '', '/');
-  vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Test network unavailable')));
 });
 
-afterEach(() => vi.restoreAllMocks());
-
-function mountHomepage() {
-  return render(
-    <AppDialogProvider>
-      <MobileDeviceProvider>
-        <KeyboardProvider><Prototype /></KeyboardProvider>
-      </MobileDeviceProvider>
-    </AppDialogProvider>,
-  );
-}
-
-function GuideHarness({ initialScreen = 'home' }: { initialScreen?: ScreenId }) {
-  const [currentScreen, setScreen] = useState<ScreenId>(initialScreen);
+function GuideHarness() {
+  const [screenName, setScreen] = useState('home');
   return <>
-    <FirstVisitGuide enabled={currentScreen === 'home'} onNavigate={setScreen} />
+    <FirstVisitGuide enabled={screenName === 'home'} onNavigate={setScreen} />
     <button onClick={() => setScreen('profile')}>我的</button>
     <button onClick={() => setScreen('home')}>首頁</button>
-    <output aria-label="目前頁面">{currentScreen}</output>
+    <output aria-label="目前頁面">{screenName}</output>
   </>;
 }
 
-describe('首次進站引導', () => {
-  it('首次首頁顯示版路分析工具文案與登入、探索入口，按免費註冊後進入既有會員頁', async () => {
-    mountHomepage();
-
-    const guide = await screen.findByRole('dialog', { name: '真正的「版路分析」工具' });
-    expect(guide).toHaveTextContent('點擊下方「我的」，選擇使用 LINE 或 Google 登入。');
-    expect(guide).toHaveTextContent('Matrix Core');
-    expect(guide).toHaveTextContent('即可開始探索各種類型的版路。');
-    expect(guide).not.toHaveTextContent('新註冊 LINE 會員');
-    expect(guide).not.toHaveTextContent('天衍 2 天');
-    expect(guide).not.toHaveTextContent('天工 1 天');
-
-    fireEvent.click(screen.getByRole('button', { name: '免費註冊' }));
-
-    expect(await screen.findByRole('heading', { name: '會員相關' })).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(await screen.findByRole('button', { name: 'LINE 登入' })).toBeInTheDocument();
-    expect(await screen.findByRole('button', { name: 'Google 登入' })).toBeInTheDocument();
-  });
-
-  it('替代文案只說明 LINE 新會員 48 小時探索、天衡、天樞十三期與完整範圍', async () => {
-    subscriptionPurchaseVisibleMock.mockReturnValue(false);
+describe('首次開啟授權條款', () => {
+  it('逐段顯示指定原文，只有同意按鈕', async () => {
     render(<AppDialogProvider><GuideHarness /></AppDialogProvider>);
-
-    const guide = await screen.findByRole('dialog', { name: '使用教學' });
-    expect(guide).toHaveTextContent('新註冊 LINE 會員可於註冊後 48 小時內使用 Matrix 探索、天衡、天樞十三期及完整範圍。');
-    expect(guide).not.toHaveTextContent('天衍 2 天');
-    expect(guide).not.toHaveTextContent('天工 1 天');
+    const dialog = await screen.findByRole('dialog', { name: '【使用者授權條款與免責聲明】' });
+    const paragraphs = dialog.querySelectorAll('.first-visit-consent-paragraph');
+    expect([...paragraphs].map(paragraph => paragraph.textContent)).toEqual([
+      '歡迎使用 Matrix 數據分析系統。',
+      '本系統是一款專為數字愛好者設計的「歷史規律統計與機率推演工具」。本系統所呈現之所有數據、歷史走勢及運算結果，均基於公開之歷史大數據進行邏輯排列，僅供統計學術研究與數字規律探討參考，不代表任何形式的預測、不保證中獎，亦不提供任何明牌或獲利承諾。',
+      '本系統未與任何官方或民間彩券發行機構、博弈平台有所關聯，亦不提供任何線上投注、賭博或代購服務。',
+      '進入系統前，請確認您已閱讀並同意本系統之《隱私權政策》，並承諾將本工具用於合法之數據研究用途。',
+    ]);
+    expect(screen.getByRole('button', { name: '同意條款並進入系統' })).toBeInTheDocument();
+    expect(dialog.querySelectorAll('button')).toHaveLength(1);
+    expect(localStorage.getItem(FIRST_VISIT_GUIDE_SEEN_KEY)).toBeNull();
   });
 
-  it('知道了僅關閉視窗，首頁 Matrix Core 仍可進入探索', async () => {
-    mountHomepage();
-    fireEvent.click(await screen.findByRole('button', { name: '知道了' }));
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(screen.getByTestId('lottery-screen')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Matrix Core' }));
-    expect(await screen.findByRole('heading', { name: '探索設定' })).toBeInTheDocument();
-  });
-
-  it('關閉後返回首頁及重新載入都不再出現引導', async () => {
-    const first = render(<AppDialogProvider><GuideHarness /></AppDialogProvider>);
-    fireEvent.click(await screen.findByRole('button', { name: '知道了' }));
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: '我的' }));
-    fireEvent.click(screen.getByRole('button', { name: '首頁' }));
-    await act(async () => {});
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    first.unmount();
-
+  it('Escape 與點擊卡片外不能視為同意，按同意後才記錄並進入首頁', async () => {
     render(<AppDialogProvider><GuideHarness /></AppDialogProvider>);
-    await act(async () => {});
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  });
-
-  it('Escape 關閉後仍在首頁且恢復原焦點', async () => {
-    render(<AppDialogProvider><GuideHarness /></AppDialogProvider>);
-    const trigger = screen.getByRole('button', { name: '我的' });
-    trigger.focus();
-    await screen.findByRole('dialog', { name: '真正的「版路分析」工具' });
+    const dialog = await screen.findByRole('dialog', { name: '【使用者授權條款與免責聲明】' });
     fireEvent.keyDown(document, { key: 'Escape' });
+    fireEvent.pointerDown(document.querySelector('.app-dialog-overlay')!);
+    expect(dialog).toBeInTheDocument();
+    expect(localStorage.getItem(FIRST_VISIT_GUIDE_SEEN_KEY)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '同意條款並進入系統' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(localStorage.getItem(FIRST_VISIT_GUIDE_SEEN_KEY)).toBe('1');
     expect(screen.getByRole('status', { name: '目前頁面' })).toHaveTextContent('home');
-    expect(document.activeElement).toBe(trigger);
   });
 
-  it.each([
-    ['知道了', 'home'],
-    ['免費註冊', 'profile'],
-  ])('StrictMode 下按 %s 一次即完成動作且沒有第二個引導', async (label, expectedScreen) => {
-    render(<StrictMode><AppDialogProvider><GuideHarness /></AppDialogProvider></StrictMode>);
-    fireEvent.click(await screen.findByRole('button', { name: label }));
+  it('同意後重新載入不重複，舊版已讀紀錄仍顯示新版條款', async () => {
+    localStorage.setItem('matrix-first-visit-guide-seen', '1');
+    const first = render(<StrictMode><AppDialogProvider><GuideHarness /></AppDialogProvider></StrictMode>);
+    expect(await screen.findByRole('dialog', { name: '【使用者授權條款與免責聲明】' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '同意條款並進入系統' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(screen.getByRole('status', { name: '目前頁面' })).toHaveTextContent(expectedScreen);
-    fireEvent.click(screen.getByRole('button', { name: '首頁' }));
+    first.unmount();
+    render(<AppDialogProvider><GuideHarness /></AppDialogProvider>);
     await act(async () => {});
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('其他功能頁不顯示或消耗首訪引導，回首頁才顯示', async () => {
-    render(<AppDialogProvider><GuideHarness initialScreen="profile" /></AppDialogProvider>);
-    await act(async () => {});
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '首頁' }));
-    expect(await screen.findByRole('dialog', { name: '真正的「版路分析」工具' })).toBeInTheDocument();
-  });
-
-  it.each(['/?code=line-callback', '/#access_token=line-callback', '/explore-result-preview'])('不在登入回傳或其他網站路徑 %s 開啟引導', async (path) => {
+  it.each(['/explore-result-preview', '/?code=line-callback'])('其他路徑 %s 不顯示條款', async path => {
     window.history.replaceState({}, '', path);
     render(<AppDialogProvider><GuideHarness /></AppDialogProvider>);
     await act(async () => {});
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(window.localStorage.length).toBe(0);
-  });
-
-  it('瀏覽器儲存無法使用時仍能關閉，當次回首頁不會重複顯示', async () => {
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new DOMException('Unavailable', 'SecurityError'); });
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new DOMException('Unavailable', 'SecurityError'); });
-    render(<AppDialogProvider><GuideHarness /></AppDialogProvider>);
-    fireEvent.click(await screen.findByRole('button', { name: '知道了' }));
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: '我的' }));
-    fireEvent.click(screen.getByRole('button', { name: '首頁' }));
-    await act(async () => {});
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(localStorage.getItem(FIRST_VISIT_GUIDE_SEEN_KEY)).toBeNull();
   });
 });

@@ -122,43 +122,42 @@
   outline-offset: 2px;
 }
 
-.app-dialog-content[data-variant="registration-guide"] {
-  width: 268px;
-  grid-template-columns: 28px minmax(0, 1fr);
-  align-items: center;
-  gap: 10px 8px;
-  padding: 12px;
+.app-dialog-content[data-variant="first-visit-consent"] {
+  width: 360px;
+  max-height: min(85dvh, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px));
+  padding: 18px;
   text-align: left;
 }
 
-.app-dialog-content[data-variant="registration-guide"] .app-dialog-icon {
-  width: 28px;
-  border-width: 1px;
-  box-shadow: none;
-  font-size: 18px;
+.app-dialog-content[data-variant="first-visit-consent"] .app-dialog-icon {
+  display: none;
 }
 
-.app-dialog-content[data-variant="registration-guide"] .app-dialog-title {
-  font-size: 15px;
-  line-height: 1.4;
+.app-dialog-content[data-variant="first-visit-consent"] .app-dialog-title {
+  font-size: 16px;
+  line-height: 1.5;
+  text-align: center;
 }
 
-.app-dialog-content[data-variant="registration-guide"] .app-dialog-description {
-  grid-column: 1 / -1;
-  margin: 0;
-  color: var(--lottery-text-secondary);
-  font-size: 12px;
-  line-height: 1.6;
+.app-dialog-content[data-variant="first-visit-consent"] .app-dialog-description {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.65;
+  text-align: left;
 }
 
-.app-dialog-content[data-variant="registration-guide"] .app-dialog-actions {
-  grid-column: 1 / -1;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: 0;
+.first-visit-consent-paragraph {
+  display: block;
+  margin-bottom: 12px;
 }
 
-.app-dialog-content[data-variant="registration-guide"] .app-dialog-button {
-  font-size: 14px;
+.first-visit-consent-paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.app-dialog-content[data-variant="first-visit-consent"] .app-dialog-actions {
+  width: 100%;
+  margin-top: 8px;
 }
 
 @media (max-width: 350px) {

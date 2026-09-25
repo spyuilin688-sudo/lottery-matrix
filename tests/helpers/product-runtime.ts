@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test';
 
 /** Layout/interaction scenarios start after the separately tested first-visit guide. */
 export async function prepareReturningVisitor(page: Page) {
-  await page.addInitScript(() => localStorage.setItem('matrix-first-visit-guide-seen', '1'));
+  await page.addInitScript(() => localStorage.setItem('matrix-first-visit-consent-v1', '1'));
 }
 
 /** Synthetic LINE identity stays inside this browser; all provider requests are intercepted. */

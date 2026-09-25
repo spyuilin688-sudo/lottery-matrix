@@ -1,21 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { hasLineOAuthCallback } from '../auth/line-pwa-return';
 import { useAppDialog } from '../dialog/AppDialog';
-import { SubscriptionCopy } from '../subscription-copy';
-import { usePermissionSettings } from '../permission-settings';
-import { useSubscriptionPurchaseVisible } from '../subscription-purchase-visibility';
 import type { Navigate } from '../features/navigation';
 
-export const FIRST_VISIT_GUIDE_SEEN_KEY = 'matrix-first-visit-guide-seen';
+export const FIRST_VISIT_GUIDE_SEEN_KEY = 'matrix-first-visit-consent-v1';
 
-export function FirstVisitGuide({ enabled, onNavigate }: { enabled: boolean; onNavigate: Navigate }) {
+export function FirstVisitGuide({ enabled }: { enabled: boolean; onNavigate: Navigate }) {
   const { confirm } = useAppDialog();
-  const subscriptionPurchaseVisible = useSubscriptionPurchaseVisible();
-  const registeredMemberFreeAccess = usePermissionSettings()?.registeredMemberFreeAccess === true;
   const shown = useRef(false);
-  const navigate = useRef(onNavigate);
-
-  useEffect(() => { navigate.current = onNavigate; }, [onNavigate]);
 
   useEffect(() => {
     if (!enabled || shown.current || window.location.pathname !== '/' || hasLineOAuthCallback()) return;
@@ -30,36 +22,26 @@ export function FirstVisitGuide({ enabled, onNavigate }: { enabled: boolean; onN
         // The in-memory guard still prevents repeats when storage is unavailable.
       }
       shown.current = true;
-      try { window.localStorage.setItem(FIRST_VISIT_GUIDE_SEEN_KEY, '1'); } catch { /* Optional persistence. */ }
 
       void confirm({
-        variant: 'registration-guide',
-        title: registeredMemberFreeAccess
-          ? '免費註冊會員'
-          : <SubscriptionCopy formal="真正的「版路分析」工具" alternative="使用教學" />,
-        description: registeredMemberFreeAccess
-          ? '使用 LINE 或 Google 登入後目前可免費使用 Matrix 探索十三期與完整範圍、天衡、天樞、天衍及天工；Matrix 狀態進階資訊仍依訂閱權限開放。'
-          : <SubscriptionCopy
-              formal={<>
-                點擊下方「我的」，選擇使用 LINE 或 Google 登入。
-                <br />
-                -
-                <br />
-                點擊首頁下方的 Matrix Core，即可開始探索各種類型的版路。
-              </>}
-              alternative="Matrix 探索二期、天衡三期基本查詢可直接使用；新註冊 LINE 會員可於註冊後 48 小時內使用 Matrix 探索、天衡、天樞十三期及完整範圍。"
-            />,
-        confirmLabel: registeredMemberFreeAccess
-          ? '免費註冊'
-          : <SubscriptionCopy formal="免費註冊" alternative="開始使用" />,
-        cancelLabel: '知道了',
+        variant: 'first-visit-consent',
+        title: '【使用者授權條款與免責聲明】',
+        description: <>
+          <span className="first-visit-consent-paragraph">歡迎使用 Matrix 數據分析系統。</span>
+          <span className="first-visit-consent-paragraph">本系統是一款專為數字愛好者設計的「歷史規律統計與機率推演工具」。本系統所呈現之所有數據、歷史走勢及運算結果，均基於公開之歷史大數據進行邏輯排列，僅供統計學術研究與數字規律探討參考，不代表任何形式的預測、不保證中獎，亦不提供任何明牌或獲利承諾。</span>
+          <span className="first-visit-consent-paragraph">本系統未與任何官方或民間彩券發行機構、博弈平台有所關聯，亦不提供任何線上投注、賭博或代購服務。</span>
+          <span className="first-visit-consent-paragraph">進入系統前，請確認您已閱讀並同意本系統之《隱私權政策》，並承諾將本工具用於合法之數據研究用途。</span>
+        </>,
+        confirmLabel: '同意條款並進入系統',
       }).then((confirmed) => {
-        if (active && confirmed && (subscriptionPurchaseVisible || registeredMemberFreeAccess)) navigate.current('profile');
+        if (active && confirmed) {
+          try { window.localStorage.setItem(FIRST_VISIT_GUIDE_SEEN_KEY, '1'); } catch { /* Optional persistence. */ }
+        }
       });
     });
 
     return () => { active = false; };
-  }, [confirm, enabled, registeredMemberFreeAccess, subscriptionPurchaseVisible]);
+  }, [confirm, enabled]);
 
   return null;
 }
