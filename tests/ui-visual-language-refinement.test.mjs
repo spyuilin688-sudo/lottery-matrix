@@ -109,7 +109,8 @@ test("approved A+B membership cards separate left-aligned plan and expiry detail
   assert.match(memberSource, /<rect x="800" y="534" width="39" height="196" fill="black" \/>/);
   assert.match(memberSource, /<rect x="86" y="522" width="222" height="214" fill="black" \/>/);
   assert.doesNotMatch(memberSource, /informationClipId|subscription-information-art/);
-  assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content", "grid-template-columns"), "minmax(0, 2fr) minmax(0, 3fr)");
+  assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content", "grid-template-columns"), "minmax(0, 9fr) minmax(0, 11fr)");
+  assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-stage", "grid-template-columns"), "calc(17.568cqw + 10px) minmax(0, 1fr)");
   assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content", "text-align"), "left");
   assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-emblem", "width"), "17.568cqw");
   assert.doesNotMatch(canonicalFeatureCss, /grid-template-columns:\s*29\.4cqw\s+29cqw/);
