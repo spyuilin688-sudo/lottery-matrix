@@ -250,7 +250,8 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
     }).then((profile) => {
       if (active && memberUserIdRef.current === userId) setMemberProfile(profile);
     }).catch(() => {
-      if (active) setMemberProfile(null);
+      // Preserve the last successfully loaded profile for the same signed-in
+      // member. Session changes clear memberProfile separately above.
     });
     return () => { active = false; };
   }, [authState, memberUserId]);
