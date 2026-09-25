@@ -6,7 +6,7 @@ it('restricts subscription snapshots to the server and preserves unknown billing
   const db = new PGlite();
   try {
     await db.exec('create role anon; create role authenticated; create role service_role bypassrls;');
-    await db.exec(readFileSync(new URL('../../../supabase/migrations/20260925203832_admin_architecture_subscriptions.sql', import.meta.url), 'utf8'));
+    await db.exec(readFileSync(new URL('../../../supabase/migrations/20260925204803_admin_architecture_subscriptions.sql', import.meta.url), 'utf8'));
     await db.exec('set role service_role');
     const rows = await db.query('select * from public.admin_architecture_subscriptions');
     expect(rows.rows).toHaveLength(4);
