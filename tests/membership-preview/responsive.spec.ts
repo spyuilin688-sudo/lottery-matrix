@@ -77,6 +77,7 @@ for (const { state, planName, tier, description: expectedDescription } of member
       expect(Math.abs(emblemBox!.width - (width - 12) * .17568)).toBeLessThanOrEqual(0.5);
       await expect(expiry).toHaveCSS("border-left-width", "1px");
       await expect(expiry).toHaveCSS("border-left-style", "solid");
+      await expect(expiry).toHaveCSS("padding-left", "14px");
       await expect(plan).toHaveCSS("text-align", "left");
       await expect(expiry).toHaveCSS("text-align", "left");
       const stage = subscriptionCard.locator(".subscription-status-stage");
@@ -84,6 +85,8 @@ for (const { state, planName, tier, description: expectedDescription } of member
       await expect(stage).toHaveCSS("padding-right", "8px");
       const stageBox = (await stage.boundingBox())!;
       expect(Math.abs(stageBox.x - 16)).toBeLessThanOrEqual(0.5);
+      const titleBox = (await subscriptionCard.locator(".section-title").boundingBox())!;
+      expect(Math.abs(stageBox.y - titleBox.y - titleBox.height - 2)).toBeLessThanOrEqual(0.5);
       expect(Math.abs(stageBox.x + stageBox.width - (width - 16))).toBeLessThanOrEqual(0.5);
       expect(Math.abs(emblemBox!.x - stageBox.x - 14)).toBeLessThanOrEqual(0.5);
       const contentBox = (await subscriptionCard.locator(".subscription-status-content").boundingBox())!;
@@ -105,6 +108,7 @@ for (const { state, planName, tier, description: expectedDescription } of member
         };
       });
       expect(textBounds.expiryLeft - textBounds.planRight).toBeGreaterThanOrEqual(10);
+      expect(Math.abs(textBounds.expiryLeft - expiryBox!.x - 15)).toBeLessThanOrEqual(0.5);
 
       const menus = profile.locator('.profile-menu');
       await expect(menus).toHaveCount(5);
@@ -311,7 +315,7 @@ for (const width of [320, 430]) {
     expect(cardBox).not.toBeNull();
     expect(titleBox).not.toBeNull();
     expect(stageBox).not.toBeNull();
-    expect(Math.abs(stageBox!.y - (titleBox!.y + titleBox!.height) - 8)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(stageBox!.y - (titleBox!.y + titleBox!.height) - 2)).toBeLessThanOrEqual(0.5);
 
     const descriptionBox = await description.evaluate(measureDescription);
     expect(descriptionBox.top).toBeGreaterThanOrEqual(cardBox!.y - 0.5);
