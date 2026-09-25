@@ -83,7 +83,7 @@ for (const { state, planName, tier, description: expectedDescription } of member
       expect(divider.width).toBe("1px");
       expect(Math.abs(divider.x - (expiryBox!.x - 14))).toBeLessThanOrEqual(0.5);
       expect(Math.abs(divider.height - expiryBox!.height)).toBeLessThanOrEqual(0.5);
-      await expect(expiry).toHaveCSS("padding-left", "14px");
+      await expect(expiry).toHaveCSS("padding-left", "15px");
       await expect(plan).toHaveCSS("text-align", "left");
       await expect(expiry).toHaveCSS("text-align", "left");
       const stage = subscriptionCard.locator(".subscription-status-stage");

@@ -1196,7 +1196,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   position: relative;
   align-self: stretch;
   margin-top: 0;
-  padding: 0 0 0 14px;
+  padding: 0 0 0 15px;
   text-align: left;
 }
 .subscription-status-content .subscription-expiry::before {
