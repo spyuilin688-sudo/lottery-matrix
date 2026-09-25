@@ -57,8 +57,11 @@ for (const { state, planName, tier, description: expectedDescription } of member
 
       const subscriptionCard = profile.locator(".subscription-status-card");
       await expect(subscriptionCard).toHaveAttribute("data-plan-tier", tier);
+      await expect(profile.locator(".subscription-entry-art-mask")).toHaveCount(0);
       await expect(subscriptionCard.locator(".subscription-status-stage")).toHaveCSS("border-style", "none");
       await expect(subscriptionCard.locator(".subscription-status-stage")).toHaveCSS("box-shadow", "none");
+      await expect(subscriptionCard.locator(".subscription-status-stage")).toHaveCSS("border-radius", "0px");
+      await expect(subscriptionCard.locator(".subscription-status-stage")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
       const plan = subscriptionCard.locator(".subscription-plan");
       const expiry = subscriptionCard.locator(".subscription-expiry");
       const emblem = subscriptionCard.locator(".subscription-status-emblem");
@@ -67,8 +70,11 @@ for (const { state, planName, tier, description: expectedDescription } of member
       expect(expiryBox).not.toBeNull();
       expect(emblemBox).not.toBeNull();
       expect(expiryBox!.y).toBeGreaterThan(planBox!.y + planBox!.height);
-      expect(Math.abs(expiryBox!.x - planBox!.x)).toBeLessThanOrEqual(0.5);
+      // A: the lower row uses the full content width, aligned with the crown.
+      expect(Math.abs(expiryBox!.x - emblemBox!.x)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(expiryBox!.x + expiryBox!.width - planBox!.x - planBox!.width)).toBeLessThanOrEqual(0.5);
       expect(emblemBox!.x + emblemBox!.width).toBeLessThanOrEqual(planBox!.x + 0.5);
+      expect(Math.abs(emblemBox!.y + emblemBox!.height / 2 - planBox!.y - planBox!.height / 2)).toBeLessThanOrEqual(0.5);
 
       const menus = profile.locator('.profile-menu');
       await expect(menus).toHaveCount(5);
@@ -238,6 +244,7 @@ for (const width of [320, 430]) {
     await expect(card.locator(".subscription-plan strong")).toHaveText("終身方案");
     await expect(description).toHaveText("Matrix Pro 權限");
     await expect(card.getByRole("button", { name: "訂閱方案／收費標準" })).toHaveCount(0);
+    await expect(page.locator(".membership-reference-art .subscription-entry-art-mask")).toHaveCount(1);
     await page.evaluate(() => document.fonts.ready);
 
     const cardBox = await card.boundingBox();

@@ -141,6 +141,7 @@ describe("ProfilePage member API", () => {
     expect(document.querySelector(".subscription-status-card")).toHaveAttribute("data-plan-tier", "yearly");
     const artwork = document.querySelector(".membership-reference-art")!;
     expect(artwork).toHaveAttribute("data-subscription-visible", "true");
+    expect(artwork.querySelector(".subscription-entry-art-mask")).toBeInTheDocument();
     const [, artworkTop, , artworkHeight] = artwork.querySelector("svg")!.getAttribute("viewBox")!.split(" ").map(Number);
     // The existing frame remains visible; the old crown is no longer repainted.
     expect(artworkTop).toBeLessThan(387);
@@ -765,6 +766,7 @@ describe("ProfilePage member API", () => {
     render(<ProfilePage onNavigate={vi.fn()} />);
 
     expect(await screen.findByText("免費會員")).toBeInTheDocument();
+    expect(document.querySelector(".subscription-entry-art-mask")).not.toBeInTheDocument();
     expect(document.querySelector(".subscription-status-card")).toHaveAttribute("data-plan-tier", "free");
     expect(screen.getByText("核心功能體驗")).toBeInTheDocument();
     expect(screen.queryByText("享有所有 Matrix Pro 功能")).not.toBeInTheDocument();
@@ -826,7 +828,7 @@ describe("ProfilePage member API", () => {
 
     expect(await screen.findByText(planName, { selector: ".subscription-plan strong" })).toBeInTheDocument();
     expect(document.querySelector(".subscription-status-card")).toHaveAttribute("data-plan-tier", tier);
-    expect(document.querySelector(".subscription-status-stage > .subscription-status-emblem[aria-hidden='true']")).not.toBeNull();
+    expect(document.querySelector(".subscription-status-content > .subscription-status-emblem[aria-hidden='true']")).not.toBeNull();
     expect(document.querySelector(".subscription-status-stage > .subscription-status-content > .subscription-plan + .subscription-expiry")).not.toBeNull();
   });
 
