@@ -102,12 +102,21 @@ test("guide categories scroll horizontally and status settings stays in the page
   assert.doesNotMatch(featureSource, /matrix-status-settings-entry/);
 });
 
-test("approved A+B membership cards keep the expiry divider with one style owner", () => {
+test("approved A+B membership cards remove the divider and stack plan above expiry", () => {
   assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content .subscription-expiry", "border"), "0");
   assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content .subscription-expiry", "border-left"), "");
   const memberSource = readFileSync(new URL("../src/features/MemberPages.tsx", import.meta.url), "utf8");
-  assert.match(memberSource, /<clipPath id=\{informationClipId\}[^>]*>[\s\S]*?<rect x="800" y="534" width="39" height="196" \/>[\s\S]*?<\/clipPath>/);
+  const informationClip = memberSource.match(/<clipPath id=\{informationClipId\}[^>]*>([\s\S]*?)<\/clipPath>/)?.[1] ?? "";
+  assert.match(memberSource, /<rect x="800" y="534" width="39" height="196" fill="black" \/>/);
+  assert.match(informationClip, /<rect x="86" y="522" width="222" height="214" \/>/);
+  assert.doesNotMatch(informationClip, /x="800"/);
   assert.match(memberSource, /<svg className="subscription-information-art"[^>]*>\s*<image[^>]*clipPath=\{`url\(#\$\{informationClipId\}\)`\}/);
+  assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content", "grid-template-columns"), "minmax(0, 1fr)");
+  assert.doesNotMatch(canonicalFeatureCss, /grid-template-columns:\s*29\.4cqw\s+29cqw/);
+  for (const tier of ["free", "monthly", "quarterly", "yearly", "lifetime"]) {
+    assert.match(canonicalFeatureCss, new RegExp(`\\.subscription-status-card\\[data-plan-tier="${tier}"\\]\\s+\\.subscription-status-stage\\s*\\{[^}]*background:`));
+    assert.match(canonicalFeatureCss, new RegExp(`\\[data-plan-tier="${tier}"\\]\\s+\\.subscription-status-emblem\\s*\\{[^}]*background-image:`));
+  }
   assert.equal(ruleBodies(featureCss, ".subscription-status-content > div:last-child").length, 0);
 });
 

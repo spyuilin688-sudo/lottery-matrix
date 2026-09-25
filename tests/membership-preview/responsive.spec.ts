@@ -1,10 +1,13 @@
 import { expect, test } from "@playwright/test";
 
 const membershipWidths = [320, 360, 375, 390, 412, 430];
-const paidScenarios = [
-  { state: "year", planName: "年費方案" },
-  { state: "long", planName: "年費方案" },
-  { state: "lifetime", planName: "終身方案" },
+const membershipScenarios = [
+  { state: "free", planName: "免費會員", tier: "free", description: "核心功能體驗" },
+  { state: "monthly", planName: "月費方案", tier: "monthly", description: "Matrix Pro 權限" },
+  { state: "quarterly", planName: "季費方案", tier: "quarterly", description: "Matrix Pro 權限" },
+  { state: "year", planName: "年費方案", tier: "yearly", description: "Matrix Pro 權限" },
+  { state: "long", planName: "年費方案", tier: "yearly", description: "Matrix Pro 權限" },
+  { state: "lifetime", planName: "終身方案", tier: "lifetime", description: "Matrix Pro 權限" },
 ];
 
 const measureDescription = (node: Element) => {
@@ -23,7 +26,22 @@ const measureDescription = (node: Element) => {
   };
 };
 
-for (const { state, planName } of paidScenarios) {
+test("membership preview loads the approved A+B artwork", async ({ page }) => {
+  await page.goto("/qa/?inner=1&state=year");
+  const artworkLoaded = await page.evaluate(async () => {
+    const artwork = new Image();
+    artwork.src = "/assets/lottery/membership/membership-ab-reference.png";
+    try {
+      await artwork.decode();
+      return artwork.naturalWidth === 1563 && artwork.naturalHeight === 1006;
+    } catch {
+      return false;
+    }
+  });
+  expect(artworkLoaded).toBe(true);
+});
+
+for (const { state, planName, tier, description: expectedDescription } of membershipScenarios) {
   for (const width of membershipWidths) {
     test(`profile ${state} membership cards keep paid details clear of the action at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
@@ -34,8 +52,23 @@ for (const { state, planName } of paidScenarios) {
       const description = profile.locator(".subscription-plan p");
       // Measure the settled paid state, never the initially empty loading copy.
       await expect(profile.locator(".subscription-plan strong")).toHaveText(planName);
-      await expect(description).toHaveText("Matrix Pro 權限");
+      await expect(description).toHaveText(expectedDescription);
       await page.evaluate(() => document.fonts.ready);
+
+      const subscriptionCard = profile.locator(".subscription-status-card");
+      await expect(subscriptionCard).toHaveAttribute("data-plan-tier", tier);
+      await expect(subscriptionCard.locator(".subscription-status-stage")).toHaveCSS("border-style", "none");
+      await expect(subscriptionCard.locator(".subscription-status-stage")).toHaveCSS("box-shadow", "none");
+      const plan = subscriptionCard.locator(".subscription-plan");
+      const expiry = subscriptionCard.locator(".subscription-expiry");
+      const emblem = subscriptionCard.locator(".subscription-status-emblem");
+      const [planBox, expiryBox, emblemBox] = await Promise.all([plan.boundingBox(), expiry.boundingBox(), emblem.boundingBox()]);
+      expect(planBox).not.toBeNull();
+      expect(expiryBox).not.toBeNull();
+      expect(emblemBox).not.toBeNull();
+      expect(expiryBox!.y).toBeGreaterThan(planBox!.y + planBox!.height);
+      expect(Math.abs(expiryBox!.x - planBox!.x)).toBeLessThanOrEqual(0.5);
+      expect(emblemBox!.x + emblemBox!.width).toBeLessThanOrEqual(planBox!.x + 0.5);
 
       const menus = profile.locator('.profile-menu');
       await expect(menus).toHaveCount(5);
@@ -106,7 +139,12 @@ for (const { state, planName } of paidScenarios) {
       const descriptionBox = await description.evaluate(measureDescription);
       const entryBox = await page.getByRole("button", { name: "訂閱方案／收費標準" }).boundingBox();
       expect(entryBox).not.toBeNull();
-      expect(descriptionBox.bottom + 8).toBeLessThanOrEqual(entryBox!.y + 0.5);
+      const contentLastLineBottom = await subscriptionCard.locator(".subscription-status-content").evaluate((content) => {
+        return Math.max(...[...content.querySelectorAll("span, strong, p")]
+          .filter((node) => node.textContent?.trim())
+          .map((node) => node.getBoundingClientRect().bottom));
+      });
+      expect(contentLastLineBottom + 8).toBeLessThanOrEqual(entryBox!.y + 0.5);
       expect(descriptionBox.top).toBeGreaterThanOrEqual(cardBoxes[1].top - 0.5);
       expect(descriptionBox.bottom).toBeLessThanOrEqual(cardBoxes[1].bottom + 0.5);
       expect(descriptionBox.left).toBeGreaterThanOrEqual(cardBoxes[1].left - 0.5);
@@ -114,6 +152,19 @@ for (const { state, planName } of paidScenarios) {
       expect(descriptionBox.scrollHeight).toBeLessThanOrEqual(descriptionBox.clientHeight + 1);
       expect(Math.abs(descriptionBox.clientHeight - descriptionBox.lineHeight)).toBeLessThanOrEqual(1);
       expect(entryBox!.y + entryBox!.height).toBeLessThanOrEqual(cardBoxes[1].bottom + 0.5);
+      for (const box of [planBox!, expiryBox!, emblemBox!, entryBox!]) {
+        expect(box.x).toBeGreaterThanOrEqual(cardBoxes[1].left - 0.5);
+        expect(box.x + box.width).toBeLessThanOrEqual(cardBoxes[1].right + 0.5);
+        expect(box.y).toBeGreaterThanOrEqual(cardBoxes[1].top - 0.5);
+        expect(box.y + box.height).toBeLessThanOrEqual(cardBoxes[1].bottom + 0.5);
+      }
+      for (const value of [plan.locator("strong"), expiry.locator("strong"), expiry.locator("p")]) {
+        if (!(await value.textContent())?.trim()) continue;
+        const textBox = await value.evaluate(measureDescription);
+        expect(textBox.left).toBeGreaterThanOrEqual(cardBoxes[1].left - 0.5);
+        expect(textBox.right).toBeLessThanOrEqual(cardBoxes[1].right + 0.5);
+        expect(textBox.scrollHeight).toBeLessThanOrEqual(textBox.clientHeight + 1);
+      }
       // Content determines the height. Bound spare space below the final action
       // to the frame inset instead of imposing a ratio that can clip paid details.
       expect(stackBox.bottom - (entryBox!.y + entryBox!.height)).toBeLessThanOrEqual(24);
@@ -133,6 +184,23 @@ for (const { state, planName } of paidScenarios) {
   }
 }
 
+test("five visual tiers use five distinct backgrounds and plan colors", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  const backgrounds = new Set<string>();
+  const colors = new Set<string>();
+  for (const { state, planName, tier } of membershipScenarios.filter(({ state }) => state !== "long")) {
+    await page.goto(`/qa/?inner=1&state=${state}`);
+    const card = page.locator(".subscription-status-card");
+    await expect(card.locator(".subscription-plan strong")).toHaveText(planName);
+    await expect(card).toHaveAttribute("data-plan-tier", tier);
+    const stage = card.locator(".subscription-status-stage");
+    backgrounds.add(`${await stage.evaluate((node) => getComputedStyle(node).backgroundImage)} ${await stage.evaluate((node) => getComputedStyle(node).backgroundColor)}`);
+    colors.add(await card.locator(".subscription-plan strong").evaluate((node) => getComputedStyle(node).color));
+  }
+  expect(backgrounds.size).toBe(5);
+  expect(colors.size).toBe(5);
+});
+
 for (const width of [320, 430]) {
   test(`profile lifetime details remain below the title with purchase hidden at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
@@ -147,11 +215,11 @@ for (const width of [320, 430]) {
 
     const cardBox = await card.boundingBox();
     const titleBox = await card.locator(".section-title").boundingBox();
-    const contentBox = await card.locator(".subscription-status-content").boundingBox();
+    const stageBox = await card.locator(".subscription-status-stage").boundingBox();
     expect(cardBox).not.toBeNull();
     expect(titleBox).not.toBeNull();
-    expect(contentBox).not.toBeNull();
-    expect(Math.abs(contentBox!.y - (titleBox!.y + titleBox!.height) - 8)).toBeLessThanOrEqual(0.5);
+    expect(stageBox).not.toBeNull();
+    expect(Math.abs(stageBox!.y - (titleBox!.y + titleBox!.height) - 8)).toBeLessThanOrEqual(0.5);
 
     const descriptionBox = await description.evaluate(measureDescription);
     expect(descriptionBox.top).toBeGreaterThanOrEqual(cardBox!.y - 0.5);

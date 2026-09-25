@@ -29,7 +29,7 @@ const client = {
       if (scenario === "profile-error") return { data: null, error: new Error("QA_PROFILE_UNAVAILABLE") };
       return { data: {
         lineUserId: "qa-line",
-        planName: scenario === "free" ? "免費會員" : isLifetime ? "終身方案" : "年費方案",
+        planName: scenario === "free" ? "免費會員" : isLifetime ? "終身方案" : scenario === "monthly" ? "月費方案" : scenario === "quarterly" ? "季費方案" : "年費方案",
         planExpiresAt: scenario === "free" ? null : "2027-10-29T00:00:00.000Z",
         isLifetime,
       }, error: null };

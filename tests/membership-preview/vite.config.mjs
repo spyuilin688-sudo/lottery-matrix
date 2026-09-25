@@ -6,8 +6,8 @@ const fixture = fileURLToPath(new URL(".", import.meta.url));
 const state = fileURLToPath(new URL("./state.ts", import.meta.url));
 export default defineConfig({
   root: fixture,
-  base: "/qa/",
-  publicDir: false,
+  base: "/",
+  publicDir: fileURLToPath(new URL("../../public", import.meta.url)),
   plugins: [
     {
       name: "membership-qa-service-boundaries",
