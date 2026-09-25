@@ -69,18 +69,23 @@ for (const { state, planName, tier, description: expectedDescription } of member
       expect(planBox).not.toBeNull();
       expect(expiryBox).not.toBeNull();
       expect(emblemBox).not.toBeNull();
-      // The crown stays left; the two natural-width text columns center in its right-hand area.
+      // The enlarged crown stays left; the divider sits in the 12px gap between left-aligned text groups.
       expect(Math.abs(expiryBox!.y - planBox!.y)).toBeLessThanOrEqual(0.5);
-      expect(Math.abs(expiryBox!.x - planBox!.x - planBox!.width - 12)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(expiryBox!.x - planBox!.x - planBox!.width - 6)).toBeLessThanOrEqual(0.5);
       expect(emblemBox!.x + emblemBox!.width).toBeLessThanOrEqual(planBox!.x);
       expect(Math.abs(emblemBox!.y + emblemBox!.height / 2 - planBox!.y - planBox!.height / 2)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(emblemBox!.width - (width - 12) * .1464)).toBeLessThanOrEqual(0.5);
+      await expect(expiry).toHaveCSS("border-left-width", "1px");
+      await expect(expiry).toHaveCSS("border-left-style", "solid");
+      await expect(plan).toHaveCSS("text-align", "left");
+      await expect(expiry).toHaveCSS("text-align", "left");
       const stage = subscriptionCard.locator(".subscription-status-stage");
-      await expect(stage).toHaveCSS("padding-left", "8px");
+      await expect(stage).toHaveCSS("padding-left", "14px");
       await expect(stage).toHaveCSS("padding-right", "8px");
       const stageBox = (await stage.boundingBox())!;
       expect(Math.abs(stageBox.x - 16)).toBeLessThanOrEqual(0.5);
       expect(Math.abs(stageBox.x + stageBox.width - (width - 16))).toBeLessThanOrEqual(0.5);
-      expect(Math.abs(emblemBox!.x - stageBox.x - 8)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(emblemBox!.x - stageBox.x - 14)).toBeLessThanOrEqual(0.5);
       const contentBox = (await subscriptionCard.locator(".subscription-status-content").boundingBox())!;
       expect(Math.abs(contentBox.x - emblemBox!.x - emblemBox!.width)).toBeLessThanOrEqual(0.5);
       expect(Math.abs(contentBox.x + contentBox.width - (stageBox.x + stageBox.width - 8))).toBeLessThanOrEqual(0.5);
