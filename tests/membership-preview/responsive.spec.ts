@@ -69,12 +69,12 @@ for (const { state, planName, tier, description: expectedDescription } of member
       expect(planBox).not.toBeNull();
       expect(expiryBox).not.toBeNull();
       expect(emblemBox).not.toBeNull();
-      // The enlarged crown stays left; the divider sits in the 12px gap between left-aligned text groups.
+      // The crown and the two text groups occupy separate portions of the status row.
       expect(Math.abs(expiryBox!.y - planBox!.y)).toBeLessThanOrEqual(0.5);
-      expect(Math.abs(expiryBox!.x - planBox!.x - planBox!.width - 6)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(expiryBox!.x - planBox!.x - planBox!.width)).toBeLessThanOrEqual(0.5);
       expect(emblemBox!.x + emblemBox!.width).toBeLessThanOrEqual(planBox!.x);
       expect(Math.abs(emblemBox!.y + emblemBox!.height / 2 - planBox!.y - planBox!.height / 2)).toBeLessThanOrEqual(0.5);
-      expect(Math.abs(emblemBox!.width - (width - 12) * .1464)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(emblemBox!.width - (width - 12) * .17568)).toBeLessThanOrEqual(0.5);
       await expect(expiry).toHaveCSS("border-left-width", "1px");
       await expect(expiry).toHaveCSS("border-left-style", "solid");
       await expect(plan).toHaveCSS("text-align", "left");
@@ -89,8 +89,8 @@ for (const { state, planName, tier, description: expectedDescription } of member
       const contentBox = (await subscriptionCard.locator(".subscription-status-content").boundingBox())!;
       expect(Math.abs(contentBox.x - emblemBox!.x - emblemBox!.width)).toBeLessThanOrEqual(0.5);
       expect(Math.abs(contentBox.x + contentBox.width - (stageBox.x + stageBox.width - 8))).toBeLessThanOrEqual(0.5);
-      const textGroupCenter = (planBox!.x + expiryBox!.x + expiryBox!.width) / 2;
-      expect(Math.abs(textGroupCenter - (contentBox.x + contentBox.width / 2))).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(planBox!.x - contentBox.x - 5)).toBeLessThanOrEqual(0.5);
+      expect(expiryBox!.height).toBeGreaterThanOrEqual(planBox!.height - 0.5);
       const textBounds = await subscriptionCard.evaluate((card) => {
         const bounds = (selector: string) => [...card.querySelectorAll(selector)]
           .filter((node) => node.textContent?.trim())
@@ -104,7 +104,8 @@ for (const { state, planName, tier, description: expectedDescription } of member
           expiryLeft: Math.min(...bounds(".subscription-expiry span, .subscription-expiry strong, .subscription-expiry p").map((box) => box.left)),
         };
       });
-      expect(Math.abs(textBounds.expiryLeft - textBounds.planRight - 12)).toBeLessThanOrEqual(0.5);
+      expect(textBounds.expiryLeft - textBounds.planRight).toBeGreaterThanOrEqual(10);
+      expect(textBounds.expiryLeft - textBounds.planRight).toBeLessThanOrEqual(48);
 
       const menus = profile.locator('.profile-menu');
       await expect(menus).toHaveCount(5);
@@ -220,6 +221,32 @@ for (const { state, planName, tier, description: expectedDescription } of member
     });
   }
 }
+
+test("lifetime status row matches the approved crown and two-column proportions at 344px", async ({ page }) => {
+  await page.setViewportSize({ width: 344, height: 768 });
+  await page.goto("/qa/?inner=1&state=lifetime");
+  const card = page.locator(".subscription-status-card");
+  await expect(card.locator(".subscription-plan strong")).toHaveText("終身方案");
+  await expect(card.locator(".subscription-expiry strong")).toHaveText("無到期日");
+  await page.evaluate(() => document.fonts.ready);
+
+  const stage = (await card.locator(".subscription-status-stage").boundingBox())!;
+  const crown = (await card.locator(".subscription-status-emblem").boundingBox())!;
+  const plan = (await card.locator(".subscription-plan").boundingBox())!;
+  const expiry = (await card.locator(".subscription-expiry").boundingBox())!;
+  const expiryTextLeft = await card.locator(".subscription-expiry span").evaluate((label) => {
+    const range = document.createRange();
+    range.selectNodeContents(label);
+    return range.getBoundingClientRect().left;
+  });
+  const proportion = (x: number) => (x - stage.x) / stage.width;
+
+  expect(Math.abs(proportion(plan.x) - .25)).toBeLessThanOrEqual(.02);
+  expect(Math.abs(proportion(expiry.x) - .54)).toBeLessThanOrEqual(.02);
+  expect(Math.abs(proportion(expiryTextLeft) - .575)).toBeLessThanOrEqual(.02);
+  expect(crown.width / stage.width).toBeGreaterThan(.18);
+  expect(Math.abs(expiry.height - plan.height)).toBeLessThanOrEqual(.5);
+});
 
 test("five visual tiers use five distinct backgrounds and plan colors", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 900 });
