@@ -70,11 +70,15 @@ for (const { state, planName, tier, description: expectedDescription } of member
       expect(expiryBox).not.toBeNull();
       expect(emblemBox).not.toBeNull();
       expect(expiryBox!.y).toBeGreaterThan(planBox!.y + planBox!.height);
-      // A: the lower row uses the full content width, aligned with the crown.
-      expect(Math.abs(expiryBox!.x - emblemBox!.x)).toBeLessThanOrEqual(0.5);
+      // Plan and expiry share one text column; the whole information group is centered.
+      expect(Math.abs(expiryBox!.x - planBox!.x)).toBeLessThanOrEqual(0.5);
       expect(Math.abs(expiryBox!.x + expiryBox!.width - planBox!.x - planBox!.width)).toBeLessThanOrEqual(0.5);
       expect(emblemBox!.x + emblemBox!.width).toBeLessThanOrEqual(planBox!.x + 0.5);
-      expect(Math.abs(emblemBox!.y + emblemBox!.height / 2 - planBox!.y - planBox!.height / 2)).toBeLessThanOrEqual(0.5);
+      const detailsCenterY = (planBox!.y + expiryBox!.y + expiryBox!.height) / 2;
+      expect(Math.abs(emblemBox!.y + emblemBox!.height / 2 - detailsCenterY)).toBeLessThanOrEqual(0.5);
+      const cardBox = await subscriptionCard.boundingBox();
+      const groupCenterX = (emblemBox!.x + expiryBox!.x + expiryBox!.width) / 2;
+      expect(Math.abs(groupCenterX - cardBox!.x - cardBox!.width / 2)).toBeLessThanOrEqual(0.5);
 
       const menus = profile.locator('.profile-menu');
       await expect(menus).toHaveCount(5);
