@@ -1,5 +1,7 @@
 {
   "imports": {
+    "../../../apps/admin/backend/architecture-overview": "../../../apps/admin/backend/architecture-overview.ts",
+    "../../../apps/admin/shared/architecture-overview": "../../../apps/admin/shared/architecture-overview.ts",
     "../../../apps/admin/shared/admin-client-ip": "../../../apps/admin/shared/admin-client-ip.ts",
     "../../../apps/admin/backend/admin-data": "../../../apps/admin/backend/admin-data.ts",
     "../../../apps/admin/backend/push-notifications": "../../../apps/admin/backend/push-notifications.ts",

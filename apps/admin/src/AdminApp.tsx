@@ -60,6 +60,7 @@ import { AdminTodos } from "./AdminTodos";
 import { PaymentReversalPanel, type PaymentRecord, type PaymentReversalStatus } from "./PaymentReversalPanel";
 import { PermissionSwitches } from "./PermissionSwitches";
 import { GrowthLineChart } from "./GrowthLineChart";
+import { ArchitectureOverview } from "./ArchitectureOverview";
 type Row = Record<string, unknown> & { id: string };
 type Dashboard = {
   todayVisitors: number | null;
@@ -107,6 +108,7 @@ const modules = [
   ["管理員權限", ShieldCheck],
   ["權限切換", ToggleLeft],
   ["系統設定", Settings],
+  ["架構總彙", Settings],
   ["啟動碼管理", KeyRound],
 ] as const;
 const tableMap: Record<string, string> = {
@@ -866,7 +868,7 @@ function AdminApp() {
           <button className="sideClose" type="button" aria-label="關閉功能選單" onClick={() => setDrawer(false)}><span aria-hidden="true">×</span></button>
         </div>
         <nav id="admin-navigation" aria-label="管理功能">
-          {modules.filter(([n]) => n !== "管理員權限" || moduleCan("admins", "view", "view")).map(([n, I], i) => (
+          {modules.filter(([n]) => (n !== "管理員權限" || moduleCan("admins", "view", "view")) && (n !== "架構總彙" || moduleCan("systemSettings", "view", "view"))).map(([n, I], i) => (
             <button
               key={n}
               className={active === n ? "nav active" : "nav"}
@@ -933,6 +935,7 @@ function AdminApp() {
             />
           )}{" "}
           {active === "系統設定" && <SystemSettings canEdit={moduleCan("systemSettings", "edit", "edit")} confirm={requestConfirmation} />}{" "}
+          {active === "架構總彙" && moduleCan("systemSettings", "view", "view") && <ArchitectureOverview key={sessionKey} client={api} />}{" "}
           {active === "通知管理" && <NotificationManagement key={sessionKey} client={api} canEdit={can("edit")} adminId={sessionKey} />}{" "}
           {active === "代辦事項" && admin && (
             <AdminTodos

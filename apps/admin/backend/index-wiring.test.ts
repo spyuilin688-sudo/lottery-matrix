@@ -521,6 +521,17 @@ describe('admin Railway route wiring', () => {
     expect(wiring.requireModulePermission).toHaveBeenNthCalledWith(2, wiring.admin, 'systemSettings', 'view');
   });
 
+  it('protects architecture subscriptions with credential and system-settings view guards', async () => {
+    const route = 'GET /api/architecture-overview';
+    wiring.requirePermission.mockClear();
+    wiring.requireModulePermission.mockClear();
+    const context = await authenticate(route, sessionContext());
+    await (routes[route][1] as (ctx: typeof context) => Promise<unknown>)(context);
+    expect(wiring.requireModulePermission).toHaveBeenCalledWith(wiring.admin, 'systemSettings', 'view');
+    expect(wiring.requirePermission).toHaveBeenCalledWith(wiring.admin, 'view');
+    expect(routes).not.toHaveProperty('PUT /api/architecture-overview');
+  });
+
   it('refreshes exactly the selected crawler and does not audit super-admin activity', async () => {
     wiring.workerRefreshLottery.mockClear();
     wiring.insertRows.mockClear();

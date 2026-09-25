@@ -1,0 +1,14 @@
+.architectureOverview { width: min(960px, 100%); min-width: 0; }
+.architectureNote { margin: 0 0 8px; color: #989ca5; font-size: 12px; line-height: 1.7; }
+.architectureGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.panel.architectureProvider { min-width: 0; margin: 0; }
+.architectureFacts { display: grid; gap: 8px; margin: 0; padding: 8px 0; border-top: 1px solid #30333a; }
+.architectureFacts > div { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 8px; font-size: 13px; line-height: 1.5; }
+.architectureFacts dt { color: #989ca5; }
+.architectureFacts dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.architectureVerified { margin: 0 0 8px; font-size: 11px; overflow-wrap: anywhere; }
+.architectureLink { gap: 6px; text-decoration: none; }
+.architectureLink:hover { filter: brightness(1.15); }
+.architectureLink:focus-visible { outline: 2px solid #e7c46d; outline-offset: 2px; }
+.architectureError { margin-bottom: 8px; }
+@media (max-width: 760px) { .architectureGrid { grid-template-columns: minmax(0, 1fr); } }
