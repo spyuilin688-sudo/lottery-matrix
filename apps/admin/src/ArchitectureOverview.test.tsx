@@ -6,6 +6,21 @@ import { ArchitectureOverview } from './ArchitectureOverview';
 
 afterEach(cleanup);
 
+it('labels the actual invoice, payment date and unfinalized charges without turning them into a renewal date', async () => {
+  render(<ArchitectureOverview client={{ get: async () => ({ data: { items: [{ provider: 'railway', plan: 'Pro', fee: 'US$20／月', renewalDate: null, verifiedAt: '2026-09-25T20:00:00Z', billing: { latestInvoiceAmount: 'US$37.12', latestInvoiceStatus: 'paid', latestPaymentDate: '2024-02-01', currentAmount: 'US$13.47', estimatedAmount: 'US$14.08', period: '2/1－3/1', source: 'Railway 工作區帳務頁', verifiedAt: '2024-02-15T00:00:00Z' } }] } }) }} />);
+  const railway = screen.getByRole('article', { name: 'Railway' });
+  await waitFor(() => expect(within(railway).getByText('最近帳單')).toBeTruthy());
+  expect(within(railway).getByText('US$37.12（已付款）')).toBeTruthy();
+  expect(within(railway).getByText('付款日期')).toBeTruthy();
+  expect(within(railway).getByText('2024-02-01')).toBeTruthy();
+  expect(within(railway).getByText('本期累計')).toBeTruthy();
+  expect(within(railway).getByText('US$13.47')).toBeTruthy();
+  expect(within(railway).getByText('預估帳單')).toBeTruthy();
+  expect(within(railway).getByText('US$14.08')).toBeTruthy();
+  expect(within(railway).getByText('尚未取得')).toBeTruthy();
+  expect(within(screen.getByRole('article', { name: 'GitHub' })).getByText('帳單尚未取得')).toBeTruthy();
+});
+
 it('shows the four providers, recorded subscription details and safe management links with one read under StrictMode', async () => {
   const get = vi.fn(async () => ({ data: { items: [
     { provider: 'railway', plan: 'Pro', fee: 'US$20／月', renewalDate: '2026-10-01', verifiedAt: '2026-09-25T20:00:00Z' },
