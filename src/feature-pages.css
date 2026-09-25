@@ -958,7 +958,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   --membership-profile-height: 21.68906cqw;
   --subscription-title-top: calc(0.7031cqw + 10px);
   --subscription-title-height: 5.4cqw;
-  --subscription-content-top: calc(var(--subscription-title-top) + var(--subscription-title-height) + 8px);
+  --subscription-content-top: calc(var(--subscription-title-top) + var(--subscription-title-height) + 2px);
   /* Four painted pixels below the frame plus the existing 8px row gap = 12px. */
   padding-bottom: 4px;
   overflow: hidden;
@@ -1195,7 +1195,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .subscription-status-content .subscription-expiry {
   align-self: stretch;
   margin-top: 0;
-  padding: 0 0 0 10px;
+  padding: 0 0 0 14px;
   border-left: 1px solid var(--pwa-frame-divider);
   text-align: left;
 }
