@@ -124,6 +124,11 @@ export async function registerPushServiceWorker(
     } finally {
       controllerChange.stop();
     }
+  }).catch((error: unknown) => {
+    // Startup may continue with the old worker; retain the update failure for
+    // diagnosis instead of silently presenting an indefinitely stale release.
+    console.warn('PWA_WORKER_UPDATE_FAILED', error instanceof Error ? error.message : 'Unknown error');
+    throw error;
   });
 }
 
