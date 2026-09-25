@@ -4,6 +4,7 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import type { Session } from '@supabase/supabase-js';
 import { render } from '../../test/render-with-member-session-and-dialog';
 import { ProfilePage } from '../features/MemberPages';
+import { publishMemberSessionChecking, publishMemberSessionReady } from '../auth/member-session-store';
 
 const auth = vi.hoisted(() => ({ getSession: vi.fn(), onAuthStateChange: vi.fn() }));
 const member = vi.hoisted(() => ({ bootstrapMember: vi.fn(), fetchMemberProfile: vi.fn() }));
@@ -55,6 +56,22 @@ test('切換會員清除舊方案，重新取得新會員方案', async () => {
   expect(screen.getByText('方案 B')).toBeTruthy();
   act(() => onSession('TOKEN_REFRESHED', { ...session('b'), access_token: 'b-refreshed' }));
   expect(member.fetchMemberProfile).toHaveBeenCalledTimes(2);
+});
+
+test('同一會員重新讀取方案失敗時保留最後成功的方案', async () => {
+  render(<ProfilePage onNavigate={vi.fn()} />);
+  await screen.findByText('方案 A');
+
+  member.fetchMemberProfile.mockRejectedValueOnce(new Error('PROFILE_TEMPORARILY_UNAVAILABLE'));
+
+  act(() => publishMemberSessionChecking());
+  expect(screen.getByText('方案 A')).toBeTruthy();
+
+  act(() => publishMemberSessionReady(session('a')));
+  await waitFor(() => expect(member.fetchMemberProfile).toHaveBeenCalledTimes(2));
+
+  expect(screen.getByText('方案 A')).toBeTruthy();
+  expect(screen.queryByText('免費會員')).toBeNull();
 });
 
 test('切換會員後忽略舊會員未完成的方案請求', async () => {
