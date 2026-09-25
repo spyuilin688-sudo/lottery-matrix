@@ -6,11 +6,10 @@ import type { AddressInfo } from 'node:net';
 // This server deliberately gives HTML a long freshness lifetime to reproduce
 // browsers retaining a prior deployment's HTTP-cache headers. No route mocking:
 // both the service worker and Chromium's HTTP cache participate in navigation.
-async function startDeployment(legacy: boolean) {
-  const worker = (await readFile(new URL(legacy
+async function startDeployment(legacy: boolean, updateWorker = false) {
+  const worker = await readFile(new URL(legacy
     ? './fixtures/pwa-cache-before-540.js'
-    : '../public/push-service-worker.js', import.meta.url), 'utf8'))
-    .replaceAll('__BUILD_ID__', 'installed');
+    : '../public/push-service-worker.js', import.meta.url), 'utf8');
   let version = 'old';
   let brokenCss = false;
   let rootRequests = 0;
@@ -18,7 +17,8 @@ async function startDeployment(legacy: boolean) {
     const path = new URL(request.url!, 'http://localhost').pathname;
     if (path === '/push-service-worker.js') {
       response.writeHead(200, { 'content-type': 'text/javascript', 'cache-control': 'no-store' });
-      response.end(worker);
+      const workerVersion = updateWorker ? version : 'installed';
+      response.end(worker.replaceAll('__BUILD_ID__', workerVersion).replaceAll('__SOURCE_SHA__', workerVersion));
     } else if (path === '/' || path === '/index.html') {
       if (path === '/') rootRequests++;
       response.writeHead(200, {
@@ -53,6 +53,43 @@ async function startDeployment(legacy: boolean) {
     }),
   };
 }
+
+test('a new worker activates while the previous version remains open', async ({ page, context }) => {
+  const deployment = await startDeployment(false, true);
+  try {
+    await page.goto(`${deployment.origin}/setup`);
+    await page.evaluate(async () => {
+      localStorage.setItem('member-session-fixture', 'existing-member');
+      document.cookie = 'member-fixture=existing-member; Path=/; SameSite=Lax';
+      await navigator.serviceWorker.register('/push-service-worker.js');
+      await navigator.serviceWorker.ready;
+    });
+    await page.goto(`${deployment.origin}/`);
+    await expect(page.locator('h1')).toHaveText('old');
+    deployment.deploy('new');
+    await page.evaluate(async () => {
+      const registration = await navigator.serviceWorker.getRegistration();
+      await registration!.update();
+    });
+    await expect.poll(() => page.evaluate(async () => {
+      return (await (await fetch('/__matrix_pwa_version__')).json()).sourceSha;
+    }), { timeout: 10_000 }).toBe('new');
+    // Activation itself preserves the open page and its member storage.
+    await expect(page.locator('h1')).toHaveText('old');
+    expect(await page.evaluate(() => localStorage.getItem('member-session-fixture'))).toBe('existing-member');
+    expect(await page.evaluate(() => document.cookie)).toContain('member-fixture=existing-member');
+    await page.reload();
+    await expect(page.locator('h1')).toHaveText('new');
+    await context.setOffline(true);
+    await page.reload();
+    await expect(page.locator('h1')).toHaveText('new');
+    await expect(page.locator('body')).toHaveAttribute('data-booted', 'yes');
+  } finally {
+    await context.setOffline(false);
+    await page.close();
+    await deployment.close();
+  }
+});
 
 for (const legacy of [true, false]) {
   test(legacy
