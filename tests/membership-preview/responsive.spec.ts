@@ -69,16 +69,20 @@ for (const { state, planName, tier, description: expectedDescription } of member
       expect(planBox).not.toBeNull();
       expect(expiryBox).not.toBeNull();
       expect(emblemBox).not.toBeNull();
-      expect(expiryBox!.y).toBeGreaterThan(planBox!.y + planBox!.height);
-      // Plan and expiry share one text column; the whole information group is centered.
-      expect(Math.abs(expiryBox!.x - planBox!.x)).toBeLessThanOrEqual(0.5);
-      expect(Math.abs(expiryBox!.x + expiryBox!.width - planBox!.x - planBox!.width)).toBeLessThanOrEqual(0.5);
+      // Use the card width: crown and plan on the left, expiry alongside on the right.
+      expect(Math.abs(expiryBox!.y - planBox!.y)).toBeLessThanOrEqual(0.5);
+      expect(planBox!.x + planBox!.width + 8).toBeLessThanOrEqual(expiryBox!.x + 0.5);
       expect(emblemBox!.x + emblemBox!.width).toBeLessThanOrEqual(planBox!.x + 0.5);
-      const detailsCenterY = (planBox!.y + expiryBox!.y + expiryBox!.height) / 2;
-      expect(Math.abs(emblemBox!.y + emblemBox!.height / 2 - detailsCenterY)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(emblemBox!.y + emblemBox!.height / 2 - planBox!.y - planBox!.height / 2)).toBeLessThanOrEqual(0.5);
       const cardBox = await subscriptionCard.boundingBox();
-      const groupCenterX = (emblemBox!.x + expiryBox!.x + expiryBox!.width) / 2;
-      expect(Math.abs(groupCenterX - cardBox!.x - cardBox!.width / 2)).toBeLessThanOrEqual(0.5);
+      expect(emblemBox!.x).toBeLessThan(cardBox!.x + cardBox!.width * 0.06);
+      expect(expiryBox!.x).toBeGreaterThan(cardBox!.x + cardBox!.width * 0.5);
+      const expiryText = await expiry.locator("span").evaluate((node) => {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        return range.getBoundingClientRect().right;
+      });
+      expect(cardBox!.x + cardBox!.width - expiryText).toBeLessThan(cardBox!.width * 0.06);
 
       const menus = profile.locator('.profile-menu');
       await expect(menus).toHaveCount(5);
@@ -155,6 +159,7 @@ for (const { state, planName, tier, description: expectedDescription } of member
           .map((node) => node.getBoundingClientRect().bottom));
       });
       expect(contentLastLineBottom + 8).toBeLessThanOrEqual(entryBox!.y + 0.5);
+      expect(entryBox!.y - contentLastLineBottom).toBeLessThanOrEqual(24);
       expect(descriptionBox.top).toBeGreaterThanOrEqual(cardBoxes[1].top - 0.5);
       expect(descriptionBox.bottom).toBeLessThanOrEqual(cardBoxes[1].bottom + 0.5);
       expect(descriptionBox.left).toBeGreaterThanOrEqual(cardBoxes[1].left - 0.5);
