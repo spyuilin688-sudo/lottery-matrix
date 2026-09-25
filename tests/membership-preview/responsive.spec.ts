@@ -188,6 +188,7 @@ test("five visual tiers use five distinct backgrounds and plan colors", async ({
   await page.setViewportSize({ width: 390, height: 900 });
   const backgrounds = new Set<string>();
   const colors = new Set<string>();
+  const crownAssets = new Set<string>();
   for (const { state, planName, tier } of membershipScenarios.filter(({ state }) => state !== "long")) {
     await page.goto(`/qa/?inner=1&state=${state}`);
     const card = page.locator(".subscription-status-card");
@@ -196,9 +197,35 @@ test("five visual tiers use five distinct backgrounds and plan colors", async ({
     const stage = card.locator(".subscription-status-stage");
     backgrounds.add(`${await stage.evaluate((node) => getComputedStyle(node).backgroundImage)} ${await stage.evaluate((node) => getComputedStyle(node).backgroundColor)}`);
     colors.add(await card.locator(".subscription-plan strong").evaluate((node) => getComputedStyle(node).color));
+    const emblemUrl = `/assets/lottery/membership/subscription/${tier}-crown.svg`;
+    await expect(card.locator(".subscription-status-emblem")).toHaveCSS("background-image", `url("${new URL(emblemUrl, page.url()).href}")`);
+    crownAssets.add(emblemUrl);
+    const crownIsVisible = await page.evaluate(async (src) => {
+      const crown = new Image();
+      crown.src = src;
+      try {
+        await crown.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = crown.naturalWidth;
+        canvas.height = crown.naturalHeight;
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        if (!context) return false;
+        context.drawImage(crown, 0, 0);
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+        let visiblePixels = 0;
+        for (let index = 3; index < pixels.length; index += 4) {
+          if (pixels[index] > 128) visiblePixels += 1;
+        }
+        return visiblePixels > 100;
+      } catch {
+        return false;
+      }
+    }, emblemUrl);
+    expect(crownIsVisible).toBe(true);
   }
   expect(backgrounds.size).toBe(5);
   expect(colors.size).toBe(5);
+  expect(crownAssets.size).toBe(5);
 });
 
 for (const width of [320, 430]) {

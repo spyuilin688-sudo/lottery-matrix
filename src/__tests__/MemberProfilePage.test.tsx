@@ -142,10 +142,11 @@ describe("ProfilePage member API", () => {
     const artwork = document.querySelector(".membership-reference-art")!;
     expect(artwork).toHaveAttribute("data-subscription-visible", "true");
     const [, artworkTop, , artworkHeight] = artwork.querySelector("svg")!.getAttribute("viewBox")!.split(" ").map(Number);
-    // Existing subscription information and its artwork remain visible when purchases are hidden.
+    // The existing frame remains visible; the old crown is no longer repainted.
     expect(artworkTop).toBeLessThan(387);
     expect(artworkTop + artworkHeight).toBeGreaterThanOrEqual(740);
-    expect(artwork.querySelector(".subscription-information-art")).toBeInTheDocument();
+    expect(artwork.querySelector(".subscription-information-art")).not.toBeInTheDocument();
+    expect(document.querySelector(".subscription-status-emblem")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "付款紀錄" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "退款規範" })).toBeInTheDocument();
     expect(screen.getByText("會員相關")).toBeInTheDocument();
@@ -945,7 +946,8 @@ it("開啟購買開關後恢復入口，關閉後不需重掛即可隱藏入口�
   const [, artworkTop, , artworkHeight] = document.querySelector(".membership-reference-art > svg")!.getAttribute("viewBox")!.split(" ").map(Number);
   expect(artworkTop).toBeLessThan(387);
   expect(artworkTop + artworkHeight).toBeGreaterThanOrEqual(740);
-  expect(document.querySelector(".subscription-information-art")).not.toBeNull();
+  expect(document.querySelector(".subscription-information-art")).toBeNull();
+  expect(document.querySelector(".subscription-status-emblem")).not.toBeNull();
   expect(screen.getByRole("button", { name: "付款紀錄" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "退款規範" })).toBeInTheDocument();
   purchaseSetting.visible = false;

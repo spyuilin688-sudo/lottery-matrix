@@ -32,7 +32,6 @@ type SubscriptionVisualTier = "free" | "monthly" | "quarterly" | "yearly" | "lif
 function MembershipArtwork({ showSubscription, maskAuthPill }: { showSubscription: boolean; maskAuthPill: boolean }) {
   const maskId = useId();
   const headingClipId = `${maskId}-heading`;
-  const informationClipId = `${maskId}-information`;
   const source = "/assets/lottery/membership/membership-ab-reference.png";
   return (
     <div className="membership-reference-art" data-subscription-visible={showSubscription} aria-hidden="true">
@@ -58,9 +57,6 @@ function MembershipArtwork({ showSubscription, maskAuthPill }: { showSubscriptio
           <clipPath id={headingClipId} clipPathUnits="userSpaceOnUse">
             <rect x="565" y="418" width="920" height="93" />
           </clipPath>
-          <clipPath id={informationClipId} clipPathUnits="userSpaceOnUse">
-            <rect x="86" y="522" width="222" height="214" />
-          </clipPath>
         </defs>
         <image href={source} width="1563" height="1006" mask={`url(#${maskId})`} />
       </svg>
@@ -76,9 +72,6 @@ function MembershipArtwork({ showSubscription, maskAuthPill }: { showSubscriptio
       </svg>
       <svg className="subscription-heading-art" viewBox="0 387 1563 353" preserveAspectRatio="none" focusable="false">
         <image href={source} width="1563" height="1006" clipPath={`url(#${headingClipId})`} />
-      </svg>
-      <svg className="subscription-information-art" viewBox="0 387 1563 353" preserveAspectRatio="none" focusable="false">
-        <image href={source} width="1563" height="1006" clipPath={`url(#${informationClipId})`} />
       </svg>
       </>}
     </div>
