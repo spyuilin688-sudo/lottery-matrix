@@ -424,7 +424,7 @@ describe('PWA push subscriptions', () => {
     updateRegistration.mockRejectedValue(failure);
     try {
       await expect(registerPushServiceWorker()).rejects.toBe(failure);
-      expect(warn).toHaveBeenCalledWith('PWA_WORKER_UPDATE_FAILED', failure.message);
+      expect(warn).toHaveBeenCalledWith('PWA_WORKER_UPDATE_FAILED', failure.message, 'stage=update;worker=none');
       expect(register).not.toHaveBeenCalled();
       expect(subscribe).not.toHaveBeenCalled();
     } finally { warn.mockRestore(); }

@@ -101,11 +101,16 @@ export async function registerPushServiceWorker(
 ): Promise<ServiceWorkerRegistration> {
   const serviceWorker = serviceWorkerContainer();
   if (!serviceWorker) throw new Error('PUSH_SERVICE_WORKER_UNSUPPORTED');
+  let stage = 'registration';
+  let pendingWorker: ServiceWorker | null = null;
   return withRegistrationTimeout(async (signal) => {
     const existing = typeof serviceWorker.getRegistration === 'function'
       ? await serviceWorker.getRegistration(SERVICE_WORKER_PATH)
       : undefined;
-    if (!existing) return await serviceWorker.register(SERVICE_WORKER_PATH);
+    if (!existing) {
+      stage = 'register';
+      return await serviceWorker.register(SERVICE_WORKER_PATH);
+    }
     // Push operations can use an activated worker without a network update.
     // Startup still waits for updates needed by the LINE return handshake.
     if (!update && existing.active?.state === 'activated') return existing;
@@ -114,10 +119,13 @@ export async function registerPushServiceWorker(
     const previousController = serviceWorker.controller;
     const controllerChange = observeControllerChange(serviceWorker, signal);
     try {
+      stage = 'update';
       const updated = await existing.update();
       if (signal.aborted) throw registrationTimeoutError();
       if (controllerChange.changed() || serviceWorker.controller !== previousController) return updated;
       if (!updated.installing && !updated.waiting) return updated;
+      pendingWorker = updated.installing ?? updated.waiting;
+      stage = 'activation';
       await controllerChange.promise;
       if (signal.aborted) throw registrationTimeoutError();
       return updated;
@@ -127,7 +135,8 @@ export async function registerPushServiceWorker(
   }).catch((error: unknown) => {
     // Startup may continue with the old worker; retain the update failure for
     // diagnosis instead of silently presenting an indefinitely stale release.
-    console.warn('PWA_WORKER_UPDATE_FAILED', error instanceof Error ? error.message : 'Unknown error');
+    console.warn('PWA_WORKER_UPDATE_FAILED', error instanceof Error ? error.message : 'Unknown error',
+      `stage=${stage};worker=${pendingWorker?.state ?? 'none'}`);
     throw error;
   });
 }
