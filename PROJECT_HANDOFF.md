@@ -1,6 +1,6 @@
 # 樂彩 Matrix 專案交接
 
-更新日期：2026-09-23（本次收斂 PWA 權限刷新與通知 Recovery 空轉；其餘章節保留原核對日期）。
+更新日期：2026-09-26（本次核對 PWA 權限設定的 12 小時保底刷新契約；其餘章節保留原核對日期）。
 
 ## 專案與版本
 
@@ -43,7 +43,9 @@ API 執行方式見 [services/matrix-api/README.md](services/matrix-api/README.m
 
 獨立補救已使用 Supabase 原生每日開始與各組下一次時槽：晚間 20:30／天天樂 09:30 開始，前段每 10 分鐘、後段每 50 分鐘；晚間另有隔日 12:00／18:00，天天樂另有隔日 00:00／06:00。完成或確定不開獎即取消當期剩餘檢查。舊 `matrix-admin-watchdog-v1` 全天 poller 已由 `20260920233444_recovery_dynamic_slots.sql` 取代，不能套用主排程的 30 分鐘間隔。
 
-PWA 的 Matrix 權限設定不再每 30 秒固定 RPC 輪詢：App 啟動立即讀取，回到前景、重新連線等事件在距離前次讀取至少 30 秒時觸發刷新，持續停留前景則每 5 分鐘保底一次；明確進入需要權限判定的 Matrix 查詢仍沿用即時權限讀取與既有 in-flight 合併。通知派送 Recovery 則由 queue 狀態、retry 時間與 lease 到期時間動態 replan `matrix-notification-recovery-next`；無待補救工作即移除動態 job，只保留每小時 `matrix-notification-recovery-fallback`。原 Web 1／2／5／15／30 分鐘 retry、Native／Admin backoff、事件觸發即時派送與 5 分鐘 stale 判定不變。
+PWA 的 Matrix 權限設定以 `src/permission-settings.ts` 為執行入口：首次啟動立即讀取，回到前景、取得焦點或重新連線時，距離前次讀取開始至少 30 秒才觸發刷新；持續停留前景的保底刷新間隔為 **12 小時**，從最近一次讀取開始計算，不是每 30 秒或每 5 分鐘固定輪詢。隱藏頁面不執行保底讀取，卸載後停止計時器與事件監聽。一般頁面／演算法快取讀取沿用已發布的設定 revision，並合併進行中的共享讀取；明確呼叫 `refreshPermissionSettings()` 才強制重讀，revision 變更或設定讀取失敗時清除受保護的快取結果。會員結果的伺服器授權不採 12 小時快取：未命中快取由結果 RPC 驗證，命中受保護快取仍呼叫 `matrix_status_entitlements` 驗證當前資格；既有訪客公開清單例外不變。相關測試為 `src/permission-settings-refresh.test.ts`、`src/__tests__/AppPermissionSettings.test.tsx`、`src/permission-settings.test.tsx` 與 `src/matrix-algorithm-api.test.ts`。
+
+通知派送 Recovery 則由 queue 狀態、retry 時間與 lease 到期時間動態 replan `matrix-notification-recovery-next`；無待補救工作即移除動態 job，只保留每小時 `matrix-notification-recovery-fallback`。原 Web 1／2／5／15／30 分鐘 retry、Native／Admin backoff、事件觸發即時派送與 5 分鐘 stale 判定不變。
 
 天工 artifact 由現行持有 lease 的分析 pipeline 產生；舊 `refresh-tiangong-sorted.py` 與自動寫入 job 已移除，保留天工 UI 檢查。工作狀態完成寫入以該次 `started_at` 作比對，防止舊執行蓋掉新執行；演算資料的 owner/run-start 寫入保護維持原契約。
 
