@@ -828,7 +828,7 @@ describe("ProfilePage member API", () => {
 
     expect(await screen.findByText(planName, { selector: ".subscription-plan strong" })).toBeInTheDocument();
     expect(document.querySelector(".subscription-status-card")).toHaveAttribute("data-plan-tier", tier);
-    expect(document.querySelector(".subscription-status-content > .subscription-status-emblem[aria-hidden='true']")).not.toBeNull();
+    expect(document.querySelector(".subscription-status-stage > .subscription-status-emblem[aria-hidden='true']")).not.toBeNull();
     expect(document.querySelector(".subscription-status-stage > .subscription-status-content > .subscription-plan + .subscription-expiry")).not.toBeNull();
   });
 

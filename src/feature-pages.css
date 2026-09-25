@@ -1142,9 +1142,12 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .subscription-status-card > .section-title::after { display: none; }
 .subscription-status-stage {
   position: relative;
+  display: grid;
+  grid-template-columns: 12.2cqw minmax(0, 1fr);
   min-width: 0;
-  margin: 0 5.115cqw;
-  padding: 2.2cqw 0 0;
+  /* Compensate for the artwork's 10px extension before applying the inner inset. */
+  margin: 0 10px;
+  padding: 2.2cqw 8px 0;
 }
 .subscription-status-emblem {
   width: 12.2cqw;
@@ -1178,8 +1181,9 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 [data-plan-tier="lifetime"] .subscription-status-emblem { background-image: url("/assets/lottery/membership/subscription/lifetime-crown.svg"); }
 .subscription-status-content {
   display: grid;
-  grid-template-columns: 12.2cqw minmax(0, 1fr) max-content;
-  column-gap: clamp(8px, 2.5cqw, 12px);
+  grid-template-columns: max-content max-content;
+  column-gap: 12px;
+  justify-content: center;
   align-items: start;
   min-width: 0;
   min-height: 0;

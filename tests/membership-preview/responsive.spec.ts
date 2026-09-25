@@ -69,13 +69,23 @@ for (const { state, planName, tier, description: expectedDescription } of member
       expect(planBox).not.toBeNull();
       expect(expiryBox).not.toBeNull();
       expect(emblemBox).not.toBeNull();
-      // A layout: crown and plan stay together on the left; expiry text aligns to the right inset.
+      // The crown stays left; the two natural-width text columns center in its right-hand area.
       expect(Math.abs(expiryBox!.y - planBox!.y)).toBeLessThanOrEqual(0.5);
-      expect(planBox!.x + planBox!.width + 8).toBeLessThanOrEqual(expiryBox!.x + 0.5);
-      expect(emblemBox!.x + emblemBox!.width).toBeLessThanOrEqual(planBox!.x + 0.5);
+      expect(Math.abs(expiryBox!.x - planBox!.x - planBox!.width - 12)).toBeLessThanOrEqual(0.5);
+      expect(emblemBox!.x + emblemBox!.width).toBeLessThanOrEqual(planBox!.x);
       expect(Math.abs(emblemBox!.y + emblemBox!.height / 2 - planBox!.y - planBox!.height / 2)).toBeLessThanOrEqual(0.5);
-      const cardBox = await subscriptionCard.boundingBox();
-      expect(emblemBox!.x).toBeLessThan(cardBox!.x + cardBox!.width * 0.06);
+      const stage = subscriptionCard.locator(".subscription-status-stage");
+      await expect(stage).toHaveCSS("padding-left", "8px");
+      await expect(stage).toHaveCSS("padding-right", "8px");
+      const stageBox = (await stage.boundingBox())!;
+      expect(Math.abs(stageBox.x - 16)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(stageBox.x + stageBox.width - (width - 16))).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(emblemBox!.x - stageBox.x - 8)).toBeLessThanOrEqual(0.5);
+      const contentBox = (await subscriptionCard.locator(".subscription-status-content").boundingBox())!;
+      expect(Math.abs(contentBox.x - emblemBox!.x - emblemBox!.width)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(contentBox.x + contentBox.width - (stageBox.x + stageBox.width - 8))).toBeLessThanOrEqual(0.5);
+      const textGroupCenter = (planBox!.x + expiryBox!.x + expiryBox!.width) / 2;
+      expect(Math.abs(textGroupCenter - (contentBox.x + contentBox.width / 2))).toBeLessThanOrEqual(0.5);
       const textBounds = await subscriptionCard.evaluate((card) => {
         const bounds = (selector: string) => [...card.querySelectorAll(selector)]
           .filter((node) => node.textContent?.trim())
@@ -84,21 +94,12 @@ for (const { state, planName, tier, description: expectedDescription } of member
             range.selectNodeContents(node);
             return range.getBoundingClientRect();
           });
-        const planText = bounds(".subscription-plan span, .subscription-plan strong, .subscription-plan p");
-        const expiryText = bounds(".subscription-expiry span, .subscription-expiry strong, .subscription-expiry p");
         return {
-          planRight: Math.max(...planText.map((box) => box.right)),
-          expiryLeft: Math.min(...expiryText.map((box) => box.left)),
-          expiryRightEdges: expiryText.map((box) => box.right),
-          stageRight: card.querySelector(".subscription-status-stage")!.getBoundingClientRect().right,
+          planRight: Math.max(...bounds(".subscription-plan span, .subscription-plan strong, .subscription-plan p").map((box) => box.right)),
+          expiryLeft: Math.min(...bounds(".subscription-expiry span, .subscription-expiry strong, .subscription-expiry p").map((box) => box.left)),
         };
       });
-      const middleGap = textBounds.expiryLeft - textBounds.planRight;
-      expect(middleGap).toBeGreaterThanOrEqual(8);
-      for (const right of textBounds.expiryRightEdges) {
-        expect(Math.abs(right - textBounds.stageRight)).toBeLessThanOrEqual(0.5);
-      }
-      expect(planBox!.x - (emblemBox!.x + emblemBox!.width)).toBeLessThanOrEqual(12);
+      expect(Math.abs(textBounds.expiryLeft - textBounds.planRight - 12)).toBeLessThanOrEqual(0.5);
 
       const menus = profile.locator('.profile-menu');
       await expect(menus).toHaveCount(5);
