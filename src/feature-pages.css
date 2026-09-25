@@ -959,7 +959,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   --subscription-title-top: calc(0.7031cqw + 10px);
   --subscription-title-height: 5.4cqw;
   --subscription-content-top: calc(var(--subscription-title-top) + var(--subscription-title-height) + 8px);
-  --subscription-content-shift: calc(var(--subscription-content-top) - 9.58cqw);
   /* Four painted pixels below the frame plus the existing 8px row gap = 12px. */
   padding-bottom: 4px;
   overflow: hidden;
@@ -983,18 +982,11 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .membership-reference-art[data-subscription-visible="false"] {
   grid-template-rows: var(--membership-profile-height);
 }
-.membership-reference-art > .subscription-heading-art,
-.membership-reference-art > .subscription-information-art {
+.membership-reference-art > .subscription-heading-art {
   position: absolute;
   left: 0;
   height: 22.58477cqw;
-}
-.membership-reference-art > .subscription-heading-art {
   top: calc(var(--membership-profile-height) + var(--subscription-title-top) - 2.8cqw);
-}
-.membership-reference-art > .subscription-information-art {
-  top: calc(var(--membership-profile-height) + var(--subscription-content-shift));
-  z-index: 1;
 }
 .membership-reference-art > .subscription-heading-mark {
   position: absolute;

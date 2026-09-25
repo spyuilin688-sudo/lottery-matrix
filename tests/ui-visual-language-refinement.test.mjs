@@ -106,18 +106,28 @@ test("approved A+B membership cards remove the divider and stack plan above expi
   assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content .subscription-expiry", "border"), "0");
   assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content .subscription-expiry", "border-left"), "");
   const memberSource = readFileSync(new URL("../src/features/MemberPages.tsx", import.meta.url), "utf8");
-  const informationClip = memberSource.match(/<clipPath id=\{informationClipId\}[^>]*>([\s\S]*?)<\/clipPath>/)?.[1] ?? "";
   assert.match(memberSource, /<rect x="800" y="534" width="39" height="196" fill="black" \/>/);
-  assert.match(informationClip, /<rect x="86" y="522" width="222" height="214" \/>/);
-  assert.doesNotMatch(informationClip, /x="800"/);
-  assert.match(memberSource, /<svg className="subscription-information-art"[^>]*>\s*<image[^>]*clipPath=\{`url\(#\$\{informationClipId\}\)`\}/);
+  assert.match(memberSource, /<rect x="86" y="522" width="222" height="214" fill="black" \/>/);
+  assert.doesNotMatch(memberSource, /informationClipId|subscription-information-art/);
   assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content", "grid-template-columns"), "minmax(0, 1fr)");
   assert.doesNotMatch(canonicalFeatureCss, /grid-template-columns:\s*29\.4cqw\s+29cqw/);
   for (const tier of ["free", "monthly", "quarterly", "yearly", "lifetime"]) {
     assert.match(canonicalFeatureCss, new RegExp(`\\.subscription-status-card\\[data-plan-tier="${tier}"\\]\\s+\\.subscription-status-stage\\s*\\{[^}]*background:`));
-    assert.match(canonicalFeatureCss, new RegExp(`\\[data-plan-tier="${tier}"\\]\\s+\\.subscription-status-emblem\\s*\\{[^}]*background-image:`));
+    const asset = `/assets/lottery/membership/subscription/${tier}-crown.svg`;
+    assert.match(canonicalFeatureCss, new RegExp(`\\[data-plan-tier="${tier}"\\]\\s+\\.subscription-status-emblem\\s*\\{[^}]*background-image:\\s*url\\("${asset}"\\)`));
   }
   assert.equal(ruleBodies(featureCss, ".subscription-status-content > div:last-child").length, 0);
+});
+
+test("five crown assets are real, self-contained, and distinct", () => {
+  const crowns = ["free", "monthly", "quarterly", "yearly", "lifetime"].map((tier) =>
+    readFileSync(new URL(`../public/assets/lottery/membership/subscription/${tier}-crown.svg`, import.meta.url), "utf8"),
+  );
+  for (const crown of crowns) {
+    assert.match(crown, /<svg[^>]*xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
+    assert.match(crown, /<image[^>]*href="data:image\/png;base64,/);
+  }
+  assert.equal(new Set(crowns).size, 5);
 });
 
 test("refined responsive owners avoid forced layout compensation", () => {
