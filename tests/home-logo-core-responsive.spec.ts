@@ -13,7 +13,7 @@ const viewports = [
 for (const viewport of viewports) {
   test(`首頁 Logo 比例與狀態卡到 Core 實際間距 ${viewport.width}x${viewport.height}`, async ({ page }, testInfo) => {
     await page.setViewportSize(viewport);
-    await page.addInitScript(() => localStorage.setItem("matrix-first-visit-guide-seen", "1"));
+    await page.addInitScript(() => localStorage.setItem("matrix-first-visit-consent-v1", "1"));
     await page.goto("/");
     const home = page.locator(".home-screen");
     await expect(home.locator(".matrix-status-card")).toHaveCount(4);

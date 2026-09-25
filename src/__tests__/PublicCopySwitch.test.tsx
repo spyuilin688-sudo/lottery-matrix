@@ -3,7 +3,6 @@ import '@testing-library/jest-dom/vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { AppDialogProvider } from '../dialog/AppDialog';
-import { FirstVisitGuide } from '../onboarding/FirstVisitGuide';
 import { AboutMatrixPage, ActivationCodePage, DisclaimerPage, MemberTermsPage, PrivacyPolicyPage, ProPlansPage, RefundPolicyPage, ServiceInfoPage } from '../features/MemberPages';
 import { MatrixGuidePage } from '../features/MatrixGuidePage';
 
@@ -43,13 +42,6 @@ beforeEach(() => {
 
 test('registered-member free mode explains actual temporary access without promising full status', async () => {
   settings.free = true;
-  const navigate = vi.fn();
-  const firstVisit = render(<AppDialogProvider><FirstVisitGuide enabled onNavigate={navigate} /></AppDialogProvider>);
-  expect(await screen.findByText(/登入後目前可免費使用 Matrix 探索十三期與完整範圍/)).toBeInTheDocument();
-  expect(screen.getByText(/Matrix 狀態進階資訊仍依訂閱權限開放/)).toBeInTheDocument();
-  firstVisit.unmount();
-  localStorage.clear();
-
   const guide = render(<MatrixGuidePage onNavigate={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: '04Matrix 探索' }));
   expect(guide.container.querySelector('.guide-preview')).toHaveTextContent('有效會員目前可免費使用十三期與完整範圍');
@@ -147,28 +139,6 @@ test('referral rewards retain all four thresholds and explain reversals once', a
   }
   fireEvent.click(screen.getByRole('button', { name: '推薦成功獎勵' }));
   expect(document.getElementById('referral-rule-推薦成功獎勵')).toBeNull();
-});
-
-test('first visit dialog changes live and keeps free usage and once-only behavior', async () => {
-  const navigate = vi.fn();
-  render(<AppDialogProvider><FirstVisitGuide enabled onNavigate={navigate} /></AppDialogProvider>);
-  expect(await screen.findByRole('heading', { name: '真正的「版路分析」工具' })).toBeInTheDocument();
-  toggle(false);
-  expect(screen.getByRole('heading', { name: '使用教學' })).toBeInTheDocument();
-  expect(screen.getByText('Matrix 探索二期、天衡三期基本查詢可直接使用；新註冊 LINE 會員可於註冊後 48 小時內使用 Matrix 探索、天衡、天樞十三期及完整範圍。')).toBeInTheDocument();
-  expect(screen.getByText(/新註冊 LINE 會員可於註冊後 48 小時內使用 Matrix 探索、天衡、天樞十三期及完整範圍/)).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: '開始使用' })).toBeInTheDocument();
-  toggle(true);
-  expect(screen.getByRole('heading', { name: '真正的「版路分析」工具' })).toBeInTheDocument();
-  expect(screen.getByText(/點擊下方「我的」，選擇使用 LINE 或 Google 登入。/)).toBeInTheDocument();
-  expect(screen.getByText(/點擊首頁下方的 Matrix Core，即可開始探索各種類型的版路。/)).toBeInTheDocument();
-  expect(screen.queryByText(/天衍 2 天、天工 1 天/)).not.toBeInTheDocument();
-  toggle(false);
-  fireEvent.click(screen.getByRole('button', { name: '開始使用' }));
-  await act(async () => {});
-  expect(navigate).not.toHaveBeenCalled();
-  toggle(true);
-  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 });
 
 test.each([

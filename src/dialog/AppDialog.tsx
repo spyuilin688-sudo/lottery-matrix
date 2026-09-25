@@ -11,7 +11,7 @@ export type AppDialogOptions = {
   cancelLabel?: string;
   tone?: AppDialogTone;
   icon?: "logout";
-  variant?: "registration-guide";
+  variant?: "first-visit-consent";
 };
 
 type DialogRequest = AppDialogOptions & {
@@ -97,7 +97,7 @@ export function AppDialogProvider({ children }: { children: ReactNode }) {
       <Dialog.Root
         open={Boolean(request)}
         onOpenChange={(open) => {
-          if (!open && request) settle(false);
+          if (!open && request && request.variant !== "first-visit-consent") settle(false);
         }}
       >
         <Dialog.Portal>
@@ -107,6 +107,8 @@ export function AppDialogProvider({ children }: { children: ReactNode }) {
               className="app-dialog-content"
               data-tone={request.tone ?? "warning"}
               data-variant={request.variant}
+              onEscapeKeyDown={(event) => { if (request.variant === "first-visit-consent") event.preventDefault(); }}
+              onPointerDownOutside={(event) => { if (request.variant === "first-visit-consent") event.preventDefault(); }}
             >
               <div className="app-dialog-icon" aria-hidden="true">
                 {request.icon === "logout"
@@ -119,8 +121,8 @@ export function AppDialogProvider({ children }: { children: ReactNode }) {
                   {request.description}
                 </Dialog.Description>
               ) : null}
-              <div className="app-dialog-actions" data-single={request.kind === "alert"}>
-                {request.kind === "confirm" ? (
+              <div className="app-dialog-actions" data-single={request.kind === "alert" || request.variant === "first-visit-consent"}>
+                {request.kind === "confirm" && request.variant !== "first-visit-consent" ? (
                   <button className="app-dialog-button app-dialog-button--secondary" type="button" onClick={() => settle(false)}>
                     {request.cancelLabel ?? "取消"}
                   </button>
