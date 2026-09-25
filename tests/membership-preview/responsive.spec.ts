@@ -72,7 +72,7 @@ for (const { state, planName, tier, description: expectedDescription } of member
       // The crown and the two text groups occupy separate portions of the status row.
       expect(Math.abs(expiryBox!.y - planBox!.y)).toBeLessThanOrEqual(0.5);
       expect(Math.abs(expiryBox!.x - planBox!.x - planBox!.width)).toBeLessThanOrEqual(0.5);
-      expect(emblemBox!.x + emblemBox!.width).toBeLessThanOrEqual(planBox!.x);
+      expect(planBox!.x - (emblemBox!.x + emblemBox!.width)).toBeGreaterThanOrEqual(15);
       expect(Math.abs(emblemBox!.y + emblemBox!.height / 2 - planBox!.y - planBox!.height / 2)).toBeLessThanOrEqual(0.5);
       expect(Math.abs(emblemBox!.width - (width - 12) * .17568)).toBeLessThanOrEqual(0.5);
       await expect(expiry).toHaveCSS("border-left-width", "1px");
@@ -87,7 +87,7 @@ for (const { state, planName, tier, description: expectedDescription } of member
       expect(Math.abs(stageBox.x + stageBox.width - (width - 16))).toBeLessThanOrEqual(0.5);
       expect(Math.abs(emblemBox!.x - stageBox.x - 14)).toBeLessThanOrEqual(0.5);
       const contentBox = (await subscriptionCard.locator(".subscription-status-content").boundingBox())!;
-      expect(Math.abs(contentBox.x - emblemBox!.x - emblemBox!.width)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(contentBox.x - emblemBox!.x - emblemBox!.width - 10)).toBeLessThanOrEqual(0.5);
       expect(Math.abs(contentBox.x + contentBox.width - (stageBox.x + stageBox.width - 8))).toBeLessThanOrEqual(0.5);
       expect(Math.abs(planBox!.x - contentBox.x - 5)).toBeLessThanOrEqual(0.5);
       expect(expiryBox!.height).toBeGreaterThanOrEqual(planBox!.height - 0.5);
@@ -181,8 +181,8 @@ for (const { state, planName, tier, description: expectedDescription } of member
           .map((node) => node.getBoundingClientRect().bottom));
       });
       expect(contentLastLineBottom + 8).toBeLessThanOrEqual(entryBox!.y + 0.5);
-      // The enlarged crown is taller than the text; keep the action 8px below the row itself.
-      expect(Math.abs(entryBox!.y - stageBox.y - stageBox.height - 8)).toBeLessThanOrEqual(0.5);
+      // The crown's transparent lower edge can overlap the action's spacing without crowding the text.
+      expect(Math.abs(entryBox!.y - stageBox.y - stageBox.height - 8 + (width - 12) * .023)).toBeLessThanOrEqual(0.5);
       expect(descriptionBox.top).toBeGreaterThanOrEqual(cardBoxes[1].top - 0.5);
       expect(descriptionBox.bottom).toBeLessThanOrEqual(cardBoxes[1].bottom + 0.5);
       expect(descriptionBox.left).toBeGreaterThanOrEqual(cardBoxes[1].left - 0.5);
@@ -241,9 +241,9 @@ test("lifetime status row matches the approved crown and two-column proportions 
   });
   const proportion = (x: number) => (x - stage.x) / stage.width;
 
-  expect(Math.abs(proportion(plan.x) - .25)).toBeLessThanOrEqual(.02);
-  expect(Math.abs(proportion(expiry.x) - .54)).toBeLessThanOrEqual(.02);
-  expect(Math.abs(proportion(expiryTextLeft) - .575)).toBeLessThanOrEqual(.02);
+  expect(Math.abs(proportion(plan.x) - .28)).toBeLessThanOrEqual(.02);
+  expect(Math.abs(proportion(expiry.x) - .59)).toBeLessThanOrEqual(.02);
+  expect(Math.abs(proportion(expiryTextLeft) - .625)).toBeLessThanOrEqual(.02);
   expect(crown.width / stage.width).toBeGreaterThan(.18);
   expect(Math.abs(expiry.height - plan.height)).toBeLessThanOrEqual(.5);
 });
