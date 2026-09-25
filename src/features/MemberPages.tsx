@@ -29,7 +29,7 @@ type SubscriptionVisualTier = "free" | "monthly" | "quarterly" | "yearly" | "lif
 /** Keep the approved raster artwork intact; mask sample text and the sample photo.
  *  All visible member data and interactive labels are rendered by ProfilePage.
  */
-function MembershipArtwork({ showSubscription, maskAuthPill }: { showSubscription: boolean; maskAuthPill: boolean }) {
+function MembershipArtwork({ showSubscription, showPurchaseEntry, maskAuthPill }: { showSubscription: boolean; showPurchaseEntry: boolean; maskAuthPill: boolean }) {
   const maskId = useId();
   const headingClipId = `${maskId}-heading`;
   const source = "/assets/lottery/membership/membership-ab-reference.png";
@@ -49,6 +49,7 @@ function MembershipArtwork({ showSubscription, maskAuthPill }: { showSubscriptio
             <rect x="320" y="528" width="473" height="207" fill="black" />
             <rect x="906" y="528" width="430" height="207" fill="black" />
             <rect x="530" y="793" width="540" height="76" fill="black" />
+            {!showPurchaseEntry && <rect className="subscription-entry-art-mask" x="70" y="752" width="1425" height="144" fill="black" />}
             <rect x="65" y="412" width="82" height="112" fill="black" />
             <rect x="565" y="418" width="920" height="93" fill="black" />
             <rect x="86" y="522" width="222" height="214" fill="black" />
@@ -392,7 +393,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   return (
     <FeatureShell title="我的" onNavigate={onNavigate} active="我的" className="profile-screen" compactHeader>
       <div className="membership-card-stack">
-        <MembershipArtwork showSubscription={true} maskAuthPill={authState === "anonymous" || authState === "signing-in"} />
+        <MembershipArtwork showSubscription={true} showPurchaseEntry={subscriptionPurchaseVisible} maskAuthPill={authState === "anonymous" || authState === "signing-in"} />
         <section className="panel membership-card profile-card" data-review-login={ecpayReviewLoginVisible} data-auth-layout={authState === "anonymous" || authState === "signing-in" ? "multiple" : "single"}>
           <div className="profile-avatar">
             <img
@@ -464,8 +465,8 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
         <section className="panel membership-card subscription-status-card" data-plan-tier={subscriptionVisualTier}>
           <SectionTitle>目前訂閱狀態</SectionTitle>
           <div className="subscription-status-stage">
-            <div className="subscription-status-emblem" aria-hidden="true" />
             <div className="subscription-status-content">
+              <div className="subscription-status-emblem" aria-hidden="true" />
               <div className="subscription-plan"><span>目前方案</span><strong>{displayedPlanName}</strong><p>{memberProfile ? displayedPlanDescription : ""}</p></div>
               <div className="subscription-expiry"><span>訂閱到期日</span><strong>{memberProfile?.isLifetime ? "無到期日" : expiry?.date ?? ""}</strong><p>{expiry ? `剩餘 ${expiry.remainingDays} 天` : ""}</p></div>
             </div>
