@@ -7,10 +7,13 @@ it('restricts subscription snapshots to the server and preserves unknown billing
   try {
     await db.exec('create role anon; create role authenticated; create role service_role bypassrls;');
     await db.exec(readFileSync(new URL('../../../supabase/migrations/20260925204803_admin_architecture_subscriptions.sql', import.meta.url), 'utf8'));
+    await db.exec(readFileSync(new URL('../../../supabase/migrations/20260925212522_admin_architecture_billing_snapshot.sql', import.meta.url), 'utf8'));
     await db.exec('set role service_role');
     const rows = await db.query('select * from public.admin_architecture_subscriptions');
     expect(rows.rows).toHaveLength(4);
     expect(rows.rows.every((row: any) => row.plan === null && row.fee === null && row.renewal_date === null)).toBe(true);
+    expect(rows.rows.every((row: any) => row.billing_snapshot === null)).toBe(true);
+    await expect(db.exec("update public.admin_architecture_subscriptions set billing_snapshot='{}'")).rejects.toThrow();
     await expect(db.exec("update public.admin_architecture_subscriptions set plan='Pro' where provider='railway'")).rejects.toThrow();
     await db.exec("update public.admin_architecture_subscriptions set plan='Pro', verified_at=now() where provider='railway'");
     for (const role of ['anon', 'authenticated']) {

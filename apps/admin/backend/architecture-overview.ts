@@ -6,10 +6,10 @@ export function createArchitectureOverview(transport: Transport) {
   return {
     async get() {
       const rows = await transport.selectRows('admin_architecture_subscriptions',
-        'select=provider,plan,fee,renewal_date,verified_at&order=provider&limit=4');
+        'select=provider,plan,fee,renewal_date,verified_at,billing_snapshot&order=provider&limit=4');
       const items = readArchitectureSubscriptions(rows.map(value => {
         const row = value as Record<string, unknown>;
-        return { provider: row.provider, plan: row.plan, fee: row.fee, renewalDate: row.renewal_date, verifiedAt: row.verified_at };
+        return { provider: row.provider, plan: row.plan, fee: row.fee, renewalDate: row.renewal_date, verifiedAt: row.verified_at, billing: row.billing_snapshot };
       }));
       return { items };
     },
