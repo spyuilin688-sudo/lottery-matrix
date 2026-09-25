@@ -21,6 +21,7 @@ import { createAdminCredentialAuth, type CredentialAdmin } from './admin-credent
 import { createConnectionStatus } from './connection-status';
 import { createNotificationEvents, getNotificationEventConfig } from './notification-events';
 import { createPermissionSettings, isPermissionSettingKey } from './permission-settings';
+import { createArchitectureOverview } from './architecture-overview';
 import { createPushNotifications, requireMemberUuid } from './push-notifications';
 import { createSupabaseTransport, getSupabaseConfig } from './supabase';
 import { createWorkerApi, getWorkerConfig, PRODUCTION_RAILWAY_API_BASE, type CrawlerLottery, type PrimaryWorkerGroup } from './worker-api';
@@ -61,6 +62,7 @@ const notificationEvents = createNotificationEvents(() => getNotificationEventCo
 const adminData = createAdminData(supabase);
 const adminTodos = createAdminTodos(supabase);
 const permissionSettings = createPermissionSettings(supabase);
+const architectureOverview = createArchitectureOverview(supabase);
 const credentialAuth = createAdminCredentialAuth(supabase);
 const workerApi = createWorkerApi(() => getWorkerConfig(secrets));
 const watchdogLeases = createSupabaseWatchdogLeaseManager(supabase);
@@ -471,6 +473,10 @@ const routes: Record<string, unknown> = {
     }
   }],
 
+  'GET /api/architecture-overview': [sessionGuard, moduleGuard('systemSettings', 'view', 'view'), async () => {
+    try { return json(await architectureOverview.get()); }
+    catch { return error('ARCHITECTURE_OVERVIEW_UNAVAILABLE', 503); }
+  }],
   'GET /api/system-status': [sessionGuard, moduleGuard('systemSettings', 'view'), async () =>
     json(await connectionStatus.get())],
 

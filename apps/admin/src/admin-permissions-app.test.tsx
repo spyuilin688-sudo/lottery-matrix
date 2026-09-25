@@ -163,6 +163,26 @@ describe('administrator operation permission editing', () => {
     container.remove();
   });
 
+  it.each(['超級管理員', '營運管理員', '查看人員'])('opens architecture subscriptions using system-settings view permission for %s without reading system health', async role => {
+    app.state.admin = { ...app.state.admin, role, modulePermissions: { systemSettings: { view: true, edit: false } } };
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    expect(buttonWithText(container, '架構總彙')).toBeTruthy();
+    await act(async () => buttonWithText(container, '架構總彙')?.click());
+    await settle();
+    expect(within(container).getAllByRole('article')).toHaveLength(4);
+    expect(app.api.get.mock.calls.filter(([url]) => url === '/api/architecture-overview')).toHaveLength(1);
+    expect(app.api.get).not.toHaveBeenCalledWith('/api/system-status');
+  });
+
+  it('hides architecture subscriptions without view permission', async () => {
+    app.state.admin = { ...app.state.admin, role: '查看人員', permissions: { view: false } };
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    expect(buttonWithText(container, '架構總彙')).toBeUndefined();
+    expect(app.api.get).not.toHaveBeenCalledWith('/api/architecture-overview');
+  });
+
   it('opens transfer requests from a notification on cold start', async () => {
     window.history.replaceState(null, '', '/#transfer-requests');
     try {
