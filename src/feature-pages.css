@@ -1193,11 +1193,19 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   min-width: 0;
 }
 .subscription-status-content .subscription-expiry {
+  position: relative;
   align-self: stretch;
   margin-top: 0;
-  padding: 0 0 0 14px;
-  border-left: 1px solid var(--pwa-frame-divider);
+  padding: 0 0 0 15px;
   text-align: left;
+}
+.subscription-status-content .subscription-expiry::before {
+  position: absolute;
+  inset-block: 0;
+  left: -14px;
+  border-left: 1px solid var(--pwa-frame-divider);
+  content: "";
+  pointer-events: none;
 }
 .subscription-status-content span {
   display: block;

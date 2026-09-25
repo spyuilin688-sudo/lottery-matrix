@@ -103,8 +103,9 @@ test("guide categories scroll horizontally and status settings stays in the page
 });
 
 test("approved A+B membership cards separate left-aligned plan and expiry details", () => {
-  assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content .subscription-expiry", "border-left"), "1px solid var(--pwa-frame-divider)");
-  assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content .subscription-expiry", "padding"), "0 0 0 14px");
+  assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content .subscription-expiry::before", "border-left"), "1px solid var(--pwa-frame-divider)");
+  assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content .subscription-expiry::before", "left"), "-14px");
+  assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content .subscription-expiry", "padding"), "0 0 0 15px");
   assert.equal(finalDeclaration(canonicalFeatureCss, ".membership-card-stack", "--subscription-content-top"), "calc(var(--subscription-title-top) + var(--subscription-title-height) + 2px)");
   assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content .subscription-expiry", "text-align"), "left");
   const memberSource = readFileSync(new URL("../src/features/MemberPages.tsx", import.meta.url), "utf8");
