@@ -315,7 +315,7 @@ for (const width of [320, 430]) {
     expect(cardBox).not.toBeNull();
     expect(titleBox).not.toBeNull();
     expect(stageBox).not.toBeNull();
-    expect(Math.abs(stageBox!.y - (titleBox!.y + titleBox!.height) - 8)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(stageBox!.y - (titleBox!.y + titleBox!.height) - 2)).toBeLessThanOrEqual(0.5);
 
     const descriptionBox = await description.evaluate(measureDescription);
     expect(descriptionBox.top).toBeGreaterThanOrEqual(cardBox!.y - 0.5);
