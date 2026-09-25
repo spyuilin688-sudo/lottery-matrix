@@ -69,20 +69,33 @@ for (const { state, planName, tier, description: expectedDescription } of member
       expect(planBox).not.toBeNull();
       expect(expiryBox).not.toBeNull();
       expect(emblemBox).not.toBeNull();
-      // Use the card width: crown and plan on the left, expiry alongside on the right.
+      // Keep the visible information together; spare card width must not widen the middle gap.
       expect(Math.abs(expiryBox!.y - planBox!.y)).toBeLessThanOrEqual(0.5);
       expect(planBox!.x + planBox!.width + 8).toBeLessThanOrEqual(expiryBox!.x + 0.5);
       expect(emblemBox!.x + emblemBox!.width).toBeLessThanOrEqual(planBox!.x + 0.5);
       expect(Math.abs(emblemBox!.y + emblemBox!.height / 2 - planBox!.y - planBox!.height / 2)).toBeLessThanOrEqual(0.5);
       const cardBox = await subscriptionCard.boundingBox();
       expect(emblemBox!.x).toBeLessThan(cardBox!.x + cardBox!.width * 0.06);
-      expect(expiryBox!.x).toBeGreaterThan(cardBox!.x + cardBox!.width * 0.5);
-      const expiryText = await expiry.locator("span").evaluate((node) => {
-        const range = document.createRange();
-        range.selectNodeContents(node);
-        return range.getBoundingClientRect().right;
+      const textBounds = await subscriptionCard.evaluate((card) => {
+        const bounds = (selector: string) => [...card.querySelectorAll(selector)]
+          .filter((node) => node.textContent?.trim())
+          .map((node) => {
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            return range.getBoundingClientRect();
+          });
+        const planText = bounds(".subscription-plan span, .subscription-plan strong, .subscription-plan p");
+        const expiryText = bounds(".subscription-expiry span, .subscription-expiry strong, .subscription-expiry p");
+        return {
+          planRight: Math.max(...planText.map((box) => box.right)),
+          expiryLeft: Math.min(...expiryText.map((box) => box.left)),
+          expiryLeftEdges: expiryText.map((box) => box.left),
+        };
       });
-      expect(cardBox!.x + cardBox!.width - expiryText).toBeLessThan(cardBox!.width * 0.06);
+      const middleGap = textBounds.expiryLeft - textBounds.planRight;
+      expect(middleGap).toBeGreaterThanOrEqual(15.5);
+      expect(middleGap).toBeLessThanOrEqual(24.5);
+      expect(Math.max(...textBounds.expiryLeftEdges) - Math.min(...textBounds.expiryLeftEdges)).toBeLessThanOrEqual(0.5);
 
       const menus = profile.locator('.profile-menu');
       await expect(menus).toHaveCount(5);
