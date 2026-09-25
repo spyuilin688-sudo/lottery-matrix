@@ -75,8 +75,14 @@ for (const { state, planName, tier, description: expectedDescription } of member
       expect(planBox!.x - (emblemBox!.x + emblemBox!.width)).toBeGreaterThanOrEqual(15);
       expect(Math.abs(emblemBox!.y + emblemBox!.height / 2 - planBox!.y - planBox!.height / 2)).toBeLessThanOrEqual(0.5);
       expect(Math.abs(emblemBox!.width - (width - 12) * .17568)).toBeLessThanOrEqual(0.5);
-      await expect(expiry).toHaveCSS("border-left-width", "1px");
-      await expect(expiry).toHaveCSS("border-left-style", "solid");
+      await expect(expiry).toHaveCSS("border-left-width", "0px");
+      const divider = await expiry.evaluate((node) => {
+        const style = getComputedStyle(node, "::before");
+        return { x: node.getBoundingClientRect().left + parseFloat(style.left), width: style.borderLeftWidth, height: parseFloat(style.height) };
+      });
+      expect(divider.width).toBe("1px");
+      expect(Math.abs(divider.x - (expiryBox!.x - 14))).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(divider.height - expiryBox!.height)).toBeLessThanOrEqual(0.5);
       await expect(expiry).toHaveCSS("padding-left", "14px");
       await expect(plan).toHaveCSS("text-align", "left");
       await expect(expiry).toHaveCSS("text-align", "left");
@@ -108,6 +114,8 @@ for (const { state, planName, tier, description: expectedDescription } of member
         };
       });
       expect(textBounds.expiryLeft - textBounds.planRight).toBeGreaterThanOrEqual(10);
+      expect(divider.x - textBounds.planRight).toBeGreaterThanOrEqual(10);
+      expect(textBounds.expiryLeft - divider.x).toBeGreaterThanOrEqual(10);
       expect(Math.abs(textBounds.expiryLeft - expiryBox!.x - 15)).toBeLessThanOrEqual(0.5);
 
       const menus = profile.locator('.profile-menu');
