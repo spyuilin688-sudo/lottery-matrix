@@ -148,7 +148,9 @@ async function send(prepared: Prepared, bearer: string, deps: Dependencies): Pro
 
 export function createNativePushHandler(
   deps: Dependencies,
+  queue: 'legacy' | 'app' = 'legacy',
 ): (request: Request) => Promise<Response> {
+  const queuePrefix = queue === 'app' ? 'app_native_notification_' : 'native_notification_';
   return async (request: Request): Promise<Response> => {
     if (request.method !== 'POST') return reply(405, { error: 'METHOD_NOT_ALLOWED' });
     const secret = deps.env('MATRIX_NOTIFICATION_DISPATCH_TOKEN');
@@ -180,7 +182,7 @@ export function createNativePushHandler(
 
     let claims: Claim[];
     try {
-      claims = await rpc<Claim[]>('native_notification_claim', { p_limit: 20 });
+      claims = await rpc<Claim[]>(`${queuePrefix}claim`, { p_limit: 20 });
     } catch {
       return reply(503, { error: 'NATIVE_QUEUE_UNAVAILABLE' });
     }
@@ -214,13 +216,13 @@ export function createNativePushHandler(
         const claim = claims[cursor++];
         const args = { p_delivery_id: claim.delivery_id, p_claim_id: claim.claim_id };
         try {
-          const prepared = await rpc<Prepared | null>('native_notification_prepare', args);
+          const prepared = await rpc<Prepared | null>(`${queuePrefix}prepare`, args);
           if (!prepared) {
             result.canceled += 1;
             continue;
           }
           const outcome = await send(prepared, bearer, deps);
-          const finished = await rpc<{ finalized: boolean }>('native_notification_finalize', {
+          const finished = await rpc<{ finalized: boolean }>(`${queuePrefix}finalize`, {
             ...args,
             p_outcome: outcome,
           });

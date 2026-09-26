@@ -10,3 +10,10 @@ verify_jwt = false
 [functions.admin-api]
 # The owner auth config is public; protected routes verify admin sessions in the handler.
 verify_jwt = false
+
+[functions.app-native-notification-dispatch]
+# Worker authenticates with the existing constant-time dispatch secret check.
+verify_jwt = false
+
+[functions.app-account-delete]
+verify_jwt = false

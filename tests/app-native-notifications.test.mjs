@@ -1,0 +1,82 @@
+import assert from 'node:assert/strict';
+import { after,test } from 'node:test';
+import { randomUUID } from 'node:crypto';
+import { createAppNotificationDb } from './helpers/app-notification-db.mjs';
+import { identity,asUser,rpc,pwaSnapshot } from './helpers/app-db.mjs';
+const db=await createAppNotificationDb();
+after(()=>db.close());
+const token=id=>'fixture-token-'+id;
+const actor=await identity(db),other=await identity(db);
+const app=await asUser(db,actor,()=>rpc(db,'app_member_bootstrap'));
+await asUser(db,other,()=>rpc(db,'app_member_bootstrap'));
+const pwa=await asUser(db,actor,()=>rpc(db,'member_bootstrap'));
+const installation=randomUUID();
+await asUser(db,actor,()=>rpc(db,'member_native_push_save',[installation,token(installation),'android']));
+const before=await pwaSnapshot(db);
+const webSnapshot=async()=>({events:(await db.query('select * from notification_events order by id')).rows,outbox:(await db.query('select * from notification_outbox order by id')).rows});
+const event=async()=>{
+  const id=randomUUID();
+  await db.query("insert into notification_events(id,event_key,event_type,source,payload,occurred_at) values($1,$2,'lottery_result','railway',$3,now())",[id,id,{lottery:'今彩539',drawDate:'2026-09-26',numbers:['01','02','03','04','05']}]);
+  return id;
+};
+const asService=async(body)=>{await db.exec('set role service_role');try{return await body();}finally{await db.exec('reset role');}};
+
+test('upgrade disables only this lawful native installation and leaves PWA data untouched',async()=>{
+  const web=await webSnapshot();
+  await asUser(db,actor,()=>rpc(db,'app_native_push_save',[installation,token(installation),'android']));
+  assert.equal((await db.query('select enabled from private.native_push_devices where installation_id=$1',[installation])).rows[0].enabled,false);
+  assert.equal((await asUser(db,actor,()=>rpc(db,'app_native_push_status',[installation]))).enabled,true);
+  await assert.rejects(asUser(db,actor,()=>rpc(db,'member_native_push_save',[installation,token(installation),'android'])),/APP_UPGRADE_REQUIRED/);
+  assert.deepEqual(await pwaSnapshot(db),before);
+  assert.deepEqual(await webSnapshot(),web);
+});
+test('active other account cannot steal an installation or token',async()=>{
+  await assert.rejects(asUser(db,other,()=>rpc(db,'app_native_push_save',[installation,token(installation),'android'])),/INSTALLATION_IN_USE|TOKEN_IN_USE/);
+  await assert.rejects(asUser(db,other,()=>rpc(db,'app_native_push_save',[randomUUID(),token(installation),'android'])),/TOKEN_IN_USE/);
+});
+test('durable App fanout survives source retention and cannot duplicate an event/device',async()=>{
+  const settings=await asUser(db,actor,()=>rpc(db,'app_notification_settings_get'));
+  settings.settings.result=true;
+  await asUser(db,actor,()=>rpc(db,'app_notification_settings_save',[settings]));
+  const id=await event();
+  const web=await webSnapshot();
+  const claims=await asService(()=>rpc(db,'app_native_notification_claim',[20]));
+  assert.equal(claims.length,1);
+  assert.deepEqual(await webSnapshot(),web);
+  const prepared=await asService(()=>rpc(db,'app_native_notification_prepare',[claims[0].delivery_id,claims[0].claim_id]));
+  assert.equal(prepared.token,token(installation));
+  assert.equal(prepared.notification_payload.title,'今彩539 開獎結果');
+  assert.deepEqual(await asService(()=>rpc(db,'app_native_notification_finalize',[claims[0].delivery_id,claims[0].claim_id,'sent'])),{finalized:true});
+  await db.query('delete from notification_events where id=$1',[id]);
+  assert.equal((await db.query('select count(*)::int n from private.app_native_push_events where id=$1',[id])).rows[0].n,1);
+  assert.deepEqual(await asService(()=>rpc(db,'app_native_notification_claim',[20])),[]);
+});
+test('token rotation keeps in-flight evidence, while disable/session revoke blocks new preparation',async()=>{
+  await event();
+  const [claim]=await asService(()=>rpc(db,'app_native_notification_claim',[20]));
+  await asService(()=>rpc(db,'app_native_notification_prepare',[claim.delivery_id,claim.claim_id]));
+  await asUser(db,actor,()=>rpc(db,'app_native_push_save',[installation,token('rotated-'+installation),'android']));
+  assert.equal(await asService(()=>rpc(db,'app_native_notification_prepare',[claim.delivery_id,claim.claim_id])),null);
+  assert.deepEqual(await asService(()=>rpc(db,'app_native_notification_finalize',[claim.delivery_id,claim.claim_id,'sent'])),{finalized:true});
+  await event();
+  const [next]=await asService(()=>rpc(db,'app_native_notification_claim',[20]));
+  await asUser(db,actor,()=>rpc(db,'app_native_push_disable',[installation]));
+  assert.equal(await asService(()=>rpc(db,'app_native_notification_prepare',[next.delivery_id,next.claim_id])),null);
+  await db.query('delete from auth.sessions where id=$1',[other.session]);
+  await assert.rejects(asUser(db,other,()=>rpc(db,'app_native_push_save',[randomUUID(),token(randomUUID()),'android'])),/AUTH_REQUIRED/);
+});
+test('a legacy delivery already leased at upgrade records its outcome and is never resent by App',async()=>{
+  const user=await identity(db);const install=randomUUID();
+  const member=await asUser(db,user,()=>rpc(db,'member_bootstrap'));
+  await asUser(db,user,()=>rpc(db,'app_member_bootstrap'));
+  await asUser(db,user,()=>rpc(db,'member_native_push_save',[install,token(install),'android']));
+  const id=await event(),outbox=randomUUID(),delivery=randomUUID(),claim=randomUUID();
+  await db.query("insert into notification_outbox(id,event_id,member_id,notification_payload) values($1,$2,$3,'{\"title\":\"legacy\",\"body\":\"legacy\"}')",[outbox,id,member.memberId]);
+  await db.query("insert into private.native_push_deliveries(id,outbox_id,installation_id,device_revision,status,attempt_count,claim_id,claim_revision,lease_until) select $1,$2,installation_id,revision,'processing',1,$3,revision,now()+interval '2 minutes' from private.native_push_devices where installation_id=$4",[delivery,outbox,claim,install]);
+  await asUser(db,user,()=>rpc(db,'app_native_push_save',[install,token(install),'android']));
+  assert.deepEqual(await asService(()=>rpc(db,'native_notification_finalize',[delivery,claim,'sent'])),{finalized:true});
+  assert.equal((await db.query('select status from private.native_push_deliveries where id=$1',[delivery])).rows[0].status,'sent');
+  assert.equal((await db.query('select count(*)::int n from private.app_native_legacy_receipts where event_id=$1 and installation_id=$2',[id,install])).rows[0].n,1);
+  await asService(()=>rpc(db,'app_native_notification_claim',[20]));
+  assert.equal((await db.query('select count(*)::int n from private.app_native_push_deliveries where installation_id=$1',[install])).rows[0].n,0);
+});

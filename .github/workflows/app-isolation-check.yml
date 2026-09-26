@@ -1,0 +1,41 @@
+name: App isolation checks
+on:
+  push:
+    branches: [work/app-isolation-backend-20260926]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-app-database:
+    if: github.ref == 'refs/heads/work/app-isolation-backend-20260926'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: matrix_app_test
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: App SQL contracts
+        run: node --test tests/app-product-membership.test.mjs tests/app-product-session-scope.test.mjs tests/app-matrix-read-api.test.mjs tests/app-member-settings.test.mjs tests/app-native-notifications.test.mjs tests/app-notification-recovery.test.mjs tests/app-account-deletion.test.mjs
+      - name: Real local Postgres concurrency
+        env:
+          APP_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/matrix_app_test
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client
+          node scripts/run-app-db-checks.mjs --test tests/app-isolation-postgres.test.mjs --database-url-env APP_TEST_DATABASE_URL
+      - name: App API and UI boundaries
+        run: npx vitest run apps/admin/backend/app-admin.test.ts apps/admin/backend/app-admin-db.test.ts apps/admin/src/AppAdminPanel.test.tsx apps/admin/src/AdminApp.recovery.test.tsx src/app-info/AppInfoPage.test.tsx src/app-info/AppInfoRouting.test.tsx
+      - name: App Edge boundaries
+        run: npx vitest run --config vitest.edge-functions.config.ts supabase/functions/app-matrix-status/handler.test.ts supabase/functions/app-native-notification-dispatch/handler.test.ts supabase/functions/app-account-delete/handler.test.ts
+      - run: npm run build:pages

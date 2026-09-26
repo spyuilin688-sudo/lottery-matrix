@@ -4,6 +4,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: [
+      "supabase/functions/app-account-delete/**/*.test.ts",
+      "supabase/functions/app-matrix-status/**/*.test.ts",
+      "supabase/functions/app-native-notification-dispatch/**/*.test.ts",
       "supabase/functions/admin-transfer-push/**/*.test.ts",
       "supabase/functions/admin-security-push/**/*.test.ts",
       "supabase/functions/_shared/**/*.test.ts",

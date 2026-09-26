@@ -1,3 +1,4 @@
+import { AppAdminPanel, type AppAdminSection } from './AppAdminPanel';
 import type { ManualRefreshTask } from '../shared/manual-refresh';
 import { MatrixWatchdogPanel } from "./MatrixWatchdogPanel";
 import { loadAdminBootstrap, createActivationBatchSubmitter } from "./admin-recovery";
@@ -292,6 +293,9 @@ const defaultAdmin = (role = "查看人員"): AdminForm => ({
   permissions: defaultOperationPermissions(role),
 });
 function AdminApp() {
+  const [product, setProduct] = useState<'pwa' | 'app'>(() => new URLSearchParams(window.location.search).get('product') === 'app' ? 'app' : 'pwa');
+  const productRef = useRef(product); productRef.current = product;
+  const [appPage, setAppPage] = useState<AppAdminSection>('users');
   const [signed, setSigned] = useState(false);
   const [bootstrapUnavailable, setBootstrapUnavailable] = useState(false);
   const activationBatchSubmitter = useRef(createActivationBatchSubmitter(api));
@@ -403,16 +407,18 @@ function AdminApp() {
     ) && can(operation);
   const sessionKey = signed ? String(admin?.id ?? "") : "";
   const mainTable = active === "管理員權限" ? "admins" : tableMap[active];
-  const listPage = useAdminDataPage(signed && mainTable && !["users", "subscriptions"].includes(mainTable) ? mainTable : null, memberListRevision, api, sessionKey);
+  const listPage = useAdminDataPage(signed && product === "pwa" && mainTable && !["users", "subscriptions"].includes(mainTable) ? mainTable : null, memberListRevision, api, sessionKey);
   const rows = listPage.items;
   const captureView = (trackRead = false) => {
     const read = loadVersion.current;
+    const capturedProduct = productRef.current;
     const view = viewVersion.current;
     const adminId = adminIdRef.current;
     const name = activeRef.current;
-    return () => mounted.current && view === viewVersion.current && adminId === adminIdRef.current && name === activeRef.current && (!trackRead || read === loadVersion.current);
+    return () => mounted.current && capturedProduct === productRef.current && view === viewVersion.current && adminId === adminIdRef.current && name === activeRef.current && (!trackRead || read === loadVersion.current);
   };
   const load = async (name = activeRef.current, expectedAdminId = adminIdRef.current, refreshPlans = true) => {
+    if (productRef.current !== "pwa") { setBusy(false); return false; }
     if (!mounted.current || !signedRef.current || name !== activeRef.current || expectedAdminId !== adminIdRef.current) return false;
     const version = ++loadVersion.current;
     loadPending.current = true;
@@ -534,6 +540,15 @@ function AdminApp() {
     setActivationSelectionMode(false);
     setSelectedActivationCodeIds(new Set());
     setActivationCopyFeedback("");
+  };
+  const chooseProduct = (next: 'pwa' | 'app') => {
+    if (next === 'app' && admin?.canManageApp !== true) return;
+    productRef.current = next; setProduct(next); viewVersion.current++; loadVersion.current++;
+    finishConfirmation(false); setDash(null); setBusy(false); setError(''); setDrawer(false);
+    const url = new URL(window.location.href);
+    if (next === 'app') url.searchParams.set('product', 'app'); else url.searchParams.delete('product');
+    window.history.replaceState({}, '', url);
+    if (next === 'pwa') void load();
   };
   const choose = (name: string) => {
     activationTitleTap.current = 0;
@@ -894,11 +909,11 @@ function AdminApp() {
           <button className="sideClose" type="button" aria-label="關閉功能選單" onClick={() => setDrawer(false)}><span aria-hidden="true">×</span></button>
         </div>
         <nav id="admin-navigation" aria-label="管理功能">
-          {modules.filter(([n]) => (n !== "管理員權限" || moduleCan("admins", "view", "view")) && (n !== "架構總彙" || moduleCan("systemSettings", "view", "view"))).map(([n, I], i) => (
+          {(product === "app" ? modules.filter(([n]) => ["用戶管理", "訂閱管理", "收入報表"].includes(n)) : modules).filter(([n]) => (n !== "管理員權限" || moduleCan("admins", "view", "view")) && (n !== "架構總彙" || moduleCan("systemSettings", "view", "view"))).map(([n, I], i) => (
             <button
               key={n}
-              className={active === n ? "nav active" : "nav"}
-              onClick={() => choose(n)}
+              className={(product === 'app' ? ({ users: '用戶管理', subscriptions: '訂閱管理', revenue: '收入報表' }[appPage]) : active) === n ? "nav active" : "nav"}
+              onClick={() => { if (product === 'app') { setAppPage(n === '用戶管理' ? 'users' : n === '訂閱管理' ? 'subscriptions' : 'revenue'); setDrawer(false); } else choose(n); }}
             >
               <I size={18} />
               <span>
@@ -916,7 +931,7 @@ function AdminApp() {
           <div>
             {isPrivateOwner && active === "啟動碼管理"
               ? <button type="button" className="privateActivationTitle" onClick={openPrivateActivationPage} aria-label="啟動碼管理"><b>{active}</b></button>
-              : <b>{active}</b>}
+              : <b>{product === "app" ? "APP版管理" : active}</b>}
           </div>
           <div className="actions">
             <button className="profileName" onClick={openProfileName} title="修改自己的名稱">
@@ -949,7 +964,16 @@ function AdminApp() {
               </div>
             </dialog>
         )}
+        {(admin?.canManageApp === true || product === 'app') && <div className="product-tabs" role="tablist" aria-label="產品版本">
+          <button role="tab" aria-selected={product === 'pwa'} onClick={() => chooseProduct('pwa')}>PWA版</button>
+          {admin?.canManageApp === true && <button role="tab" aria-selected={product === 'app'} onClick={() => chooseProduct('app')}>APP版</button>}
+        </div>}
         <section className="content">
+          {product === 'app' ? admin?.canManageApp === true ? <>
+            <div role="tablist" aria-label="App 管理項目" className="app-admin-sections">{(['users', 'subscriptions', 'revenue'] as const).map(name => <button key={name} role="tab" aria-selected={appPage === name} onClick={() => setAppPage(name)}>{{ users: '用戶', subscriptions: '訂閱', revenue: '收入' }[name]}</button>)}</div>
+            <AppAdminPanel key={`${sessionKey}:${appPage}`} page={appPage} />
+          </> : <p role="alert">沒有 App 管理權限。</p> : <>
+
           {error && <div className="error">{error}</div>}
           {busy && <div className="loading">資料處理中…</div>}
           {active === "營運概覽" && dash && <Overview d={dash} />}{" "}
@@ -1183,6 +1207,7 @@ function AdminApp() {
               <Pagination page={listPage.currentPage} totalPages={listPage.totalPages} onPage={changeTablePage} disabled={listPage.loading || Boolean(listPage.error)} />
             </>
           )}
+          </>}
         </section>
         {confirmation && (
           <ConfirmationDialog
