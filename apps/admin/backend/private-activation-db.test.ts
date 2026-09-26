@@ -55,7 +55,7 @@ beforeAll(async () => {
   await db.exec(read('20260926005023_private_activation_codes.sql'));
   await db.exec(read('20260926013545_retain_private_activation_history_and_public_plan_search.sql'));
   await db.exec(read('20260926015433_private_audit_content_search.sql'));
-  await db.exec(read('20260926025210_narrow_private_activation_audit_redaction.sql'));
+  await db.exec(read('20260926030508_20260926025210_narrow_private_activation_audit_redaction.sql'));
 }, 20000);
 afterAll(() => db.close());
 

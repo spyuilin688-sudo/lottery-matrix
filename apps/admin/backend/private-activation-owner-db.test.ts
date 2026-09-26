@@ -24,7 +24,7 @@ beforeAll(async () => {
       ('${other}','other@example.com','Other','超級管理員','啟用','other-salt','other-hash');
     select pg_catalog.set_config('request.jwt.claims','{"role":"service_role"}',false);
   `);
-  await db.exec(readFileSync(new URL('../../../supabase/migrations/20260926024552_protect_private_activation_owner_account.sql', import.meta.url), 'utf8'));
+  await db.exec(readFileSync(new URL('../../../supabase/migrations/20260926030507_20260926024552_protect_private_activation_owner_account.sql', import.meta.url), 'utf8'));
 }, 20000);
 afterAll(() => db.close());
 
