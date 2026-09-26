@@ -54,6 +54,24 @@ function retryStorage() {
 }
 
 describe('activation retry across form and page reopening', () => {
+  it('retries a public batch started by the previous frontend using its original request identity', async () => {
+    const storage = retryStorage();
+    const legacyKey = 'matrix:admin:activation-request:["a","7_days",3]';
+    const legacyRequestId = '00000000-0000-4000-8000-000000000123';
+    storage.setItem(legacyKey, legacyRequestId);
+    const requests: Array<{ requestId: string; private: boolean }> = [];
+    const client = { post: async (_path: string, body: unknown) => {
+      requests.push(body as { requestId: string; private: boolean });
+      return { data: { count: 3 } };
+    } };
+
+    await createActivationBatchSubmitter(client, storage).submit('a', '7_days', 3);
+    expect(requests[0]).toMatchObject({ requestId: legacyRequestId, private: false });
+    expect(storage.getItem(legacyKey)).toBeNull();
+    await createActivationBatchSubmitter(client, storage).submit('a', '7_days', 3);
+    expect(requests[1].requestId).not.toBe(legacyRequestId);
+  });
+
   it('preserves an ambiguous operation after a new submitter is created and clears it after success', async () => {
     const storage = retryStorage();
     const requests: Array<{ requestId: string }> = [];

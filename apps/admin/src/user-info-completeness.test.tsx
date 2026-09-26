@@ -23,3 +23,18 @@ it('shows the existing account, connection, online, and subscription fields with
   expect(text).not.toContain('member-internal-id');
   await act(async () => root.unmount()); host.remove();
 });
+
+it('shows unknown renewal state for a redacted subscription', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
+  HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
+  const host = document.createElement('div'); document.body.append(host); const root = createRoot(host);
+  const client = { get: vi.fn(async () => ({ data: { items: [], hasMore: false } })) };
+  await act(async () => root.render(<UserInfoDialog module="subscriptions" row={{
+    id: 'member-2', memberDisplayName: '一般會員', autoRenew: null,
+    planName: null, planStartedAt: null, planExpiresAt: null, isLifetime: null,
+  }} client={client} onClose={() => {}} />));
+  const renewal = [...host.querySelectorAll('dt')].find((field) => field.textContent === '自動續訂');
+  expect(renewal?.nextElementSibling?.textContent).toBe('—');
+  await act(async () => root.unmount()); host.remove();
+});

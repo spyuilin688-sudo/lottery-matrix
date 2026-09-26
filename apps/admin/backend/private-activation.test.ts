@@ -57,6 +57,21 @@ describe('private activation code access', () => {
     expect(request).toHaveBeenCalledTimes(1);
   });
 
+  it('hides an earlier private plan after a second redemption while preserving status changes', async () => {
+    const earlier = { current_plan_id: 'plan-1', plan_started_at: '2026-09-01T00:00:00Z',
+      plan_expires_at: '2026-09-08T00:00:00Z', is_lifetime: false };
+    const request = vi.fn(async () => [{ member_id: 'member-1', ...earlier,
+      plan_expires_at: '2026-09-23T00:00:00Z' }]);
+    const row = { id: 'audit-1', targetTable: 'members', targetId: 'member-1', content: '停用會員帳號',
+      beforeData: { ...earlier, status: 'active' }, afterData: { ...earlier, status: 'disabled' } };
+    const [visible] = await maskPrivateAuditRows([row], operator, { request });
+    expect(visible).toMatchObject({ content: '停用會員帳號',
+      beforeData: { status: 'active' }, afterData: { status: 'disabled' } });
+    expect(visible.beforeData).not.toHaveProperty('plan_expires_at');
+    expect(visible.afterData).not.toHaveProperty('is_lifetime');
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+
   it('applies audit masking in the paged admin API path', async () => {
     const requestPage = vi.fn(async (_path: string) => ({ total: 1, items: [{
       id: 'audit-1', target_table: 'members', target_id: 'member-1',
@@ -97,6 +112,25 @@ describe('private activation code access', () => {
     expect(page.items[0]).toMatchObject({ id: 'member-1', memberDisplayName: '會員', isLifetime: null, currentPlanId: null, planStartedAt: null, planExpiresAt: null });
     expect(page.total).toBe(1);
     expect(new URL(requestPage.mock.calls[0][0], 'https://test').searchParams.get('keyword_plan.name')).toBeNull();
+    expect(new URL(requestPage.mock.calls[0][0], 'https://test').searchParams.get('or'))
+      .toContain('admin_visible_plan_name.imatch."會員"');
     expect(request.mock.calls.filter(([path]) => path.startsWith('/rest/v1/private_activation_redemptions'))).toHaveLength(1);
+  });
+
+  it('filters and sorts only visible plan details for other administrators', async () => {
+    const requestPage = vi.fn(async () => ({ items: [], total: 0 }));
+    const api = { request: vi.fn(async () => []), requestPage };
+    const currentDate = new Date('2026-09-26T00:00:00Z');
+    await listAdminMemberPage('subscriptions', { plan: 'yearly', sortBy: 'planStartedAt',
+      startDate: '2026-09-01', dateField: 'planExpiresAt' }, api, currentDate, operator);
+    const filtered = new URL(requestPage.mock.calls[0][0], 'https://test').searchParams;
+    expect(filtered.get('admin_visible_plan_duration')).toBe('eq.365');
+    expect(filtered.get('current_plan.duration_days')).toBeNull();
+    expect(filtered.get('order')).toBe('admin_visible_plan_started_at.desc.nullslast,id.asc');
+    expect(filtered.get('admin_visible_plan_expires_at')).toBe('gte.2026-08-31T16:00:00.000Z');
+
+    await listAdminMemberPage('users', { sortBy: 'planExpiresAt' }, api, currentDate, operator);
+    expect(new URL(requestPage.mock.calls[1][0], 'https://test').searchParams.get('order'))
+      .toBe('admin_visible_plan_expires_at.desc.nullslast,id.asc');
   });
 });

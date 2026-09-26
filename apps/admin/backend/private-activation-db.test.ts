@@ -53,6 +53,7 @@ beforeAll(async () => {
   `);
   await db.exec(read('20260910123427_admin_atomic_activation_batch.sql'));
   await db.exec(read('20260926005023_private_activation_codes.sql'));
+  await db.exec(read('20260926012234_retain_private_activation_history_and_public_plan_search.sql'));
 }, 20000);
 afterAll(() => db.close());
 
@@ -95,6 +96,55 @@ describe('private activation code database lifecycle', () => {
       .toEqual([{ is_lifetime: true, plan_expires_at: null }]);
     expect((await db.query('select code_id, is_lifetime from public.private_activation_redemptions where member_id=$1', [member])).rows)
       .toEqual([{ code_id: row.id, is_lifetime: true }]);
+    expect((await db.query('select code_id from public.private_activation_redemption_history where member_id=$1', [member])).rows)
+      .toEqual([{ code_id: row.id }]);
     expect((await db.query('select count(*)::int as n from public.audit_logs')).rows).toEqual([{ n: 2 }]);
+  });
+
+  it('retains both hidden redemptions for the same member without exposing the history to member sessions', async () => {
+    const secondMember = '00000000-0000-4000-8000-000000000005';
+    await db.query('insert into public.members(id,auth_user_id,status) values ($1,$1,$2)', [secondMember, 'active']);
+    await db.query("select set_config('app.test_uid',$1,false)", [secondMember]);
+    const redeemedCodeIds: string[] = [];
+    for (const duration of ['7_days', '15_days']) {
+      const batchId = (await generate(owner, duration, true)).rows[0].result.batchId;
+      const code = (await db.query<{ id: string; code: string }>('select id,code from public.activation_codes where batch_id=$1', [batchId])).rows[0];
+      await db.query('select private.redeem_activation_code($1)', [code.code]);
+      redeemedCodeIds.push(code.id);
+    }
+    const history = (await db.query<{ code_id: string }>(
+      'select code_id from public.private_activation_redemption_history where member_id=$1 order by redeemed_at, code_id',
+      [secondMember],
+    )).rows;
+    expect(new Set(history.map(row => row.code_id))).toEqual(new Set(redeemedCodeIds));
+    expect((await db.query('select count(*)::int as n from public.private_activation_redemptions where member_id=$1', [secondMember])).rows)
+      .toEqual([{ n: 1 }]);
+    expect((await db.query("select has_table_privilege('authenticated','public.private_activation_redemption_history','select') as allowed")).rows)
+      .toEqual([{ allowed: false }]);
+  });
+
+  it('allows public plan-name search but hides the current plan from search after a private redemption', async () => {
+    const publicMember = '00000000-0000-4000-8000-000000000006';
+    await db.query('insert into public.members(id,auth_user_id,status,current_plan_id) values ($1,$1,$2,$3)',
+      [publicMember, 'active', monthlyPlan]);
+    const visibleName = (id: string) => db.query<{ name: string | null }>(
+      'select public.admin_visible_plan_name(member) as name from public.members as member where id=$1', [id],
+    );
+    expect((await visibleName(publicMember)).rows).toEqual([{ name: '月費方案' }]);
+    expect((await visibleName(member)).rows).toEqual([{ name: null }]);
+    expect((await db.query('select public.admin_visible_plan_duration(m) as days from public.members m where id=$1', [publicMember])).rows)
+      .toEqual([{ days: 30 }]);
+    expect((await db.query('select public.admin_visible_plan_duration(m) as days from public.members m where id=$1', [member])).rows)
+      .toEqual([{ days: null }]);
+    const secondMember = '00000000-0000-4000-8000-000000000005';
+    expect((await visibleName(secondMember)).rows).toEqual([{ name: null }]);
+    expect((await db.query('select public.admin_visible_plan_started_at(m) as started from public.members m where id=$1', [secondMember])).rows)
+      .toEqual([{ started: null }]);
+    await db.query("update public.members set plan_expires_at=plan_expires_at+interval '1 day' where id=$1", [secondMember]);
+    expect((await visibleName(secondMember)).rows).toEqual([{ name: '月費方案' }]);
+    expect((await db.query('select public.admin_visible_plan_expires_at(m) as expires from public.members m where id=$1', [secondMember])).rows[0].expires)
+      .not.toBeNull();
+    expect((await db.query("select has_function_privilege('authenticated','public.admin_visible_plan_name(public.members)','execute') as allowed")).rows)
+      .toEqual([{ allowed: false }]);
   });
 });
