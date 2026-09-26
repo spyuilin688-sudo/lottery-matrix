@@ -32,6 +32,14 @@ const date = (value: unknown): string => {
   if (!Number.isFinite(d.getTime())) throw Error('INVALID_DATE');
   return d.toISOString().slice(0, 10);
 };
+const timestamp = (value: unknown): string => {
+  if (typeof value !== 'string' || !value) throw Error('INVALID_DATE');
+  if (/^\d{10}$/.test(value)) return new Date(Number(value) * 1000).toISOString();
+  if (!/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,3})?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/.test(value)
+    || date(value.slice(0,10)) !== value.slice(0,10)) throw Error('INVALID_DATE');
+  return new Date(value).toISOString();
+};
+const taipeiDate = (value: string) => new Date(Date.parse(value) + 8 * 60 * 60 * 1000).toISOString().slice(0,10);
 const empty = () => ({latestInvoiceAmount:null,latestInvoiceStatus:null,latestPaymentDate:null,currentAmount:null,estimatedAmount:null,period:null});
 
 export function githubSnapshot(body: Row, previous: Row | null, now: Date) {
@@ -70,6 +78,8 @@ export function railwaySnapshot(data: Row, now: Date, previous: Row | null = nul
   if (workspace.id !== workspaceId || !Array.isArray(customer.invoices)) throw Error('INVALID_WORKSPACE');
   const current = amount(customer.currentUsage);
   const period = row(customer.billingPeriod);
+  const cycleStart = timestamp(period.start), cycleEnd = timestamp(period.end);
+  if (cycleStart >= cycleEnd) throw Error('INVALID_BILLING_PERIOD');
   const agent = row(data.agentUsage);
   if (!Number.isSafeInteger(agent.totalUsedCents) || date(agent.billingPeriodEnd)!==date(period.end)) throw Error('INVALID_AGENT_PERIOD');
   const agentAmount=amount(agent.totalUsedCents)/100;
@@ -105,7 +115,8 @@ export function railwaySnapshot(data: Row, now: Date, previous: Row | null = nul
     estimatedAmount: estimated === null ? null : `${money(estimated)}（折抵前用量預估）`,
     latestInvoiceAmount:latest ? money(latest.total/100) : null,
     latestInvoiceStatus:latest && ['paid','open','void','uncollectible'].includes(latest.status) ? latest.status : null,
-    period:`${date(period.start)}－${date(period.end)}（結束時間不含）`,
+    billingCycle:{start:cycleStart,end:cycleEnd,precision:'timestamp',source:'Railway API',verifiedAt:now.toISOString()},
+    period:`${taipeiDate(cycleStart)}－${taipeiDate(cycleEnd)}（台灣時間；結束時間不含）`,
     source,
     verifiedAt:now.toISOString(),
   };
