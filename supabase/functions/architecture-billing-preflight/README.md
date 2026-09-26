@@ -4,11 +4,11 @@ This is a read-only, explicitly invoked diagnostic for the unfinished daily bill
 
 POST requires the existing server-only `x-matrix-dispatch-token`, matched against `MATRIX_NOTIFICATION_DISPATCH_TOKEN`. The existing Vault dispatch token can invoke it through pg_net without copying secrets into source or returning them to the client. GET and unauthorized requests perform no provider requests.
 
-The function checks Cloudflare token verification, user subscriptions and visible accounts using `CLOUDFLARE_BILLING_API_TOKEN`; it checks GitHub's current UTC month usage endpoint with `GITHUB_BILLING_API_TOKEN`, falling back to the existing `GITHUB_ACTIONS_TOKEN`. HTTP rejection and request failures are reported without provider response bodies. Railway and Supabase configuration presence is only reported; it does not establish endpoint availability or authorization.
+The function checks Cloudflare token verification, user subscriptions and visible accounts using `CLOUDFLARE_BILLING_API_TOKEN`; it checks GitHub's current UTC month usage endpoint with `GITHUB_BILLING_API_TOKEN`, falling back to the existing `GITHUB_ACTIONS_TOKEN`. Railway uses `RAILWAY_BILLING_API_TOKEN` to read the configured workspace's current usage, billing period, invoices and subscriptions through the official GraphQL API. Only success and record counts are returned. HTTP rejection, GraphQL errors and request failures are reported without provider response bodies. Supabase configuration presence is only reported; it does not establish endpoint availability or authorization.
 
 ## Unfinished work
 
-- Complete the Railway workspace billing authorization and verify the exact API fields.
+- Railway workspace billing authorization is verified. Confirm amount units and field semantics before implementing snapshot conversion.
 - Establish a supported Supabase billing data source and its authorization. Merely supplying a Management API token does not prove invoice access.
 - Resolve the GitHub billing API rejection and verify the required user Plan permission.
 - Verify Cloudflare Pages-specific coverage. A subscription with `rate_plan.scope = zone` is a zone plan and must not be presented as the Pages plan. Empty account invoice history is not evidence of zero current usage.
