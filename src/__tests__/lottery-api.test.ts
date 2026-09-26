@@ -794,11 +794,13 @@ it('a late old revision probe cannot replace a newer accepted snapshot baseline'
   const next = { ...old, '今彩539': 'snapshot-new' };
   let finishProbe!: (response: Response) => void;
   let startProbe!: () => void;
+  let probes = 0;
   const started = new Promise<void>(resolve => { startProbe = resolve; });
   vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(jsonResponse({ drawDate: '2026-09-26', items: [], revisions: old }));
   await fetchLatestLotteryResultState('2026-09-26');
   vi.mocked(globalThis.fetch).mockImplementation(async url => {
     if (String(url).includes('/result-revisions')) {
+      if (++probes > 1) return jsonResponse({ revisions: next });
       startProbe();
       return new Promise<Response>(resolve => { finishProbe = resolve; });
     }
@@ -811,6 +813,44 @@ it('a late old revision probe cannot replace a newer accepted snapshot baseline'
   finishProbe(jsonResponse({ revisions: old }));
   await probe;
   expect(await readThroughCache('matrix-rpc:new-snapshot-derived', 60_000, async () => 'invalidated')).toBe('new-snapshot');
+});
+
+it('reconfirms a newer readiness version when a delayed intermediate snapshot arrives first', async () => {
+  const initial = { '今彩539': 'initial', '天天樂': 'b', '六合彩': 'c', '大樂透': 'd' };
+  const intermediate = { ...initial, '今彩539': 'intermediate' };
+  const newest = { ...initial, '今彩539': 'newest' };
+  const snapshot = (period: string, revisions: typeof initial) => ({
+    drawDate: '2026-09-26', items: [{ lottery: '今彩539', period }], revisions,
+  });
+  vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(jsonResponse(snapshot('115208', initial)));
+  await fetchLatestLotteryResultState();
+  clearReadCache('lottery:published-result:');
+  localStorage.removeItem('lottery-published-result:latest');
+  let finishSnapshot!: (response: Response) => void;
+  let finishProbe!: (response: Response) => void;
+  let startSnapshot!: () => void;
+  let startProbe!: () => void;
+  const snapshotStarted = new Promise<void>(resolve => { startSnapshot = resolve; });
+  const probeStarted = new Promise<void>(resolve => { startProbe = resolve; });
+  let probeCalls = 0;
+  let snapshotCalls = 0;
+  vi.mocked(globalThis.fetch).mockImplementation(async url => {
+    if (String(url).includes('/result-revisions')) {
+      if (++probeCalls > 1) return jsonResponse({ revisions: newest });
+      return new Promise<Response>(resolve => { finishProbe = resolve; startProbe(); });
+    }
+    if (++snapshotCalls > 1) return jsonResponse(snapshot('115210', newest));
+    return new Promise<Response>(resolve => { finishSnapshot = resolve; startSnapshot(); });
+  });
+  const pendingSnapshot = fetchLatestLotteryResultState();
+  const pendingProbe = confirmPublishedResultRevisions(() => true);
+  await Promise.all([snapshotStarted, probeStarted]);
+  finishSnapshot(jsonResponse(snapshot('115209', intermediate)));
+  expect((await pendingSnapshot).items[0].period).toBe('115209');
+  finishProbe(jsonResponse({ revisions: newest }));
+  await pendingProbe;
+  expect((await fetchLatestLotteryResultState()).items[0].period).toBe('115210');
+  expect(probeCalls).toBe(2);
 });
 
 it.each(['persisted', 'legacy-network', 'same-version-network'] as const)('a %s read cannot suppress an in-flight newer readiness revision', async kind => {

@@ -491,15 +491,21 @@ function acceptCompletedResultRevisions(revisions: ResultRevisions | undefined) 
 }
 
 // Share only the network probe; each mounted owner checks whether it is still current.
-export async function confirmPublishedResultRevisions(isCurrent: () => boolean) {
+export async function confirmPublishedResultRevisions(isCurrent: () => boolean): Promise<void> {
   const probe = await readThroughCache('lottery:result-revisions', 0, async () => {
     const epoch = completedRevisionEpoch;
     const data = await requestJson<{ revisions?: unknown }>('/api/matrix/result-revisions', { cache: 'no-store' });
     return { revisions: parseResultRevisions(data.revisions), epoch };
   });
-  // The ownership epoch belongs to the shared network request, not to each
-  // consumer joining it. A later successful snapshot supersedes this probe.
-  if (isCurrent() && probe.epoch === completedRevisionEpoch) acceptCompletedResultRevisions(probe.revisions);
+  if (!isCurrent()) return;
+  // Response order does not establish database version order. If a changed
+  // snapshot arrived during this probe, confirm again instead of discarding a
+  // potentially newer publication. Owners that accepted the same probe agree.
+  if (probe.epoch !== completedRevisionEpoch) {
+    if (RESULT_LOTTERIES.every(lottery => completedResultRevisions?.[lottery] === probe.revisions[lottery])) return;
+    return confirmPublishedResultRevisions(isCurrent);
+  }
+  acceptCompletedResultRevisions(probe.revisions);
 }
 
 function parsedLatestResultState(data: { drawDate?: unknown; items?: unknown; dueLotteries?: unknown; revisions?: unknown }): LatestLotteryResultState {

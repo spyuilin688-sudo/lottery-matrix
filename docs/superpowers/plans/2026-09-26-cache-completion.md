@@ -39,3 +39,11 @@ For each task: demonstrate red regression, implement smallest change, run named 
 - `npm run build:pages` — runtime integrity, root TypeScript, PWA and admin production builds passed.
 - `git diff --check` passed. Cross-review found and corrected both response-order races: a new homepage snapshot before the probe must invalidate derived data; an old probe after a newer snapshot must not rewind the baseline. Storage hydration, missing metadata and unchanged network snapshots must not suppress a newer probe. New regression assertions were observed failing before their fixes.
 - Only named related tests were executed. No database migration or dependency changes.
+
+## Takeover verification
+
+- Continued the existing PR #939 after confirming its original changes matched the local worktree. Found and repaired two remaining review defects rather than reimplementing the completed work.
+- A history correction with no new card-publication signal returned stale years in a deterministic test. Summary revision probes now share pending work only; unchanged full summaries remain cached. The regression now verifies correction and new-year insertion without manual invalidation, plus concurrent query sharing and failure recovery.
+- A delayed intermediate homepage snapshot could suppress a newer readiness response. The regression reproduced period `115209` instead of `115210`; current owners now re-confirm after a conflicting epoch, while consumers of an already accepted identical probe reuse it.
+- Fresh final focused commands above: frontend **62 passed**, backend **101 passed**. Both new defects were observed failing before their fixes.
+- `npm run build:pages` and `git diff --check` passed again. Follow-up independent review found both defects resolved and no remaining blocking issue. No full test suite was run.

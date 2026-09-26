@@ -440,7 +440,15 @@ def _draw_query(repository: AnalysisRepository, lottery: str, kind: str, **param
     if cache is not None and kind in {"history", "tongxing", "summary"}:
         # Revalidate with a small latest-row response before reusing a large page.
         # Database revisions cover all history corrections and cross-process writers.
-        latest = _draw_query(repository, lottery, "latest")
+        if kind == "summary":
+            # History can change again while card publication is already dirty,
+            # without another Realtime signal. Share pending probes only so
+            # each later years read observes the current database revision.
+            probe_key = json.dumps([lottery, "summary-revision"], ensure_ascii=False)
+            latest = cache.read(probe_key, lambda: _execute_draw_query(repository, lottery, "latest"),
+                                cache_result=False)
+        else:
+            latest = _draw_query(repository, lottery, "latest")
         revision = latest.get("revision")
         if isinstance(revision, str) and revision and (cursor is None or cursor.get("revision") == revision):
             key = json.dumps([lottery, revision, kind, params], sort_keys=True, ensure_ascii=False)
