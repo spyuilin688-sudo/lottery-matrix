@@ -105,3 +105,16 @@ it('does not use a response from a closed view in the new administrator view', a
   await waitFor(() => expect(screen.queryByRole('status')).toBeNull());
   expect(screen.queryByText('Old plan')).toBeNull();
 });
+
+
+it('shows automatically retrieved Cloudflare limits without claiming known usage or payment',async()=>{
+ render(<ArchitectureOverview client={{get:async()=>({data:{items:[{...row,provider:'cloudflare',plan:null,fee:null,billing:{source:'Cloudflare API',verifiedAt:'2026-09-26T00:00:00Z',limits:[{label:'建置快取容量',value:'10,000 MB'}]}}]}})}}/>);
+ await waitFor(()=>expect(screen.queryByRole('status')).toBeNull());
+ const card=screen.getByRole('article',{name:'Cloudflare Pages',exact:true});
+ fireEvent.click(card.querySelector('summary')!);
+ expect(within(card).getByText('10,000 MB')).toBeTruthy();
+ expect(within(card).getByText(/上限自動更新：/)).toBeTruthy();
+ expect(within(card).queryByText(/人工核對：/)).toBeNull();
+ expect(within(card).getByText('每月建置已用量、剩餘額度與重置時間尚未取得。')).toBeTruthy();
+ expect(within(card.querySelector('summary')!).getAllByText('尚未確認')).toHaveLength(3);
+});

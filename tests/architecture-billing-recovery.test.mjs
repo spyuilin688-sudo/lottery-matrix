@@ -51,6 +51,18 @@ test('billing recovery migrations preserve data and enforce terminal outcomes',a
         assert.equal((await db.query('select public.finish_admin_architecture_billing_run($1,$2) as changed',[id,JSON.stringify(results)])).rows[0].changed,false);
       } finally {await db.exec('rollback');}
     });
+    await db.exec(readFileSync(new URL('../supabase/migrations/20260926041111_cloudflare_entitlement_sync.sql',import.meta.url),'utf8'));
+    await t.test('partial Cloudflare limits persist without declaring billing complete',async()=>{
+      await db.exec('begin; set local role service_role');
+      try {
+        const id=(await db.query('select public.claim_admin_architecture_billing_run() as id')).rows[0].id;
+        const snapshot={source:'Cloudflare API limits only',verifiedAt:new Date().toISOString(),limits:[{label:'同時建置',value:'1 個'}]};
+        const results={github:{status:'failed'},railway:{status:'failed'},cloudflare:{status:'partial',snapshot}};
+        assert.equal((await db.query('select public.finish_admin_architecture_billing_run($1,$2) as changed',[id,JSON.stringify(results)])).rows[0].changed,true);
+        assert.equal((await db.query('select status from public.admin_architecture_billing_runs where id=$1',[id])).rows[0].status,'partial');
+        assert.deepEqual((await db.query("select billing_snapshot from public.admin_architecture_subscriptions where provider='cloudflare'")).rows[0].billing_snapshot,snapshot);
+      } finally {await db.exec('rollback');}
+    });
     await t.test('a later invocation expires abandoned work without permitting another daily run',async()=>{
       await db.exec('begin');
       try {
