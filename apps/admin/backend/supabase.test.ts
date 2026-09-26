@@ -72,6 +72,7 @@ describe('createSupabaseTransport', () => {
   it.each([
     ['P0002', 'ACTIVATION_CODE_NOT_FOUND', 500, 404],
     ['42501', 'REDEEMED_ACTIVATION_CODE_DELETE_FORBIDDEN', 403, 403],
+    ['42501', 'PRIVATE_ACTIVATION_CODE_FORBIDDEN', 403, 403],
   ])('forwards the exact activation deletion error %s/%s', async (code, message, responseStatus, expectedStatus) => {
     const transport = createSupabaseTransport(
       { url: 'https://example.supabase.co', serviceRoleKey: 'test-key' },
@@ -79,6 +80,16 @@ describe('createSupabaseTransport', () => {
     );
     await expect(transport.supabaseRequest('rpc/admin_delete_activation_code'))
       .rejects.toMatchObject({ message, statusCode: expectedStatus });
+  });
+
+  it('preserves private activation deletion permission denial through the transport and admin service', async () => {
+    const transport = createSupabaseTransport(
+      { url: 'https://example.invalid', serviceRoleKey: 'test-key' },
+      async () => Response.json({ code: '42501', message: 'PRIVATE_ACTIVATION_CODE_FORBIDDEN' }, { status: 403 }),
+    );
+    await expect(createAdminData(transport).deleteActivationCode('code-1', {
+      id: 'admin-1', account: 'other@example.com', role: '超級管理員',
+    })).rejects.toMatchObject({ statusCode: 403, message: '沒有刪除隱藏啟動碼權限' });
   });
 
   it.each([
