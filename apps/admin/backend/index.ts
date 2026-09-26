@@ -15,6 +15,7 @@ import {
   type PermissionKey,
 } from './admin-auth';
 import { createAdminData, getDashboard, listAdminLoginRecordPage, listAdminTablePage, listAdminMemberPage } from './admin-data';
+import { isPrivateActivationOwner } from './private-activation';
 import { createAdminTodos } from './admin-todos';
 import { createAdminTransferPush } from './admin-transfer-push';
 import { createAdminCredentialAuth, type CredentialAdmin } from './admin-credential-auth';
@@ -626,6 +627,9 @@ const routes: Record<string, unknown> = {
   'GET /api/data/:table': [sessionGuard, guard('view'), async (ctx: Context) => {
     try {
       const admin = await getAdmin(ctx);
+      if (ctx.params.table === 'privateActivationCodes' && !isPrivateActivationOwner(actorOf(admin))) {
+        return error('沒有查看隱藏啟動碼權限', 403);
+      }
       const modulesByTable: Partial<Record<string, ModuleKey>> = {
         users: 'users',
         subscriptions: 'subscriptions',
@@ -633,17 +637,18 @@ const routes: Record<string, unknown> = {
         transferRequests: 'subscriptions',
         subscriptionRecords: 'subscriptions',
         activationCodes: 'activationCodes',
+        privateActivationCodes: 'activationCodes',
         admins: 'admins',
       };
       const module = modulesByTable[ctx.params.table];
       if (module) requireModulePermission(admin, module, 'view');
       if (ctx.params.table === 'users' || ctx.params.table === 'subscriptions') {
-        return json(await listAdminMemberPage(ctx.params.table, ctx.query ?? {}, supabase));
+        return json(await listAdminMemberPage(ctx.params.table, ctx.query ?? {}, supabase, new Date(), actorOf(admin)));
       }
       if (ctx.params.table === 'loginRecords') {
         return json(await listAdminLoginRecordPage(ctx.query ?? {}, supabase));
       }
-      return json(await listAdminTablePage(ctx.params.table, ctx.query ?? {}, supabase));
+      return json(await listAdminTablePage(ctx.params.table, ctx.query ?? {}, supabase, new Date(), actorOf(admin)));
     } catch (cause) {
       return fail(cause);
     }
@@ -754,7 +759,8 @@ const routes: Record<string, unknown> = {
       const durationType = legacyDurations[rawDuration] ?? rawDuration;
       const quantity = Number(body.quantity ?? 10);
       const admin = await getAdmin(ctx);
-      return json(await adminData.generateActivationCodeBatch(durationType, quantity, actorOf(admin), String(body.requestId ?? "")));
+      if (body.private !== undefined && typeof body.private !== 'boolean') return error('隱藏啟動碼參數不正確', 400);
+      return json(await adminData.generateActivationCodeBatch(durationType, quantity, actorOf(admin), String(body.requestId ?? ""), body.private === true));
     } catch (cause) {
       return fail(cause);
     }

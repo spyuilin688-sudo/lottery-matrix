@@ -26,8 +26,8 @@ function sessionRetryStorage(): RetryStorage | null {
 export function createActivationBatchSubmitter(client: BatchClient, storage: RetryStorage | null = sessionRetryStorage()) {
   const pending = new Map<string, string>();
   return {
-    async submit(actorId: string, durationType: string, quantity: number) {
-      const key = `matrix:admin:activation-request:${JSON.stringify([actorId, durationType, quantity])}`;
+    async submit(actorId: string, durationType: string, quantity: number, isPrivate = false) {
+      const key = `matrix:admin:activation-request:${JSON.stringify([actorId, durationType, quantity, isPrivate])}`;
       let requestId = pending.get(key);
       if (!requestId) {
         try {
@@ -39,7 +39,7 @@ export function createActivationBatchSubmitter(client: BatchClient, storage: Ret
       }
       // Retain only the request identity; never persist credentials or generated codes.
       try { storage?.setItem(key, requestId); } catch { storage = null; /* Keep the in-memory fallback. */ }
-      const result = await client.post('/api/activation-codes/batch', { durationType, quantity, requestId });
+      const result = await client.post('/api/activation-codes/batch', { durationType, quantity, requestId, private: isPrivate });
       if (pending.get(key) === requestId) pending.delete(key);
       try {
         if (storage?.getItem(key) === requestId) storage.removeItem(key);

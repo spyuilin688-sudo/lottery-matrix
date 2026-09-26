@@ -5,7 +5,7 @@ import { readAdminDataPage, type AdminDataPage } from './admin-table-pagination'
 type Client = { get(path: string): Promise<{ data: unknown }> };
 export type AdminListQuery = { page: number; keyword: string; status: string; startDate: string; endDate: string; sortBy: string; sortDirection: 'asc' | 'desc'; plan?: string };
 const defaults: Record<string, string> = {
-  activationCodes: 'createdAt', auditLogs: 'operationTime', admins: 'createdAt',
+  activationCodes: 'createdAt', privateActivationCodes: 'createdAt', auditLogs: 'operationTime', admins: 'createdAt',
   subscriptionRecords: 'paidAt', transferRequests: 'submittedAt', loginRecords: 'loginAt', plans: 'name', users: 'registeredAt', subscriptions: 'planStartedAt',
 };
 const initialQuery = (table: string | null): AdminListQuery => ({ page: 1, keyword: '', status: 'all', startDate: '', endDate: '', sortBy: defaults[table ?? ''] ?? 'createdAt', sortDirection: 'desc', ...(table === 'subscriptions' ? { plan: 'all' } : {}) });
