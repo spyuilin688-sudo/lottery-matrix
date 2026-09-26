@@ -28,6 +28,8 @@ const app = vi.hoisted(() => {
     };
     if (url === '/api/dashboard') return { data: dashboard };
     if (url === '/api/todos') return { data: { items: [] } };
+    if (url === '/api/push-members') return { data: { items: [], total: 0, currentPage: 1, totalPages: 1 } };
+    if (url === '/api/push-delivery-logs') return { data: { items: [] } };
     return { data: { items: [] } };
   });
   return {
@@ -49,7 +51,7 @@ async function settle() {
   await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
 }
 
-describe('AdminApp todo navigation', () => {
+describe('AdminApp todo and notification navigation', () => {
   let container: HTMLDivElement;
   let root: ReturnType<typeof createRoot>;
 
@@ -66,22 +68,41 @@ describe('AdminApp todo navigation', () => {
     vi.clearAllMocks();
   });
 
-  it('opens the shared todo page from the main navigation without using a generic data table', async () => {
+  it.each([
+    { first: '代辦事項', firstPanel: '.adminTodos', firstPaths: ['/api/todos'], second: '通知管理', secondPanel: '.notificationManagement' },
+    { first: '通知管理', firstPanel: '.notificationManagement', firstPaths: ['/api/push-members', '/api/push-delivery-logs'], second: '代辦事項', secondPanel: '.adminTodos' },
+  ])('opens $first immediately and reads each page only when selected', async ({ first, firstPanel, firstPaths, second, secondPanel }) => {
+    const paths = ['/api/todos', '/api/push-members', '/api/push-delivery-logs'];
+    const readCount = (path: string) => app.api.get.mock.calls.filter(([url]) => url === path).length;
+    const navigate = (name: string) => {
+      const button = Array.from(container.querySelectorAll<HTMLButtonElement>('nav button'))
+        .find((node) => node.textContent?.includes(name));
+      expect(button).toBeDefined();
+      act(() => button!.click());
+    };
+
     await act(async () => root.render(<AdminApp />));
     await settle();
     await settle();
+    for (const path of paths) expect(readCount(path)).toBe(0);
 
-    const todoNavigation = Array.from(container.querySelectorAll('nav button'))
-      .find((node) => node.textContent?.includes('代辦事項')) as HTMLButtonElement | undefined;
-    expect(todoNavigation).toBeDefined();
-
-    act(() => todoNavigation?.click());
-    expect(container.querySelector('.content [role="status"]')?.textContent).toContain('頁面載入中');
+    navigate(first);
+    expect(container.querySelector(firstPanel)).not.toBeNull();
     await settle();
+    for (const path of paths) expect(readCount(path)).toBe(firstPaths.includes(path) ? 1 : 0);
 
-    await waitFor(() => expect(container.querySelector('.adminTodos')).not.toBeNull());
-    expect(container.querySelector('.adminTodos h1')?.textContent).toBe('代辦事項');
-    expect(app.api.get).toHaveBeenCalledWith('/api/todos');
-    expect(container.querySelector('.tableWrap')).toBeNull();
+    navigate(second);
+    expect(container.querySelector(secondPanel)).not.toBeNull();
+    await waitFor(() => {
+      for (const path of paths) expect(readCount(path)).toBe(1);
+    });
+    if (second === '代辦事項') {
+      expect(container.querySelector('.adminTodos h1')?.textContent).toBe('代辦事項');
+      expect(container.querySelector('.tableWrap')).toBeNull();
+    }
+
+    navigate('營運概覽');
+    await settle();
+    for (const path of paths) expect(readCount(path)).toBe(1);
   });
 });

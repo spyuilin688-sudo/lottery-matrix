@@ -6,7 +6,7 @@ import { useAdminDataPage } from "./use-admin-data-page";
 import { AdminListControls } from "./AdminListControls";
 import { readAdminDataPage } from "./admin-table-pagination";
 import { adminBusinessDateKey } from "../shared/admin-business-time";
-import { lazy, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { api, auth } from "./admin-platform-client";
 import {
   BarChart3,
@@ -60,8 +60,8 @@ import { PaymentReversalPanel, type PaymentRecord, type PaymentReversalStatus } 
 import { PermissionSwitches } from "./PermissionSwitches";
 import { GrowthLineChart } from "./GrowthLineChart";
 import { ArchitectureOverview } from "./ArchitectureOverview";
-const NotificationManagement = lazy(() => import("./NotificationManagement").then(({ NotificationManagement }) => ({ default: NotificationManagement })));
-const AdminTodos = lazy(() => import("./AdminTodos").then(({ AdminTodos }) => ({ default: AdminTodos })));
+import { NotificationManagement } from "./NotificationManagement";
+import { AdminTodos } from "./AdminTodos";
 type Row = Record<string, unknown> & { id: string };
 type Dashboard = {
   todayVisitors: number | null;
