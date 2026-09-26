@@ -124,3 +124,28 @@ test('one provider failure preserves that snapshot while other provider succeeds
   assert.equal(finish.p_results.railway.snapshot,undefined);
   assert.ok(!result.includes('private')&&!result.includes('secret'));
 });
+
+test('GitHub aggregates each SKU with quantity, gross charges, discounts and net charges',()=>{
+ const item={product:'Actions',sku:'Actions Linux',unitType:'minutes',quantity:100,grossAmount:0.8,discountAmount:0.3,netAmount:0.5};
+ const r=githubSnapshot({usageItems:[item,item,{...item,sku:'Actions Windows',quantity:20,grossAmount:0.32,discountAmount:0,netAmount:0.32}]},null,now);
+ assert.deepEqual(r.usageBreakdown,[{label:'Actions／Actions Linux',quantity:'200 分鐘',grossAmount:'US$1.6000',discountAmount:'US$0.6000',netAmount:'US$1.0000'},{label:'Actions／Actions Windows',quantity:'20 分鐘',grossAmount:'US$0.3200',discountAmount:'US$0.0000',netAmount:'US$0.3200'}]);
+ assert.equal(r.currentAmount,'US$1.32（折抵後用量；不含方案費）');
+ const missing=githubSnapshot({usageItems:[{product:'Actions',sku:'Storage',unitType:'GB',netAmount:0}]},null,now);
+ assert.equal(missing.usageBreakdown[0].quantity,null);
+ assert.equal(missing.usageBreakdown[0].discountAmount,null);
+});
+test('Railway exposes API pending charges and resource details without computing invoice discounts',()=>{
+ const r=railwaySnapshot(railway,now);
+ assert.equal(r.pendingAmount,'US$30.00');
+ assert.equal(r.usageBreakdown.find(x=>x.label==='記憶體').quantity,'43,200 GB·分鐘');
+ assert.equal(r.usageBreakdown.find(x=>x.label==='記憶體').grossAmount,'US$10.0000');
+ assert.equal(r.usageBreakdown.find(x=>x.label==='記憶體').discountAmount,null);
+ assert.equal(r.usageBreakdown.find(x=>x.label==='Agent').grossAmount,'US$10.0000');
+ assert.equal(railwaySnapshot({...railway,workspace:{...railway.workspace,customer:{...railway.workspace.customer,subscriptions:[]}}},now).pendingAmount,null);
+});
+test('live GitHub unit spellings are localized without converting storage hours into a quota',()=>{
+ const item={product:'actions',sku:'Actions storage',unitType:'GigabyteHours',quantity:526.455,grossAmount:0.1,discountAmount:0.1,netAmount:0};
+ const r=githubSnapshot({usageItems:[item,{...item,sku:'Actions Linux',unitType:'Minutes',quantity:17174}]},null,now);
+ assert.equal(r.usageBreakdown[0].quantity,'526.455 GB·小時');
+ assert.equal(r.usageBreakdown[1].quantity,'17,174 分鐘');
+});
