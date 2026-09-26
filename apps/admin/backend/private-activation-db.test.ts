@@ -53,7 +53,7 @@ beforeAll(async () => {
   `);
   await db.exec(read('20260910123427_admin_atomic_activation_batch.sql'));
   await db.exec(read('20260926005023_private_activation_codes.sql'));
-  await db.exec(read('20260926012234_retain_private_activation_history_and_public_plan_search.sql'));
+  await db.exec(read('20260926013545_retain_private_activation_history_and_public_plan_search.sql'));
 }, 20000);
 afterAll(() => db.close());
 
