@@ -69,3 +69,8 @@ it.each([[true,''],[false,'offline']])('hides previous cycle dates and renewal r
  expect(screen.queryByText('2026-10-25')).toBeNull();
  expect(screen.queryByText('2026-09-27')).toBeNull();
 });
+it('shows the API next invoice time in Taiwan separately from payment',()=>{
+ show([{...item,billing:{...item.billing!,nextInvoiceAt:'2026-09-26T20:34:47.000Z',account:{...item.billing!.account!,paymentDate:null}}}]);
+ expect(screen.getByText('下次出帳').nextElementSibling?.textContent).toBe('2026/09/27 04:34台灣時間；非實際扣款時間');
+ expect(screen.getByText('付款日期').nextElementSibling?.textContent).toBe('未取得');
+});

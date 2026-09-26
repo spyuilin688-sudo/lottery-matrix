@@ -110,6 +110,7 @@ export function railwaySnapshot(data: Row, now: Date, previous: Row | null = nul
     ...(previous?.account ? {account:previous.account} : {}),
     manualPayment,
     pendingAmount:pending===null?null:money(pending),
+    nextInvoiceAt:active.length===1 && active[0].nextInvoiceDate != null ? timestamp(active[0].nextInvoiceDate) : null,
     usageBreakdown,
     currentAmount: `${money(current+agentAmount)}（折抵前用量${pending===null?'':`；待出帳快照 ${money(pending)}`}）`,
     estimatedAmount: estimated === null ? null : `${money(estimated)}（折抵前用量預估）`,
@@ -200,7 +201,7 @@ export function createSyncHandler(deps: Dependencies) {
           } else {
             const body=await api('https://backboard.railway.com/graphql/v2',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({
               query:`query BillingSync($workspaceId:String!,$measurements:[MetricMeasurement!]!) {
-                workspace(workspaceId:$workspaceId) { id customer { currentUsage billingPeriod {start end} subscriptions { status nextInvoiceCurrentTotal } invoices {total status periodStart periodEnd} } }
+                workspace(workspaceId:$workspaceId) { id customer { currentUsage billingPeriod {start end} subscriptions { status nextInvoiceCurrentTotal nextInvoiceDate } invoices {total status periodStart periodEnd} } }
                 agentUsage(workspaceId:$workspaceId) {totalUsedCents billingPeriodEnd}
                 usage(workspaceId:$workspaceId,measurements:$measurements,includeDeleted:true) {measurement value}
                 estimatedUsage(workspaceId:$workspaceId,measurements:$measurements,includeDeleted:true) {measurement estimatedValue}

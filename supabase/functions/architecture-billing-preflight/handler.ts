@@ -62,7 +62,7 @@ export function createHandler(deps: Dependencies) {
       };
     } catch { return { status: 'request_failed' }; }
   }
-  async function probeRailway(token: string) {
+  async function probeRailway(token: string, details = false) {
     try {
       const response = await deps.fetch('https://backboard.railway.com/graphql/v2', {
         method: 'POST',
@@ -98,7 +98,14 @@ export function createHandler(deps: Dependencies) {
         return { status: 'api_rejected', httpStatus: response.status };
       }
       return { status: 'readable', httpStatus: response.status,
-        invoiceCount: customer.invoices.length, subscriptionCount: customer.subscriptions.length };
+        invoiceCount: customer.invoices.length, subscriptionCount: customer.subscriptions.length,
+        ...(details ? {billingPeriod: {start:displayText(object(customer.billingPeriod).start)??null,end:displayText(object(customer.billingPeriod).end)??null},
+          nextInvoices:customer.subscriptions.slice(0,30).map(value=>{
+            const subscription=object(value);
+            return {date:displayText(subscription.nextInvoiceDate)??null,
+              totalCents:Number.isSafeInteger(subscription.nextInvoiceCurrentTotal)?subscription.nextInvoiceCurrentTotal:null};
+          })} : {}),
+      };
     } catch { return { status: 'request_failed' }; }
   }
   return async (request: Request) => {
@@ -136,7 +143,7 @@ export function createHandler(deps: Dependencies) {
         : { status: 'missing_credential' },
       gh ? probe(`https://api.github.com/users/spyuilin688-sudo/settings/billing/usage?year=${now.getUTCFullYear()}&month=${now.getUTCMonth()+1}`, gh, 'github')
         : { status: 'missing_credential' },
-      rw ? probeRailway(rw) : { status: 'missing_billing_credential' },
+      rw ? probeRailway(rw, options.railwayDetails===true) : { status: 'missing_billing_credential' },
     ]);
     return json({ cloudflare, github, railway,
       supabase: { status: deps.getEnv('SUPABASE_BILLING_API_TOKEN') ? 'credential_present_unverified' : 'missing_billing_credential' },
