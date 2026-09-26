@@ -13,7 +13,7 @@ begin
   end if;
 
   insert into public.members (auth_user_id, registered_at)
-  values (new.user_id, pg_catalog.coalesce(new.created_at, pg_catalog.now()))
+  values (new.user_id, coalesce(new.created_at, pg_catalog.now()))
   on conflict (auth_user_id) do nothing;
 
   return new;
@@ -34,7 +34,7 @@ execute function private.sync_registered_member_from_identity();
 insert into public.members (auth_user_id, registered_at)
 select distinct on (identity.user_id)
   identity.user_id,
-  pg_catalog.coalesce(identity.created_at, pg_catalog.now())
+  coalesce(identity.created_at, pg_catalog.now())
 from auth.identities as identity
 where identity.provider in ('google', 'custom:line')
   and not exists (
