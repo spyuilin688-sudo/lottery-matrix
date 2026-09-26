@@ -3,7 +3,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const migration = readFileSync(
-  new URL('../../../supabase/migrations/20260926143000_sync_registered_members_from_auth_identities.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20260926143203_sync_registered_members_from_auth_identities.sql', import.meta.url),
   'utf8',
 );
 
