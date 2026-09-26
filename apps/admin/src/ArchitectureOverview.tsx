@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { architectureProviders, readArchitectureSubscriptions, type ArchitectureSubscription } from '../shared/architecture-overview';
 import { formatAdminDateTime } from './admin-operations';
 import './architecture-overview.css';
+import { ArchitecturePaymentOverview } from './ArchitecturePaymentOverview';
 
 type Client = { get(path: string): Promise<{ data: unknown }> };
 const invoiceStatuses = { paid: '已付款', open: '待付款', void: '已作廢', uncollectible: '無法收款' };
@@ -43,6 +44,7 @@ export function ArchitectureOverview({ client }: { client: Client }) {
       <p className="architectureNote">查看下次付款，展開各平台查看費用、額度與紀錄。預估及待出帳金額以最終帳單為準。</p>
       {loading && <div className="loading" role="status">讀取訂閱資料中…</div>}
       {error && <div className="architectureError"><p className="error" role="alert">{error}</p><button type="button" className="compactButton" disabled={loading} onClick={() => setAttempt(value => value + 1)}>重新載入</button></div>}
+      <ArchitecturePaymentOverview items={items} loading={loading} error={error} />
       <div className="architectureGrid">
         {architectureProviders.map(provider => {
           const item = items.find(value => value.provider === provider.id);
