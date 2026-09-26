@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
+import { waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const app = vi.hoisted(() => {
@@ -74,10 +75,11 @@ describe('AdminApp todo navigation', () => {
       .find((node) => node.textContent?.includes('代辦事項')) as HTMLButtonElement | undefined;
     expect(todoNavigation).toBeDefined();
 
-    await act(async () => todoNavigation?.click());
+    act(() => todoNavigation?.click());
+    expect(container.querySelector('.content [role="status"]')?.textContent).toContain('頁面載入中');
     await settle();
 
-    expect(container.querySelector('.adminTodos')).not.toBeNull();
+    await waitFor(() => expect(container.querySelector('.adminTodos')).not.toBeNull());
     expect(container.querySelector('.adminTodos h1')?.textContent).toBe('代辦事項');
     expect(app.api.get).toHaveBeenCalledWith('/api/todos');
     expect(container.querySelector('.tableWrap')).toBeNull();

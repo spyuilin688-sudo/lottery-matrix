@@ -12,6 +12,7 @@ const response = (body, type = 'text/html', status = 200) => new Response(body, 
 async function harness({ version = 'new', stores = new Map(), offline = false, brokenCss = false, cacheUnavailable = false, cachePutFailure = false, legacy = false, freshHttpShell } = {}) {
   const handlers = new Map();
   const requests = [];
+  let shellVersion = version;
   const key = (request) => new URL(typeof request === 'string' ? request : request.url, origin).href;
   const network = async (request, options = {}) => {
     const url = key(request); requests.push(url);
@@ -25,7 +26,7 @@ async function harness({ version = 'new', stores = new Map(), offline = false, b
     // The browser spec separately exercises this boundary with real HTTP caching.
     const cacheMode = options.cache ?? request.cache ?? 'default';
     if (freshHttpShell && cacheMode === 'default') return response(html(freshHttpShell));
-    return response(html(version));
+    return response(html(shellVersion));
   };
   const caches = {
     keys: async () => [...stores.keys()],
@@ -70,7 +71,10 @@ async function harness({ version = 'new', stores = new Map(), offline = false, b
     await Promise.all(waits);
     return resolved;
   }
-  return { stores, actions, requests, dispatch, setOffline: value => { offline = value; }, setBrokenCss: value => { brokenCss = value; } };
+  return { stores, caches, actions, requests, dispatch,
+    setOffline: value => { offline = value; },
+    setShellVersion: value => { shellVersion = value; },
+    setBrokenCss: value => { brokenCss = value; } };
 }
 const navigation = { url: `${origin}/`, method: 'GET', mode: 'navigate', destination: 'document' };
 const style = { url: `${origin}/assets/new.css`, method: 'GET', destination: 'style' };
@@ -81,6 +85,44 @@ test('installation prepares CSS and JS before the offline shell becomes usable',
   assert.equal((await w.dispatch('fetch', style)).headers.get('content-type'), 'text/css');
   assert.equal((await w.dispatch('fetch', { ...style, url: `${origin}/assets/new.js`, destination: 'script' })).headers.get('content-type'), 'text/javascript');
   assert.deepEqual(w.actions, ['skipWaiting', 'claim']);
+});
+
+test('a previous worker retains a complete offline shell while deferred pages of a new build are installing', async () => {
+  const old = await harness({ version: 'old' });
+  await old.dispatch('install');
+  old.setShellVersion('new');
+  const newShell = await old.dispatch('fetch', navigation);
+  assert.match(await newShell.clone().text(), /assets\/new\.js/);
+  assert.match(await old.stores.get('matrix-pwa-shell-old').get(`${origin}/`).clone().text(), /assets\/new\.js/);
+  assert.equal(old.stores.get('matrix-pwa-shell-old').has(`${origin}/assets/new-feature.js`), false);
+
+  const dom = new JSDOM(await newShell.text(), { url: origin });
+  try {
+    const { preservePreviousPwaShell } = await import('../src/pwa-shell-compat.ts');
+    assert.equal(await preservePreviousPwaShell({ cacheStorage: old.caches, page: dom.window.document, controller: null }), false);
+    assert.match(await old.stores.get('matrix-pwa-shell-old').get(`${origin}/`).clone().text(), /assets\/new\.js/);
+    assert.equal(await preservePreviousPwaShell({ cacheStorage: old.caches, page: dom.window.document, controller: {} }), true);
+    assert.equal(await preservePreviousPwaShell({ cacheStorage: old.caches, page: dom.window.document, controller: {} }), false);
+    old.setOffline(true);
+    const offline = await old.dispatch('fetch', navigation);
+    assert.match(await offline.text(), /assets\/old\.js/);
+    assert.equal((await old.dispatch('fetch', { ...style, url: `${origin}/assets/old.css` })).headers.get('content-type'), 'text/css');
+    assert.equal((await old.dispatch('fetch', { ...style, url: `${origin}/assets/old.js`, destination: 'script' })).headers.get('content-type'), 'text/javascript');
+  } finally { dom.window.close(); }
+});
+
+test('an incomplete previous generation cannot overwrite the cached current shell', async () => {
+  const old = await harness({ version: 'old' });
+  await old.dispatch('install');
+  old.stores.get('matrix-pwa-shell-old').delete(`${origin}/assets/old.css`);
+  old.setShellVersion('new');
+  const newShell = await old.dispatch('fetch', navigation);
+  const dom = new JSDOM(await newShell.text(), { url: origin });
+  try {
+    const { preservePreviousPwaShell } = await import('../src/pwa-shell-compat.ts');
+    assert.equal(await preservePreviousPwaShell({ cacheStorage: old.caches, page: dom.window.document, controller: {} }), false);
+    assert.match(await old.stores.get('matrix-pwa-shell-old').get(`${origin}/`).clone().text(), /assets\/new\.js/);
+  } finally { dom.window.close(); }
 });
 
 test('a cached asset is served without a network request online or offline', async () => {

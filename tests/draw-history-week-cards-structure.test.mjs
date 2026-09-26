@@ -11,7 +11,7 @@ const responsiveCss = readFileSync(new URL("../src/responsive-feature-pages.css"
 test("歷史開獎 live route 由 Prototype 經 patched router 指向 core implementation", () => {
   assert.match(
     prototypeSource,
-    /import \{ FeaturePageRouter \} from "\.\/FeaturePagesPatched";/,
+    /const FeaturePageRouter = lazy\(\(\) =>[\s\S]*?import\("\.\/FeaturePagesPatched"\)/,
   );
   assert.match(
     prototypeSource,
@@ -45,4 +45,3 @@ test("歷史開獎由 sticky 頁首與全寬內容 owner 維持單一頁面流 [
   assert.match(featurePagesCss, /\.sticky-title-card-screen > \.product-header,\s*\.number-reference-screen > \.product-header\s*\{[^}]*position:\s*sticky;[^}]*z-index:\s*30;[^}]*top:\s*0;/s);
   assert.match(historySource, /<BrandHeader[\s\S]*action=\{headerAction\}/);
 });
-

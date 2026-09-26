@@ -6,7 +6,7 @@ import { useAdminDataPage } from "./use-admin-data-page";
 import { AdminListControls } from "./AdminListControls";
 import { readAdminDataPage } from "./admin-table-pagination";
 import { adminBusinessDateKey } from "../shared/admin-business-time";
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { lazy, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { api, auth } from "./admin-platform-client";
 import {
   BarChart3,
@@ -54,13 +54,14 @@ import {
   type SystemStatusActionOutcome,
   type SystemStatusItem,
 } from "./system-status";
-import { NotificationManagement } from "./NotificationManagement";
+import { AdminPanelLoadBoundary } from "./AdminPanelLoadBoundary";
 import { AdminTransferPush } from "./AdminTransferPush";
-import { AdminTodos } from "./AdminTodos";
 import { PaymentReversalPanel, type PaymentRecord, type PaymentReversalStatus } from "./PaymentReversalPanel";
 import { PermissionSwitches } from "./PermissionSwitches";
 import { GrowthLineChart } from "./GrowthLineChart";
-import { ArchitectureOverview } from "./ArchitectureOverview";
+const NotificationManagement = lazy(() => import("./NotificationManagement").then(({ NotificationManagement }) => ({ default: NotificationManagement })));
+const AdminTodos = lazy(() => import("./AdminTodos").then(({ AdminTodos }) => ({ default: AdminTodos })));
+const ArchitectureOverview = lazy(() => import("./ArchitectureOverview").then(({ ArchitectureOverview }) => ({ default: ArchitectureOverview })));
 type Row = Record<string, unknown> & { id: string };
 type Dashboard = {
   todayVisitors: number | null;
@@ -962,15 +963,15 @@ function AdminApp() {
             />
           )}{" "}
           {active === "系統設定" && <SystemSettings canEdit={moduleCan("systemSettings", "edit", "edit")} confirm={requestConfirmation} />}{" "}
-          {active === "架構總彙" && moduleCan("systemSettings", "view", "view") && <ArchitectureOverview key={sessionKey} client={api} />}{" "}
-          {active === "通知管理" && <NotificationManagement key={sessionKey} client={api} canEdit={can("edit")} adminId={sessionKey} />}{" "}
+          {active === "架構總彙" && moduleCan("systemSettings", "view", "view") && <AdminPanelLoadBoundary><ArchitectureOverview key={sessionKey} client={api} /></AdminPanelLoadBoundary>}{" "}
+          {active === "通知管理" && <AdminPanelLoadBoundary><NotificationManagement key={sessionKey} client={api} canEdit={can("edit")} adminId={sessionKey} /></AdminPanelLoadBoundary>}{" "}
           {active === "代辦事項" && admin && (
-            <AdminTodos
+            <AdminPanelLoadBoundary><AdminTodos
               key={sessionKey}
               client={api}
               admin={{ id: String(admin.id ?? ""), role: String(admin.role ?? "") }}
               requestConfirmation={requestConfirmation}
-            />
+            /></AdminPanelLoadBoundary>
           )}{" "}
           {active === "用戶管理" && (
             <UserManager

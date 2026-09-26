@@ -18,15 +18,16 @@ vi.stubGlobal('ResizeObserver', class {
   unobserve() {}
 });
 
-test('first navigation renders real feature pages immediately without waiting for a page import', () => {
+test('first feature visit loads its code on demand and later visits use the loaded page', async () => {
   window.localStorage.setItem(FIRST_VISIT_GUIDE_SEEN_KEY, '1');
   render(<AppDialogProvider><MobileDeviceProvider><KeyboardProvider><Prototype /></KeyboardProvider></MobileDeviceProvider></AppDialogProvider>);
 
   fireEvent.click(screen.getByRole('button', { name: '我的' }));
-  expect(screen.getByRole('heading', { name: '推廣相關' })).toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('載入中');
+  expect(await screen.findByRole('heading', { name: '推廣相關' })).toBeInTheDocument();
   expect(screen.queryByText('載入中…')).not.toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole('button', { name: '首頁' }));
+  fireEvent.click(await screen.findByRole('button', { name: '首頁' }));
   fireEvent.click(screen.getByRole('button', { name: /^計算機$/ }));
   expect(screen.getByRole('heading', { name: '連碰設定' })).toBeInTheDocument();
   expect(screen.queryByText('載入中…')).not.toBeInTheDocument();

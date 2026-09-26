@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js';
+import type { SupabaseClient, User } from '@supabase/supabase-js';
 
 type RequestConfig = { data?: unknown };
 type AdminApiClientOptions = {
@@ -136,6 +136,7 @@ async function getOwnerClient() {
     || typeof data.publicKey !== 'string' || !data.publicKey) {
     throw new AdminApiError('OWNER_AUTH_CONFIGURATION_UNAVAILABLE', 503);
   }
+  const { createClient } = await import('@supabase/supabase-js');
   ownerClient = createClient(data.url, data.publicKey, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
   });

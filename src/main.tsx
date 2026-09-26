@@ -34,6 +34,7 @@ import { clearLineLoginAttempt } from './auth/line-login-attempt';
 import { clearLineLoginCallbackError, readLineLoginCallbackError } from './auth/line-login-callback-error';
 import { PasswordRecovery } from './auth/PasswordRecovery';
 import { isPasswordRecoveryUrl } from './auth/password-recovery';
+import { preservePreviousPwaShell } from './pwa-shell-compat';
 
 // Preserve the callback purpose before Supabase can consume its URL parameters.
 const launchUrl = new URL(window.location.href);
@@ -41,6 +42,7 @@ const hasPasswordRecovery = isPasswordRecoveryUrl(launchUrl);
 const lineLoginError = hasPasswordRecovery ? undefined : readLineLoginCallbackError(launchUrl);
 
 installGlobalInputBehavior();
+void preservePreviousPwaShell().catch(() => undefined);
 
 const linePwaWorkerReady = !hasPasswordRecovery && 'serviceWorker' in navigator
   ? registerPushServiceWorker()
