@@ -118,3 +118,20 @@ it('shows automatically retrieved Cloudflare limits without claiming known usage
  expect(within(card).getByText('每月建置已用量、剩餘額度與重置時間尚未取得。')).toBeTruthy();
  expect(within(card.querySelector('summary')!).getAllByText('尚未確認')).toHaveLength(3);
 });
+
+it('shows automatic resource costs and pending invoice separately from the older manual estimate',async()=>{
+ const manualPayment={paymentDate:'2026-08-26',amount:'US$20.00',verifiedAt:'2026-09-25T00:00:00Z',source:'已核對付款'};
+ render(<ArchitectureOverview client={{get:async()=>({data:{items:[{...row,billing:{...billing,account,pendingAmount:'US$18.38',manualPayment,usageBreakdown:[{label:'記憶體',quantity:'22,244 GB·分鐘',grossAmount:'US$5.1491',discountAmount:null,netAmount:null}]}}]}})}}/>);
+ await screen.findByText('Pro');const card=screen.getByRole('article',{name:'Railway',exact:true});fireEvent.click(card.querySelector('summary')!);
+ expect(within(card).getByText('22,244 GB·分鐘')).toBeTruthy();expect(within(card).getByText('US$5.1491')).toBeTruthy();
+ expect(within(card).getByText('待出帳金額（自動更新）')).toBeTruthy();expect(within(card).getByText('US$18.38')).toBeTruthy();
+ expect(within(card).getByText('2026-08-26')).toBeTruthy();expect(within(card).getByText('歷史已核對付款')).toBeTruthy();
+ expect(within(card).getByText('用量明細自動更新')).toBeTruthy();
+});
+it('Supabase clearly identifies stored detail provenance and the missing automation',async()=>{
+ render(<ArchitectureOverview client={{get:async()=>({data:{items:[{...row,provider:'supabase',billing:{...billing,account}}]}})}}/>);
+ await screen.findByText('Pro');const card=screen.getByRole('article',{name:'Supabase',exact:true});fireEvent.click(card.querySelector('summary')!);
+ expect(within(card).getByText('尚未接通帳務自動更新')).toBeTruthy();
+ expect(within(card).getByText('100 小時')).toBeTruthy();
+ expect(within(card).getByText(/額度明細核對時間：/)).toBeTruthy();
+});

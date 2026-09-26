@@ -27,6 +27,10 @@ export type ArchitectureAccount = {
 };
 
 export type ArchitectureBilling = {
+  pendingAmount?: string | null;
+  usageBreakdown?: Array<{label:string;quantity:string|null;grossAmount:string|null;discountAmount:string|null;netAmount:string|null}>;
+  manualPayment?: {paymentDate:string;amount:string;verifiedAt:string;source:string} | null;
+  manualInvoiceVerifiedAt?: string | null;
   limits?: Array<{ label: string; value: string }>;
   account?: ArchitectureAccount | null;
   latestInvoiceAmount: string | null;
@@ -89,7 +93,7 @@ function readBilling(value: unknown): ArchitectureBilling | null {
   const invalid = () => new Error('帳單資料格式不符，請重新載入。');
   if (typeof value !== 'object' || Array.isArray(value)) throw invalid();
   const row = value as Record<string, unknown>;
-  for (const field of ['latestInvoiceAmount', 'currentAmount', 'estimatedAmount', 'period'] as const) {
+  for (const field of ['latestInvoiceAmount', 'currentAmount', 'estimatedAmount', 'period', 'pendingAmount'] as const) {
     if (row[field] != null && !isText(row[field])) throw invalid();
   }
   if (row.latestInvoiceStatus != null && !['paid', 'open', 'void', 'uncollectible'].includes(String(row.latestInvoiceStatus))) throw invalid();
@@ -103,8 +107,32 @@ function readBilling(value: unknown): ArchitectureBilling | null {
       return { label: entry.label, value: entry.value };
     });
   }
+  let usageBreakdown: ArchitectureBilling['usageBreakdown'];
+  if (Object.prototype.hasOwnProperty.call(row, 'usageBreakdown')) {
+    if (!Array.isArray(row.usageBreakdown) || row.usageBreakdown.length > 30) throw invalid();
+    usageBreakdown=row.usageBreakdown.map(entry=>{
+      if(!entry || typeof entry!=='object' || Array.isArray(entry) || !isText(entry.label)) throw invalid();
+      const detail: Record<string,string|null>={label:entry.label};
+      for(const field of ['quantity','grossAmount','discountAmount','netAmount']) {
+        if(entry[field]!==null&&!isText(entry[field])) throw invalid();
+        detail[field]=entry[field];
+      }
+      return detail as NonNullable<ArchitectureBilling['usageBreakdown']>[number];
+    });
+  }
+  let manualPayment:ArchitectureBilling['manualPayment'];
+  if(row.manualPayment!=null) {
+    const payment=row.manualPayment as Record<string,unknown>;
+    if(typeof payment!=='object'||Array.isArray(payment)||!isDate(payment.paymentDate)||!isText(payment.amount)||!isText(payment.source)||!isText(payment.verifiedAt)||!Number.isFinite(Date.parse(payment.verifiedAt))) throw invalid();
+    manualPayment={paymentDate:payment.paymentDate,amount:payment.amount,source:payment.source,verifiedAt:payment.verifiedAt};
+  }
+  if(row.manualInvoiceVerifiedAt!=null&&(!isText(row.manualInvoiceVerifiedAt)||!Number.isFinite(Date.parse(row.manualInvoiceVerifiedAt)))) throw invalid();
   return {
     ...(limits === undefined ? {} : { limits }),
+    ...(usageBreakdown === undefined ? {} : { usageBreakdown }),
+    ...(Object.prototype.hasOwnProperty.call(row,'pendingAmount') ? {pendingAmount:row.pendingAmount??null} : {}),
+    ...(manualPayment ? {manualPayment} : {}),
+    ...(row.manualInvoiceVerifiedAt ? {manualInvoiceVerifiedAt:row.manualInvoiceVerifiedAt} : {}),
     latestInvoiceAmount: row.latestInvoiceAmount ?? null,
     latestInvoiceStatus: row.latestInvoiceStatus ?? null,
     latestPaymentDate: row.latestPaymentDate ?? null,

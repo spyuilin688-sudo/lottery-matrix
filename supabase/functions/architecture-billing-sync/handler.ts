@@ -7,6 +7,25 @@ const amount = (value: unknown): number => {
   return value;
 };
 const money = (value: number) => `US$${amount(value).toFixed(2)}`;
+const detailMoney = (value: number) => `US$${amount(value).toFixed(4)}`;
+const quantityText = (value: number, unit: string) => `${amount(value).toLocaleString('en-US',{maximumFractionDigits:10})} ${unit}`;
+function githubBreakdown(items: Row[]) {
+  const groups=new Map<string,Row[]>();
+  for(const item of items) {
+    if(typeof item.product!=='string'||typeof item.sku!=='string'||typeof item.unitType!=='string') return [];
+    const key=JSON.stringify([item.product,item.sku,item.unitType]);
+    groups.set(key,[...(groups.get(key)??[]),item]);
+  }
+  if(groups.size>30) throw Error('TOO_MANY_USAGE_GROUPS');
+  const sum=(items:Row[],field:string)=>items.some(item=>item[field]==null)?null:items.reduce((total,item)=>total+amount(item[field]),0);
+  const units:Record<string,string>={minutes:'分鐘',hours:'小時',requests:'次',gb:'GB','gb-hours':'GB·小時',gigabytehours:'GB·小時',gigabytes:'GB'};
+  return [...groups.values()].map(items=>{
+    const item=items[0], quantity=sum(items,'quantity'), gross=sum(items,'grossAmount'), discount=sum(items,'discountAmount'), net=sum(items,'netAmount');
+    const label=`${item.product}／${item.sku}`;
+    if(label.length>200||item.unitType.length>80) throw Error('INVALID_USAGE_LABEL');
+    return {label,quantity:quantity===null?null:quantityText(quantity,units[item.unitType.toLowerCase()]??item.unitType),grossAmount:gross===null?null:detailMoney(gross),discountAmount:discount===null?null:detailMoney(discount),netAmount:net===null?null:detailMoney(net)};
+  });
+}
 const date = (value: unknown): string => {
   if (typeof value !== 'string' || !value) throw Error('INVALID_DATE');
   const d = new Date(/^\d{10}$/.test(value) ? Number(value) * 1000 : value);
@@ -28,6 +47,7 @@ export function githubSnapshot(body: Row, previous: Row | null, now: Date) {
     latestInvoiceStatus: previous?.latestInvoiceStatus ?? null,
     latestPaymentDate: previous?.latestPaymentDate ?? null,
     manualInvoiceVerifiedAt,
+    usageBreakdown:githubBreakdown(body.usageItems),
     currentAmount: `${money(total)}（折抵後用量；不含方案費）`,
     period: `${start}－${end}`,
     source: `GitHub 用量 API（個人帳號全部儲存庫）；歷史付款保留${manualInvoiceVerifiedAt ? date(manualInvoiceVerifiedAt) : '先前'}核對資料`,
@@ -68,9 +88,19 @@ export function railwaySnapshot(data: Row, now: Date, previous: Row | null = nul
   const source = 'Railway API（全工作區含 Agent）；用量／預估未折抵；待出帳可能延遲；API 未提供付款日期'
     + (manualPayment ? `；人工核對付款：${date(manualPayment.paymentDate)} ${manualPayment.amount}（核對：${date(manualPayment.verifiedAt)}；非本期付款日期）` : '');
   if (source.length>200) throw Error('INVALID_PAYMENT_PROVENANCE');
+  const resourceLabels:Record<string,[string,string]>={MEMORY_USAGE_GB:['記憶體','GB·分鐘'],CPU_USAGE:['CPU','vCPU·分鐘'],NETWORK_TX_GB:['對外流量','GB'],DISK_USAGE_GB:['磁碟','GB·分鐘'],BACKUP_USAGE_GB:['備份','GB·分鐘']};
+  const grouped=new Map<string,number>();
+  if(Array.isArray(data.usage)) for(const item of data.usage) {
+    if(!Object.hasOwn(resourceLabels,item.measurement)) throw Error('UNKNOWN_MEASUREMENT');
+    grouped.set(item.measurement,(grouped.get(item.measurement)??0)+amount(item.value));
+  }
+  const usageBreakdown:Array<{label:string;quantity:string|null;grossAmount:string;discountAmount:null;netAmount:null}>=[...grouped].map(([key,value])=>({label:resourceLabels[key][0],quantity:quantityText(value,resourceLabels[key][1]),grossAmount:detailMoney(value*rates[key]),discountAmount:null,netAmount:null}));
+  usageBreakdown.push({label:'Agent',quantity:null,grossAmount:detailMoney(agentAmount),discountAmount:null,netAmount:null});
   return {...empty(),
     ...(previous?.account ? {account:previous.account} : {}),
     manualPayment,
+    pendingAmount:pending===null?null:money(pending),
+    usageBreakdown,
     currentAmount: `${money(current+agentAmount)}（折抵前用量${pending===null?'':`；待出帳快照 ${money(pending)}`}）`,
     estimatedAmount: estimated === null ? null : `${money(estimated)}（折抵前用量預估）`,
     latestInvoiceAmount:latest ? money(latest.total/100) : null,

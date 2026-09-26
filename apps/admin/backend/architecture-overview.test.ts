@@ -65,3 +65,12 @@ it('exposes automatic limits separately from manual account data and validates t
  expect(JSON.stringify(r)).not.toContain('hidden');
  for(const invalid of [null,[{label:'上限',value:0}],Array(31).fill(limits[0])]) await expect(createArchitectureOverview({selectRows:async()=>[{...input,billing_snapshot:{...input.billing_snapshot,limits:invalid}}]}).get()).rejects.toThrow();
 });
+
+it('allowlists automatic usage and original historical payment provenance',async()=>{
+ const usageBreakdown=[{label:'CPU',quantity:'100 vCPU·分鐘',grossAmount:'US$1.0000',discountAmount:null,netAmount:null}];
+ const manualPayment={paymentDate:'2026-08-26',amount:'US$20.00',verifiedAt:'2026-09-25T00:00:00Z',source:'已核對付款'};
+ const r={...accountRow(account),billing_snapshot:{...accountRow(account).billing_snapshot,pendingAmount:'US$18.00',usageBreakdown:[{...usageBreakdown[0],token:'secret'}],manualPayment:{...manualPayment,privateUrl:'secret'},manualInvoiceVerifiedAt:'2026-09-25T00:00:00Z'}};
+ const result=(await createArchitectureOverview({selectRows:async()=>[r]}).get()).items[0].billing;
+ expect(result?.usageBreakdown).toEqual(usageBreakdown);expect(result?.pendingAmount).toBe('US$18.00');expect(result?.manualPayment).toEqual(manualPayment);expect(JSON.stringify(result)).not.toContain('secret');
+ for(const bad of [{usageBreakdown:[{...usageBreakdown[0],quantity:4}]},{manualPayment:{...manualPayment,paymentDate:'2026-02-30'}},{pendingAmount:3}]) await expect(createArchitectureOverview({selectRows:async()=>[{...r,billing_snapshot:{...r.billing_snapshot,...bad}}]}).get()).rejects.toThrow();
+});

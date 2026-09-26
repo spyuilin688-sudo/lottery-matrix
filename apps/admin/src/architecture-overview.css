@@ -29,7 +29,7 @@
 .architectureUsage { margin-top: 10px; padding-top: 10px; border-top: 1px solid #24272d; }
 .architectureQuotas { display: grid; gap: 8px; }
 .architectureQuota { padding: 8px; border: 1px solid #30333a; border-radius: 8px; }
-.architectureQuota h4 { margin: 0 0 8px; font-size: 12px; }
+.architectureQuota h4 { overflow-wrap: anywhere; margin: 0 0 8px; font-size: 12px; }
 .architectureQuota dl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0; font-size: 12px; line-height: 1.5; }
 .architectureQuota dl > div { min-width: 0; }
 .architectureQuota dt { font-size: 11px; margin-bottom: 2px; }
