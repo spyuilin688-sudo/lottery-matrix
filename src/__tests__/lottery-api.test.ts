@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { API_REQUEST_TIMEOUT_MS } from '../lib/api-resilience';
-import { LOTTERY_API_BASE, fetchLatestLotteryDraw, fetchLatestLotteryResult, fetchLatestLotteryResultState, fetchLotteryHistory, fetchLotteryHistoryYears, fetchNumberReference, fetchTongXing, invalidatePublishedLotteryData, normalizePeriod } from '../lottery-api';
+import { LOTTERY_API_BASE, confirmPublishedResultRevisions, fetchLatestLotteryDraw, fetchLatestLotteryResult, fetchLatestLotteryResultState, fetchLotteryHistory, fetchLotteryHistoryYears, fetchNumberReference, fetchTongXing, invalidatePublishedLotteryData, normalizePeriod } from '../lottery-api';
 import { clearReadCache, readThroughCache, resetReadCacheForTests } from '../read-cache';
 
 afterEach(() => {
@@ -699,4 +699,141 @@ describe('persistent safe read caches', () => {
     await fetchTongXing(request);
     expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/tongxing'))).toHaveLength(2);
   });
+});
+
+
+it('does not let pending old history years rewind the period or return stale years', async () => {
+  let latest = { period: '115208', numbers: ['01'] };
+  let resolveYears!: (response: Response) => void;
+  let yearsStarted!: () => void;
+  const started = new Promise<void>(resolve => { yearsStarted = resolve; });
+  let calls = 0;
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async url => {
+    if (String(url).includes('/latest/')) return jsonResponse(latest);
+    if (++calls === 1) {
+      yearsStarted();
+      return new Promise<Response>(resolve => { resolveYears = resolve; });
+    }
+    return jsonResponse({ years: ['2027', '2026'] });
+  });
+  const pending = fetchLotteryHistoryYears('今彩539');
+  await started;
+  latest = { period: '115209', numbers: ['03'] };
+  invalidatePublishedLotteryData('今彩539');
+  await fetchLotteryHistoryYears('今彩539');
+  resolveYears(jsonResponse({ years: ['2026'] }));
+  expect(await pending).toEqual(['2027', '2026']);
+  expect(localStorage.getItem(`matrix-result-period:${encodeURIComponent('今彩539')}`)).toBe('115209');
+  resetReadCacheForTests();
+  expect(await fetchLotteryHistoryYears('今彩539')).toEqual(['2027', '2026']);
+  expect(calls).toBe(2);
+});
+
+
+it.each([undefined, '2026-09-26'])('a late completed-result response cannot restore stale data after a readiness probe (%s)', async cycleDate => {
+  const revisions = { '今彩539': 'new', '天天樂': 'new', '六合彩': 'new', '大樂透': 'new' };
+  let resolveOld!: (response: Response) => void;
+  let begin!: () => void;
+  const started = new Promise<void>(resolve => { begin = resolve; });
+  let calls = 0;
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async url => {
+    if (String(url).includes('/result-revisions')) return jsonResponse({ revisions });
+    if (++calls === 1) { begin(); return new Promise<Response>(resolve => { resolveOld = resolve; }); }
+    return jsonResponse({ drawDate: '2026-09-26', items: [{ lottery: '今彩539', period: '115209' }], revisions });
+  });
+  const pending = fetchLatestLotteryResultState(cycleDate);
+  await started;
+  // A legacy successful cache has no verified version baseline.
+  localStorage.setItem('lottery-published-result:latest', JSON.stringify({ savedAt: Date.now(), value: {
+    drawDate: '2026-09-25', items: [{ lottery: '今彩539', period: '115208' }], revisions: { ...revisions, '今彩539': 'old' },
+  } }));
+  await confirmPublishedResultRevisions(() => true);
+  resolveOld(jsonResponse({ drawDate: '2026-09-25', items: [{ lottery: '今彩539', period: '115208' }], revisions: { ...revisions, '今彩539': 'old' } }));
+  const value = await pending;
+  expect(value.items[0].period).toBe('115209');
+  expect(value.revisions).toEqual(revisions);
+  expect(calls).toBe(2);
+});
+
+it('a new dated snapshot arriving before the readiness probe invalidates old derived caches', async () => {
+  const old = { '今彩539': 'before-return', '天天樂': 'b', '六合彩': 'c', '大樂透': 'd' };
+  const next = { ...old, '今彩539': 'new-generation-same-period' };
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async url => String(url).includes('/result-revisions')
+    ? jsonResponse({ revisions: next })
+    : jsonResponse({ drawDate: '2026-09-26', items: [{ lottery: '今彩539', period: '115209' }], revisions: old }));
+  await fetchLatestLotteryResultState();
+  const load = vi.fn(async () => 'old-derived');
+  await readThroughCache('matrix-rpc:test-return', 60_000, load);
+  vi.mocked(globalThis.fetch).mockImplementation(async url => String(url).includes('/result-revisions')
+    ? jsonResponse({ revisions: next })
+    : jsonResponse({ drawDate: '2026-09-26', items: [{ lottery: '今彩539', period: '115209' }], revisions: next }));
+  await fetchLatestLotteryResultState('2026-09-26');
+  await confirmPublishedResultRevisions(() => true);
+  const reload = vi.fn(async () => 'new-derived');
+  expect(await readThroughCache('matrix-rpc:test-return', 60_000, reload)).toBe('new-derived');
+  expect(reload).toHaveBeenCalledTimes(1);
+});
+
+it('a legacy snapshot without revisions is revalidated once when a versioned dated result arrives', async () => {
+  const next = { '今彩539': 'legacy-upgrade', '天天樂': 'b', '六合彩': 'c', '大樂透': 'd' };
+  vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(jsonResponse({ drawDate: '2026-09-26', items: [] }));
+  await fetchLatestLotteryResultState();
+  await readThroughCache('matrix-rpc:legacy-derived', 60_000, async () => 'legacy');
+  vi.mocked(globalThis.fetch).mockImplementation(async url => String(url).includes('/result-revisions')
+    ? jsonResponse({ revisions: next })
+    : jsonResponse({ drawDate: '2026-09-26', items: [], revisions: next }));
+  await fetchLatestLotteryResultState('2026-09-26');
+  expect(await readThroughCache('matrix-rpc:legacy-derived', 60_000, async () => 'fresh')).toBe('fresh');
+  await confirmPublishedResultRevisions(() => true);
+  expect(await readThroughCache('matrix-rpc:legacy-derived', 60_000, async () => 'unexpected-reload')).toBe('fresh');
+});
+
+it('a late old revision probe cannot replace a newer accepted snapshot baseline', async () => {
+  vi.spyOn(Date, 'now').mockReturnValue(Date.now());
+  const old = { '今彩539': 'probe-old', '天天樂': 'b', '六合彩': 'c', '大樂透': 'd' };
+  const next = { ...old, '今彩539': 'snapshot-new' };
+  let finishProbe!: (response: Response) => void;
+  let startProbe!: () => void;
+  const started = new Promise<void>(resolve => { startProbe = resolve; });
+  vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(jsonResponse({ drawDate: '2026-09-26', items: [], revisions: old }));
+  await fetchLatestLotteryResultState('2026-09-26');
+  vi.mocked(globalThis.fetch).mockImplementation(async url => {
+    if (String(url).includes('/result-revisions')) {
+      startProbe();
+      return new Promise<Response>(resolve => { finishProbe = resolve; });
+    }
+    return jsonResponse({ drawDate: '2026-09-26', items: [], revisions: next });
+  });
+  const probe = confirmPublishedResultRevisions(() => true);
+  await started;
+  await fetchLatestLotteryResultState('2026-09-26');
+  await readThroughCache('matrix-rpc:new-snapshot-derived', 60_000, async () => 'new-snapshot');
+  finishProbe(jsonResponse({ revisions: old }));
+  await probe;
+  expect(await readThroughCache('matrix-rpc:new-snapshot-derived', 60_000, async () => 'invalidated')).toBe('new-snapshot');
+});
+
+it.each(['persisted', 'legacy-network', 'same-version-network'] as const)('a %s read cannot suppress an in-flight newer readiness revision', async kind => {
+  const old = { '今彩539': `hydrate-old-${kind}`, '天天樂': 'b', '六合彩': 'c', '大樂透': 'd' };
+  const next = { ...old, '今彩539': `probe-new-${kind}` };
+  vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(jsonResponse({ drawDate: '2026-09-26', items: [], revisions: old }));
+  await fetchLatestLotteryResultState();
+  resetReadCacheForTests();
+  await readThroughCache('matrix-rpc:hydrate-derived', 60_000, async () => 'old-derived');
+  let finish!: (response: Response) => void;
+  let begin!: () => void;
+  const started = new Promise<void>(resolve => { begin = resolve; });
+  vi.mocked(globalThis.fetch).mockImplementation(async url => {
+    if (String(url).includes('/result-revisions')) {
+      begin();
+      return new Promise<Response>(resolve => { finish = resolve; });
+    }
+    return jsonResponse({ drawDate: '2026-09-26', items: [], ...(kind === 'same-version-network' ? { revisions: old } : {}) });
+  });
+  const pending = confirmPublishedResultRevisions(() => true);
+  await started;
+  await fetchLatestLotteryResultState(kind === 'persisted' ? undefined : '2026-09-26');
+  finish(jsonResponse({ revisions: next }));
+  await pending;
+  expect(await readThroughCache('matrix-rpc:hydrate-derived', 60_000, async () => 'new-derived')).toBe('new-derived');
 });

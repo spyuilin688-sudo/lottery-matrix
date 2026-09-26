@@ -262,3 +262,17 @@ def test_concurrent_history_requests_share_version_probe_and_retry_after_failure
     repository.draw_read_cache.invalidate()
     assert _draw_query(repository, '今彩539', 'history', p_limit=500)['revision'] == 'v2'
     assert sum(p['p_kind'] == 'latest' for _, p in repository.calls) == 2
+
+
+def test_year_summary_is_shared_by_revision_and_reloads_after_correction():
+    from app.draw_read_cache import DrawReadCache
+    repository = QueryRepository({'years': ['2026'], 'revision': 'r1', 'items': [draw()]})
+    repository.draw_read_cache = DrawReadCache()
+    path = '/api/matrix/history-years/' + quote('今彩539')
+    assert handle_api_request('GET', path, None, repository)[1] == {'years': ['2026']}
+    assert handle_api_request('GET', path, None, repository)[1] == {'years': ['2026']}
+    assert [params['p_kind'] for _, params in repository.calls] == ['latest', 'summary']
+    repository.payload = {'years': ['2026', '2025'], 'revision': 'r2', 'items': [draw()]}
+    repository.draw_read_cache.invalidate()
+    assert handle_api_request('GET', path, None, repository)[1] == {'years': ['2026', '2025']}
+    assert [params['p_kind'] for _, params in repository.calls] == ['latest', 'summary', 'latest', 'summary']
