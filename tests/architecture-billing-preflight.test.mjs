@@ -92,3 +92,10 @@ test('account entitlement diagnostic exposes only feature allocation, not raw ac
  assert.equal(urls.filter(u=>u.endsWith('/billable/usage')).length,1);
  assert.deepEqual(result.cloudflare.usageV2,{status:'readable',httpStatus:200,count:0});
 });
+
+test('optional Railway diagnostic returns invoice dates but never private invoice bodies',async()=>{
+ const h=createHandler({getEnv:n=>({MATRIX_NOTIFICATION_DISPATCH_TOKEN:'expected',RAILWAY_BILLING_API_TOKEN:'secret'})[n],fetch:async()=>Response.json({data:{workspace:{id:'8b32b524-e3de-4ad2-a37d-4d641bca491a',customer:{currentUsage:1,invoices:[],billingPeriod:{start:'2026-09-01T00:00:00Z',end:'2026-10-01T00:00:00Z'},subscriptions:[{nextInvoiceDate:'1790812800',nextInvoiceCurrentTotal:1234,private:'private-url'}]}}}})});
+ const body=await (await h(new Request('https://test',{method:'POST',headers:{'x-matrix-dispatch-token':'expected'},body:'{"railwayDetails":true}'}))).json();
+ assert.deepEqual(body.railway.nextInvoices,[{date:'1790812800',totalCents:1234}]);
+ assert.equal(JSON.stringify(body).includes('private-url'),false);
+});

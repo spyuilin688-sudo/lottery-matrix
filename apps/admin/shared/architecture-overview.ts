@@ -27,6 +27,7 @@ export type ArchitectureAccount = {
 };
 
 export type ArchitectureBilling = {
+  nextInvoiceAt?: string | null;
   billingCycle?: { start: string; end: string; precision: 'date' | 'timestamp'; source: string; verifiedAt: string };
   pendingAmount?: string | null;
   usageBreakdown?: Array<{label:string;quantity:string|null;grossAmount:string|null;discountAmount:string|null;netAmount:string|null}>;
@@ -103,6 +104,7 @@ function readBilling(value: unknown): ArchitectureBilling | null {
   if (row.latestInvoiceStatus != null && !['paid', 'open', 'void', 'uncollectible'].includes(String(row.latestInvoiceStatus))) throw invalid();
   if (row.latestPaymentDate != null && !isDate(row.latestPaymentDate)) throw invalid();
   if (!isText(row.source) || !isText(row.verifiedAt) || !Number.isFinite(Date.parse(row.verifiedAt))) throw invalid();
+  if (row.nextInvoiceAt != null && !isTimestamp(row.nextInvoiceAt)) throw invalid();
   let billingCycle: ArchitectureBilling['billingCycle'];
   if (Object.prototype.hasOwnProperty.call(row, 'billingCycle')) {
     const cycle = row.billingCycle;
@@ -142,6 +144,7 @@ function readBilling(value: unknown): ArchitectureBilling | null {
   }
   if(row.manualInvoiceVerifiedAt!=null&&(!isText(row.manualInvoiceVerifiedAt)||!Number.isFinite(Date.parse(row.manualInvoiceVerifiedAt)))) throw invalid();
   return {
+    ...(Object.prototype.hasOwnProperty.call(row, 'nextInvoiceAt') ? {nextInvoiceAt:row.nextInvoiceAt??null} : {}),
     ...(billingCycle ? { billingCycle } : {}),
     ...(limits === undefined ? {} : { limits }),
     ...(usageBreakdown === undefined ? {} : { usageBreakdown }),

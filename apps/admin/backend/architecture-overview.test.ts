@@ -91,3 +91,13 @@ it('preserves verified billing-cycle precision without exposing unrelated fields
   await expect(createArchitectureOverview({selectRows:async()=>[{...row,billing_snapshot:{...row.billing_snapshot,billingCycle:bad}}]}).get()).rejects.toThrow();
  }
 });
+
+it('allowlists next invoice timestamps without converting them into payment dates',async()=>{
+ const base=accountRow(null);
+ for(const nextInvoiceAt of ['2026-09-26T20:34:47.000Z',null]) {
+  const result=await createArchitectureOverview({selectRows:async()=>[{...base,billing_snapshot:{...base.billing_snapshot,nextInvoiceAt}}]}).get();
+  expect(result.items[0].billing?.nextInvoiceAt).toBe(nextInvoiceAt);
+  expect(result.items[0].billing?.latestPaymentDate).toBeNull();
+ }
+ for(const nextInvoiceAt of ['2026-02-30T00:00:00Z','2026-09-26',123]) await expect(createArchitectureOverview({selectRows:async()=>[{...base,billing_snapshot:{...base.billing_snapshot,nextInvoiceAt}}]}).get()).rejects.toThrow();
+});

@@ -167,3 +167,10 @@ test('Railway rejects malformed cycles and preserves epoch timestamp precision',
  const period={start:'1756684800',end:'1759276800'};
  assert.equal(snapshot(period).billingCycle.end,new Date(Number(period.end)*1000).toISOString());
 });
+
+test('Railway sync retrieves next invoice timestamp separately from actual payment dates',()=>{
+ const input=structuredClone(railway);input.workspace.customer.subscriptions[0].nextInvoiceDate='2026-09-26T20:34:47.000Z';
+ const result=railwaySnapshot(input,now);assert.equal(result.nextInvoiceAt,'2026-09-26T20:34:47.000Z');assert.equal(result.latestPaymentDate,null);
+ input.workspace.customer.subscriptions[0].nextInvoiceDate=null;assert.equal(railwaySnapshot(input,now).nextInvoiceAt,null);
+ input.workspace.customer.subscriptions[0].nextInvoiceDate='2026-02-30T01:00:00Z';assert.throws(()=>railwaySnapshot(input,now));
+});
