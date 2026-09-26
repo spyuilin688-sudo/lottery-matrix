@@ -20,11 +20,12 @@
 .architectureSection h3 { font-size: 13px; margin: 0 0 8px; color: #ece7d8; }
 .architectureSection p, .architectureSource p { margin: 6px 0 0; font-size: 12px; overflow-wrap: anywhere; }
 .architectureFacts { display: grid; gap: 8px; margin: 0; }
-.architectureFacts > div { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 8px; font-size: 13px; line-height: 1.5; }
+.architectureFacts > div { font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.architectureFacts dt, .architectureFacts dd { display: inline; }
 .architectureFacts dt, .architectureQuota dt { color: #989ca5; }
 .architectureFacts dd, .architectureQuota dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
-.architectureFacts dt { overflow-wrap: anywhere; }
-.architectureFacts small { display: block; color: #989ca5; font-size: 11px; }
+.architectureFacts dt { margin-inline-end: 8px; overflow-wrap: anywhere; }
+.architectureFacts small { margin-inline-start: 6px; color: #989ca5; font-size: 11px; }
 .architectureUsage { margin-top: 10px; padding-top: 10px; border-top: 1px solid #24272d; }
 .architectureQuotas { display: grid; gap: 8px; }
 .architectureQuota { padding: 8px; border: 1px solid #30333a; border-radius: 8px; }

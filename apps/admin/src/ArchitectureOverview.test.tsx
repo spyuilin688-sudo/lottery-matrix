@@ -9,6 +9,19 @@ const billing = { latestInvoiceAmount: 'US$37.12', latestInvoiceStatus: 'paid', 
 const row = { provider: 'railway', plan: 'Pro', fee: 'US$20／月', renewalDate: '2026-10-01', verifiedAt: '2026-09-25T20:00:00Z', billing };
 const account = { paymentDate: '2026-10-02', paymentDateNote: '官方帳務頁顯示', paymentAmount: 'US$10.50', paymentKind: 'estimate', paymentNote: '折抵後預估，尚未結帳', costs: [{ label: '固定費用', value: 'US$20／月', note: '含用量額度' }], quotas: [{ label: 'CPU', included: '100 小時', used: '20 小時', remaining: '80 小時', reset: '2026-10-01' }], verifiedAt: '2026-09-25T10:00:00Z', source: '官方 Billing 頁人工核對' };
 
+it('distinguishes GitHub usage access from unavailable payment data and exposes the Pages blocker', async () => {
+  const source='帳戶 API 可讀；Pages API 拒絕讀取（403），尚未取得 Pages 專屬帳務。';
+  render(<ArchitectureOverview client={{ get: async () => ({data:{items:[{...row,provider:'github',plan:'GitHub Pro'},{...row,provider:'cloudflare',plan:null,fee:null,billing:{...billing,currentAmount:null,estimatedAmount:null,source}}]}}) }} />);
+  await screen.findByText('GitHub Pro');
+  const github=screen.getByRole('article',{name:'GitHub',exact:true});
+  expect(within(github.querySelector('summary')!).getByText('用量資料已取得')).toBeTruthy();
+  expect(within(github.querySelector('summary')!).getAllByText('尚未確認')).toHaveLength(2);
+  const cloudflare=screen.getByRole('article',{name:'Cloudflare Pages',exact:true});
+  expect(within(cloudflare.querySelector('summary')!).getByText('Pages 帳務未取得')).toBeTruthy();
+  fireEvent.click(cloudflare.querySelector('summary')!);
+  expect(within(cloudflare).getAllByText(source).length).toBeGreaterThan(0);
+});
+
 it('keeps all four provider summaries collapsed and opens details without another request under StrictMode', async () => {
   const get = vi.fn(async () => ({ data: { items: [{ ...row, billing: { ...billing, account } }] } }));
   render(<StrictMode><ArchitectureOverview client={{ get }} /></StrictMode>);

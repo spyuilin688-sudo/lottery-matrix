@@ -49,7 +49,7 @@ export function ArchitectureOverview({ client }: { client: Client }) {
             <article className="panel architectureProvider" key={provider.id} aria-labelledby={`architecture-${provider.id}`}>
               <details className="architectureDisclosure">
                 <summary className="architectureSummary">
-                  <div className="architectureIdentity"><h2 id={`architecture-${provider.id}`}>{provider.name}</h2><span>{item?.plan ?? missing}</span>{item?.fee && <span className="architecturePlanFee">方案費用 {item.fee}</span>}</div>
+                  <div className="architectureIdentity"><h2 id={`architecture-${provider.id}`}>{provider.name}</h2><span>{item?.plan ?? missing}</span>{item?.fee && <span className="architecturePlanFee">方案費用 {item.fee}</span>}{!loading && provider.id === 'github' && billing?.currentAmount && <span>用量資料已取得</span>}{!loading && !error && provider.id === 'cloudflare' && !billing?.currentAmount && !account && <span>Pages 帳務未取得</span>}</div>
                   <div className="architecturePayment"><span>下次付款日期</span><strong>{account?.paymentDate ? <time dateTime={account.paymentDate}>{account.paymentDate}</time> : missing}</strong></div>
                   <div className="architecturePayment"><span>{amountLabel}</span><strong>{amount ?? missing}</strong>{account && <small className="architectureSnapshotDate">人工核對 <time dateTime={account.verifiedAt}>{formatAdminDateTime(account.verifiedAt).split(' ')[0]}</time></small>}</div>
                   <span className="architectureChevron" aria-hidden="true">⌄</span>
@@ -57,6 +57,7 @@ export function ArchitectureOverview({ client }: { client: Client }) {
                 <div className="architectureDetailBody">
                   <section className="architectureSection" aria-label={`${provider.name} 付款說明`}>
                     <h3>付款說明</h3>
+                    {provider.id === 'cloudflare' && !account && billing?.source && <p>{billing.source}</p>}
                     <p>{account?.paymentDateNote || (account?.paymentDate ? '付款日期取自官方帳務頁人工核對。' : '尚未取得已核對的下次扣款日期；續費日期與帳務期間不能視為實際扣款日。')}</p>
                     <p>{account?.paymentNote || (amount ? '金額依標示區分已確認應繳、預估與待出帳，以平台最終帳單為準。' : '尚未取得已核對的本次應繳金額；方案費用與用量不等於實際扣款。')}</p>
                     {account && <p className="architectureVerified">人工核對：<time dateTime={account.verifiedAt}>{formatAdminDateTime(account.verifiedAt)}</time>（官方帳務頁快照，非每日同步）</p>}

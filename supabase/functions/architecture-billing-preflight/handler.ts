@@ -1,6 +1,7 @@
 type Dependencies = { getEnv(name: string): string | undefined; fetch: typeof fetch };
 type RecordValue = Record<string, unknown>;
 const object = (value: unknown): RecordValue => value && typeof value === 'object' && !Array.isArray(value) ? value as RecordValue : {};
+const displayText = (value: unknown) => typeof value === 'string' && value.length <= 200 ? value : undefined;
 
 export function createHandler(deps: Dependencies) {
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
@@ -22,6 +23,13 @@ export function createHandler(deps: Dependencies) {
       const rows = provider === 'github' ? body.usageItems : body.result;
       return {
         status: 'readable', httpStatus: response.status,
+        ...(url.endsWith('/accounts/2a0ab3c9c14b3d669c035efa1bc60fe4/subscriptions') && Array.isArray(rows) ? {
+          plans: rows.slice(0,30).map(item => {
+            const subscription=object(item),plan=object(subscription.rate_plan);
+            return {name:displayText(plan.public_name),scope:displayText(plan.scope),id:displayText(plan.id),price:typeof subscription.price==='number'&&Number.isFinite(subscription.price)?subscription.price:undefined,currency:displayText(subscription.currency),frequency:displayText(subscription.frequency)};
+          }),
+        } : {}),
+        ...(url.endsWith('/billable-usage/info') && typeof object(rows).covered==='boolean' ? {covered:object(rows).covered} : {}),
         ...(Array.isArray(rows) ? {
           count: rows.length,
           // Account identifiers only. Never return tokens, invoices or signed URLs.
@@ -79,6 +87,7 @@ export function createHandler(deps: Dependencies) {
     let difference = 0;
     for (let i = 0; i < expected.length; i++) difference |= supplied.charCodeAt(i) ^ expected.charCodeAt(i);
     if (difference !== 0) return json({ error: 'UNAUTHORIZED' }, 401);
+    const options=object(await request.json().catch(()=>({})));
     const cf = deps.getEnv('CLOUDFLARE_BILLING_API_TOKEN')?.trim();
     const gh = (deps.getEnv('GITHUB_BILLING_API_TOKEN') || deps.getEnv('GITHUB_ACTIONS_TOKEN'))?.trim();
     const rw = deps.getEnv('RAILWAY_BILLING_API_TOKEN')?.trim();
@@ -88,7 +97,16 @@ export function createHandler(deps: Dependencies) {
         probe('https://api.cloudflare.com/client/v4/user/tokens/verify', cf, 'cloudflare'),
         probe('https://api.cloudflare.com/client/v4/user/subscriptions', cf, 'cloudflare'),
         probe('https://api.cloudflare.com/client/v4/accounts?per_page=50', cf, 'cloudflare'),
-      ]).then(([token, subscriptions, accounts]) => ({ status: 'checked', token, subscriptions, accounts }))
+      ]).then(async ([token, subscriptions, accounts]) => {
+        if(options.cloudflareDetails!==true) return {status:'checked',token,subscriptions,accounts};
+        const base='https://api.cloudflare.com/client/v4/accounts/2a0ab3c9c14b3d669c035efa1bc60fe4';
+        const [pages,accountSubscriptions,usageInfo]=await Promise.all([
+          probe(`${base}/pages/projects/lottery-matrix`,cf,'cloudflare'),
+          probe(`${base}/subscriptions`,cf,'cloudflare'),
+          probe(`${base}/billable-usage/info`,cf,'cloudflare'),
+        ]);
+        return {status:'checked',token,subscriptions,accounts,pages,accountSubscriptions,usageInfo};
+      })
         : { status: 'missing_credential' },
       gh ? probe(`https://api.github.com/users/spyuilin688-sudo/settings/billing/usage?year=${now.getUTCFullYear()}&month=${now.getUTCMonth()+1}`, gh, 'github')
         : { status: 'missing_credential' },
