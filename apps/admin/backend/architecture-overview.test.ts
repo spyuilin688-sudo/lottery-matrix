@@ -54,3 +54,14 @@ it('rejects malformed optional account snapshots and nested rows', async () => {
     await expect(createArchitectureOverview({ selectRows: async () => [accountRow(value)] }).get()).rejects.toThrow();
   }
 });
+
+
+it('exposes automatic limits separately from manual account data and validates them',async()=>{
+ const limits=[{label:'同時建置',value:'1 個'}];
+ const input={...accountRow(account),provider:'cloudflare',billing_snapshot:{source:'Cloudflare API',verifiedAt:'2026-09-26T00:00:00Z',limits:[{...limits[0],secret:'hidden'}],account}};
+ const r=await createArchitectureOverview({selectRows:async()=>[input]}).get();
+ expect(r.items[0].billing?.limits).toEqual(limits);
+ expect(r.items[0].billing?.account).toEqual(account);
+ expect(JSON.stringify(r)).not.toContain('hidden');
+ for(const invalid of [null,[{label:'上限',value:0}],Array(31).fill(limits[0])]) await expect(createArchitectureOverview({selectRows:async()=>[{...input,billing_snapshot:{...input.billing_snapshot,limits:invalid}}]}).get()).rejects.toThrow();
+});

@@ -78,3 +78,17 @@ test('unpaid invoice diagnostic allowlists amounts and never exposes invoice lin
       : {status:'readable',httpStatus:200,unpaid:[{amountToPay:12.5,currency:'USD'}]});
   }
 });
+
+test('account entitlement diagnostic exposes only feature allocation, not raw account data',async()=>{
+ const urls=[];
+ const h=createHandler({getEnv:n=>({MATRIX_NOTIFICATION_DISPATCH_TOKEN:'expected',CLOUDFLARE_BILLING_API_TOKEN:'private-token'})[n],fetch:async url=>{
+  urls.push(url);
+  return Response.json({success:true,result:url.endsWith('/entitlements')?[{id:'pages_builds',allocation:{type:'max_count',value:500},private:'do-not-expose'}]:[]});
+ }});
+ const result=await (await h(new Request('https://test',{method:'POST',headers:{'x-matrix-dispatch-token':'expected'},body:'{"cloudflareDetails":true}'}))).json();
+ assert.deepEqual(result.cloudflare.entitlements,{status:'readable',httpStatus:200,count:1,allocations:[{id:'pages_builds',type:'max_count',value:500}]});
+ assert.equal(JSON.stringify(result).includes('do-not-expose'),false);
+ assert.equal(urls.filter(u=>u.endsWith('/entitlements')).length,1);
+ assert.equal(urls.filter(u=>u.endsWith('/billable/usage')).length,1);
+ assert.deepEqual(result.cloudflare.usageV2,{status:'readable',httpStatus:200,count:0});
+});

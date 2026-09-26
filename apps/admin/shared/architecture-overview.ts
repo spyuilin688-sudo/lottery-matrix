@@ -27,6 +27,7 @@ export type ArchitectureAccount = {
 };
 
 export type ArchitectureBilling = {
+  limits?: Array<{ label: string; value: string }>;
   account?: ArchitectureAccount | null;
   latestInvoiceAmount: string | null;
   latestInvoiceStatus: 'paid' | 'open' | 'void' | 'uncollectible' | null;
@@ -94,7 +95,16 @@ function readBilling(value: unknown): ArchitectureBilling | null {
   if (row.latestInvoiceStatus != null && !['paid', 'open', 'void', 'uncollectible'].includes(String(row.latestInvoiceStatus))) throw invalid();
   if (row.latestPaymentDate != null && !isDate(row.latestPaymentDate)) throw invalid();
   if (!isText(row.source) || !isText(row.verifiedAt) || !Number.isFinite(Date.parse(row.verifiedAt))) throw invalid();
+  let limits: ArchitectureBilling['limits'];
+  if (Object.prototype.hasOwnProperty.call(row, 'limits')) {
+    if (!Array.isArray(row.limits) || row.limits.length > 30) throw invalid();
+    limits = row.limits.map(entry => {
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry) || !isText(entry.label) || !isText(entry.value)) throw invalid();
+      return { label: entry.label, value: entry.value };
+    });
+  }
   return {
+    ...(limits === undefined ? {} : { limits }),
     latestInvoiceAmount: row.latestInvoiceAmount ?? null,
     latestInvoiceStatus: row.latestInvoiceStatus ?? null,
     latestPaymentDate: row.latestPaymentDate ?? null,

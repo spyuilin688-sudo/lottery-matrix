@@ -83,9 +83,23 @@ export function railwaySnapshot(data: Row, now: Date, previous: Row | null = nul
 
 export function cloudflareSnapshot(data: Row, previous: Row | null, now: Date) {
   if (row(data.project).name !== 'lottery-matrix' || !Array.isArray(data.subscriptions)
-      || !Array.isArray(data.history) || typeof data.covered !== 'boolean') throw Error('INVALID_CLOUDFLARE');
-  return {...empty(), ...(previous?.account ? {account:previous.account} : {}),
-    source:`Cloudflare API：Pages 專案可讀；帳單紀錄 ${data.history.length} 筆（全帳戶，不能推算 Pages 本期金額）；${data.covered?'用量接口支援，金額待核對':'帳戶不支援計費用量接口'}；網域方案不是 Pages 方案；額度與扣款日期尚未取得`,
+      || !Array.isArray(data.history) || !Array.isArray(data.entitlements) || typeof data.covered !== 'boolean') throw Error('INVALID_CLOUDFLARE');
+  const definitions: Record<string,[string,string]>={
+    'pages.concurrent_builds':['同時建置','個'],
+    'pages.custom_domains_per_project':['每專案自訂網域','個'],
+    'pages.build_cache_storage_limit_mb':['建置快取容量','MB'],
+    'pages.build_cache_retention_limit_days':['建置快取保留時間','天'],
+  };
+  const active=data.entitlements.filter((entry:Row)=>Object.hasOwn(definitions,entry.id)&&!entry.deleted_date);
+  if(new Set(active.map((entry:Row)=>entry.id)).size!==active.length) throw Error('DUPLICATE_ENTITLEMENT');
+  const limits=active.map((entry:Row)=>{
+    const allocation=row(entry.allocation);
+    if(allocation.type!=='max_count'||!Number.isSafeInteger(allocation.value)||allocation.value<0) throw Error('INVALID_ENTITLEMENT');
+    const [label,unit]=definitions[entry.id];
+    return {label,value:`${allocation.value.toLocaleString('en-US')} ${unit}`};
+  });
+  return {...empty(), ...(previous?.account ? {account:previous.account} : {}), limits,
+    source:`Cloudflare API：額度上限 ${limits.length} 項；帳單紀錄 ${data.history.length} 筆（全帳戶，不能推算 Pages 本期金額）；${data.covered?'用量接口支援，金額待核對':'帳戶不支援計費用量接口'}；網域方案不是 Pages 方案；每月建置用量、待繳金額與扣款日未取得`,
     verifiedAt:now.toISOString(),
   };
 }
@@ -135,13 +149,13 @@ export function createSyncHandler(deps: Dependencies) {
           } else if(provider==='cloudflare') {
             const cfBase='https://api.cloudflare.com/client/v4/accounts/2a0ab3c9c14b3d669c035efa1bc60fe4';
             const cfHeaders={Authorization:`Bearer ${token}`,Accept:'application/json'};
-            const responses=await Promise.all(['/pages/projects/lottery-matrix','/subscriptions','/billing/history?page=1&per_page=20','/billable-usage/info'].map(path=>api(cfBase+path,{headers:cfHeaders})));
+            const responses=await Promise.all(['/pages/projects/lottery-matrix','/subscriptions','/billing/history?page=1&per_page=20','/billable-usage/info','/entitlements'].map(path=>api(cfBase+path,{headers:cfHeaders})));
             if(responses.some(body=>body.success!==true)) throw Error('PROVIDER_REJECTED');
-            const [project,subscriptions,history,usage]=responses;
+            const [project,subscriptions,history,usage,entitlements]=responses;
             // Never treat a truncated history page as the latest bill: ordering is not guaranteed.
             const info=row(history.result_info);
             if(!Array.isArray(history.result) || history.result.length>=20 || (typeof info.total_count==='number'&&info.total_count>history.result.length)) throw Error('INCOMPLETE_RESPONSE');
-            snapshot=cloudflareSnapshot({project:project.result,subscriptions:subscriptions.result,history:history.result,covered:row(usage.result).covered},rows.find((r:Row)=>r.provider==='cloudflare')?.billing_snapshot??null,now);
+            snapshot=cloudflareSnapshot({project:project.result,subscriptions:subscriptions.result,history:history.result,covered:row(usage.result).covered,entitlements:entitlements.result},rows.find((r:Row)=>r.provider==='cloudflare')?.billing_snapshot??null,now);
           } else {
             const body=await api('https://backboard.railway.com/graphql/v2',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({
               query:`query BillingSync($workspaceId:String!,$measurements:[MetricMeasurement!]!) {
@@ -153,7 +167,9 @@ export function createSyncHandler(deps: Dependencies) {
             if(body.errors?.length) throw Error('PROVIDER_REJECTED');
             snapshot=railwaySnapshot(row(body.data),now,rows.find((r:Row)=>r.provider==='railway')?.billing_snapshot??null);
           }
-          results[provider]={status:'synced',snapshot};
+          results[provider]=provider==='cloudflare'
+            ? {status:'partial',reason:'僅取得額度上限與帳單紀錄；用量、待繳金額與扣款日未取得',snapshot}
+            : {status:'synced',snapshot};
         } catch { results[provider]={status:'failed',reason:'帳單讀取或格式驗證失敗；保留上次資料'}; }
       }));
       results.supabase={status:'pending',reason:'尚未確認組織帳單公開 API'};
@@ -161,7 +177,8 @@ export function createSyncHandler(deps: Dependencies) {
       const finished=await rpc('finish_admin_architecture_billing_run',{p_run_id:runId,p_results:results});
       if(finished!==true) throw Error('STORAGE_WRITE_FAILED');
       const succeeded=['github','railway','cloudflare'].filter(provider=>results[provider].status==='synced').length;
-      return json({status:succeeded===3?'completed':succeeded>0?'partial':'failed',results:Object.fromEntries(Object.entries(results).map(([name,result])=>[name,{status:result.status,reason:result.reason}]))});
+      const partial=Object.values(results).some(result=>result.status==='partial');
+      return json({status:succeeded===3?'completed':succeeded>0||partial?'partial':'failed',results:Object.fromEntries(Object.entries(results).map(([name,result])=>[name,{status:result.status,reason:result.reason}]))});
     } catch {
       if(runId) {
         try { await rpc('fail_admin_architecture_billing_run',{p_run_id:runId}); }

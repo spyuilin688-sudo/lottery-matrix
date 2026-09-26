@@ -79,11 +79,15 @@ export function ArchitectureOverview({ client }: { client: Client }) {
                   </section>
                   <section className="architectureSection" aria-label={`${provider.name} 額度與用量`}>
                     <h3>額度與用量</h3>
+                    {!!billing?.limits?.length && <>
+                      <p className="architectureVerified">上限自動更新：<time dateTime={billing.verifiedAt}>{formatAdminDateTime(billing.verifiedAt)}</time>（僅上限，非已用量）</p>
+                      <dl className="architectureFacts">{billing.limits.map(limit => <div key={limit.label}><dt>{limit.label}</dt><dd>{limit.value}</dd></div>)}</dl>
+                    </>}
                     {account?.quotas.length ? <div className="architectureQuotas">{account.quotas.map((quota, index) => <div className="architectureQuota" key={`${quota.label}-${index}`}>
                       <h4>{quota.label}</h4>
                       <dl><div><dt>包含額度／上限</dt><dd>{quota.included}</dd></div><div><dt>已用</dt><dd>{quota.used}</dd></div><div><dt>剩餘</dt><dd>{quota.remaining}</dd></div><div><dt>重置時間</dt><dd>{quota.reset}</dd></div></dl>
                       {quota.note && <p>{quota.note}</p>}
-                    </div>)}</div> : <p>尚未取得已核對的額度明細；未知用量與剩餘額度不以 0 顯示。</p>}
+                    </div>)}</div> : <p>{billing?.limits?.length ? '每月建置已用量、剩餘額度與重置時間尚未取得。' : '尚未取得已核對的額度明細；未知用量與剩餘額度不以 0 顯示。'}</p>}
                   </section>
                   <section className="architectureSection" aria-label={`${provider.name} 帳單與付款紀錄`}>
                     <h3>帳單與付款紀錄</h3>
@@ -97,7 +101,7 @@ export function ArchitectureOverview({ client }: { client: Client }) {
                   </section>
                   <details className="architectureSource">
                     <summary>資料來源與更新時間</summary>
-                    <p>GitHub、Railway、Cloudflare 每日 09:20（台灣時間）同步一次；失敗時保留上次資料。Cloudflare 同步帳單紀錄與接口狀態，未取得的 Pages 費用及額度仍標示未知。Supabase 尚未自動同步。</p>
+                    <p>GitHub、Railway、Cloudflare 每日 09:20（台灣時間）同步一次；失敗時保留上次資料。Cloudflare 自動更新已取得的額度上限；每月用量、待繳金額及扣款日仍未取得。Supabase 尚未自動同步。</p>
                     <p className="architectureVerified">方案確認：{item?.verifiedAt ? <time dateTime={item.verifiedAt}>{formatAdminDateTime(item.verifiedAt)}</time> : '尚未確認'}</p>
                     {item?.renewalDate && <p>方案續費紀錄：<time dateTime={item.renewalDate}>{item.renewalDate}</time>（不代表扣款日）</p>}
                     {billing && <><p className="architectureVerified">帳務資料更新：<time dateTime={billing.verifiedAt}>{formatAdminDateTime(billing.verifiedAt)}</time>（不代表歷史付款重新核對）</p><p>{billing.source}</p></>}

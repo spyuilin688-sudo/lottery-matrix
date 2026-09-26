@@ -24,6 +24,12 @@ export function createHandler(deps: Dependencies) {
       const rows = provider === 'github' ? body.usageItems : body.result;
       return {
         status: 'readable', httpStatus: response.status,
+        ...(url.endsWith('/entitlements') && Array.isArray(rows) ? {
+          allocations: rows.slice(0,200).map(item=>{
+            const entry=object(item), allocation=object(entry.allocation);
+            return {id:displayText(entry.id),type:displayText(allocation.type),value:typeof allocation.value==='number'&&Number.isFinite(allocation.value)?allocation.value:undefined};
+          }),
+        } : {}),
         ...(url.endsWith('/billing/unpaid-invoice') ? {
           unpaid: Array.isArray(object(rows).invoices) ? (object(rows).invoices as unknown[]).map(item => {
             const entry=object(item);
@@ -116,14 +122,16 @@ export function createHandler(deps: Dependencies) {
       ]).then(async ([token, subscriptions, accounts]) => {
         if(options.cloudflareDetails!==true) return {status:'checked',token,subscriptions,accounts};
         const base='https://api.cloudflare.com/client/v4/accounts/2a0ab3c9c14b3d669c035efa1bc60fe4';
-        const [pages,accountSubscriptions,usageInfo,billingHistory,unpaidInvoices]=await Promise.all([
+        const [pages,accountSubscriptions,usageInfo,billingHistory,unpaidInvoices,entitlements,usageV2]=await Promise.all([
           probe(`${base}/pages/projects/lottery-matrix`,cf,'cloudflare'),
           probe(`${base}/subscriptions`,cf,'cloudflare'),
           probe(`${base}/billable-usage/info`,cf,'cloudflare'),
           probe(`${base}/billing/history?page=1&per_page=20`,cf,'cloudflare'),
           probe(`${base}/billing/unpaid-invoice`,cf,'cloudflare'),
+          probe(`${base}/entitlements`,cf,'cloudflare'),
+          probe(`${base}/billable/usage`,cf,'cloudflare'),
         ]);
-        return {status:'checked',token,subscriptions,accounts,pages,accountSubscriptions,usageInfo,billingHistory,unpaidInvoices};
+        return {status:'checked',token,subscriptions,accounts,pages,accountSubscriptions,usageInfo,billingHistory,unpaidInvoices,entitlements,usageV2};
       })
         : { status: 'missing_credential' },
       gh ? probe(`https://api.github.com/users/spyuilin688-sudo/settings/billing/usage?year=${now.getUTCFullYear()}&month=${now.getUTCMonth()+1}`, gh, 'github')
