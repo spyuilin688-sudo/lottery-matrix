@@ -65,6 +65,16 @@ export async function maskPrivateMemberEntitlements<T extends MemberRow>(
 }
 
 type AuditRow = MemberRow & { targetTable?: unknown; targetId?: unknown; beforeData?: unknown; afterData?: unknown };
+const privatePlanAuditFields = new Set([
+  'current_plan_id', 'plan_started_at', 'plan_expires_at', 'is_lifetime',
+  'auto_renew', 'subscription_revision',
+]);
+
+function redactPlanAuditFields(value: unknown): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const entries = Object.entries(value).filter(([key]) => !privatePlanAuditFields.has(key));
+  return entries.length === Object.keys(value).length ? value : entries.length ? Object.fromEntries(entries) : null;
+}
 
 export async function maskPrivateAuditRows<T extends AuditRow>(rows: T[], actor: Actor, api: PrivateRequester): Promise<T[]> {
   if (isPrivateActivationOwner(actor)) return rows;
@@ -73,17 +83,17 @@ export async function maskPrivateAuditRows<T extends AuditRow>(rows: T[], actor:
       .map(row => String(row.targetId)), api,
   );
   if (!byMember.size) return rows;
-  const matches = (value: unknown, snapshot: PrivateRedemption) => {
-    if (!value || typeof value !== 'object') return false;
-    const data = value as Record<string, unknown>;
-    return (data.current_plan_id ?? null) === snapshot.current_plan_id
-      && sameTimestamp(data.plan_started_at, snapshot.plan_started_at)
-      && sameTimestamp(data.plan_expires_at, snapshot.plan_expires_at)
-      && data.is_lifetime === snapshot.is_lifetime;
-  };
   return rows.map(row => {
-    const snapshot = byMember.get(String(row.targetId ?? ''));
-    if (!snapshot || !matches(row.beforeData, snapshot) && !matches(row.afterData, snapshot)) return row;
-    return { ...row, content: '會員資料異動', beforeData: null, afterData: null } as T;
+    if (row.targetTable !== 'members' || !byMember.has(String(row.targetId ?? ''))) return row;
+    const beforeData = redactPlanAuditFields(row.beforeData);
+    const afterData = redactPlanAuditFields(row.afterData);
+    const sensitiveContent = typeof row.content === 'string'
+      && (/^訂閱操作：/.test(row.content) || /終生|終身|永久|lifetime/i.test(row.content));
+    if (beforeData === row.beforeData && afterData === row.afterData && !sensitiveContent) return row;
+    return {
+      ...row,
+      content: sensitiveContent ? '會員資料異動' : row.content,
+      beforeData, afterData,
+    } as T;
   });
 }

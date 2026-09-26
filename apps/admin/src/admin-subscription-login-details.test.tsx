@@ -21,7 +21,11 @@ vi.mock('./admin-platform-client', () => ({
         id: 'member-1', memberDisplayName: 'Google 會員', identityDisplay: 'Google ID：google-123',
         planName: '季費', planStartedAt: '2026-09-01T00:00:00Z', planExpiresAt: '2026-12-01T00:00:00Z',
         isLifetime: false, autoRenew: true, status: 'active', registeredAt: '2026-08-01T00:00:00Z', lastOnlineAt: '2026-09-16T08:00:00Z',
-      }], total: 1, currentPage: 1, totalPages: 1 } };
+      }, {
+        id: 'member-2', memberDisplayName: '一般會員', identityDisplay: 'Google ID：google-456',
+        planName: null, planStartedAt: null, planExpiresAt: null,
+        isLifetime: null, autoRenew: null, subscriptionRevision: null, status: 'active',
+      }], total: 2, currentPage: 1, totalPages: 1 } };
       if (path.startsWith('/api/data/loginRecords?')) return { data: { items: [{
         id: 'login-1', account: 'operator', loginAt: '2026-09-16T08:00:00Z', logoutAt: '2026-09-16T09:00:00Z',
         onlineMinutes: 60, ip: '203.0.113.1', estimatedRegion: '台灣・台北市', device: 'Android',
@@ -55,6 +59,18 @@ it('shows member name beside provider identity in subscription management', asyn
     expect(table!.querySelector('thead')?.textContent).toContain('會員名稱');
     expect(table!.querySelector('tbody')?.textContent).toContain('Google 會員');
     expect(table!.querySelector('tbody')?.textContent).toContain('Google ID：google-123');
+  } finally { await act(async () => root.unmount()); container.remove(); }
+});
+
+it('shows redacted renewal data as unknown and does not offer an unusable expiry action', async () => {
+  const { container, root } = await renderAndOpen('訂閱管理');
+  try {
+    const table = [...container.querySelectorAll('table')].find((item) => item.querySelector('thead')?.textContent?.includes('自動續訂'));
+    const redactedRow = [...table!.querySelectorAll('tbody tr')].find((row) => row.textContent?.includes('一般會員'));
+    expect(redactedRow).toBeTruthy();
+    expect(redactedRow!.querySelectorAll('td')[5]?.textContent).toBe('—');
+    expect(redactedRow!.querySelector('button')).toBeTruthy();
+    expect(redactedRow!.querySelector('button')?.textContent).toBe('用戶資訊');
   } finally { await act(async () => root.unmount()); container.remove(); }
 });
 

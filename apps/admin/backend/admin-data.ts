@@ -395,7 +395,7 @@ function applyAdminPageFilters(
   query: AdminPageQuery,
   filterStatus = true,
   currentDate = new Date(),
-  suppressPlanSearch = false,
+  safePlanSearch = false,
 ) {
   const config = pageDefinitions[table];
   if (!config) throw new AdminDataError('Invalid table');
@@ -405,16 +405,22 @@ function applyAdminPageFilters(
   const startDate = String(query.startDate ?? '');
   const endDate = String(query.endDate ?? '');
   const dateField = String(query.dateField ?? config.dates[0] ?? '');
+  const columns = safePlanSearch && (table === 'users' || table === 'subscriptions')
+    ? { ...config.columns, planName: 'admin_visible_plan_name',
+      planStartedAt: 'admin_visible_plan_started_at', planExpiresAt: 'admin_visible_plan_expires_at' }
+    : config.columns;
   if (keyword.length > 200 || (sortBy && !Object.prototype.hasOwnProperty.call(config.columns, sortBy))
     || !['asc', 'desc'].includes(direction) || (dateField && !config.dates.includes(dateField))
     || ((startDate || endDate) && !dateField)) throw new AdminDataError('查詢條件不正確');
   if (sortBy) {
-    const column = config.columns[sortBy];
+    const column = columns[sortBy];
     url.searchParams.set('order', `${column}.${direction}.nullslast${column === 'id' ? '' : ',id.asc'}`);
+  } else if (safePlanSearch && table === 'subscriptions') {
+    url.searchParams.set('order', 'admin_visible_plan_started_at.desc.nullslast,id.asc');
   }
   try {
     const range = adminBusinessDateRange(startDate, endDate);
-    const column = config.columns[dateField];
+    const column = columns[dateField];
     if (range.start) url.searchParams.append(column, `gte.${range.start}`);
     if (range.endExclusive) url.searchParams.append(column, `lt.${range.endExclusive}`);
   } catch {
@@ -443,12 +449,15 @@ function applyAdminPageFilters(
   if (/^\d+$/.test(keyword) && Number.isSafeInteger(Number(keyword))) {
     clauses.push(...(config.numeric ?? []).map(field => `${field}.eq.${Number(keyword)}`));
   }
-  for (const relation of config.relations?.filter(value => !suppressPlanSearch || value.alias !== 'keyword_plan') ?? []) {
+  for (const relation of config.relations?.filter(value => !safePlanSearch || value.alias !== 'keyword_plan') ?? []) {
     // Empty search embeds filter the parent OR group without removing the
     // separately selected display-name embeds from matching rows.
     url.searchParams.set('select', `${url.searchParams.get('select')},${relation.alias}:${relation.relation}()`);
     url.searchParams.set(`${relation.alias}.${relation.field}`, `imatch.${pattern}`);
     clauses.push(`${relation.alias}.not.is.null`);
+  }
+  if (safePlanSearch && (table === 'users' || table === 'subscriptions')) {
+    clauses.push(`admin_visible_plan_name.imatch.${JSON.stringify(pattern)}`);
   }
   url.searchParams.set('or', `(${clauses.join(',')})`);
 }
@@ -526,16 +535,11 @@ export async function listAdminMemberPage(
   const page = parsePage(query, pageSize);
   const definition = getAdminTableDefinition(table);
   const url = new URL(definition.path, 'https://supabase.invalid');
-  if (table === 'users' && actor && !isPrivateActivationOwner(actor)) {
-    const sortBy = String(query.sortBy ?? '');
-    const dateField = String(query.dateField ?? pageDefinitions[table].dates[0]);
-    if (['planName', 'planStartedAt', 'planExpiresAt'].includes(sortBy)
-        || ((query.startDate || query.endDate) && ['planStartedAt', 'planExpiresAt'].includes(dateField))) {
-      throw new AdminDataError('查詢條件不正確');
-    }
-  }
+  const safePlanSearch = Boolean(actor && !isPrivateActivationOwner(actor));
   if (table === 'subscriptions') {
-    url.searchParams.set('current_plan.duration_days', plan === 'all' ? 'in.(30,90,365)' : `eq.${planDurations[plan]}`);
+    if (plan === 'all') url.searchParams.set('current_plan.duration_days', 'in.(30,90,365)');
+    else if (safePlanSearch) url.searchParams.set('admin_visible_plan_duration', `eq.${planDurations[plan]}`);
+    else url.searchParams.set('current_plan.duration_days', `eq.${planDurations[plan]}`);
     url.searchParams.set('plan_expires_at', `gt.${currentDate.toISOString()}`);
     url.searchParams.set('is_lifetime', 'eq.false');
   }
@@ -546,7 +550,7 @@ export async function listAdminMemberPage(
     // from the keyword OR group so searching cannot replace either filter.
     url.searchParams.set('and', '(or(status.in.(active,啟用),status.is.null))');
   }
-  applyAdminPageFilters(url, table, query, false, currentDate, Boolean(actor && !isPrivateActivationOwner(actor)));
+  applyAdminPageFilters(url, table, query, false, currentDate, safePlanSearch);
   const result = await readAdminPage(url, page, pageSize, api);
   const enriched = await enrichMembers(result.items.map(row => definition.map(row, currentDate)), api, currentDate, true);
   const items = actor ? await maskPrivateMemberEntitlements(enriched, actor, api) : enriched;

@@ -51,7 +51,7 @@ export function UserInfoDialog({ row, client, module = 'users', onClose }: {
       ['方案開始時間', formatAdminDateTime(row.planStartedAt)],
       ['方案到期時間', row.isLifetime ? '終生' : formatAdminDateTime(row.planExpiresAt)],
     );
-    if ('autoRenew' in row) fields.push(['自動續訂', row.autoRenew ? '是' : '否']);
+    if ('autoRenew' in row) fields.push(['自動續訂', row.autoRenew == null ? '—' : row.autoRenew ? '是' : '否']);
   }
   return <dialog ref={dialog} className="memberInfoDialog" aria-labelledby="member-info-title" onCancel={onClose}>
     <header className="memberInfoHeading"><h2 id="member-info-title">用戶資訊</h2><button type="button" className="compactButton" onClick={onClose} autoFocus>關閉</button></header>

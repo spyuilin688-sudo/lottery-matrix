@@ -28,10 +28,11 @@ export function createActivationBatchSubmitter(client: BatchClient, storage: Ret
   return {
     async submit(actorId: string, durationType: string, quantity: number, isPrivate = false) {
       const key = `matrix:admin:activation-request:${JSON.stringify([actorId, durationType, quantity, isPrivate])}`;
+      const legacyKey = isPrivate ? null : `matrix:admin:activation-request:${JSON.stringify([actorId, durationType, quantity])}`;
       let requestId = pending.get(key);
       if (!requestId) {
         try {
-          const stored = storage?.getItem(key);
+          const stored = storage?.getItem(key) || (legacyKey ? storage?.getItem(legacyKey) : null);
           if (stored && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stored)) requestId = stored;
         } catch { storage = null; /* Keep the in-memory fallback. */ }
         requestId ??= crypto.randomUUID();
@@ -43,6 +44,7 @@ export function createActivationBatchSubmitter(client: BatchClient, storage: Ret
       if (pending.get(key) === requestId) pending.delete(key);
       try {
         if (storage?.getItem(key) === requestId) storage.removeItem(key);
+        if (legacyKey && storage?.getItem(legacyKey) === requestId) storage.removeItem(legacyKey);
       } catch { storage = null; /* Ignore stale storage after a confirmed success. */ }
       return result;
     },
