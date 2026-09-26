@@ -159,7 +159,7 @@ def _latest_completed_results(
 
             try:
                 result = cache.read(key, load)
-                return {**result, **({"dueLotteries": due_lotteries} if due_lotteries is not None else {})}
+                return {**result, "revisions": _result_revision_tokens(version), **({"dueLotteries": due_lotteries} if due_lotteries is not None else {})}
             except _CompletedResultRevisionChanged:
                 continue
 
@@ -188,6 +188,50 @@ def _public_result_revision(client: Any) -> dict[str, Any] | None:
            for part in revision.values()):
         return None
     return revision
+
+
+def _result_revision_tokens(version: dict[str, Any]) -> dict[str, str]:
+    return {
+        lottery: sha256(json.dumps(part, sort_keys=True, ensure_ascii=False,
+                                   separators=(',', ':')).encode('utf-8')).hexdigest()
+        for lottery, part in version.items()
+    }
+
+
+class _UncacheableManifest(Exception):
+    pass
+
+
+def _cached_published_manifest(lottery: str, repository: AnalysisRepository) -> dict[str, Any] | None:
+    cache = getattr(repository, "draw_read_cache", None)
+    client = getattr(repository, "client", None)
+    if cache is None or client is None:
+        return published_manifest(lottery, repository)
+    for _attempt in range(2):
+        # Lightweight version checks are shared only while pending. A completed
+        # probe must not hide a correction or publication from the next reader.
+        version = cache.read("manifest-revision", lambda: {"version": _public_result_revision(client)},
+                             cache_result=False)["version"]
+        if version is None:
+            return published_manifest(lottery, repository)
+        key = "card-manifest:" + json.dumps([lottery, version], sort_keys=True, ensure_ascii=False)
+
+        def load():
+            manifest = published_manifest(lottery, repository)
+            if manifest is None:
+                raise _UncacheableManifest()
+            if _public_result_revision(client) != version:
+                raise _CompletedResultRevisionChanged()
+            return manifest
+
+        try:
+            return cache.read(key, load)
+        except _UncacheableManifest:
+            return None
+        except _CompletedResultRevisionChanged:
+            continue
+    # Continuous writes: preserve the original validation path without storing it.
+    return published_manifest(lottery, repository)
 
 
 def _read_latest_completed_results(client: Any) -> dict[str, Any]:
@@ -393,10 +437,18 @@ def _draw_query(repository: AnalysisRepository, lottery: str, kind: str, **param
         key = json.dumps([lottery, "latest", params], sort_keys=True, ensure_ascii=False)
         return cache.read(key, lambda: _execute_draw_query(repository, lottery, kind, **params),
                           ttl=public_read_ttl_seconds())
-    if cache is not None and kind in {"history", "tongxing"}:
+    if cache is not None and kind in {"history", "tongxing", "summary"}:
         # Revalidate with a small latest-row response before reusing a large page.
         # Database revisions cover all history corrections and cross-process writers.
-        latest = _draw_query(repository, lottery, "latest")
+        if kind == "summary":
+            # History can change again while card publication is already dirty,
+            # without another Realtime signal. Share pending probes only so
+            # each later years read observes the current database revision.
+            probe_key = json.dumps([lottery, "summary-revision"], ensure_ascii=False)
+            latest = cache.read(probe_key, lambda: _execute_draw_query(repository, lottery, "latest"),
+                                cache_result=False)
+        else:
+            latest = _draw_query(repository, lottery, "latest")
         revision = latest.get("revision")
         if isinstance(revision, str) and revision and (cursor is None or cursor.get("revision") == revision):
             key = json.dumps([lottery, revision, kind, params], sort_keys=True, ensure_ascii=False)
@@ -850,11 +902,17 @@ def handle_api_request(
             if "/" not in card_lottery:
                 lottery = _parse_lottery(unquote(card_lottery))
                 if parse_qs(parsed.query).get('format') == ['png']:
-                    return 200, published_manifest(lottery, repository) or {
+                    return 200, _cached_published_manifest(lottery, repository) or {
                         'lottery': lottery, 'period': None, 'cards': {},
                     }
                 # Keep the pre-PNG manifest for installed PWA clients.
                 return 200, _card_manifest(lottery, repository)
+        if method == "GET" and path == "/api/matrix/result-revisions":
+            client = getattr(repository, "client", None)
+            version = _public_result_revision(client) if client is not None else None
+            if version is None:
+                return 503, {"error": "RESULT_REVISION_UNAVAILABLE"}
+            return 200, {"revisions": _result_revision_tokens(version)}
         if method == "GET" and path == "/api/matrix/latest-result":
             query = parse_qs(parsed.query)
             cycle_values = query.get("cycleDate", [])
@@ -1104,7 +1162,7 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
             status,
             payload,
             allow_cors=not protected,
-            no_store=protected or self._is_matrix_card_path(),
+            no_store=protected or self._is_matrix_card_path() or urlsplit(self.path).path == "/api/matrix/result-revisions",
         )
 
     def do_POST(self) -> None:

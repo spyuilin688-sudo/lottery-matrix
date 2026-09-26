@@ -1,4 +1,4 @@
-import { invalidateMatrixData } from './matrix-data-revision';
+import { getMatrixDataRevision, invalidateMatrixData } from './matrix-data-revision';
 import type { NumberBallLottery } from './NumberBall';
 import { fetchWithPolicy, withRequestId } from './lib/api-resilience';
 import { RAILWAY_API_BASE } from './runtime-api-config';
@@ -83,7 +83,13 @@ export type LatestLotteryResult = {
   period?: string;
 };
 
+type ResultRevisions = Record<NumberBallLottery, string>;
+let completedResultRevisions: ResultRevisions | undefined;
+let completedRevisionReadAt = 0;
+let completedRevisionEpoch = 0;
+
 export type LatestLotteryResultState = {
+  revisions?: ResultRevisions;
   drawDate: string | null;
   dueLotteries: NumberBallLottery[];
   items: LatestLotteryResult[];
@@ -455,12 +461,60 @@ function parseDueLotteries(values: unknown): NumberBallLottery[] {
   ).map(({ lottery }) => lottery);
 }
 
-function parsedLatestResultState(data: { drawDate?: unknown; items?: unknown; dueLotteries?: unknown }): LatestLotteryResultState {
+const RESULT_LOTTERIES: NumberBallLottery[] = ['今彩539', '天天樂', '六合彩', '大樂透'];
+function parseResultRevisions(value: unknown): ResultRevisions {
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+    || Object.keys(value).length !== RESULT_LOTTERIES.length
+    || RESULT_LOTTERIES.some(lottery => typeof (value as Record<string, unknown>)[lottery] !== 'string'
+      || !(value as Record<string, string>)[lottery])) throw new Error('Lottery API invalid result revisions');
+  return value as ResultRevisions;
+}
+
+function acceptCompletedResultRevisions(revisions: ResultRevisions | undefined) {
+  if (!revisions) {
+    completedResultRevisions = undefined;
+    completedRevisionReadAt = Date.now();
+    return;
+  }
+  const stored = readPublishedResultCacheEntry<LatestLotteryResultState>(undefined, Infinity);
+  let previous = completedResultRevisions;
+  if (stored?.value.revisions && stored.savedAt >= completedRevisionReadAt) {
+    try { previous = parseResultRevisions(stored.value.revisions); } catch { previous = undefined; }
+  }
+  const changed = RESULT_LOTTERIES.filter(lottery => previous?.[lottery] !== revisions[lottery]);
+  if (changed.length) completedRevisionEpoch += 1;
+  // A successful new snapshot must invalidate derived data before replacing
+  // the baseline, even when it wins the race against the readiness probe.
+  completedResultRevisions = revisions;
+  completedRevisionReadAt = Date.now();
+  for (const lottery of changed) invalidatePublishedLotteryData(lottery);
+}
+
+// Share only the network probe; each mounted owner checks whether it is still current.
+export async function confirmPublishedResultRevisions(isCurrent: () => boolean): Promise<void> {
+  const probe = await readThroughCache('lottery:result-revisions', 0, async () => {
+    const epoch = completedRevisionEpoch;
+    const data = await requestJson<{ revisions?: unknown }>('/api/matrix/result-revisions', { cache: 'no-store' });
+    return { revisions: parseResultRevisions(data.revisions), epoch };
+  });
+  if (!isCurrent()) return;
+  // Response order does not establish database version order. If a changed
+  // snapshot arrived during this probe, confirm again instead of discarding a
+  // potentially newer publication. Owners that accepted the same probe agree.
+  if (probe.epoch !== completedRevisionEpoch) {
+    if (RESULT_LOTTERIES.every(lottery => completedResultRevisions?.[lottery] === probe.revisions[lottery])) return;
+    return confirmPublishedResultRevisions(isCurrent);
+  }
+  acceptCompletedResultRevisions(probe.revisions);
+}
+
+function parsedLatestResultState(data: { drawDate?: unknown; items?: unknown; dueLotteries?: unknown; revisions?: unknown }): LatestLotteryResultState {
   if (data.drawDate !== null && (typeof data.drawDate !== 'string' || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(data.drawDate))) {
     throw new Error('Lottery API invalid response: drawDate');
   }
   return {
     drawDate: data.drawDate === null ? null : data.drawDate as string,
+    ...(data.revisions === undefined ? {} : { revisions: parseResultRevisions(data.revisions) }),
     dueLotteries: parseDueLotteries(data.dueLotteries),
     items: parseLatestLotteryList(data.items, 'items'),
   };
@@ -482,10 +536,14 @@ export async function fetchLatestLotteryResultState(
   // Today's due lotteries can change through a calendar override without a
   // draw publication. Recheck dated homepage requests on each entry/retry.
   if (cycleDate) {
-    return parsedLatestResultState(await requestJson<{ drawDate?: unknown; items?: unknown; dueLotteries?: unknown }>(
+    const revision = getMatrixDataRevision();
+    const value = parsedLatestResultState(await requestJson<{ drawDate?: unknown; items?: unknown; dueLotteries?: unknown }>(
       `/api/matrix/latest-result${query}`,
       signal ? { signal } : undefined,
     ));
+    if (revision !== getMatrixDataRevision()) return fetchLatestLotteryResultState(cycleDate, signal);
+    acceptCompletedResultRevisions(value.revisions);
+    return value;
   }
   let expiresAt = Infinity;
   return readThroughCache(
@@ -496,6 +554,8 @@ export async function fetchLatestLotteryResultState(
       if (stored && Date.now() - stored.savedAt < publishedResultCacheTtlMs(stored.savedAt)) {
         try {
           const value = parsedLatestResultState(stored.value);
+          completedResultRevisions = value.revisions;
+          completedRevisionReadAt = stored.savedAt;
           expiresAt = stored.savedAt + publishedResultCacheTtlMs(stored.savedAt);
           return value;
         } catch { /* Recheck damaged browser storage with the public API. */ }
@@ -504,8 +564,10 @@ export async function fetchLatestLotteryResultState(
         `/api/matrix/latest-result${query}`,
         signal ? { signal } : undefined,
       );
+      if (!isCurrent()) return fetchLatestLotteryResultState(cycleDate, signal);
       const value = parsedLatestResultState(data);
-      if (isCurrent()) writePublishedResultCache(cycleDate, value);
+      acceptCompletedResultRevisions(value.revisions);
+      writePublishedResultCache(cycleDate, value);
       expiresAt = Date.now() + publishedResultCacheTtlMs();
       return value;
     },
@@ -568,7 +630,7 @@ export async function fetchLotteryHistoryYears(lottery: NumberBallLottery): Prom
   return readThroughCache(
     `lottery:years:${lottery}`,
     lotteryReadCacheTtlMs(lottery, 'standard'),
-    async () => {
+    async ({ isCurrent }) => {
       const stored = drawPeriod
         ? readLotteryQueryCacheEntry<string[]>(lottery, drawPeriod, persistentKey, Infinity)
         : null;
@@ -582,6 +644,7 @@ export async function fetchLotteryHistoryYears(lottery: NumberBallLottery): Prom
       if (!Array.isArray(data.years) || data.years.some(year => typeof year !== 'string' || !/^\d{4}$/.test(year))) {
         throw new Error('歷史年份格式不正確');
       }
+      if (!isCurrent()) return fetchLotteryHistoryYears(lottery);
       const years = [...new Set(data.years as string[])].sort().reverse();
       if (drawPeriod) writeLotteryQueryCache(lottery, drawPeriod, persistentKey, years);
       expiresAt = lotteryReadCacheExpiresAt(lottery, 'standard');

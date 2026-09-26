@@ -1,5 +1,5 @@
 import { getSupabaseClient } from './lib/supabase';
-import { invalidatePublishedLotteryData, revalidatePublishedLotteryData } from './lottery-api';
+import { confirmPublishedResultRevisions, invalidatePublishedLotteryData } from './lottery-api';
 import type { NumberBallLottery } from './NumberBall';
 
 const LOTTERIES: readonly string[] = ['今彩539', '天天樂', '六合彩', '大樂透'];
@@ -9,17 +9,31 @@ const LOTTERIES: readonly string[] = ['今彩539', '天天樂', '六合彩', '�
 export function subscribePublishedResultRefresh() {
   let disposed = false;
   let connected = false;
-  let readyOnce = false;
+  let connectionRevision = 0;
+  let probePending = false;
+  let probeAgain = false;
   let streamReady = false;
   let connectionReady = false;
   let client: ReturnType<typeof getSupabaseClient> | undefined;
   let channel: ReturnType<ReturnType<typeof getSupabaseClient>['channel']> | undefined;
   const revisions = new Map<string, number>();
+  const confirmReady = () => {
+    if (disposed || !connectionReady) return;
+    if (probePending) { probeAgain = true; return; }
+    probePending = true;
+    const revision = connectionRevision;
+    void confirmPublishedResultRevisions(() => !disposed && connectionReady && revision === connectionRevision)
+      .catch(() => { /* Existing timed cache expiry remains the fallback. */ })
+      .finally(() => {
+        probePending = false;
+        if (probeAgain) { probeAgain = false; confirmReady(); }
+      });
+  };
   const markReady = () => {
     if (!connected || !streamReady || connectionReady) return;
     connectionReady = true;
-    if (readyOnce) revalidatePublishedLotteryData();
-    readyOnce = true;
+    connectionRevision += 1;
+    confirmReady();
   };
 
   try {
@@ -41,6 +55,8 @@ export function subscribePublishedResultRefresh() {
       const previous = revisions.get(record.lottery);
       if (previous !== undefined && previous >= (record.revision as number)) return;
       revisions.set(record.lottery, record.revision as number);
+      connectionRevision += 1; // A late probe cannot supersede an observed publication.
+      if (probePending) probeAgain = true;
       invalidatePublishedLotteryData(record.lottery as NumberBallLottery);
     });
     channel.subscribe(status => {

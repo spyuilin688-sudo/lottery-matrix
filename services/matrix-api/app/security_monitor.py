@@ -65,7 +65,7 @@ def request_category(target: str, method: str = "GET"):
     if path == "/health" or path in {"/jobs/status", "/jobs/refresh", "/jobs/refresh/status", "/jobs/recover", "/jobs/calendar/marksix", "/jobs/primary", "/jobs/result-ready"}:
         return None
     if method == "GET" and (
-        path == "/api/matrix/latest-result"
+        path in {"/api/matrix/latest-result", "/api/matrix/result-revisions"}
         or path.startswith(("/api/matrix/latest/", "/api/matrix/history-years/", "/api/matrix/cards/"))
     ):
         return "public_read"
