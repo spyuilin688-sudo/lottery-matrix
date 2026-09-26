@@ -43,7 +43,7 @@ test('guest opens a saved notebook shortcut and stays on the current page', asyn
   localStorage.setItem('matrix-quick-target', 'notebook');
   mount();
   openProfile();
-  fireEvent.click(screen.getByRole('button', { name: '開啟快捷' }));
+  fireEvent.click(await screen.findByRole('button', { name: '開啟快捷' }));
   expect(screen.getByRole('heading', { name: 'profile' })).toBeVisible();
   expect(await screen.findByRole('dialog', { name: '請先登入' })).toHaveTextContent('請先登入後再使用 Matrix 筆記本');
   expect(screen.queryByRole('heading', { name: 'notebook' })).toBeNull();
@@ -63,7 +63,7 @@ test('LINE login allows the existing shortcut open and return behavior', async (
   localStorage.setItem('matrix-quick-target', 'notebook');
   mount();
   openProfile();
-  fireEvent.click(screen.getByRole('button', { name: '開啟快捷' }));
+  fireEvent.click(await screen.findByRole('button', { name: '開啟快捷' }));
   expect(await screen.findByRole('heading', { name: 'notebook' })).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: '開啟快捷' }));
   expect(screen.getByRole('heading', { name: 'profile' })).toBeVisible();

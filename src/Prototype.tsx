@@ -1,5 +1,5 @@
 import { DAILY_SORTED_ONLY_DESCRIPTION, supportsDrawOrder, useLotteryOrder } from "./use-lottery-order";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { lazy, useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import "./feature-pages.css";
 import {
@@ -15,7 +15,6 @@ import "./pro-plans-layout.css";
 import "./pro-plans-carousel-peek.css";
 import "./activation-code-layout.css";
 import "./tianyan-expanded-layout-patch.css";
-import { FeaturePageRouter } from "./FeaturePagesPatched";
 import { BottomNavigation, HomeQuickSettingsButton } from "./BottomNavigation";
 import { FeaturePageLoadBoundary } from "./FeaturePageLoadBoundary";
 import { useLatestLotteryDraw } from "./useLatestLotteryDraw";
@@ -30,6 +29,10 @@ import { withDeadline } from "./lib/api-resilience";
 import { HOME_REFRESH_INTERVAL_MS, homepageRefreshCycleAt, homepageRefreshCycleKey, millisecondsUntilNextHomepageRefreshWindow } from "./homepage-refresh-policy";
 import { FirstVisitGuide } from "./onboarding/FirstVisitGuide";
 import { useLinePageEntry } from "./auth/LinePageGuard";
+
+const FeaturePageRouter = lazy(() =>
+  import("./FeaturePagesPatched").then(({ FeaturePageRouter }) => ({ default: FeaturePageRouter })),
+);
 
 export type LotteryId = "今彩539" | "天天樂" | "六合彩" | "大樂透";
 export type DrawOrder = "順球" | "落球";

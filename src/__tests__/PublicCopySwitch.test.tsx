@@ -191,7 +191,7 @@ test.each([true, false])('天衡指南與服務說明在購買顯示 %s 下提�
   const guide = render(<MatrixGuidePage onNavigate={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: '05Matrix 天衡' }));
   const preview = guide.container.querySelector('.guide-preview')!;
-  for (const text of ['同一期兩個球位', '三期、十三期', '準5+ (鎖定1碼)、準6+ (鎖定2碼)', '進階天衡設定', '結果期', '版路結果', '三期基本查詢可直接使用', '十三期與完整範圍依目前帳號權限開放']) {
+  for (const text of ['同一期兩個球位', '三期、十三期', '準5+ (鎖定 1 碼)、準6+ (鎖定 2 碼)', '進階天衡設定', '結果期', '版路結果', '三期基本查詢可直接使用', '十三期與完整範圍依目前帳號權限開放']) {
     expect(preview.textContent).toContain(text);
   }
   expect(preview.textContent).not.toMatch(/預測|查詢期/);
@@ -207,7 +207,7 @@ test.each([true, false])('天樞指南在購買顯示 %s 下保留三球位及�
   const guide = render(<MatrixGuidePage onNavigate={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: '06Matrix 天樞' }));
   const preview = guide.container.querySelector('.guide-preview')!;
-  for (const text of ['同一期三個球位', '三期、十三期', '準5+ (鎖定1碼)、準6+ (鎖定2碼)', '進階天樞設定', '開始天樞', '三個條件球位', '依目前帳號權限開放']) {
+  for (const text of ['同一期三個球位', '三期、十三期', '準5+ (鎖定 1 碼)、準6+ (鎖定 2 碼)', '進階天樞設定', '開始天樞', '三個條件球位', '依目前帳號權限開放']) {
     expect(preview.textContent).toContain(text);
   }
 });

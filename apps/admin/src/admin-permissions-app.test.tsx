@@ -177,7 +177,7 @@ describe('administrator operation permission editing', () => {
     expect(buttonWithText(container, '架構總彙')).toBeTruthy();
     await act(async () => buttonWithText(container, '架構總彙')?.click());
     await settle();
-    expect(within(container).getAllByRole('article')).toHaveLength(4);
+    await waitFor(() => expect(within(container).getAllByRole('article')).toHaveLength(4));
     expect(app.api.get.mock.calls.filter(([url]) => url === '/api/architecture-overview')).toHaveLength(1);
     expect(app.api.get).not.toHaveBeenCalledWith('/api/system-status');
   });

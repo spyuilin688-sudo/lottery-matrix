@@ -410,6 +410,7 @@ test.each([
   expect(screen.getByRole('button', { name: '今彩539 臨界' })).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole('button', { name: '我的' }));
+  await act(async () => { await import('../FeaturePagesPatched'); });
   await flush();
   api.fetchMatrixStatusSummaries.mockClear();
   act(() => { updateAlgorithmCacheSession(nextSession); });

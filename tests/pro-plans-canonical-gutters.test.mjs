@@ -33,14 +33,14 @@ function listSourceFiles(directory) {
 
 test("正式入口先載入共用樣式，Pro 方案樣式只有一個匯入 owner", () => {
   const sharedIndex = prototypeSource.indexOf('import "./feature-pages.css";');
-  const patchedRouterIndex = prototypeSource.indexOf('import { FeaturePageRouter } from "./FeaturePagesPatched";');
+  const patchedRouterIndex = prototypeSource.indexOf('import("./FeaturePagesPatched")');
   const layoutIndex = prototypeSource.indexOf('import "./pro-plans-layout.css";');
   const dotsIndex = prototypeSource.indexOf('import "./pro-plans-carousel-peek.css";');
 
   assert.ok(sharedIndex >= 0, "Prototype 缺少共用 feature-pages 樣式");
-  assert.ok(patchedRouterIndex > sharedIndex, "正式入口必須先載入共用樣式，再載入 patched router");
-  assert.ok(layoutIndex >= 0, "patched router 缺少 Pro 方案版面 owner");
+  assert.ok(layoutIndex > sharedIndex, "正式入口必須先載入共用樣式，再載入 Pro 方案版面 owner");
   assert.ok(dotsIndex > layoutIndex, "Pro 方案分頁指示樣式必須在版面 owner 之後載入");
+  assert.ok(patchedRouterIndex > dotsIndex, "所有 Pro 方案樣式須在延後載入 patched router 前先載入");
 
   const layoutOwners = listSourceFiles(srcRoot)
     .filter((path) => readFileSync(path, "utf8").includes('import "./pro-plans-layout.css";'))
