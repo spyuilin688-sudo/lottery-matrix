@@ -72,6 +72,27 @@ describe('activation retry across form and page reopening', () => {
     expect(requests[1].requestId).not.toBe(legacyRequestId);
   });
 
+  it('does not reuse a stale legacy batch after a newer public batch succeeds', async () => {
+    const storage = retryStorage();
+    const oldId = '00000000-0000-4000-8000-000000000123';
+    const currentId = '00000000-0000-4000-8000-000000000456';
+    storage.setItem('matrix:admin:activation-request:["a","7_days",3]', oldId);
+    storage.setItem('matrix:admin:activation-request:["a","7_days",3,false]', currentId);
+    const requests: Array<{ requestId: string }> = [];
+    const client = { post: async (_path: string, body: unknown) => {
+      requests.push(body as { requestId: string });
+      return { data: { count: 3 } };
+    } };
+
+    const submitter = createActivationBatchSubmitter(client, storage);
+    await submitter.submit('a', '7_days', 3);
+    await submitter.submit('a', '7_days', 3);
+
+    expect(requests[0].requestId).toBe(currentId);
+    expect(requests[1].requestId).not.toBe(currentId);
+    expect(requests[1].requestId).not.toBe(oldId);
+  });
+
   it('preserves an ambiguous operation after a new submitter is created and clears it after success', async () => {
     const storage = retryStorage();
     const requests: Array<{ requestId: string }> = [];

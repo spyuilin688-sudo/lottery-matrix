@@ -86,6 +86,22 @@ describe('private activation code access', () => {
     expect(request).toHaveBeenCalledTimes(1);
   });
 
+  it('searches and sorts audit entries by the content visible to each administrator', async () => {
+    const requestPage = vi.fn(async () => ({ total: 0, items: [] }));
+    const api = { requestPage, request: vi.fn(async () => []) };
+    const query = { keyword: 'lifetime', sortBy: 'content' };
+    await listAdminTablePage('auditLogs', query, api, new Date(), operator);
+    const privateView = new URL(requestPage.mock.calls[0][0], 'https://test').searchParams;
+    expect(privateView.get('or')).toContain('admin_visible_audit_content.imatch."lifetime"');
+    expect(privateView.get('or')).not.toMatch(/(?:\(|,)content\.imatch\."lifetime"/);
+    expect(privateView.get('order')).toBe('admin_visible_audit_content.desc.nullslast,id.asc');
+
+    await listAdminTablePage('auditLogs', query, api, new Date(), owner);
+    const ownerView = new URL(requestPage.mock.calls[1][0], 'https://test').searchParams;
+    expect(ownerView.get('or')).toContain('content.imatch."lifetime"');
+    expect(ownerView.get('order')).toBe('content.desc.nullslast,id.asc');
+  });
+
   it('keeps private codes out of the public page and enforces the owner on the hidden page', async () => {
     const requestPage = vi.fn(async (_path: string) => ({ items: [], total: 0 }));
     const api = { request: vi.fn(async () => []), requestPage };
