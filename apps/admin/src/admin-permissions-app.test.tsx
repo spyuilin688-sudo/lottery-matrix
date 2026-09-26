@@ -99,6 +99,11 @@ const app = vi.hoisted(() => {
       ];
       return { data: { items, total: items.length, currentPage: 1, totalPages: 1 } };
     }
+    if (path === '/api/data/privateActivationCodes') {
+      return { data: { items: [
+        { id: 'secret-code', code: 'SECR-ET00-0000-0001', status: 'unused', redeemedAt: null, redeemedByLineDisplayName: null },
+      ], total: 1, currentPage: 1, totalPages: 1 } };
+    }
     return { data: { items: [], total: 0, currentPage: 1, totalPages: 1 } };
   });
   return {
@@ -837,5 +842,38 @@ describe('administrator operation permission editing', () => {
     await settle();
 
     expect(container.querySelector<HTMLButtonElement>('[aria-label="刪除啟動碼 QRST-UVWX-YZ12-3456"]')?.disabled).toBe(false);
+  });
+
+  it('opens the owner-only hidden page on two title taps and creates a private batch there', async () => {
+    app.state.admin = { ...app.state.admin, account: 'spyuilin688@gmail.com' };
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '啟動碼管理')?.click());
+    await settle();
+    const title = container.querySelector<HTMLButtonElement>('header .privateActivationTitle');
+    expect(title).not.toBeNull();
+    await act(async () => title?.click());
+    expect(container.querySelector('header')?.textContent).toContain('啟動碼管理');
+    await act(async () => title?.click());
+    await waitFor(() => expect(app.api.get).toHaveBeenCalledWith(expect.stringContaining('/api/data/privateActivationCodes?')));
+    expect(container.querySelector('header')?.textContent).toContain('隱藏啟動碼管理');
+    expect(container.textContent).toContain('SECR-ET00-0000-0001');
+    expect(container.querySelector('nav')?.textContent).not.toContain('隱藏啟動碼管理');
+
+    await act(async () => buttonWithText(container, '新增')?.click());
+    await act(async () => buttonWithText(container, '建立')?.click());
+    await act(async () => within(within(container).getByRole('alertdialog')).getByRole('button', { name: '確認建立' }).click());
+    await waitFor(() => expect(app.api.post).toHaveBeenCalledWith('/api/activation-codes/batch',
+      expect.objectContaining({ private: true, durationType: '30_days', quantity: 10 })));
+    expect(app.api.get).toHaveBeenCalledWith(expect.stringContaining('/api/data/privateActivationCodes?'));
+  });
+
+  it('does not offer the hidden entry to other super administrators', async () => {
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '啟動碼管理')?.click());
+    await settle();
+    expect(container.querySelector('header .privateActivationTitle')).toBeNull();
+    expect(app.api.get).not.toHaveBeenCalledWith(expect.stringContaining('/api/data/privateActivationCodes?'));
   });
 });

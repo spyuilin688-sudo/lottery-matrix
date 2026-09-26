@@ -1,6 +1,6 @@
 # Architecture billing connection preflight
 
-This is a read-only, explicitly invoked diagnostic for the unfinished daily billing integration. It does not update billing snapshots, change provider subscriptions, or create a schedule. There is no frontend route to this function.
+This is a read-only, explicitly invoked connection diagnostic. Daily GitHub/Railway synchronization is implemented separately in `architecture-billing-sync`. This diagnostic does not update billing snapshots, change provider subscriptions, or create a schedule. There is no frontend route to this function.
 
 POST requires the existing server-only `x-matrix-dispatch-token`, matched against `MATRIX_NOTIFICATION_DISPATCH_TOKEN`. The existing Vault dispatch token can invoke it through pg_net without copying secrets into source or returning them to the client. GET and unauthorized requests perform no provider requests.
 
@@ -8,11 +8,11 @@ The function checks Cloudflare token verification, user subscriptions and visibl
 
 ## Unfinished work
 
-- Railway workspace billing authorization is verified. Confirm amount units and field semantics before implementing snapshot conversion.
+- Railway workspace billing authorization and field units are verified; daily sync includes Agent usage and separates pending invoice snapshots from gross usage.
 - Establish a supported Supabase billing data source and its authorization. Merely supplying a Management API token does not prove invoice access.
-- Resolve the GitHub billing API rejection and verify the required user Plan permission.
+- GitHub billing API access is verified after the user approved Plan read-only permission. Daily usage sync retains the provenance of manually confirmed payment history.
 - Verify Cloudflare Pages-specific coverage. A subscription with `rate_plan.scope = zone` is a zone plan and must not be presented as the Pages plan. Empty account invoice history is not evidence of zero current usage.
-- After providers are verified, implement persisted per-provider sync results and one daily schedule, then confirm an actual scheduled execution. Existing snapshots and their original verification times must remain unchanged on failure.
+- Complete the remaining provider coverage. The separate daily sync persists per-provider results and keeps existing snapshots and their original verification times unchanged on failure.
 
 The selected user requirement remains daily automatic updates for all four providers. This diagnostic is not that feature. No repeated requests or scheduled preflight are configured.
 

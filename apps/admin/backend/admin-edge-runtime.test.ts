@@ -31,6 +31,11 @@ describe('Supabase admin Edge runtime', () => {
     expect(importMap.imports['../../../apps/admin/backend/permission-settings'])
       .toBe('../../../apps/admin/backend/permission-settings.ts');
   });
+  it('includes the private activation authorization module in the deployed bundle', () => {
+    const importMap = JSON.parse(readFileSync(new URL('../../../supabase/functions/admin-api/deno.json', import.meta.url), 'utf8'));
+    expect(importMap.imports['../../../apps/admin/backend/private-activation'])
+      .toBe('../../../apps/admin/backend/private-activation.ts');
+  });
 
   it('normalizes only the deployed and proxied admin API prefixes', () => {
     expect(apiPath(new Request('https://project.test/functions/v1/admin-api/api/bootstrap'))).toBe('/api/bootstrap');

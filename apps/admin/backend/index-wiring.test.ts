@@ -214,6 +214,39 @@ const sessionContext = (params: Record<string, string> = {}) => ({
   event: { headers: { cookie: 'admin_session=test', 'user-agent': 'test-agent' }, requestContext: { http: { sourceIp: '127.0.0.1' } } },
 });
 
+describe('hidden activation code API authorization', () => {
+  const execute = async (route: string, ctx: Record<string, unknown>) => {
+    for (const middleware of routes[route] as Array<(value: unknown) => Promise<unknown>>) {
+      const result = await middleware(ctx);
+      if (result) return result;
+    }
+  };
+
+  it('rejects direct hidden list access for another super administrator before database read', async () => {
+    const previous = wiring.admin.account;
+    wiring.admin.account = 'other@example.com';
+    wiring.requestPage.mockClear();
+    try {
+      const result = await execute('GET /api/data/:table', sessionContext({ table: 'privateActivationCodes' }));
+      expect(result).toMatchObject({ status: 403 });
+      expect(wiring.requestPage).not.toHaveBeenCalled();
+    } finally { wiring.admin.account = previous; }
+  });
+
+  it('requires the designated account for hidden batch creation even with a forged request', async () => {
+    const previous = wiring.admin.account;
+    wiring.admin.account = 'other@example.com';
+    wiring.supabaseRequest.mockClear();
+    try {
+      const result = await execute('POST /api/activation-codes/batch', {
+        ...sessionContext(), body: { durationType: 'lifetime', quantity: 1, requestId: crypto.randomUUID(), private: true },
+      });
+      expect(result).toMatchObject({ status: 403 });
+      expect(wiring.supabaseRequest).not.toHaveBeenCalledWith('rpc/admin_generate_activation_code_batch', expect.anything());
+    } finally { wiring.admin.account = previous; }
+  });
+});
+
 describe('system settings mutation authorization', () => {
   it.each([
     'POST /api/system-status/:id/refresh',

@@ -34,7 +34,7 @@ export function ArchitectureOverview({ client }: { client: Client }) {
 
   return (
     <div className="architectureOverview" aria-label="平台訂閱總覽" aria-busy={loading}>
-      <p className="architectureNote">方案費用與實際帳單分開顯示。帳單為最近一次取得的紀錄；尚未連接自動同步。本期累計與預估金額可能變動，以平台最終帳單為準。</p>
+      <p className="architectureNote">GitHub、Railway 每日 09:20（台灣時間）更新一次，失敗時保留上次資料。Supabase、Cloudflare Pages 尚未自動同步。用量、待出帳與折抵金額依各欄位標示，以平台最終帳單為準。</p>
       {loading && <div className="loading" role="status">讀取訂閱資料中…</div>}
       {error && <div className="architectureError"><p className="error" role="alert">{error}</p><button type="button" className="compactButton" disabled={loading} onClick={() => setAttempt(value => value + 1)}>重新載入</button></div>}
       <div className="architectureGrid">
@@ -56,7 +56,7 @@ export function ArchitectureOverview({ client }: { client: Client }) {
                   <div><dt>付款日期</dt><dd>{item.billing.latestPaymentDate ? <time dateTime={item.billing.latestPaymentDate}>{item.billing.latestPaymentDate}</time> : '尚未取得'}</dd></div>
                   <div><dt>帳務期間</dt><dd>{item.billing.period ?? '尚未取得'}</dd></div>
                   <div><dt>本期累計</dt><dd>{item.billing.currentAmount ?? '尚未取得'}</dd></div>
-                  <div><dt>預估帳單</dt><dd>{item.billing.estimatedAmount ?? '尚未取得'}</dd></div>
+                  <div><dt>預估金額</dt><dd>{item.billing.estimatedAmount ?? '尚未取得'}</dd></div>
                 </dl>
                 <p className="architectureVerified">帳單確認：<time dateTime={item.billing.verifiedAt}>{formatAdminDateTime(item.billing.verifiedAt)}</time><br />來源：{item.billing.source}</p>
               </> : !loading && <p className="architectureVerified">帳單尚未取得</p>}
