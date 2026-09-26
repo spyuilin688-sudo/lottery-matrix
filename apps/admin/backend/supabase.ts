@@ -66,6 +66,7 @@ const adminMutationConflictMessages: Record<string, readonly string[]> = {
 const activationDeleteErrors = new Map([
   ['P0002:ACTIVATION_CODE_NOT_FOUND', { upstream: 500, status: 404 }],
   ['42501:REDEEMED_ACTIVATION_CODE_DELETE_FORBIDDEN', { upstream: 403, status: 403 }],
+  ['42501:PRIVATE_ACTIVATION_CODE_FORBIDDEN', { upstream: 403, status: 403 }],
 ]);
 
 const protectedOwnerPasswordErrors = new Map([
