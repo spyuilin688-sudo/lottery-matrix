@@ -117,6 +117,7 @@ const tableMap: Record<string, string> = {
   登入紀錄: "loginRecords",
   審計日誌: "auditLogs",
   啟動碼管理: "activationCodes",
+  隱藏啟動碼管理: "privateActivationCodes",
 };
 const labels: Record<string, string[]> = {
   users: [
@@ -162,6 +163,16 @@ const labels: Record<string, string[]> = {
     "device",
   ],
   activationCodes: [
+    "code",
+    "durationType",
+    "status",
+    "createdAt",
+    "identityDisplay",
+    "redeemedAt",
+    "expiresAt",
+    "batchId",
+  ],
+  privateActivationCodes: [
     "code",
     "durationType",
     "status",
@@ -314,6 +325,7 @@ function AdminApp() {
   const [activationSelectionMode, setActivationSelectionMode] = useState(false);
   const [selectedActivationCodeIds, setSelectedActivationCodeIds] = useState<Set<string>>(new Set());
   const [activationCopyFeedback, setActivationCopyFeedback] = useState("");
+  const activationTitleTap = useRef(0);
   const activationCopyFeedbackTimer = useRef<number | null>(null);
   const revenueResetRequestId = useRef<string | null>(null);
   const revenueResetActorId = useRef<string | null>(null);
@@ -381,6 +393,8 @@ function AdminApp() {
         admin?.role === "超級管理員",
     );
   const isSuper = admin?.role === "超級管理員";
+  const isPrivateOwner = isSuper && String(admin?.account ?? "").trim().toLowerCase() === "spyuilin688@gmail.com";
+  const isActivationPage = active === "啟動碼管理" || active === "隱藏啟動碼管理";
   const moduleCan = (module: string, action: "view" | "edit", operation: PermissionKey) =>
     Boolean(
       (admin?.modulePermissions as Record<string, Record<string, boolean>> | undefined)?.[module]?.[action]
@@ -521,6 +535,7 @@ function AdminApp() {
     setActivationCopyFeedback("");
   };
   const choose = (name: string) => {
+    activationTitleTap.current = 0;
     viewVersion.current += 1;
     loadVersion.current += 1;
     bootVersion.current += 1;
@@ -624,6 +639,16 @@ function AdminApp() {
     );
   };
   const fields = useMemo(() => labels[tableMap[active]] || [], [active]);
+  const openPrivateActivationPage = () => {
+    if (!isPrivateOwner || active !== "啟動碼管理") return;
+    const now = Date.now();
+    if (now - activationTitleTap.current < 700) {
+      activationTitleTap.current = 0;
+      choose("隱藏啟動碼管理");
+    } else {
+      activationTitleTap.current = now;
+    }
+  };
   useEffect(() => {
     setSelectedActivationCodeIds(new Set());
     setActivationCopyFeedback("");
@@ -646,7 +671,7 @@ function AdminApp() {
         const current = captureView(true);
         setBusy(true);
         try {
-          await activationBatchSubmitter.current.submit(adminIdRef.current, durationType, quantity);
+          await activationBatchSubmitter.current.submit(adminIdRef.current, durationType, quantity, active === "隱藏啟動碼管理");
           if (!current()) return;
           setShowForm(false);
           setForm({});
@@ -675,7 +700,7 @@ function AdminApp() {
         try {
           await deleteActivationCode(api, id);
           if (!current()) return;
-          await load("啟動碼管理");
+          await load(active);
         } catch (e) {
           if (current()) setError(e instanceof Error ? e.message : "刪除啟動碼失敗");
         } finally {
@@ -888,7 +913,9 @@ function AdminApp() {
             <Menu size={22} />
           </button>
           <div>
-            <b>{active}</b>
+            {isPrivateOwner && active === "啟動碼管理"
+              ? <button type="button" className="privateActivationTitle" onClick={openPrivateActivationPage} aria-label="啟動碼管理"><b>{active}</b></button>
+              : <b>{active}</b>}
           </div>
           <div className="actions">
             <button className="profileName" onClick={openProfileName} title="修改自己的名稱">
@@ -1061,7 +1088,7 @@ function AdminApp() {
           </>)}{" "}
           {tableMap[active] && !["用戶管理", "訂閱管理"].includes(active) && (
             <>
-              {active === "啟動碼管理" && (
+              {isActivationPage && (
                 <div className="toolbar">
                   <div>{listPage.total} 筆資料</div>
                   <div className="activationCodeToolbarActions">
@@ -1090,7 +1117,7 @@ function AdminApp() {
                   </div>
                 </div>
               )}
-              {showForm && active === "啟動碼管理" && (
+              {showForm && isActivationPage && (
                 <div className="formCard activationCodeFormCard">
                   <h3>建立啟動碼</h3>
                   <div className="activationCodeFormGrid">
@@ -1132,22 +1159,22 @@ function AdminApp() {
                   </div>
                 </div>
               )}
-              <AdminListControls page={listPage} name={active} statuses={active === "啟動碼管理" ? [["unused", "未使用"], ["used", "已使用"], ["expired", "已到期"]] : []}
-                sorts={active === "啟動碼管理" ? [["createdAt", "建立時間"], ["expiresAt", "到期時間"], ["code", "啟動碼"]] : active === "審計日誌" ? [["operationTime", "操作時間"], ["admin", "管理員"]] : [["loginAt", "登入時間"], ["account", "管理員帳號"]]} />
+              <AdminListControls page={listPage} name={active} statuses={isActivationPage ? [["unused", "未使用"], ["used", "已使用"], ["expired", "已到期"]] : []}
+                sorts={isActivationPage ? [["createdAt", "建立時間"], ["expiresAt", "到期時間"], ["code", "啟動碼"]] : active === "審計日誌" ? [["operationTime", "操作時間"], ["admin", "管理員"]] : [["loginAt", "登入時間"], ["account", "管理員帳號"]]} />
               {listPage.loading && <div role="status" className="loading">資料讀取中…</div>}
               <DataTable
                 emptyMessage={listPage.loading ? "資料讀取中" : listPage.error ? "資料載入失敗" : "目前沒有資料"}
                 rows={rows}
                 fields={fields}
-                canDelete={active === "啟動碼管理" && moduleCan("activationCodes", "edit", "delete")}
+                canDelete={isActivationPage && moduleCan("activationCodes", "edit", "delete")}
                 onDelete={deleteCode}
                 pendingDeleteIds={actionsInFlight}
-                selection={active === "啟動碼管理" ? {
+                selection={isActivationPage ? {
                   enabled: activationSelectionMode,
                   selectedIds: selectedActivationCodeIds,
                   onToggle: toggleActivationCode,
                 } : undefined}
-                getDeleteDisabledReason={active === "啟動碼管理" && !isSuper
+                getDeleteDisabledReason={isActivationPage && !isSuper
                   ? (row) => redeemedActivationCode(row) ? "已兌換，僅超級管理員可刪除" : ""
                   : undefined}
               />

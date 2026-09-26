@@ -4,6 +4,7 @@
     "../../../apps/admin/shared/architecture-overview": "../../../apps/admin/shared/architecture-overview.ts",
     "../../../apps/admin/shared/admin-client-ip": "../../../apps/admin/shared/admin-client-ip.ts",
     "../../../apps/admin/backend/admin-data": "../../../apps/admin/backend/admin-data.ts",
+    "../../../apps/admin/backend/private-activation": "../../../apps/admin/backend/private-activation.ts",
     "../../../apps/admin/backend/push-notifications": "../../../apps/admin/backend/push-notifications.ts",
     "../../../apps/admin/backend/admin-todos": "../../../apps/admin/backend/admin-todos.ts",
     "../../../apps/admin/backend/permission-settings": "../../../apps/admin/backend/permission-settings.ts",

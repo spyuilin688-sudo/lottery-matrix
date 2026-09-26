@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createAdminData } from './admin-data';
 
 const superAdmin = { id: 'super-1', account: 'super@example.com', name: 'Super', role: '超級管理員' };
+const privateOwner = { ...superAdmin, account: 'spyuilin688@gmail.com' };
 const operator = { id: 'operator-1', account: 'operator@example.com', name: 'Operator', role: '營運管理員' };
 const viewer = { id: 'viewer-1', account: 'viewer@example.com', name: 'Viewer', role: '查看人員' };
 const requestId = '00000000-0000-4000-8000-000000000010';
@@ -23,8 +24,19 @@ describe('activation-code generation rules', () => {
     await expect(data.generateActivationCodeBatch('60_days', 20, superAdmin, requestId)).resolves.toEqual({ batchId: 'batch-1', count: 20 });
     expect(rpc).toHaveBeenCalledWith('rpc/admin_generate_activation_code_batch', {
       method: 'POST',
-      body: JSON.stringify({ p_duration_type: '60_days', p_quantity: 20, p_actor_id: superAdmin.id, p_request_id: requestId }),
+      body: JSON.stringify({ p_duration_type: '60_days', p_quantity: 20, p_actor_id: superAdmin.id, p_request_id: requestId, p_private: false }),
     });
+  });
+
+  it('creates a private batch only for the designated super administrator', async () => {
+    const rpc = vi.fn(async () => result(1));
+    const data = createData(rpc);
+    await expect(data.generateActivationCodeBatch('lifetime', 1, privateOwner, requestId, true)).resolves.toMatchObject({ count: 1 });
+    expect(JSON.parse(rpc.mock.calls[0][1].body)).toMatchObject({ p_private: true, p_duration_type: 'lifetime' });
+    for (const actor of [superAdmin, operator]) {
+      await expect(data.generateActivationCodeBatch('7_days', 1, actor, requestId, true)).rejects.toMatchObject({ statusCode: 403 });
+    }
+    expect(rpc).toHaveBeenCalledTimes(1);
   });
 
   it.each(['7_days', '15_days'])('allows an operations administrator to create %s codes', async (durationType) => {

@@ -1,6 +1,7 @@
 import { adminBusinessDateKey, adminBusinessDateRange } from '../shared/admin-business-time';
 import { lookupLocations, memberConnectionSummaries, normalizeIpAddress } from './member-login-history';
 import { memberDisplayNameFromAuthUser, providerIdentityFromAuthUser, type AuthUserForIdentity } from './member-provider-identity';
+import { isPrivateActivationOwner, maskPrivateAuditRows, maskPrivateMemberEntitlements, privateActivationCodePath } from './private-activation';
 type Requester = {
   request<T = unknown>(path: string, init?: RequestInit): Promise<T>;
   requestPage?<T = unknown>(path: string): Promise<{ items: T[]; total: number }>;
@@ -176,7 +177,7 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   activationCodes: {
-    path: '/rest/v1/activation_codes?select=id,batch_id,code,duration_type,created_at,expires_at,redeemed_at,status,redeemed_member:members!activation_codes_redeemed_by_member_id_fkey(id,auth_user_id,line_user_id,line_display_name)&order=created_at.desc,id.asc',
+    path: privateActivationCodePath(false),
     map: (row, currentDate = new Date()) => ({
       id: String(row.id),
       batchId: row.batch_id,
@@ -193,6 +194,10 @@ const definitions: Record<string, TableDefinition> = {
       status: row.status === 'unused' && new Date(String(row.expires_at)).getTime() <= currentDate.getTime()
         ? 'expired' : row.status,
     }),
+  },
+  privateActivationCodes: {
+    path: privateActivationCodePath(true),
+    map: (row, currentDate) => definitions.activationCodes.map(row, currentDate),
   },
   plans: {
     path: '/rest/v1/plans?select=id,name,price,duration_days&order=duration_days.asc,id.asc',
@@ -280,7 +285,7 @@ export async function listAdminTable(table: string, api: Requester, currentDate 
     return { items: await enrichLoginRecords(items, api) };
   }
   if (table === 'users' || table === 'subscriptions') return { items: await enrichMembers(items, api, currentDate) };
-  if (['subscriptionRecords', 'transferRequests', 'activationCodes'].includes(table)) {
+  if (['subscriptionRecords', 'transferRequests', 'activationCodes', 'privateActivationCodes'].includes(table)) {
     return { items: await enrichProviderIdentities(items, api) };
   }
   return { items };
@@ -328,6 +333,13 @@ const memberColumns = {
   planName: 'current_plan(name)', planStartedAt: 'plan_started_at', planExpiresAt: 'plan_expires_at',
   lastOnlineAt: 'last_online_at', referralCode: 'referral_code', invitationCode: 'invitation_code',
 };
+const activationCodePageDefinition: PageDefinition = {
+  pageSize: 10,
+  columns: { id: 'id', batchId: 'batch_id', code: 'code', durationType: 'duration_type', createdAt: 'created_at', expiresAt: 'expires_at', redeemedAt: 'redeemed_at', status: 'status', redeemedByMemberId: 'redeemed_member(id)', redeemedByLineDisplayName: 'redeemed_member(line_display_name)' },
+  dates: ['createdAt', 'expiresAt', 'redeemedAt'], keywords: ['code', 'duration_type', 'status'], identifiers: ['batch_id'],
+  statuses: ['unused', 'used', 'expired'],
+  relations: [{ alias: 'keyword_member', relation: 'members!activation_codes_redeemed_by_member_id_fkey', field: 'admin_member_display_name' }],
+};
 const pageDefinitions: Record<string, PageDefinition> = {
   users: { pageSize: 15, columns: memberColumns, dates: ['registeredAt', 'planStartedAt', 'planExpiresAt', 'lastOnlineAt'], keywords: ['admin_member_display_name', 'referral_code', 'invitation_code'], identifiers: ['auth_user_id'], relations: [{ alias: 'keyword_plan', relation: 'plans!members_current_plan_id_fkey', field: 'name' }] },
   subscriptions: { pageSize: 30, columns: memberColumns, dates: ['planStartedAt', 'planExpiresAt', 'registeredAt', 'lastOnlineAt'], keywords: ['admin_member_display_name', 'referral_code', 'invitation_code'], identifiers: ['auth_user_id'], relations: [{ alias: 'keyword_plan', relation: 'plans!members_current_plan_id_fkey', field: 'name' }] },
@@ -335,13 +347,8 @@ const pageDefinitions: Record<string, PageDefinition> = {
     pageSize: 10, columns: { id: 'id', account: 'account', loginAt: 'login_at', logoutAt: 'logout_at', onlineMinutes: 'online_minutes', ip: 'ip', device: 'device' },
     dates: ['loginAt', 'logoutAt'], keywords: ['account', 'ip', 'device'], numeric: ['online_minutes'], identifiers: ['admin_id'],
   },
-  activationCodes: {
-    pageSize: 10,
-    columns: { id: 'id', batchId: 'batch_id', code: 'code', durationType: 'duration_type', createdAt: 'created_at', expiresAt: 'expires_at', redeemedAt: 'redeemed_at', status: 'status', redeemedByMemberId: 'redeemed_member(id)', redeemedByLineDisplayName: 'redeemed_member(line_display_name)' },
-    dates: ['createdAt', 'expiresAt', 'redeemedAt'], keywords: ['code', 'duration_type', 'status'], identifiers: ['batch_id'],
-    statuses: ['unused', 'used', 'expired'],
-    relations: [{ alias: 'keyword_member', relation: 'members!activation_codes_redeemed_by_member_id_fkey', field: 'admin_member_display_name' }],
-  },
+  activationCodes: activationCodePageDefinition,
+  privateActivationCodes: activationCodePageDefinition,
   auditLogs: {
     pageSize: 30,
     columns: { id: 'id', operationTime: 'operation_time', admin: 'admin', operationType: 'operation_type', targetTable: 'target_table', targetId: 'target_id', content: 'content', ip: 'ip', device: 'device' },
@@ -388,6 +395,7 @@ function applyAdminPageFilters(
   query: AdminPageQuery,
   filterStatus = true,
   currentDate = new Date(),
+  suppressPlanSearch = false,
 ) {
   const config = pageDefinitions[table];
   if (!config) throw new AdminDataError('Invalid table');
@@ -416,12 +424,12 @@ function applyAdminPageFilters(
   if (filterStatus && status !== 'all') {
     if (!config.statuses?.includes(status)) throw new AdminDataError('查詢條件不正確');
     const storedStatus = table === 'admins' ? ({ active: '啟用', disabled: '停用' }[status] ?? status) : status;
-    if (table === 'activationCodes' && status === 'expired') {
+    if ((table === 'activationCodes' || table === 'privateActivationCodes') && status === 'expired') {
       // Keep expiry independent of the keyword OR group and filter before paging.
       url.searchParams.append('and', `(or(status.eq.expired,and(status.eq.unused,expires_at.lte.${currentDate.toISOString()})))`);
     } else {
       url.searchParams.set('status', `eq.${storedStatus}`);
-      if (table === 'activationCodes' && status === 'unused') {
+      if ((table === 'activationCodes' || table === 'privateActivationCodes') && status === 'unused') {
         url.searchParams.append('expires_at', `gt.${currentDate.toISOString()}`);
       }
     }
@@ -435,7 +443,7 @@ function applyAdminPageFilters(
   if (/^\d+$/.test(keyword) && Number.isSafeInteger(Number(keyword))) {
     clauses.push(...(config.numeric ?? []).map(field => `${field}.eq.${Number(keyword)}`));
   }
-  for (const relation of config.relations ?? []) {
+  for (const relation of config.relations?.filter(value => !suppressPlanSearch || value.alias !== 'keyword_plan') ?? []) {
     // Empty search embeds filter the parent OR group without removing the
     // separately selected display-name embeds from matching rows.
     url.searchParams.set('select', `${url.searchParams.get('select')},${relation.alias}:${relation.relation}()`);
@@ -466,16 +474,20 @@ async function readAdminPage(url: URL, page: number, pageSize: number, api: Page
   return { ...result, currentPage, totalPages: Math.max(1, Math.ceil(result.total / pageSize)) };
 }
 
-export async function listAdminTablePage(table: string, query: AdminPageQuery, api: PageRequester, currentDate = new Date()) {
+export async function listAdminTablePage(table: string, query: AdminPageQuery, api: PageRequester, currentDate = new Date(), actor?: AdminActor) {
   const definition = getAdminTableDefinition(table);
-  if (table === 'users' || table === 'subscriptions') return listAdminMemberPage(table, query, api, currentDate);
+  if (table === 'privateActivationCodes' && (!actor || !isPrivateActivationOwner(actor))) throw new AdminDataError('沒有查看隱藏啟動碼權限', 403);
+  if (table === 'users' || table === 'subscriptions') return listAdminMemberPage(table, query, api, currentDate, actor);
   if (table === 'loginRecords') return listAdminLoginRecordPage(query, api);
   const page = parsePage(query, pageDefinitions[table].pageSize);
   const url = new URL(definition.path, 'https://supabase.invalid');
   applyAdminPageFilters(url, table, query, true, currentDate);
   const result = await readAdminPage(url, page, pageDefinitions[table].pageSize, api);
   const items = result.items.map(row => definition.map(row, currentDate));
-  if (['subscriptionRecords', 'transferRequests', 'activationCodes'].includes(table)) {
+  if (table === 'auditLogs' && actor) {
+    return { ...result, items: await maskPrivateAuditRows(items, actor, api) };
+  }
+  if (['subscriptionRecords', 'transferRequests', 'activationCodes', 'privateActivationCodes'].includes(table)) {
     return { ...result, items: await enrichProviderIdentities(items, api) };
   }
   return { ...result, items };
@@ -498,6 +510,7 @@ export async function listAdminMemberPage(
   query: AdminPageQuery,
   api: PageRequester,
   currentDate = new Date(),
+  actor?: AdminActor,
 ) {
   const keyword = String(query.keyword ?? '').trim();
   const status = String(query.status ?? 'all');
@@ -513,6 +526,14 @@ export async function listAdminMemberPage(
   const page = parsePage(query, pageSize);
   const definition = getAdminTableDefinition(table);
   const url = new URL(definition.path, 'https://supabase.invalid');
+  if (table === 'users' && actor && !isPrivateActivationOwner(actor)) {
+    const sortBy = String(query.sortBy ?? '');
+    const dateField = String(query.dateField ?? pageDefinitions[table].dates[0]);
+    if (['planName', 'planStartedAt', 'planExpiresAt'].includes(sortBy)
+        || ((query.startDate || query.endDate) && ['planStartedAt', 'planExpiresAt'].includes(dateField))) {
+      throw new AdminDataError('查詢條件不正確');
+    }
+  }
   if (table === 'subscriptions') {
     url.searchParams.set('current_plan.duration_days', plan === 'all' ? 'in.(30,90,365)' : `eq.${planDurations[plan]}`);
     url.searchParams.set('plan_expires_at', `gt.${currentDate.toISOString()}`);
@@ -525,9 +546,10 @@ export async function listAdminMemberPage(
     // from the keyword OR group so searching cannot replace either filter.
     url.searchParams.set('and', '(or(status.in.(active,啟用),status.is.null))');
   }
-  applyAdminPageFilters(url, table, query, false);
+  applyAdminPageFilters(url, table, query, false, currentDate, Boolean(actor && !isPrivateActivationOwner(actor)));
   const result = await readAdminPage(url, page, pageSize, api);
-  const items = await enrichMembers(result.items.map(row => definition.map(row, currentDate)), api, currentDate, true);
+  const enriched = await enrichMembers(result.items.map(row => definition.map(row, currentDate)), api, currentDate, true);
+  const items = actor ? await maskPrivateMemberEntitlements(enriched, actor, api) : enriched;
   return { ...result, items };
 }
 
@@ -690,7 +712,7 @@ export function createAdminData(transport: WriteTransport) {
 
   async function updateMemberStatus(id: string, status: string, actor: AdminActor) {
     if (!['active', 'disabled'].includes(status)) throw new AdminDataError('會員狀態不正確');
-    return transport.supabaseRequest<Row>('rpc/admin_set_member_status', {
+    const updated = await transport.supabaseRequest<Row>('rpc/admin_set_member_status', {
       method: 'POST',
       body: JSON.stringify({
         p_member_id: id,
@@ -699,6 +721,7 @@ export function createAdminData(transport: WriteTransport) {
         p_actor_name: actor.name || actor.account,
       }),
     });
+    return isPrivateActivationOwner(actor) ? updated : { id: updated.id ?? id, status: updated.status };
   }
 
   async function updateSubscription(
@@ -726,7 +749,7 @@ export function createAdminData(transport: WriteTransport) {
       if (!Number.isFinite(expiry.getTime())) throw new AdminDataError('到期時間不正確');
       expiresAt = expiry.toISOString();
     }
-    return transport.supabaseRequest<Row>('rpc/admin_update_subscription_guarded', {
+    const updated = await transport.supabaseRequest<Row>('rpc/admin_update_subscription_guarded', {
       method: 'POST',
       body: JSON.stringify({
         p_member_id: id,
@@ -740,6 +763,7 @@ export function createAdminData(transport: WriteTransport) {
         p_request_id: input.action === 'renew' ? input.requestId : null,
       }),
     });
+    return isPrivateActivationOwner(actor) ? updated : { id: updated.id ?? id };
   }
 
   async function reviewTransferRequest(
@@ -835,6 +859,9 @@ export function createAdminData(transport: WriteTransport) {
         if (error.message === 'ACTIVATION_CODE_NOT_FOUND' && error.statusCode === 404) {
           throw new AdminDataError('找不到啟動碼', 404);
         }
+        if (error.message === 'PRIVATE_ACTIVATION_CODE_FORBIDDEN' && error.statusCode === 403) {
+          throw new AdminDataError('沒有刪除隱藏啟動碼權限', 403);
+        }
         if (error.message === 'REDEEMED_ACTIVATION_CODE_DELETE_FORBIDDEN' && error.statusCode === 403) {
           throw new AdminDataError('已兌換的啟動碼僅限超級管理員刪除', 403);
         }
@@ -843,7 +870,7 @@ export function createAdminData(transport: WriteTransport) {
     }
   }
 
-  async function generateActivationCodeBatch(durationType: string, quantity: number, actor: AdminActor, requestId?: string) {
+  async function generateActivationCodeBatch(durationType: string, quantity: number, actor: AdminActor, requestId?: string, isPrivate = false) {
     if (!durationTypes.includes(durationType)) throw new AdminDataError('啟動期限不正確');
     if (!activationCodeQuantities.includes(quantity)) throw new AdminDataError('建立數量不正確');
     if (!['超級管理員', '營運管理員'].includes(String(actor.role ?? ''))) {
@@ -852,12 +879,13 @@ export function createAdminData(transport: WriteTransport) {
     if (actor.role === '營運管理員' && !operatorActivationCodeDurations.includes(durationType)) {
       throw new AdminDataError('營運管理員僅可建立 7 天或 15 天啟動碼', 403);
     }
+    if (isPrivate && !isPrivateActivationOwner(actor)) throw new AdminDataError('沒有建立隱藏啟動碼權限', 403);
     if (!requestId || !UUID_PATTERN.test(requestId)) {
       throw new AdminDataError('啟動碼建立請求不正確');
     }
     const result = await transport.supabaseRequest<{ batchId: string; count: number }>('rpc/admin_generate_activation_code_batch', {
       method: 'POST',
-      body: JSON.stringify({ p_duration_type: durationType, p_quantity: quantity, p_actor_id: actor.id, p_request_id: requestId }),
+      body: JSON.stringify({ p_duration_type: durationType, p_quantity: quantity, p_actor_id: actor.id, p_request_id: requestId, p_private: isPrivate }),
     });
     if (!result?.batchId || result.count !== quantity) throw new AdminDataError('啟動碼批次建立失敗', 500);
     return { batchId: result.batchId, count: result.count };

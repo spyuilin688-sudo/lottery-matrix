@@ -165,7 +165,7 @@ export function formatAdminRowForDisplay(table: string | null, row: AdminRow): A
   if (table === 'subscriptions' && (row.memberDisplayName == null || row.memberDisplayName === '')) {
     return { ...row, memberDisplayName: row.lineDisplayName ?? row.line_display_name ?? null };
   }
-  if (table === 'activationCodes') {
+  if (table === 'activationCodes' || table === 'privateActivationCodes') {
     return withMemberIdentityDisplay(row, row.redeemedByLineDisplayName);
   }
   if (table === 'subscriptionRecords' || table === 'transferRequests') {

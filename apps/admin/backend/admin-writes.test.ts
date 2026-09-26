@@ -174,7 +174,7 @@ describe('authorized Supabase writes', () => {
     expect(insertRows).not.toHaveBeenCalled();
     expect(rpc).toHaveBeenCalledWith('rpc/admin_generate_activation_code_batch', {
       method: 'POST',
-      body: JSON.stringify({ p_duration_type: '30_days', p_quantity: 10, p_actor_id: actor.id, p_request_id: '00000000-0000-4000-8000-000000000010' }),
+      body: JSON.stringify({ p_duration_type: '30_days', p_quantity: 10, p_actor_id: actor.id, p_request_id: '00000000-0000-4000-8000-000000000010', p_private: false }),
     });
   });
 

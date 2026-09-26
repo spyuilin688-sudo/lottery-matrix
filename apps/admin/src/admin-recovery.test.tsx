@@ -36,6 +36,16 @@ describe('activation operation retry identity', () => {
     for(const [actor, duration, quantity] of [['a','7_days',3],['b','7_days',3],['b','15_days',3]] as const) await submitter.submit(actor, duration, quantity).catch(()=>{});
     expect(new Set(requests.map(r=>r.requestId)).size).toBe(3);
   });
+  it('keeps public and hidden batch retries separate for the same quantity and duration', async () => {
+    const requests: any[] = [];
+    const submitter = createActivationBatchSubmitter({ post: async (_path, body) => { requests.push(body); throw Error('offline'); } });
+    await submitter.submit('owner', 'lifetime', 1, false).catch(() => {});
+    await submitter.submit('owner', 'lifetime', 1, true).catch(() => {});
+    await submitter.submit('owner', 'lifetime', 1, false).catch(() => {});
+    expect(requests.map(request => request.private)).toEqual([false, true, false]);
+    expect(requests[0].requestId).toBe(requests[2].requestId);
+    expect(requests[0].requestId).not.toBe(requests[1].requestId);
+  });
 });
 
 function retryStorage() {
