@@ -12,7 +12,6 @@ const tongxingCss = readFileSync(new URL('../src/tongxing-compact.css', import.m
 const responsiveCss = readFileSync(new URL('../src/responsive-feature-pages.css', import.meta.url), 'utf8');
 const brandCss = readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
 const tokens = readFileSync(new URL('../src/design-tokens.css', import.meta.url), 'utf8');
-const brandSource = readFileSync(new URL('../src/BrandLogo.tsx', import.meta.url), 'utf8');
 const adjustmentsCss = readFileSync(new URL('../src/feature-page-adjustments.css', import.meta.url), 'utf8');
 
 test('歷史開獎使用內容驅動的精簡按鈕及 sticky 頁首 [header migration]', () => {

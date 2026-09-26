@@ -8,7 +8,6 @@ import { ruleBodies } from './helpers/css-rules.mjs';
 
 const featureSource = readFeaturePagesSource();
 const prototypeSource = readFileSync(new URL('../src/Prototype.tsx', import.meta.url), 'utf8');
-const brandSource = readFileSync(new URL('../src/BrandLogo.tsx', import.meta.url), 'utf8');
 const featureCss = readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
 const ballCss = readFileSync(new URL('../src/number-ball.css', import.meta.url), 'utf8');
 const responsiveCss = readFileSync(new URL('../src/responsive-feature-pages.css', import.meta.url), 'utf8');
