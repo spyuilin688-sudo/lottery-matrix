@@ -74,3 +74,20 @@ it('allowlists automatic usage and original historical payment provenance',async
  expect(result?.usageBreakdown).toEqual(usageBreakdown);expect(result?.pendingAmount).toBe('US$18.00');expect(result?.manualPayment).toEqual(manualPayment);expect(JSON.stringify(result)).not.toContain('secret');
  for(const bad of [{usageBreakdown:[{...usageBreakdown[0],quantity:4}]},{manualPayment:{...manualPayment,paymentDate:'2026-02-30'}},{pendingAmount:3}]) await expect(createArchitectureOverview({selectRows:async()=>[{...r,billing_snapshot:{...r.billing_snapshot,...bad}}]}).get()).rejects.toThrow();
 });
+
+it('preserves verified billing-cycle precision without exposing unrelated fields or accepting invalid dates',async()=>{
+ const cycle={start:'2026-09-25',end:'2026-10-25',precision:'date',source:'官方帳務頁',verifiedAt:'2026-09-26T02:00:00Z'};
+ const row={...accountRow(account),billing_snapshot:{...accountRow(account).billing_snapshot,billingCycle:{...cycle,token:'secret'}}};
+ const result=await createArchitectureOverview({selectRows:async()=>[row]}).get();
+ expect(result.items[0].billing?.billingCycle).toEqual(cycle);
+ expect(JSON.stringify(result)).not.toContain('secret');
+ for(const bad of [{...cycle,end:'2026-02-30'},{...cycle,end:'2026-09-24'},{...cycle,precision:'timestamp'},{...cycle,verifiedAt:'invalid'}]) {
+  await expect(createArchitectureOverview({selectRows:async()=>[{...row,billing_snapshot:{...row.billing_snapshot,billingCycle:bad}}]}).get()).rejects.toThrow();
+ }
+ const timestampCycle={...cycle,start:'2026-08-26T18:30:45.000Z',end:'2026-09-26T18:30:45.000Z',precision:'timestamp'};
+ const resultWithTime=await createArchitectureOverview({selectRows:async()=>[{...row,billing_snapshot:{...row.billing_snapshot,billingCycle:timestampCycle}}]}).get();
+ expect(resultWithTime.items[0].billing?.billingCycle).toEqual(timestampCycle);
+ for(const bad of [{...timestampCycle,end:'2026-09-26T18:30:45'},{...timestampCycle,end:'2026-02-30T18:30:45Z'},{...timestampCycle,end:'2026-09-26T24:30:00Z'},null]) {
+  await expect(createArchitectureOverview({selectRows:async()=>[{...row,billing_snapshot:{...row.billing_snapshot,billingCycle:bad}}]}).get()).rejects.toThrow();
+ }
+});

@@ -12,7 +12,7 @@ it('shows each provider once and aligned payment facts without opening details',
  expect(screen.getAllByRole('heading',{name:'Railway'})).toHaveLength(1);
  const card=screen.getByRole('article',{name:'Railway'});
  for(const text of ['2026-10-02','US$23.47','US$18.45','US$18.60']) expect(within(card.querySelector('.architecturePaymentFacts')!).getByText(text)).toBeTruthy();
- expect(within(card).getByText('未取得').className).toContain('architectureUnknown');
+ expect(within(card).getByText('本次應付').nextElementSibling?.className).toContain('architectureUnknown');
  expect(within(card).getByText('（折抵前用量）').tagName).toBe('SMALL');
  expect(card.querySelector('details')!.open).toBe(false);
  fireEvent.click(card.querySelector('summary')!);

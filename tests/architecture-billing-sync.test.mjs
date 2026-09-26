@@ -149,3 +149,21 @@ test('live GitHub unit spellings are localized without converting storage hours 
  assert.equal(r.usageBreakdown[0].quantity,'526.455 GB·小時');
  assert.equal(r.usageBreakdown[1].quantity,'17,174 分鐘');
 });
+
+test('Railway preserves full billing-cycle timestamps and renders dates in Taiwan time',()=>{
+ const period={start:'2026-08-26T18:30:45Z',end:'2026-09-26T18:30:45Z'};
+ const result=railwaySnapshot({...railway,workspace:{...railway.workspace,customer:{...railway.workspace.customer,billingPeriod:period}},agentUsage:{...railway.agentUsage,billingPeriodEnd:period.end}},now);
+ assert.equal(result.billingCycle.start,'2026-08-26T18:30:45.000Z');
+ assert.equal(result.billingCycle.end,'2026-09-26T18:30:45.000Z');
+ assert.equal(result.billingCycle.precision,'timestamp');
+ assert.equal(result.billingCycle.verifiedAt,now.toISOString());
+ assert.equal(result.period,'2026-08-27－2026-09-27（台灣時間；結束時間不含）');
+ assert.equal(result.latestPaymentDate,null);
+ assert.equal(githubSnapshot({usageItems:[]},null,now).billingCycle,undefined);
+});
+test('Railway rejects malformed cycles and preserves epoch timestamp precision',()=>{
+ const snapshot=period=>railwaySnapshot({...railway,workspace:{...railway.workspace,customer:{...railway.workspace.customer,billingPeriod:period}},agentUsage:{...railway.agentUsage,billingPeriodEnd:period.end}},now);
+ for(const period of [{start:'2026-02-30T00:00:00Z',end:'2026-10-01T00:00:00Z'},{start:'2026-09-01',end:'2026-10-01'},{start:'2026-09-01T00:00:00',end:'2026-10-01T00:00:00Z'},{start:'2026-10-02T00:00:00Z',end:'2026-10-01T00:00:00Z'}]) assert.throws(()=>snapshot(period));
+ const period={start:'1756684800',end:'1759276800'};
+ assert.equal(snapshot(period).billingCycle.end,new Date(Number(period.end)*1000).toISOString());
+});

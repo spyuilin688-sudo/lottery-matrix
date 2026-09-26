@@ -27,6 +27,7 @@ export type ArchitectureAccount = {
 };
 
 export type ArchitectureBilling = {
+  billingCycle?: { start: string; end: string; precision: 'date' | 'timestamp'; source: string; verifiedAt: string };
   pendingAmount?: string | null;
   usageBreakdown?: Array<{label:string;quantity:string|null;grossAmount:string|null;discountAmount:string|null;netAmount:string|null}>;
   manualPayment?: {paymentDate:string;amount:string;verifiedAt:string;source:string} | null;
@@ -46,6 +47,9 @@ export type ArchitectureBilling = {
 const isText = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0 && value.length <= 200;
 const isDate = (value: unknown): value is string => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
   && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+const isTimestamp = (value: unknown): value is string => isText(value)
+  && /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,3})?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/.test(value)
+  && isDate(value.slice(0, 10)) && Number.isFinite(Date.parse(value));
 
 function readAccount(value: unknown): ArchitectureAccount | null {
   if (value === null) return null;
@@ -99,6 +103,16 @@ function readBilling(value: unknown): ArchitectureBilling | null {
   if (row.latestInvoiceStatus != null && !['paid', 'open', 'void', 'uncollectible'].includes(String(row.latestInvoiceStatus))) throw invalid();
   if (row.latestPaymentDate != null && !isDate(row.latestPaymentDate)) throw invalid();
   if (!isText(row.source) || !isText(row.verifiedAt) || !Number.isFinite(Date.parse(row.verifiedAt))) throw invalid();
+  let billingCycle: ArchitectureBilling['billingCycle'];
+  if (Object.prototype.hasOwnProperty.call(row, 'billingCycle')) {
+    const cycle = row.billingCycle;
+    if (!cycle || typeof cycle !== 'object' || Array.isArray(cycle)) throw invalid();
+    const input = cycle as Record<string, unknown>;
+    const validDate = input.precision === 'date' ? isDate : input.precision === 'timestamp' ? isTimestamp : null;
+    if (!validDate || !validDate(input.start) || !validDate(input.end)
+      || Date.parse(input.start) >= Date.parse(input.end) || !isText(input.source) || !isTimestamp(input.verifiedAt)) throw invalid();
+    billingCycle = { start: input.start, end: input.end, precision: input.precision as 'date' | 'timestamp', source: input.source, verifiedAt: input.verifiedAt };
+  }
   let limits: ArchitectureBilling['limits'];
   if (Object.prototype.hasOwnProperty.call(row, 'limits')) {
     if (!Array.isArray(row.limits) || row.limits.length > 30) throw invalid();
@@ -128,6 +142,7 @@ function readBilling(value: unknown): ArchitectureBilling | null {
   }
   if(row.manualInvoiceVerifiedAt!=null&&(!isText(row.manualInvoiceVerifiedAt)||!Number.isFinite(Date.parse(row.manualInvoiceVerifiedAt)))) throw invalid();
   return {
+    ...(billingCycle ? { billingCycle } : {}),
     ...(limits === undefined ? {} : { limits }),
     ...(usageBreakdown === undefined ? {} : { usageBreakdown }),
     ...(Object.prototype.hasOwnProperty.call(row,'pendingAmount') ? {pendingAmount:row.pendingAmount??null} : {}),
