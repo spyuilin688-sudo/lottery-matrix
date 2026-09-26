@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { architectureProviders, type ArchitectureSubscription } from '../shared/architecture-overview';
-import { formatAdminDateTime } from './admin-operations';
+import { type ArchitectureSubscription } from '../shared/architecture-overview';
 
 const dayMs = 86_400_000;
 const taipeiOffset = 8 * 60 * 60 * 1000;
@@ -13,9 +12,7 @@ function remainingDays(date: string | null | undefined, today: number) {
   return days === 0 ? '今天付款（時間未提供）' : `剩 ${days} 天`;
 }
 
-export function ArchitecturePaymentOverview({ items, loading, error }: {
-  items: ArchitectureSubscription[]; loading: boolean; error: string;
-}) {
+export function usePaymentDay() {
   const [today, setToday] = useState(() => taipeiDay(Date.now()));
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -30,27 +27,25 @@ export function ArchitecturePaymentOverview({ items, loading, error }: {
     document.addEventListener('visibilitychange', resume);
     return () => { clearTimeout(timer); document.removeEventListener('visibilitychange', resume); };
   }, []);
+  return today;
+}
+
+export function ArchitecturePaymentOverview({ item, loading, error, today }: {
+  item?: ArchitectureSubscription; loading: boolean; error: string; today: number;
+}) {
   const unavailable = loading ? '讀取中…' : error ? '讀取失敗' : '未取得';
-  return <section className="architecturePaymentOverview" aria-labelledby="payment-overview-title">
-    <h2 id="payment-overview-title">付款總覽</h2>
-    <p className="architectureNote">剩餘天數按台灣日期計算；付款時間未提供時不推算。累計費用、預估及待出帳不等於最終應付。</p>
-    <div className="architecturePaymentCards">{architectureProviders.map(provider => {
-      const billing = !loading && !error ? items.find(item => item.provider === provider.id)?.billing : null;
-      const account = billing?.account;
-      return <section className="architecturePaymentCard" key={provider.id} aria-label={`${provider.name} 付款總覽`}>
-        <h3>{provider.name}</h3>
-        <dl className="architecturePaymentFacts">
-          <div><dt>付款日期／時間</dt><dd>{account?.paymentDate ? <><time dateTime={account.paymentDate}>{account.paymentDate}</time><small>時間未提供</small></> : unavailable}</dd></div>
-          <div><dt>距離付款</dt><dd>{loading || error ? unavailable : remainingDays(account?.paymentDate, today)}</dd></div>
-          <div><dt>目前累計費用</dt><dd>{billing?.currentAmount ?? unavailable}</dd></div>
-          <div><dt>本次應付金額</dt><dd>{account?.paymentKind === 'due' ? account.paymentAmount ?? unavailable : unavailable}</dd></div>
-        </dl>
-        {billing?.pendingAmount && <p>待出帳：<strong>{billing.pendingAmount}</strong>（尚非最終應付）</p>}
-        {account?.paymentKind === 'pending' && account.paymentAmount && !billing?.pendingAmount && <p>待出帳（原核對）：{account.paymentAmount}</p>}
-        {account?.paymentKind === 'estimate' && account.paymentAmount && <p>預估應付（原核對）：{account.paymentAmount}</p>}
-        {billing && <p className="architectureSnapshotDate">費用資料時間：<time dateTime={billing.verifiedAt}>{formatAdminDateTime(billing.verifiedAt)}</time>（台灣時間）{provider.id === 'supabase' ? '；尚未自動更新' : ''}</p>}
-        {account && <p className="architectureSnapshotDate">付款資料原核對：<time dateTime={account.verifiedAt}>{formatAdminDateTime(account.verifiedAt)}</time>（台灣時間）</p>}
-      </section>;
-    })}</div>
-  </section>;
+  const billing = !loading && !error ? item?.billing : null;
+  const account = billing?.account;
+  // Only separate the known currency prefix; preserve all explanations in details.
+  const amount = billing?.currentAmount?.match(/^US\$[\d,.]+/)?.[0] ?? billing?.currentAmount;
+  const note = billing?.currentAmount?.slice(amount?.length ?? 0).trim().replace(/；待出帳快照 US\$[\d,.]+/, '');
+  const pending = billing?.pendingAmount ?? (account?.paymentKind === 'pending' ? account.paymentAmount : null);
+  return <dl className="architecturePaymentFacts">
+    <div><dt>付款日期</dt><dd className={account?.paymentDate ? '' : 'architectureUnknown'}>{account?.paymentDate ? <><time dateTime={account.paymentDate}>{account.paymentDate}</time><small>時間未提供</small></> : unavailable}</dd></div>
+    <div><dt>剩餘天數</dt><dd className={account?.paymentDate ? '' : 'architectureUnknown'}>{loading || error ? unavailable : remainingDays(account?.paymentDate, today)}</dd></div>
+    <div><dt>目前累計</dt><dd className={amount ? '' : 'architectureUnknown'}>{amount ?? unavailable}{note && <small>{note}</small>}</dd></div>
+    <div><dt>本次應付</dt><dd className={account?.paymentKind === 'due' && account.paymentAmount ? '' : 'architectureUnknown'}>{account?.paymentKind === 'due' ? account.paymentAmount ?? unavailable : unavailable}</dd></div>
+    {pending && <div><dt>待出帳</dt><dd>{pending}<small>非最終應付</small></dd></div>}
+    {account?.paymentKind === 'estimate' && account.paymentAmount && <div><dt>預估應付</dt><dd>{account.paymentAmount}<small>原核對資料，非最終應付</small></dd></div>}
+  </dl>;
 }
