@@ -41,3 +41,26 @@ it('does not update a new view with a closed view response',async()=>{
  let finish!:(v:unknown)=>void;const old=render(<ArchitectureOverview client={{get:()=>new Promise(resolve=>{finish=data=>resolve({data});})}}/>);old.unmount();
  render(<ArchitectureOverview client={{get:async()=>({data:{items:[]}})}}/>);finish({items:[row]});await waitFor(()=>expect(screen.queryByRole('status')).toBeNull());expect(screen.queryByText('Pro')).toBeNull();
 });
+it('describes provider coverage from the fields that are actually available',async()=>{
+ const github={...row,provider:'github',plan:'GitHub Pro',fee:'US$4／月',billing:{...row.billing,pendingAmount:null,estimatedAmount:null,account:{...account,paymentDate:null,paymentAmount:null,paymentKind:'due',quotas:[{label:'Actions 執行分鐘',included:'3,000 分鐘',used:'2,852 分鐘',remaining:'148 分鐘',reset:'每月'}]}}};
+ const railway={...row,billing:{...row.billing,billingCycle:{start:'2026-08-26T20:34:47.000Z',end:'2026-09-26T20:34:47.000Z',precision:'timestamp',source:'Railway API',verifiedAt:'2026-09-26T04:00:00Z'},nextInvoiceAt:'2026-09-26T20:34:47.000Z',estimatedAmount:'US$23.64',latestInvoiceAmount:'US$20',usageBreakdown:[{label:'Agent',quantity:null,grossAmount:'US$17.54',discountAmount:null,netAmount:null}],manualPayment:{paymentDate:'2026-08-26',amount:'US$20',source:'歷史核對',verifiedAt:'2026-09-25T00:00:00Z'},account:{...account,paymentDate:null,quotas:[{label:'Agent 支出上限',included:'US$80',used:'US$17.54',remaining:'US$62.46',reset:'每帳期'}]}}};
+ const supabase={...row,provider:'supabase',plan:'Pro',fee:'US$25／月',billing:{...row.billing,latestInvoiceAmount:'US$66.51',billingCycle:{start:'2026-09-25',end:'2026-10-25',precision:'date',source:'官方帳務頁',verifiedAt:'2026-09-26T02:00:00Z'},account:{...account,paymentDate:null}}};
+ const cloudflare={provider:'cloudflare',plan:null,fee:null,renewalDate:null,verifiedAt:null,billing:{latestInvoiceAmount:null,latestInvoiceStatus:null,latestPaymentDate:null,currentAmount:null,estimatedAmount:null,period:null,source:'Cloudflare API',verifiedAt:'2026-09-26T04:14:05Z',limits:[{label:'建置快取容量',value:'10,000 MB'},{label:'同時建置',value:'1 個'},{label:'每專案自訂網域',value:'100 個'},{label:'建置快取保留時間',value:'7 天'}]}};
+ render(<ArchitectureOverview client={{get:async()=>({data:{items:[github,railway,supabase,cloudflare]}})}}/>);
+ await screen.findByText('GitHub Pro');
+ const openStatus=(name:string)=>{const card=screen.getByRole('article',{name});fireEvent.click(card.querySelector('summary')!);const status=within(card).getByRole('group',{name:`${name} 更新狀態`});fireEvent.click(status.querySelector('summary')!);return status;};
+ const githubStatus=openStatus('GitHub');
+ expect(githubStatus.textContent).toContain('方案費、方案額度、歷史付款紀錄');
+ expect(githubStatus.textContent).toContain('方案續費日、整期預估、本次應付、實際扣款日');
+ expect(githubStatus.textContent).not.toContain('剩餘方案額度');
+ const railwayStatus=openStatus('Railway');
+ expect(railwayStatus.textContent).toContain('方案費、支出上限、歷史付款紀錄');
+ expect(railwayStatus.textContent).toContain('分項折抵、實際扣款日');
+ expect(railwayStatus.textContent).not.toContain('支出上限、實際扣款日');
+ const supabaseStatus=openStatus('Supabase');
+ expect(supabaseStatus.textContent).toContain('自動帳務尚未接通');
+ expect(supabaseStatus.textContent).toContain('帳期、費用、額度、帳單');
+ const cloudflareStatus=openStatus('Cloudflare Pages');
+ expect(cloudflareStatus.textContent).toContain('額度上限 4 項');
+ expect(cloudflareStatus.textContent).toContain('Pages 本期用量、待繳金額、帳期、實際扣款日');
+});

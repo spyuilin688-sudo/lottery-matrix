@@ -7,12 +7,42 @@ import { ArchitecturePaymentOverview, usePaymentDay } from './ArchitecturePaymen
 
 type Client = { get(path: string): Promise<{ data: unknown }> };
 const invoiceStatuses = { paid: '已付款', open: '待付款', void: '已作廢', uncollectible: '無法收款' };
-const providerSyncDetails = {
-  github: [['更新時間', '每日 09:20'], ['自動更新', '用量費用'], ['人工核對', '方案費、方案額度、付款紀錄'], ['尚未取得', '整期預估、扣款金額與日期、剩餘方案額度']],
-  railway: [['更新時間', '每日 09:20'], ['自動更新', '帳期、下次出帳、全工作區與 Agent 用量、預估、待出帳、最近帳單'], ['尚未取得', '分項折抵、支出上限、實際扣款日']],
-  supabase: [['自動更新', '尚未接通'], ['人工核對', '費用、額度、帳單；保留上次資料，非即時用量']],
-  cloudflare: [['更新時間', '每日 09:20'], ['自動更新', '部分額度上限'], ['尚未取得', '每月用量、待繳金額、扣款日']],
-};
+type ProviderId = (typeof architectureProviders)[number]['id'];
+type SyncFact = readonly [string, string];
+const joined = (values: Array<string | false | null | undefined>) => values.filter(Boolean).join('、') || '尚未取得';
+
+function providerSyncDetails(provider: ProviderId, item?: ArchitectureSubscription): SyncFact[] {
+  const billing = item?.billing;
+  const account = billing?.account;
+  const hasPaymentHistory = Boolean(billing?.manualPayment || billing?.latestPaymentDate || billing?.latestInvoiceAmount);
+  const hasConfirmedDue = account?.paymentKind === 'due' && Boolean(account.paymentAmount);
+  if (provider === 'github') return [
+    ['更新時間', '每日 09:20'],
+    ['自動更新', billing?.currentAmount ? '用量費用' : '尚未取得'],
+    ['人工核對', joined([item?.fee && '方案費', Boolean(account?.quotas.length) && '方案額度', hasPaymentHistory && '歷史付款紀錄'])],
+    ['尚未取得', joined([!item?.renewalDate && '方案續費日', !billing?.estimatedAmount && '整期預估', !hasConfirmedDue && '本次應付', !account?.paymentDate && '實際扣款日', !account?.quotas.length && '方案額度'])],
+  ];
+  if (provider === 'railway') {
+    const hasDiscountBreakdown = billing?.usageBreakdown?.some(detail => detail.discountAmount != null);
+    const hasSpendingLimit = account?.quotas.some(quota => quota.label.includes('支出上限'));
+    return [
+      ['更新時間', '每日 09:20'],
+      ['自動更新', joined([billing?.billingCycle && '帳期', billing?.nextInvoiceAt && '下次出帳', billing?.currentAmount && '全工作區與 Agent 用量', billing?.estimatedAmount && '預估', billing?.pendingAmount && '待出帳', billing?.latestInvoiceAmount && '最近帳單'])],
+      ['人工核對', joined([item?.fee && '方案費', hasSpendingLimit && '支出上限', hasPaymentHistory && '歷史付款紀錄'])],
+      ['尚未取得', joined([!hasDiscountBreakdown && '分項折抵', !account?.paymentDate && '實際扣款日', !hasSpendingLimit && '支出上限'])],
+    ];
+  }
+  if (provider === 'supabase') return [
+    ['自動帳務', '尚未接通'],
+    ['人工核對', joined([billing?.billingCycle && '帳期', Boolean(item?.fee || account?.costs.length) && '費用', Boolean(account?.quotas.length) && '額度', billing?.latestInvoiceAmount && '帳單'])],
+    ['尚未取得', joined(['即時用量', !hasConfirmedDue && '本次應付', !account?.paymentDate && '實際扣款日'])],
+  ];
+  return [
+    ['更新時間', '每日 09:20'],
+    ['自動更新', billing?.limits?.length ? `額度上限 ${billing.limits.length} 項` : '尚未取得'],
+    ['尚未取得', joined([!billing?.currentAmount && 'Pages 本期用量', !billing?.pendingAmount && '待繳金額', !billing?.billingCycle && '帳期', !account?.paymentDate && '實際扣款日', !item?.plan && 'Pages 方案'])],
+  ];
+}
 
 export function ArchitectureOverview({ client }: { client: Client }) {
   const today = usePaymentDay();
@@ -61,7 +91,7 @@ export function ArchitectureOverview({ client }: { client: Client }) {
                 <div className="architectureDetailBody">
                   <details className="architectureSection" aria-label={`${provider.name} 更新狀態`}><summary>資料更新狀態</summary>
                     {(loading || error || !billing) && <p>{loading ? '讀取中…' : error ? '資料讀取失敗' : '帳務資料未取得'}</p>}
-                    <dl className="architectureFacts">{providerSyncDetails[provider.id].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+                    <dl className="architectureFacts">{providerSyncDetails(provider.id, item).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
                   </details>
                   <details className="architectureSection" aria-label={`${provider.name} 付款說明`}><summary>付款說明</summary>
                     <p>{account?.paymentDate ? '付款日期由官方帳務頁人工核對。' : '扣款日期未取得；出帳日與續費日不是扣款日。'}</p>
