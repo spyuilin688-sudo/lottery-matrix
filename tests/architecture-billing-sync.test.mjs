@@ -14,6 +14,15 @@ test('GitHub uses net usage and keeps the original provenance of manual payment 
   assert.throws(()=>githubSnapshot({usageItems:[{netAmount:null}]},null,now));
 });
 const railway={workspace:{id:'8b32b524-e3de-4ad2-a37d-4d641bca491a',customer:{currentUsage:25,billingPeriod:{start:'2026-09-01T00:00:00Z',end:'2026-10-01T00:00:00Z'},subscriptions:[{status:'active',nextInvoiceCurrentTotal:3000}],invoices:[{total:2000,status:'paid',periodStart:'1756684800',periodEnd:'1759276800'}]}},agentUsage:{totalUsedCents:1000,billingPeriodEnd:'2026-10-01T00:00:00Z'},usage:[{measurement:'MEMORY_USAGE_GB',value:43200}],estimatedUsage:[{measurement:'MEMORY_USAGE_GB',estimatedValue:86400}]};
+test('daily usage sync retains separately verified account quotas and their original date',()=>{
+  const account={paymentDate:null,paymentAmount:'US$18.60',paymentKind:'estimate',verifiedAt:'2026-09-25T00:00:00Z',source:'Provider dashboard',quotas:[{label:'Included credit',included:'US$20',used:'US$20',remaining:'US$0',reset:'Billing period'}],costs:[]};
+  for(const snapshot of [githubSnapshot({usageItems:[]},{account},now),railwaySnapshot(railway,now,{account})]) {
+    assert.deepEqual(snapshot.account,account);
+    assert.notEqual(snapshot.account.verifiedAt,snapshot.verifiedAt);
+  }
+  assert.equal(Object.hasOwn(githubSnapshot({usageItems:[]},null,now),'account'),false);
+  assert.equal(Object.hasOwn(railwaySnapshot(railway,now),'account'),false);
+});
 test('Railway distinguishes dollar usage from cents in invoice totals and does not invent payment dates',()=>{
   const result=railwaySnapshot(railway,now);
   assert.equal(result.currentAmount,'US$35.00（折抵前用量；待出帳快照 US$30.00）');

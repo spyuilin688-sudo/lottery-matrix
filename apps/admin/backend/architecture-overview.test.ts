@@ -27,3 +27,30 @@ it('does not disguise storage failures or malformed data as confirmed empty subs
   await expect(createArchitectureOverview({ selectRows: async () => { throw new Error('offline'); } }).get()).rejects.toThrow();
   await expect(createArchitectureOverview({ selectRows: async () => [{ provider: 'unknown' }] }).get()).rejects.toThrow();
 });
+
+const account = {
+  paymentDate: '2026-10-01', paymentDateNote: '官方帳務頁顯示', paymentAmount: 'US$14.08', paymentKind: 'estimate', paymentNote: '折抵後預估，尚未結帳',
+  costs: [{ label: '固定費用', value: 'US$20／月', note: '含用量額度' }],
+  quotas: [{ label: 'CPU', included: '100 小時', used: '20 小時', remaining: '80 小時', reset: '2026-10-01' }],
+  verifiedAt: '2026-09-26T00:00:00Z', source: '官方 Billing 頁人工核對',
+};
+const accountRow = (value: unknown) => ({ provider: 'railway', plan: 'Pro', fee: null, renewal_date: null, verified_at: null, billing_snapshot: { source: 'API', verifiedAt: '2026-09-26T01:00:00Z', account: value } });
+
+it('allowlists verified account, cost and quota fields without exposing nested private data', async () => {
+  const input = { ...account, privateUrl: 'secret', costs: [{ ...account.costs[0], token: 'secret' }], quotas: [{ ...account.quotas[0], token: 'secret' }] };
+  const result = await createArchitectureOverview({ selectRows: async () => [accountRow(input)] }).get();
+  expect(result.items[0].billing?.account).toEqual(account);
+  expect(JSON.stringify(result)).not.toContain('secret');
+  const empty = await createArchitectureOverview({ selectRows: async () => [accountRow(null)] }).get();
+  expect(empty.items[0].billing?.account).toBeNull();
+});
+
+it('rejects malformed optional account snapshots and nested rows', async () => {
+  const invalid = [undefined, [], {}, { ...account, paymentDate: '2026-02-30' }, { ...account, paymentKind: 'paid' }, { ...account, paymentKind: ['due'] },
+    { ...account, verifiedAt: '' }, { ...account, paymentAmount: 0 }, { ...account, paymentNote: 'x'.repeat(201) },
+    { ...account, costs: Array(31).fill(account.costs[0]) }, { ...account, costs: [{ label: 'Fee', value: 0 }] },
+    { ...account, quotas: [{ ...account.quotas[0], remaining: null }] }, { ...account, quotas: [{ ...account.quotas[0], note: {} }] }];
+  for (const value of invalid) {
+    await expect(createArchitectureOverview({ selectRows: async () => [accountRow(value)] }).get()).rejects.toThrow();
+  }
+});

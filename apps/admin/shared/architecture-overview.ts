@@ -14,7 +14,20 @@ export type ArchitectureSubscription = {
   billing: ArchitectureBilling | null;
 };
 
+export type ArchitectureAccount = {
+  paymentDate: string | null;
+  paymentDateNote: string;
+  paymentAmount: string | null;
+  paymentKind: 'due' | 'estimate' | 'pending' | 'unknown';
+  paymentNote: string;
+  costs: Array<{ label: string; value: string; note?: string }>;
+  quotas: Array<{ label: string; included: string; used: string; remaining: string; reset: string; note?: string }>;
+  verifiedAt: string;
+  source: string;
+};
+
 export type ArchitectureBilling = {
+  account?: ArchitectureAccount | null;
   latestInvoiceAmount: string | null;
   latestInvoiceStatus: 'paid' | 'open' | 'void' | 'uncollectible' | null;
   latestPaymentDate: string | null;
@@ -28,6 +41,47 @@ export type ArchitectureBilling = {
 const isText = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0 && value.length <= 200;
 const isDate = (value: unknown): value is string => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
   && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+
+function readAccount(value: unknown): ArchitectureAccount | null {
+  if (value === null) return null;
+  const invalid = () => new Error('帳戶核對資料格式不符，請重新載入。');
+  const isNote = (entry: unknown): entry is string => typeof entry === 'string' && entry.length <= 200;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw invalid();
+  const row = value as Record<string, unknown>;
+  if (row.paymentDate !== null && !isDate(row.paymentDate)) throw invalid();
+  if (row.paymentAmount !== null && !isText(row.paymentAmount)) throw invalid();
+  if (typeof row.paymentKind !== 'string' || !['due', 'estimate', 'pending', 'unknown'].includes(row.paymentKind)) throw invalid();
+  if (!isNote(row.paymentDateNote) || !isNote(row.paymentNote)) throw invalid();
+  if (!isText(row.source) || !isText(row.verifiedAt) || !Number.isFinite(Date.parse(row.verifiedAt))) throw invalid();
+  function readRows(value: unknown, fields: readonly string[]) {
+    if (!Array.isArray(value) || value.length > 30) throw invalid();
+    return value.map(entry => {
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) throw invalid();
+      const input = entry as Record<string, unknown>;
+      const output: Record<string, string> = {};
+      for (const field of fields) {
+        if (!isText(input[field])) throw invalid();
+        output[field] = input[field];
+      }
+      if (Object.prototype.hasOwnProperty.call(input, 'note')) {
+        if (!isNote(input.note)) throw invalid();
+        output.note = input.note;
+      }
+      return output;
+    });
+  }
+  return {
+    paymentDate: row.paymentDate,
+    paymentDateNote: row.paymentDateNote,
+    paymentAmount: row.paymentAmount,
+    paymentKind: row.paymentKind,
+    paymentNote: row.paymentNote,
+    costs: readRows(row.costs, ['label', 'value']),
+    quotas: readRows(row.quotas, ['label', 'included', 'used', 'remaining', 'reset']),
+    verifiedAt: row.verifiedAt,
+    source: row.source,
+  } as ArchitectureAccount;
+}
 
 function readBilling(value: unknown): ArchitectureBilling | null {
   if (value === null || value === undefined) return null;
@@ -49,6 +103,7 @@ function readBilling(value: unknown): ArchitectureBilling | null {
     period: row.period ?? null,
     source: row.source,
     verifiedAt: row.verifiedAt,
+    ...(Object.prototype.hasOwnProperty.call(row, 'account') ? { account: readAccount(row.account) } : {}),
   } as ArchitectureBilling;
 }
 

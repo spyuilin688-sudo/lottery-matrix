@@ -23,6 +23,7 @@ export function githubSnapshot(body: Row, previous: Row | null, now: Date) {
   const end = new Date(Date.UTC(year, month + 1, 0)).toISOString().slice(0, 10);
   const manualInvoiceVerifiedAt = previous?.manualInvoiceVerifiedAt ?? previous?.verifiedAt ?? null;
   return {...empty(),
+    ...(previous?.account ? {account:previous.account} : {}),
     latestInvoiceAmount: previous?.latestInvoiceAmount ?? null,
     latestInvoiceStatus: previous?.latestInvoiceStatus ?? null,
     latestPaymentDate: previous?.latestPaymentDate ?? null,
@@ -68,6 +69,7 @@ export function railwaySnapshot(data: Row, now: Date, previous: Row | null = nul
     + (manualPayment ? `；人工核對付款：${date(manualPayment.paymentDate)} ${manualPayment.amount}（核對：${date(manualPayment.verifiedAt)}；非本期付款日期）` : '');
   if (source.length>200) throw Error('INVALID_PAYMENT_PROVENANCE');
   return {...empty(),
+    ...(previous?.account ? {account:previous.account} : {}),
     manualPayment,
     currentAmount: `${money(current+agentAmount)}（折抵前用量${pending===null?'':`；待出帳快照 ${money(pending)}`}）`,
     estimatedAmount: estimated === null ? null : `${money(estimated)}（折抵前用量預估）`,
