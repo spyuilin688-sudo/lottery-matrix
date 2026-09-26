@@ -18,7 +18,7 @@ describe('registered member identity synchronization', () => {
   const db = new PGlite();
 
   beforeAll(async () => {
-    await db.exec(\`
+    await db.exec(`
       create role anon;
       create role authenticated;
       create schema auth;
@@ -37,10 +37,10 @@ describe('registered member identity synchronization', () => {
       );
 
       insert into auth.identities (id, user_id, provider, created_at) values
-        ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', '\${existingGoogle}', 'google', '2026-09-01T00:00:00Z'),
-        ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2', '\${existingLine}', 'custom:line', '2026-09-02T00:00:00Z'),
-        ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3', '\${existingEmail}', 'email', '2026-09-03T00:00:00Z');
-    \`);
+        ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', '${existingGoogle}', 'google', '2026-09-01T00:00:00Z'),
+        ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2', '${existingLine}', 'custom:line', '2026-09-02T00:00:00Z'),
+        ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3', '${existingEmail}', 'email', '2026-09-03T00:00:00Z');
+    `);
 
     await db.exec(migration);
   });
@@ -74,11 +74,11 @@ describe('registered member identity synchronization', () => {
   });
 
   it('does not leave an Auth identity behind when the member insert cannot commit', async () => {
-    await db.exec(\`
+    await db.exec(`
       alter table public.members
       add constraint reject_blocked_member
-      check (auth_user_id <> '\${blocked}'::uuid);
-    \`);
+      check (auth_user_id <> '${blocked}'::uuid);
+    `);
 
     await expect(db.query(
       'insert into auth.identities (id, user_id, provider, created_at) values ($1, $2, $3, $4)',
