@@ -3,7 +3,7 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { useAdminDataPage } from './use-admin-data-page';
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.useRealTimers(); });
 const response = (id: string, currentPage = 1, total = 301) => ({ data: { items: [{ id }], total, currentPage, totalPages: 11 } });
 function deferred() {
   let resolve!: (value: ReturnType<typeof response>) => void;
@@ -20,10 +20,10 @@ it('uses server counts and sends page, filters and stable ordering without slici
   expect(result.current.currentPage).toBe(2);
   expect(result.current.items).toEqual([{ id: 'oldest-result' }]);
   act(() => result.current.setPage(3));
-  await waitFor(() => expect(client.get).toHaveBeenLastCalledWith(expect.stringContaining('page=3&')));
+  await waitFor(() => expect(client.get).toHaveBeenLastCalledWith(expect.stringContaining('page=3&'), expect.objectContaining({ signal: expect.any(AbortSignal) })));
   act(() => result.current.setQuery({ keyword: 'old member', status: 'used', startDate: '2026-09-01', endDate: '2026-09-02', sortBy: 'code', sortDirection: 'asc' }));
   expect(result.current.items).toEqual([]);
-  await waitFor(() => expect(client.get).toHaveBeenLastCalledWith('/api/data/activationCodes?page=1&keyword=old+member&status=used&startDate=2026-09-01&endDate=2026-09-02&sortBy=code&sortDirection=asc'));
+  await waitFor(() => expect(client.get).toHaveBeenLastCalledWith('/api/data/activationCodes?page=1&keyword=old+member&status=used&startDate=2026-09-01&endDate=2026-09-02&sortBy=code&sortDirection=asc', expect.objectContaining({ signal: expect.any(AbortSignal) })));
 });
 
 it.each(['resolve', 'reject'] as const)('ignores an old %s while a newer page is loading and after it succeeds', async outcome => {
@@ -82,7 +82,7 @@ it('reads only the active tab, preserves its filters, and refreshes it when sele
   rerender({ enabled: true, revision: 0 });
   await waitFor(() => expect(client.get).toHaveBeenCalledTimes(3));
   expect(result.current.query.status).toBe('confirmed');
-  expect(client.get).toHaveBeenLastCalledWith(expect.stringContaining('status=confirmed'));
+  expect(client.get).toHaveBeenLastCalledWith(expect.stringContaining('status=confirmed'), expect.objectContaining({ signal: expect.any(AbortSignal) }));
 });
 
 it('ignores an in-flight inactive tab result until the tab becomes active again', async () => {
@@ -98,4 +98,53 @@ it('ignores an in-flight inactive tab result until the tab becomes active again'
   rerender({ enabled: true });
   await waitFor(() => expect(result.current.items).toEqual([{ id: 'fresh' }]));
   expect(client.get).toHaveBeenCalledTimes(2);
+});
+
+it('aborts superseded and unmounted reads without showing a cancellation error', async () => {
+  const client = { get: vi.fn((_path: string, config?: { signal?: AbortSignal }) => new Promise<never>((_, reject) => {
+    config?.signal?.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')));
+  })) };
+  const { result, unmount } = renderHook(() => useAdminDataPage('users', 0, client, 'admin-1'));
+  await waitFor(() => expect(client.get).toHaveBeenCalledTimes(1));
+  const first = client.get.mock.calls[0][1]!.signal!;
+  act(() => result.current.setPage(2));
+  expect(first.aborted).toBe(true);
+  await waitFor(() => expect(client.get).toHaveBeenCalledTimes(2));
+  expect(result.current.error).toBe('');
+  const second = client.get.mock.calls[1][1]!.signal!;
+  unmount();
+  expect(second.aborted).toBe(true);
+});
+
+it('debounces only text edits, including from a later page, while page/filter/clear read immediately', async () => {
+  vi.useFakeTimers();
+  const client = { get: vi.fn().mockResolvedValue(response('current')) };
+  const { result } = renderHook(() => useAdminDataPage('users', 0, client, 'admin-1'));
+  await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+  act(() => result.current.setPage(3));
+  await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+  act(() => result.current.setQuery({ keyword: 'member' }));
+  await act(async () => { await vi.advanceTimersByTimeAsync(299); });
+  expect(client.get).toHaveBeenCalledTimes(2);
+  await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+  expect(client.get).toHaveBeenCalledTimes(3);
+  for (const patch of [{ page: 2 }, { status: 'active' }, { keyword: '' }]) {
+    const count = client.get.mock.calls.length;
+    act(() => result.current.setQuery(patch));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(client.get).toHaveBeenCalledTimes(count + 1);
+  }
+});
+
+it('does not cancel the active read for an unchanged query', async () => {
+  const pending = deferred();
+  const client = { get: vi.fn().mockReturnValue(pending.promise) };
+  const { result } = renderHook(() => useAdminDataPage('users', 0, client, 'admin-1'));
+  await waitFor(() => expect(client.get).toHaveBeenCalledTimes(1));
+  const signal = client.get.mock.calls[0][1].signal as AbortSignal;
+  act(() => result.current.setQuery({ keyword: '' }));
+  expect(signal.aborted).toBe(false);
+  await act(async () => pending.resolve(response('kept')));
+  expect(result.current.items[0].id).toBe('kept');
+  expect(client.get).toHaveBeenCalledTimes(1);
 });

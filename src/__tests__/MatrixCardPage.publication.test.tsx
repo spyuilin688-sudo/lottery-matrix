@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
 
 const api = vi.hoisted(() => ({
@@ -51,8 +51,10 @@ const withDraw = {
 
 afterEach(() => {
   cleanup();
+  sessionStorage.clear();
   vi.useRealTimers();
   vi.clearAllMocks();
+  api.fetchMatrixCardManifest.mockReset();
   realtime.state.onMessage = null;
   realtime.state.onSystem = null;
   realtime.state.onStatus = null;
@@ -201,4 +203,64 @@ test('a prolonged API failure uses hourly recovery only until the signaled card 
   expect((screen.getByRole('tab', { name: '落球' }) as HTMLButtonElement).disabled).toBe(false);
   await act(async () => { await vi.advanceTimersByTimeAsync(3_600_001); });
   expect(api.fetchMatrixCardManifest).toHaveBeenCalledTimes(initialReads + 5);
+});
+
+
+test('a failed same-lottery refresh preserves the last card and switching lottery clears it', async () => {
+  vi.useFakeTimers();
+  api.fetchMatrixCardManifest.mockResolvedValue(sortedOnly);
+  render(<AppDialogProvider><MatrixCardPage onNavigate={vi.fn()} /></AppDialogProvider>);
+  await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+  api.fetchMatrixCardManifest.mockRejectedValue(new Error('offline'));
+  await act(async () => {
+    window.dispatchEvent(new Event('online'));
+    await vi.advanceTimersByTimeAsync(1);
+  });
+  expect(screen.getByRole('img', { name: '今彩539順球牌單，第 115209 期' })).toBeTruthy();
+  expect(screen.getByRole('alert').textContent).toBe('更新失敗，目前顯示上次資料');
+  await act(async () => { fireEvent.click(screen.getByRole('tab', { name: '大樂透' })); });
+  expect(screen.queryByRole('img')).toBeNull();
+});
+
+test('overlapping recovery reads share a request and a newer signal is fetched after it settles', async () => {
+  vi.useFakeTimers();
+  let resolveFirst!: (value: typeof sortedOnly) => void;
+  api.fetchMatrixCardManifest.mockImplementationOnce(() => new Promise(resolve => { resolveFirst = resolve; }))
+    .mockResolvedValue(withDraw);
+  render(<AppDialogProvider><MatrixCardPage onNavigate={vi.fn()} /></AppDialogProvider>);
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(1);
+    window.dispatchEvent(new Event('online'));
+    await vi.advanceTimersByTimeAsync(1);
+    realtime.state.onMessage?.({ new: { lottery: '今彩539', generation: withDraw.generation, orders: ['sorted', 'draw'] } });
+    await vi.advanceTimersByTimeAsync(1);
+  });
+  expect(api.fetchMatrixCardManifest).toHaveBeenCalledTimes(1);
+  await act(async () => {
+    resolveFirst(sortedOnly);
+    await vi.advanceTimersByTimeAsync(1);
+  });
+  expect(api.fetchMatrixCardManifest).toHaveBeenCalledTimes(2);
+  expect((screen.getByRole('tab', { name: '落球' }) as HTMLButtonElement).disabled).toBe(false);
+});
+
+test('replication readiness waits for an initial read and then closes its publication gap', async () => {
+  vi.useFakeTimers();
+  let resolveInitial!: (value: typeof sortedOnly) => void;
+  api.fetchMatrixCardManifest.mockImplementationOnce(() => new Promise(resolve => { resolveInitial = resolve; }))
+    .mockResolvedValue(withDraw);
+  realtime.channel.subscribe.mockImplementationOnce((callback: (status: string) => void) => {
+    realtime.state.onStatus = callback;
+    callback('SUBSCRIBED');
+    return realtime.channel;
+  });
+  render(<AppDialogProvider><MatrixCardPage onNavigate={vi.fn()} /></AppDialogProvider>);
+  await act(async () => {
+    realtime.state.onSystem?.({ extension: 'postgres_changes', status: 'ok' });
+    await vi.advanceTimersByTimeAsync(1);
+  });
+  expect(api.fetchMatrixCardManifest).toHaveBeenCalledTimes(1);
+  await act(async () => { resolveInitial(sortedOnly); await vi.advanceTimersByTimeAsync(1); });
+  expect(api.fetchMatrixCardManifest).toHaveBeenCalledTimes(2);
+  expect((screen.getByRole('tab', { name: '落球' }) as HTMLButtonElement).disabled).toBe(false);
 });

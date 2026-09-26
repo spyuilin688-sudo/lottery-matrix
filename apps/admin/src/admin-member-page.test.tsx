@@ -11,11 +11,11 @@ test('page and search are sent to server; stale results never replace a newer fi
   await waitFor(() => expect(result.current.paged.items[0]?.id).toBe('page1'));
   expect(result.current.total).toBe(61);
   act(() => result.current.setPage(2));
-  await waitFor(() => expect(client.get).toHaveBeenCalledWith('/api/data/users?page=2&keyword=&status=all&startDate=&endDate=&sortBy=registeredAt&sortDirection=desc'));
+  await waitFor(() => expect(client.get).toHaveBeenCalledWith('/api/data/users?page=2&keyword=&status=all&startDate=&endDate=&sortBy=registeredAt&sortDirection=desc', expect.objectContaining({ signal: expect.any(AbortSignal) })));
   act(() => result.current.setKeyword('舊會員'));
   expect(result.current.paged.items).toEqual([]);
   await waitFor(() => expect(result.current.paged.items[0]?.id).toBe('search-result'));
-  expect(client.get).toHaveBeenLastCalledWith('/api/data/users?page=1&keyword=%E8%88%8A%E6%9C%83%E5%93%A1&status=all&startDate=&endDate=&sortBy=registeredAt&sortDirection=desc');
+  expect(client.get).toHaveBeenLastCalledWith('/api/data/users?page=1&keyword=%E8%88%8A%E6%9C%83%E5%93%A1&status=all&startDate=&endDate=&sortBy=registeredAt&sortDirection=desc', expect.objectContaining({ signal: expect.any(AbortSignal) }));
   await act(async () => finishOld(response('stale-page2', 61, 2)));
   expect(result.current.paged.items[0]?.id).toBe('search-result');
 });
@@ -36,7 +36,7 @@ test('status changes reset page and a mutation refresh preserves the selected fi
   await waitFor(() => expect(result.current.loading).toBe(false));
   act(() => { result.current.setPage(3); });
   act(() => { result.current.setStatus('disabled'); });
-  await waitFor(() => expect(client.get).toHaveBeenLastCalledWith('/api/data/users?page=1&keyword=&status=disabled&startDate=&endDate=&sortBy=registeredAt&sortDirection=desc'));
+  await waitFor(() => expect(client.get).toHaveBeenLastCalledWith('/api/data/users?page=1&keyword=&status=disabled&startDate=&endDate=&sortBy=registeredAt&sortDirection=desc', expect.objectContaining({ signal: expect.any(AbortSignal) })));
   rerender({ revision: 1 });
   await waitFor(() => expect(client.get.mock.calls.filter(([url]) => url.includes('status=disabled')).length).toBe(2));
 });

@@ -293,11 +293,18 @@ export async function listAdminTable(table: string, api: Requester, currentDate 
 
 async function enrichMembers(items: Array<Row & { id: string }>, api: Requester, currentDate: Date, scopeMembers = false) {
   if (!items.length) return [];
-  const providerItems = await enrichProviderIdentities(items, api);
-  const connections = await memberConnectionSummaries(items.map(item => String(item.authUserId ?? '')), api);
   const since = new Date(currentDate.getTime() - 3 * 86_400_000).toISOString();
-  const memberFilter = scopeMembers ? `&member_id=in.(${items.map(item => encodeURIComponent(item.id)).join(',')})` : '';
-  const sessions = await listAllRows(api, `/rest/v1/member_online_sessions?select=member_id,online_seconds&started_at=gte.${encodeURIComponent(since)}&order=id.asc${memberFilter}`);
+  // These reads depend only on the returned members, not on one another.
+  // The production paged path receives one summary per member instead of all sessions.
+  const [providerItems, connections, sessions] = await Promise.all([
+    enrichProviderIdentities(items, api),
+    memberConnectionSummaries(items.map(item => String(item.authUserId ?? '')), api),
+    scopeMembers
+      ? api.request<Row[]>('/rest/v1/rpc/admin_member_online_summary', {
+        method: 'POST', body: JSON.stringify({ p_member_ids: items.map(item => item.id), p_since: since }),
+      })
+      : listAllRows(api, `/rest/v1/member_online_sessions?select=member_id,online_seconds&started_at=gte.${encodeURIComponent(since)}&order=id.asc`),
+  ]);
   const secondsByMember = new Map<string, number>();
   for (const session of sessions) {
     const memberId = String(session.member_id ?? '');

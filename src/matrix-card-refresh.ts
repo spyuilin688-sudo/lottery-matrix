@@ -26,7 +26,7 @@ function hasPublishedCardChanged(
 // hourly refresh; a healthy channel reads the card only after publication.
 export function subscribeMatrixCardRefresh(
   lottery: NumberBallLottery,
-  refresh: () => Promise<boolean>,
+  refresh: (requireFresh?: boolean) => Promise<boolean>,
   currentCard: () => PublishedCard | null,
 ) {
   let disposed = false;
@@ -41,20 +41,33 @@ export function subscribeMatrixCardRefresh(
   let recoveryNeeded = false;
   let connected = false;
   let streamReady = false;
+  let refreshing = false;
+  let readinessRead = false;
 
   const clearRetry = () => {
     if (retryTimer !== undefined) clearTimeout(retryTimer);
     retryTimer = undefined;
   };
   const queueRefresh = () => {
-    if (disposed || document.visibilityState === 'hidden' || queued !== undefined) return;
+    if (disposed || document.visibilityState === 'hidden' || queued !== undefined || refreshing) return;
     queued = setTimeout(() => {
       queued = undefined;
       if (disposed || document.visibilityState === 'hidden') return;
       const expected = pendingSignal;
-      void refresh().then(success => {
-        if (disposed || expected !== pendingSignal) return;
-        if (expected && success && !hasPublishedCardChanged(expected, lottery, currentCard())) {
+      refreshing = true;
+      const requireFresh = readinessRead;
+      readinessRead = false;
+      void refresh(requireFresh).then(success => {
+        refreshing = false;
+        if (disposed) return;
+        // A newer publication may arrive while a coalesced read is pending.
+        // Recheck that signal once this read settles, never concurrently.
+        if (readinessRead || (expected !== pendingSignal && pendingSignal
+          && hasPublishedCardChanged(pendingSignal, lottery, currentCard()))) {
+          queueRefresh();
+          return;
+        }
+        if (pendingSignal && success && !hasPublishedCardChanged(pendingSignal, lottery, currentCard())) {
           pendingSignal = undefined;
           pendingKey = undefined;
           retryAttempts = 0;
@@ -105,6 +118,7 @@ export function subscribeMatrixCardRefresh(
         if (connected) {
           if (!recoveryNeeded) stopFallback();
           // SUBSCRIBED can precede the replication listener; read after its ack.
+          readinessRead = true;
           queueRefresh();
         }
       } else {
@@ -131,6 +145,7 @@ export function subscribeMatrixCardRefresh(
         connected = true;
         if (streamReady) {
           if (!recoveryNeeded) stopFallback();
+          readinessRead = true;
           queueRefresh();
         }
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {

@@ -21,30 +21,36 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
 
   useEffect(() => {
     let active = true;
-    let revision = 0;
+    let inFlight: Promise<boolean> | null = null;
     let publishedCard: MatrixCardManifest | null = null;
     setLoading(true);
     setLoadFailed(false);
     setManifest(null);
-    const refresh = async (): Promise<boolean> => {
-      const current = ++revision;
-      try {
-        const nextManifest = await fetchMatrixCardManifest(lottery);
-        if (!active || current !== revision) return false;
-        publishedCard = nextManifest;
-        setManifest(nextManifest);
-        setLoadFailed(false);
-        return true;
-      } catch {
-        if (active && current === revision) {
-          publishedCard = null;
-          setManifest(null);
-          setLoadFailed(true);
-        }
-        return false;
-      } finally {
-        if (active && current === revision) setLoading(false);
+    const refresh = (requireFresh = false): Promise<boolean> => {
+      if (inFlight) {
+        // Replication readiness closes the join gap: its read must start after
+        // the listener is ready, even when the initial fetch is still pending.
+        return requireFresh ? inFlight.then(() => active ? refresh() : false) : inFlight;
       }
+      inFlight = (async () => {
+        try {
+          const nextManifest = await fetchMatrixCardManifest(lottery);
+          if (!active) return false;
+          publishedCard = nextManifest;
+          setManifest(nextManifest);
+          setLoadFailed(false);
+          return true;
+        } catch {
+          if (active) {
+            setLoadFailed(true);
+          }
+          return false;
+        } finally {
+          inFlight = null;
+          if (active) setLoading(false);
+        }
+      })();
+      return inFlight;
     };
     void refresh();
     const unsubscribe = subscribeMatrixCardRefresh(lottery, refresh, () => publishedCard);
@@ -93,10 +99,10 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
       </div>
       <section className="matrix-ticket" aria-busy={loading}>
         {loading ? <p>牌單載入中…</p> : null}
-        {loadFailed ? <p role="alert">牌單暫時無法載入，請稍後再試</p> : null}
+        {loadFailed ? <p role="alert">{cardUrl && cardPeriod ? "更新失敗，目前顯示上次資料" : "牌單暫時無法載入，請稍後再試"}</p> : null}
         {!loading && !loadFailed && !cardPeriod ? <p>尚無可用牌單</p> : null}
         {!loading && !loadFailed && cardPeriod && !cardUrl ? <p role="status">{order === "draw" ? "落球" : "順球"}牌單待公布</p> : null}
-        {!loading && !loadFailed && cardUrl && cardPeriod ? (
+        {!loading && cardUrl && cardPeriod ? (
           <img className="matrix-ticket-image" src={cardUrl} alt={lottery + (order === "draw" ? "落球" : "順球") + "牌單，第 " + cardPeriod + " 期"} />
         ) : null}
       </section>
