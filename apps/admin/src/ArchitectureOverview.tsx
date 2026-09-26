@@ -97,7 +97,7 @@ export function ArchitectureOverview({ client }: { client: Client }) {
                   </section>
                   <details className="architectureSource">
                     <summary>資料來源與更新時間</summary>
-                    <p>GitHub、Railway 每日 09:20（台灣時間）同步一次；失敗時保留上次資料。Supabase、Cloudflare Pages 尚未自動同步。</p>
+                    <p>GitHub、Railway、Cloudflare 每日 09:20（台灣時間）同步一次；失敗時保留上次資料。Cloudflare 同步帳單紀錄與接口狀態，未取得的 Pages 費用及額度仍標示未知。Supabase 尚未自動同步。</p>
                     <p className="architectureVerified">方案確認：{item?.verifiedAt ? <time dateTime={item.verifiedAt}>{formatAdminDateTime(item.verifiedAt)}</time> : '尚未確認'}</p>
                     {item?.renewalDate && <p>方案續費紀錄：<time dateTime={item.renewalDate}>{item.renewalDate}</time>（不代表扣款日）</p>}
                     {billing && <><p className="architectureVerified">帳務資料更新：<time dateTime={billing.verifiedAt}>{formatAdminDateTime(billing.verifiedAt)}</time>（不代表歷史付款重新核對）</p><p>{billing.source}</p></>}

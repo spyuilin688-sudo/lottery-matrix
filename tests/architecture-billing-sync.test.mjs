@@ -62,7 +62,7 @@ for(const successful of [0,1,2]) test(`sync reports the true outcome when ${succ
     throw Error('unexpected');
   }});
   const response=await h(request());
-  assert.equal((await response.json()).status,['failed','partial','completed'][successful]);
+  assert.equal((await response.json()).status,['failed','partial','partial'][successful]);
 });
 test('storage interruption closes the claimed run without retrying provider requests',async()=>{
   const calls=[];
