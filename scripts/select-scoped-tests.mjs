@@ -4,7 +4,7 @@ import { appendFileSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const GROUPS = ['node', 'vitest', 'edge', 'admin', 'python', 'playwright', 'tianshu', 'membership'];
+const GROUPS = ['node', 'postgres', 'vitest', 'edge', 'admin', 'python', 'playwright', 'tianshu', 'membership'];
 const EXTENSIONS = ['', '.ts', '.tsx', '.mjs', '.js', '.jsx', '.json', '.py', '/index.ts', '/index.tsx', '/index.js', '/__init__.py'];
 const PYTHON_ROOT = 'services/matrix-api';
 const SOURCE = /\.(?:[cm]?[jt]sx?|css|html|py|json|ya?ml)$/;
@@ -73,6 +73,7 @@ const CONFIG_OWNERS = {
 
 function groupFor(file, source = '') {
   if (!TEST.test(file)) return null;
+  if (file === 'tests/app-isolation-postgres.test.mjs') return 'postgres';
   if (file.endsWith('.py')) return file.startsWith(`${PYTHON_ROOT}/tests/`) ? 'python' : null;
   if (file === 'tests/matrix-tianshu-layout.spec.ts') return 'tianshu';
   if (/\.spec\.tsx?$/.test(file)) return file.startsWith('tests/membership-preview/') ? 'membership' : 'playwright';
@@ -210,6 +211,10 @@ export function commandFor(group, files, root) {
     if (typeof file !== 'string' || !/^[\w./-]+$/.test(file) || file.startsWith('-') || file.startsWith('/') || file.split('/').includes('..') || !TEST.test(file)) {
       throw new Error(`Expected an explicit test file inside the repository: ${file}`);
     }
+  }
+  if (group === 'postgres') {
+    if (files.length !== 1 || files[0] !== 'tests/app-isolation-postgres.test.mjs') throw new Error('Postgres runner accepts only the isolated App database test');
+    return { bin: process.execPath, args: [path.join(root, 'scripts/run-app-db-checks.mjs'), '--test', files[0], '--database-url-env', 'APP_TEST_DATABASE_URL'], cwd: root };
   }
   const absolute = [...new Set(files)].map(file => path.resolve(root, file));
   if (group === 'node') return { bin: process.execPath, args: ['--experimental-transform-types', '--test', ...absolute], cwd: root };

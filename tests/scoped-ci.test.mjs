@@ -21,6 +21,7 @@ const files = new Map(Object.entries({
   'tests/client-source.test.mjs': "import test from 'node:test'; readFileSync(new URL('../src/client.ts', import.meta.url));",
   'tests/fixtures/legacy.js': 'old worker',
   'tests/worker.test.mjs': "import test from 'node:test'; readFileSync(new URL('./fixtures/legacy.js', import.meta.url));",
+  'tests/app-isolation-postgres.test.mjs': "import test from 'node:test';",
   'supabase/functions/example/handler.ts': 'export const handler = 1;',
   'supabase/functions/example/handler.test.ts': "import { handler } from './handler.ts'; import { it } from 'vitest';",
   'services/matrix-api/app/schedule.py': 'from .dates import today',
@@ -144,6 +145,21 @@ test('Matrix Tianshu layout uses one scoped Project CI runner with its dedicated
   assert.deepEqual(plan.groups.tianshu, ['tests/matrix-tianshu-layout.spec.ts']);
   const command = commandFor('tianshu', plan.groups.tianshu, '/repo');
   assert.ok(command.args.includes('playwright.matrix-tianshu.config.ts'));
+});
+
+
+test('real App Postgres isolation check uses its dedicated wrapper runner', () => {
+  const plan = selectTests(files, ['tests/app-isolation-postgres.test.mjs']);
+  assert.deepEqual(plan.groups.postgres, ['tests/app-isolation-postgres.test.mjs']);
+  assert.deepEqual(plan.groups.node, []);
+  const command = commandFor('postgres', plan.groups.postgres, '/repo');
+  assert.equal(command.bin, process.execPath);
+  assert.deepEqual(command.args, [
+    '/repo/scripts/run-app-db-checks.mjs',
+    '--test', 'tests/app-isolation-postgres.test.mjs',
+    '--database-url-env', 'APP_TEST_DATABASE_URL',
+  ]);
+  assert.throws(() => commandFor('postgres', ['tests/worker.test.mjs'], '/repo'), /Postgres runner accepts only/);
 });
 
 test('every runner receives explicit absolute test paths; empty or unsafe scope never invokes it', () => {
