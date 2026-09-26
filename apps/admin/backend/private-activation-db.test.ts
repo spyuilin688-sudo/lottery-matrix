@@ -54,6 +54,7 @@ beforeAll(async () => {
   await db.exec(read('20260910123427_admin_atomic_activation_batch.sql'));
   await db.exec(read('20260926005023_private_activation_codes.sql'));
   await db.exec(read('20260926013545_retain_private_activation_history_and_public_plan_search.sql'));
+  await db.exec(read('20260926015433_private_audit_content_search.sql'));
 }, 20000);
 afterAll(() => db.close());
 
@@ -145,6 +146,27 @@ describe('private activation code database lifecycle', () => {
     expect((await db.query('select public.admin_visible_plan_expires_at(m) as expires from public.members m where id=$1', [secondMember])).rows[0].expires)
       .not.toBeNull();
     expect((await db.query("select has_function_privilege('authenticated','public.admin_visible_plan_name(public.members)','execute') as allowed")).rows)
+      .toEqual([{ allowed: false }]);
+  });
+
+  it('filters hidden audit text before searching while preserving unrelated entries', async () => {
+    const publicMember = '00000000-0000-4000-8000-000000000006';
+    await db.query('insert into public.audit_logs (target_table,target_id,content) values ($1,$2,$3),($1,$2,$4),($1,$5,$3),($6,$7,$3)',
+      ['members', member, '訂閱操作：lifetime', '停用會員帳號', publicMember, 'settings', 'not-a-uuid']);
+
+    const hidden = await db.query<{ content: string }>(
+      "select public.admin_visible_audit_content(log) as content from public.audit_logs as log where target_table='members' and target_id=$1 and public.admin_visible_audit_content(log) ~* 'lifetime'",
+      [member]);
+    expect(hidden.rows).toEqual([]);
+    const visible = await db.query<{ target_id: string; content: string }>(
+      "select target_id, public.admin_visible_audit_content(log) as content from public.audit_logs as log where content='訂閱操作：lifetime' order by target_id",
+    );
+    expect(visible.rows).toEqual([
+      { target_id: member, content: '會員資料異動' },
+      { target_id: publicMember, content: '訂閱操作：lifetime' },
+      { target_id: 'not-a-uuid', content: '訂閱操作：lifetime' },
+    ]);
+    expect((await db.query("select has_function_privilege('authenticated','public.admin_visible_audit_content(public.audit_logs)','execute') as allowed")).rows)
       .toEqual([{ allowed: false }]);
   });
 });

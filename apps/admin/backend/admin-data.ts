@@ -396,6 +396,7 @@ function applyAdminPageFilters(
   filterStatus = true,
   currentDate = new Date(),
   safePlanSearch = false,
+  safeAuditContent = false,
 ) {
   const config = pageDefinitions[table];
   if (!config) throw new AdminDataError('Invalid table');
@@ -408,7 +409,7 @@ function applyAdminPageFilters(
   const columns = safePlanSearch && (table === 'users' || table === 'subscriptions')
     ? { ...config.columns, planName: 'admin_visible_plan_name',
       planStartedAt: 'admin_visible_plan_started_at', planExpiresAt: 'admin_visible_plan_expires_at' }
-    : config.columns;
+    : safeAuditContent ? { ...config.columns, content: 'admin_visible_audit_content' } : config.columns;
   if (keyword.length > 200 || (sortBy && !Object.prototype.hasOwnProperty.call(config.columns, sortBy))
     || !['asc', 'desc'].includes(direction) || (dateField && !config.dates.includes(dateField))
     || ((startDate || endDate) && !dateField)) throw new AdminDataError('查詢條件不正確');
@@ -442,7 +443,7 @@ function applyAdminPageFilters(
   }
   if (!keyword) return;
   const pattern = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const clauses = config.keywords.map(field => `${field}.imatch.${JSON.stringify(pattern)}`);
+  const clauses = config.keywords.map(field => `${safeAuditContent && field === 'content' ? 'admin_visible_audit_content' : field}.imatch.${JSON.stringify(pattern)}`);
   if (UUID_PATTERN.test(keyword)) {
     clauses.push(...['id', ...(config.identifiers ?? [])].map(field => `${field}.eq.${keyword}`));
   }
@@ -490,7 +491,8 @@ export async function listAdminTablePage(table: string, query: AdminPageQuery, a
   if (table === 'loginRecords') return listAdminLoginRecordPage(query, api);
   const page = parsePage(query, pageDefinitions[table].pageSize);
   const url = new URL(definition.path, 'https://supabase.invalid');
-  applyAdminPageFilters(url, table, query, true, currentDate);
+  applyAdminPageFilters(url, table, query, true, currentDate, false,
+    table === 'auditLogs' && Boolean(actor && !isPrivateActivationOwner(actor)));
   const result = await readAdminPage(url, page, pageDefinitions[table].pageSize, api);
   const items = result.items.map(row => definition.map(row, currentDate));
   if (table === 'auditLogs' && actor) {
