@@ -296,7 +296,20 @@ const routes: Record<string, unknown> = {
       const owner = await requireAdmin(ctx.user?.email, supabase);
       if (owner.role !== '超級管理員') return error('僅超級管理員可執行首次設定', 403);
       if (await credentialAuth.isConfigured(String(owner.id))) return error('此管理員已完成首次設定', 409);
-      await credentialAuth.setPassword(String(owner.id), String(bodyOf(ctx).password ?? ''));
+      if (isPrivateActivationOwner(owner)) {
+        const [account] = await supabase.selectRows<{ revision: number; name: string }>(
+          'admin_accounts', `select=revision,name&id=eq.${encodeURIComponent(String(owner.id))}&limit=1`,
+        );
+        if (!account) return error('管理員帳號不存在', 404);
+        const credentials = await credentialAuth.passwordFields(String(bodyOf(ctx).password ?? ''), true);
+        await adminData.updateAdminAccount(String(owner.id), {
+          account: owner.account, name: account.name, role: owner.role, status: owner.status,
+          can_view: true, can_add: true, can_edit: true, can_delete: true,
+          expectedRevision: account.revision, ...credentials,
+        }, actorOf(owner));
+      } else {
+        await credentialAuth.setPassword(String(owner.id), String(bodyOf(ctx).password ?? ''));
+      }
       return json({ configured: true, account: owner.account });
     } catch (cause) { return fail(cause); }
   }],

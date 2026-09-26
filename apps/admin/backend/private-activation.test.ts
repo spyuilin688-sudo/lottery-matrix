@@ -5,6 +5,7 @@ import { listAdminMemberPage, listAdminTablePage } from './admin-data';
 
 const owner = { account: 'spyuilin688@gmail.com', role: '超級管理員' };
 const operator = { account: 'operator@example.com', role: '營運管理員' };
+const auditMemberId = '00000000-0000-4000-8000-000000000003';
 
 describe('private activation code access', () => {
   it('requires both the designated account and the super administrator role', () => {
@@ -45,14 +46,14 @@ describe('private activation code access', () => {
 
   it('hides the original plan snapshot in audit records after a status update', async () => {
     const request = vi.fn(async () => [{
-      member_id: 'member-1', current_plan_id: 'plan-1',
+      member_id: auditMemberId, current_plan_id: 'plan-1',
       plan_started_at: '2026-09-01T00:00:00Z', plan_expires_at: null, is_lifetime: true,
     }]);
-    const rows = [{ id: 'audit-1', targetTable: 'members', targetId: 'member-1', content: '訂閱操作：lifetime',
+    const rows = [{ id: 'audit-1', targetTable: 'members', targetId: auditMemberId, content: '訂閱操作：lifetime',
       beforeData: { current_plan_id: 'plan-1', plan_started_at: '2026-09-01T00:00:00Z', plan_expires_at: null, is_lifetime: true },
       afterData: { current_plan_id: 'plan-1', plan_started_at: '2026-09-01T00:00:00Z', plan_expires_at: null, is_lifetime: true } }];
     const masked = await maskPrivateAuditRows(rows, operator, { request });
-    expect(masked[0]).toMatchObject({ id: 'audit-1', targetId: 'member-1', content: '會員資料異動', beforeData: null, afterData: null });
+    expect(masked[0]).toMatchObject({ id: 'audit-1', targetId: auditMemberId, content: '會員資料異動', beforeData: null, afterData: null });
     expect(await maskPrivateAuditRows(rows, owner, { request })).toEqual(rows);
     expect(request).toHaveBeenCalledTimes(1);
   });
@@ -60,9 +61,11 @@ describe('private activation code access', () => {
   it('hides an earlier private plan after a second redemption while preserving status changes', async () => {
     const earlier = { current_plan_id: 'plan-1', plan_started_at: '2026-09-01T00:00:00Z',
       plan_expires_at: '2026-09-08T00:00:00Z', is_lifetime: false };
-    const request = vi.fn(async () => [{ member_id: 'member-1', ...earlier,
-      plan_expires_at: '2026-09-23T00:00:00Z' }]);
-    const row = { id: 'audit-1', targetTable: 'members', targetId: 'member-1', content: '停用會員帳號',
+    const request = vi.fn(async () => [
+      { member_id: auditMemberId, ...earlier },
+      { member_id: auditMemberId, ...earlier, plan_expires_at: '2026-09-23T00:00:00Z' },
+    ]);
+    const row = { id: 'audit-1', targetTable: 'members', targetId: auditMemberId, content: '停用會員帳號',
       beforeData: { ...earlier, status: 'active' }, afterData: { ...earlier, status: 'disabled' } };
     const [visible] = await maskPrivateAuditRows([row], operator, { request });
     expect(visible).toMatchObject({ content: '停用會員帳號',
@@ -70,16 +73,61 @@ describe('private activation code access', () => {
     expect(visible.beforeData).not.toHaveProperty('plan_expires_at');
     expect(visible.afterData).not.toHaveProperty('is_lifetime');
     expect(request).toHaveBeenCalledTimes(1);
+    expect(request.mock.calls[0][0]).toContain('/rest/v1/private_activation_redemption_history?');
+  });
+
+  it('keeps an unrelated public subscription action visible after a private redemption', async () => {
+    const snapshot = { member_id: auditMemberId, current_plan_id: 'private-plan',
+      plan_started_at: '2026-09-01T00:00:00Z', plan_expires_at: null, is_lifetime: true };
+    const request = vi.fn(async () => [snapshot]);
+    const afterData = { current_plan_id: 'public-plan', plan_started_at: '2026-09-25T00:00:00Z',
+      plan_expires_at: '2026-10-25T00:00:00Z', is_lifetime: false, status: 'active' };
+    const row = { id: 'audit-public', targetTable: 'members', targetId: auditMemberId, content: '訂閱操作：activate',
+      beforeData: { current_plan_id: snapshot.current_plan_id, plan_started_at: snapshot.plan_started_at,
+        plan_expires_at: null, is_lifetime: true, status: 'active' }, afterData };
+    const [visible] = await maskPrivateAuditRows([row], operator, { request });
+    expect(visible).toMatchObject({ content: '訂閱操作：activate', beforeData: { status: 'active' }, afterData });
+    expect(visible.beforeData).not.toHaveProperty('current_plan_id');
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+
+  it('redacts an uppercase member UUID consistently with database search', async () => {
+    const memberId = 'abcdefab-cdef-4abc-8def-abcdefabcdef';
+    const request = vi.fn(async () => [{ member_id: memberId, current_plan_id: 'secret',
+      plan_started_at: null, plan_expires_at: null, is_lifetime: true }]);
+    const row = { id: 'audit-upper', targetTable: 'members', targetId: memberId.toUpperCase(),
+      content: '訂閱操作：lifetime', beforeData: { current_plan_id: 'secret', plan_started_at: null,
+        plan_expires_at: null, is_lifetime: true } };
+    expect(await maskPrivateAuditRows([row], operator, { request })).toEqual([{
+      ...row, content: '會員資料異動', beforeData: null,
+    }]);
+    expect(request.mock.calls[0][0]).toContain(memberId);
+  });
+
+  it('reads additional history pages when a member has more private redemptions than one response', async () => {
+    const irrelevant = Array.from({ length: 200 }, () => ({ member_id: auditMemberId,
+      current_plan_id: 'other', plan_started_at: null, plan_expires_at: null, is_lifetime: false }));
+    const privateSnapshot = { member_id: auditMemberId, current_plan_id: 'secret',
+      plan_started_at: null, plan_expires_at: null, is_lifetime: true };
+    const request = vi.fn().mockResolvedValueOnce(irrelevant).mockResolvedValueOnce([privateSnapshot]);
+    const row = { id: 'audit-older', targetTable: 'members', targetId: auditMemberId,
+      content: '訂閱操作：lifetime', afterData: { current_plan_id: 'secret', plan_started_at: null,
+        plan_expires_at: null, is_lifetime: true } };
+    expect(await maskPrivateAuditRows([row], operator, { request })).toEqual([{
+      ...row, content: '會員資料異動', afterData: null,
+    }]);
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(request.mock.calls[1][0]).toContain('offset=200');
   });
 
   it('applies audit masking in the paged admin API path', async () => {
     const requestPage = vi.fn(async (_path: string) => ({ total: 1, items: [{
-      id: 'audit-1', target_table: 'members', target_id: 'member-1',
+      id: 'audit-1', target_table: 'members', target_id: auditMemberId,
       content: '訂閱操作：lifetime', before_data: { current_plan_id: 'plan-1', plan_started_at: null, plan_expires_at: null, is_lifetime: true },
       after_data: { current_plan_id: 'plan-1', plan_started_at: null, plan_expires_at: null, is_lifetime: true },
     }] }));
     const request = vi.fn(async (_path: string) => [{
-      member_id: 'member-1', current_plan_id: 'plan-1', plan_started_at: null, plan_expires_at: null, is_lifetime: true,
+      member_id: auditMemberId, current_plan_id: 'plan-1', plan_started_at: null, plan_expires_at: null, is_lifetime: true,
     }]);
     const page = await listAdminTablePage('auditLogs', {}, { requestPage, request }, new Date(), operator);
     expect(page.items[0]).toMatchObject({ id: 'audit-1', content: '會員資料異動', beforeData: null, afterData: null });

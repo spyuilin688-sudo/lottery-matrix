@@ -1073,6 +1073,7 @@ function AdminApp() {
               emptyMessage={listPage.loading ? "資料讀取中" : listPage.error ? "資料載入失敗" : "目前沒有資料"}
               rows={rows}
               isSuper={Boolean(isSuper)}
+              adminId={String(admin?.id ?? '')}
               showForm={showForm}
               setShowForm={setShowForm}
               form={adminForm}
@@ -1489,6 +1490,7 @@ function AdminManager({
   busy,
   emptyMessage,
   isSuper,
+  adminId,
   showForm,
   setShowForm,
   form,
@@ -1505,6 +1507,7 @@ function AdminManager({
   busy: boolean;
   emptyMessage: string;
   isSuper: boolean;
+  adminId: string;
   showForm: boolean;
   setShowForm: (v: boolean) => void;
   form: AdminForm;
@@ -1516,6 +1519,9 @@ function AdminManager({
   onEdit: (r: Row) => void;
   onDelete: (id: string) => void;
 }) {
+  const editingProtectedOwner = editing && form.account.trim().toLowerCase() === 'spyuilin688@gmail.com';
+  const editingOwnAccount = rows.some(row => String(row.id) === adminId
+    && String(row.account ?? '').trim().toLowerCase() === 'spyuilin688@gmail.com');
   const roleDescription: Record<string, string> = {
     超級管理員: "用戶管理、訂閱管理、啟動碼管理、權限切換、系統設定、管理員權限",
     營運管理員: "用戶管理、訂閱管理、啟動碼管理；權限切換與系統設定僅查看",
@@ -1540,6 +1546,7 @@ function AdminManager({
               管理員帳號
               <input
                 value={form.account}
+                disabled={editingProtectedOwner}
                 onChange={(e) => setForm({ ...form, account: e.target.value })}
               />
             </label>
@@ -1552,12 +1559,13 @@ function AdminManager({
             </label>
             <label>
               {editing ? "新密碼（留空不變）" : "初始密碼"}
-              <input type="password" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+              <input type="password" autoComplete="new-password" value={form.password} disabled={editingProtectedOwner && !editingOwnAccount} onChange={(e) => setForm({ ...form, password: e.target.value })} />
             </label>
             <label>
               角色
               <select
                 value={form.role}
+                disabled={editingProtectedOwner}
                 onChange={(e) => onRole(e.target.value)}
               >
                 <option>超級管理員</option>
@@ -1569,6 +1577,7 @@ function AdminManager({
               帳號狀態
               <select
                 value={form.status}
+                disabled={editingProtectedOwner}
                 onChange={(e) => setForm({ ...form, status: e.target.value })}
               >
                 <option>啟用</option>
@@ -1646,7 +1655,7 @@ function AdminManager({
                             aria-label={`刪除管理員 ${text(r.account)}`}
                             className="danger"
                             onClick={() => onDelete(r.id)}
-                            disabled={busy}
+                            disabled={busy || String(r.account ?? '').trim().toLowerCase() === 'spyuilin688@gmail.com'}
                           >
                             <Trash2 size={15} />
                           </button>

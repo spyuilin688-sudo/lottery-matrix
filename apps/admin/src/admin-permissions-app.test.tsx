@@ -13,6 +13,7 @@ const app = vi.hoisted(() => {
       role: '超級管理員',
       permissions: { view: true, add: true, edit: true, delete: true },
     } as Record<string, unknown>,
+    adminRows: null as Array<Record<string, unknown>> | null,
     failPaymentRead: false,
     memberStatus: 'active',
     memberRows: null as Array<{ id: string; memberDisplayName: string; status: string }> | null,
@@ -70,7 +71,7 @@ const app = vi.hoisted(() => {
       }],
     } };
     if (url === '/api/permission-settings') return { data: state.permissionSettings };
-    if (path === '/api/data/admins') return { data: { items: [otherAdmin], total: 37, currentPage: 1, totalPages: 2 } };
+    if (path === '/api/data/admins') return { data: { items: state.adminRows ?? [otherAdmin], total: 37, currentPage: 1, totalPages: 2 } };
     if (url.startsWith('/api/data/users?')) {
       const items = state.memberRows ?? [{ id: 'member-1', memberDisplayName: '測試會員', status: state.memberStatus }];
       return { data: { items, total: items.length, currentPage: 1, totalPages: 1 } };
@@ -149,6 +150,7 @@ describe('administrator operation permission editing', () => {
       permissions: { view: true, add: true, edit: true, delete: true },
     };
     app.state.failPaymentRead = false;
+    app.state.adminRows = null;
     app.state.memberStatus = 'active';
     app.state.memberRows = null;
     app.state.transferRequests = [];
@@ -376,6 +378,36 @@ describe('administrator operation permission editing', () => {
       expectedRevision: 7,
       permissions: { view: false, add: true, edit: false, delete: true },
     }));
+  });
+
+  it('disables protected credentials, role, status and deletion for a different super administrator', async () => {
+    app.state.adminRows = [{ id: 'protected-owner', account: 'spyuilin688@gmail.com', name: 'Owner',
+      role: '超級管理員', status: '啟用', revision: 2, permissions: { view: true, add: true, edit: true, delete: true } }];
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '管理員權限')?.click());
+    await settle();
+    expect(within(container).getByRole<HTMLButtonElement>('button', { name: '刪除管理員 spyuilin688@gmail.com' }).disabled).toBe(true);
+    await act(async () => within(container).getByRole('button', { name: '編輯管理員 spyuilin688@gmail.com' }).click());
+    for (const label of ['管理員帳號', '新密碼（留空不變）', '角色', '帳號狀態']) {
+      expect((within(container).getByLabelText(label) as HTMLInputElement).disabled).toBe(true);
+    }
+    expect((within(container).getByLabelText('管理員名稱') as HTMLInputElement).disabled).toBe(false);
+  });
+
+  it('allows the protected owner to change their own password but keeps the identity fields locked', async () => {
+    app.state.admin = { ...app.state.admin, id: 'protected-owner', account: 'spyuilin688@gmail.com' };
+    app.state.adminRows = [{ id: 'protected-owner', account: 'spyuilin688@gmail.com', name: 'Owner',
+      role: '超級管理員', status: '啟用', revision: 2, permissions: { view: true, add: true, edit: true, delete: true } }];
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '管理員權限')?.click());
+    await settle();
+    await act(async () => within(container).getByRole('button', { name: '編輯管理員 spyuilin688@gmail.com' }).click());
+    expect((within(container).getByLabelText('新密碼（留空不變）') as HTMLInputElement).disabled).toBe(false);
+    for (const label of ['管理員帳號', '角色', '帳號狀態']) {
+      expect((within(container).getByLabelText(label) as HTMLInputElement).disabled).toBe(true);
+    }
   });
 
   it('retains the edit draft and shows a conflict without silently retrying stale permissions', async () => {
