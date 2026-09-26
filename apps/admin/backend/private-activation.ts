@@ -70,7 +70,19 @@ const privatePlanAuditFields = new Set([
   'auto_renew', 'subscription_revision',
 ]);
 
-function redactPlanAuditFields(value: unknown): unknown {
+function matchesPrivatePlan(value: unknown, snapshots: PrivateRedemption[]): boolean {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const data = value as Record<string, unknown>;
+  if (!['current_plan_id', 'plan_started_at', 'plan_expires_at', 'is_lifetime']
+    .every(field => Object.hasOwn(data, field))) return false;
+  return snapshots.some(snapshot => data.current_plan_id === snapshot.current_plan_id
+    && sameTimestamp(data.plan_started_at, snapshot.plan_started_at)
+    && sameTimestamp(data.plan_expires_at, snapshot.plan_expires_at)
+    && data.is_lifetime === snapshot.is_lifetime);
+}
+
+function redactPlanAuditFields(value: unknown, snapshots: PrivateRedemption[]): unknown {
+  if (!matchesPrivatePlan(value, snapshots)) return value;
   if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
   const entries = Object.entries(value).filter(([key]) => !privatePlanAuditFields.has(key));
   return entries.length === Object.keys(value).length ? value : entries.length ? Object.fromEntries(entries) : null;
@@ -78,17 +90,36 @@ function redactPlanAuditFields(value: unknown): unknown {
 
 export async function maskPrivateAuditRows<T extends AuditRow>(rows: T[], actor: Actor, api: PrivateRequester): Promise<T[]> {
   if (isPrivateActivationOwner(actor)) return rows;
-  const byMember = await privateRedemptions(
-    rows.filter(row => row.targetTable === 'members' && typeof row.targetId === 'string')
-      .map(row => String(row.targetId)), api,
-  );
+  const auditMemberId = (row: AuditRow) => row.targetTable === 'members'
+    && typeof row.targetId === 'string'
+    && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(row.targetId)
+    ? row.targetId.toLowerCase() : null;
+  const ids = [...new Set(rows.map(auditMemberId).filter((id): id is string => id !== null))];
+  if (!ids.length) return rows;
+  const byMember = new Map<string, PrivateRedemption[]>();
+  const base = '/rest/v1/private_activation_redemption_history?select=member_id,current_plan_id,plan_started_at,plan_expires_at,is_lifetime'
+    + `&member_id=in.(${ids.map(encodeURIComponent).join(',')})&order=code_id.asc&limit=200`;
+  let offset = 0;
+  while (true) {
+    const histories = await api.request(`${base}&offset=${offset}`);
+    for (const snapshot of histories) {
+      const key = snapshot.member_id.toLowerCase();
+      const previous = byMember.get(key);
+      if (previous) previous.push(snapshot);
+      else byMember.set(key, [snapshot]);
+    }
+    if (histories.length < 200) break;
+    offset += histories.length;
+  }
   if (!byMember.size) return rows;
   return rows.map(row => {
-    if (row.targetTable !== 'members' || !byMember.has(String(row.targetId ?? ''))) return row;
-    const beforeData = redactPlanAuditFields(row.beforeData);
-    const afterData = redactPlanAuditFields(row.afterData);
+    const memberId = auditMemberId(row);
+    const snapshots = memberId ? byMember.get(memberId) : undefined;
+    if (!snapshots) return row;
+    const beforeData = redactPlanAuditFields(row.beforeData, snapshots);
+    const afterData = redactPlanAuditFields(row.afterData, snapshots);
     const sensitiveContent = typeof row.content === 'string'
-      && (/^訂閱操作：/.test(row.content) || /終生|終身|永久|lifetime/i.test(row.content));
+      && /終生|終身|永久|lifetime/i.test(row.content);
     if (beforeData === row.beforeData && afterData === row.afterData && !sensitiveContent) return row;
     return {
       ...row,

@@ -55,6 +55,7 @@ beforeAll(async () => {
   await db.exec(read('20260926005023_private_activation_codes.sql'));
   await db.exec(read('20260926013545_retain_private_activation_history_and_public_plan_search.sql'));
   await db.exec(read('20260926015433_private_audit_content_search.sql'));
+  await db.exec(read('20260926025210_narrow_private_activation_audit_redaction.sql'));
 }, 20000);
 afterAll(() => db.close());
 
@@ -166,6 +167,12 @@ describe('private activation code database lifecycle', () => {
       { target_id: publicMember, content: '訂閱操作：lifetime' },
       { target_id: 'not-a-uuid', content: '訂閱操作：lifetime' },
     ]);
+    await db.query('insert into public.audit_logs(target_table,target_id,content) values ($1,$2,$3)',
+      ['members', member, '訂閱操作：activate']);
+    expect((await db.query<{ content: string }>(
+      "select public.admin_visible_audit_content(log) as content from public.audit_logs log where target_id=$1 and content='訂閱操作：activate'",
+      [member],
+    )).rows).toEqual([{ content: '訂閱操作：activate' }]);
     expect((await db.query("select has_function_privilege('authenticated','public.admin_visible_audit_content(public.audit_logs)','execute') as allowed")).rows)
       .toEqual([{ allowed: false }]);
   });

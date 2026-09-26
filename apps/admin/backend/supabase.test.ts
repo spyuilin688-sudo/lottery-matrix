@@ -58,6 +58,18 @@ describe('getSupabaseConfig', () => {
 
 describe('createSupabaseTransport', () => {
   it.each([
+    ['PT409', 'ADMIN_REVISION_CONFLICT', 409],
+    ['42501', 'PRIVATE_ACTIVATION_OWNER_PROTECTED', 403],
+    ['22023', 'INVALID_ADMIN_INPUT', 400],
+  ])('forwards only expected owner password change errors %s/%s', async (code, message, status) => {
+    const transport = createSupabaseTransport(
+      { url: 'https://example.supabase.co', serviceRoleKey: 'test-key' },
+      async () => new Response(JSON.stringify({ code, message }), { status }),
+    );
+    await expect(transport.supabaseRequest('rpc/admin_update_private_activation_owner_password'))
+      .rejects.toMatchObject({ message, statusCode: status });
+  });
+  it.each([
     ['P0002', 'ACTIVATION_CODE_NOT_FOUND', 500, 404],
     ['42501', 'REDEEMED_ACTIVATION_CODE_DELETE_FORBIDDEN', 403, 403],
   ])('forwards the exact activation deletion error %s/%s', async (code, message, responseStatus, expectedStatus) => {

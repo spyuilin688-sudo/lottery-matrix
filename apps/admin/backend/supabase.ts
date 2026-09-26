@@ -68,11 +68,19 @@ const activationDeleteErrors = new Map([
   ['42501:REDEEMED_ACTIVATION_CODE_DELETE_FORBIDDEN', { upstream: 403, status: 403 }],
 ]);
 
+const protectedOwnerPasswordErrors = new Map([
+  ['PT409:ADMIN_REVISION_CONFLICT', 409],
+  ['42501:PRIVATE_ACTIVATION_OWNER_PROTECTED', 403],
+  ['42501:ADMIN_BACKEND_REQUIRED', 403],
+  ['22023:INVALID_ADMIN_INPUT', 400],
+]);
+
 async function readSupabaseDomainError(path: string, response: Response) {
   const normalizedPath = path.replace(/^\/+/, '').split('?')[0];
   if (normalizedPath !== 'rest/v1/rpc/admin_record_payment_reversal'
     && normalizedPath !== 'rest/v1/rpc/admin_matrix_permission_settings_update'
     && normalizedPath !== 'rest/v1/rpc/admin_delete_activation_code'
+    && normalizedPath !== 'rest/v1/rpc/admin_update_private_activation_owner_password'
     && !(normalizedPath in adminMutationConflictMessages)) return null;
 
   let body: unknown;
@@ -84,6 +92,10 @@ async function readSupabaseDomainError(path: string, response: Response) {
   if (!body || typeof body !== 'object') return null;
   const { code, message } = body as { code?: unknown; message?: unknown };
   if (typeof code !== 'string' || typeof message !== 'string') return null;
+  if (normalizedPath === 'rest/v1/rpc/admin_update_private_activation_owner_password') {
+    const status = protectedOwnerPasswordErrors.get(`${code}:${message}`);
+    return status === response.status ? new SupabaseDomainError(message, status) : null;
+  }
   if (normalizedPath in adminMutationConflictMessages) {
     return code === 'PT409' && response.status === 409
       && adminMutationConflictMessages[normalizedPath].includes(message)

@@ -582,6 +582,7 @@ export async function getDashboard(api: Requester, currentDate = new Date()) {
 }
 
 const adminRoles = ['超級管理員', '營運管理員', '查看人員'];
+const privateActivationOwnerAccount = 'spyuilin688@gmail.com';
 const adminStatuses = ['啟用', '停用'];
 const durationTypes = ['7_days', '15_days', '30_days', '60_days', '90_days', '365_days', 'lifetime'];
 const activationCodeQuantities = [1, 3, 5, 10, 20];
@@ -659,6 +660,7 @@ export function createAdminData(transport: WriteTransport) {
   async function createAdminAccount(input: AdminAccountInput, actor: AdminActor) {
     if (!input.password_salt || !input.password_hash) throw new AdminDataError('管理員密碼必填');
     const record = validateAdminInput(input);
+    if (record.account === privateActivationOwnerAccount) throw new AdminDataError('指定管理員帳號受保護', 403);
     const [created] = await transport.insertRows<Row>('admin_accounts', [record]);
     if (!created) throw new AdminDataError('建立管理員失敗', 500);
     await writeAudit({
@@ -678,9 +680,33 @@ export function createAdminData(transport: WriteTransport) {
     const [before] = await transport.selectRows<Row>('admin_accounts', `select=*&id=eq.${encodeURIComponent(id)}`);
     if (!before) throw new AdminDataError('Not found', 404);
     const record = validateAdminInput(input);
+    const owner = String(before.account ?? '').trim().toLowerCase() === privateActivationOwnerAccount;
+    const changedPassword = 'password_salt' in record || 'password_hash' in record;
+    if (owner && (record.account !== privateActivationOwnerAccount || record.role !== '超級管理員'
+        || record.status !== '啟用' || (changedPassword && actor.id !== id))
+        || !owner && record.account === privateActivationOwnerAccount) {
+      throw new AdminDataError('指定管理員帳號受保護', 403);
+    }
     await protectLastEnabledSuper(before, { role: record.role, status: record.status });
     // The predicate is checked by PostgreSQL at the write, including changes after the read.
-    const [updated] = await transport.updateRows<Row>('admin_accounts', `id=eq.${encodeURIComponent(id)}&revision=eq.${input.expectedRevision}`, record);
+    let updated: Row | undefined;
+    if (owner && changedPassword) {
+      try {
+        updated = await transport.supabaseRequest<Row>('rpc/admin_update_private_activation_owner_password', {
+          method: 'POST',
+          body: JSON.stringify({
+            p_actor_id: actor.id, p_expected_revision: input.expectedRevision, p_name: record.name,
+            p_password_salt: record.password_salt, p_password_hash: record.password_hash,
+          }),
+        });
+      } catch (cause) {
+        const failure = cause as { statusCode?: number; message?: string } | null;
+        if (failure?.statusCode === 409 && failure.message === 'ADMIN_REVISION_CONFLICT') throw conflict();
+        throw cause;
+      }
+    } else {
+      [updated] = await transport.updateRows<Row>('admin_accounts', `id=eq.${encodeURIComponent(id)}&revision=eq.${input.expectedRevision}`, record);
+    }
     if (!updated) throw conflict();
     await writeAudit({
       actor,
@@ -837,6 +863,9 @@ export function createAdminData(transport: WriteTransport) {
     if (id === actor.id) throw new AdminDataError('不得刪除自己的管理員帳號');
     const [before] = await transport.selectRows<Row>('admin_accounts', `select=*&id=eq.${encodeURIComponent(id)}`);
     if (!before) throw new AdminDataError('Not found', 404);
+    if (String(before.account ?? '').trim().toLowerCase() === privateActivationOwnerAccount) {
+      throw new AdminDataError('指定管理員帳號不可刪除', 403);
+    }
     await protectLastEnabledSuper(before);
     const [deleted] = await transport.deleteRows<Row>('admin_accounts', `id=eq.${encodeURIComponent(id)}`);
     if (!deleted) throw new AdminDataError('Not found', 404);

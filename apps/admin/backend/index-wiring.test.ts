@@ -164,6 +164,23 @@ vi.mock('./watchdog-status', () => ({
 import { handler, matrixIndependentWatchdog } from './index';
 const routes = handler as unknown as Record<string, unknown[]>;
 
+it('bootstraps the designated owner password through the guarded operation', async () => {
+  const protectedOwner = { id: 'protected-owner', account: 'spyuilin688@gmail.com', name: 'Owner',
+    role: '超級管理員', status: '啟用', revision: 0 };
+  wiring.requireAdmin.mockResolvedValueOnce(protectedOwner);
+  const transport = wiring.createSupabaseTransport.mock.results[0].value;
+  transport.selectRows.mockResolvedValueOnce([protectedOwner]).mockResolvedValueOnce([protectedOwner]);
+  wiring.supabaseRequest.mockClear();
+  wiring.updateRows.mockClear();
+  wiring.supabaseRequest.mockResolvedValueOnce(protectedOwner);
+  const routeHandler = routes['POST /api/admin-credential-bootstrap'][1] as (ctx: unknown) => Promise<unknown>;
+  expect(await routeHandler({ user: { email: protectedOwner.account }, body: { password: 'test-password' } }))
+    .toMatchObject({ status: 200, body: { configured: true, account: protectedOwner.account } });
+  expect(wiring.supabaseRequest).toHaveBeenCalledWith('rpc/admin_update_private_activation_owner_password',
+    expect.objectContaining({ method: 'POST', body: expect.stringContaining('"p_actor_id":"protected-owner"') }));
+  expect(wiring.updateRows).not.toHaveBeenCalledWith('admin_accounts', expect.anything(), expect.objectContaining({ password_hash: expect.anything() }));
+});
+
 describe('manual Railway recovery route', () => {
   const route = 'POST /api/system-status/:id/recover';
   const execute = async (id = 'cron-matrix-539-refresh-v2') => {

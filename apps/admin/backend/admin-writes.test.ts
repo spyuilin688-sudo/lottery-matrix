@@ -423,6 +423,66 @@ describe('authorized Supabase writes', () => {
     expect(updateRows).not.toHaveBeenCalled();
   });
 
+  it('rejects a different super administrator replacing the private activation owner password or deleting that account', async () => {
+    const protectedOwner = {
+      id: 'protected-owner', account: 'spyuilin688@gmail.com', name: 'Owner',
+      role: '超級管理員', status: '啟用', revision: 0,
+    };
+    const updateRows = vi.fn(async () => [protectedOwner]);
+    const deleteRows = vi.fn(async () => [protectedOwner]);
+    const data = createAdminData({
+      insertRows: vi.fn(), updateRows, deleteRows, supabaseRequest: vi.fn(),
+      selectRows: vi.fn(async () => [protectedOwner]),
+    });
+    const otherSuper = { id: 'another-super', account: 'other@example.com', name: 'Other', role: '超級管理員' };
+    await expect(data.updateAdminAccount(protectedOwner.id, {
+      ...input, account: protectedOwner.account, name: protectedOwner.name,
+      role: protectedOwner.role, status: protectedOwner.status, expectedRevision: 0,
+      password_salt: 'replacement-salt', password_hash: 'replacement-hash',
+    }, otherSuper)).rejects.toMatchObject({ statusCode: 403 });
+    await expect(data.deleteAdminAccount(protectedOwner.id, otherSuper)).rejects.toMatchObject({ statusCode: 403 });
+    expect(updateRows).not.toHaveBeenCalled();
+    expect(deleteRows).not.toHaveBeenCalled();
+  });
+
+  it('routes the private activation owner password change through the guarded database operation', async () => {
+    const protectedOwner = {
+      id: 'protected-owner', account: 'spyuilin688@gmail.com', name: 'Owner',
+      role: '超級管理員', status: '啟用', revision: 2,
+    };
+    const rpc = vi.fn(async () => ({ ...protectedOwner, password_hash: 'new-hash' }));
+    const updateRows = vi.fn();
+    const data = createAdminData({
+      insertRows: vi.fn(), updateRows, deleteRows: vi.fn(), supabaseRequest: rpc,
+      selectRows: vi.fn(async () => [protectedOwner]),
+    });
+    await data.updateAdminAccount(protectedOwner.id, {
+      ...input, account: protectedOwner.account, name: protectedOwner.name,
+      role: protectedOwner.role, status: protectedOwner.status, expectedRevision: 2,
+      password_salt: 'new-salt', password_hash: 'new-hash',
+    }, { id: protectedOwner.id, account: protectedOwner.account, name: 'Owner', role: '超級管理員' });
+    expect(rpc).toHaveBeenCalledWith('rpc/admin_update_private_activation_owner_password', expect.objectContaining({
+      method: 'POST', body: expect.stringContaining('"p_actor_id":"protected-owner"'),
+    }));
+    expect(updateRows).not.toHaveBeenCalled();
+  });
+
+  it('keeps the owner edit draft actionable after a concurrent password revision', async () => {
+    const protectedOwner = { id: 'protected-owner', account: 'spyuilin688@gmail.com',
+      name: 'Owner', role: '超級管理員', status: '啟用', revision: 2 };
+    const data = createAdminData({
+      insertRows: vi.fn(), updateRows: vi.fn(), deleteRows: vi.fn(),
+      selectRows: vi.fn(async () => [protectedOwner]),
+      supabaseRequest: vi.fn(async () => { throw Object.assign(new Error('ADMIN_REVISION_CONFLICT'), { statusCode: 409 }); }),
+    });
+    await expect(data.updateAdminAccount(protectedOwner.id, {
+      ...input, account: protectedOwner.account, name: protectedOwner.name,
+      role: protectedOwner.role, status: protectedOwner.status, expectedRevision: 2,
+      password_salt: 'new-salt', password_hash: 'new-hash',
+    }, { id: protectedOwner.id, account: protectedOwner.account, name: 'Owner', role: '超級管理員' }))
+      .rejects.toMatchObject({ statusCode: 409, message: '管理員資料已變更，請取消編輯並重新載入後再試' });
+  });
+
   it('enables or disables a member and audits the change', async () => {
     const rpc = vi.fn(async () => ({ id: 'member-1', status: 'disabled' }));
     const data = createAdminData({
