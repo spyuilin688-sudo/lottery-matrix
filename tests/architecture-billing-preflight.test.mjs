@@ -2,6 +2,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHandler } from '../supabase/functions/architecture-billing-preflight/handler.ts';
 
+test('optional Pages diagnostic checks account scope without exposing project secrets', async () => {
+  const urls=[];
+  const handler=createHandler({getEnv:n=>({MATRIX_NOTIFICATION_DISPATCH_TOKEN:'expected',CLOUDFLARE_BILLING_API_TOKEN:'cf-secret'})[n],fetch:async url=>{
+    urls.push(url);
+    if(url.endsWith('/pages/projects/lottery-matrix')) return Response.json({success:true,result:{name:'lottery-matrix',deployment_configs:{production:{env_vars:{PRIVATE:'secret-value'}}}}});
+    return Response.json({success:true,result:[]});
+  }});
+  const response=await handler(new Request('https://example.test',{method:'POST',headers:{'x-matrix-dispatch-token':'expected'},body:JSON.stringify({cloudflareDetails:true})}));
+  const result=await response.text();
+  assert.equal(JSON.parse(result).cloudflare.pages.status,'readable');
+  assert.ok(urls.some(url=>url.endsWith('/accounts/2a0ab3c9c14b3d669c035efa1bc60fe4/subscriptions')));
+  assert.ok(!result.includes('PRIVATE')&&!result.includes('secret-value')&&!result.includes('cf-secret'));
+});
+
 test('rejects unauthorized requests without calling provider APIs', async () => {
   let calls=0;
   const handler=createHandler({getEnv:n=>n==='MATRIX_NOTIFICATION_DISPATCH_TOKEN'?'expected':undefined,fetch:async()=>{calls++;throw Error('unexpected');}});
