@@ -15,14 +15,21 @@ export function createHandler(deps: Dependencies) {
         signal: AbortSignal.timeout(12000), redirect: 'error',
       });
       if (!response.ok) {
-        await response.body?.cancel();
-        return { status: 'api_rejected', httpStatus: response.status };
+        const failure=provider==='cloudflare' ? object(await response.json().catch(()=>({}))) : {};
+        const codes=Array.isArray(failure.errors) ? failure.errors.map(item=>object(item).code).filter(code=>typeof code==='number') : [];
+        return { status: 'api_rejected', httpStatus: response.status, codes };
       }
       const body = object(await response.json());
       if (provider === 'cloudflare' && body.success !== true) return { status: 'api_rejected', httpStatus: response.status };
       const rows = provider === 'github' ? body.usageItems : body.result;
       return {
         status: 'readable', httpStatus: response.status,
+        ...(url.endsWith('/billing/unpaid-invoice') ? {
+          unpaid: Array.isArray(object(rows).invoices) ? (object(rows).invoices as unknown[]).map(item => {
+            const entry=object(item);
+            return {amountToPay:typeof entry.amount_to_pay==='number'&&Number.isFinite(entry.amount_to_pay)?entry.amount_to_pay:undefined,currency:displayText(entry.currency)};
+          }) : null,
+        } : {}),
         ...(url.includes('/billing/history?') && Array.isArray(rows) ? {
           history: rows.map(item => {
             const entry=object(item);
@@ -109,13 +116,14 @@ export function createHandler(deps: Dependencies) {
       ]).then(async ([token, subscriptions, accounts]) => {
         if(options.cloudflareDetails!==true) return {status:'checked',token,subscriptions,accounts};
         const base='https://api.cloudflare.com/client/v4/accounts/2a0ab3c9c14b3d669c035efa1bc60fe4';
-        const [pages,accountSubscriptions,usageInfo,billingHistory]=await Promise.all([
+        const [pages,accountSubscriptions,usageInfo,billingHistory,unpaidInvoices]=await Promise.all([
           probe(`${base}/pages/projects/lottery-matrix`,cf,'cloudflare'),
           probe(`${base}/subscriptions`,cf,'cloudflare'),
           probe(`${base}/billable-usage/info`,cf,'cloudflare'),
           probe(`${base}/billing/history?page=1&per_page=20`,cf,'cloudflare'),
+          probe(`${base}/billing/unpaid-invoice`,cf,'cloudflare'),
         ]);
-        return {status:'checked',token,subscriptions,accounts,pages,accountSubscriptions,usageInfo,billingHistory};
+        return {status:'checked',token,subscriptions,accounts,pages,accountSubscriptions,usageInfo,billingHistory,unpaidInvoices};
       })
         : { status: 'missing_credential' },
       gh ? probe(`https://api.github.com/users/spyuilin688-sudo/settings/billing/usage?year=${now.getUTCFullYear()}&month=${now.getUTCMonth()+1}`, gh, 'github')

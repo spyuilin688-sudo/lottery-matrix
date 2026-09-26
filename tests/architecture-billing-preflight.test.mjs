@@ -61,3 +61,20 @@ test('Railway rejects GraphQL errors even with HTTP 200 and does not leak errors
   const response=await handler(new Request('https://example.test',{method:'POST',headers:{'x-matrix-dispatch-token':'expected'}}));
   assert.deepEqual((await response.json()).railway,{status:'api_rejected',httpStatus:200});
 });
+
+test('unpaid invoice diagnostic allowlists amounts and never exposes invoice links', async () => {
+  for (const rejected of [false,true]) {
+    const handler=createHandler({getEnv:n=>({MATRIX_NOTIFICATION_DISPATCH_TOKEN:'expected',CLOUDFLARE_BILLING_API_TOKEN:'private-token'})[n],fetch:async url=>{
+      if(url.endsWith('/billing/unpaid-invoice')) return Response.json(rejected
+        ? {errors:[{code:7003,message:'private-token private-details'},{code:'private-details'}]}
+        : {success:true,result:{invoices:[{amount_to_pay:12.5,currency:'USD',hosted_invoice_url:'private-details',invoice_id:'private-details'}]}}, {status:rejected?400:200});
+      return Response.json({success:true,result:[]});
+    }});
+    const response=await handler(new Request('https://example.test',{method:'POST',headers:{'x-matrix-dispatch-token':'expected'},body:JSON.stringify({cloudflareDetails:true})}));
+    const raw=await response.text();
+    assert.ok(!raw.includes('private-token')&&!raw.includes('private-details'));
+    assert.deepEqual(JSON.parse(raw).cloudflare.unpaidInvoices,rejected
+      ? {status:'api_rejected',httpStatus:400,codes:[7003]}
+      : {status:'readable',httpStatus:200,unpaid:[{amountToPay:12.5,currency:'USD'}]});
+  }
+});
