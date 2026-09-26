@@ -2,15 +2,16 @@ import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 export function assertLocalAppTestDatabase(raw) {
   const url=new URL(raw);
-  if (!['postgres:','postgresql:'].includes(url.protocol) || !['127.0.0.1','localhost','[::1]'].includes(url.hostname)
+  if (url.search || url.hash || !['postgres:','postgresql:'].includes(url.protocol) || !['127.0.0.1','localhost','[::1]'].includes(url.hostname)
     || !/^\/matrix_app_test(?:_[a-f0-9]+)?$/.test(url.pathname)) throw new Error('Only an explicitly named loopback App test database is allowed');
   return url;
 }
+export const localPostgresEnvironment = () => Object.fromEntries(Object.entries(globalThis.process.env).filter(([name]) => !name.startsWith('PG')));
 export function createPsqlClient(raw) {
   assertLocalAppTestDatabase(raw);
   // Merge at the OS pipe so PostgreSQL errors are observed before the marker,
   // rather than racing independent stdout/stderr callbacks. URL stays an argv.
-  const process=spawn('bash',['-c','exec psql "$@" 2>&1','app-test-psql','-X','-qAt','--no-psqlrc',raw],{stdio:['pipe','pipe','pipe']});
+  const process=spawn('bash',['-c','exec psql "$@" 2>&1','app-test-psql','-X','-qAt','--no-psqlrc',raw],{stdio:['pipe','pipe','pipe'],env:localPostgresEnvironment()});
   let current=null,stdout='',stderr='',tail=Promise.resolve();
   process.stdout.on('data',chunk=>{
     stdout+=chunk;
@@ -27,7 +28,7 @@ export function createPsqlClient(raw) {
     const request=tail.then(()=>new Promise((resolve,reject)=>{
       const marker='APP_TEST_DONE_'+randomUUID().replaceAll('-','');
       const timer=setTimeout(()=>{process.kill();reject(new Error('Postgres test command timed out'));},15000);
-      current={marker,resolve,reject,timer};process.stdin.write(`${sql}\n\\echo ${marker}\n`);
+      current={marker,resolve,reject,timer};process.stdin.write(`${sql}\n;\n\\echo ${marker}\n`);
     }));tail=request.catch(()=>{});return request;
   };
   const literal=value=>value===null?'NULL':typeof value==='number'?String(value):`'${(typeof value==='string'?value:JSON.stringify(value)).replaceAll("'","''")}'`;

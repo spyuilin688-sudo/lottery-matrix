@@ -17,11 +17,13 @@ async function setup(t) {
   return {db,who,app};
 }
 test('dual-product deletion preserves PWA membership and shared sessions, blocks silent App recreation',async t=>{
-  const {db,who}=await setup(t);
+  const {db,who,app}=await setup(t);
+  await db.query("insert into private.app_native_push_events(event_key,event_type,payload) values('personal-reminder','bet_reminder',$1),('global-draw','lottery_result','{}')",[{memberId:app.memberId}]);
   await asUser(db,who,()=>rpc(db,'member_bootstrap'));
   const before=await pwaSnapshot(db);
   const job=await rpc(db,'app_account_deletion_begin',[who.user,who.session]);
   assert.equal(job.authIdentity,'retained'); assert.equal(job.status,'completed');
+  assert.deepEqual((await db.query('select event_key from private.app_native_push_events')).rows,[{event_key:'global-draw'}]);
   assert.deepEqual(await pwaSnapshot(db),before);
   assert.equal((await db.query('select count(*)::int n from public.app_members')).rows[0].n,0);
   assert.equal((await db.query('select count(*)::int n from public.app_notification_settings')).rows[0].n,0);

@@ -26,7 +26,7 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - name: App SQL contracts
-        run: node --test tests/app-product-membership.test.mjs tests/app-product-session-scope.test.mjs tests/app-matrix-read-api.test.mjs tests/app-member-settings.test.mjs tests/app-native-notifications.test.mjs tests/app-notification-recovery.test.mjs tests/app-account-deletion.test.mjs
+        run: node --test tests/app-product-membership.test.mjs tests/app-product-session-scope.test.mjs tests/app-matrix-read-api.test.mjs tests/app-member-settings.test.mjs tests/app-native-notifications.test.mjs tests/app-notification-recovery.test.mjs tests/app-account-deletion.test.mjs tests/app-selected-time-reminders.test.mjs tests/app-test-database-boundary.test.mjs
       - name: Real local Postgres concurrency
         env:
           APP_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/matrix_app_test

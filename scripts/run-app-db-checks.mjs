@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { assertLocalAppTestDatabase } from '../tests/helpers/app-postgres.mjs';
+import { assertLocalAppTestDatabase,localPostgresEnvironment } from '../tests/helpers/app-postgres.mjs';
 const args=process.argv.slice(2);
 if(args.length!==4 || args[0]!=='--test' || args[1]!=='tests/app-isolation-postgres.test.mjs' || args[2]!=='--database-url-env' || !/^[A-Z][A-Z0-9_]+$/.test(args[3])) throw new Error('Use --test tests/app-isolation-postgres.test.mjs --database-url-env APP_TEST_DATABASE_URL');
 const source=process.env[args[3]];
@@ -9,7 +9,7 @@ const url=assertLocalAppTestDatabase(source);
 if(spawnSync('psql',['--version'],{stdio:'ignore'}).status!==0) throw new Error('psql is unavailable; real Postgres verification was not run');
 const database='matrix_app_test_'+randomUUID().replaceAll('-','');
 const execute=sql=>{
- const result=spawnSync('psql',['-X','-q','-v','ON_ERROR_STOP=1',source],{input:sql,encoding:'utf8'});
+ const result=spawnSync('psql',['-X','-q','-v','ON_ERROR_STOP=1',source],{input:sql,encoding:'utf8',env:localPostgresEnvironment()});
  if(result.status!==0) throw new Error('Local isolated test database setup/cleanup failed: '+result.stderr);
 };
 execute(`create database ${database};`);

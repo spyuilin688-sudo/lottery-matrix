@@ -61,7 +61,7 @@ export function AppAdminPanel({ page, client = api }: { page: AppAdminSection; c
       <p>共 {list.total} 位 App 用戶</p>
       <div className="app-admin-table-scroll" tabIndex={0} aria-label="App 用戶資料">
         <table><thead><tr><th>用戶</th><th>狀態</th><th>權益</th>{page === 'users' && <th>操作</th>}</tr></thead>
-          <tbody>{list.items.map(member => <tr key={member.id}><td>{member.displayName || '未設定名稱'}<small>{member.id}</small></td><td>{member.status === 'active' ? '啟用' : '停用'}</td><td>{member.entitlementSource === 'free_launch' ? '免費開放' : '未確認'}{member.subscription && <small>訂閱：{member.subscription.status}</small>}</td>{page === 'users' && <td><button onClick={() => { setPending(member); setMutationError(''); }}>{member.status === 'active' ? '停用' : '啟用'}</button></td>}</tr>)}</tbody>
+          <tbody>{list.items.map(member => <tr key={member.id}><td>{member.displayName || '未設定名稱'}<small>{member.id}</small>{member.registeredAt && <small>註冊：{new Date(member.registeredAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}</small>}</td><td>{member.status === 'active' ? '啟用' : '停用'}</td><td>{member.entitlementSource === 'free_launch' ? '免費開放' : '未確認'}{member.subscription && <small>訂閱：{member.subscription.status}</small>}</td>{page === 'users' && <td><button onClick={() => { setPending(member); setMutationError(''); }}>{member.status === 'active' ? '停用' : '啟用'}</button></td>}</tr>)}</tbody>
         </table>
       </div>
       {!list.items.length && <p>目前沒有符合條件的 App 用戶。</p>}

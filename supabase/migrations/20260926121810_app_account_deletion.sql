@@ -50,6 +50,10 @@ begin
   delete from private.app_native_installation_upgrades where auth_user_id=p_user_id;
   -- Cascades remove App rights, subscriptions, preferences, online records,
   -- device tokens, queued deliveries/outbox and per-member App audit records.
+  delete from private.app_native_push_events e
+    where e.event_type='bet_reminder' and e.payload->>'memberId' in (
+      select id::text from public.app_members where auth_user_id=p_user_id
+    );
   delete from public.app_members where auth_user_id=p_user_id;
   delete from auth.sessions s where s.user_id=p_user_id
     and exists(select 1 from private.product_session_usage u where u.session_id=s.id and u.product='app')
