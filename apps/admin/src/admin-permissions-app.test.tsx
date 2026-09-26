@@ -175,6 +175,7 @@ describe('administrator operation permission editing', () => {
     await act(async () => root.render(<AdminApp />));
     await settle();
     expect(buttonWithText(container, '架構總彙')).toBeTruthy();
+    expect(app.api.get).not.toHaveBeenCalledWith('/api/architecture-overview');
     await act(async () => buttonWithText(container, '架構總彙')?.click());
     await settle();
     await waitFor(() => expect(within(container).getAllByRole('article')).toHaveLength(4));
