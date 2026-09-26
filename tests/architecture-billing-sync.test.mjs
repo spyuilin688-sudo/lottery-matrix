@@ -32,11 +32,71 @@ test('authentication rejects before storage and provider calls',async()=>{
 });
 const env={MATRIX_NOTIFICATION_DISPATCH_TOKEN:'dispatch',SUPABASE_URL:'https://db.test',SUPABASE_SERVICE_ROLE_KEY:'server',GITHUB_ACTIONS_TOKEN:'github',RAILWAY_BILLING_API_TOKEN:'railway'};
 const request=()=>new Request('https://test',{method:'POST',headers:{'x-matrix-dispatch-token':'dispatch'},body:'{}'});
+test('Railway keeps verified historical payment separate when the latest invoice changes',()=>{
+  const previous={latestInvoiceAmount:'US$17.00',latestInvoiceStatus:'paid',latestPaymentDate:'2026-08-25',source:'Verified payment receipt',verifiedAt:'2026-09-20T00:00:00Z'};
+  const result=railwaySnapshot(railway,now,previous);
+  assert.equal(result.latestInvoiceAmount,'US$20.00');
+  assert.equal(result.latestPaymentDate,null);
+  assert.equal(result.manualPayment.paymentDate,'2026-08-25');
+  assert.equal(result.manualPayment.amount,'US$17.00');
+  assert.match(result.source,/人工核對付款：2026-08-25 US\$17.00/);
+  assert.deepEqual(railwaySnapshot(railway,now,result).manualPayment,result.manualPayment);
+  assert.ok(result.source.length<=200);
+});
+for(const successful of [0,1,2]) test(`sync reports the true outcome when ${successful} providers succeed`,async()=>{
+  const h=createSyncHandler({getEnv:n=>env[n],now:()=>now,fetch:async(url)=>{
+    if(url.endsWith('claim_admin_architecture_billing_run'))return Response.json('run-id');
+    if(url.includes('/rest/v1/admin_architecture_subscriptions'))return Response.json([]);
+    if(url.includes('api.github.com'))return successful>0 ? Response.json({usageItems:[]}) : new Response('',{status:503});
+    if(url.includes('backboard.railway.com'))return successful>1 ? Response.json({data:railway}) : new Response('',{status:503});
+    if(url.endsWith('finish_admin_architecture_billing_run'))return Response.json(true);
+    throw Error('unexpected');
+  }});
+  const response=await h(request());
+  assert.equal((await response.json()).status,['failed','partial','completed'][successful]);
+});
+test('storage interruption closes the claimed run without retrying provider requests',async()=>{
+  const calls=[];
+  const h=createSyncHandler({getEnv:n=>env[n],now:()=>now,fetch:async(url,init)=>{
+    calls.push(url);
+    if(url.endsWith('claim_admin_architecture_billing_run'))return Response.json('run-id');
+    if(url.includes('/rest/v1/admin_architecture_subscriptions'))throw Error('private storage error');
+    if(url.endsWith('fail_admin_architecture_billing_run')){assert.deepEqual(JSON.parse(init.body),{p_run_id:'run-id'});return Response.json(true);}
+    throw Error('unexpected');
+  }});
+  const response=await h(request());
+  assert.equal(response.status,503);
+  assert.deepEqual(await response.json(),{error:'SYNC_STORAGE_FAILED'});
+  assert.equal(calls.filter(x=>x.endsWith('fail_admin_architecture_billing_run')).length,1);
+  assert.equal(calls.some(x=>/api.github.com|backboard.railway.com/.test(x)),false);
+});
 test('duplicate daily invocation does not call providers',async()=>{
   let count=0;
   const h=createSyncHandler({getEnv:n=>env[n],now:()=>now,fetch:async url=>{count++; assert.match(url,/claim_admin_architecture_billing_run$/); return Response.json(null);}});
   assert.equal((await (await h(request())).json()).status,'already_claimed');
   assert.equal(count,1);
+});
+test('preview retains stored payment provenance and never claims or writes a run',async()=>{
+  const manualPayment={paymentDate:'2026-08-25',amount:'US$17.00',verifiedAt:'2026-09-20T00:00:00Z',source:'Verified receipt'};
+  const h=createSyncHandler({getEnv:n=>env[n],now:()=>now,fetch:async(url)=>{
+    if(url.includes('/rest/v1/admin_architecture_subscriptions'))return Response.json([{provider:'railway',billing_snapshot:{manualPayment}}]);
+    if(url.includes('api.github.com'))return Response.json({usageItems:[]});
+    if(url.includes('backboard.railway.com'))return Response.json({data:railway});
+    assert.fail('preview attempted a database write');
+  }});
+  const response=await h(new Request('https://test',{method:'POST',headers:{'x-matrix-dispatch-token':'dispatch'},body:'{"dryRun":true}'}));
+  const result=await response.json();
+  assert.equal(result.status,'preview');
+  assert.deepEqual(result.results.railway.snapshot.manualPayment,manualPayment);
+});
+test('failure to close an interrupted run remains a redacted storage error',async()=>{
+  const h=createSyncHandler({getEnv:n=>env[n],now:()=>now,fetch:async(url)=>{
+    if(url.endsWith('claim_admin_architecture_billing_run'))return Response.json('run-id');
+    throw Error('private unavailable database');
+  }});
+  const response=await h(request());
+  assert.equal(response.status,503);
+  assert.deepEqual(await response.json(),{error:'SYNC_STORAGE_FAILED'});
 });
 test('one provider failure preserves that snapshot while other provider succeeds; errors are redacted',async()=>{
   let finish;

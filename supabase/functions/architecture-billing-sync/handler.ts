@@ -44,7 +44,7 @@ function usageCost(items: unknown, field: 'value' | 'estimatedValue') {
     return sum + amount(item[field]) * rates[item.measurement];
   }, 0);
 }
-export function railwaySnapshot(data: Row, now: Date) {
+export function railwaySnapshot(data: Row, now: Date, previous: Row | null = null) {
   const workspace = row(data.workspace), customer = row(workspace.customer);
   if (workspace.id !== workspaceId || !Array.isArray(customer.invoices)) throw Error('INVALID_WORKSPACE');
   const current = amount(customer.currentUsage);
@@ -56,19 +56,25 @@ export function railwaySnapshot(data: Row, now: Date) {
   const active=customer.subscriptions.filter((subscription:Row)=>subscription.status==='active');
   const pending=active.length===1 && Number.isSafeInteger(active[0].nextInvoiceCurrentTotal)
     ? active[0].nextInvoiceCurrentTotal/100 : null;
-  const invoices = customer.invoices.map((invoice: Row) => ({...invoice, sortDate:date(invoice.periodEnd)}))
+  const invoices = customer.invoices.map((invoice: Row): Row => ({...invoice, sortDate:date(invoice.periodEnd)}))
     .sort((a: Row,b: Row) => b.sortDate.localeCompare(a.sortDate));
   const latest = invoices[0];
   if (latest && !Number.isSafeInteger(latest.total)) throw Error('INVALID_INVOICE');
   const estimated = data.estimatedUsage == null || data.usage == null ? null
     : usageCost(data.estimatedUsage,'estimatedValue') + Math.max(0,current-usageCost(data.usage,'value')) + agentAmount;
+  const manualPayment = previous?.manualPayment ?? (previous?.latestPaymentDate && previous?.latestInvoiceAmount
+    ? {paymentDate:previous.latestPaymentDate,amount:previous.latestInvoiceAmount,verifiedAt:previous.verifiedAt,source:previous.source} : null);
+  const source = 'Railway API（全工作區含 Agent）；用量／預估未折抵；待出帳可能延遲；API 未提供付款日期'
+    + (manualPayment ? `；人工核對付款：${date(manualPayment.paymentDate)} ${manualPayment.amount}（核對：${date(manualPayment.verifiedAt)}；非本期付款日期）` : '');
+  if (source.length>200) throw Error('INVALID_PAYMENT_PROVENANCE');
   return {...empty(),
+    manualPayment,
     currentAmount: `${money(current+agentAmount)}（折抵前用量${pending===null?'':`；待出帳快照 ${money(pending)}`}）`,
     estimatedAmount: estimated === null ? null : `${money(estimated)}（折抵前用量預估）`,
     latestInvoiceAmount:latest ? money(latest.total/100) : null,
     latestInvoiceStatus:latest && ['paid','open','void','uncollectible'].includes(latest.status) ? latest.status : null,
     period:`${date(period.start)}－${date(period.end)}（結束時間不含）`,
-    source:'Railway API（工作區全部專案與 Agent）；用量預估未套用方案與抵用額；待出帳快照可能延遲；API 未提供付款日期',
+    source,
     verifiedAt:now.toISOString(),
   };
 }
@@ -124,7 +130,7 @@ export function createSyncHandler(deps: Dependencies) {
                 estimatedUsage(workspaceId:$workspaceId,measurements:$measurements,includeDeleted:true) {measurement estimatedValue}
               }`,variables:{workspaceId,measurements}})});
             if(body.errors?.length) throw Error('PROVIDER_REJECTED');
-            snapshot=railwaySnapshot(row(body.data),now);
+            snapshot=railwaySnapshot(row(body.data),now,rows.find((r:Row)=>r.provider==='railway')?.billing_snapshot??null);
           }
           results[provider]={status:'synced',snapshot};
         } catch { results[provider]={status:'failed',reason:'帳單讀取或格式驗證失敗；保留上次資料'}; }
@@ -134,7 +140,14 @@ export function createSyncHandler(deps: Dependencies) {
       if(dryRun) return json({status:'preview',results});
       const finished=await rpc('finish_admin_architecture_billing_run',{p_run_id:runId,p_results:results});
       if(finished!==true) throw Error('STORAGE_WRITE_FAILED');
-      return json({status:'completed',results:Object.fromEntries(Object.entries(results).map(([name,result])=>[name,{status:result.status,reason:result.reason}]))});
-    } catch { return json({error:'SYNC_STORAGE_FAILED'},503); }
+      const succeeded=['github','railway'].filter(provider=>results[provider].status==='synced').length;
+      return json({status:succeeded===2?'completed':succeeded===1?'partial':'failed',results:Object.fromEntries(Object.entries(results).map(([name,result])=>[name,{status:result.status,reason:result.reason}]))});
+    } catch {
+      if(runId) {
+        try { await rpc('fail_admin_architecture_billing_run',{p_run_id:runId}); }
+        catch { /* A later claim expires abandoned runs when storage recovers. */ }
+      }
+      return json({error:'SYNC_STORAGE_FAILED'},503);
+    }
   };
 }

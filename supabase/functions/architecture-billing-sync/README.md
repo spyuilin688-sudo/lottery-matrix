@@ -13,13 +13,17 @@ POST requires the existing server-only `x-matrix-dispatch-token`. Credentials ar
 
 ## Persistence and failure handling
 
-`claim_admin_architecture_billing_run` provides an atomic, unique Taipei-day claim. Only `service_role` can use the RPCs or read run history. An unauthorized request makes no database/provider calls. A duplicate call returns `already_claimed` without provider calls. One provider failing never overwrites its last good snapshot or blocks the other provider. Malformed/incomplete provider responses fail closed. A process crash leaves a visible `running` record; it does not automatically loop or retry that day.
+`claim_admin_architecture_billing_run` provides an atomic, unique Taipei-day claim. Only `service_role` can use the RPCs or read run history. An unauthorized request makes no database/provider calls. A duplicate call returns `already_claimed` without provider calls. One provider failing never overwrites its last good snapshot or blocks the other provider. Malformed/incomplete provider responses fail closed.
+
+HTTP result status and database status both distinguish `completed`, `partial` and `failed` for the two supported providers. A caught storage failure closes an acquired run through the idempotent `fail_admin_architecture_billing_run`; it cannot overwrite an already finished run. If the process is killed or storage is unavailable, the next claim expires records older than the existing ten-minute completion window. This normally happens on the next daily invocation; no extra poller, provider retry or second daily attempt is introduced.
+
+Railway's previously verified payment is retained in `manualPayment` with its amount, date, source and original verification time. The existing source text displays it explicitly as historical manual verification, separate from the current invoice. Never copy that date to a different invoice. The repair migration recovers this metadata from the saved pre-sync snapshot without changing billing verification time, current usage, plans or other providers.
 
 `finish_admin_architecture_billing_run` locks the running record, rejects stale/duplicate completion, saves prior snapshots for rollback and updates successful snapshots in one transaction. Plan, price and renewal fields are not inferred from billing usage. The durable results record explicitly lists the two pending providers.
 
 ## Verification and rollback
 
-Run `node --test tests/architecture-billing-sync.test.mjs tests/architecture-billing-preflight.test.mjs`.
+Run `node --test tests/architecture-billing-sync.test.mjs tests/architecture-billing-preflight.test.mjs tests/architecture-billing-recovery.test.mjs`. The recovery suite uses the project's existing PGlite dependency for actual SQL migrations, access checks and state transitions.
 
 Verify API previews against provider UI before enabling the cron. Check `cron.job_run_details`, the run record and persisted snapshot together; a queued HTTP request alone is not proof of synchronization.
 
