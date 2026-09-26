@@ -15,7 +15,7 @@ it('labels the actual invoice, payment date and unfinalized charges without turn
   expect(within(railway).getByText('2024-02-01')).toBeTruthy();
   expect(within(railway).getByText('本期累計')).toBeTruthy();
   expect(within(railway).getByText('US$13.47')).toBeTruthy();
-  expect(within(railway).getByText('預估帳單')).toBeTruthy();
+  expect(within(railway).getByText('預估金額')).toBeTruthy();
   expect(within(railway).getByText('US$14.08')).toBeTruthy();
   expect(within(railway).getByText('尚未取得')).toBeTruthy();
   expect(within(screen.getByRole('article', { name: 'GitHub' })).getByText('帳單尚未取得')).toBeTruthy();
