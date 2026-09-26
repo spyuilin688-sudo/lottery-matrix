@@ -19,7 +19,10 @@ test.each([
   const query = new URL(requestPage.mock.calls[0][0], 'https://test').searchParams;
   expect(query.get('limit')).toBe(String(pageSize)); expect(query.get('offset')).toBe(String(pageSize));
   expect(query.get('status')).toBe('in.(disabled,inactive,停用)');
-  expect(request.mock.calls.filter(([p]) => p.includes('member_online_sessions')).every(([p]) => new URL(p, 'https://test').searchParams.get('member_id') === 'in.(11111111-1111-4111-8111-111111111111)')).toBe(true);
+  expect(request).toHaveBeenCalledWith('/rest/v1/rpc/admin_member_online_summary', expect.objectContaining({
+    method: 'POST', body: expect.stringContaining('"p_member_ids":["11111111-1111-4111-8111-111111111111"]'),
+  }));
+  expect(request.mock.calls.some(([p]) => p.includes('/member_online_sessions?'))).toBe(false);
 });
 
 test('search includes plan, nickname, referral and invitation before pagination and escapes filter syntax', async () => {

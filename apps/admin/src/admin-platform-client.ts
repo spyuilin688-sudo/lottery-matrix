@@ -47,9 +47,17 @@ export function createAdminApiClient(options: AdminApiClientOptions = {}) {
   const fetcher = options.fetcher ?? fetch;
   const timeoutMs = options.timeoutMs ?? 15_000;
 
-  async function request(method: string, path: string, body?: unknown) {
+  async function request(method: string, path: string, body?: unknown, signal?: AbortSignal) {
     const url = adminApiPath(path);
     const controller = new AbortController();
+    const cancelled = () => new DOMException('列表重新載入已取消', 'AbortError');
+    if (signal?.aborted) throw cancelled();
+    let abortRead: (() => void) | undefined;
+    const cancellation = new Promise<never>((_, reject) => {
+      if (!signal) return;
+      abortRead = () => { controller.abort(); reject(cancelled()); };
+      signal.addEventListener('abort', abortRead, { once: true });
+    });
     let timeout: ReturnType<typeof setTimeout>;
     const deadline = new Promise<never>((_, reject) => {
       timeout = setTimeout(() => {
@@ -58,10 +66,11 @@ export function createAdminApiClient(options: AdminApiClientOptions = {}) {
       }, timeoutMs);
     });
     try {
-      return await Promise.race([deadline, (async () => {
+      return await Promise.race([deadline, cancellation, (async () => {
         const headers = new Headers({ Accept: 'application/json' });
         if (body !== undefined) headers.set('Content-Type', 'application/json');
         const bearer = await options.bearerToken?.();
+        if (signal?.aborted) throw cancelled();
         if (controller.signal.aborted) throw new AdminApiError('ADMIN_API_TIMEOUT', 504);
         if (bearer) headers.set('Authorization', `Bearer ${bearer}`);
         const response = await fetcher(url, {
@@ -82,16 +91,18 @@ export function createAdminApiClient(options: AdminApiClientOptions = {}) {
         return { data };
       })()]);
     } catch (cause) {
+      if (signal?.aborted) throw cancelled();
       if (cause instanceof AdminApiError) throw cause;
       if (controller.signal.aborted) throw new AdminApiError('ADMIN_API_TIMEOUT', 504);
       throw new AdminApiError('ADMIN_API_UNAVAILABLE', 503);
     } finally {
       clearTimeout(timeout!);
+      if (abortRead) signal?.removeEventListener('abort', abortRead);
     }
   }
 
   return {
-    get: (path: string) => request('GET', path),
+    get: (path: string, config?: { signal?: AbortSignal }) => request('GET', path, undefined, config?.signal),
     post: (path: string, body?: unknown) => request('POST', path, body),
     put: (path: string, body?: unknown) => request('PUT', path, body),
     delete: (path: string, config?: RequestConfig) => request('DELETE', path, config?.data),

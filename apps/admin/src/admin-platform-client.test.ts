@@ -150,3 +150,38 @@ describe('Cloudflare admin API client', () => {
     await expect(client.get('https://attacker.test/collect')).rejects.toThrow('ADMIN_API_PATH_INVALID');
   });
 });
+
+it('cancels a GET during token loading without fetching or misreporting a timeout', async () => {
+  let resolve!: (value: string) => void;
+  const bearer = new Promise<string>(yes => { resolve = yes; });
+  const fetcher = vi.fn();
+  const client = createAdminApiClient({ fetcher, bearerToken: () => bearer });
+  const controller = new AbortController();
+  const pending = client.get('/api/data/users', { signal: controller.signal });
+  const assertion = expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+  controller.abort();
+  await assertion;
+  resolve('token');
+  await Promise.resolve();
+  expect(fetcher).not.toHaveBeenCalled();
+});
+
+it('forwards GET cancellation to fetch and leaves independent writes running', async () => {
+  const signals: AbortSignal[] = [];
+  const fetcher = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+    signals.push(init!.signal!);
+    return new Promise<Response>(resolve => {
+      if (init?.method === 'POST') resolve(new Response('{}'));
+    });
+  });
+  const client = createAdminApiClient({ fetcher });
+  const controller = new AbortController();
+  const pending = client.get('/api/data/users', { signal: controller.signal });
+  const assertion = expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+  await Promise.resolve();
+  controller.abort();
+  await assertion;
+  expect(signals[0].aborted).toBe(true);
+  await expect(client.post('/api/todos', {})).resolves.toEqual({ data: {} });
+  expect(signals[1].aborted).toBe(false);
+});

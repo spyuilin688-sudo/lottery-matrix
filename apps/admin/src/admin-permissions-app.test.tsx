@@ -198,7 +198,7 @@ describe('administrator operation permission editing', () => {
       expect(container.querySelector('#transfer-requests')).not.toBeNull();
       expect(container.querySelector('[aria-label="新轉帳手機通知"]')).not.toBeNull();
       expect(subscriptionTab(container, '轉帳申請').getAttribute('aria-selected')).toBe('true');
-      expect(app.api.get).toHaveBeenCalledWith(expect.stringContaining('/api/data/transferRequests?page=1&'));
+      expect(app.api.get).toHaveBeenCalledWith(expect.stringContaining('/api/data/transferRequests?page=1&'), expect.objectContaining({ signal: expect.any(AbortSignal) }));
     } finally { window.history.replaceState(null, '', '/'); }
   });
 
@@ -225,7 +225,7 @@ describe('administrator operation permission editing', () => {
     expect(subscriptionTab(container, '訂閱會員').getAttribute('aria-selected')).toBe('true');
     await act(async () => subscriptionTab(container, '付款紀錄').click());
 
-    await waitFor(() => expect(app.api.get).toHaveBeenCalledWith(expect.stringContaining('/api/data/subscriptionRecords?page=1&')));
+    await waitFor(() => expect(app.api.get).toHaveBeenCalledWith(expect.stringContaining('/api/data/subscriptionRecords?page=1&'), expect.objectContaining({ signal: expect.any(AbortSignal) })));
     await waitFor(() => expect(container.querySelector('[aria-label="記錄沖銷 payment-1"]')).not.toBeNull());
     const open = container.querySelector<HTMLButtonElement>('[aria-label="記錄沖銷 payment-1"]');
     await act(async () => open?.click());
@@ -244,7 +244,7 @@ describe('administrator operation permission editing', () => {
     expect(app.api.put).toHaveBeenCalledWith('/api/payments/payment-1/reversal', {
       status: 'refunded', reason: '銀行退款已完成',
     });
-    expect(app.api.get).toHaveBeenCalledWith(expect.stringContaining('/api/data/subscriptions?page=1&'));
+    expect(app.api.get).toHaveBeenCalledWith(expect.stringContaining('/api/data/subscriptions?page=1&'), expect.objectContaining({ signal: expect.any(AbortSignal) }));
     expect(container.querySelector('[role="status"]')?.textContent).toContain('付款紀錄已更新');
     expect(container.querySelector('[role="status"]')?.textContent).toContain('會員訂閱清單將於開啟時重新載入');
     expect(app.api.get.mock.calls.filter(([url]) => String(url).startsWith('/api/data/subscriptions?'))).toHaveLength(1);
@@ -887,7 +887,7 @@ describe('administrator operation permission editing', () => {
     await act(async () => title?.click());
     expect(container.querySelector('header')?.textContent).toContain('啟動碼管理');
     await act(async () => title?.click());
-    await waitFor(() => expect(app.api.get).toHaveBeenCalledWith(expect.stringContaining('/api/data/privateActivationCodes?')));
+    await waitFor(() => expect(app.api.get).toHaveBeenCalledWith(expect.stringContaining('/api/data/privateActivationCodes?'), expect.objectContaining({ signal: expect.any(AbortSignal) })));
     expect(container.querySelector('header')?.textContent).toContain('隱藏啟動碼管理');
     expect(container.textContent).toContain('SECR-ET00-0000-0001');
     expect(container.querySelector('nav')?.textContent).not.toContain('隱藏啟動碼管理');
@@ -897,7 +897,7 @@ describe('administrator operation permission editing', () => {
     await act(async () => within(within(container).getByRole('alertdialog')).getByRole('button', { name: '確認建立' }).click());
     await waitFor(() => expect(app.api.post).toHaveBeenCalledWith('/api/activation-codes/batch',
       expect.objectContaining({ private: true, durationType: '30_days', quantity: 10 })));
-    expect(app.api.get).toHaveBeenCalledWith(expect.stringContaining('/api/data/privateActivationCodes?'));
+    expect(app.api.get).toHaveBeenCalledWith(expect.stringContaining('/api/data/privateActivationCodes?'), expect.objectContaining({ signal: expect.any(AbortSignal) }));
   });
 
   it('does not offer the hidden entry to other super administrators', async () => {
@@ -906,6 +906,6 @@ describe('administrator operation permission editing', () => {
     await act(async () => buttonWithText(container, '啟動碼管理')?.click());
     await settle();
     expect(container.querySelector('header .privateActivationTitle')).toBeNull();
-    expect(app.api.get).not.toHaveBeenCalledWith(expect.stringContaining('/api/data/privateActivationCodes?'));
+    expect(app.api.get).not.toHaveBeenCalledWith(expect.stringContaining('/api/data/privateActivationCodes?'), expect.objectContaining({ signal: expect.any(AbortSignal) }));
   });
 });

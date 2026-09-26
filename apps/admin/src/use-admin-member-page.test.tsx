@@ -50,9 +50,9 @@ describe('useAdminMemberPage subscription filters', () => {
     await act(async () => { root.render(<Harness />); });
     await vi.waitFor(() => expect(get).toHaveBeenCalled());
     await act(async () => { container.querySelector('button')?.click(); });
-    await vi.waitFor(() => expect(get).toHaveBeenCalledWith('/api/data/subscriptions?page=1&keyword=&status=all&startDate=&endDate=&sortBy=planStartedAt&sortDirection=desc&plan=quarterly'));
+    await vi.waitFor(() => expect(get).toHaveBeenCalledWith('/api/data/subscriptions?page=1&keyword=&status=all&startDate=&endDate=&sortBy=planStartedAt&sortDirection=desc&plan=quarterly', expect.objectContaining({ signal: expect.any(AbortSignal) })));
 
-    expect(get).toHaveBeenLastCalledWith('/api/data/subscriptions?page=1&keyword=&status=all&startDate=&endDate=&sortBy=planStartedAt&sortDirection=desc&plan=quarterly');
+    expect(get).toHaveBeenLastCalledWith('/api/data/subscriptions?page=1&keyword=&status=all&startDate=&endDate=&sortBy=planStartedAt&sortDirection=desc&plan=quarterly', expect.objectContaining({ signal: expect.any(AbortSignal) }));
     expect(container.textContent).toBe('quarterly');
   });
 });
