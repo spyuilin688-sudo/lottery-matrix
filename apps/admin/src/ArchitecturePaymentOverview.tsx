@@ -53,13 +53,13 @@ export function ArchitecturePaymentOverview({ item, loading, error, today }: {
   return <dl className="architecturePaymentFacts">
     <div><dt>本期結束</dt><dd className={cycle ? '' : 'architectureUnknown'}>{cycle ? <><time dateTime={cycle.end}>{cycle.precision === 'timestamp' ? formatAdminDateTime(cycle.end) : cycle.end}</time><small>{cycle.precision === 'timestamp' ? '台灣時間' : '時間未提供'}</small></> : unavailable}</dd></div>
     <div><dt>距本期結束</dt><dd className={cycle ? '' : 'architectureUnknown'}>{loading || error ? unavailable : remainingCycleDays(cycle, today)}</dd></div>
-    {renewalDate && <div><dt>方案續費日</dt><dd><time dateTime={renewalDate}>{renewalDate}</time><small>時間未提供；不代表扣款日</small></dd></div>}
-    {billing?.nextInvoiceAt && <div><dt>下次出帳</dt><dd><time dateTime={billing.nextInvoiceAt}>{formatAdminDateTime(billing.nextInvoiceAt)}</time><small>台灣時間；非實際扣款時間</small></dd></div>}
+    {renewalDate && <div><dt>方案續費日</dt><dd><time dateTime={renewalDate}>{renewalDate}</time><small>時間未提供；非扣款日</small></dd></div>}
+    {billing?.nextInvoiceAt && <div><dt>下次出帳</dt><dd><time dateTime={billing.nextInvoiceAt}>{formatAdminDateTime(billing.nextInvoiceAt)}</time><small>台灣時間；非扣款時間</small></dd></div>}
     <div><dt>付款日期</dt><dd className={account?.paymentDate ? '' : 'architectureUnknown'}>{account?.paymentDate ? <><time dateTime={account.paymentDate}>{account.paymentDate}</time><small>時間未提供</small></> : unavailable}</dd></div>
     <div><dt>距離付款</dt><dd className={account?.paymentDate ? '' : 'architectureUnknown'}>{loading || error ? unavailable : remainingDays(account?.paymentDate, today)}</dd></div>
-    <div><dt>目前累計</dt><dd className={amount ? '' : 'architectureUnknown'}>{amount ?? unavailable}{note && <small>{note}</small>}</dd></div>
+    <div><dt>本期累計</dt><dd className={amount ? '' : 'architectureUnknown'}>{amount ?? unavailable}{note && <small>{note}</small>}</dd></div>
     <div><dt>本次應付</dt><dd className={account?.paymentKind === 'due' && account.paymentAmount ? '' : 'architectureUnknown'}>{account?.paymentKind === 'due' ? account.paymentAmount ?? unavailable : unavailable}</dd></div>
     {pending && <div><dt>待出帳</dt><dd>{pending}<small>非最終應付</small></dd></div>}
-    {account?.paymentKind === 'estimate' && account.paymentAmount && <div><dt>預估應付</dt><dd>{account.paymentAmount}<small>原核對資料，非最終應付</small></dd></div>}
+    {account?.paymentKind === 'estimate' && account.paymentAmount && <div><dt>預估應付</dt><dd>{account.paymentAmount}<small>人工核對預估，非最終應付</small></dd></div>}
   </dl>;
 }

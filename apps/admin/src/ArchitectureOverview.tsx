@@ -7,11 +7,11 @@ import { ArchitecturePaymentOverview, usePaymentDay } from './ArchitecturePaymen
 
 type Client = { get(path: string): Promise<{ data: unknown }> };
 const invoiceStatuses = { paid: '已付款', open: '待付款', void: '已作廢', uncollectible: '無法收款' };
-const providerSyncNotes = {
-  github: '每日 09:20 自動更新用量費用；方案費、方案額度及付款紀錄保留原核對資料。用量接口未提供整期預估、下次扣款金額、日期或剩餘方案額度。',
-  railway: '每日 09:20 自動更新帳期結束、下次出帳時間、全工作區及 Agent 用量、預估、待出帳與最近帳單。分項折抵、支出上限及實際扣款日未由目前同步接口取得。',
-  supabase: '尚未接通組織帳務自動同步；費用、額度及帳單保留上次官方帳務頁核對結果，不代表目前即時用量。',
-  cloudflare: '每日 09:20 自動更新已取得的額度上限；每月用量、待繳金額及扣款日仍未取得。',
+const providerSyncDetails = {
+  github: [['更新時間', '每日 09:20'], ['自動更新', '用量費用'], ['人工核對', '方案費、方案額度、付款紀錄'], ['尚未取得', '整期預估、扣款金額與日期、剩餘方案額度']],
+  railway: [['更新時間', '每日 09:20'], ['自動更新', '帳期、下次出帳、全工作區與 Agent 用量、預估、待出帳、最近帳單'], ['尚未取得', '分項折抵、支出上限、實際扣款日']],
+  supabase: [['自動更新', '尚未接通'], ['人工核對', '費用、額度、帳單；保留上次資料，非即時用量']],
+  cloudflare: [['更新時間', '每日 09:20'], ['自動更新', '部分額度上限'], ['尚未取得', '每月用量、待繳金額、扣款日']],
 };
 
 export function ArchitectureOverview({ client }: { client: Client }) {
@@ -42,7 +42,7 @@ export function ArchitectureOverview({ client }: { client: Client }) {
 
   return (
     <div className="architectureOverview" aria-label="平台訂閱總覽" aria-busy={loading}>
-      <p className="architectureNote">金額以美元計價。本期結束是結帳時間，與實際扣款日分開顯示；天數按台灣日期計算。</p>
+      <p className="architectureNote">美元計價；時間與天數依台灣時區。本期結束不等於扣款日。</p>
       {loading && <div className="loading" role="status">讀取訂閱資料中…</div>}
       {error && <div className="architectureError"><p className="error" role="alert">{error}</p><button type="button" className="compactButton" disabled={loading} onClick={() => setAttempt(value => value + 1)}>重新載入</button></div>}
       <div className="architectureGrid">
@@ -57,26 +57,25 @@ export function ArchitectureOverview({ client }: { client: Client }) {
               <header className="architectureProviderHeader"><h2 id={`architecture-${provider.id}`}>{provider.name}</h2><span>{item?.plan ?? missing}</span></header>
               <ArchitecturePaymentOverview item={item} loading={loading} error={error} today={today} />
               <details className="architectureDisclosure">
-                <summary className="architectureSummary">費用、額度與付款明細<span className="architectureChevron" aria-hidden="true">⌄</span></summary>
+                <summary className="architectureSummary">查看帳務明細<span className="architectureChevron" aria-hidden="true">⌄</span></summary>
                 <div className="architectureDetailBody">
                   <details className="architectureSection" aria-label={`${provider.name} 更新狀態`}><summary>資料更新狀態</summary>
-                    <p>{loading ? '讀取中…' : error ? '資料讀取失敗' : !billing ? '尚未取得帳務資料' : provider.id === 'supabase' ? '尚未接通帳務自動更新' : billing?.usageBreakdown?.length ? '用量明細自動更新' : provider.id === 'cloudflare' ? '額度上限部分自動更新' : '用量總額部分自動更新'}</p>
-                    <p>{providerSyncNotes[provider.id]}</p>
+                    {(loading || error || !billing) && <p>{loading ? '讀取中…' : error ? '資料讀取失敗' : '帳務資料未取得'}</p>}
+                    <dl className="architectureFacts">{providerSyncDetails[provider.id].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
                   </details>
                   <details className="architectureSection" aria-label={`${provider.name} 付款說明`}><summary>付款說明</summary>
-                    {provider.id === 'cloudflare' && !account && billing?.source && <p>{billing.source}</p>}
-                    <p>{account?.paymentDateNote || (account?.paymentDate ? '付款日期取自官方帳務頁人工核對。' : '尚未取得已核對的下次扣款日期；續費日期與帳務期間不能視為實際扣款日。')}</p>
-                    <p>{account?.paymentNote || (amount ? '金額依標示區分已確認應繳、預估與待出帳，以平台最終帳單為準。' : '尚未取得已核對的本次應繳金額；方案費用與用量不等於實際扣款。')}</p>
+                    <p>{account?.paymentDate ? '付款日期由官方帳務頁人工核對。' : '扣款日期未取得；出帳日與續費日不是扣款日。'}</p>
+                    <p>{amount ? '預估、待出帳與應繳分開列示，以最終帳單為準。' : '本次應付未取得；方案費與用量不代表實際扣款。'}</p>
                     {provider.id !== 'cloudflare' && <dl className="architectureFacts">
-                      <div><dt>{billing?.pendingAmount ? '待出帳金額（自動更新）' : '待出帳金額'}</dt><dd>{billing?.pendingAmount ?? '未取得；目前同步資料未提供'}</dd></div>
+                      <div><dt>待出帳金額</dt><dd>{billing?.pendingAmount ?? '未取得'}{billing?.pendingAmount && <small>自動更新</small>}</dd></div>
                     </dl>}
-                    {billing?.pendingAmount && <p>待出帳為平台回傳的暫存金額，可能延遲，不代表已扣款或最終應繳；不再自行扣除折抵。</p>}
+                    {billing?.pendingAmount && <p>平台暫存金額可能延遲，尚非最終帳單。</p>}
 
                   </details>
                   <details className="architectureSection" aria-label={`${provider.name} 費用組成`}><summary>費用組成</summary>
                     {account?.costs.length ? <><dl className="architectureFacts">{account.costs.map((cost, index) => <div key={`${cost.label}-${index}`}><dt>{cost.label}</dt><dd>{cost.value}{cost.note && <small>{cost.note}</small>}</dd></div>)}</dl></> : <>
                       <dl className="architectureFacts"><div><dt>方案費用</dt><dd>{item?.fee ?? '尚未確認'}</dd></div></dl>
-                      <p>尚未取得已核對的費用組成與折抵明細。</p>
+                      <p>費用組成與折抵明細未取得。</p>
                     </>}
                     {billing && <>
                       <dl className="architectureFacts architectureUsage">
@@ -84,11 +83,11 @@ export function ArchitectureOverview({ client }: { client: Client }) {
                         <div><dt>本期累計</dt><dd>{billing.currentAmount ?? '尚未確認'}</dd></div>
                         <div><dt>平台預估</dt><dd>{billing.estimatedAmount ?? '尚未確認'}</dd></div>
                       </dl>
-                      <p>用量金額可能尚未計入折抵，不代表本次應繳。計價與折抵範圍見資料來源。</p>
+                      <p>用量可能未扣折抵，非最終應付；計價範圍見資料來源。</p>
                     </>}
                   </details>
                   {!!billing?.usageBreakdown?.length && <details className="architectureSection" aria-label={`${provider.name} 自動用量明細`}><summary>本期用量與費用明細</summary>
-                    <p>{provider.id === 'github' ? '用量按產品及計價項目彙總，不含方案月費；不同單位不可直接相加，計費用量不等於已消耗的免費額度。' : '資源費用為折抵前用量，依既有計價換算；分項折抵與折抵後金額未取得。'}</p>
+                    <p>{provider.id === 'github' ? '不含方案月費。各項用量分開計算，不能當成免費額度用量。' : '費用依既有單價換算，尚未扣除折抵。'}</p>
                     <div className="architectureQuotas">{billing.usageBreakdown.map((detail,index) => <div className="architectureQuota" key={`${detail.label}-${index}`}>
                       <h4>{detail.label}</h4>
                       <dl><div><dt>計費用量</dt><dd>{detail.quantity ?? '未取得'}</dd></div><div><dt>折抵前費用</dt><dd>{detail.grossAmount ?? '未取得'}</dd></div><div><dt>折抵金額</dt><dd>{detail.discountAmount ?? '未取得分項折抵'}</dd></div><div><dt>折抵後費用</dt><dd>{detail.netAmount ?? '未取得'}</dd></div></dl>
@@ -96,14 +95,14 @@ export function ArchitectureOverview({ client }: { client: Client }) {
                   </details>}
                   <details className="architectureSection" aria-label={`${provider.name} 額度與用量`}><summary>額度與用量</summary>
                     {!!billing?.limits?.length && <>
-                      <p className="architectureVerified">上限自動更新：<time dateTime={billing.verifiedAt}>{formatAdminDateTime(billing.verifiedAt)}</time>（僅上限，非已用量）</p>
+                      <p className="architectureVerified">上限更新：<time dateTime={billing.verifiedAt}>{formatAdminDateTime(billing.verifiedAt)}</time>（非已用量）</p>
                       <dl className="architectureFacts">{billing.limits.map(limit => <div key={limit.label}><dt>{limit.label}</dt><dd>{limit.value}</dd></div>)}</dl>
                     </>}
                     {account?.quotas.length ? <><div className="architectureQuotas">{account.quotas.map((quota, index) => <div className="architectureQuota" key={`${quota.label}-${index}`}>
                       <h4>{quota.label}</h4>
                       <dl><div><dt>包含額度／上限</dt><dd>{quota.included}</dd></div><div><dt>已用</dt><dd>{quota.used}</dd></div><div><dt>剩餘</dt><dd>{quota.remaining}</dd></div><div><dt>重置時間</dt><dd>{quota.reset}</dd></div></dl>
                       {quota.note && <p>{quota.note}</p>}
-                    </div>)}</div></> : <p>{billing?.limits?.length ? '每月建置已用量、剩餘額度與重置時間尚未取得。' : '尚未取得已核對的額度明細；未知用量與剩餘額度不以 0 顯示。'}</p>}
+                    </div>)}</div></> : <p>{billing?.limits?.length ? '每月建置用量、剩餘額度與重置時間未取得。' : '額度明細未取得；未知值不以 0 表示。'}</p>}
                   </details>
                   <details className="architectureSection" aria-label={`${provider.name} 帳單與付款紀錄`}><summary>帳單與付款紀錄</summary>
                     {billing ? <>
@@ -117,17 +116,23 @@ export function ArchitectureOverview({ client }: { client: Client }) {
                         <dl className="architectureFacts"><div><dt>付款日期</dt><dd><time dateTime={billing.manualPayment.paymentDate}>{billing.manualPayment.paymentDate}</time></dd></div><div><dt>付款金額</dt><dd>{billing.manualPayment.amount}</dd></div></dl>
                         <p className="architectureVerified">原核對時間：{formatAdminDateTime(billing.manualPayment.verifiedAt)}；{billing.manualPayment.source}</p>
                       </>}
-                      <p>最近帳單與歷史已核對付款分開列示；帳單標示已付款，不代表已取得實際付款日期。</p>
+                      <p>帳單標示「已付款」，不代表付款日期已取得。</p>
                     </> : <p>尚未取得帳單與付款紀錄。</p>}
                   </details>
                   <details className="architectureSource">
                     <summary>資料來源與更新時間</summary>
-                    <p>{providerSyncNotes[provider.id]} 自動更新失敗時保留上次成功資料。</p>
-                    <p className="architectureVerified">方案確認：{item?.verifiedAt ? <time dateTime={item.verifiedAt}>{formatAdminDateTime(item.verifiedAt)}</time> : '尚未確認'}</p>
-                    {item?.renewalDate && <p>方案續費紀錄：<time dateTime={item.renewalDate}>{item.renewalDate}</time>（不代表扣款日）</p>}
-                    {billing && <><p className="architectureVerified">帳務資料更新：<time dateTime={billing.verifiedAt}>{formatAdminDateTime(billing.verifiedAt)}</time>（不代表歷史付款重新核對）</p><p>{billing.source}</p></>}
-                    {billing?.billingCycle && <p className="architectureVerified">帳期核對：{formatAdminDateTime(billing.billingCycle.verifiedAt)}（台灣時間）；{billing.billingCycle.source}</p>}
-                    {account && <><p className="architectureVerified">付款、費用及額度原核對：{formatAdminDateTime(account.verifiedAt)}（台灣時間；非每日同步）</p><p>{account.source}</p></>}
+                    {provider.id !== 'supabase' && <p>自動更新失敗時，保留上次成功資料。</p>}
+                    <dl className="architectureFacts">
+                      <div><dt>方案確認</dt><dd>{item?.verifiedAt ? <time dateTime={item.verifiedAt}>{formatAdminDateTime(item.verifiedAt)}</time> : '尚未確認'}</dd></div>
+                      {item?.renewalDate && <div><dt>續費紀錄</dt><dd><time dateTime={item.renewalDate}>{item.renewalDate}</time><small>非扣款日</small></dd></div>}
+                      {billing && <div><dt>帳務更新</dt><dd><time dateTime={billing.verifiedAt}>{formatAdminDateTime(billing.verifiedAt)}</time><small>歷史付款未重新核對</small></dd></div>}
+                      {billing?.billingCycle && <div><dt>帳期核對</dt><dd>{formatAdminDateTime(billing.billingCycle.verifiedAt)}<small>{billing.billingCycle.source}</small></dd></div>}
+                      {account && <div><dt>人工核對</dt><dd>{formatAdminDateTime(account.verifiedAt)}<small>付款、費用、額度；非自動更新</small></dd></div>}
+                      {billing && <div><dt>帳務來源</dt><dd>{billing.source}</dd></div>}
+                      {account && <div><dt>核對來源</dt><dd>{account.source}</dd></div>}
+                      {account?.paymentDateNote && <div><dt>付款日期依據</dt><dd>{account.paymentDateNote}</dd></div>}
+                      {account?.paymentNote && <div><dt>付款金額依據</dt><dd>{account.paymentNote}</dd></div>}
+                    </dl>
                   </details>
                   <a className="compactButton architectureLink" href={provider.url} target="_blank" rel="noopener noreferrer" aria-label={`${provider.name} 管理訂閱（另開分頁）`}>管理訂閱 <span aria-hidden="true">↗</span></a>
                 </div>
