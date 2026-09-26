@@ -30,4 +30,10 @@ App 會員、權限、通知設定、在線紀錄、原生推播、管理後台�
 
 ## 審查與遠端驗證
 
-獨立程式審查、真實 PostgreSQL CI、APK/AAB 建置結果待記錄。未執行正式部署或 main 合併。
+獨立審查已完成，沒有未解決的 Critical／Important 程式問題。修正包含：App 選號提醒產生與刪除、保留共用 session 時不呼叫 GoTrue logout、限制測試 DB URL／環境覆寫、停用帳號的正確提示、後台註冊時間。
+
+GitHub Actions run 36243852323（工作分支 commit a6263d9dda042cd6c7c19d02af1064743da0a251）完整通過：45 項 SQL／邊界測試、真實 PostgreSQL 17 多連線測試、30 項 App API/UI、9 項 App Edge，以及 build:pages。真實 PostgreSQL 包含首次加入並行、PWA 加入與 App 刪除的兩種順序、收入唯一事件及推播租約互斥。初次 run 36243526225 的 psql adapter 分號問題已修復，沒有跳過失敗項目。
+
+後續測試修正僅替 due-reminder 案例提供當日開獎覆寫並在案例後移除，避免週日影響測試；本機4項 reminder tests 通過。審查者最後讀取此小修改遇到舊工作目錄過期，此限制保留；遠端 CI 會再次驗證。
+
+Android 工作分支 commit cdbefddd5b5624683a806cfe1d3eef9e08601d1b、原生 bundle tree cc4f75a1f80e2d40b8bd0550b9553c2174650018 與本機一致。APK/AAB 建置 run 36244088935 結果另見 Android 專案提審紀錄。未執行正式部署、main 合併或 Play 上傳。

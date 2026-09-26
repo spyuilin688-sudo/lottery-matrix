@@ -28,6 +28,7 @@ test('selected-time App reminders are durable, member scoped, idempotent and nev
  assert.equal((await db.query('select private.notification_reminder_is_due($1,$2) ok',[events[0].payload,'2026-09-26T11:00:01Z'])).rows[0].ok,true);
 });
 test('a due personal reminder reaches native prepare for only its App device',async()=>{
+ await db.exec("insert into private.notification_draw_day_overrides values('今彩539',(now() at time zone 'Asia/Taipei')::date,true);");
  const installation=randomUUID();
  await asUser(db,who,()=>rpc(db,'app_native_push_save',[installation,'fixture-token-'+installation,'android']));
  // Advance the generated event to the fixture's real delivery clock; keep the
@@ -36,6 +37,7 @@ test('a due personal reminder reaches native prepare for only its App device',as
  const [claim]=await rpc(db,'app_native_notification_claim',[20]);assert.ok(claim);
  const delivery=await rpc(db,'app_native_notification_prepare',[claim.delivery_id,claim.claim_id]);
  assert.equal(delivery.token,'fixture-token-'+installation);
+ await db.exec("delete from private.notification_draw_day_overrides where lottery='今彩539' and draw_date=(now() at time zone 'Asia/Taipei')::date;");
  assert.equal((await db.query('select count(*)::int n from private.app_native_push_outbox')).rows[0].n,1);
 });
 test('disabled, wrong-minute and non-draw-day members receive no new reminder',async()=>{
