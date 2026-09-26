@@ -59,9 +59,9 @@ import { AdminTransferPush } from "./AdminTransferPush";
 import { PaymentReversalPanel, type PaymentRecord, type PaymentReversalStatus } from "./PaymentReversalPanel";
 import { PermissionSwitches } from "./PermissionSwitches";
 import { GrowthLineChart } from "./GrowthLineChart";
+import { ArchitectureOverview } from "./ArchitectureOverview";
 const NotificationManagement = lazy(() => import("./NotificationManagement").then(({ NotificationManagement }) => ({ default: NotificationManagement })));
 const AdminTodos = lazy(() => import("./AdminTodos").then(({ AdminTodos }) => ({ default: AdminTodos })));
-const ArchitectureOverview = lazy(() => import("./ArchitectureOverview").then(({ ArchitectureOverview }) => ({ default: ArchitectureOverview })));
 type Row = Record<string, unknown> & { id: string };
 type Dashboard = {
   todayVisitors: number | null;
