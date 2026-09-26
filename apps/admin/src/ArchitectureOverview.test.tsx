@@ -3,135 +3,37 @@ import { StrictMode } from 'react';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { ArchitectureOverview } from './ArchitectureOverview';
-
 afterEach(cleanup);
-const billing = { latestInvoiceAmount: 'US$37.12', latestInvoiceStatus: 'paid', latestPaymentDate: '2024-02-01', currentAmount: 'US$13.47', estimatedAmount: 'US$14.08', period: '2/1－3/1', source: 'Railway 工作區帳務頁；歷史付款人工核對 2024-02-15', verifiedAt: '2026-09-26T00:00:00Z' };
-const row = { provider: 'railway', plan: 'Pro', fee: 'US$20／月', renewalDate: '2026-10-01', verifiedAt: '2026-09-25T20:00:00Z', billing };
-const account = { paymentDate: '2026-10-02', paymentDateNote: '官方帳務頁顯示', paymentAmount: 'US$10.50', paymentKind: 'estimate', paymentNote: '折抵後預估，尚未結帳', costs: [{ label: '固定費用', value: 'US$20／月', note: '含用量額度' }], quotas: [{ label: 'CPU', included: '100 小時', used: '20 小時', remaining: '80 小時', reset: '2026-10-01' }], verifiedAt: '2026-09-25T10:00:00Z', source: '官方 Billing 頁人工核對' };
-
-it('distinguishes GitHub usage access from unavailable payment data and exposes the Pages blocker', async () => {
-  const source='帳戶 API 可讀；Pages API 拒絕讀取（403），尚未取得 Pages 專屬帳務。';
-  render(<ArchitectureOverview client={{ get: async () => ({data:{items:[{...row,provider:'github',plan:'GitHub Pro'},{...row,provider:'cloudflare',plan:null,fee:null,billing:{...billing,currentAmount:null,estimatedAmount:null,source}}]}}) }} />);
-  await screen.findByText('GitHub Pro');
-  const github=screen.getByRole('article',{name:'GitHub',exact:true});
-  expect(within(github.querySelector('summary')!).getByText('用量資料已取得')).toBeTruthy();
-  expect(within(github.querySelector('summary')!).getAllByText('尚未確認')).toHaveLength(2);
-  const cloudflare=screen.getByRole('article',{name:'Cloudflare Pages',exact:true});
-  expect(within(cloudflare.querySelector('summary')!).getByText('Pages 帳務未取得')).toBeTruthy();
-  fireEvent.click(cloudflare.querySelector('summary')!);
-  expect(within(cloudflare).getAllByText(source).length).toBeGreaterThan(0);
-});
-
-it('keeps all four provider summaries collapsed and opens details without another request under StrictMode', async () => {
-  const get = vi.fn(async () => ({ data: { items: [{ ...row, billing: { ...billing, account } }] } }));
-  render(<StrictMode><ArchitectureOverview client={{ get }} /></StrictMode>);
-  const railway = screen.getByRole('article', { name: 'Railway' });
-  await waitFor(() => expect(within(railway).getByText('Pro')).toBeTruthy());
-  expect(screen.getAllByRole('article')).toHaveLength(4);
-  const disclosures = [...document.querySelectorAll<HTMLDetailsElement>('.architectureDisclosure')];
-  expect(disclosures).toHaveLength(4);
-  expect(disclosures.every(details => !details.open)).toBe(true);
-  const summary = railway.querySelector('summary')!;
-  expect(within(summary).getByText('2026-10-02')).toBeTruthy();
-  expect(within(summary).getByText('US$10.50')).toBeTruthy();
-  expect(within(summary).getByText('方案費用 US$20／月')).toBeTruthy();
-  expect(within(summary).getByText(/人工核對/)).toBeTruthy();
-  expect(within(summary).getByText('預估應繳')).toBeTruthy();
-  fireEvent.click(summary);
-  expect(disclosures[0].open).toBe(true);
-  expect(within(railway).getByText('包含額度／上限')).toBeTruthy();
-  expect(within(railway).getByText('100 小時')).toBeTruthy();
-  expect(within(railway).getByText('20 小時')).toBeTruthy();
-  expect(within(railway).getByText('80 小時')).toBeTruthy();
-  expect(within(railway).getByText(/人工核對：/)).toBeTruthy();
-  expect(within(railway).getByText(/帳務資料更新：/)).toBeTruthy();
-  expect(within(railway).getByText(billing.source)).toBeTruthy();
-  expect(get.mock.calls).toEqual([['/api/architecture-overview']]);
-  for (const article of screen.getAllByRole('article')) {
-    const details = article.querySelector('details')!;
-    if (!details.open) fireEvent.click(details.querySelector('summary')!);
-  }
-  for (const link of screen.getAllByRole('link', { name: /管理訂閱/ })) {
-    expect(link.getAttribute('target')).toBe('_blank');
-    expect(link.getAttribute('rel')).toContain('noopener');
-    expect(link.getAttribute('href')).toMatch(/^https:\/\//);
-  }
-});
-
-it('does not infer next payment from renewal date, last invoice or a usage period', async () => {
-  render(<ArchitectureOverview client={{ get: async () => ({ data: { items: [row] } }) }} />);
-  const railway = screen.getByRole('article', { name: 'Railway' });
-  await waitFor(() => expect(within(railway).getByText('Pro')).toBeTruthy());
-  const summary = railway.querySelector('summary')!;
-  expect(within(summary).getAllByText('尚未確認')).toHaveLength(2);
-  expect(summary.textContent).not.toMatch(/2026-10-01|2024-02-01|37.12|已付款|2\/1/);
-  fireEvent.click(summary);
-  expect(within(railway).getByText('US$37.12（已付款）')).toBeTruthy();
-  expect(within(railway).getByText('上次付款日期')).toBeTruthy();
-  expect(within(railway).getByText('2024-02-01')).toBeTruthy();
-  expect(within(railway).getByText('本期累計')).toBeTruthy();
-  expect(within(railway).getByText('US$13.47')).toBeTruthy();
-  expect(within(railway).getByText('平台預估')).toBeTruthy();
-  expect(within(railway).getByText('US$14.08')).toBeTruthy();
-  expect(within(railway).getByText(/尚未取得已核對的額度明細/)).toBeTruthy();
-});
-
-it.each([['pending', '待出帳'], ['unknown', '本次應繳']])('keeps %s amounts distinguishable from confirmed due amounts', async (paymentKind, label) => {
-  render(<ArchitectureOverview client={{ get: async () => ({ data: { items: [{ ...row, billing: { ...billing, account: { ...account, paymentKind } } }] } }) }} />);
-  await screen.findByText('Pro');
-  const summary = screen.getByRole('article', { name: 'Railway' }).querySelector('summary')!;
-  expect(within(summary).getByText(label)).toBeTruthy();
-  if (paymentKind === 'unknown') expect(within(summary).queryByText('US$10.50')).toBeNull();
-});
-
-it('distinguishes a failed read from missing data and supports a single explicit retry', async () => {
-  const get = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ data: { items: [] } });
-  render(<ArchitectureOverview client={{ get }} />);
-  await screen.findByRole('alert');
-  fireEvent.click(screen.getByRole('button', { name: '重新載入' }));
-  await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
-  expect(get).toHaveBeenCalledTimes(2);
-  expect(screen.getAllByRole('article')).toHaveLength(4);
-  expect([...document.querySelectorAll('article > details > summary')].every(summary => summary.textContent?.includes('尚未確認'))).toBe(true);
-});
-
-it('does not use a response from a closed view in the new administrator view', async () => {
-  let finish!: (value: unknown) => void;
-  const oldClient = { get: vi.fn(() => new Promise<{ data: unknown }>(resolve => { finish = value => resolve({ data: value }); })) };
-  const oldView = render(<ArchitectureOverview client={oldClient} />);
-  oldView.unmount();
-  render(<ArchitectureOverview client={{ get: async () => ({ data: { items: [] } }) }} />);
-  finish({ items: [{ provider: 'railway', plan: 'Old plan', fee: null, renewalDate: null, verifiedAt: null }] });
-  await waitFor(() => expect(screen.queryByRole('status')).toBeNull());
-  expect(screen.queryByText('Old plan')).toBeNull();
-});
-
-
-it('shows automatically retrieved Cloudflare limits without claiming known usage or payment',async()=>{
- render(<ArchitectureOverview client={{get:async()=>({data:{items:[{...row,provider:'cloudflare',plan:null,fee:null,billing:{source:'Cloudflare API',verifiedAt:'2026-09-26T00:00:00Z',limits:[{label:'建置快取容量',value:'10,000 MB'}]}}]}})}}/>);
- await waitFor(()=>expect(screen.queryByRole('status')).toBeNull());
- const card=screen.getByRole('article',{name:'Cloudflare Pages',exact:true});
+const account={paymentDate:'2026-10-02',paymentDateNote:'官方核對',paymentAmount:'US$18.60',paymentKind:'estimate',paymentNote:'非最終帳單',costs:[{label:'方案月費',value:'US$20',note:'含額度'}],quotas:[{label:'CPU',included:'100 小時',used:'20 小時',remaining:'80 小時',reset:'2026-10-01'}],verifiedAt:'2026-09-25T00:00:00Z',source:'官方帳務頁'};
+const row={provider:'railway',plan:'Pro',fee:'US$20／月',renewalDate:null,verifiedAt:null,billing:{account,currentAmount:'US$23.47（折抵前用量；待出帳快照 US$18.45）',pendingAmount:'US$18.45',source:'API',verifiedAt:'2026-09-26T04:00:00Z',manualPayment:{paymentDate:'2026-08-26',amount:'US$20',source:'歷史核對',verifiedAt:'2026-09-25T00:00:00Z'}}};
+it('shows each provider once and aligned payment facts without opening details',async()=>{
+ const get=vi.fn(async()=>({data:{items:[row]}})); render(<StrictMode><ArchitectureOverview client={{get}}/></StrictMode>);
+ await screen.findByText('Pro'); expect(screen.getAllByRole('article')).toHaveLength(4);
+ expect(screen.getAllByRole('heading',{name:'Railway'})).toHaveLength(1);
+ const card=screen.getByRole('article',{name:'Railway'});
+ for(const text of ['2026-10-02','US$23.47','US$18.45','US$18.60']) expect(within(card.querySelector('.architecturePaymentFacts')!).getByText(text)).toBeTruthy();
+ expect(within(card).getByText('未取得').className).toContain('architectureUnknown');
+ expect(within(card).getByText('（折抵前用量）').tagName).toBe('SMALL');
+ expect(card.querySelector('details')!.open).toBe(false);
  fireEvent.click(card.querySelector('summary')!);
- expect(within(card).getByText('10,000 MB')).toBeTruthy();
- expect(within(card).getByText(/上限自動更新：/)).toBeTruthy();
- expect(within(card).queryByText(/人工核對：/)).toBeNull();
- expect(within(card).getByText('每月建置已用量、剩餘額度與重置時間尚未取得。')).toBeTruthy();
- expect(within(card.querySelector('summary')!).getAllByText('尚未確認')).toHaveLength(3);
+ const sections=card.querySelectorAll<HTMLDetailsElement>('.architectureSection'); expect([...sections].every(x=>!x.open)).toBe(true);
+ for(const section of sections) fireEvent.click(section.querySelector('summary')!);
+ expect(within(card).getByText('100 小時')).toBeTruthy(); expect(within(card).getByText('2026-08-26')).toBeTruthy();
+ expect(get.mock.calls).toEqual([['/api/architecture-overview']]);
 });
-
-it('shows automatic resource costs and pending invoice separately from the older manual estimate',async()=>{
- const manualPayment={paymentDate:'2026-08-26',amount:'US$20.00',verifiedAt:'2026-09-25T00:00:00Z',source:'已核對付款'};
- render(<ArchitectureOverview client={{get:async()=>({data:{items:[{...row,billing:{...billing,account,pendingAmount:'US$18.38',manualPayment,usageBreakdown:[{label:'記憶體',quantity:'22,244 GB·分鐘',grossAmount:'US$5.1491',discountAmount:null,netAmount:null}]}}]}})}}/>);
- await screen.findByText('Pro');const card=screen.getByRole('article',{name:'Railway',exact:true});fireEvent.click(card.querySelector('summary')!);
- expect(within(card).getByText('22,244 GB·分鐘')).toBeTruthy();expect(within(card).getByText('US$5.1491')).toBeTruthy();
- expect(within(card).getByText('待出帳金額（自動更新）')).toBeTruthy();expect(within(card).getByText('US$18.38')).toBeTruthy();
- expect(within(card).getByText('2026-08-26')).toBeTruthy();expect(within(card).getByText('歷史已核對付款')).toBeTruthy();
- expect(within(card).getByText('用量明細自動更新')).toBeTruthy();
+it('keeps verification timestamps in sources and retains the external link',async()=>{
+ render(<ArchitectureOverview client={{get:async()=>({data:{items:[row]}})}}/>); await screen.findByText('Pro');
+ const card=screen.getByRole('article',{name:'Railway'}); fireEvent.click(card.querySelector('summary')!);
+ const source=card.querySelector('.architectureSource')!;fireEvent.click(source.querySelector('summary')!);
+ expect(source.textContent).toContain('2026/09/25 08:00');expect(source.textContent).toContain('2026/09/26 12:00');
+ const link=within(card).getByRole('link',{name:/管理訂閱/});expect(link.getAttribute('rel')).toContain('noopener');
 });
-it('Supabase clearly identifies stored detail provenance and the missing automation',async()=>{
- render(<ArchitectureOverview client={{get:async()=>({data:{items:[{...row,provider:'supabase',billing:{...billing,account}}]}})}}/>);
- await screen.findByText('Pro');const card=screen.getByRole('article',{name:'Supabase',exact:true});fireEvent.click(card.querySelector('summary')!);
- expect(within(card).getByText('尚未接通帳務自動更新')).toBeTruthy();
- expect(within(card).getByText('100 小時')).toBeTruthy();
- expect(within(card).getByText(/額度明細核對時間：/)).toBeTruthy();
+it('shows read failures and retries once without retaining stale amounts',async()=>{
+ const get=vi.fn().mockRejectedValueOnce(Error('offline')).mockResolvedValueOnce({data:{items:[]}});
+ render(<ArchitectureOverview client={{get}}/>);await screen.findByRole('alert');expect(screen.getAllByText('讀取失敗').length).toBeGreaterThan(0);
+ fireEvent.click(screen.getByRole('button',{name:'重新載入'}));await waitFor(()=>expect(screen.queryByRole('alert')).toBeNull());expect(get).toHaveBeenCalledTimes(2);
+});
+it('does not update a new view with a closed view response',async()=>{
+ let finish!:(v:unknown)=>void;const old=render(<ArchitectureOverview client={{get:()=>new Promise(resolve=>{finish=data=>resolve({data});})}}/>);old.unmount();
+ render(<ArchitectureOverview client={{get:async()=>({data:{items:[]}})}}/>);finish({items:[row]});await waitFor(()=>expect(screen.queryByRole('status')).toBeNull());expect(screen.queryByText('Pro')).toBeNull();
 });

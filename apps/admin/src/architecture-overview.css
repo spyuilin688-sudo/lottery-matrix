@@ -1,68 +1,35 @@
 .architectureOverview { width: min(960px, 100%); min-width: 0; }
-.architectureNote { margin: 0 0 8px; color: #989ca5; font-size: 12px; line-height: 1.7; }
-.architectureGrid { display: grid; gap: 8px; }
-.panel.architectureProvider { min-width: 0; margin: 0; padding: 0; }
-.architectureSummary { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) 16px; gap: 12px; align-items: center; min-height: 72px; padding: 10px 12px; cursor: pointer; list-style: none; border-radius: 11px; }
+.architectureNote { margin: 0 0 10px; color: #989ca5; font-size: 12px; line-height: 1.6; }
+.architectureGrid { display: grid; gap: 12px; }
+.panel.architectureProvider { min-width: 0; margin: 0; padding: 0 12px; }
+.architectureProviderHeader { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; padding: 14px 0 10px; }
+.architectureProviderHeader h2 { margin: 0; font-size: 16px; }
+.architectureProviderHeader > span { color: #989ca5; font-size: 12px; }
+.architecturePaymentFacts, .architectureFacts { margin: 0; display: grid; }
+.architecturePaymentFacts > div, .architectureFacts > div, .architectureQuota dl > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 12px; align-items: baseline; min-width: 0; padding: 8px 0; border-bottom: 1px solid #24272d; }
+.architecturePaymentFacts dt, .architectureFacts dt, .architectureQuota dt { color: #989ca5; font-size: 12px; overflow-wrap: anywhere; }
+.architecturePaymentFacts dd, .architectureFacts dd, .architectureQuota dd { min-width: 0; margin: 0; text-align: right; overflow-wrap: anywhere; font-size: 13px; font-variant-numeric: tabular-nums; }
+.architecturePaymentFacts dd { color: #e1c170; font-weight: 600; font-size: 14px; }
+.architecturePaymentFacts .architectureUnknown { color: #989ca5; font-weight: 400; }
+.architecturePaymentFacts small, .architectureFacts small { display: block; margin-top: 4px; color: #989ca5; font-size: 11px; font-weight: 400; line-height: 1.6; }
+.architectureSummary { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; min-height: 44px; cursor: pointer; list-style: none; color: #ece7d8; font-size: 12px; }
 .architectureSummary::-webkit-details-marker { display: none; }
-.architectureSummary:hover { background: #191b20; }
-.architectureIdentity { min-width: 0; }
-.architectureIdentity h2 { margin: 0 0 2px; font-size: 15px; }
-.architectureIdentity > span, .architecturePayment > span { color: #989ca5; font-size: 11px; }
-.architectureIdentity > span { display: block; overflow-wrap: anywhere; }
-.architecturePayment { align-self: start; display: grid; gap: 3px; min-width: 0; }
-.architecturePayment strong { color: #e1c170; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.architectureSnapshotDate { color: #989ca5; font-size: 10px; font-weight: 400; line-height: 1.5; overflow-wrap: anywhere; }
-.architectureIdentity > .architecturePlanFee { font-size: 11px; }
-.architectureChevron { color: #e1c170; text-align: center; transition: transform .15s; }
+.architectureChevron { color: #e1c170; }
 .architectureDisclosure[open] > .architectureSummary .architectureChevron { transform: rotate(180deg); }
-.architectureDetailBody { min-width: 0; padding: 0 12px 12px; }
-.architectureSection { border-top: 1px solid #30333a; padding: 10px 0; }
-.architectureSection h3 { font-size: 13px; margin: 0 0 8px; color: #ece7d8; }
-.architectureSection p, .architectureSource p { margin: 6px 0 0; font-size: 12px; overflow-wrap: anywhere; }
-.architectureFacts { display: grid; gap: 8px; margin: 0; }
-.architectureFacts > div { font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
-.architectureFacts dt, .architectureFacts dd { display: inline; }
-.architectureFacts dt, .architectureQuota dt { color: #989ca5; }
-.architectureFacts dd, .architectureQuota dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
-.architectureFacts dt { margin-inline-end: 8px; overflow-wrap: anywhere; }
-.architectureFacts small { margin-inline-start: 6px; color: #989ca5; font-size: 11px; }
-.architectureUsage { margin-top: 10px; padding-top: 10px; border-top: 1px solid #24272d; }
-.architectureQuotas { display: grid; gap: 8px; }
-.architectureQuota { padding: 8px; border: 1px solid #30333a; border-radius: 8px; }
-.architectureQuota h4 { overflow-wrap: anywhere; margin: 0 0 8px; font-size: 12px; }
-.architectureQuota dl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0; font-size: 12px; line-height: 1.5; }
-.architectureQuota dl > div { min-width: 0; }
-.architectureQuota dt { font-size: 11px; margin-bottom: 2px; }
+.architectureDetailBody { min-width: 0; padding-bottom: 12px; }
+.architectureSection, .architectureSource { border-top: 1px solid #30333a; }
+.architectureSection > summary, .architectureSource > summary { cursor: pointer; padding: 12px 0; min-height: 44px; color: #ece7d8; font-size: 13px; }
+.architectureSection[open], .architectureSource[open] { padding-bottom: 12px; }
+.architectureSection p, .architectureSource p { margin: 8px 0; color: #989ca5; font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.architectureSection h4 { margin: 12px 0 4px; font-size: 12px; }
+.architectureUsage { margin-top: 10px; }
+.architectureQuotas { display: grid; gap: 10px; }
+.architectureQuota { min-width: 0; padding: 8px 10px; background: #111419; border: 1px solid #30333a; border-radius: 8px; }
+.architectureQuota h4 { margin: 0; padding: 4px 0 8px; overflow-wrap: anywhere; font-size: 13px; }
+.architectureQuota dl { margin: 0; }
+.architectureQuota dl > div:last-child, .architectureFacts > div:last-child { border-bottom: 0; }
 .architectureSection .architectureVerified, .architectureSource .architectureVerified { font-size: 11px; }
-.architectureSource { border-top: 1px solid #30333a; margin-bottom: 10px; }
-.architectureSource > summary { display: list-item; min-height: 40px; padding: 10px 0; color: #989ca5; font-size: 12px; cursor: pointer; }
-.architectureSource[open] { padding-bottom: 8px; }
+.architectureSource { margin-bottom: 10px; }
 .architectureLink { gap: 6px; text-decoration: none; }
-.architectureLink:hover { filter: brightness(1.15); }
 .architectureOverview summary:focus-visible, .architectureLink:focus-visible { outline: 2px solid #e7c46d; outline-offset: 2px; }
 .architectureError { margin-bottom: 8px; }
-@media (max-width: 760px) {
-  .architectureSummary { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 16px; gap: 8px; min-height: 100px; padding: 10px; }
-  .architectureIdentity { grid-column: 1 / 3; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
-  .architectureIdentity h2 { margin: 0; }
-  .architectureIdentity > span { font-size: 12px; }
-  .architecturePayment { grid-row: 2; }
-  .architectureChevron { grid-column: 3; grid-row: 1 / 3; }
-  .architectureDetailBody { padding: 0 10px 10px; }
-  .architectureQuota dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (prefers-reduced-motion: reduce) { .architectureChevron { transition: none; } }
-
-.architecturePaymentOverview { margin-bottom: 16px; min-width: 0; }
-.architecturePaymentOverview > h2 { margin: 0 0 8px; font-size: 17px; }
-.architecturePaymentCards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.architecturePaymentCard { min-width: 0; padding: 12px; background: #111419; border: 1px solid #30333a; border-radius: 10px; }
-.architecturePaymentCard h3 { margin: 0 0 10px; font-size: 15px; }
-.architecturePaymentFacts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; }
-.architecturePaymentFacts > div { min-width: 0; }
-.architecturePaymentFacts dt { margin-bottom: 4px; color: #989ca5; font-size: 12px; }
-.architecturePaymentFacts dd { margin: 0; color: #e1c170; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.architecturePaymentFacts small { display: block; margin-top: 2px; color: #989ca5; font-size: 11px; font-weight: 400; }
-.architecturePaymentCard p { margin: 8px 0 0; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
-.architecturePaymentCard .architectureSnapshotDate { font-size: 11px; }
-@media (max-width: 760px) { .architecturePaymentCards { grid-template-columns: minmax(0, 1fr); } }
