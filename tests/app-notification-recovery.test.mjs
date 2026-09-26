@@ -18,7 +18,7 @@ await db.exec(`
     insert into net.requests(url) values($1) returning id into result; return result;
   end; $$;
   create table cron.job(jobid bigint,jobname text,command text,schedule text);
-  insert into cron.job values(1,'matrix-notification-recovery-5m','select private.notification_recovery_tick(pg_catalog.now());','*/5 * * * *');
+  insert into cron.job values(1,'matrix-notification-recovery-fallback','select private.notification_recovery_tick(pg_catalog.now());','7 * * * *');
   create function cron.alter_job(job_id bigint,command text) returns void language sql as
     $$update cron.job set command=$2 where jobid=$1$$;
 `);
@@ -30,13 +30,14 @@ const enqueue = async () => {
 };
 const countRequests = async () => (await db.query('select count(*)::int n from net.requests')).rows[0].n;
 
-test('idle recovery performs no HTTP request and retains the existing five-minute schedule', async () => {
+test('idle recovery performs no HTTP request and retains the existing dynamic-recovery fallback schedule', async () => {
   const result = await db.query('select private.app_notification_recovery_tick() value');
   assert.equal(result.rows[0].value, null);
   assert.equal(await countRequests(), 0);
   const jobs = (await db.query('select * from cron.job')).rows;
   assert.equal(jobs.length, 1);
-  assert.equal(jobs[0].schedule, '*/5 * * * *');
+  assert.equal(jobs[0].schedule, '7 * * * *');
+  assert.equal(jobs[0].jobname, 'matrix-notification-recovery-fallback');
   assert.ok(jobs[0].command.includes('private.notification_recovery_tick'));
   assert.ok(jobs[0].command.includes('private.app_notification_recovery_tick'));
 });

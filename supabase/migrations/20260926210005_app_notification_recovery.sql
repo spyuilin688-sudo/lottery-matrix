@@ -66,8 +66,8 @@ revoke all on function private.app_notification_dispatch_http_tick(),private.app
 do $$
 declare v_job record;
 begin
-  select jobid,command into v_job from cron.job where jobname='matrix-notification-recovery-5m';
-  if not found then raise exception 'MATRIX_NOTIFICATION_RECOVERY_CRON_MISSING'; end if;
+  select jobid,command into v_job from cron.job where jobname='matrix-notification-recovery-fallback';
+  if not found then raise exception 'MATRIX_NOTIFICATION_RECOVERY_FALLBACK_CRON_MISSING'; end if;
   perform cron.alter_job(job_id:=v_job.jobid,
     command:=v_job.command||' select private.app_notification_recovery_tick();');
 end;
