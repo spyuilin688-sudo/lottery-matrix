@@ -58,7 +58,7 @@ export async function memberConnectionSummaries(authIds: string[], api: Requeste
   const ids = [...new Set(authIds.filter(id => uuid.test(id)))];
   const rows: Row[] = [];
   for (let offset = 0; offset < ids.length; offset += 100) {
-    rows.push(...await api.request<Row[]>(`/rest/v1/member_latest_connections?select=auth_user_id,last_connection_ip&auth_user_id=in.(${ids.slice(offset, offset + 100).join(',')})`));
+    rows.push(...await api.request<Row[]>(`/rest/v1/pwa_member_latest_connections?select=auth_user_id,last_connection_ip&auth_user_id=in.(${ids.slice(offset, offset + 100).join(',')})`));
   }
   const locations = await lookupLocations(rows.map(row => normalizeIpAddress(row.last_connection_ip)), api).catch(() => new Map<string, string | null>());
   for (const row of rows) { const ip = normalizeIpAddress(row.last_connection_ip); result.set(String(row.auth_user_id), { recentIp: ip, estimatedRegion: ip ? locations.get(ip) || null : null }); }
@@ -72,7 +72,7 @@ export async function listMemberLoginHistory(memberId: string, rawPage: unknown,
   if (!members[0]) throw Object.assign(new Error('找不到會員'), { statusCode: 404 });
   const authId = String(members[0].auth_user_id);
   if (!uuid.test(authId)) return { items: [], hasMore: false };
-  const rows = await api.request<Row[]>(`/rest/v1/member_login_records?select=id,login_at,login_ip&auth_user_id=eq.${authId}&order=login_at.desc,id.desc&limit=6&offset=${(page - 1) * 5}`);
+  const rows = await api.request<Row[]>(`/rest/v1/pwa_member_login_records?select=id,login_at,login_ip&auth_user_id=eq.${authId}&order=login_at.desc,id.desc&limit=6&offset=${(page - 1) * 5}`);
   const items = rows.slice(0, 5);
   const locations = await lookupLocations(items.map(row => normalizeIpAddress(row.login_ip)), api).catch(() => new Map<string, string | null>());
   return { items: items.map(row => { const ip = normalizeIpAddress(row.login_ip); return { id: String(row.id), loginAt: row.login_at, ip, region: ip ? locations.get(ip) || null : null }; }), hasMore: rows.length > 5 };

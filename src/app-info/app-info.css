@@ -1,0 +1,7 @@
+.app-info-page{box-sizing:border-box;width:min(100%,760px);min-height:100dvh;margin:auto;padding:clamp(16px,4vw,32px);font:1rem/1.75 system-ui,sans-serif;color:#17243a;background:#fff;overflow-wrap:anywhere}
+.app-info-page h1{font-size:1.8em;line-height:1.3;margin:1em 0}.app-info-page h2{font-size:1.2em;line-height:1.4;margin-top:1.8em}
+.app-info-page p{margin:.75em 0}.app-info-page a{color:#174eb6;text-decoration:underline}
+.app-info-page button{font:inherit;min-height:44px;padding:10px 16px;border:1px solid #365b95;border-radius:8px;background:#f4f7fd;color:#17243a;white-space:normal;max-width:100%}
+.app-info-page button:disabled{opacity:.55}.app-info-actions{display:flex;flex-wrap:wrap;gap:12px;margin:20px 0}
+.app-info-confirm{display:flex;align-items:flex-start;gap:10px;padding:12px 0}.app-info-confirm input{flex:none;width:20px;height:20px;margin-top:5px}
+.app-info-page .app-info-delete{background:#9e2636;color:white}.app-info-page footer{margin-top:36px;border-top:1px solid #d7dfeb;padding-top:20px}

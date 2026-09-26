@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { listMemberLoginHistory, lookupLocations, locationLabel } from './member-login-history';
+import { listMemberLoginHistory, lookupLocations, locationLabel, memberConnectionSummaries } from './member-login-history';
 const member = '11111111-1111-4111-8111-111111111111';
 const user = '22222222-2222-4222-8222-222222222222';
 describe('member login history', () => {
@@ -13,8 +13,14 @@ describe('member login history', () => {
     const result = await listMemberLoginHistory(member, 2, { request } as never);
     expect(result.items).toHaveLength(5); expect(result.hasMore).toBe(true);
     expect(request.mock.calls[1][0]).toContain(`auth_user_id=eq.${user}`);
+    expect(request.mock.calls[1][0]).toContain('/rest/v1/pwa_member_login_records?');
     expect(request.mock.calls[1][0]).toContain('limit=6&offset=5');
     expect(result.items[0].ip).toBeNull();
+  });
+  it('reads only the PWA recent-connection projection', async () => {
+    const request = vi.fn(async (_path: string) => []);
+    await memberConnectionSummaries([user], { request } as never);
+    expect(request.mock.calls[0]?.[0]).toContain('/rest/v1/pwa_member_latest_connections?');
   });
   it('uses cached geolocation without disclosing account information', async () => {
     const fetcher = vi.fn();

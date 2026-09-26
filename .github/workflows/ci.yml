@@ -23,6 +23,7 @@ jobs:
     outputs:
       plan: ${{ steps.select.outputs.plan }}
       node: ${{ steps.select.outputs.node }}
+      postgres: ${{ steps.select.outputs.postgres }}
       vitest: ${{ steps.select.outputs.vitest }}
       edge: ${{ steps.select.outputs.edge }}
       admin: ${{ steps.select.outputs.admin }}
@@ -70,6 +71,41 @@ jobs:
       - name: Related Node packaging tests
         if: needs.scope.outputs.node == 'true'
         run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run node
+
+  app-postgres:
+    needs: scope
+    if: needs.scope.outputs.postgres == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SCOPED_TEST_PLAN: ${{ needs.scope.outputs.plan }}
+      APP_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/matrix_app_test
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: matrix_app_test
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.SCOPE_HEAD_SHA }}
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client
+      - name: Related isolated App PostgreSQL test
+        run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run postgres
 
   test-and-build:
     needs: scope
@@ -197,13 +233,14 @@ jobs:
         run: node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run python
 
   release-gate:
-    needs: [scope, runtime-integrity, test-and-build, runtime-tests, admin, matrix-api]
+    needs: [scope, runtime-integrity, app-postgres, test-and-build, runtime-tests, admin, matrix-api]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
     env:
       scope: ${{ needs.scope.result }}
       runtime_integrity: ${{ needs.runtime-integrity.result }}
+      app_postgres: ${{ needs.app-postgres.result }}
       test_and_build: ${{ needs.test-and-build.result }}
       runtime_tests: ${{ needs.runtime-tests.result }}
       admin: ${{ needs.admin.result }}
@@ -213,7 +250,7 @@ jobs:
         run: |
           node <<'NODE'
           const required = ['scope', 'runtime_integrity', 'admin'];
-          const conditional = ['test_and_build', 'runtime_tests', 'matrix_api'];
+          const conditional = ['app_postgres', 'test_and_build', 'runtime_tests', 'matrix_api'];
           for (const name of required) {
             if (process.env[name] !== 'success') {
               throw new Error(`Required CI job did not succeed: ${name}=${process.env[name]}`);

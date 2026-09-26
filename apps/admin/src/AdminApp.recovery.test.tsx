@@ -286,3 +286,31 @@ describe('AdminApp weak-network bootstrap',()=>{
     expect(screen.queryByText('後台連線異常，請重新載入')).toBeNull();
   });
 });
+
+it('the App product ignores late PWA dashboard responses and owns its queries', async () => {
+  window.history.replaceState({}, '', '/admin/');
+  let resolveDashboard!: (value: unknown) => void;
+  client.get.mockImplementation((path: string) => {
+    if (path === '/api/bootstrap') return Promise.resolve({ data: { admin: { id: 'owner', name: 'Owner', canManageApp: true, role: '超級管理員' } } });
+    if (path === '/api/dashboard') return new Promise(done => { resolveDashboard = done; });
+    if (path.startsWith('/api/app/users')) return Promise.resolve({ data: { items: [{ id: 'app', displayName: 'App 專用會員', status: 'active', entitlementRevision: 1 }], total: 1, page: 1, pageSize: 25 } });
+    return Promise.resolve({ data: { items: [], total: 0, currentPage: 1, totalPages: 1 } });
+  });
+  render(<AdminApp />);
+  fireEvent.click(await screen.findByRole('tab', { name: 'APP版' }));
+  await screen.findByText('App 專用會員');
+  await act(async () => resolveDashboard({ data: { ...dashboard, totalUsers: 99999 } }));
+  expect(screen.queryByText('99,999')).toBeNull();
+  expect(new URL(window.location.href).searchParams.get('product')).toBe('app');
+  window.history.replaceState({}, '', '/admin/');
+});
+
+it('a non-owner loading the App URL cannot fetch App data', async () => {
+  window.history.replaceState({}, '', '/admin/?product=app');
+  client.get.mockResolvedValue({ data: { admin: { id: 'other', name: 'Other', role: '超級管理員', canManageApp: false } } });
+  render(<AdminApp />);
+  await screen.findByText('沒有 App 管理權限。');
+  expect(screen.queryByRole('tab', { name: 'APP版' })).toBeNull();
+  expect(client.get.mock.calls.some(([url]) => url.startsWith('/api/app/'))).toBe(false);
+  window.history.replaceState({}, '', '/admin/');
+});

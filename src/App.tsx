@@ -1,3 +1,4 @@
+import { AppInfoPage, isAppInfoPath } from './app-info/AppInfoPage';
 import { useEffect } from "react";
 import { installPermissionSettingsRefresh } from "./permission-settings";
 import { MemberSessionBridge } from "./auth/MemberSessionBridge";
@@ -11,7 +12,9 @@ import { LineLoginErrorNotice } from "./auth/LineLoginErrorNotice";
 import type { LineLoginCallbackError } from "./auth/line-login-callback-error";
 
 export default function App({ lineLoginError }: { lineLoginError?: LineLoginCallbackError } = {}) {
-  useEffect(() => installPermissionSettingsRefresh(), []);
+  const appInfo = isAppInfoPath(window.location.pathname);
+  useEffect(() => appInfo ? undefined : installPermissionSettingsRefresh(), [appInfo]);
+  if (appInfo) return <AppInfoPage />;
   const isExploreResultPreviewPath =
     window.location.pathname === "/explore-result-preview" ||
     window.location.pathname === "/explore-result-preview/";

@@ -52,6 +52,7 @@ every nonempty invocation appends the selected full test paths.
 | Group | Eligible files | Command prefix / working directory |
 | --- | --- | --- |
 | `node` | `.test.mjs` and tests importing `node:test` | `node --test`; repository root |
+| `postgres` | `tests/app-isolation-postgres.test.mjs` | `scripts/run-app-db-checks.mjs` against isolated PostgreSQL 17; repository root |
 | `vitest` | Root client/shared/backend tests and admin backend tests | `node_modules/.bin/vitest run --config vitest.config.ts`; repository root |
 | `edge` | Supabase function tests | `node_modules/.bin/vitest run --config vitest.edge-functions.config.ts`; repository root |
 | `admin` | Admin frontend tests, including `.test.tsx` | `apps/admin/node_modules/.bin/vitest run --config apps/admin/vite.config.ts`; repository root |
@@ -66,7 +67,8 @@ Each test belongs to one group, avoiding the prior duplicate admin test runs.
 
 The runtime commit-atomicity check, `check:runtime`, production build, admin build,
 and admin Pages build remain required. Selected Node packaging tests run after a
-production build. Selected browser jobs install Chromium and its system
+production build. The App concurrency test is never run as a generic Node test;
+it uses the dedicated PostgreSQL runner, which creates and drops an isolated test database through `scripts/run-app-db-checks.mjs`. Selected browser jobs install Chromium and its system
 dependencies; selected Python tests run after `uv sync --frozen`.
 
 ## Review and focused verification

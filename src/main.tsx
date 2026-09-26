@@ -1,3 +1,4 @@
+import { isAppInfoPath } from './app-info/AppInfoPage';
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "@fontsource/roboto/latin-500.css";
@@ -38,13 +39,14 @@ import { preservePreviousPwaShell } from './pwa-shell-compat';
 
 // Preserve the callback purpose before Supabase can consume its URL parameters.
 const launchUrl = new URL(window.location.href);
+const appInfo = isAppInfoPath(launchUrl.pathname);
 const hasPasswordRecovery = isPasswordRecoveryUrl(launchUrl);
 const lineLoginError = hasPasswordRecovery ? undefined : readLineLoginCallbackError(launchUrl);
 
 installGlobalInputBehavior();
-void preservePreviousPwaShell().catch(() => undefined);
+if (!appInfo) void preservePreviousPwaShell().catch(() => undefined);
 
-const linePwaWorkerReady = !hasPasswordRecovery && 'serviceWorker' in navigator
+const linePwaWorkerReady = !appInfo && !hasPasswordRecovery && 'serviceWorker' in navigator
   ? registerPushServiceWorker()
     .then(() => registerLinePwaClient())
     .catch(() => false)
@@ -57,14 +59,14 @@ const renderApp = () => {
     clearLineLoginAttempt();
     clearLineLoginCallbackError();
   }
-  const stopVisitorTracking = installVisitorTracking();
+  const stopVisitorTracking = appInfo ? () => {} : installVisitorTracking();
   if (import.meta.hot) import.meta.hot.dispose(stopVisitorTracking);
   ReactDOM.createRoot(root).render(
     <React.StrictMode>
       <App lineLoginError={lineLoginError} />
     </React.StrictMode>,
   );
-  if (!diagnosticFlushStarted) {
+  if (!appInfo && !diagnosticFlushStarted) {
     diagnosticFlushStarted = true;
     void flushLinePwaDiagnostics(window, getSupabaseClient());
   }
@@ -90,6 +92,7 @@ root.textContent = '正在開啟樂彩 Matrix…';
 const hasNormalLineCallback = !hasPasswordRecovery && hasLineOAuthCallback();
 
 async function bootstrap() {
+  if (appInfo) { renderApp(); return; }
   if (hasPasswordRecovery) {
     renderPasswordRecovery();
     return;

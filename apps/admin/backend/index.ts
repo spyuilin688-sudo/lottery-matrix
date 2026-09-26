@@ -1,3 +1,4 @@
+import { createAppAdmin, canManageApp } from './app-admin';
 import { isRefreshRequestId } from '../shared/manual-refresh';
 import { createOptimizerRunner, type OptimizerScope } from './matrix-optimizer-runner';
 import { createRailwayEvidenceCollector } from './matrix-railway-evidence';
@@ -61,6 +62,7 @@ const adminTransferPush = createAdminTransferPush(() => getSupabaseConfig(secret
 const pushNotifications = createPushNotifications(() => getSupabaseConfig(secrets));
 const notificationEvents = createNotificationEvents(() => getNotificationEventConfig(secrets));
 const adminData = createAdminData(supabase);
+const appAdmin = createAppAdmin(supabase);
 const adminTodos = createAdminTodos(supabase);
 const permissionSettings = createPermissionSettings(supabase);
 const architectureOverview = createArchitectureOverview(supabase);
@@ -273,7 +275,7 @@ const routes: Record<string, unknown> = {
         await supabase.updateRows('admin_accounts', `id=eq.${encodeURIComponent(login.admin.id)}`, { last_login_at: lastLoginAt });
         await supabase.insertRows('admin_login_records', [{ id: login.loginRecordId, admin_id: login.admin.id, account: login.admin.account, login_at: lastLoginAt, ...requestMetadata(ctx) }]);
       }
-      const response = json({ admin: { ...login.admin, lastLoginAt } });
+      const response = json({ admin: { ...login.admin, lastLoginAt, canManageApp: canManageApp(login.admin) } });
       response.headers['Set-Cookie'] = credentialAuth.sessionCookie(login.token);
       return response;
     } catch (cause) {
@@ -315,10 +317,22 @@ const routes: Record<string, unknown> = {
   }],
 
   'GET /api/bootstrap': [sessionGuard, async (ctx: Context) => {
-    try { return json({ admin: await getAdmin(ctx) }); }
+    try { const admin = await getAdmin(ctx); return json({ admin: { ...admin, canManageApp: canManageApp(admin) } }); }
     catch (cause) { return fail(cause); }
   }],
 
+  'GET /api/app/users': [sessionGuard, async (ctx: Context) => {
+    try { return json(await appAdmin.list('users', ctx.query ?? {}, await getAdmin(ctx))); } catch (cause) { return fail(cause); }
+  }],
+  'GET /api/app/subscriptions': [sessionGuard, async (ctx: Context) => {
+    try { return json(await appAdmin.list('subscriptions', ctx.query ?? {}, await getAdmin(ctx))); } catch (cause) { return fail(cause); }
+  }],
+  'GET /api/app/revenue': [sessionGuard, async (ctx: Context) => {
+    try { return json(await appAdmin.revenue(await getAdmin(ctx))); } catch (cause) { return fail(cause); }
+  }],
+  'PUT /api/app/users/:id/status': [sessionGuard, async (ctx: Context) => {
+    try { return json(await appAdmin.setStatus(ctx.params.id, bodyOf(ctx), await getAdmin(ctx))); } catch (cause) { return fail(cause); }
+  }],
   'GET /api/permission-settings': [sessionGuard, async (ctx: Context) => {
     try {
       await getAdmin(ctx);

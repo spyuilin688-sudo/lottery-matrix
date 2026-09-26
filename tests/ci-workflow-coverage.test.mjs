@@ -31,7 +31,7 @@ test('CI has no whole-project test command or wildcard test invocation', () => {
     assert.doesNotMatch(command, /(?:node --test|vitest run|uv run pytest|playwright test)/,
       'Test runners must receive validated explicit files through the selector');
   }
-  for (const group of ['node', 'vitest', 'edge', 'admin', 'python', 'playwright', 'tianshu', 'membership']) {
+  for (const group of ['node', 'postgres', 'vitest', 'edge', 'admin', 'python', 'playwright', 'tianshu', 'membership']) {
     assert.equal(commands.filter(command => command === `node scripts/select-scoped-tests.mjs --plan-env SCOPED_TEST_PLAN --run ${group}`).length, 1);
     assert.match(workflow, new RegExp(`if: needs\\.scope\\.outputs\\.${group} == 'true'`));
   }
@@ -58,6 +58,16 @@ test('the single production build runs before selected packaging tests', () => {
   const related = job('test-and-build');
   assert.doesNotMatch(related, /--run node/);
   assert.doesNotMatch(related, /^\s*run:\s*npm run build\s*$/m);
+});
+
+
+test('isolated App PostgreSQL checks use PostgreSQL 17 and the validated wrapper', () => {
+  const postgres = job('app-postgres');
+  assert.match(postgres, /if: needs\.scope\.outputs\.postgres == 'true'/);
+  assert.match(postgres, /image: postgres:17/);
+  assert.match(postgres, /APP_TEST_DATABASE_URL: postgresql:\/\/postgres:postgres@127\.0\.0\.1:5432\/matrix_app_test/);
+  assert.match(postgres, /run: node scripts\/select-scoped-tests\.mjs --plan-env SCOPED_TEST_PLAN --run postgres/);
+  assert.doesNotMatch(postgres, /continue-on-error:\s*true/);
 });
 
 test('browser jobs install Chromium dependencies and run each configuration only with selected files', () => {
@@ -100,8 +110,10 @@ test('specialized Tianshu workflow no longer duplicates Project CI pull-request 
 test('selected test jobs fail the workflow when their tests fail', () => {
   const root = job('test-and-build');
   const runtime = job('runtime-tests');
+  const postgres = job('app-postgres');
   assert.doesNotMatch(root, /continue-on-error:\s*true/);
   assert.doesNotMatch(runtime, /continue-on-error:\s*true/);
+  assert.doesNotMatch(postgres, /continue-on-error:\s*true/);
 });
 
 test('main pushes finish one same-commit release gate without cancellation', () => {
@@ -113,11 +125,12 @@ test('main pushes finish one same-commit release gate without cancellation', () 
   const gate = job('release-gate');
   assert.match(
     gate,
-    /needs:\s*\[scope, runtime-integrity, test-and-build, runtime-tests, admin, matrix-api\]/,
+    /needs:\s*\[scope, runtime-integrity, app-postgres, test-and-build, runtime-tests, admin, matrix-api\]/,
   );
   assert.match(gate, /if:\s*always\(\)/);
   assert.match(gate, /scope:\s*\$\{\{ needs\.scope\.result \}\}/);
   assert.match(gate, /runtime_integrity:\s*\$\{\{ needs\.runtime-integrity\.result \}\}/);
+  assert.match(gate, /app_postgres:\s*\$\{\{ needs\.app-postgres\.result \}\}/);
   assert.match(gate, /test_and_build:\s*\$\{\{ needs\.test-and-build\.result \}\}/);
   assert.match(gate, /runtime_tests:\s*\$\{\{ needs\.runtime-tests\.result \}\}/);
   assert.match(gate, /admin:\s*\$\{\{ needs\.admin\.result \}\}/);
