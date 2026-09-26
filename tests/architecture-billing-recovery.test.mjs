@@ -14,6 +14,7 @@ test('billing recovery migrations preserve data and enforce terminal outcomes',a
     await db.query("insert into public.admin_architecture_billing_runs(run_day,status,previous_snapshots) values(current_date-1,'completed',$1)",[JSON.stringify({railway:snapshot})]);
     await db.query("update public.admin_architecture_subscriptions set billing_snapshot=$1 where provider='railway'",[JSON.stringify({...snapshot,latestPaymentDate:null})]);
     await db.exec(migration);
+    await db.exec(readFileSync(new URL('../supabase/migrations/20260926035024_cloudflare_architecture_daily_sync.sql',import.meta.url),'utf8'));
     await t.test('restores historical payment without claiming it belongs to current invoice',async()=>{
       const value=(await db.query("select billing_snapshot from public.admin_architecture_subscriptions where provider='railway'")).rows[0].billing_snapshot;
       assert.equal(value.latestPaymentDate,null);
@@ -21,6 +22,7 @@ test('billing recovery migrations preserve data and enforce terminal outcomes',a
       assert.equal(value.manualPayment?.amount,'US$17.00');
       assert.match(value.source,/人工核對付款：2026-08-12 US\$17.00/);
       await db.exec(migration);
+    await db.exec(readFileSync(new URL('../supabase/migrations/20260926035024_cloudflare_architecture_daily_sync.sql',import.meta.url),'utf8'));
       assert.deepEqual((await db.query("select billing_snapshot from public.admin_architecture_subscriptions where provider='railway'")).rows[0].billing_snapshot,value);
     });
     await t.test('interruption closes once and cannot reopen or overwrite finished runs',async()=>{
@@ -34,15 +36,15 @@ test('billing recovery migrations preserve data and enforce terminal outcomes',a
         assert.equal((await db.query('select public.claim_admin_architecture_billing_run() as id')).rows[0].id,null);
       } finally {await db.exec('rollback');}
     });
-    for(const count of [0,1,2]) await t.test(`database records ${['failed','partial','completed'][count]} and preserves unsuccessful provider data`,async()=>{
+    for(const count of [0,1,2,3]) await t.test(`database records ${['failed','partial','partial','completed'][count]} and preserves unsuccessful provider data`,async()=>{
       await db.exec('begin; set local role service_role');
       try {
         const before=(await db.query('select * from public.admin_architecture_subscriptions order by provider')).rows;
         const id=(await db.query('select public.claim_admin_architecture_billing_run() as id')).rows[0].id;
         const fresh={source:'API fixture',verifiedAt:new Date().toISOString(),currentAmount:'US$3.00'};
-        const results={github:count>0?{status:'synced',snapshot:fresh}:{status:'failed'},railway:count>1?{status:'synced',snapshot:fresh}:{status:'failed'}};
+        const results={github:count>0?{status:'synced',snapshot:fresh}:{status:'failed'},railway:count>1?{status:'synced',snapshot:fresh}:{status:'failed'},cloudflare:count>2?{status:'synced',snapshot:fresh}:{status:'failed'}};
         assert.equal((await db.query('select public.finish_admin_architecture_billing_run($1,$2) as changed',[id,JSON.stringify(results)])).rows[0].changed,true);
-        assert.equal((await db.query('select status from public.admin_architecture_billing_runs where id=$1',[id])).rows[0].status,['failed','partial','completed'][count]);
+        assert.equal((await db.query('select status from public.admin_architecture_billing_runs where id=$1',[id])).rows[0].status,['failed','partial','partial','completed'][count]);
         const after=(await db.query('select * from public.admin_architecture_subscriptions order by provider')).rows;
         for(const row of after){const old=before.find(x=>x.provider===row.provider);if(results[row.provider]?.status!=='synced')assert.deepEqual(row,old);assert.equal(row.plan,old.plan);assert.equal(row.verified_at,old.verified_at);}
         assert.equal((await db.query('select public.fail_admin_architecture_billing_run($1) as changed',[id])).rows[0].changed,false);

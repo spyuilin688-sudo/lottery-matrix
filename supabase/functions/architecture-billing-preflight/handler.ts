@@ -23,6 +23,15 @@ export function createHandler(deps: Dependencies) {
       const rows = provider === 'github' ? body.usageItems : body.result;
       return {
         status: 'readable', httpStatus: response.status,
+        ...(url.includes('/billing/history?') && Array.isArray(rows) ? {
+          history: rows.map(item => {
+            const entry=object(item);
+            return {amount:typeof entry.amount==='number'&&Number.isFinite(entry.amount)?entry.amount:undefined,
+              currency:displayText(entry.currency),status:displayText(entry.status),type:displayText(entry.type),
+              occurredAt:displayText(entry.occurred_at)};
+          }),
+          totalCount: typeof object(body.result_info).total_count==='number' ? object(body.result_info).total_count : undefined,
+        } : {}),
         ...(url.endsWith('/accounts/2a0ab3c9c14b3d669c035efa1bc60fe4/subscriptions') && Array.isArray(rows) ? {
           plans: rows.slice(0,30).map(item => {
             const subscription=object(item),plan=object(subscription.rate_plan);
@@ -100,12 +109,13 @@ export function createHandler(deps: Dependencies) {
       ]).then(async ([token, subscriptions, accounts]) => {
         if(options.cloudflareDetails!==true) return {status:'checked',token,subscriptions,accounts};
         const base='https://api.cloudflare.com/client/v4/accounts/2a0ab3c9c14b3d669c035efa1bc60fe4';
-        const [pages,accountSubscriptions,usageInfo]=await Promise.all([
+        const [pages,accountSubscriptions,usageInfo,billingHistory]=await Promise.all([
           probe(`${base}/pages/projects/lottery-matrix`,cf,'cloudflare'),
           probe(`${base}/subscriptions`,cf,'cloudflare'),
           probe(`${base}/billable-usage/info`,cf,'cloudflare'),
+          probe(`${base}/billing/history?page=1&per_page=20`,cf,'cloudflare'),
         ]);
-        return {status:'checked',token,subscriptions,accounts,pages,accountSubscriptions,usageInfo};
+        return {status:'checked',token,subscriptions,accounts,pages,accountSubscriptions,usageInfo,billingHistory};
       })
         : { status: 'missing_credential' },
       gh ? probe(`https://api.github.com/users/spyuilin688-sudo/settings/billing/usage?year=${now.getUTCFullYear()}&month=${now.getUTCMonth()+1}`, gh, 'github')

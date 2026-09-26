@@ -81,6 +81,15 @@ export function railwaySnapshot(data: Row, now: Date, previous: Row | null = nul
   };
 }
 
+export function cloudflareSnapshot(data: Row, previous: Row | null, now: Date) {
+  if (row(data.project).name !== 'lottery-matrix' || !Array.isArray(data.subscriptions)
+      || !Array.isArray(data.history) || typeof data.covered !== 'boolean') throw Error('INVALID_CLOUDFLARE');
+  return {...empty(), ...(previous?.account ? {account:previous.account} : {}),
+    source:`Cloudflare API：Pages 專案可讀；帳單紀錄 ${data.history.length} 筆（全帳戶，不能推算 Pages 本期金額）；${data.covered?'用量接口支援，金額待核對':'帳戶不支援計費用量接口'}；網域方案不是 Pages 方案；額度與扣款日期尚未取得`,
+    verifiedAt:now.toISOString(),
+  };
+}
+
 export function createSyncHandler(deps: Dependencies) {
   const json = (body: unknown, status=200) => Response.json(body,{status,headers:{'Cache-Control':'no-store'}});
   async function api(url: string, init: RequestInit={}) {
@@ -115,14 +124,24 @@ export function createSyncHandler(deps: Dependencies) {
       if(!Array.isArray(rows)) throw Error('STORAGE_READ_FAILED');
       const now=deps.now();
       const results: Row={};
-      await Promise.all(['github','railway'].map(async provider=>{
+      await Promise.all(['github','railway','cloudflare'].map(async provider=>{
         try {
-          const token=(provider==='github' ? deps.getEnv('GITHUB_BILLING_API_TOKEN') || deps.getEnv('GITHUB_ACTIONS_TOKEN') : deps.getEnv('RAILWAY_BILLING_API_TOKEN'))?.trim();
+          const token=(provider==='github' ? deps.getEnv('GITHUB_BILLING_API_TOKEN') || deps.getEnv('GITHUB_ACTIONS_TOKEN') : provider==='railway' ? deps.getEnv('RAILWAY_BILLING_API_TOKEN') : deps.getEnv('CLOUDFLARE_BILLING_API_TOKEN'))?.trim();
           if(!token) throw Error('MISSING_CREDENTIAL');
           let snapshot;
           if(provider==='github') {
             const body=await api(`https://api.github.com/users/spyuilin688-sudo/settings/billing/usage?year=${now.getUTCFullYear()}&month=${now.getUTCMonth()+1}`,{headers:{Authorization:`Bearer ${token}`,Accept:'application/json','X-GitHub-Api-Version':'2026-03-10'}});
             snapshot=githubSnapshot(row(body),rows.find((r:Row)=>r.provider==='github')?.billing_snapshot??null,now);
+          } else if(provider==='cloudflare') {
+            const cfBase='https://api.cloudflare.com/client/v4/accounts/2a0ab3c9c14b3d669c035efa1bc60fe4';
+            const cfHeaders={Authorization:`Bearer ${token}`,Accept:'application/json'};
+            const responses=await Promise.all(['/pages/projects/lottery-matrix','/subscriptions','/billing/history?page=1&per_page=20','/billable-usage/info'].map(path=>api(cfBase+path,{headers:cfHeaders})));
+            if(responses.some(body=>body.success!==true)) throw Error('PROVIDER_REJECTED');
+            const [project,subscriptions,history,usage]=responses;
+            // Never treat a truncated history page as the latest bill: ordering is not guaranteed.
+            const info=row(history.result_info);
+            if(!Array.isArray(history.result) || history.result.length>=20 || (typeof info.total_count==='number'&&info.total_count>history.result.length)) throw Error('INCOMPLETE_RESPONSE');
+            snapshot=cloudflareSnapshot({project:project.result,subscriptions:subscriptions.result,history:history.result,covered:row(usage.result).covered},rows.find((r:Row)=>r.provider==='cloudflare')?.billing_snapshot??null,now);
           } else {
             const body=await api('https://backboard.railway.com/graphql/v2',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({
               query:`query BillingSync($workspaceId:String!,$measurements:[MetricMeasurement!]!) {
@@ -138,12 +157,11 @@ export function createSyncHandler(deps: Dependencies) {
         } catch { results[provider]={status:'failed',reason:'帳單讀取或格式驗證失敗；保留上次資料'}; }
       }));
       results.supabase={status:'pending',reason:'尚未確認組織帳單公開 API'};
-      results.cloudflare={status:'pending',reason:'尚未確認 Pages 專屬帳務資料'};
       if(dryRun) return json({status:'preview',results});
       const finished=await rpc('finish_admin_architecture_billing_run',{p_run_id:runId,p_results:results});
       if(finished!==true) throw Error('STORAGE_WRITE_FAILED');
-      const succeeded=['github','railway'].filter(provider=>results[provider].status==='synced').length;
-      return json({status:succeeded===2?'completed':succeeded===1?'partial':'failed',results:Object.fromEntries(Object.entries(results).map(([name,result])=>[name,{status:result.status,reason:result.reason}]))});
+      const succeeded=['github','railway','cloudflare'].filter(provider=>results[provider].status==='synced').length;
+      return json({status:succeeded===3?'completed':succeeded>0?'partial':'failed',results:Object.fromEntries(Object.entries(results).map(([name,result])=>[name,{status:result.status,reason:result.reason}]))});
     } catch {
       if(runId) {
         try { await rpc('fail_admin_architecture_billing_run',{p_run_id:runId}); }
