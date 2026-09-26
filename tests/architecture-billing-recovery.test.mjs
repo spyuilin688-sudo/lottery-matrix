@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {PGlite} from '@electric-sql/pglite';
 
-const migration=readFileSync(new URL('../supabase/migrations/20260926015904_repair_architecture_billing_outcomes.sql',import.meta.url),'utf8');
+const migration=readFileSync(new URL('../supabase/migrations/20260926020425_repair_architecture_billing_outcomes.sql',import.meta.url),'utf8');
 test('billing recovery migrations preserve data and enforce terminal outcomes',async t=>{
   const db=new PGlite();
   try {
