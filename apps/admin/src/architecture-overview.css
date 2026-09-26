@@ -1,14 +1,53 @@
 .architectureOverview { width: min(960px, 100%); min-width: 0; }
 .architectureNote { margin: 0 0 8px; color: #989ca5; font-size: 12px; line-height: 1.7; }
-.architectureGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.panel.architectureProvider { min-width: 0; margin: 0; }
-.architectureFacts { display: grid; gap: 8px; margin: 0; padding: 8px 0; border-top: 1px solid #30333a; }
-.architectureFacts > div { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 8px; font-size: 13px; line-height: 1.5; }
-.architectureFacts dt { color: #989ca5; }
-.architectureFacts dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
-.architectureVerified { margin: 0 0 8px; font-size: 11px; overflow-wrap: anywhere; }
+.architectureGrid { display: grid; gap: 8px; }
+.panel.architectureProvider { min-width: 0; margin: 0; padding: 0; }
+.architectureSummary { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) 16px; gap: 12px; align-items: center; min-height: 72px; padding: 10px 12px; cursor: pointer; list-style: none; border-radius: 11px; }
+.architectureSummary::-webkit-details-marker { display: none; }
+.architectureSummary:hover { background: #191b20; }
+.architectureIdentity { min-width: 0; }
+.architectureIdentity h2 { margin: 0 0 2px; font-size: 15px; }
+.architectureIdentity > span, .architecturePayment > span { color: #989ca5; font-size: 11px; }
+.architectureIdentity > span { display: block; overflow-wrap: anywhere; }
+.architecturePayment { align-self: start; display: grid; gap: 3px; min-width: 0; }
+.architecturePayment strong { color: #e1c170; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.architectureSnapshotDate { color: #989ca5; font-size: 10px; font-weight: 400; line-height: 1.5; overflow-wrap: anywhere; }
+.architectureIdentity > .architecturePlanFee { font-size: 11px; }
+.architectureChevron { color: #e1c170; text-align: center; transition: transform .15s; }
+.architectureDisclosure[open] > .architectureSummary .architectureChevron { transform: rotate(180deg); }
+.architectureDetailBody { min-width: 0; padding: 0 12px 12px; }
+.architectureSection { border-top: 1px solid #30333a; padding: 10px 0; }
+.architectureSection h3 { font-size: 13px; margin: 0 0 8px; color: #ece7d8; }
+.architectureSection p, .architectureSource p { margin: 6px 0 0; font-size: 12px; overflow-wrap: anywhere; }
+.architectureFacts { display: grid; gap: 8px; margin: 0; }
+.architectureFacts > div { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 8px; font-size: 13px; line-height: 1.5; }
+.architectureFacts dt, .architectureQuota dt { color: #989ca5; }
+.architectureFacts dd, .architectureQuota dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.architectureFacts dt { overflow-wrap: anywhere; }
+.architectureFacts small { display: block; color: #989ca5; font-size: 11px; }
+.architectureUsage { margin-top: 10px; padding-top: 10px; border-top: 1px solid #24272d; }
+.architectureQuotas { display: grid; gap: 8px; }
+.architectureQuota { padding: 8px; border: 1px solid #30333a; border-radius: 8px; }
+.architectureQuota h4 { margin: 0 0 8px; font-size: 12px; }
+.architectureQuota dl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0; font-size: 12px; line-height: 1.5; }
+.architectureQuota dl > div { min-width: 0; }
+.architectureQuota dt { font-size: 11px; margin-bottom: 2px; }
+.architectureSection .architectureVerified, .architectureSource .architectureVerified { font-size: 11px; }
+.architectureSource { border-top: 1px solid #30333a; margin-bottom: 10px; }
+.architectureSource > summary { display: list-item; min-height: 40px; padding: 10px 0; color: #989ca5; font-size: 12px; cursor: pointer; }
+.architectureSource[open] { padding-bottom: 8px; }
 .architectureLink { gap: 6px; text-decoration: none; }
 .architectureLink:hover { filter: brightness(1.15); }
-.architectureLink:focus-visible { outline: 2px solid #e7c46d; outline-offset: 2px; }
+.architectureOverview summary:focus-visible, .architectureLink:focus-visible { outline: 2px solid #e7c46d; outline-offset: 2px; }
 .architectureError { margin-bottom: 8px; }
-@media (max-width: 760px) { .architectureGrid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 760px) {
+  .architectureSummary { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 16px; gap: 8px; min-height: 100px; padding: 10px; }
+  .architectureIdentity { grid-column: 1 / 3; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+  .architectureIdentity h2 { margin: 0; }
+  .architectureIdentity > span { font-size: 12px; }
+  .architecturePayment { grid-row: 2; }
+  .architectureChevron { grid-column: 3; grid-row: 1 / 3; }
+  .architectureDetailBody { padding: 0 10px 10px; }
+  .architectureQuota dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) { .architectureChevron { transition: none; } }
