@@ -26,6 +26,10 @@ it('keeps verification timestamps in sources and retains the external link',asyn
  const card=screen.getByRole('article',{name:'Railway'}); fireEvent.click(card.querySelector('summary')!);
  const source=card.querySelector('.architectureSource')!;fireEvent.click(source.querySelector('summary')!);
  expect(source.textContent).toContain('2026/09/25 08:00');expect(source.textContent).toContain('2026/09/26 12:00');
+ expect(within(source).getByText(account.paymentDateNote)).toBeTruthy();
+ expect(within(source).getByText(account.paymentNote)).toBeTruthy();
+ expect(within(card).getAllByText(account.paymentDateNote)).toHaveLength(1);
+ expect(source.textContent).not.toContain('每日 09:20');
  const link=within(card).getByRole('link',{name:/管理訂閱/});expect(link.getAttribute('rel')).toContain('noopener');
 });
 it('shows read failures and retries once without retaining stale amounts',async()=>{
